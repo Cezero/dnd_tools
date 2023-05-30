@@ -7,7 +7,6 @@ function App() {
 
   let handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("in handleSubmit: rollString = " + rollString);
     try {
       let res = await fetch("/api/dice/roll", {
         headers: {
@@ -22,7 +21,6 @@ function App() {
       let resJson = await res.json();
       if (res.status === 200) {
         setData(resJson);
-        console.log("in handleSubmit setData = " + resJson);
       } else {
         setData("Some error occured");
       };
