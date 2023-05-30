@@ -1,6 +1,7 @@
 const { parseAndRoll } = require('./services');
 
 const rollDice = async (req, res) => {
+    console.log("in controllers.rollDice");
     try {
         const dieDescription = req.body.dieDescription;
         console.log("in controllers.rollDice dieDescription = " + dieDescription);

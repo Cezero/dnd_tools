@@ -10,6 +10,10 @@ console.log("in server/index.js");
 app.use(express.static(path.resolve(__dirname, '../client/build')));
 
 app.use(express.json());
+app.use('/api', (req, res, next) => {
+  console.log('Time:', Date.now(), ' Request URL:', req.originalUrl);
+  next();
+})
 app.use('/api/dice', require('./dice/routes'));
 
 // All other GET requests not handled before will return our React app
