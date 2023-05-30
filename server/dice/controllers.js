@@ -1,12 +1,10 @@
 const { parseAndRoll } = require('./services');
 
 const rollDice = async (req, res) => {
-    console.log("in controllers.rollDice");
     try {
         const dieDescription = req.body.dieDescription;
-        console.log("in controllers.rollDice dieDescription = " + dieDescription);
         const result = await parseAndRoll(dieDescription);
-        res.json(result);
+        res.json(JSON.stringify(result));
     }
     catch (err) {
         res.status(500).send(err);
