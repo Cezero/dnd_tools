@@ -1,22 +1,42 @@
 import React from "react";
-import logo from './logo.svg';
 import './App.css';
 
 function App() {
   const [data, setData] = React.useState(null);
+  const [rollString, setRollString] = React.useState(null);
 
-  React.useEffect(() => {
-    fetch("/api")
-      .then((res) => res.json())
-      .then((data) => setData(data.message));
-  }, []);
+  let handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      let res = await fetch("/api/dice/roll", {
+        method: "POST",
+        body: JSON.stringify({
+          dieDescription: rollString,
+        }),
+      });
+      let resJson = await res.json();
+      if (res.status === 200) {
+        setData(JSON.stringify(res));
+      } else {
+        setData("Some error occured");
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>{!data ? "Loading..." : data}</p>
-      </header>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          value={rollString}
+          placeholder="Roll Description"
+          onChange={(e) => setRollString(e.target.value)}
+        />
+        <button type="submit">Roll</button>
+      <div className="message">{data ? <p>{data}</p> : null}</div>
+      </form>
     </div>
   );
 }
