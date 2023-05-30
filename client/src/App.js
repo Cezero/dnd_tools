@@ -10,6 +10,10 @@ function App() {
     console.log("in handleSubmit: rollString = " + rollString);
     try {
       let res = await fetch("/api/dice/roll", {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
         method: "POST",
         body: JSON.stringify({
           dieDescription: rollString,
