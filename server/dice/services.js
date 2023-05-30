@@ -2,7 +2,7 @@ const Owlbear = require('owlbear');
 
 const roller = new Owlbear();
 
-export default function parseAndRoll(notation) {
+const parseAndRoll = function(notation) {
     try {
         const parsed = roller.parse(notation);
         return parsed;
@@ -10,3 +10,7 @@ export default function parseAndRoll(notation) {
         return e;
     };
 };
+
+module.exports = {
+    parseAndRoll
+}
