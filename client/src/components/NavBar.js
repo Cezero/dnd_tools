@@ -13,7 +13,11 @@ import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import AdbIcon from '@mui/icons-material/Adb';
 
-const pages = ['Dice Roller', 'Encounter Tracker'];
+const pages = {
+  "dieroll": { name: "Dice Roller", link: "/DiceRoller"},
+  "inittrack": { name: "Initiative Tracker", link: "/InitiativeTracker"}
+}
+
 const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
 
 function NavBar() {
@@ -87,9 +91,11 @@ function NavBar() {
                 display: { xs: 'block', md: 'none' },
               }}
             >
-              {pages.map((page) => (
+              {Object.keys(pages).map((page) => (
                 <MenuItem key={page} onClick={handleCloseNavMenu}>
-                  <Typography textAlign="center">{page}</Typography>
+                  <Typography textAlign="center">
+                    <link to={`${pages[page]["link"]}`}>${pages[page]["name"]}</link>
+                  </Typography>
                 </MenuItem>
               ))}
             </Menu>
@@ -114,13 +120,13 @@ function NavBar() {
             D&D Tools
           </Typography>
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
-            {pages.map((page) => (
+            {Object.keys(pages).map((page) => (
               <Button
                 key={page}
                 onClick={handleCloseNavMenu}
                 sx={{ my: 2, color: 'white', display: 'block' }}
               >
-                {page}
+                <link to={`${pages[page]["link"]}`}>${pages[page]["name"]}</link>
               </Button>
             ))}
           </Box>
