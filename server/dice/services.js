@@ -1,4 +1,4 @@
-import Owlbear from 'owlbear';
+const Owlbear = require('owlbear');
 
 const roller = new Owlbear();
 
