@@ -7,7 +7,7 @@ function App() {
 
   let handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("in handleSubmit");
+    console.log("in handleSubmit: rollString = " + rollString);
     try {
       let res = await fetch("/api/dice/roll", {
         method: "POST",
