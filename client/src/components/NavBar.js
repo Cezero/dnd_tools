@@ -122,18 +122,15 @@ function NavBar() {
           </Typography>
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
             {pages.map((page) => (
-              <Link
-                style={{ textDecoration: "none",  color: "white"}}
+              <Button
+                component={Link}
                 to={`/${page}`}
+                key={page}
+                onClick={handleCloseNavMenu}
+                sx={{ my: 2, color: 'white', display: 'block' }}
               >
-                <Button
-                  key={page}
-                  onClick={handleCloseNavMenu}
-                  sx={{ my: 2, color: 'white', display: 'block' }}
-                >
-                  {page}
-                </Button>
-              </Link>
+                {page}
+              </Button>
             ))}
           </Box>
 
