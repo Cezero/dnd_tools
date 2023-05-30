@@ -99,7 +99,7 @@ function NavBar() {
                       style={{ textDecoration: "none",  color: "white"}}
                       to={`/${page}`}
                     >
-                      {buttonLabel[{page}]}
+                      buttonLabel[{page}]
                     </Link></Typography>
                 </MenuItem>
               ))}
@@ -134,7 +134,7 @@ function NavBar() {
                 variant="outlined"
                 sx={{ my: 2, color: 'white', display: 'block' }}
               >
-                {buttonLabel[{page}]}
+                buttonLabel[{page}]
               </Button>
             ))}
           </Box>
