@@ -15,6 +15,10 @@ import AdbIcon from '@mui/icons-material/Adb';
 import {Link} from "react-router-dom";
 
 const pages = ['DiceRoller', 'InitiativeTracker'];
+const buttonLabel = {
+  "DiceRoller": "Dice Roller",
+  "InitiativeTracker": "Initiative Tracker",
+}
 const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
 
 function NavBar() {
@@ -95,7 +99,7 @@ function NavBar() {
                       style={{ textDecoration: "none",  color: "white"}}
                       to={`/${page}`}
                     >
-                      {page}
+                      {buttonLabel[{page}]}
                     </Link></Typography>
                 </MenuItem>
               ))}
@@ -127,9 +131,10 @@ function NavBar() {
                 to={`/${page}`}
                 key={page}
                 onClick={handleCloseNavMenu}
+                variant="outlined"
                 sx={{ my: 2, color: 'white', display: 'block' }}
               >
-                {page}
+                {buttonLabel[{page}]}
               </Button>
             ))}
           </Box>
