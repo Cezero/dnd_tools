@@ -19,10 +19,10 @@ function App() {
         setData(JSON.stringify(res));
       } else {
         setData("Some error occured");
-      }
+      };
     } catch (err) {
       console.log(err);
-    }
+    };
   };
 
   return (
@@ -39,6 +39,6 @@ function App() {
       </form>
     </div>
   );
-}
+};
 
 export default App;

@@ -8,5 +8,5 @@ export default function parseAndRoll(notation) {
         return parsed;
     } catch (e) {
         return e;
-    }
+    };
 };
