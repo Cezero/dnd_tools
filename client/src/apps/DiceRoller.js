@@ -1,5 +1,4 @@
 import React from "react";
-import './DiceRoller.css';
 
 function DiceRoller() {
   const [data, setData] = React.useState(null);
