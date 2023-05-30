@@ -16,7 +16,7 @@ import AdbIcon from '@mui/icons-material/Adb';
 const pages = ['Dice Roller', 'Encounter Tracker'];
 const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
 
-function navBar() {
+function NavBar() {
   const [anchorElNav, setAnchorElNav] = React.useState(null);
   const [anchorElUser, setAnchorElUser] = React.useState(null);
 
@@ -160,4 +160,4 @@ function navBar() {
   );
 }
 
-export default navBar;
+export default NavBar;

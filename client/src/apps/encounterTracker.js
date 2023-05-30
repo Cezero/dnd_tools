@@ -1,7 +1,7 @@
 import React from "react";
 
-function encounterTracker() {
-    return <div className="encounterTracker">Encounter Tracker</div>;
+function EncounterTracker() {
+    return <div className="EncounterTracker">Encounter Tracker</div>;
 };
 
-export default encounterTracker;
+export default EncounterTracker;
