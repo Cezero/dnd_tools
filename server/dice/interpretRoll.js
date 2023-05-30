@@ -1,4 +1,4 @@
-export function interpretRoll(roll) {
+const interpretRoll = function(roll) {
 	const terms = [];
 	roll.forEach((term) => {
 		if(term['die']) {
@@ -145,3 +145,5 @@ function synthesizeRolls(allRolls, explosions, rerolls) {
 
 	return rolls;
 }
+
+module.exports = { interpretRoll };
