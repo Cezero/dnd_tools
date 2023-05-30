@@ -7,8 +7,6 @@ const interpretRoll = function(roll) {
 		else {terms.push(term)};
 	});
 
-	console.log(terms);
-
 	const toEvaluate = terms.map((term) => {
 		if(term.allRolls) {
 			return term.sum;
