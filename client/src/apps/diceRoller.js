@@ -1,7 +1,7 @@
 import React from "react";
-import './App.css';
+import './diceRoller.css';
 
-function App() {
+function diceRoller() {
   const [data, setData] = React.useState(null);
   const [rollString, setRollString] = React.useState(null);
 
@@ -30,7 +30,7 @@ function App() {
   };
 
   return (
-    <div className="App">
+    <div className="diceRoller">
       <form onSubmit={handleSubmit}>
         <input
           type="text"
@@ -45,4 +45,4 @@ function App() {
   );
 };
 
-export default App;
+export default diceRoller;
