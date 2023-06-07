@@ -1,5 +1,7 @@
 import React from "react";
 
+import {displayRollBreakdown} from "../inc/displayRollBreakdown";
+
 function DiceRoller() {
   const [data, setData] = React.useState(null);
   const [rollString, setRollString] = React.useState(null);
@@ -30,6 +32,7 @@ function DiceRoller() {
 
   return (
     <div className="DiceRoller">
+      <p>Enter dice to be rolled using standard notation (3d6, 1d20+4, 4d6k3, etc)</p>
       <form onSubmit={handleSubmit}>
         <input
           type="text"
@@ -38,7 +41,7 @@ function DiceRoller() {
           onChange={(e) => setRollString(e.target.value)}
         />
         <button type="submit">Roll</button>
-      <div className="message">{data ? <p>{data}</p> : null}</div>
+      <div className="message">{data ? <p>{displayRollBreakdown(data, rollString)}</p> : null}</div>
       </form>
     </div>
   );
