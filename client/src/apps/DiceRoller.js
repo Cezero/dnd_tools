@@ -21,7 +21,7 @@ function DiceRoller() {
       });
       let resJson = await res.json();
       if (res.status === 200) {
-        setData(resJson);
+        setData(JSON.parse(resJson));
       } else {
         setData("Some error occured");
       };
@@ -43,8 +43,8 @@ function DiceRoller() {
         <button type="submit">Roll</button>
         <div className="message">
           {data ? <p>data: {data}</p> : null}
-          {data ? <p>data.evaluated: {data["evaluated"]}</p> : null}
-          {data ? <p>data.roll: {data["roll"]}</p> : null}
+          {data ? <p>data.evaluated: {data.evaluated}</p> : null}
+          {data ? <p>data.roll: {data.roll}</p> : null}
         </div>  
       </form>
     </div>
