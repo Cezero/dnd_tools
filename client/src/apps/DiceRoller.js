@@ -20,19 +20,16 @@ function DiceRoller() {
         }),
       });
       let resJson = await res.json();
-      setData(res);
+      let dataString = "";
+      if (res.status === 200) {
+        let dieResult = JSON.parse(res.json());
+        dataString = <p>Roll Result: {dieResult.evaluated}</p>;
+      } else {
+        dataString = <p>Some error occured</p>;
+      };
+      setData(dataString);
     } catch (err) {
       console.log(err);
-    };
-  };
-
-  let displayResult = () => {
-    if (!data) { return; }
-    if (data.status === 200) {
-      let dieResult = JSON.parse(data.json());
-      return <p>Roll Result: {dieResult.evaluated}</p>;
-    } else {
-      return <p>"Some error occured"</p>;
     };
   };
 
@@ -48,7 +45,7 @@ function DiceRoller() {
         />
         <button type="submit">Roll</button>
       </form>
-      <div className="message">{displayResult}</div>
+      <div className="message">{data ? <p>{data}</p> : null}</div>
     </div>
   );
 };
