@@ -48,7 +48,7 @@ function DiceRoller() {
         />
         <button type="submit">Roll</button>
       </form>
-      <div className="message">{data ? {data} : null}</div>
+      <div className="message">{data ? <div>{data}</div> : null}</div>
     </div>
   );
 };
