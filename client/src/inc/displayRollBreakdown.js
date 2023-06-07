@@ -5,6 +5,7 @@ import {mdiDiceD4Outline, mdiDiceD6Outline, mdiDiceD8Outline, mdiDiceD10Outline,
 export function displayRollBreakdown({rollData, original}) {
 	if(!rollData) {return;}
 	const {roll} = rollData;
+	console.log("in displayRollBreakdown: rolldata: ", rollData, " roll: ", roll);
 	return (
 		<div>
 			<div className='roll-original'>{original}</div>
@@ -24,7 +25,7 @@ function breakdownTerm(term, index) {
 	}
 	else {
 		console.log(term.synthesizedRolls);
-		const polyhedronSpan = <Icon path={determinePolyhedronClasses(term.diceTerm.die.sides)} size={1} />;
+		const polyhedronSpan = determinePolyhedronClasses(term.diceTerm.die.sides);
 		if(term.synthesizedRolls.length <= 1) {
 			return (
 				<span key={'term' + index}>
@@ -77,17 +78,17 @@ function breakdownDiceTerm(term) {
 function determinePolyhedronClasses(sides) {
 	switch(sides) {
 		case 4:
-			return {mdiDiceD4Outline};
+			return <Icon path={mdiDiceD4Outline} size={1} />;
 		case 6:
-			return {mdiDiceD6Outline};
+			return <Icon path={mdiDiceD6Outline} size={1} />;
 		case 8:
-			return {mdiDiceD8Outline};
+			return <Icon path={mdiDiceD8Outline} size={1} />;
 		case 10:
-			return {mdiDiceD10Outline};
+			return <Icon path={mdiDiceD10Outline} size={1} />;
 		case 12:
-			return {mdiDiceD12Outline};
+			return <Icon path={mdiDiceD12Outline} size={1} />;
 		case 20:
-			return {mdiDiceD20Outline};
+			return <Icon path={mdiDiceD20Outline} size={1} />;
 		case 100:
 			return "flaticon-dodecahedron-1 poly polyhedron-d100";
 		default:
