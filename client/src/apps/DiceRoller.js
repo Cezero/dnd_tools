@@ -29,7 +29,7 @@ function DiceRoller() {
   let displayResult = () => {
     if (!data) { return; }
     if (data.status === 200) {
-      dieResult = JSON.parse(data.json());
+      let dieResult = JSON.parse(data.json());
       return <p>Roll Result: {dieResult.evaluated}</p>;
     } else {
       return <p>"Some error occured"</p>;
