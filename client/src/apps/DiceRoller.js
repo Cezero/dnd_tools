@@ -43,6 +43,7 @@ function DiceRoller() {
         <button type="submit">Roll</button>
       </form>
       <div className="message">
+        {data ? <p>{data}</p> : null}
         {data ? <p>{displayRollBreakdown(data)}<br/>{data.rollData.evaluated}</p> : null}
       </div>
     </div>
