@@ -43,7 +43,6 @@ function DiceRoller() {
         <button type="submit">Roll</button>
         <div className="message">
           {data ? <p>{data}</p> : null}
-          {data ? <p>{data.rollData.evaluated}</p> : null}
         </div>
       </form>
     </div>
