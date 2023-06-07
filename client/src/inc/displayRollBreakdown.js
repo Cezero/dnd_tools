@@ -3,9 +3,10 @@ import Icon from '@mdi/react';
 import {mdiDiceD4Outline, mdiDiceD6Outline, mdiDiceD8Outline, mdiDiceD10Outline, mdiDiceD12Outline, mdiDiceD20Outline} from '@mdi/js';
 
 export function displayRollBreakdown({rollData, original}) {
+	console.log("in displayRollBreakdown: rollData: ", rollData, " original: ", original);
 	if(!rollData) {return;}
 	const {roll} = rollData;
-	console.log("in displayRollBreakdown: rolldata: ", rollData, " roll: ", roll);
+	console.log("in displayRollBreakdown: roll: ", roll);
 	return (
 		<div>
 			<div className='roll-original'>{original}</div>
