@@ -23,11 +23,10 @@ function DiceRoller() {
       let dataString = "";
       if (res.status === 200) {
         let dieResult = JSON.parse(resJson);
-        let roll = { "rollData": dieResult, "original": rollString };
-        let breakdown = displayRollBreakdown(roll);
-        console.log("result: ", roll.rollData.evaluated);
+        let breakdown = displayRollBreakdown({ "rollData": dieResult, "original": rollString });
+        console.log("result: ", dieResult.evaluated);
         console.log("breakdown: ", breakdown);
-        dataString = <p>Roll Result: {roll.rollData.evaluated}</p>;
+        dataString = <p>Roll Result: {dieResult.evaluated}</p>;
       } else {
         dataString = <p>Some error occured</p>;
       };
