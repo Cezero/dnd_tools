@@ -77,17 +77,17 @@ function breakdownDiceTerm(term) {
 function determinePolyhedronClasses(sides) {
 	switch(sides) {
 		case 4:
-			return "{mdiDiceD4Outline}";
+			return {mdiDiceD4Outline};
 		case 6:
-			return "{mdiDiceD6Outline}";
+			return {mdiDiceD6Outline};
 		case 8:
-			return "{mdiDiceD8Outline}";
+			return {mdiDiceD8Outline};
 		case 10:
-			return "{mdiDiceD10Outline}";
+			return {mdiDiceD10Outline};
 		case 12:
-			return "{mdiDiceD12Outline}";
+			return {mdiDiceD12Outline};
 		case 20:
-			return "{mdiDiceD20Outline}";
+			return {mdiDiceD20Outline};
 		case 100:
 			return "flaticon-dodecahedron-1 poly polyhedron-d100";
 		default:
