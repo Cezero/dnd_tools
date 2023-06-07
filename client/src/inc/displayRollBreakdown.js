@@ -1,6 +1,6 @@
 import React from 'react';
 import Icon from '@mdi/react';
-import {mdiDiceD4Outline, mdiDiceD6Outline, mdiDiceD8Outline, mdiDiceD10Outline, mdiDiceD12Outline, mdiDiceD20Outline} from '@mdi/js';
+import {mdiDiceD4Outline, mdiDiceD6Outline, mdiDiceD8Outline, mdiDiceD10Outline, mdiDiceD12Outline, mdiDiceD20Outline, mdiPercentBoxOutline} from '@mdi/js';
 
 export function displayRollBreakdown({rollData, original}) {
 	console.log("in displayRollBreakdown: rollData: ", rollData, " original: ", original);
@@ -91,8 +91,8 @@ function determinePolyhedronClasses(sides) {
 		case 20:
 			return <Icon path={mdiDiceD20Outline} size={1} />;
 		case 100:
-			return "flaticon-dodecahedron-1 poly polyhedron-d100";
+			return <Icon path={mdiPercentBoxOutline} size={1} />;
 		default:
-			return "flaticon-dodecahedron-2 poly polyhedron-dn";
+			return <Icon path={mdiDiceD20Outline} size={1} />;
 	}
 }
