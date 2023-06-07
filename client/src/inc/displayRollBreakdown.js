@@ -79,17 +79,17 @@ function breakdownDiceTerm(term) {
 function determinePolyhedronClasses(sides) {
 	switch(sides) {
 		case 4:
-			return "<Icon path={mdiDiceD4Outline} size={1} />";
+			return <Icon path={mdiDiceD4Outline} size={1} />;
 		case 6:
-			return "<Icon path={mdiDiceD6Outline} size={1} />";
+			return <Icon path={mdiDiceD6Outline} size={1} />;
 		case 8:
-			return "<Icon path={mdiDiceD8Outline} size={1} />";
+			return <Icon path={mdiDiceD8Outline} size={1} />;
 		case 10:
-			return "<Icon path={mdiDiceD10Outline} size={1} />";
+			return <Icon path={mdiDiceD10Outline} size={1} />;
 		case 12:
-			return "<Icon path={mdiDiceD12Outline} size={1} />";
+			return <Icon path={mdiDiceD12Outline} size={1} />;
 		case 20:
-			return "<Icon path={mdiDiceD20Outline} size={1} />";
+			return <Icon path={mdiDiceD20Outline} size={1} />;
 		case 100:
 			return "flaticon-dodecahedron-1 poly polyhedron-d100";
 		default:
