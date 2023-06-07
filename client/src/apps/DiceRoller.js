@@ -44,7 +44,7 @@ function DiceRoller() {
       </form>
       <div className="message">
         {data ? <p>data.evaluated: {data.evaluated}</p> : null}
-        {data ? <p>data.roll: {data.roll}</p> : null}
+        {data ? <p>{displayRollBreakdown(data, rollString)}</p> : null}
       </div>
     </div>
   );
