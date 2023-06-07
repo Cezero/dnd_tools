@@ -25,6 +25,7 @@ function DiceRoller() {
         console.log("resJson: ", resJson);
         let dieResult = JSON.parse(resJson);
         dataString = <p>Roll Result: {dieResult.evaluated}</p>;
+        dataString += <p>{displayRollBreakdown(dieResult.roll, rollString)}</p>
       } else {
         dataString = <p>Some error occured</p>;
       };
