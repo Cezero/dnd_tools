@@ -41,10 +41,11 @@ function DiceRoller() {
           onChange={(e) => setRollString(e.target.value)}
         />
         <button type="submit">Roll</button>
-        <div className="message">
-          {data ? <p>{data}</p> : null}
-        </div>
       </form>
+      <div className="message">
+        {data ? <p>{data.evaluated}</p> : null}
+        {data ? <p>{data.roll}</p> : null}
+      </div>
     </div>
   );
 };
