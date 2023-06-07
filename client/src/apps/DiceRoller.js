@@ -26,7 +26,7 @@ function DiceRoller() {
         let breakdown = displayRollBreakdown({ "rollData": dieResult, "original": rollString });
         console.log("result: ", dieResult.evaluated);
         console.log("breakdown: ", breakdown);
-        dataString = <p>Roll Result: {dieResult.evaluated}</p>;
+        dataString = <p>Roll Result: {dieResult.evaluated}{breakdown}</p>;
       } else {
         dataString = <p>Some error occured</p>;
       };
