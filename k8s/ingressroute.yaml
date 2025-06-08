@@ -1,0 +1,27 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: dndtools
+  namespace: dnd-tools
+  labels:
+    app: traefik
+spec:
+  entryPoints:
+    - websecure
+  routes:
+  - match: Host(`dndtools.local.cyberdeck.org`) && PathPrefix(`/api`)
+    kind: Rule
+    services:
+    - kind: Service
+      name: backend
+      namespace: dnd-tools
+      scheme: http
+      port: 3001
+  - match: Host(`dndtools.local.cyberdeck.org`)
+    kind: Rule
+    services:
+    - kind: Service
+      name: frontend
+      namespace: dnd-tools
+      scheme: http
+      port: 5173
