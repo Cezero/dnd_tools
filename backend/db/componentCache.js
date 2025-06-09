@@ -1,32 +1,44 @@
 import pool from './pool.js';
 
-let componentMap = new Map();
-let idMap = new Map();
-
-async function loadComponentCache() {
-    const [rows] = await pool.query('SELECT * FROM spell_components');
-
-    componentMap.clear();
-    idMap.clear();
-
-    for (const row of rows) {
-        componentMap.set(row.comp_name, row);
-        idMap.set(row.comp_id, row);
+class ComponentCache {
+    constructor() {
+        this.components = new Map();
+        this.initialized = false;
     }
 
-    console.log(`[ComponentCache] Loaded ${rows.length} components`);
+    async initialize() {
+        if (this.initialized) return;
+
+        const [rows] = await pool.query('SELECT * FROM spell_components');
+        for (const row of rows) {
+            this.components.set(row.comp_id, {
+                comp_id: row.comp_id,
+                comp_name: row.comp_name,
+                comp_abbrev: row.comp_abbrev
+            });
+        }
+        this.initialized = true;
+        console.log(`[ComponentCache] Initialized with ${this.components.size} components`);
+    }
+
+    getComponent(componentName) {
+        if (!this.initialized) {
+            throw new Error('ComponentCache not initialized');
+        }
+        return Array.from(this.components.values()).find(comp =>
+            comp.comp_name.toLowerCase() === componentName.toLowerCase() ||
+            comp.comp_abbrev.toLowerCase() === componentName.toLowerCase()
+        );
+    }
+
+    getComponentById(componentId) {
+        if (!this.initialized) {
+            throw new Error('ComponentCache not initialized');
+        }
+        return this.components.get(componentId);
+    }
 }
 
-await loadComponentCache();
-
-function getComponent(key) {
-    if (typeof key === 'number') return idMap.get(key);
-    if (typeof key === 'string') return componentMap.get(key);
-    return null;
-}
-
-export default {
-    load: loadComponentCache,
-    getAll: () => Array.from(idMap.values()),
-    getComponent
-}; 
+const componentCache = new ComponentCache();
+componentCache.initialize();
+export default componentCache; 

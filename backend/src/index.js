@@ -1,9 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import spellsRouter from '../routes/spells.js';
-import classCache from '../db/classCache.js';
-
-await classCache.load();
 
 const app = express();
 app.use(cors());

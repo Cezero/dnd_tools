@@ -1,8 +1,8 @@
 import express from 'express';
-import pool from '../db/pool.js';
 import classCache from '../db/classCache.js';
 import componentCache from '../db/componentCache.js';
 import descriptorCache from '../db/descriptorCache.js';
+import rangeCache from '../db/rangeCache.js';
 import schoolCache from '../db/schoolCache.js';
 import { timedQuery } from '../db/queryTimer.js';
 
@@ -127,12 +127,14 @@ router.get('/', async (req, res) => {
                 sp.*,
                 ${useLevelMap ? 'slm.spell_level as spell_level' : 'MIN(sl.spell_level) as spell_level'},
                 GROUP_CONCAT(DISTINCT ssm.school_id) as school_ids,
-                GROUP_CONCAT(DISTINCT sdm.desc_id) as descriptor_ids
+                GROUP_CONCAT(DISTINCT sdm.desc_id) as descriptor_ids,
+                COUNT(*) OVER() as total_count
             ${baseQuery}
             ${joinClause}
             LEFT JOIN spell_level_map sl ON sp.spell_id = sl.spell_id
             LEFT JOIN spell_school_map ssm ON sp.spell_id = ssm.spell_id
             LEFT JOIN spell_descriptor_map sdm ON sp.spell_id = sdm.spell_id
+            LEFT JOIN spell_ranges sr ON sp.spell_range_id = sr.range_id
             ${where}
             GROUP BY sp.spell_id
             ${having}
@@ -143,27 +145,13 @@ router.get('/', async (req, res) => {
         console.log('Query Values:', [...values, parseInt(limit), parseInt(offset)]);
 
         const [[rows], mainQueryTime] = await timedQuery(
-            pool,
             mainQuery,
             [...values, parseInt(limit), parseInt(offset)],
             `Spells list query (${useLevelMap ? 'using level map' : 'using spells table'})`
         );
 
-        const [[{ count }], countQueryTime] = await timedQuery(
-            pool,
-            `
-            SELECT COUNT(DISTINCT sp.spell_id) as count 
-            ${baseQuery}
-            ${joinClause}
-            LEFT JOIN spell_level_map sl ON sp.spell_id = sl.spell_id
-            LEFT JOIN spell_school_map ssm ON sp.spell_id = ssm.spell_id
-            LEFT JOIN spell_descriptor_map sdm ON sp.spell_id = sdm.spell_id
-            ${where}
-            ${having}
-            `,
-            values,
-            'Spells count query'
-        );
+        // Get total count from the first row (all rows will have the same count)
+        const total = rows.length > 0 ? Number(rows[0].total_count) : 0;
 
         // Map IDs to names using caches
         const cacheStart = performance.now();
@@ -176,7 +164,8 @@ router.get('/', async (req, res) => {
             descriptors: row.descriptor_ids ? row.descriptor_ids.split(',').map(id => {
                 const descriptor = descriptorCache.getDescriptor(parseInt(id));
                 return descriptor ? descriptor.descriptor : null;
-            }).filter(Boolean) : []
+            }).filter(Boolean) : [],
+            range: row.spell_range_id ? rangeCache.getRange(row.spell_range_id) : null
         }));
         const cacheTime = performance.now() - cacheStart;
         console.log(`[QueryTimer] Cache mapping took ${cacheTime.toFixed(2)}ms`);
@@ -184,13 +173,12 @@ router.get('/', async (req, res) => {
         res.json({
             page: Number(page),
             limit: Number(limit),
-            total: Number(count),
+            total: total,
             results,
             _debug: {
                 mainQueryTime,
-                countQueryTime,
                 cacheTime,
-                totalTime: mainQueryTime + countQueryTime + cacheTime
+                totalTime: mainQueryTime + cacheTime
             }
         });
     } catch (err) {

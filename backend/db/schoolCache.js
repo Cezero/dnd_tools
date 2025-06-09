@@ -1,52 +1,42 @@
 import pool from './pool.js';
 
-let schoolMap = new Map();
-let idMap = new Map();
-let subschoolMap = new Map();
-
-async function loadSchoolCache() {
-    const [schools] = await pool.query('SELECT * FROM spell_schools');
-    const [subschools] = await pool.query('SELECT * FROM spell_subschools');
-
-    schoolMap.clear();
-    idMap.clear();
-    subschoolMap.clear();
-
-    for (const row of schools) {
-        schoolMap.set(row.school_name, row);
-        idMap.set(row.school_id, row);
+class SchoolCache {
+    constructor() {
+        this.schools = new Map();
+        this.initialized = false;
     }
 
-    for (const row of subschools) {
-        if (!subschoolMap.has(row.school_id)) {
-            subschoolMap.set(row.school_id, new Map());
+    async initialize() {
+        if (this.initialized) return;
+
+        const [rows] = await pool.query('SELECT * FROM spell_schools');
+        for (const row of rows) {
+            this.schools.set(row.school_id, {
+                school_id: row.school_id,
+                school_name: row.school_name
+            });
         }
-        subschoolMap.get(row.school_id).set(row.subschool, row);
+        this.initialized = true;
+        console.log(`[SchoolCache] Initialized with ${this.schools.size} schools`);
     }
 
-    console.log(`[SchoolCache] Loaded ${schools.length} schools and ${subschools.length} subschools`);
+    getSchool(schoolName) {
+        if (!this.initialized) {
+            throw new Error('SchoolCache not initialized');
+        }
+        return Array.from(this.schools.values()).find(school =>
+            school.school_name.toLowerCase() === schoolName.toLowerCase()
+        );
+    }
+
+    getSchoolById(schoolId) {
+        if (!this.initialized) {
+            throw new Error('SchoolCache not initialized');
+        }
+        return this.schools.get(schoolId);
+    }
 }
 
-await loadSchoolCache();
-
-function getSchool(key) {
-    if (typeof key === 'number') return idMap.get(key);
-    if (typeof key === 'string') return schoolMap.get(key);
-    return null;
-}
-
-function getSubschool(schoolId, subschoolName) {
-    return subschoolMap.get(schoolId)?.get(subschoolName) || null;
-}
-
-function getSubschools(schoolId) {
-    return Array.from(subschoolMap.get(schoolId)?.values() || []);
-}
-
-export default {
-    load: loadSchoolCache,
-    getAll: () => Array.from(idMap.values()),
-    getSchool,
-    getSubschool,
-    getSubschools
-}; 
+const schoolCache = new SchoolCache();
+schoolCache.initialize();
+export default schoolCache; 

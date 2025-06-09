@@ -156,7 +156,4 @@ wheels/
 .installed.cfg
 *.egg
 
-# Python test logs
-backend/tests/logs/
-backend/db.env
-*.log
+.pytest_cache/

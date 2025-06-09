@@ -1,58 +1,44 @@
 import pool from './pool.js';
 
-let classMap = new Map();
-let idMap = new Map();
-
-async function loadClassCache() {
-    const [rows] = await pool.query('SELECT * FROM classes');
-    
-    classMap.clear();
-    idMap.clear();
-
-    for (const row of rows) {
-        classMap.set(row.class_name, row);
-        idMap.set(row.class_id, row);
+class ClassCache {
+    constructor() {
+        this.classes = new Map();
+        this.initialized = false;
     }
 
-    console.log(`[ClassCache] Loaded ${rows.length} classes`);
-}
+    async initialize() {
+        if (this.initialized) return;
 
-await loadClassCache();
-
-function getClass(key) {
-    if (typeof key === 'number') return idMap.get(key);
-    if (typeof key === 'string') return classMap.get(key);
-    return null;
-}
-
-function filterClasses({ prestige = null, filters = {} } = {}) {
-    return Array.from(idMap.values()).filter(cls => {
-        if (prestige === true && !cls.is_prestige_class) return false;
-        if (prestige === false && cls.is_prestige_class) return false;
-
-        for (const [key, value] of Object.entries(filters)) {
-            if (Array.isArray(value)) {
-                if (!value.includes(cls[key])) return false;
-            } else {
-                if (cls[key] !== value) return false;
-            }
+        const [rows] = await pool.query('SELECT * FROM classes');
+        for (const row of rows) {
+            this.classes.set(row.class_id, {
+                class_id: row.class_id,
+                class_name: row.class_name,
+                class_abbr: row.class_abbr
+            });
         }
-        return true;
-    });
+        this.initialized = true;
+        console.log(`[ClassCache] Initialized with ${this.classes.size} classes`);
+    }
+
+    getClass(className) {
+        if (!this.initialized) {
+            throw new Error('ClassCache not initialized');
+        }
+        return Array.from(this.classes.values()).find(cls =>
+            cls.class_name.toLowerCase() === className.toLowerCase() ||
+            cls.class_abbr.toLowerCase() === className.toLowerCase()
+        );
+    }
+
+    getClassById(classId) {
+        if (!this.initialized) {
+            throw new Error('ClassCache not initialized');
+        }
+        return this.classes.get(classId);
+    }
 }
 
-function getAllBaseClasses(filters = {}) {
-    return filterClasses({ prestige: false, filters });
-}
-
-function getAllPrestigeClasses(filters = {}) {
-    return filterClasses({ prestige: true, filters });
-}
-
-export default {
-    load: loadClassCache,
-    getAll: () => Array.from(idMap.values()),
-    getClass,
-    getAllBaseClasses,
-    getAllPrestigeClasses
-};
+const classCache = new ClassCache();
+classCache.initialize();
+export default classCache;
