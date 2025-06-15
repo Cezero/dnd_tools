@@ -1,0 +1,16 @@
+{
+    "ollama_url": "http://cybernas01.local.cyberdeck.org:30068/api/chat",
+    "llm_model_name": "transcriptionstream/transcriptionstream:latest",
+    "ocr_endpoint_url": "http://paddlex.local.cyberdeck.org:8080",
+    "prompts": {
+        "text_cleanup_prompt": "You are a formatting engine. Do not include any extra commentary or explanations.\nYour task: Given Markdown extracted from OCR, correct errors such as:\n- Substituting 1 for l, 0 for O\n- Fixing broken headers (e.g. \"#Abilities\" > \"# Abilities\")\n- Removing line breaks in the middle of sentences\n- Correcting malformed lists, code blocks, and tables\n- Preserving all original meaning\n- fixing spelling errors\n\nRespond with the fixed Markdown only. Do not wrap the output in ```markdown or add comments.\n\n"
+    },
+    "paths": {
+        "ocr_output_dir": "/home/countzero/git/dnd_tools/cache/ocr_output",
+        "image_dir": "/home/countzero/git/dnd_tools/cache/page_images",
+        "pdf_dir": "/home/countzero/git/dnd_tools/cache/pdf_sources"
+    },
+    "settings": {
+        "image_resize_width": 768
+    }
+}

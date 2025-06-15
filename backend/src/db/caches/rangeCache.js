@@ -1,4 +1,4 @@
-import pool from './pool.js';
+import { timedQuery } from "../queryTimer.js";
 
 class RangeCache {
     constructor() {
@@ -9,7 +9,7 @@ class RangeCache {
     async initialize() {
         if (this.initialized) return;
 
-        const [rows] = await pool.query('SELECT * FROM spell_ranges');
+        const rows = await timedQuery('SELECT * FROM spell_ranges', [], 'RangeCache');
         for (const row of rows) {
             this.ranges.set(row.range_id, {
                 range_id: row.range_id,

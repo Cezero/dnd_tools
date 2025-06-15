@@ -1,0 +1,22 @@
+{
+  "include": [
+    {
+      "path": "backend/db/schema/schema.sql",
+      "weight": 10
+    }
+  ],
+  "exclude": [
+    {
+      "path": "backend/node_modules/**"
+    },
+    {
+      "path": "frontend/node_modules/**"
+    },
+    {
+        "path": "frontend/dist/**"
+    },
+    {
+        "path": "venv/**"
+    }
+  ]
+}

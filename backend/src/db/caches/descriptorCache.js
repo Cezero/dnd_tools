@@ -1,4 +1,4 @@
-import pool from './pool.js';
+import { timedQuery } from "../queryTimer.js";
 
 class DescriptorCache {
     constructor() {
@@ -9,7 +9,7 @@ class DescriptorCache {
     async initialize() {
         if (this.initialized) return;
 
-        const [rows] = await pool.query('SELECT * FROM spell_descriptors');
+        const rows = await timedQuery('SELECT * FROM spell_descriptors', [], 'DescriptorCache');
         for (const row of rows) {
             this.descriptors.set(row.desc_id, {
                 desc_id: row.desc_id,
@@ -20,9 +20,29 @@ class DescriptorCache {
         console.log(`[DescriptorCache] Initialized with ${this.descriptors.size} descriptors`);
     }
 
+    getID(input) {
+        if (!this.initialized) {
+            throw new Error('DescriptorCache not initialized');
+        }
+        if (!input) return null;
+
+        // If input is a number or numeric string, try to use it as an ID
+        const numericInput = Number(input);
+        if (!isNaN(numericInput)) {
+            return this.descriptors.has(numericInput) ? numericInput : null;
+        }
+
+        // Otherwise try to find by name
+        const descriptorInfo = this.getDescriptor(input);
+        return descriptorInfo ? descriptorInfo.desc_id : null;
+    }
+
     getDescriptor(descriptorName) {
         if (!this.initialized) {
             throw new Error('DescriptorCache not initialized');
+        }
+        if (typeof descriptorName !== 'string') {
+            return null;
         }
         return Array.from(this.descriptors.values()).find(desc =>
             desc.descriptor.toLowerCase() === descriptorName.toLowerCase()
@@ -38,5 +58,5 @@ class DescriptorCache {
 }
 
 const descriptorCache = new DescriptorCache();
-descriptorCache.initialize();
+await descriptorCache.initialize();
 export default descriptorCache; 

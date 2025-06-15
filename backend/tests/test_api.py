@@ -69,12 +69,16 @@ def api():
 def test_health_check(api: APIClient):
     """Test health check endpoint"""
     response = api.get("/health")
+    if response.status_code == 404:
+        print('404 response:', response.text)
     assert response.status_code == 200
     assert response.text == "OK"
 
 def test_get_all_spells(api: APIClient):
     """Test getting all spells"""
     response = api.get("/spells")
+    if response.status_code == 404:
+        print('404 response:', response.text)
     assert response.status_code == 200
     data = response.json()
     assert "page" in data
@@ -85,6 +89,8 @@ def test_get_all_spells(api: APIClient):
 def test_get_spell_by_id(api: APIClient):
     """Test getting a spell by ID"""
     response = api.get("/spells/1")
+    if response.status_code == 404:
+        print('404 response:', response.text)
     assert response.status_code == 200
     data = response.json()
     
@@ -109,6 +115,8 @@ def test_get_spells_with_filters(api: APIClient):
     """Test getting spells with filters"""
     params = {"class": "wizard", "level": "1"}
     response = api.get("/spells", params=params)
+    if response.status_code == 404:
+        print('404 response:', response.text)
     assert response.status_code == 200
     data = response.json()
     assert "results" in data
@@ -120,6 +128,8 @@ def test_get_spells_with_search(api: APIClient):
     """Test getting spells with search"""
     params = {"name": "fire"}
     response = api.get("/spells", params=params)
+    if response.status_code == 404:
+        print('404 response:', response.text)
     assert response.status_code == 200
     data = response.json()
     assert "results" in data
@@ -130,6 +140,8 @@ def test_get_spells_with_sorting(api: APIClient):
     """Test getting spells with sorting"""
     params = {"sort": "name", "order": "asc"}
     response = api.get("/spells", params=params)
+    if response.status_code == 404:
+        print('404 response:', response.text)
     assert response.status_code == 200
     data = response.json()
     assert "results" in data
@@ -140,12 +152,73 @@ def test_get_spells_with_pagination(api: APIClient):
     """Test getting spells with pagination"""
     params = {"page": 1, "limit": 10}
     response = api.get("/spells", params=params)
+    if response.status_code == 404:
+        print('404 response:', response.text)
     assert response.status_code == 200
     data = response.json()
     assert "results" in data
     assert len(data["results"]) <= 10
     assert data["page"] == 1
     assert data["limit"] == 10
+
+def test_lookups():
+    # Test getting all lookups
+    response = requests.get("http://localhost:3001/api/lookups")
+    if response.status_code == 404:
+        print('404 response:', response.text)
+    assert response.status_code == 200
+    data = response.json()
+
+    # Define expected fields for each lookup type
+    lookup_fields = {
+        'classes': {
+            'id_field': 'class_id',
+            'name_field': 'class_name',
+            'abbr_field': 'class_abbr'
+        },
+        'components': {
+            'id_field': 'comp_id',
+            'name_field': 'comp_name',
+            'abbr_field': 'comp_abbrev'
+        },
+        'descriptors': {
+            'id_field': 'desc_id',
+            'name_field': 'descriptor'
+        },
+        'ranges': {
+            'id_field': 'range_id',
+            'name_field': 'range_name',
+            'abbr_field': 'range_abbr'
+        },
+        'schools': {
+            'id_field': 'school_id',
+            'name_field': 'school_name'
+        }
+    }
+
+    # Verify all expected lookup types are present
+    for lookup_type in lookup_fields:
+        assert lookup_type in data
+        assert isinstance(data[lookup_type], list)
+        assert len(data[lookup_type]) > 0
+
+        # Get the first item to verify structure
+        item = data[lookup_type][0]
+        fields = lookup_fields[lookup_type]
+
+        # Verify required fields
+        assert fields['id_field'] in item
+        assert fields['name_field'] in item
+
+        # Verify ID is a number
+        assert isinstance(item[fields['id_field']], int)
+        # Verify name is a string
+        assert isinstance(item[fields['name_field']], str)
+
+        # Verify abbreviation field if it exists
+        if 'abbr_field' in fields:
+            assert fields['abbr_field'] in item
+            assert isinstance(item[fields['abbr_field']], str)
 
 if __name__ == "__main__":
     # Create logs directory if it doesn't exist

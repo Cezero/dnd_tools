@@ -1,0 +1,468 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import MarkdownEditor from '@/components/MarkdownEditor';
+import api from '@/lib/api';
+import lookupService from '@/features/spells/services/LookupService';
+
+function SpellEdit() {
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const fromListParams = location.state?.fromListParams || '';
+    console.log('SpellEdit mounted. fromListParams:', fromListParams);
+    const [spell, setSpell] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [message, setMessage] = useState('');
+    const [spellRanges, setSpellRanges] = useState([]);
+    const [spellClasses, setSpellClasses] = useState([]);
+    const [spellSources, setSpellSources] = useState([]);
+    const [selectedClassToAdd, setSelectedClassToAdd] = useState('');
+    const [spellSchools, setSpellSchools] = useState([]);
+    const [spellSubschools, setSpellSubschools] = useState([]);
+    const [spellDescriptors, setSpellDescriptors] = useState([]);
+    const [selectedSchoolId, setSelectedSchoolId] = useState('');
+    const [selectedSubschoolId, setSelectedSubschoolId] = useState('');
+    const [spellComponents, setSpellComponents] = useState([]);
+
+    useEffect(() => {
+        const fetchSpellAndLookups = async () => {
+            try {
+                await lookupService.initialize();
+                const ranges = lookupService.getAll('ranges');
+                setSpellRanges(ranges);
+
+                const classes = lookupService.getAll('classes');
+                setSpellClasses(classes);
+
+                const sources = lookupService.getAll('sources');
+                setSpellSources(sources);
+
+                const schools = lookupService.getAll('schools');
+                setSpellSchools(schools);
+
+                const descriptors = lookupService.getAll('descriptors');
+                setSpellDescriptors(descriptors);
+
+                const components = lookupService.getAll('components');
+                setSpellComponents(components);
+
+                const subschools = lookupService.getAll('subschools');
+                setSpellSubschools(subschools);
+
+                const data = await api(`/spells/${id}`);
+                console.log('Fetched spell data:', data);
+                setSpell(prevSpell => ({ // Use functional update to ensure latest state
+                    ...data,
+                    components: data.components || [], // Ensure components is an array
+                    descriptors: data.descriptors || [], // Ensure descriptors is an array
+                    schools: data.schools || [], // Ensure schools is an array
+                    subschools: data.subschools || [] // Ensure subschools is an array
+                }));
+
+                console.log('Initial spell state after setup:', spell); // This will still log previous state due to closure
+
+            } catch (err) {
+                setError(err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchSpellAndLookups();
+    }, [id]);
+
+    const handleChange = (e) => {
+        let name, value;
+
+        // MDEditor passes value directly as the first argument, not an event object
+        if (typeof e === 'string') {
+            name = 'spell_description';
+            value = e;
+        } else {
+            // For other input types, destructure from e.target
+            ({ name, value } = e.target);
+        }
+
+        if (name === 'spell_range_id') {
+            const selectedRange = spellRanges.find(range => range.range_id === parseInt(value));
+            setSpell(prevSpell => ({
+                ...prevSpell,
+                spell_range_id: parseInt(value),
+                spell_range: selectedRange ? selectedRange.range_name : ''
+            }));
+        } else if (name === 'class_id') {
+            // For simplicity, handle single class selection for now
+            const selectedClassId = parseInt(value);
+            setSpell(prevSpell => ({
+                ...prevSpell,
+                class_levels: selectedClassId ? [{ class_id: selectedClassId, spell_level: prevSpell.class_levels[0]?.spell_level || 0 }] : []
+            }));
+        } else if (name === 'source_id') {
+            // For simplicity, handle single source selection for now
+            const selectedSourceId = parseInt(value);
+            setSpell(prevSpell => ({
+                ...prevSpell,
+                sources: selectedSourceId ? [{ book_id: selectedSourceId, page_number: prevSpell.sources[0]?.page_number || null }] : []
+            }));
+        } else if (name === 'page_number') {
+            const newPageNumber = parseInt(value);
+            setSpell(prevSpell => ({
+                ...prevSpell,
+                sources: prevSpell.sources.length > 0 ? [{ ...prevSpell.sources[0], page_number: newPageNumber }] : []
+            }));
+        } else if (name === 'schools') {
+            const schoolId = parseInt(e.target.value);
+            setSpell(prevSpell => {
+                const newSchools = e.target.checked
+                    ? [...prevSpell.schools, schoolId]
+                    : prevSpell.schools.filter(id => id !== schoolId);
+                console.log('Schools updated to:', newSchools);
+                return { ...prevSpell, schools: newSchools };
+            });
+        } else if (name === 'subschools') {
+            const subschoolId = parseInt(e.target.value);
+            setSpell(prevSpell => {
+                const newSubschools = e.target.checked
+                    ? [...prevSpell.subschools, subschoolId]
+                    : prevSpell.subschools.filter(id => id !== subschoolId);
+                console.log('Subschools updated to:', newSubschools);
+                return { ...prevSpell, subschools: newSubschools };
+            });
+        } else if (name === 'descriptors') {
+            const descriptorId = parseInt(e.target.value);
+            setSpell(prevSpell => {
+                const newDescriptors = e.target.checked
+                    ? [...prevSpell.descriptors, descriptorId]
+                    : prevSpell.descriptors.filter(id => id !== descriptorId);
+                console.log('Descriptors updated to:', newDescriptors);
+                return { ...prevSpell, descriptors: newDescriptors };
+            });
+        } else if (name === 'components') {
+            const componentId = parseInt(e.target.value);
+            setSpell(prevSpell => {
+                const newComponents = e.target.checked
+                    ? [...prevSpell.components, componentId]
+                    : prevSpell.components.filter(id => id !== componentId);
+                console.log('Components updated to:', newComponents);
+                return { ...prevSpell, components: newComponents };
+            });
+        } else {
+            setSpell(prevSpell => ({
+                ...prevSpell,
+                [name]: value
+            }));
+        }
+    };
+
+    const handleClassLevelChange = (index, field, value) => {
+        setSpell(prevSpell => ({
+            ...prevSpell,
+            class_levels: prevSpell.class_levels.map((cl, i) =>
+                i === index ? { ...cl, [field]: parseInt(value) } : cl
+            )
+        }));
+    };
+
+    const handleAddClassLevel = () => {
+        if (selectedClassToAdd) {
+            const newClassId = parseInt(selectedClassToAdd);
+            const existingClass = spell.class_levels.find(cl => cl.class_id === newClassId);
+            if (!existingClass) {
+                setSpell(prevSpell => ({
+                    ...prevSpell,
+                    class_levels: [...prevSpell.class_levels, { class_id: newClassId, spell_level: 0 }]
+                }));
+            } else {
+                setMessage('Class already added.');
+            }
+            setSelectedClassToAdd(''); // Reset selection
+        }
+    };
+
+    const handleRemoveClassLevel = (index) => {
+        setSpell(prevSpell => ({
+            ...prevSpell,
+            class_levels: prevSpell.class_levels.filter((_, i) => i !== index)
+        }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setMessage('');
+        setError(null);
+
+        try {
+            const payload = {
+                ...spell,
+                class_levels: spell.class_levels.map(cl => ({
+                    class_id: parseInt(cl.class_id),
+                    spell_level: parseInt(cl.spell_level)
+                })).filter(cl => !isNaN(cl.class_id) && !isNaN(cl.spell_level)),
+                source_id: spell.sources.length > 0 ? spell.sources[0].book_id : null,
+                page_number: spell.sources.length > 0 ? spell.sources[0].page_number : null
+            };
+
+            // Remove complex objects and single-entry class/source fields
+            delete payload.class_id; // Remove the single class_id
+            delete payload.spell_level; // Remove the single spell_level
+            delete payload.sources; // Remove the sources array, as source_id and page_number are sent separately
+            payload.schools = selectedSchoolId ? [selectedSchoolId] : [];
+            payload.subschools = selectedSubschoolId ? [selectedSubschoolId] : [];
+            payload.descriptors = spell.descriptors; // Use spell.descriptors directly
+            payload.components = spell.components;
+
+            console.log('Payload being sent to API:', payload);
+            console.log('Payload components:', payload.components);
+            console.log('Payload descriptors:', payload.descriptors);
+
+            await api(`/spells/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify(payload),
+            });
+            setMessage('Spell updated successfully!');
+            console.log('Navigating from EditSpell (Save) with params:', fromListParams);
+            navigate(`/spells/${id}`, { state: { fromListParams: fromListParams } }); // Redirect to view spell page, passing list params
+        } catch (err) {
+            setError(err);
+            setMessage(`Error updating spell: ${err.message || err}`);
+        }
+    };
+
+    if (isLoading) return <div className="p-4 bg-white  dark:bg-[#121212]  min-h-screen">Loading spell for editing...</div>;
+    if (error) return <div className="p-4 bg-white  dark:bg-[#121212] dark:text-red-500 min-h-screen">Error: {error.message}</div>;
+    if (!spell) return <div className="p-4 bg-white  dark:bg-[#121212]  min-h-screen">Spell not found.</div>;
+
+    return (
+        <div className="p-4 bg-white dark:bg-[#121212]  min-h-screen">
+            <h1 className="text-2xl font-bold mb-4">Edit Spell: {spell.spell_name}</h1>
+            {message && <div className="mb-4 p-2 rounded text-green-700 bg-green-100 dark:bg-green-800 dark:text-green-200">{message}</div>}
+            {error && <div className="mb-4 p-2 rounded text-red-700 bg-red-100 dark:bg-red-800 dark:text-red-200">Error: {error.message || String(error)}</div>}
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-2 auto-rows-auto">
+                    {/* Row 1, Columns 1 & 2: Spell Schools & Subschools */}
+                    <div className="md:col-span-2">
+                        <label htmlFor="schools" className="block text-lg font-medium">Spell Schools & Subschools:</label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-y-.75 gap-x-2 mt-1">
+                            {spellSchools.map(school => (
+                                <div key={school.school_id} className="mb-2 p-2 border rounded dark:border-gray-600">
+                                    <label className="inline-flex items-center font-bold text-base">
+                                        <input
+                                            type="checkbox"
+                                            value={school.school_id}
+                                            checked={spell.schools.includes(school.school_id)}
+                                            onChange={handleChange}
+                                            name="schools"
+                                            className="form-checkbox"
+                                        />
+                                        <span className="ml-2">{school.school_name}</span>
+                                    </label>
+                                    {
+                                        lookupService.getSubschoolsBySchoolId(school.school_id).length > 0 && (
+                                            <div className="ml-6 mt-1 grid grid-cols-1 gap-y-0.5">
+                                                {lookupService.getSubschoolsBySchoolId(school.school_id).map(subschool => (
+                                                    <label key={subschool.sub_id} className="inline-flex items-center text-sm">
+                                                        <input
+                                                            type="checkbox"
+                                                            value={subschool.sub_id}
+                                                            checked={spell.subschools.includes(subschool.sub_id)}
+                                                            onChange={handleChange}
+                                                            name="subschools"
+                                                            className="form-checkbox"
+                                                        />
+                                                        <span className="ml-2">{subschool.subschool}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        )
+                                    }
+                                </div>
+                            ))}
+                        </div>
+
+                    </div>
+                    {/* Row 1, Columns 3 & 4 */}
+                    <div className="md:col-span-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 auto-rows-auto">
+                            {/* Row 1, Column 3: Spell Descriptors & Casting Time */}
+                            <div className="md:col-span-1">
+                                <label htmlFor="descriptors" className="block text-lg font-medium">Spell Descriptors:</label>
+                                <div className="grid grid-cols-2 gap-y-0.25 p-2 mt-1 border rounded dark:border-gray-600">
+                                    {spellDescriptors.map(descriptor => (
+                                        <div key={descriptor.descriptor_id}>
+                                            <label className="inline-flex items-center text-base">
+                                                <input
+                                                    type="checkbox"
+                                                    name="descriptors"
+                                                    value={descriptor.descriptor_id}
+                                                    checked={spell.descriptors.includes(descriptor.descriptor_id)}
+                                                    onChange={handleChange}
+                                                    className="form-checkbox h-4 w-4 text-blue-600 dark:bg-gray-700 dark:border-gray-600 rounded accent-blue-600"
+                                                />
+                                                <span className="ml-2 text-gray-700 dark:text-gray-300">{descriptor.descriptor}</span>
+                                            </label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            {/* Row 1, Column 4: Spell Components & Spell Range fields */}
+                            <div className="md:col-span-1">
+                                <label htmlFor="components" className="block text-lg font-medium">Spell Components:</label>
+                                <div className="grid grid-cols-2 gap-y-0.25 mt-1 p-2 border rounded dark:border-gray-600">
+                                    {spellComponents.map(component => (
+                                        <div key={component.comp_id}>
+                                            <label className="inline-flex items-center text-base">
+                                                <input
+                                                    type="checkbox"
+                                                    name="components"
+                                                    value={component.comp_id}
+                                                    checked={spell.components.includes(component.comp_id)}
+                                                    onChange={handleChange}
+                                                    className="form-checkbox h-4 w-4 text-blue-600 dark:bg-gray-700 dark:border-gray-600 rounded accent-blue-600"
+                                                />
+                                                <span className="ml-2 text-gray-700 dark:text-gray-300">{component.comp_name}</span>
+                                            </label>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="mt-2">
+                                    <label htmlFor="spell_range" className="block text-lg font-medium">Spell Range (Text):</label>
+                                    <input type="text" id="spell_range" name="spell_range" value={spell.spell_range || ''} readOnly className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600 bg-gray-100 dark:bg-gray-800" />
+                                </div>
+                                <div className="mt-2">
+                                    <label htmlFor="spell_range_id" className="block text-lg font-medium">Spell Range:</label>
+                                    <select id="spell_range_id" name="spell_range_id" value={spell.spell_range_id || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600">
+                                        <option value="">Select a range</option>
+                                        {spellRanges.map(range => (
+                                            <option key={range.range_id} value={range.range_id}>
+                                                {range.range_name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="mt-2">
+                                    <label htmlFor="spell_range_value" className="block text-lg font-medium">Spell Range Value:</label>
+                                    <input type="number" id="spell_range_value" name="spell_range_value" value={spell.spell_range_value || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                                </div>
+                            </div>
+                            {/* Row 2, Columns 3 & 4: Spell Area, Duration, Save, Resistance */}
+                            <div className="md:col-span-2">
+                                <div className="flex items-center gap-2 mt-2">
+                                    <label htmlFor="cast_time" className="block text-lg w-48 font-medium">Casting Time:</label>
+                                    <input type="text" id="cast_time" name="cast_time" value={spell.cast_time || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                                </div>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <label htmlFor="spell_area" className="block text-lg w-48 font-medium">Spell Area:</label>
+                                    <input type="text" id="spell_area" name="spell_area" value={spell.spell_area || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                                </div>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <label htmlFor="spell_duration" className="block text-lg w-48 font-medium">Spell Duration:</label>
+                                    <input type="text" id="spell_duration" name="spell_duration" value={spell.spell_duration || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                                </div>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <label htmlFor="spell_save" className="block text-lg w-48 font-medium">Saving Throw:</label>
+                                    <input type="text" id="spell_save" name="spell_save" value={spell.spell_save || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                                </div>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <label htmlFor="spell_resistance" className="block text-lg w-48 font-medium">Spell Resistance:</label>
+                                    <input type="text" id="spell_resistance" name="spell_resistance" value={spell.spell_resistance || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                                </div>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <label htmlFor="source_id" className="block text-lg w-48 font-medium">Source:</label>
+                                    <div className="flex items-center gap-2 w-full">
+                                        <select id="source_id" name="source_id" value={spell.sources[0]?.book_id || ''} onChange={handleChange} className="mt-1 block w-64 p-1 border rounded dark:bg-gray-700 dark:border-gray-600">
+                                            <option value="">Select a source</option>
+                                            {spellSources.map(source => (
+                                                <option key={source.book_id} value={source.book_id}>
+                                                    {source.title}
+                                                </option>
+                                            ))}
+                                        </select>
+
+                                        {spell.sources.length > 0 && (
+                                            <div className="flex items-center gap-2">
+                                                <label htmlFor="page_number" className="block text-lg font-medium">Pg:</label>
+                                                <input type="number" id="page_number" name="page_number" value={spell.sources[0]?.page_number || ''} onChange={handleChange} className="mt-1 block w-16 p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                                            </div>
+                                        )}
+                                    </div>  
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="md:col-span-4">
+                        <h3 className="text-lg font-bold mb-2">Class Levels</h3>
+                        <div className="flex items-center gap-2">
+                            {spell.class_levels.map((cl, index) => (
+                                <div key={index} className="flex items-center gap-1">
+                                    <span className="block text-sm font-medium">{lookupService.getById('classes', cl.class_id)?.class_name || 'Unknown Class'}:</span>
+                                    <input
+                                        type="number"
+                                        name="spell_level"
+                                        value={cl.spell_level || ''}
+                                        onChange={(e) => handleClassLevelChange(index, 'spell_level', e.target.value)}
+                                        className="block w-10 p-1 border rounded dark:bg-gray-700 dark:border-gray-600"
+                                        placeholder="Level"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveClassLevel(index)}
+                                        className="px-2 py-1 bg-red-600  rounded hover:bg-red-700"
+                                    >
+                                        X
+                                    </button>
+                                </div>
+                            ))}
+                            <select
+                                value={selectedClassToAdd}
+                                onChange={(e) => setSelectedClassToAdd(e.target.value)}
+                                className="block p-1 border rounded dark:bg-gray-700 dark:border-gray-600 mr-1 w-48"
+                            >
+                                <option value="">Add Class</option>
+                                {spellClasses
+                                    .filter(cls => {
+                                        const addedClassNames = new Set(spell.class_levels.map(cl => lookupService.getById('classes', cl.class_id)?.class_name).filter(Boolean));
+                                        return !addedClassNames.has(cls.class_name);
+                                    })
+                                    .map(cls => (
+                                        <option key={cls.class_id} value={cls.class_id}>
+                                            {cls.class_name}
+                                        </option>
+                                    ))}
+                            </select>
+                            <button
+                                type="button"
+                                onClick={handleAddClassLevel}
+                                className="p-1.5 bg-green-600 rounded hover:bg-green-700"
+                            >
+                                Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label htmlFor="spell_summary" className="block text-lg font-medium">Spell Summary:</label>
+                    <input type="text" id="spell_summary" name="spell_summary" value={spell.spell_summary || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                </div>
+                <div>
+                    <MarkdownEditor
+                        id="spell_description"
+                        name="spell_description"
+                        label="Spell Description"
+                        value={spell.spell_description || ''}
+                        onChange={handleChange}
+                    />
+                </div>
+                <div className="flex space-x-4">
+                    <button type="submit" className="px-4 py-2 bg-blue-600  rounded hover:bg-blue-700">Save Changes</button>
+                    <button type="button" onClick={() => {
+                        console.log('Navigating from EditSpell (Cancel) with params:', fromListParams);
+                        navigate(`/spells/${id}`, { state: { fromListParams: fromListParams } });
+                    }} className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 dark:bg-gray-600  dark:hover:bg-gray-500">Cancel</button>
+                </div>
+            </form>
+        </div>
+    );
+}
+
+export default SpellEdit; 

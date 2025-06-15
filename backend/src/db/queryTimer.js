@@ -4,7 +4,7 @@ import pool from './pool.js';
  * Utility function to time database queries
  * @param {Function} queryFn - The query function to execute
  * @param {string} queryName - Name of the query for logging
- * @returns {Promise<[any, number]>} - Returns [query result, execution time in ms]
+ * @returns {Promise<any>} - Returns query result
  */
 export async function timeQuery(queryFn, queryName) {
     const start = performance.now();
@@ -13,7 +13,7 @@ export async function timeQuery(queryFn, queryName) {
     const duration = end - start;
 
     console.log(`[QueryTimer] ${queryName} took ${duration.toFixed(2)}ms`);
-    return [result, duration];
+    return result[0];
 }
 
 /**
@@ -21,7 +21,7 @@ export async function timeQuery(queryFn, queryName) {
  * @param {string} sql - The SQL query
  * @param {Array} values - Query parameters
  * @param {string} queryName - Name of the query for logging
- * @returns {Promise<[any, number]>} - Returns [query result, execution time in ms]
+ * @returns {Promise<any>} - Returns query result
  */
 export async function timedQuery(sql, values, queryName) {
     return timeQuery(

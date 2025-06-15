@@ -1,4 +1,4 @@
-import pool from './pool.js';
+import { timedQuery } from "../queryTimer.js";
 
 class ComponentCache {
     constructor() {
@@ -9,7 +9,7 @@ class ComponentCache {
     async initialize() {
         if (this.initialized) return;
 
-        const [rows] = await pool.query('SELECT * FROM spell_components');
+        const rows = await timedQuery('SELECT * FROM spell_components', [], 'ComponentCache');
         for (const row of rows) {
             this.components.set(row.comp_id, {
                 comp_id: row.comp_id,
@@ -21,9 +21,29 @@ class ComponentCache {
         console.log(`[ComponentCache] Initialized with ${this.components.size} components`);
     }
 
+    getID(input) {
+        if (!this.initialized) {
+            throw new Error('ComponentCache not initialized');
+        }
+        if (!input) return null;
+
+        // If input is a number or numeric string, try to use it as an ID
+        const numericInput = Number(input);
+        if (!isNaN(numericInput)) {
+            return this.components.has(numericInput) ? numericInput : null;
+        }
+
+        // Otherwise try to find by name or abbreviation
+        const componentInfo = this.getComponent(input);
+        return componentInfo ? componentInfo.comp_id : null;
+    }
+
     getComponent(componentName) {
         if (!this.initialized) {
             throw new Error('ComponentCache not initialized');
+        }
+        if (typeof componentName !== 'string') {
+            return null;
         }
         return Array.from(this.components.values()).find(comp =>
             comp.comp_name.toLowerCase() === componentName.toLowerCase() ||
@@ -40,5 +60,5 @@ class ComponentCache {
 }
 
 const componentCache = new ComponentCache();
-componentCache.initialize();
+await componentCache.initialize();
 export default componentCache; 
