@@ -1,11 +1,13 @@
-import { Link } from 'react-router-dom';
-import { useAuth } from '../auth/authProvider';
+import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '@/auth/authProvider';
 import ThemeToggle from './themeToggle';
 import { useState, useRef, useEffect } from 'react';
-import LookupService from '../features/spells/services/LookupService';
+import LookupService from '@/services/LookupService';
+import { featureNavigation } from '@/features/featureRoutes';
 
 export default function Navbar() {
   const { user, logout, updatePreferredEdition } = useAuth();
+  const location = useLocation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const [editions, setEditions] = useState([]);
@@ -98,13 +100,37 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-gray-100 dark:bg-gray-800 shadow p-4 flex justify-between items-center">
-      <div className="space-x-4">
-        <Link to="/" className="font-bold text-lg hover:underline">Home</Link>
-        <Link to="/spells" className="hover:underline">Spells</Link>
-        {/* Future features can be added here */}
+    <nav className="bg-gray-100 dark:bg-gray-800 h-11 shadow flex">
+      <div className="flex items-center pl-4">
+        <Link to="/" className="font-bold text-lg">DnD Tools</Link>
       </div>
-      <div className="flex items-center space-x-4">
+      <div className="flex items-end space-x-1 ml-6">
+        {featureNavigation.map((item) => {
+          const isActive = location.pathname.startsWith(item.path);
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`px-2 border border-b-0 border-gray-300 dark:border-gray-600 rounded-t-lg 
+                ${isActive ? 'bg-white dark:bg-gray-900 font-bold' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+            >
+              {item.label}
+            </Link>
+          );
+        })}
+      </div>
+      <div className="flex items-end space-x-1 mr-6 ml-auto">
+        {user && user.is_admin && (
+          <Link
+            to="/admin"
+            className={`px-2 border border-b-0 border-gray-300 dark:border-gray-600 rounded-t-lg 
+              ${location.pathname.startsWith('/admin') ? 'bg-white dark:bg-gray-900 font-bold' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+          >
+            Admin
+          </Link>
+        )}
+      </div>
+      <div className="flex items-center space-x-2 pr-4">
         {editions.length > 0 && (
           <select
             value={selectedEdition}
@@ -121,7 +147,7 @@ export default function Navbar() {
 
         {user ? (
           <div className="relative">
-            <button onClick={toggleDropdown} className="text-sm px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none">
+            <button onClick={toggleDropdown} className="text-sm items-center rounded hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none">
               Logged in as <strong>{user.username}</strong>
             </button>
             {isDropdownOpen && (

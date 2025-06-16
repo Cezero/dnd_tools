@@ -1,3 +1,18 @@
+import SpellList from '@/features/spells/components/spellList';
+import SpellDetail from '@/features/spells/components/spellDetail';
+import SpellEdit from '@/features/spells/components/spellEdit';
+
+export const routes = [
+    { path: '/spells', component: SpellList, exact: true },
+    { path: '/spells/:id', component: SpellDetail, exact: true },
+    { path: '/spells/:id/edit', component: SpellEdit, exact: true },
+];
+
+export const navigation = {
+    label: "Spells",
+    path: "/spells",
+};
+
 export const DEFAULT_COLUMNS = ['spell_name', 'spell_level', 'spell_summary'];
 
 export const COLUMN_DEFINITIONS = {
@@ -81,4 +96,4 @@ export const COLUMN_DEFINITIONS = {
         sortable: false,
         filterable: false
     }
-}; 
+};

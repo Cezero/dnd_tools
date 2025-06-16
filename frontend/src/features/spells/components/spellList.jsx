@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import LookupService from '@/features/spells/services/LookupService';
-import { DEFAULT_COLUMNS, COLUMN_DEFINITIONS } from './config/spellConfig';
+import LookupService from '@/services/LookupService';
+import { DEFAULT_COLUMNS, COLUMN_DEFINITIONS } from '@/features/spells/config/spellConfig';
 import api from '@/lib/api';
 import { useAuth } from '@/auth/authProvider';
 import GenericList from '@/components/GenericList/GenericList';

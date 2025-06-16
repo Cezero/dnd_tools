@@ -228,7 +228,7 @@ function GenericList({
                         handleSort(columnId);
                     }
                 }}
-                className={`border-b p-1 text-left text-md border-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-white ${column.sortable ? 'cursor-pointer' : ''}`}
+                className={`border-b p-1 text-left text-md border-gray-600 dark:border-gray-700 dark:bg-gray-900 ${column.sortable ? 'cursor-pointer' : ''}`}
                 title={column.sortable ? (
                     sortKey === columnId ? (
                         sortOrder === 'asc' ? `Sort descending by ${column.label}` : `Clear sort for ${column.label}`
@@ -281,11 +281,11 @@ function GenericList({
     };
 
     if (isLoading) {
-        return <div className="p-4 bg-white text-black dark:bg-[#121212] dark:text-white min-h-screen">Loading...</div>;
+        return <div className="p-4 bg-white dark:bg-[#121212] min-h-screen">Loading...</div>;
     }
 
     return (
-        <div className="p-4 bg-white text-black dark:bg-[#121212] dark:text-white min-h-screen">
+        <div className="p-4 bg-white dark:bg-[#121212] min-h-screen">
             <div className="relative">
                 <table className="w-full border-collapse border border-solid border-gray-600">
                     <thead>

@@ -1,6 +1,6 @@
 // lib/remarkLinkEntities.js
 import { visit } from 'unist-util-visit';
-import lookupService from '@/features/spells/services/LookupService';
+import lookupService from '@/services/LookupService';
 
 const ENTITY_MAP = {
   Spell: '/spells/',

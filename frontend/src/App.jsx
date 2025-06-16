@@ -1,13 +1,11 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './auth/authProvider';
-import RequireAuth from './auth/requireAuth';
+import { AuthProvider } from '@/auth/authProvider';
+import RequireAuth from '@/auth/requireAuth';
 
-import Layout from './components/layout';
-import LoginPage from './auth/loginPage';
-import SpellList from './features/spells/spellList';
-import SpellDetail from './features/spells/spellDetail';
-import SpellEdit from './features/spells/spellEdit';
-import RegisterPage from './auth/registerPage';
+import Layout from '@/components/layout';
+import LoginPage from '@/auth/loginPage';
+import RegisterPage from '@/auth/registerPage';
+import { featureRoutes } from '@/features/featureRoutes';
 
 export default function App() {
   return (
@@ -17,10 +15,9 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route element={<RequireAuth><Layout /></RequireAuth>}>
-            <Route path="/" element={<SpellList />} />
-            <Route path="/spells" element={<SpellList />} />
-            <Route path="/spells/:id" element={<SpellDetail />} />
-            <Route path="/spells/:id/edit" element={<SpellEdit />} />
+            {featureRoutes.map((route, index) => (
+              <Route key={index} path={route.path} element={<route.component />} />
+            ))}
             {/* Add more protected routes here as needed */}
           </Route>
         </Routes>

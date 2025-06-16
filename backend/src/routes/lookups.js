@@ -8,6 +8,8 @@ import sourceCache from '../db/caches/sourceCache.js';
 import editionCache from '../db/caches/editionCache.js';
 import subschoolCache from '../db/caches/subschoolCache.js';
 import spellCache from '../db/caches/spellCache.js';
+import alignmentCache from '../db/caches/alignmentCache.js';
+import raceCache from '../db/caches/raceCache.js';
 
 const router = express.Router();
 
@@ -23,7 +25,9 @@ router.get('/', async (req, res) => {
             sourceCache.initialize(),
             editionCache.initialize(),
             subschoolCache.initialize(),
-            spellCache.initialize()
+            spellCache.initialize(),
+            alignmentCache.initialize(),
+            raceCache.initialize()
         ]);
 
         // Get all data from caches
@@ -36,7 +40,9 @@ router.get('/', async (req, res) => {
             sources: Array.from(sourceCache.sources.values()),
             editions: Array.from(editionCache.editions.values()),
             subschools: Array.from(subschoolCache.subschools.values()),
-            spells: Array.from(spellCache.spells.values())
+            spells: Array.from(spellCache.spells.values()),
+            alignments: Array.from(alignmentCache.alignments.values()),
+            races: Array.from(raceCache.races.values())
         };
 
         res.json(lookups);

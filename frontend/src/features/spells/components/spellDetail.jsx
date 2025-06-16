@@ -1,6 +1,6 @@
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import lookupService from './services/LookupService';
+import lookupService from '@/services/LookupService';
 import api from '@/lib/api';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -34,7 +34,7 @@ function SpellDetail() {
     }, [id]);
 
     // Inner cell styling (the inner border, padding, background, text colors)
-    const innerCellContentClasses = "p-3 bg-white  dark:bg-gray-700 dark: dark:border-gray-500 rounded-lg border";
+    const innerCellContentClasses = "p-3 bg-white dark:bg-gray-700 dark:border-gray-500 rounded-lg border";
 
     // Outer container styling (width, centering, outer border, shadow)
     const outerContainerClasses = "w-3/5 mx-auto border-2 border-gray-400 dark:border-gray-500 rounded-lg shadow-lg p-1";
