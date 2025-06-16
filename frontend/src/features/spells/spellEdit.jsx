@@ -3,6 +3,9 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import MarkdownEditor from '@/components/MarkdownEditor';
 import api from '@/lib/api';
 import lookupService from '@/features/spells/services/LookupService';
+import Icon from '@mdi/react';
+import { mdiTrashCan } from '@mdi/js';
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react';
 
 function SpellEdit() {
     const { id } = useParams();
@@ -57,7 +60,9 @@ function SpellEdit() {
                     components: data.components || [], // Ensure components is an array
                     descriptors: data.descriptors || [], // Ensure descriptors is an array
                     schools: data.schools || [], // Ensure schools is an array
-                    subschools: data.subschools || [] // Ensure subschools is an array
+                    subschools: data.subschools || [], // Ensure subschools is an array
+                    spell_effect: data.spell_effect || '', // Ensure spell_effect is a string
+                    spell_target: data.spell_target || '' // Ensure spell_target is a string
                 }));
 
                 console.log('Initial spell state after setup:', spell); // This will still log previous state due to closure
@@ -156,12 +161,22 @@ function SpellEdit() {
     };
 
     const handleClassLevelChange = (index, field, value) => {
-        setSpell(prevSpell => ({
-            ...prevSpell,
-            class_levels: prevSpell.class_levels.map((cl, i) =>
-                i === index ? { ...cl, [field]: parseInt(value) } : cl
-            )
-        }));
+        setSpell(prevSpell => {
+            if (field === 'spell_level' && parseInt(value) === -1) {
+                // If 'Remove' is selected, remove the class level
+                return {
+                    ...prevSpell,
+                    class_levels: prevSpell.class_levels.filter((_, i) => i !== index)
+                };
+            } else {
+                return {
+                    ...prevSpell,
+                    class_levels: prevSpell.class_levels.map((cl, i) =>
+                        i === index ? { ...cl, [field]: parseInt(value) } : cl
+                    )
+                };
+            }
+        });
     };
 
     const handleAddClassLevel = () => {
@@ -180,13 +195,6 @@ function SpellEdit() {
         }
     };
 
-    const handleRemoveClassLevel = (index) => {
-        setSpell(prevSpell => ({
-            ...prevSpell,
-            class_levels: prevSpell.class_levels.filter((_, i) => i !== index)
-        }));
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setMessage('');
@@ -200,7 +208,9 @@ function SpellEdit() {
                     spell_level: parseInt(cl.spell_level)
                 })).filter(cl => !isNaN(cl.class_id) && !isNaN(cl.spell_level)),
                 source_id: spell.sources.length > 0 ? spell.sources[0].book_id : null,
-                page_number: spell.sources.length > 0 ? spell.sources[0].page_number : null
+                page_number: spell.sources.length > 0 ? spell.sources[0].page_number : null,
+                spell_effect: spell.spell_effect || null,
+                spell_target: spell.spell_target || null
             };
 
             // Remove complex objects and single-entry class/source fields
@@ -234,18 +244,86 @@ function SpellEdit() {
     if (!spell) return <div className="p-4 bg-white  dark:bg-[#121212]  min-h-screen">Spell not found.</div>;
 
     return (
-        <div className="p-4 bg-white dark:bg-[#121212]  min-h-screen">
+        <div className="p-4 bg-white dark:bg-[#121212] min-h-screen">
             <h1 className="text-2xl font-bold mb-4">Edit Spell: {spell.spell_name}</h1>
             {message && <div className="mb-4 p-2 rounded text-green-700 bg-green-100 dark:bg-green-800 dark:text-green-200">{message}</div>}
             {error && <div className="mb-4 p-2 rounded text-red-700 bg-red-100 dark:bg-red-800 dark:text-red-200">Error: {error.message || String(error)}</div>}
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-2 auto-rows-auto">
-                    {/* Row 1, Columns 1 & 2: Spell Schools & Subschools */}
                     <div className="md:col-span-2">
-                        <label htmlFor="schools" className="block text-lg font-medium">Spell Schools & Subschools:</label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-y-.75 gap-x-2 mt-1">
+                        <div className="flex items-center gap-2">
+                            <label htmlFor="cast_time" className="block text-lg w-48 font-medium">Casting Time:</label>
+                            <input type="text" id="cast_time" name="cast_time" value={spell.cast_time || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                            <label htmlFor="spell_range" className="block text-lg w-48 font-medium">Range (Text):</label>
+                            <input type="text" id="spell_range" name="spell_range" value={spell.spell_range || ''} readOnly className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600 bg-gray-100 dark:bg-gray-800" />
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                            <label htmlFor="spell_range_id" className="block text-lg w-48 font-medium">Range:</label>
+                            <select id="spell_range_id" name="spell_range_id" value={spell.spell_range_id || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600">
+                                <option value="">Select a range</option>
+                                {spellRanges.map(range => (
+                                    <option key={range.range_id} value={range.range_id}>
+                                        {range.range_name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                            <label htmlFor="spell_range_value" className="block text-lg w-48 font-medium">Range Value:</label>
+                            <input type="text" id="spell_range_value" name="spell_range_value" value={spell.spell_range_value || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                            <label htmlFor="spell_effect" className="block text-lg w-48 font-medium">Effect:</label>
+                            <input type="text" id="spell_effect" name="spell_effect" value={spell.spell_effect || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                            <label htmlFor="spell_area" className="block text-lg w-48 font-medium">Area:</label>
+                            <input type="text" id="spell_area" name="spell_area" value={spell.spell_area || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                            <label htmlFor="spell_target" className="block text-lg w-48 font-medium">Target:</label>
+                            <input type="text" id="spell_target" name="spell_target" value={spell.spell_target || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                            <label htmlFor="spell_duration" className="block text-lg w-48 font-medium">Duration:</label>
+                            <input type="text" id="spell_duration" name="spell_duration" value={spell.spell_duration || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                            <label htmlFor="spell_save" className="block text-lg w-48 font-medium">Saving Throw:</label>
+                            <input type="text" id="spell_save" name="spell_save" value={spell.spell_save || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                            <label htmlFor="spell_resistance" className="block text-lg w-48 font-medium">Spell Resistance:</label>
+                            <input type="text" id="spell_resistance" name="spell_resistance" value={spell.spell_resistance || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                            <label htmlFor="source_id" className="block text-lg w-48 font-medium">Source:</label>
+                            <div className="flex items-center gap-2 w-full">
+                                <select id="source_id" name="source_id" value={spell.sources[0]?.book_id || ''} onChange={handleChange} className="mt-1 block w-64 p-1 border rounded dark:bg-gray-700 dark:border-gray-600">
+                                    <option value="">Select a source</option>
+                                    {spellSources.map(source => (
+                                        <option key={source.book_id} value={source.book_id}>
+                                            {source.title}
+                                        </option>
+                                    ))}
+                                </select>
+
+                                {spell.sources.length > 0 && (
+                                    <div className="flex items-center gap-2">
+                                        <label htmlFor="page_number" className="block text-lg font-medium">Pg:</label>
+                                        <input type="number" id="page_number" name="page_number" value={spell.sources[0]?.page_number || ''} onChange={handleChange} className="mt-1 block w-16 p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="md:col-span-2">
+                        <label htmlFor="schools" className="block text-lg font-medium">Schools & Subschools:</label>
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-y-2 gap-x-2 mt-1">
                             {spellSchools.map(school => (
-                                <div key={school.school_id} className="mb-2 p-2 border rounded dark:border-gray-600">
+                                <div key={school.school_id} className="p-2 border rounded dark:border-gray-600">
                                     <label className="inline-flex items-center font-bold text-base">
                                         <input
                                             type="checkbox"
@@ -253,7 +331,7 @@ function SpellEdit() {
                                             checked={spell.schools.includes(school.school_id)}
                                             onChange={handleChange}
                                             name="schools"
-                                            className="form-checkbox"
+                                            className="form-checkbox h-4 w-4 text-blue-600 dark:bg-gray-700 dark:border-gray-600 rounded accent-blue-600 checked:bg-blue-600 dark:checked:bg-blue-600"
                                         />
                                         <span className="ml-2">{school.school_name}</span>
                                     </label>
@@ -268,7 +346,7 @@ function SpellEdit() {
                                                             checked={spell.subschools.includes(subschool.sub_id)}
                                                             onChange={handleChange}
                                                             name="subschools"
-                                                            className="form-checkbox"
+                                                            className="form-checkbox h-4 w-4 text-blue-600 dark:bg-gray-700 dark:border-gray-600 rounded accent-blue-600 checked:bg-blue-600 dark:checked:bg-blue-600"
                                                         />
                                                         <span className="ml-2">{subschool.subschool}</span>
                                                     </label>
@@ -279,172 +357,119 @@ function SpellEdit() {
                                 </div>
                             ))}
                         </div>
-
-                    </div>
-                    {/* Row 1, Columns 3 & 4 */}
-                    <div className="md:col-span-2">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 auto-rows-auto">
-                            {/* Row 1, Column 3: Spell Descriptors & Casting Time */}
-                            <div className="md:col-span-1">
-                                <label htmlFor="descriptors" className="block text-lg font-medium">Spell Descriptors:</label>
-                                <div className="grid grid-cols-2 gap-y-0.25 p-2 mt-1 border rounded dark:border-gray-600">
-                                    {spellDescriptors.map(descriptor => (
-                                        <div key={descriptor.descriptor_id}>
-                                            <label className="inline-flex items-center text-base">
-                                                <input
-                                                    type="checkbox"
-                                                    name="descriptors"
-                                                    value={descriptor.descriptor_id}
-                                                    checked={spell.descriptors.includes(descriptor.descriptor_id)}
-                                                    onChange={handleChange}
-                                                    className="form-checkbox h-4 w-4 text-blue-600 dark:bg-gray-700 dark:border-gray-600 rounded accent-blue-600"
-                                                />
-                                                <span className="ml-2 text-gray-700 dark:text-gray-300">{descriptor.descriptor}</span>
-                                            </label>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                            {/* Row 1, Column 4: Spell Components & Spell Range fields */}
-                            <div className="md:col-span-1">
-                                <label htmlFor="components" className="block text-lg font-medium">Spell Components:</label>
-                                <div className="grid grid-cols-2 gap-y-0.25 mt-1 p-2 border rounded dark:border-gray-600">
-                                    {spellComponents.map(component => (
-                                        <div key={component.comp_id}>
-                                            <label className="inline-flex items-center text-base">
-                                                <input
-                                                    type="checkbox"
-                                                    name="components"
-                                                    value={component.comp_id}
-                                                    checked={spell.components.includes(component.comp_id)}
-                                                    onChange={handleChange}
-                                                    className="form-checkbox h-4 w-4 text-blue-600 dark:bg-gray-700 dark:border-gray-600 rounded accent-blue-600"
-                                                />
-                                                <span className="ml-2 text-gray-700 dark:text-gray-300">{component.comp_name}</span>
-                                            </label>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="mt-2">
-                                    <label htmlFor="spell_range" className="block text-lg font-medium">Spell Range (Text):</label>
-                                    <input type="text" id="spell_range" name="spell_range" value={spell.spell_range || ''} readOnly className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600 bg-gray-100 dark:bg-gray-800" />
-                                </div>
-                                <div className="mt-2">
-                                    <label htmlFor="spell_range_id" className="block text-lg font-medium">Spell Range:</label>
-                                    <select id="spell_range_id" name="spell_range_id" value={spell.spell_range_id || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600">
-                                        <option value="">Select a range</option>
-                                        {spellRanges.map(range => (
-                                            <option key={range.range_id} value={range.range_id}>
-                                                {range.range_name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="mt-2">
-                                    <label htmlFor="spell_range_value" className="block text-lg font-medium">Spell Range Value:</label>
-                                    <input type="number" id="spell_range_value" name="spell_range_value" value={spell.spell_range_value || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
-                                </div>
-                            </div>
-                            {/* Row 2, Columns 3 & 4: Spell Area, Duration, Save, Resistance */}
-                            <div className="md:col-span-2">
-                                <div className="flex items-center gap-2 mt-2">
-                                    <label htmlFor="cast_time" className="block text-lg w-48 font-medium">Casting Time:</label>
-                                    <input type="text" id="cast_time" name="cast_time" value={spell.cast_time || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
-                                </div>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <label htmlFor="spell_area" className="block text-lg w-48 font-medium">Spell Area:</label>
-                                    <input type="text" id="spell_area" name="spell_area" value={spell.spell_area || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
-                                </div>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <label htmlFor="spell_duration" className="block text-lg w-48 font-medium">Spell Duration:</label>
-                                    <input type="text" id="spell_duration" name="spell_duration" value={spell.spell_duration || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
-                                </div>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <label htmlFor="spell_save" className="block text-lg w-48 font-medium">Saving Throw:</label>
-                                    <input type="text" id="spell_save" name="spell_save" value={spell.spell_save || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
-                                </div>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <label htmlFor="spell_resistance" className="block text-lg w-48 font-medium">Spell Resistance:</label>
-                                    <input type="text" id="spell_resistance" name="spell_resistance" value={spell.spell_resistance || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
-                                </div>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <label htmlFor="source_id" className="block text-lg w-48 font-medium">Source:</label>
-                                    <div className="flex items-center gap-2 w-full">
-                                        <select id="source_id" name="source_id" value={spell.sources[0]?.book_id || ''} onChange={handleChange} className="mt-1 block w-64 p-1 border rounded dark:bg-gray-700 dark:border-gray-600">
-                                            <option value="">Select a source</option>
-                                            {spellSources.map(source => (
-                                                <option key={source.book_id} value={source.book_id}>
-                                                    {source.title}
-                                                </option>
-                                            ))}
-                                        </select>
-
-                                        {spell.sources.length > 0 && (
-                                            <div className="flex items-center gap-2">
-                                                <label htmlFor="page_number" className="block text-lg font-medium">Pg:</label>
-                                                <input type="number" id="page_number" name="page_number" value={spell.sources[0]?.page_number || ''} onChange={handleChange} className="mt-1 block w-16 p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
-                                            </div>
-                                        )}
-                                    </div>  
-                                </div>
+                        <div className="mt-1">
+                            <label htmlFor="descriptors" className="block text-lg font-medium">Descriptors:</label>
+                            <div className="grid grid-cols-4 gap-y-0.25 p-2 mt-1 border rounded dark:border-gray-600">
+                                {spellDescriptors.map(descriptor => (
+                                    <div key={descriptor.descriptor_id}>
+                                        <label className="inline-flex items-center text-base">
+                                            <input
+                                                type="checkbox"
+                                                name="descriptors"
+                                                value={descriptor.descriptor_id}
+                                                checked={spell.descriptors.includes(descriptor.descriptor_id)}
+                                                onChange={handleChange}
+                                                className="form-checkbox h-4 w-4 text-blue-600 dark:bg-gray-700 dark:border-gray-600 rounded accent-blue-600 checked:bg-blue-600 dark:checked:bg-blue-600"
+                                            />
+                                            <span className="ml-2 text-gray-700 dark:text-gray-300">{descriptor.descriptor}</span>
+                                        </label>
+                                    </div>
+                                ))}
                             </div>
                         </div>
-                    </div>
-                    <div className="md:col-span-4">
-                        <h3 className="text-lg font-bold mb-2">Class Levels</h3>
-                        <div className="flex items-center gap-2">
-                            {spell.class_levels.map((cl, index) => (
-                                <div key={index} className="flex items-center gap-1">
-                                    <span className="block text-sm font-medium">{lookupService.getById('classes', cl.class_id)?.class_name || 'Unknown Class'}:</span>
-                                    <input
-                                        type="number"
-                                        name="spell_level"
-                                        value={cl.spell_level || ''}
-                                        onChange={(e) => handleClassLevelChange(index, 'spell_level', e.target.value)}
-                                        className="block w-10 p-1 border rounded dark:bg-gray-700 dark:border-gray-600"
-                                        placeholder="Level"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveClassLevel(index)}
-                                        className="px-2 py-1 bg-red-600  rounded hover:bg-red-700"
-                                    >
-                                        X
-                                    </button>
-                                </div>
-                            ))}
-                            <select
-                                value={selectedClassToAdd}
-                                onChange={(e) => setSelectedClassToAdd(e.target.value)}
-                                className="block p-1 border rounded dark:bg-gray-700 dark:border-gray-600 mr-1 w-48"
-                            >
-                                <option value="">Add Class</option>
-                                {spellClasses
-                                    .filter(cls => {
-                                        const addedClassNames = new Set(spell.class_levels.map(cl => lookupService.getById('classes', cl.class_id)?.class_name).filter(Boolean));
-                                        return !addedClassNames.has(cls.class_name);
-                                    })
-                                    .map(cls => (
-                                        <option key={cls.class_id} value={cls.class_id}>
-                                            {cls.class_name}
-                                        </option>
-                                    ))}
-                            </select>
-                            <button
-                                type="button"
-                                onClick={handleAddClassLevel}
-                                className="p-1.5 bg-green-600 rounded hover:bg-green-700"
-                            >
-                                Add
-                            </button>
+                        <div className="mt-1">
+                            <label htmlFor="components" className="block text-lg font-medium">Components:</label>
+                            <div className="flex items-center gap-3 p-2 mt-1 border rounded dark:border-gray-600">
+                                {spellComponents.map(component => (
+                                    <div key={component.comp_id}>
+                                        <label className="inline-flex items-center text-base">
+                                            <input
+                                                type="checkbox"
+                                                name="components"
+                                                value={component.comp_id}
+                                                checked={spell.components.includes(component.comp_id)}
+                                                onChange={handleChange}
+                                                className="form-checkbox h-4 w-4 text-blue-600 dark:bg-gray-700 dark:border-gray-600 rounded accent-blue-600 checked:bg-blue-600 dark:checked:bg-blue-600"
+                                            />
+                                            <span className="ml-1 text-gray-700 dark:text-gray-300">{component.comp_name}</span>
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div>
+                <div className="mt-2">
+                    <h3 className="text-lg font-medium">Class Levels:</h3>
+                    <div className="flex items-center gap-2">
+                        {spell.class_levels.map((cl, index) => (
+                            <div key={index} className="flex items-center gap-1">
+                                <span className="block">{lookupService.getById('classes', cl.class_id)?.class_name || 'Unknown Class'}:</span>
+                                <Listbox
+                                    value={cl.spell_level || 0}
+                                    onChange={(value) => handleClassLevelChange(index, 'spell_level', value)}
+                                    as="div"
+                                    className="relative inline-block text-left"
+                                >
+                                    <ListboxButton className="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm p-1 bg-white text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-offset-0 focus:ring-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600">
+                                        {cl.spell_level !== -1 ? cl.spell_level : <Icon path={mdiTrashCan} size={0.8} color="red" />}
+                                    </ListboxButton>
+                                    <ListboxOptions className="absolute z-10 p-1 bg-white shadow-lg rounded-md text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none focus:ring-1 focus:ring-offset-0 focus:ring-gray-300 dark:bg-gray-700">
+                                        {[...Array(10).keys()].map(level => (
+                                            <ListboxOption
+                                                key={level}
+                                                className={({ active }) =>
+                                                    `cursor-default select-none relative p-1 ${active ? 'text-white bg-blue-600' : 'text-gray-900 dark:text-gray-300'}`
+                                                }
+                                                value={level}
+                                            >
+                                                {level}
+                                            </ListboxOption>
+                                        ))}
+                                        <ListboxOption
+                                            key="-1"
+                                            className={({ active }) =>
+                                                `cursor-default select-none relative pl-0.5 ${active ? 'text-white bg-blue-600' : 'text-gray-900 dark:text-gray-300'}`
+                                            }
+                                            value={-1}
+                                        >
+                                            <Icon path={mdiTrashCan} size={0.6} color="red" />
+                                        </ListboxOption>
+                                    </ListboxOptions>
+                                </Listbox>
+                            </div>
+                        ))}
+                        <select
+                            value={selectedClassToAdd}
+                            onChange={(e) => setSelectedClassToAdd(e.target.value)}
+                            className="block p-1 border rounded dark:bg-gray-700 dark:border-gray-600 mr-1 w-48"
+                        >
+                            <option value="">Add Class</option>
+                            {spellClasses
+                                .filter(cls => {
+                                    const addedClassNames = new Set(spell.class_levels.map(cl => lookupService.getById('classes', cl.class_id)?.class_name).filter(Boolean));
+                                    return !addedClassNames.has(cls.class_name);
+                                })
+                                .map(cls => (
+                                    <option key={cls.class_id} value={cls.class_id}>
+                                        {cls.class_name}
+                                    </option>
+                                ))}
+                        </select>
+                        <button
+                            type="button"
+                            onClick={handleAddClassLevel}
+                            className="p-1.5 bg-green-600 rounded hover:bg-green-700"
+                        >
+                            Add
+                        </button>
+                    </div>
+                </div>
+                <div className="mt-2">
                     <label htmlFor="spell_summary" className="block text-lg font-medium">Spell Summary:</label>
                     <input type="text" id="spell_summary" name="spell_summary" value={spell.spell_summary || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
                 </div>
-                <div>
+                <div className="mt-2">
                     <MarkdownEditor
                         id="spell_description"
                         name="spell_description"
@@ -453,7 +478,7 @@ function SpellEdit() {
                         onChange={handleChange}
                     />
                 </div>
-                <div className="flex space-x-4">
+                <div className="flex mt-1 gap-2">
                     <button type="submit" className="px-4 py-2 bg-blue-600  rounded hover:bg-blue-700">Save Changes</button>
                     <button type="button" onClick={() => {
                         console.log('Navigating from EditSpell (Cancel) with params:', fromListParams);

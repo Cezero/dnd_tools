@@ -73,6 +73,8 @@ function SpellDetail() {
                     <p><strong>Level:</strong> {lookupService.getClassLevelAbbr(spell.class_levels)}</p>
                     {spell.components && <p><strong>Components:</strong> {lookupService.getComponentAbbreviations(spell.components)}</p>}
                     {spell.cast_time && <p><strong>Casting Time:</strong> {spell.cast_time}</p>}
+                    {spell.spell_effect && <p><strong>Effect:</strong> {spell.spell_effect}</p>}
+                    {spell.spell_area && <p><strong>Area:</strong> {spell.spell_area}</p>}
                     {spell.spell_range && <p><strong>Range:</strong> {spell.spell_range}</p>}
                     {spell.spell_target && <p><strong>Target:</strong> {spell.spell_target}</p>}
                     {spell.spell_duration && <p><strong>Duration:</strong> {spell.spell_duration}</p>}

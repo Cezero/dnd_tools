@@ -24,7 +24,7 @@ export const COLUMN_DEFINITIONS = {
     descriptors: {
         label: 'Descriptors',
         sortable: false,
-        filterable: false
+        filterable: true
     },
     casting_time: {
         label: 'Casting Time',
@@ -44,7 +44,7 @@ export const COLUMN_DEFINITIONS = {
     components: {
         label: 'Components',
         sortable: false,
-        filterable: false
+        filterable: true
     },
     source: {
         label: 'Sources',
@@ -55,5 +55,30 @@ export const COLUMN_DEFINITIONS = {
         label: 'Classes',
         sortable: true,
         filterable: true
+    },
+    spell_effect: {
+        label: 'Effect',
+        sortable: false,
+        filterable: false
+    },
+    spell_target: {
+        label: 'Target',
+        sortable: false,
+        filterable: false
+    },
+    spell_area: {
+        label: 'Area',
+        sortable: false,
+        filterable: false
+    },
+    spell_save: {
+        label: 'Saving Throw',
+        sortable: false,
+        filterable: false
+    },
+    spell_resistance: {
+        label: 'Spell Resistance',
+        sortable: false,
+        filterable: false
     }
 }; 

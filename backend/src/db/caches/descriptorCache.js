@@ -55,6 +55,23 @@ class DescriptorCache {
         }
         return this.descriptors.get(descriptorId);
     }
+
+    getIDs(descriptorNames) {
+        if (!this.initialized) {
+            throw new Error('DescriptorCache not initialized');
+        }
+        if (!Array.isArray(descriptorNames) || descriptorNames.length === 0) {
+            return [];
+        }
+        const ids = [];
+        for (const name of descriptorNames) {
+            const descriptorInfo = this.getDescriptor(name);
+            if (descriptorInfo) {
+                ids.push(descriptorInfo.desc_id);
+            }
+        }
+        return ids;
+    }
 }
 
 const descriptorCache = new DescriptorCache();

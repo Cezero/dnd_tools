@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Icon from '@mdi/react';
 import { mdiFilterOutline, mdiSortAscending, mdiSortDescending, mdiCog, mdiFilter } from '@mdi/js';
@@ -34,11 +34,26 @@ function GenericList({
     // Initialize filters directly from search params
     const initialFilters = {};
     for (const key in filterOptions) {
-        initialFilters[key] = searchParams.get(key) || '';
+        const paramValue = searchParams.get(key);
+        if (filterOptions[key]?.type === 'multi-select') {
+            const values = paramValue
+                ? paramValue.split(',')
+                    .filter(val => val !== '') // Added to remove empty strings
+                    .map(val => {
+                        const num = Number(val);
+                        return isNaN(num) ? val : num; // Return original string if not a valid number
+                    })
+                : [];
+            const logic = searchParams.get(`${key}_logic`) || 'or'; // Default to 'or'
+            initialFilters[key] = { values, logic };
+        } else {
+            initialFilters[key] = paramValue || '';
+        }
     }
     const [filters, setFilters] = useState(initialFilters);
 
     const [displayFilter, setDisplayFilter] = useState(''); // Which filter is currently open
+    const [activeMultiSelectFilterId, setActiveMultiSelectFilterId] = useState(null); // For controlled multi-select open state
     const [visibleColumns, setVisibleColumns] = useColumnConfig(storageKey, defaultColumns, columnDefinitions, requiredColumnId);
     const [isConfigOpen, setIsConfigOpen] = useState(false);
 
@@ -46,22 +61,11 @@ function GenericList({
     const lastClickedElement = useRef(null);
 
     useEffect(() => {
-        const params = new URLSearchParams({
-            page,
-            limit,
-            sort: sortKey,
-            order: sortOrder,
-        });
-
-        // Add all generic filters to params
-        for (const key in filters) {
-            if (filters[key]) {
-                params.set(key, filters[key]);
-            }
-        }
+        // Construct params directly from searchParams
+        const currentSearchParams = new URLSearchParams(searchParams.toString()); // Create a mutable copy
 
         setIsLoading(true);
-        fetchData(params)
+        fetchData(currentSearchParams)
             .then(result => {
                 setData(result.data);
                 setTotal(result.total);
@@ -72,11 +76,15 @@ function GenericList({
             .finally(() => {
                 setIsLoading(false);
             });
-    }, [page, limit, sortKey, sortOrder, filters, fetchData]);
+    }, [searchParams, fetchData]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (displayFilter && thRefs.current[displayFilter] && !thRefs.current[displayFilter].contains(event.target)) {
+                // If the closed filter was a multi-select, clear its active state
+                if (filterOptions[displayFilter]?.type === 'multi-select') {
+                    setActiveMultiSelectFilterId(null);
+                }
                 setDisplayFilter('');
                 lastClickedElement.current = event.target; // Store the element that closed the filter
             }
@@ -86,33 +94,78 @@ function GenericList({
         return () => {
             document.removeEventListener('mousedown', handleClickOutside, true);
         };
-    }, [displayFilter]);
+    }, [displayFilter, filterOptions]);
 
-    const handleFilterChange = (filterKey, value) => {
-        setFilters(prev => ({
-            ...prev,
-            [filterKey]: value
-        }));
+    const handleFilterChange = useCallback((filterKey, value) => {
+        setFilters(prev => {
+            const newFilters = { ...prev };
+            if (filterOptions[filterKey]?.type === 'multi-select') {
+                newFilters[filterKey] = { ...newFilters[filterKey], values: value };
+            } else {
+                newFilters[filterKey] = value;
+            }
+            return newFilters;
+        });
+        // Apply filter immediately for all types, including multi-select
         setSearchParams(prev => {
             const newParams = new URLSearchParams(prev);
-            if (value) {
-                newParams.set(filterKey, value);
+            if (filterOptions[filterKey]?.type === 'multi-select') {
+                const currentFilter = filters[filterKey]; // Use current state for logic
+                if (value && value.length > 0) {
+                    newParams.set(filterKey, value.join(','));
+                    newParams.set(`${filterKey}_logic`, currentFilter?.logic || 'or'); // Add logic to URL
+                } else {
+                    newParams.delete(filterKey);
+                    newParams.delete(`${filterKey}_logic`);
+                }
             } else {
-                newParams.delete(filterKey);
+                if (value) {
+                    newParams.set(filterKey, value);
+                } else {
+                    newParams.delete(filterKey);
+                }
             }
-            // Ensure current page, limit, sort, order are preserved
             newParams.set('page', '1'); // Reset to first page on filter change
             return newParams;
         });
-        // Optionally, close filter dropdown after selection if it's a select
+
+        // Optionally, close single-select dropdowns immediately
         if (filterOptions[filterKey]?.type === 'select') {
             setDisplayFilter('');
         }
-    };
+    }, [filterOptions, setSearchParams, filters]);
 
-    const toggleFilter = (columnId) => {
-        setDisplayFilter(displayFilter === columnId ? '' : columnId);
-    };
+    const handleLogicChange = useCallback((filterKey, newLogic) => {
+        setFilters(prev => ({
+            ...prev,
+            [filterKey]: { ...prev[filterKey], logic: newLogic }
+        }));
+        setSearchParams(prev => {
+            const newParams = new URLSearchParams(prev);
+            const currentFilter = filters[filterKey];
+            if (currentFilter?.values && currentFilter.values.length > 0) { // Only set logic if values exist
+                newParams.set(`${filterKey}_logic`, newLogic);
+            } else { // If no values, logic param is not meaningful, so delete it
+                newParams.delete(`${filterKey}_logic`);
+            }
+            newParams.set('page', '1'); // Reset to first page on filter change
+            return newParams;
+        });
+    }, [filters, setSearchParams]);
+
+    const toggleFilter = useCallback((columnId) => {
+        if (displayFilter === columnId) { // Filter is closing
+            if (filterOptions[columnId]?.type === 'multi-select') {
+                setActiveMultiSelectFilterId(null);
+            }
+            setDisplayFilter(''); // Close the filter
+        } else { // Filter is opening
+            if (filterOptions[columnId]?.type === 'multi-select') {
+                setActiveMultiSelectFilterId(columnId);
+            }
+            setDisplayFilter(columnId);
+        }
+    }, [displayFilter, filterOptions]);
 
     const handleSort = (key) => {
         if (sortKey === key) {
@@ -158,7 +211,13 @@ function GenericList({
         const column = columnDefinitions[columnId];
         if (!column) return null;
 
-        const isFiltered = !!filters[columnId]; // Check if a filter is applied to this column
+        // Check if a filter is applied to this column
+        let isFiltered = false;
+        if (filterOptions[columnId]?.type === 'multi-select') {
+            isFiltered = filters[columnId] && filters[columnId].values.length > 0;
+        } else {
+            isFiltered = !!filters[columnId];
+        }
 
         return (
             <th
@@ -207,10 +266,13 @@ function GenericList({
                 {displayFilter === columnId && column.filterable && filterOptions[columnId] && (
                     <div className="absolute mt-2 p-1 bg-opacity-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-lg" onClick={(e) => e.stopPropagation()}>
                         {React.createElement(filterOptions[columnId].component, {
-                            value: filters[columnId],
-                            onChange: (e) => handleFilterChange(columnId, e.target.value),
+                            key: columnId,
+                            selected: filters[columnId]?.values,
+                            onChange: (value) => handleFilterChange(columnId, value),
+                            open: filterOptions[columnId]?.type === 'multi-select' ? activeMultiSelectFilterId === columnId : undefined, // Pass open prop for multi-selects
+                            logicType: filterOptions[columnId]?.type === 'multi-select' ? filters[columnId]?.logic : undefined,
+                            onLogicChange: filterOptions[columnId]?.type === 'multi-select' ? (newLogic) => handleLogicChange(columnId, newLogic) : undefined,
                             ...filterOptions[columnId].props,
-                            className: "p-1 border rounded w-full dark:bg-gray-800 text-sm" // Apply common styles here
                         })}
                     </div>
                 )}

@@ -5,10 +5,11 @@ import { timedQuery } from '../../../db/queryTimer.js';
 export async function getSpells(req, res) {
     // Only allow these query params
     const allowedParams = [
-        'page', 'limit', 'sort', 'order', 'name', 'classId', 'spell_level', 'school', 'descriptor', 'edition_id', 'source'
+        'page', 'limit', 'sort', 'order', 'name', 'classId', 'spell_level', 'school', 'descriptors', 'edition_id', 'source', 'components',
+        'classId_logic', 'descriptors_logic' // Add new logic parameters
     ];
     const invalidParams = Object.keys(req.query).filter(
-        key => !allowedParams.includes(key)
+        key => !allowedParams.includes(key) && !key.endsWith('_logic') // Allow any _logic param if base param is allowed
     );
     if (invalidParams.length > 0) {
         return res.status(400).json({
@@ -22,26 +23,35 @@ export async function getSpells(req, res) {
         sort = 'spell_name',
         order = 'asc',
         name = '',
-        classId = '',
+        classId: classIdParam = '', // Rename to avoid conflict with parsed array
         spell_level = '',
         school = '',
-        descriptor = '',
+        descriptors: descriptorsParam = '', // Rename to avoid conflict with parsed array
         source = '',
+        components = '',
         edition_id = null, // Default to null
+        classId_logic = 'or', // Default to 'or'
+        descriptors_logic = 'or', // Default to 'or'
     } = req.query;
     const offset = (page - 1) * limit;
     const allowedSorts = ['spell_name', 'spell_level', 'school', 'classId', 'spell_summary'];
     let sortBy = allowedSorts.includes(sort) ? sort : 'spell_name';
     const sortOrder = order === 'desc' ? 'DESC' : 'ASC';
 
+    // Parse classId into an array of numbers
+    const classIds = classIdParam ? (Array.isArray(classIdParam) ? classIdParam : classIdParam.split(',')).map(Number).filter(id => !isNaN(id)) : [];
+    // Parse descriptors into an array of numbers (assuming frontend sends IDs now)
+    const descriptorIds = descriptorsParam ? (Array.isArray(descriptorsParam) ? descriptorsParam : descriptorsParam.split(',')).map(Number).filter(id => !isNaN(id)) : [];
+
     let whereClauses = [];
     let havingClauses = [];
-    let values = [];
+    let whereValues = [];
+    let havingValues = [];
     let baseQuery = '';
     let joinClause = '';
 
-    // Determine if we should use spell_level_map as the base table
-    const useLevelMap = classId;
+    // Determine if we should use spell_level_map as the base table (based on presence of classId filter)
+    const useLevelMap = classIds.length > 0;
 
     if (useLevelMap) {
         baseQuery = `FROM spell_level_map slm JOIN spells sp ON slm.spell_id = sp.spell_id`;
@@ -49,20 +59,32 @@ export async function getSpells(req, res) {
         joinClause = `
             LEFT JOIN spell_school_map ssm ON sp.spell_id = ssm.spell_id
             LEFT JOIN spell_descriptor_map sdm ON sp.spell_id = sdm.spell_id
-            LEFT JOIN spell_component_map scm ON sp.spell_id = scm.comp_id
+            LEFT JOIN spell_component_map scm ON sp.spell_id = scm.spell_id
             LEFT JOIN spell_ranges sr ON sp.spell_range_id = sr.range_id
             LEFT JOIN spell_source_map ssm_src ON sp.spell_id = ssm_src.spell_id and ssm_src.display = 1
         `;
 
 
-        if (classId) {
-            whereClauses.push(`slm.class_id = ?`);
-            values.push(classId);
+        if (classIds.length > 0) {
+            if (classId_logic === 'and') {
+                // For AND logic, we need to ensure the spell has ALL selected class IDs.
+                // We filter by IN initially and then use HAVING to ensure all distinct selected class IDs are present.
+                whereClauses.push(`slm.class_id IN (?)`);
+                whereValues.push(classIds.join(','));
+                havingClauses.push(`COUNT(DISTINCT slm.class_id) = ?`);
+                havingValues.push(classIds.length);
+            } else { // 'or' logic (default)
+                whereClauses.push(`slm.class_id IN (?)`);
+                whereValues.push(classIds.join(','));
+            }
+        } else if (Array.isArray(classIdParam) && classIdParam.length > 0) {
+            // If classId was an array but all values were invalid
+            return res.status(400).json({ error: `Invalid class ID(s): ${classIdParam.join(', ')}` });
         }
 
         if (spell_level) {
             whereClauses.push(`slm.spell_level = ?`);
-            values.push(parseInt(spell_level));
+            whereValues.push(parseInt(spell_level));
         }
         if (sortBy === 'spell_level') {
             sortBy = 'slm.spell_level';
@@ -73,7 +95,7 @@ export async function getSpells(req, res) {
         joinClause = `
             LEFT JOIN spell_school_map ssm ON sp.spell_id = ssm.spell_id
             LEFT JOIN spell_descriptor_map sdm ON sp.spell_id = sdm.spell_id
-            LEFT JOIN spell_component_map scm ON sp.spell_id = scm.comp_id
+            LEFT JOIN spell_component_map scm ON sp.spell_id = scm.spell_id
             LEFT JOIN spell_ranges sr ON sp.spell_range_id = sr.range_id
             LEFT JOIN spell_source_map ssm_src ON sp.spell_id = ssm_src.spell_id and ssm_src.display = 1
             LEFT JOIN spell_level_map slm ON sp.spell_id = slm.spell_id and slm.display = 1
@@ -81,7 +103,7 @@ export async function getSpells(req, res) {
 
         if (spell_level) {
             whereClauses.push(`sp.spell_level = ?`);
-            values.push(parseInt(spell_level));
+            whereValues.push(parseInt(spell_level));
         }
         if (sortBy === 'spell_level') {
             sortBy = 'sp.spell_level';
@@ -92,17 +114,17 @@ export async function getSpells(req, res) {
     if (edition_id !== null) {
         if (parseInt(edition_id, 10) === 4) { // 4 is the edition_id for 3E, which means combined 3E/3.5E
             whereClauses.push(`sp.edition_id IN (?, ?)`);
-            values.push(4, 5);
+            whereValues.push(4, 5);
         } else {
             whereClauses.push(`sp.edition_id = ?`);
-            values.push(parseInt(edition_id, 10));
+            whereValues.push(parseInt(edition_id, 10));
         }
     }
 
     // Add common filters (always relative to 'sp' alias which is present in all base queries)
     if (name) {
         whereClauses.push(`(sp.spell_name LIKE ?)`);
-        values.push(`%${name}%`);
+        whereValues.push(`%${name}%`);
     }
 
     if (school) {
@@ -113,7 +135,7 @@ export async function getSpells(req, res) {
                 WHERE ssm_filter.spell_id = sp.spell_id 
                 AND ssm_filter.school_id = ?
             )`);
-            values.push(schoolId);
+            whereValues.push(schoolId);
         } else {
             return res.status(404).json({
                 error: `School not found: ${school}`
@@ -121,18 +143,45 @@ export async function getSpells(req, res) {
         }
     }
 
-    if (descriptor) {
-        const descriptorId = descriptorCache.getID(descriptor);
-        if (descriptorId) {
-            whereClauses.push(`EXISTS (
-                SELECT 1 FROM spell_descriptor_map sdm_filter 
-                WHERE sdm_filter.spell_id = sp.spell_id 
-                AND sdm_filter.desc_id = ?
-            )`);
-            values.push(descriptorId);
-        } else {
+    if (descriptorsParam) { // Use descriptorsParam to check if the filter was provided
+        if (descriptorIds.length > 0) {
+            if (descriptors_logic === 'and') {
+                whereClauses.push(`EXISTS (
+                    SELECT 1 FROM spell_descriptor_map sdm_filter 
+                    WHERE sdm_filter.spell_id = sp.spell_id 
+                    AND sdm_filter.desc_id IN (?) 
+                    GROUP BY sdm_filter.spell_id 
+                    HAVING COUNT(DISTINCT sdm_filter.desc_id) = ?
+                )`);
+                whereValues.push(descriptorIds.join(','));
+                havingValues.push(descriptorIds.length);
+            } else { // 'or' logic (default)
+                whereClauses.push(`EXISTS (
+                    SELECT 1 FROM spell_descriptor_map sdm_filter 
+                    WHERE sdm_filter.spell_id = sp.spell_id 
+                    AND sdm_filter.desc_id IN (?) 
+                )`);
+                whereValues.push(descriptorIds.join(','));
+            }
+        } else if (descriptorIds.length === 0 && descriptorsParam.length > 0) { // If names were provided but no valid IDs found
             return res.status(404).json({
-                error: `Descriptor not found: ${descriptor}`
+                error: `Descriptor(s) not found: ${descriptorsParam.split(',').filter(s => s.trim().length > 0).join(', ')}` // Use original param for error message
+            });
+        }
+    }
+
+    if (components) {
+        const componentId = parseInt(components);
+        if (!isNaN(componentId)) {
+            whereClauses.push(`EXISTS (
+                SELECT 1 FROM spell_component_map scm_filter 
+                WHERE scm_filter.spell_id = sp.spell_id 
+                AND scm_filter.comp_id = ?
+            )`);
+            whereValues.push(componentId);
+        } else {
+            return res.status(400).json({
+                error: `Invalid component ID: ${components}`
             });
         }
     }
@@ -144,11 +193,15 @@ export async function getSpells(req, res) {
             AND ssm_source_filter.display = 1
             AND ssm_source_filter.book_id = ?
         )`);
-        values.push(parseInt(source));
+        whereValues.push(parseInt(source));
     }
 
     const where = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
     const having = havingClauses.length > 0 ? `HAVING ${havingClauses.join(' AND ')}` : '';
+
+    if (sortBy === 'classId') {
+        sortBy = 'slm.class_id';
+    }
 
     try {
         // Build the main data query
@@ -171,11 +224,11 @@ export async function getSpells(req, res) {
             LIMIT ? OFFSET ?`;
 
         console.log('Final SQL Query:', mainQuery);
-        console.log('Query Values:', [...values, parseInt(limit), parseInt(offset)]);
+        console.log('Query Values:', [...whereValues, ...havingValues, parseInt(limit), parseInt(offset)]);
 
         const rows = await timedQuery(
             mainQuery,
-            [...values, parseInt(limit), parseInt(offset)],
+            [...whereValues, ...havingValues, parseInt(limit), parseInt(offset)],
             `Spells list query (${useLevelMap ? 'using level map' : 'using spells table'})`
         );
 
@@ -272,7 +325,7 @@ export async function getSpellById(req, res) {
 
 export async function updateSpell(req, res) {
     const spellId = parseInt(req.params.id);
-    const { spell_summary, spell_description, cast_time, spell_range, spell_range_id, spell_range_value, spell_area, spell_duration, spell_save, spell_resistance, edition_id, schools, subschools, descriptors, components } = req.body;
+    const { spell_summary, spell_description, cast_time, spell_range, spell_range_id, spell_range_value, spell_area, spell_duration, spell_save, spell_resistance, spell_effect, spell_target, edition_id, schools, subschools, descriptors, components } = req.body;
 
     if (isNaN(spellId)) {
         return res.status(400).json({ error: 'Invalid spell ID' });
@@ -292,6 +345,8 @@ export async function updateSpell(req, res) {
         if (spell_duration !== undefined) { updateFields.push('spell_duration = ?'); updateValues.push(spell_duration); }
         if (spell_save !== undefined) { updateFields.push('spell_save = ?'); updateValues.push(spell_save); }
         if (spell_resistance !== undefined) { updateFields.push('spell_resistance = ?'); updateValues.push(spell_resistance); }
+        if (spell_effect !== undefined) { updateFields.push('spell_effect = ?'); updateValues.push(spell_effect); }
+        if (spell_target !== undefined) { updateFields.push('spell_target = ?'); updateValues.push(spell_target); }
         if (edition_id !== undefined) { updateFields.push('edition_id = ?'); updateValues.push(edition_id); }
 
         if (updateFields.length > 0) {
