@@ -26,11 +26,6 @@ function GenericList({
     const [searchParams, setSearchParams] = useSearchParams();
     const [isLoading, setIsLoading] = useState(true);
 
-    // Create a stable string representation of searchParams for useEffect dependency
-    const searchParamsString = useMemo(() => {
-        return searchParams.toString();
-    }, [searchParams]);
-
     const page = parseInt(searchParams.get('page') || '1');
     const [limit, setLimit] = useState(parseInt(searchParams.get('limit') || '20'));
     const [sortKey, setSortKey] = useState(searchParams.get('sort') || '');
@@ -40,16 +35,17 @@ function GenericList({
     const initialFilters = {};
     for (const key in filterOptions) {
         const paramValue = searchParams.get(key);
-        if (filterOptions[key]?.type === 'multi-select') {
+        const filterType = columnDefinitions[key]?.filterType;
+        if (filterType === 'multi-select') {
             const values = paramValue
                 ? paramValue.split(',')
-                    .filter(val => val !== '') // Added to remove empty strings
+                    .filter(val => val !== '')
                     .map(val => {
                         const num = Number(val);
-                        return isNaN(num) ? val : num; // Return original string if not a valid number
+                        return isNaN(num) ? val : num;
                     })
                 : [];
-            const logic = searchParams.get(`${key}_logic`) || 'or'; // Default to 'or'
+            const logic = searchParams.get(`${key}_logic`) || 'or';
             initialFilters[key] = { values, logic };
         } else {
             initialFilters[key] = paramValue || '';
@@ -66,8 +62,9 @@ function GenericList({
     const lastClickedElement = useRef(null);
 
     useEffect(() => {
+        const currentSearchParams = new URLSearchParams(searchParams.toString());
         setIsLoading(true);
-        fetchData(searchParams)
+        fetchData(currentSearchParams)
             .then(result => {
                 setData(result.data);
                 setTotal(result.total);
@@ -78,17 +75,18 @@ function GenericList({
             .finally(() => {
                 setIsLoading(false);
             });
-    }, [searchParamsString, fetchData]);
+    }, [searchParams, fetchData]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (displayFilter && thRefs.current[displayFilter] && !thRefs.current[displayFilter].contains(event.target)) {
                 // If the closed filter was a multi-select, clear its active state
-                if (filterOptions[displayFilter]?.type === 'multi-select') {
+                const filterType = columnDefinitions[displayFilter]?.filterType;
+                if (filterType === 'multi-select') {
                     setActiveMultiSelectFilterId(null);
                 }
                 setDisplayFilter('');
-                lastClickedElement.current = event.target; // Store the element that closed the filter
+                lastClickedElement.current = event.target;
             }
         };
 
@@ -96,12 +94,13 @@ function GenericList({
         return () => {
             document.removeEventListener('mousedown', handleClickOutside, true);
         };
-    }, [displayFilter, filterOptions]);
+    }, [displayFilter, columnDefinitions]);
 
     const handleFilterChange = useCallback((filterKey, value) => {
         setFilters(prev => {
             const newFilters = { ...prev };
-            if (filterOptions[filterKey]?.type === 'multi-select') {
+            const filterType = columnDefinitions[filterKey]?.filterType;
+            if (filterType === 'multi-select') {
                 newFilters[filterKey] = { ...newFilters[filterKey], values: value };
             } else {
                 newFilters[filterKey] = value;
@@ -111,11 +110,12 @@ function GenericList({
         // Apply filter immediately for all types, including multi-select
         setSearchParams(prev => {
             const newParams = new URLSearchParams(prev);
-            if (filterOptions[filterKey]?.type === 'multi-select') {
-                const currentFilter = filters[filterKey]; // Use current state for logic
+            const filterType = columnDefinitions[filterKey]?.filterType;
+            if (filterType === 'multi-select') {
+                const currentFilter = filters[filterKey];
                 if (value && value.length > 0) {
                     newParams.set(filterKey, value.join(','));
-                    newParams.set(`${filterKey}_logic`, currentFilter?.logic || 'or'); // Add logic to URL
+                    newParams.set(`${filterKey}_logic`, currentFilter?.logic || 'or');
                 } else {
                     newParams.delete(filterKey);
                     newParams.delete(`${filterKey}_logic`);
@@ -127,15 +127,16 @@ function GenericList({
                     newParams.delete(filterKey);
                 }
             }
-            newParams.set('page', '1'); // Reset to first page on filter change
+            newParams.set('page', '1');
             return newParams;
         });
 
         // Optionally, close single-select dropdowns immediately
-        if (filterOptions[filterKey]?.type === 'select') {
+        const filterType = columnDefinitions[filterKey]?.filterType;
+        if (filterType === 'select') {
             setDisplayFilter('');
         }
-    }, [filterOptions, setSearchParams, filters]);
+    }, [columnDefinitions, setSearchParams, filters]);
 
     const handleLogicChange = useCallback((filterKey, newLogic) => {
         setFilters(prev => ({
@@ -156,18 +157,19 @@ function GenericList({
     }, [filters, setSearchParams]);
 
     const toggleFilter = useCallback((columnId) => {
+        const filterType = columnDefinitions[columnId]?.filterType;
         if (displayFilter === columnId) { // Filter is closing
-            if (filterOptions[columnId]?.type === 'multi-select') {
+            if (filterType === 'multi-select') {
                 setActiveMultiSelectFilterId(null);
             }
             setDisplayFilter(''); // Close the filter
         } else { // Filter is opening
-            if (filterOptions[columnId]?.type === 'multi-select') {
+            if (filterType === 'multi-select') {
                 setActiveMultiSelectFilterId(columnId);
             }
             setDisplayFilter(columnId);
         }
-    }, [displayFilter, filterOptions]);
+    }, [displayFilter, columnDefinitions]);
 
     const handleSort = (key) => {
         if (sortKey === key) {
@@ -215,7 +217,8 @@ function GenericList({
 
         // Check if a filter is applied to this column
         let isFiltered = false;
-        if (filterOptions[columnId]?.type === 'multi-select') {
+        const filterType = column.filterType;
+        if (filterType === 'multi-select') {
             isFiltered = filters[columnId] && filters[columnId].values.length > 0;
         } else {
             isFiltered = !!filters[columnId];
@@ -269,11 +272,11 @@ function GenericList({
                     <div className="absolute mt-2 p-1 bg-opacity-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-lg" onClick={(e) => e.stopPropagation()}>
                         {React.createElement(filterOptions[columnId].component, {
                             key: columnId,
-                            selected: filters[columnId]?.values,
+                            selected: filterType === 'multi-select' ? filters[columnId]?.values : filters[columnId],
                             onChange: (value) => handleFilterChange(columnId, value),
-                            open: filterOptions[columnId]?.type === 'multi-select' ? activeMultiSelectFilterId === columnId : undefined, // Pass open prop for multi-selects
-                            logicType: filterOptions[columnId]?.type === 'multi-select' ? filters[columnId]?.logic : undefined,
-                            onLogicChange: filterOptions[columnId]?.type === 'multi-select' ? (newLogic) => handleLogicChange(columnId, newLogic) : undefined,
+                            open: filterType === 'multi-select' ? activeMultiSelectFilterId === columnId : undefined,
+                            logicType: filterType === 'multi-select' ? filters[columnId]?.logic : undefined,
+                            onLogicChange: filterType === 'multi-select' ? (newLogic) => handleLogicChange(columnId, newLogic) : undefined,
                             ...filterOptions[columnId].props,
                         })}
                     </div>

@@ -26,7 +26,6 @@ function SpellList() {
         },
         spell_level: {
             component: Select,
-            type: 'select',
             props: {
                 children: (
                     <>
@@ -40,25 +39,18 @@ function SpellList() {
                 ),
             }
         },
-        schools: {
-            component: Select,
-            type: 'select',
+        school: {
+            component: MultiSelect,
             props: {
-                children: (
-                    <>
-                        <option value="">All Schools</option>
-                        {lookupsInitialized ? LookupService.getAll('schools').map(school => (
-                            <option key={school.school_id} value={school.school_name}>
-                                {school.school_name}
-                            </option>
-                        )) : null}
-                    </>
-                ),
+                options: lookupsInitialized ? LookupService.getAll('schools') : [],
+                displayKey: 'school_name',
+                valueKey: 'school_id',
+                placeholder: 'Select Schools',
+                className: 'w-48'
             }
         },
         descriptors: {
             component: MultiSelect,
-            type: 'multi-select',
             props: {
                 options: lookupsInitialized ? LookupService.getAll('descriptors') : [],
                 displayKey: 'descriptor',
@@ -68,37 +60,27 @@ function SpellList() {
             }
         },
         source: {
-            component: Select,
-            type: 'select',
+            component: MultiSelect,
             props: {
-                children: (
-                    <>
-                        <option value="">All Sources</option>
-                        {lookupsInitialized ? LookupService.getAll('sources')
-                            .filter(source => source.has_spells)
-                            .sort((a, b) => {
-                                if (a.sort_order !== 999 && b.sort_order !== 999) {
-                                    return a.sort_order - b.sort_order;
-                                } else if (a.sort_order !== 999) {
-                                    return -1;
-                                } else if (b.sort_order !== 999) {
-                                    return 1;
-                                } else {
-                                    return a.book_id - b.book_id;
-                                }
-                            })
-                            .map(source => (
-                                <option key={source.book_id} value={source.book_id}>
-                                    {source.title}
-                                </option>
-                            )) : null}
-                    </>
-                ),
+                options: lookupsInitialized ? LookupService.getAll('sources').filter(source => source.has_spells).sort((a, b) => {
+                    if (a.sort_order !== 999 && b.sort_order !== 999) {
+                        return a.sort_order - b.sort_order;
+                    } else if (a.sort_order !== 999) {
+                        return -1;
+                    } else if (b.sort_order !== 999) {
+                        return 1;
+                    } else {
+                        return a.book_id - b.book_id;
+                    }
+                }) : [],
+                displayKey: 'title',
+                valueKey: 'book_id',
+                placeholder: 'Select Sources',
+                className: 'w-52'
             }
         },
         classId: {
             component: MultiSelect,
-            type: 'multi-select',
             props: {
                 options: lookupsInitialized ? LookupService.getAll('classes').filter(dndClass => dndClass.caster) : [],
                 displayKey: 'class_name',
@@ -108,19 +90,13 @@ function SpellList() {
             }
         },
         components: {
-            component: Select,
-            type: 'select',
+            component: MultiSelect,
             props: {
-                children: (
-                    <>
-                        <option value="">All Components</option>
-                        {lookupsInitialized ? LookupService.getAll('components').map(component => (
-                            <option key={component.comp_id} value={component.comp_id}>
-                                {component.comp_name}
-                            </option>
-                        )) : null}
-                    </>
-                ),
+                options: lookupsInitialized ? LookupService.getAll('components') : [],
+                displayKey: 'comp_name',
+                valueKey: 'comp_id',
+                placeholder: 'Select Components',
+                className: 'w-48'
             }
         },
     }), [lookupsInitialized]);

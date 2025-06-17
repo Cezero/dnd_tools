@@ -5,7 +5,7 @@ import api from '@/services/api';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
-import remarkLinkEntities from '@/lib/remarkLinkEntities';
+import remarkLinkEntities from '@/plugins/remarkLinkEntities';
 import { useAuth } from '@/auth/authProvider';
 import { useNavigate } from 'react-router-dom';
 

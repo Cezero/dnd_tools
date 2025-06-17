@@ -20,11 +20,13 @@ export const COLUMN_DEFINITIONS = {
         label: 'Name',
         sortable: true,
         filterable: true,
+        filterType: 'input'
     },
     spell_level: {
         label: 'Level',
         sortable: true,
-        filterable: true
+        filterable: true,
+        filterType: 'select'
     },
     spell_summary: {
         label: 'Summary',
@@ -34,12 +36,14 @@ export const COLUMN_DEFINITIONS = {
     school: {
         label: 'School',
         sortable: true,
-        filterable: true
+        filterable: true,
+        filterType: 'multi-select'
     },
     descriptors: {
         label: 'Descriptors',
         sortable: false,
-        filterable: true
+        filterable: true,
+        filterType: 'multi-select'
     },
     casting_time: {
         label: 'Casting Time',
@@ -59,17 +63,20 @@ export const COLUMN_DEFINITIONS = {
     components: {
         label: 'Components',
         sortable: false,
-        filterable: true
+        filterable: true,
+        filterType: 'multi-select'
     },
     source: {
         label: 'Sources',
         sortable: false,
-        filterable: true
+        filterable: true,
+        filterType: 'multi-select'
     },
     classId: {
         label: 'Classes',
         sortable: true,
-        filterable: true
+        filterable: true,
+        filterType: 'multi-select'
     },
     spell_effect: {
         label: 'Effect',

@@ -1,8 +1,8 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
-import remarkReferenceTable from '@/lib/remarkReferenceTable';
-import ReferenceTableDisplay from '@/components/ReferenceTable/ReferenceTableDisplay';
+import remarkReferenceTable from '@/plugins/remarkTableEmbed';
+import ReferenceTableDisplay from '@/components/ReferenceTable/ReferenceTable';
 
 function MarkdownViewer({ markdown }) {
     return (

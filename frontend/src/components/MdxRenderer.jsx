@@ -5,7 +5,7 @@ import { MDXProvider } from '@mdx-js/react';
 import * as runtime from 'react/jsx-runtime';
 
 // Example table component
-import TableEmbed from './TableEmbed';
+import TableEmbed from '@/components/ReferenceTable/ReferenceTable';
 
 // Component map for custom syntax
 const components = {

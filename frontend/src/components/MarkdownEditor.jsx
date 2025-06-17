@@ -2,7 +2,7 @@
 import React from 'react';
 import MDEditor from '@uiw/react-md-editor';
 import remarkGfm from 'remark-gfm';
-import remarkLinkEntities from '@/lib/remarkLinkEntities';
+import remarkLinkEntities from '@/plugins/remarkLinkEntities';
 import rehypeRaw from 'rehype-raw';
 import '@/styles/mdeditor.css';
 
