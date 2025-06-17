@@ -77,6 +77,31 @@ function GenericList({
             });
     }, [searchParams, fetchData]);
 
+    // New useEffect to sync filters state with URL search params
+    useEffect(() => {
+        const newParams = new URLSearchParams();
+        newParams.set('page', page.toString());
+        newParams.set('limit', limit.toString());
+        if (sortKey) newParams.set('sort', sortKey);
+        if (sortOrder) newParams.set('order', sortOrder);
+
+        for (const key in filters) {
+            const filterType = columnDefinitions[key]?.filterType;
+            if (filterType === 'multi-select') {
+                if (filters[key]?.values && filters[key].values.length > 0) {
+                    newParams.set(key, filters[key].values.join(','));
+                    if (filters[key]?.logic) {
+                        newParams.set(`${key}_logic`, filters[key].logic);
+                    }
+                }
+            } else if (filters[key] !== '') {
+                newParams.set(key, filters[key]);
+            }
+        }
+        console.log('[useEffect - filters changed] Setting URLSearchParams:', newParams.toString());
+        setSearchParams(newParams);
+    }, [filters, page, limit, sortKey, sortOrder, setSearchParams, columnDefinitions]);
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (displayFilter && thRefs.current[displayFilter] && !thRefs.current[displayFilter].contains(event.target)) {
@@ -105,30 +130,8 @@ function GenericList({
             } else {
                 newFilters[filterKey] = value;
             }
-            return newFilters;
-        });
-        // Apply filter immediately for all types, including multi-select
-        setSearchParams(prev => {
-            const newParams = new URLSearchParams(prev);
-            const filterType = columnDefinitions[filterKey]?.filterType;
-            if (filterType === 'multi-select') {
-                const currentFilter = filters[filterKey];
-                if (value && value.length > 0) {
-                    newParams.set(filterKey, value.join(','));
-                    newParams.set(`${filterKey}_logic`, currentFilter?.logic || 'or');
-                } else {
-                    newParams.delete(filterKey);
-                    newParams.delete(`${filterKey}_logic`);
-                }
-            } else {
-                if (value) {
-                    newParams.set(filterKey, value);
-                } else {
-                    newParams.delete(filterKey);
-                }
-            }
-            newParams.set('page', '1');
-            return newParams;
+            console.log(`[handleFilterChange] Setting filters for ${filterKey}:`, newFilters[filterKey]);
+            return newFilters; // Only return the newFilters state
         });
 
         // Optionally, close single-select dropdowns immediately
@@ -136,25 +139,17 @@ function GenericList({
         if (filterType === 'select') {
             setDisplayFilter('');
         }
-    }, [columnDefinitions, setSearchParams, filters]);
+    }, [columnDefinitions]); // Removed 'setSearchParams' and 'filters' from dependency array
 
     const handleLogicChange = useCallback((filterKey, newLogic) => {
-        setFilters(prev => ({
-            ...prev,
-            [filterKey]: { ...prev[filterKey], logic: newLogic }
-        }));
-        setSearchParams(prev => {
-            const newParams = new URLSearchParams(prev);
-            const currentFilter = filters[filterKey];
-            if (currentFilter?.values && currentFilter.values.length > 0) { // Only set logic if values exist
-                newParams.set(`${filterKey}_logic`, newLogic);
-            } else { // If no values, logic param is not meaningful, so delete it
-                newParams.delete(`${filterKey}_logic`);
-            }
-            newParams.set('page', '1'); // Reset to first page on filter change
-            return newParams;
+        setFilters(prev => {
+            const newFilters = {
+                ...prev,
+                [filterKey]: { ...prev[filterKey], logic: newLogic }
+            };
+            return newFilters; // Only return the newFilters state
         });
-    }, [filters, setSearchParams]);
+    }, []); // Removed 'setSearchParams' and 'filters' from dependency array
 
     const toggleFilter = useCallback((columnId) => {
         const filterType = columnDefinitions[columnId]?.filterType;
@@ -202,13 +197,51 @@ function GenericList({
     const handleLimitChange = (e) => {
         const newLimit = parseInt(e.target.value);
         setLimit(newLimit);
+
         const newTotalPages = Math.ceil(total / newLimit);
         const newPage = Math.min(page, newTotalPages || 1);
-        setSearchParams({ page: newPage, limit: newLimit, sort: sortKey, order: sortOrder, ...filters });
+
+        const newParams = new URLSearchParams();
+        newParams.set('page', newPage.toString());
+        newParams.set('limit', newLimit.toString());
+        if (sortKey) newParams.set('sort', sortKey);
+        if (sortOrder) newParams.set('order', sortOrder);
+        for (const key in filters) {
+            const filterType = columnDefinitions[key]?.filterType;
+            if (filterType === 'multi-select') {
+                if (filters[key]?.values && filters[key].values.length > 0) {
+                    newParams.set(key, filters[key].values.join(','));
+                    if (filters[key]?.logic) {
+                        newParams.set(`${key}_logic`, filters[key].logic);
+                    }
+                }
+            } else if (filters[key] !== '') { // For single-selects/inputs, check if value is non-empty
+                newParams.set(key, filters[key]);
+            }
+        }
+        setSearchParams(newParams);
     };
 
     const handlePageChange = (newPage) => {
-        setSearchParams({ page: newPage, limit, sort: sortKey, order: sortOrder, ...filters });
+        const newParams = new URLSearchParams();
+        newParams.set('page', newPage.toString());
+        newParams.set('limit', limit.toString());
+        if (sortKey) newParams.set('sort', sortKey);
+        if (sortOrder) newParams.set('order', sortOrder);
+        for (const key in filters) {
+            const filterType = columnDefinitions[key]?.filterType;
+            if (filterType === 'multi-select') {
+                if (filters[key]?.values && filters[key].values.length > 0) {
+                    newParams.set(key, filters[key].values.join(','));
+                    if (filters[key]?.logic) {
+                        newParams.set(`${key}_logic`, filters[key].logic);
+                    }
+                }
+            } else if (filters[key] !== '') { // For single-selects/inputs, check if value is non-empty
+                newParams.set(key, filters[key]);
+            }
+        }
+        setSearchParams(newParams);
     };
 
     const renderColumnHeader = (columnId, isLastColumn) => {
@@ -269,17 +302,24 @@ function GenericList({
                     )}
                 </div>
                 {displayFilter === columnId && column.filterable && filterOptions[columnId] && (
-                    <div className="absolute mt-2 p-1 bg-opacity-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-lg" onClick={(e) => e.stopPropagation()}>
-                        {React.createElement(filterOptions[columnId].component, {
-                            key: columnId,
-                            selected: filterType === 'multi-select' ? filters[columnId]?.values : filters[columnId],
-                            onChange: (value) => handleFilterChange(columnId, value),
-                            open: filterType === 'multi-select' ? activeMultiSelectFilterId === columnId : undefined,
-                            logicType: filterType === 'multi-select' ? filters[columnId]?.logic : undefined,
-                            onLogicChange: filterType === 'multi-select' ? (newLogic) => handleLogicChange(columnId, newLogic) : undefined,
-                            ...filterOptions[columnId].props,
-                        })}
-                    </div>
+                    React.createElement(filterOptions[columnId].component, {
+                        key: columnId,
+                        selected: filterType === 'multi-select' ? filters[columnId]?.values : filters[columnId],
+                        onChange: (value) => handleFilterChange(columnId, value),
+                        open: displayFilter === columnId,
+                        onOpenChange: (newOpenState) => {
+                            if (newOpenState) {
+                                setDisplayFilter(columnId);
+                            } else {
+                                setDisplayFilter('');
+                            }
+                        },
+                        ...(filterType === 'multi-select' && {
+                            logicType: filters[columnId]?.logic,
+                            onLogicChange: (newLogic) => handleLogicChange(columnId, newLogic),
+                        }),
+                        ...filterOptions[columnId].props,
+                    })
                 )}
             </th>
         );

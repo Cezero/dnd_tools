@@ -8,6 +8,7 @@ import GenericList from '@/components/GenericList/GenericList';
 import Input from '@/components/GenericList/Input';
 import Select from '@/components/GenericList/Select';
 import MultiSelect from '@/components/GenericList/MultiSelect';
+import SingleSelect from '@/components/GenericList/SingleSelect';
 import React from 'react';
 
 
@@ -25,18 +26,13 @@ function SpellList() {
             }
         },
         spell_level: {
-            component: Select,
+            component: SingleSelect,
             props: {
-                children: (
-                    <>
-                        <option value="">All Levels</option>
-                        {[...Array(10).keys()].map(level => (
-                            <option key={level} value={level}>
-                                {level}
-                            </option>
-                        ))}
-                    </>
-                ),
+                options: [...Array(10).keys()].map(level => ({ id: level, name: level.toString() })),
+                displayKey: 'name',
+                valueKey: 'id',
+                placeholder: 'All Levels',
+                className: 'w-32',
             }
         },
         school: {
