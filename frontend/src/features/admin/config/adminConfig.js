@@ -1,9 +1,8 @@
 import AdminDashboardPage from '@/features/admin/pages/AdminDashboardPage';
 import AdminDashboardContent from '@/features/admin/pages/AdminDashboardContent';
-import ReferenceTablesPage from '@/features/admin/pages/ReferenceTableMgmt/List';
-import NewReferenceTablePage from '@/features/admin/pages/ReferenceTableMgmt/New';
-import EditReferenceTablePage from '@/features/admin/pages/ReferenceTableMgmt/Edit';
-import ReferenceTableContentPage from '@/features/admin/pages/ReferenceTableMgmt/View';
+import ReferenceTablesList from '@/features/admin/pages/ReferenceTableMgmt/ReferenceTablesList';
+import ReferenceTableEditor from '@/features/admin/pages/ReferenceTableMgmt/ReferenceTableEditor';
+import ReferenceTableViewer from '@/features/admin/pages/ReferenceTableMgmt/ReferenceTableViewer';
 
 export const routes = [
     {
@@ -19,20 +18,16 @@ export const routes = [
             },
             {
                 path: 'reference-tables',
-                component: ReferenceTablesPage,
+                component: ReferenceTablesList,
                 exact: true,
             },
             {
-                path: 'reference-tables/new',
-                component: NewReferenceTablePage,
+                path: 'reference-tables/:id/edit',
+                component: ReferenceTableEditor,
             },
             {
                 path: 'reference-tables/:id',
-                component: ReferenceTableContentPage,
-            },
-            {
-                path: 'reference-tables/:id/edit',
-                component: EditReferenceTablePage,
+                component: ReferenceTableViewer,
             },
         ],
     },

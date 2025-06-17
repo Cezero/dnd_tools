@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/auth/authProvider';
 import RequireAuth from '@/auth/requireAuth';
 
@@ -32,6 +32,7 @@ export default function App() {
               </Route>
             ))}
             {/* Add more protected routes here as needed */}
+            <Route path="/" element={<Navigate to="/spells" replace />} />
           </Route>
         </Routes>
       </Router>

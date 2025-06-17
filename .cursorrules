@@ -1,7 +1,20 @@
 {
+  "rules": [
+    {
+      "description": "Prevent all package manager install commands",
+      "match": "**",
+      "blockCommands": [
+        "npm install",
+        "npm ci",
+        "yarn",
+        "yarn install",
+        "pnpm install"
+      ]
+    }
+  ],
   "include": [
     {
-      "path": "backend/db/schema/schema.sql",
+      "path": "backend/src/db/schema/schema.sql",
       "weight": 10
     }
   ],

@@ -43,16 +43,15 @@ export const getReferenceTableById = async (id) => {
     }
 };
 
-export const fetchReferenceTableContent = async (id, searchParams) => {
+export const fetchReferenceTableRaw = async (id) => {
     try {
-        const queryString = new URLSearchParams(searchParams).toString();
-        const url = queryString ? `/reference-tables/${id}/content?${queryString}` : `/reference-tables/${id}/content`;
+        const url = `/reference-tables/${id}/raw`;
         const response = await api(url, { method: 'GET' });
         return response;
     } catch (error) {
-        console.error(`Error fetching content for reference table with ID ${id}:`, error);
+        console.error(`Error fetching raw data for reference table with ID ${id}:`, error);
         throw error;
     }
 };
 
-export default { fetchReferenceTables, createReferenceTable, deleteReferenceTable, getReferenceTableById, fetchReferenceTableContent };
+export default { fetchReferenceTables, createReferenceTable, deleteReferenceTable, getReferenceTableById, fetchReferenceTableRaw };
