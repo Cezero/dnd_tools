@@ -20,7 +20,8 @@ export const COLUMN_DEFINITIONS = {
         label: 'Name',
         sortable: true,
         filterable: true,
-        filterType: 'input'
+        filterType: 'input',
+        paramName: 'name'
     },
     spell_level: {
         label: 'Level',
@@ -74,7 +75,7 @@ export const COLUMN_DEFINITIONS = {
     },
     classId: {
         label: 'Classes',
-        sortable: true,
+        sortable: false,
         filterable: true,
         filterType: 'multi-select'
     },

@@ -202,6 +202,9 @@ export async function getSpells(req, res) {
     if (sortBy === 'classId') {
         sortBy = 'slm.class_id';
     }
+    if (sortBy === 'spell_name') {
+        sortBy = 'sp.spell_name';
+    }
 
     try {
         // Build the main data query

@@ -34,7 +34,8 @@ function GenericList({
     // Initialize filters directly from search params
     const initialFilters = {};
     for (const key in filterOptions) {
-        const paramValue = searchParams.get(key);
+        const paramName = columnDefinitions[key]?.paramName || key;
+        const paramValue = searchParams.get(paramName);
         const filterType = columnDefinitions[key]?.filterType;
         if (filterType === 'multi-select') {
             const values = paramValue
@@ -45,7 +46,7 @@ function GenericList({
                         return isNaN(num) ? val : num;
                     })
                 : [];
-            const logic = searchParams.get(`${key}_logic`) || 'or';
+            const logic = searchParams.get(`${paramName}_logic`) || 'or';
             initialFilters[key] = { values, logic };
         } else {
             initialFilters[key] = paramValue || '';
@@ -87,15 +88,16 @@ function GenericList({
 
         for (const key in filters) {
             const filterType = columnDefinitions[key]?.filterType;
+            const paramName = columnDefinitions[key]?.paramName || key;
             if (filterType === 'multi-select') {
                 if (filters[key]?.values && filters[key].values.length > 0) {
-                    newParams.set(key, filters[key].values.join(','));
+                    newParams.set(paramName, filters[key].values.join(','));
                     if (filters[key]?.logic) {
-                        newParams.set(`${key}_logic`, filters[key].logic);
+                        newParams.set(`${paramName}_logic`, filters[key].logic);
                     }
                 }
             } else if (filters[key] !== '') {
-                newParams.set(key, filters[key]);
+                newParams.set(paramName, filters[key]);
             }
         }
         console.log('[useEffect - filters changed] Setting URLSearchParams:', newParams.toString());
@@ -208,15 +210,16 @@ function GenericList({
         if (sortOrder) newParams.set('order', sortOrder);
         for (const key in filters) {
             const filterType = columnDefinitions[key]?.filterType;
+            const paramName = columnDefinitions[key]?.paramName || key;
             if (filterType === 'multi-select') {
                 if (filters[key]?.values && filters[key].values.length > 0) {
-                    newParams.set(key, filters[key].values.join(','));
+                    newParams.set(paramName, filters[key].values.join(','));
                     if (filters[key]?.logic) {
-                        newParams.set(`${key}_logic`, filters[key].logic);
+                        newParams.set(`${paramName}_logic`, filters[key].logic);
                     }
                 }
             } else if (filters[key] !== '') { // For single-selects/inputs, check if value is non-empty
-                newParams.set(key, filters[key]);
+                newParams.set(paramName, filters[key]);
             }
         }
         setSearchParams(newParams);
@@ -230,15 +233,16 @@ function GenericList({
         if (sortOrder) newParams.set('order', sortOrder);
         for (const key in filters) {
             const filterType = columnDefinitions[key]?.filterType;
+            const paramName = columnDefinitions[key]?.paramName || key;
             if (filterType === 'multi-select') {
                 if (filters[key]?.values && filters[key].values.length > 0) {
-                    newParams.set(key, filters[key].values.join(','));
+                    newParams.set(paramName, filters[key].values.join(','));
                     if (filters[key]?.logic) {
-                        newParams.set(`${key}_logic`, filters[key].logic);
+                        newParams.set(`${paramName}_logic`, filters[key].logic);
                     }
                 }
             } else if (filters[key] !== '') { // For single-selects/inputs, check if value is non-empty
-                newParams.set(key, filters[key]);
+                newParams.set(paramName, filters[key]);
             }
         }
         setSearchParams(newParams);

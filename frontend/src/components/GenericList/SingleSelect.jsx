@@ -45,8 +45,8 @@ const SingleSelect = ({ options, displayKey, valueKey, selected, onChange, place
                 <div className="w-full">
                     <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
                         <div
-                            className={`block px-4 py-2 text-sm font-normal text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700 cursor-pointer ${selected === ''
-                                ? 'text-blue-500 dark:text-blue-300'
+                            className={`block px-4 py-0.5 text-sm font-normal text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700 cursor-pointer ${selected === ''
+                                ? 'font-semibold text-blue-500 dark:text-blue-300'
                                 : ''
                                 }`}
                             onClick={() => handleOptionClick('')}
@@ -56,8 +56,8 @@ const SingleSelect = ({ options, displayKey, valueKey, selected, onChange, place
                         {options.map((option) => (
                             <div
                                 key={option[valueKey]}
-                                className={`block px-4 py-2 text-sm font-normal text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700 cursor-pointer ${selected === option[valueKey]
-                                    ? 'text-blue-500 dark:text-blue-300'
+                                className={`block px-4 py-0.5 text-sm font-normal text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700 cursor-pointer ${selected === option[valueKey]
+                                    ? 'font-semibold text-blue-500 dark:text-blue-300'
                                     : ''
                                     }`}
                                 onClick={() => handleOptionClick(option[valueKey])}
