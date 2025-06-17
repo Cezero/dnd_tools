@@ -11,8 +11,12 @@ function MarkdownViewer({ markdown }) {
                 remarkPlugins={[remarkReferenceTable]}
                 rehypePlugins={[rehypeRaw]}
                 components={{
-                    'reference-table': ({ node, ...props }) => {
-                        return <ReferenceTableDisplay id={props.id} />;
+                    'div': ({ node, ...props }) => {
+                        if (props['data-reference-table-id']) {
+                            const id = parseInt(props['data-reference-table-id'], 10);
+                            return <ReferenceTableDisplay id={id} />;
+                        }
+                        return <div {...props} />;
                     },
                 }}
             >
