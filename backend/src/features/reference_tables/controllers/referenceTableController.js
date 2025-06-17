@@ -20,8 +20,24 @@ export async function getReferenceTables(req, res) {
 
     try {
         const query = `
-            SELECT id, name, description, COUNT(*) OVER() as total_count
-            FROM reference_tables
+            SELECT
+                rt.id,
+                rt.name,
+                rt.description,
+                COALESCE(rc.row_count, 0) as row_count,
+                COALESCE(cc.column_count, 0) as column_count,
+                COUNT(rt.id) OVER() as total_count
+            FROM
+                reference_tables rt
+            LEFT JOIN
+                (SELECT table_id, COUNT(id) as row_count FROM reference_table_rows GROUP BY table_id) rc
+                ON rt.id = rc.table_id
+            LEFT JOIN
+                (SELECT rtr.table_id, MAX(rtc.column_index) + 1 as column_count
+                 FROM reference_table_rows rtr
+                 JOIN reference_table_cells rtc ON rtr.id = rtc.row_id
+                 GROUP BY rtr.table_id) cc
+                ON rt.id = cc.table_id
             ${where}
             ORDER BY ${sortBy} ${sortOrder}
             LIMIT ? OFFSET ?`;
@@ -97,7 +113,7 @@ export async function createReferenceTable(req, res) {
     }
 
     try {
-        await timedQuery('START TRANSACTION');
+        await timedQuery('START TRANSACTION', [], 'Start Transaction: Create Reference Table');
 
         const insertTableQuery = `INSERT INTO reference_tables (name, description) VALUES (?, ?)`;
         const tableResult = await timedQuery(insertTableQuery, [name, description], 'Create reference table');
@@ -118,11 +134,11 @@ export async function createReferenceTable(req, res) {
             }
         }
 
-        await timedQuery('COMMIT');
+        await timedQuery('COMMIT', [], 'Commit Transaction: Create Reference Table');
         res.status(201).json({ message: 'Reference table created successfully', tableId: tableId });
 
     } catch (err) {
-        await timedQuery('ROLLBACK');
+        await timedQuery('ROLLBACK', [], 'Rollback Transaction: Create Reference Table');
         console.error(err);
         res.status(500).send('Server error');
     }
@@ -137,7 +153,7 @@ export async function updateReferenceTable(req, res) {
     }
 
     try {
-        await timedQuery('START TRANSACTION');
+        await timedQuery('START TRANSACTION', [], 'Start Transaction: Update Reference Table');
 
         // Update the main table info
         const updateTableQuery = `UPDATE reference_tables SET name = ?, description = ? WHERE id = ?`;
@@ -163,11 +179,11 @@ export async function updateReferenceTable(req, res) {
             }
         }
 
-        await timedQuery('COMMIT');
+        await timedQuery('COMMIT', [], 'Commit Transaction: Update Reference Table');
         res.json({ message: 'Reference table updated successfully' });
 
     } catch (err) {
-        await timedQuery('ROLLBACK');
+        await timedQuery('ROLLBACK', [], 'Rollback Transaction: Update Reference Table');
         console.error(err);
         res.status(500).send('Server error');
     }
@@ -177,19 +193,96 @@ export async function deleteReferenceTable(req, res) {
     const { id } = req.params;
 
     try {
-        await timedQuery('START TRANSACTION');
+        await timedQuery('START TRANSACTION', [], 'Start Transaction: Delete Reference Table');
 
         // Delete associated cells and rows first due to foreign key constraints
         await timedQuery(`DELETE FROM reference_table_cells WHERE row_id IN (SELECT id FROM reference_table_rows WHERE table_id = ?)`, [id], 'Delete associated reference table cells');
         await timedQuery(`DELETE FROM reference_table_rows WHERE table_id = ?`, [id], 'Delete associated reference table rows');
         await timedQuery(`DELETE FROM reference_tables WHERE id = ?`, [id], 'Delete reference table');
 
-        await timedQuery('COMMIT');
+        await timedQuery('COMMIT', [], 'Commit Transaction: Delete Reference Table');
         res.status(200).json({ message: 'Reference table deleted successfully' });
 
     } catch (err) {
-        await timedQuery('ROLLBACK');
+        await timedQuery('ROLLBACK', [], 'Rollback Transaction: Delete Reference Table');
         console.error(err);
+        res.status(500).send('Server error');
+    }
+}
+
+export async function getReferenceTableContent(req, res) {
+    const { id } = req.params;
+    const { page = 1, limit = 20, sort, order } = req.query;
+    const offset = (page - 1) * limit;
+
+    try {
+        // Get column information for the table
+        const columnsQuery = `
+            SELECT DISTINCT
+                rtc.column_index,
+                SUBSTR(rtc.content, 1, 50) AS sample_content,
+                'TEXT' as data_type -- Placeholder, actual type detection is complex without schema
+            FROM
+                reference_table_cells rtc
+            JOIN
+                reference_table_rows rtr ON rtc.row_id = rtr.id
+            WHERE
+                rtr.table_id = ?
+            ORDER BY
+                rtc.column_index ASC;
+        `;
+        const rawColumns = await timedQuery(columnsQuery, [id], 'Get reference table columns');
+
+        // Determine column names based on column_index
+        const columns = rawColumns.map((col, index) => ({
+            column_name: `column_${col.column_index + 1}`,
+            data_type: col.data_type // Or attempt to infer type from sample_content if desired
+        }));
+
+        // Construct the dynamic SELECT part for content
+        let selectColumns = ['rtr.id', 'rtr.row_index', 'rtr.label'];
+        columns.forEach(col => {
+            selectColumns.push(`MAX(CASE WHEN rtc.column_index = ${col.column_name.replace('column_', '') - 1} THEN rtc.content ELSE NULL END) AS ${col.column_name}`);
+        });
+
+        // Get rows and cells for the table
+        const countQuery = `SELECT COUNT(id) AS total_count FROM reference_table_rows WHERE table_id = ?`;
+        const totalRowsResult = await timedQuery(countQuery, [id], 'Count reference table rows');
+        const total = totalRowsResult.length > 0 ? totalRowsResult[0].total_count : 0;
+
+        let orderByClause = '';
+        if (sort && columns.some(col => col.column_name === sort)) {
+            orderByClause = `ORDER BY ${sort} ${order === 'desc' ? 'DESC' : 'ASC'}`;
+        } else {
+            orderByClause = 'ORDER BY rtr.row_index ASC';
+        }
+
+        const contentQuery = `
+            SELECT
+                ${selectColumns.join(',\n')}
+            FROM
+                reference_table_rows rtr
+            LEFT JOIN
+                reference_table_cells rtc ON rtr.id = rtc.row_id
+            WHERE
+                rtr.table_id = ?
+            GROUP BY
+                rtr.id, rtr.row_index, rtr.label
+            ${orderByClause}
+            LIMIT ? OFFSET ?;
+        `;
+        const results = await timedQuery(contentQuery, [id, parseInt(limit), parseInt(offset)], 'Get reference table content');
+
+        res.json({
+            page: Number(page),
+            limit: Number(limit),
+            total: Number(total),
+            columns: columns,
+            results: results,
+        });
+
+    } catch (err) {
+        console.error('Error fetching reference table content:', err);
         res.status(500).send('Server error');
     }
 } 

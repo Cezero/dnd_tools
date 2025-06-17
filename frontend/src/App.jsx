@@ -16,7 +16,20 @@ export default function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route element={<RequireAuth><Layout /></RequireAuth>}>
             {featureRoutes.map((route, index) => (
-              <Route key={index} path={route.path} element={<route.component />} />
+              <Route
+                key={index}
+                path={route.path}
+                element={route.component ? <route.component /> : null}
+              >
+                {route.children && route.children.map((childRoute, childIndex) => (
+                  <Route
+                    key={`${index}-${childIndex}`}
+                    path={childRoute.path}
+                    element={<childRoute.component />}
+                    exact={childRoute.exact}
+                  />
+                ))}
+              </Route>
             ))}
             {/* Add more protected routes here as needed */}
           </Route>

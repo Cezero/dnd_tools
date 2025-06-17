@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Icon from '@mdi/react';
-import { mdiTable, mdiChevronRight, mdiChevronLeft } from '@mdi/js';
+import { mdiTable, mdiChevronRight, mdiChevronLeft, mdiHome } from '@mdi/js';
 
 function AdminSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }) {
     const sidebarRef = useRef(null);
@@ -80,6 +80,18 @@ function AdminSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }) {
                     {/* Navigation Links */}
                     <nav className="flex-grow">
                         <ul>
+                            <li>
+                                <Link
+                                    to="/admin"
+                                    className={`flex items-center px-4 py-2 rounded 
+                                        text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 
+                                        ${isExpanded ? 'justify-start' : 'justify-center'}`}
+                                    title="Admin Dashboard"
+                                >
+                                    <Icon path={mdiHome} size={1} />
+                                    {isExpanded && <span className="ml-3">Dashboard</span>}
+                                </Link>
+                            </li>
                             <li>
                                 <Link
                                     to="/admin/reference-tables"

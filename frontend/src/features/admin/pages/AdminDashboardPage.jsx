@@ -16,10 +16,8 @@ function AdminDashboardPage() {
             />
             <div className={`flex-grow p-4 transition-all duration-300 ease-in-out overflow-y-auto
         ${isSidebarHidden ? 'ml-0' : (isSidebarExpanded ? 'ml-64' : 'ml-16')}`}>
-                <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Admin Dashboard</h1>
-                <p className="text-gray-700 dark:text-gray-300">This page will display various administrative statistics and tools.</p>
-                {/* Placeholder for statistics or main admin content */}
-                <Outlet /> {/* Renders nested routes, e.g., ReferenceTablesPage */}
+                {/* The Outlet will render the matched child route component here */}
+                <Outlet />
             </div>
         </div>
     );

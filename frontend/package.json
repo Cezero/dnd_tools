@@ -11,6 +11,9 @@
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",
+    "@lexical/html": "^0.32.1",
+    "@lexical/react": "^0.32.1",
+    "@lexical/table": "^0.32.1",
     "@mdi/js": "^7.4.47",
     "@mdi/react": "^1.6.1",
     "@uiw/react-md-editor": "^4.0.7",

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import MarkdownEditor from '@/components/MarkdownEditor';
-import api from '@/lib/api';
+import api from '@/services/api';
 import lookupService from '@/services/LookupService';
 import Icon from '@mdi/react';
 import { mdiTrashCan } from '@mdi/js';

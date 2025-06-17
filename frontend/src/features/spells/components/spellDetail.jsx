@@ -1,7 +1,7 @@
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import lookupService from '@/services/LookupService';
-import api from '@/lib/api';
+import api from '@/services/api';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';

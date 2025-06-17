@@ -1,4 +1,4 @@
-import api from '@/lib/api';
+import api from '@/services/api';
 
 const USER_PROFILE_API_BASE_URL = '/user/profile';
 

@@ -26,6 +26,11 @@ function GenericList({
     const [searchParams, setSearchParams] = useSearchParams();
     const [isLoading, setIsLoading] = useState(true);
 
+    // Create a stable string representation of searchParams for useEffect dependency
+    const searchParamsString = useMemo(() => {
+        return searchParams.toString();
+    }, [searchParams]);
+
     const page = parseInt(searchParams.get('page') || '1');
     const [limit, setLimit] = useState(parseInt(searchParams.get('limit') || '20'));
     const [sortKey, setSortKey] = useState(searchParams.get('sort') || '');
@@ -61,11 +66,8 @@ function GenericList({
     const lastClickedElement = useRef(null);
 
     useEffect(() => {
-        // Construct params directly from searchParams
-        const currentSearchParams = new URLSearchParams(searchParams.toString()); // Create a mutable copy
-
         setIsLoading(true);
-        fetchData(currentSearchParams)
+        fetchData(searchParams)
             .then(result => {
                 setData(result.data);
                 setTotal(result.total);
@@ -76,7 +78,7 @@ function GenericList({
             .finally(() => {
                 setIsLoading(false);
             });
-    }, [searchParams, fetchData]);
+    }, [searchParamsString, fetchData]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {

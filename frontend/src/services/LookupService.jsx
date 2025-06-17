@@ -1,4 +1,4 @@
-import api from '@/lib/api';
+import api from '@/services/api';
 
 let _isInitialized = false;
 let _initializationPromise = null;
