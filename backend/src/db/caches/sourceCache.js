@@ -9,8 +9,8 @@ class SourceCache {
     async initialize() {
         if (this.initialized) return;
 
-        const rows = await timedQuery('SELECT * FROM source_books where display = 1', [], 'SourceCache(books)');
-        const spellSourceRows = await timedQuery('SELECT DISTINCT book_id FROM spell_source_map', [], 'SourceCache(spell_source_map)');
+        const { rows } = await timedQuery('SELECT * FROM source_books where display = 1', [], 'SourceCache(books)');
+        const { rows: spellSourceRows } = await timedQuery('SELECT DISTINCT book_id FROM spell_source_map', [], 'SourceCache(spell_source_map)');
         const booksWithSpells = new Set(spellSourceRows.map(row => row.book_id));
 
         for (const row of rows) {

@@ -9,7 +9,7 @@ class EditionCache {
     async initialize() {
         if (this.initialized) return;
 
-        const rows = await timedQuery('SELECT * FROM editions', [], 'EditionCache');
+        const { rows } = await timedQuery('SELECT * FROM editions', [], 'EditionCache');
         for (const row of rows) {
             this.editions.set(row.edition_id, {
                 edition_id: row.edition_id,

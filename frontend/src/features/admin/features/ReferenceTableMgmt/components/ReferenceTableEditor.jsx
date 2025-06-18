@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useReactTable, getCoreRowModel, flexRender } from '@tanstack/react-table';
 import referenceTableService from '@/services/referenceTableService';
 import { Icon } from '@mdi/react';
@@ -7,9 +7,105 @@ import { mdiTableColumnRemove, mdiTableRowRemove, mdiTableColumnPlusAfter, mdiTa
 
 export default function ReferenceTableEditor() {
     const { id } = useParams();
+    const navigate = useNavigate();
     const [data, setData] = useState([]);
     const [columns, setColumns] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [tableName, setTableName] = useState('');
+    const [tableDescription, setTableDescription] = useState('');
+    const [tableId, setTableId] = useState(id);
+
+    // Refs for focus management
+    const tableNameInputRef = useRef(null);
+    const tableDescriptionRef = useRef(null);
+    const headerInputRefs = useRef(new Map());
+    const dataCellRefs = useRef(new Map());
+    const cancelButtonRef = useRef(null);
+    const saveButtonRef = useRef(null);
+
+    const getCellRef = (rowIndex, colIndex) => {
+        const key = `${rowIndex}-${colIndex}`;
+        if (!dataCellRefs.current.has(key)) {
+            dataCellRefs.current.set(key, React.createRef());
+        }
+        return dataCellRefs.current.get(key);
+    };
+
+    const getHeaderRef = (colIndex) => {
+        const key = `header-${colIndex}`;
+        if (!headerInputRefs.current.has(key)) {
+            headerInputRefs.current.set(key, React.createRef());
+        }
+        return headerInputRefs.current.get(key);
+    };
+
+    const handleKeyDown = (e, type, rowIndex = -1, colIndex = -1) => {
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            const numColumns = columns.length;
+            const numRows = data.length;
+
+            if (!e.shiftKey) { // Tab (forward navigation)
+                if (type === 'tableName') {
+                    tableDescriptionRef.current.focus();
+                } else if (type === 'tableDescription') {
+                    if (numColumns > 0) {
+                        getHeaderRef(0).current.focus();
+                    }
+                } else if (type === 'header') {
+                    if (colIndex < numColumns - 1) {
+                        getHeaderRef(colIndex + 1).current.focus();
+                    } else if (numRows > 0) {
+                        getCellRef(0, 0).current.focus();
+                    } else {
+                        cancelButtonRef.current.focus(); // If no rows, go to cancel button
+                    }
+                } else if (type === 'cell') {
+                    if (colIndex < numColumns - 1) {
+                        getCellRef(rowIndex, colIndex + 1).current.focus();
+                    } else if (rowIndex < numRows - 1) {
+                        getCellRef(rowIndex + 1, 0).current.focus();
+                    } else {
+                        cancelButtonRef.current.focus();
+                    }
+                } else if (type === 'cancelButton') {
+                    saveButtonRef.current.focus();
+                } else if (type === 'saveButton') {
+                    tableNameInputRef.current.focus();
+                }
+            } else { // Shift + Tab (backward navigation)
+                if (type === 'tableName') {
+                    saveButtonRef.current.focus();
+                } else if (type === 'tableDescription') {
+                    tableNameInputRef.current.focus();
+                } else if (type === 'header') {
+                    if (colIndex > 0) {
+                        getHeaderRef(colIndex - 1).current.focus();
+                    } else {
+                        tableDescriptionRef.current.focus();
+                    }
+                } else if (type === 'cell') {
+                    if (colIndex > 0) {
+                        getCellRef(rowIndex, colIndex - 1).current.focus();
+                    } else if (rowIndex > 0) {
+                        getCellRef(rowIndex - 1, numColumns - 1).current.focus();
+                    } else {
+                        getHeaderRef(numColumns - 1).current.focus();
+                    }
+                } else if (type === 'cancelButton') {
+                    if (numRows > 0 && numColumns > 0) {
+                        getCellRef(numRows - 1, numColumns - 1).current.focus();
+                    } else if (numColumns > 0) {
+                        getHeaderRef(numColumns - 1).current.focus();
+                    } else {
+                        tableDescriptionRef.current.focus();
+                    }
+                } else if (type === 'saveButton') {
+                    cancelButtonRef.current.focus();
+                }
+            }
+        }
+    };
 
     useEffect(() => {
         async function fetchTable() {
@@ -21,10 +117,20 @@ export default function ReferenceTableEditor() {
                     { accessorKey: 'col2', header: 'Column 2' },
                     { accessorKey: 'col3', header: 'Column 3' }
                 ]);
+                setTableName('New Table');
+                setTableDescription('');
                 setLoading(false);
             } else {
-                const response = await referenceTableService.fetchReferenceTableRaw(id);
-                const { rows, headers } = response.data;
+                const [tableResponse, rawResponse] = await Promise.all([
+                    referenceTableService.getReferenceTableById(id),
+                    referenceTableService.fetchReferenceTableRaw(id)
+                ]);
+
+                const { name, description } = tableResponse.data;
+                setTableName(name);
+                setTableDescription(description);
+
+                const { rows, headers } = rawResponse.data;
                 const colDefs = headers.map((header, i) => ({
                     accessorKey: `col${i}`,
                     header,
@@ -71,14 +177,14 @@ export default function ReferenceTableEditor() {
     const addColumnAt = (insertIndex) => {
         const newColumns = [...columns];
         newColumns.splice(insertIndex, 0, { accessorKey: 'TEMP_KEY', header: '', isAuto: true });
-      
+
         // Reindex columns to col0, col1, ...
         const rekeyedColumns = newColumns.map((col, i) => ({
             ...col,
             accessorKey: `col${i}`,
             header: col.isAuto ? `Column ${i + 1}` : col.header,
         }));
-      
+
         // Update each row with the new column and remap keys
         const updatedData = data.map(row => {
             const newRow = {};
@@ -94,11 +200,11 @@ export default function ReferenceTableEditor() {
             }
             return newRow;
         });
-      
+
         setColumns(rekeyedColumns);
         setData(updatedData);
     };
-      
+
     const addColumnAfter = (index) => {
         addColumnAt(index + 1);
     };
@@ -110,13 +216,13 @@ export default function ReferenceTableEditor() {
     const deleteColumn = (columnId) => {
         const colIndex = columns.findIndex(c => c.accessorKey === columnId);
         if (colIndex === -1) return;
-      
+
         const newColumns = columns.filter(c => c.accessorKey !== columnId);
         const rekeyedColumns = newColumns.map((col, i) => ({
             ...col,
             accessorKey: `col${i}`,
         }));
-      
+
         const updatedData = data.map(row => {
             const newRow = {};
             let colIdx = 0;
@@ -128,16 +234,62 @@ export default function ReferenceTableEditor() {
             }
             return newRow;
         });
-      
+
         setColumns(rekeyedColumns);
         setData(updatedData);
     };
-      
+
+    const handleSave = async () => {
+        const tableData = {
+            name: tableName,
+            description: tableDescription,
+            headers: columns.map(col => col.header),
+            rows: data.map(row => columns.map(col => row[col.accessorKey]))
+        };
+
+        try {
+            if (tableId === 'new') {
+                const response = await referenceTableService.createReferenceTable(tableData);
+                setTableId(response.id); // Update tableId with the new ID
+                navigate('/admin/reference-tables');
+            } else {
+                await referenceTableService.updateReferenceTable(tableId, tableData);
+                navigate('/admin/reference-tables');
+            }
+        } catch (error) {
+            console.error('Error saving table:', error);
+            // Optionally, show an error message to the user
+        }
+    };
 
     if (loading) return <div>Loading...</div>;
 
     return (
-        <div className="p-4 space-y-4">
+        <div className="p-4">
+            <div className="mb-4">
+                <label htmlFor="tableName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Table Name</label>
+                <input
+                    type="text"
+                    id="tableName"
+                    ref={tableNameInputRef}
+                    value={tableName}
+                    onChange={(e) => setTableName(e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(e, 'tableName')}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border dark:border-gray-700"
+                />
+            </div>
+            <div className="mb-8">
+                <label htmlFor="tableDescription" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+                <textarea
+                    id="tableDescription"
+                    ref={tableDescriptionRef}
+                    value={tableDescription}
+                    onChange={(e) => setTableDescription(e.target.value)}
+                    rows="3"
+                    onKeyDown={(e) => handleKeyDown(e, 'tableDescription')}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border dark:border-gray-700"
+                ></textarea>
+            </div>
             <table className="table-auto border border-gray-300 dark:border-gray-700 w-full">
                 <thead>
                     <tr>
@@ -145,10 +297,12 @@ export default function ReferenceTableEditor() {
                             <th key={col.accessorKey} className="border p-2 bg-gray-100 dark:bg-gray-800 dark:border-gray-700 relative">
                                 <input
                                     type="text"
+                                    ref={getHeaderRef(colIndex)}
                                     value={col.header}
                                     onChange={e => handleHeaderChange(col.accessorKey, e.target.value)}
                                     className="bg-transparent w-full border-none text-sm focus:outline-none"
-                                />                                
+                                    onKeyDown={(e) => handleKeyDown(e, 'header', -1, colIndex)}
+                                />
                                 <div className="absolute top-0 left-0 right-3/4 h-4 group">
                                     <button
                                         onClick={() => addColumnBefore(colIndex)}
@@ -189,9 +343,11 @@ export default function ReferenceTableEditor() {
                                 <td key={col.accessorKey} className="border p-2 relative dark:border-gray-700">
                                     <input
                                         type="text"
+                                        ref={getCellRef(rowIndex, colIndex)}
                                         value={row[col.accessorKey] ?? ''}
                                         onChange={e => handleChange(rowIndex, col.accessorKey, e.target.value)}
                                         className="w-full bg-transparent border-none focus:outline-none"
+                                        onKeyDown={(e) => handleKeyDown(e, 'cell', rowIndex, colIndex)}
                                     />
                                     {colIndex === columns.length - 1 && (
                                         <div className="absolute top-0 bottom-3/4 right-0 w-4 group">
@@ -232,6 +388,24 @@ export default function ReferenceTableEditor() {
                     ))}
                 </tbody>
             </table>
+            <div className="mt-4 flex justify-end space-x-2">
+                <button
+                    onClick={() => navigate('/admin/reference-tables')}
+                    ref={cancelButtonRef}
+                    onKeyDown={(e) => handleKeyDown(e, 'cancelButton')}
+                    className="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-400 dark:hover:bg-gray-600"
+                >
+                    Cancel
+                </button>
+                <button
+                    onClick={handleSave}
+                    ref={saveButtonRef}
+                    onKeyDown={(e) => handleKeyDown(e, 'saveButton')}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                    Save
+                </button>
+            </div>
         </div>
     );
 }

@@ -7,7 +7,7 @@ function AdminDashboardPage() {
     const [isSidebarHidden, setIsSidebarHidden] = useState(false); // New state for hidden sidebar
 
     return (
-        <div className="flex h-full bg-gray-100 dark:bg-gray-900">
+        <div className="flex h-full bg-gray-100 dark:bg-[#121212]">
             <AdminSidebar
                 isExpanded={isSidebarExpanded}
                 setIsExpanded={setIsSidebarExpanded}

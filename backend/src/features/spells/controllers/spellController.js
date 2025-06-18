@@ -229,7 +229,7 @@ export async function getSpells(req, res) {
         console.log('Final SQL Query:', mainQuery);
         console.log('Query Values:', [...whereValues, ...havingValues, parseInt(limit), parseInt(offset)]);
 
-        const rows = await timedQuery(
+        const { rows } = await timedQuery(
             mainQuery,
             [...whereValues, ...havingValues, parseInt(limit), parseInt(offset)],
             `Spells list query (${useLevelMap ? 'using level map' : 'using spells table'})`
@@ -258,18 +258,18 @@ export async function getSpellById(req, res) {
 
     try {
         // Get basic spell information
-        const spell = await timedQuery(
+        const { rows: spell } = await timedQuery(
             `SELECT * FROM spells WHERE spell_id = ?`,
             [spellId],
             'Get spell details'
         );
 
-        if (!spell) {
+        if (!spell.length) {
             return res.status(404).json({ error: `Spell not found: ${spellId}` });
         }
 
         // Get spell schools and subschools
-        const schoolMappings = await timedQuery(
+        const { rows: schoolMappings } = await timedQuery(
             `SELECT ssm.school_id, ssubm.sub_id
             FROM spell_school_map ssm
             LEFT JOIN spell_subschool_map ssubm ON ssm.spell_id = ssubm.spell_id
@@ -279,21 +279,21 @@ export async function getSpellById(req, res) {
         );
 
         // Get spell components
-        const componentIds = await timedQuery(
+        const { rows: componentIds } = await timedQuery(
             `SELECT comp_id FROM spell_component_map WHERE spell_id = ?`,
             [spellId],
             'Get spell components'
         );
 
         // Get spell descriptors
-        const descriptorIds = await timedQuery(
+        const { rows: descriptorIds } = await timedQuery(
             `SELECT desc_id FROM spell_descriptor_map WHERE spell_id = ?`,
             [spellId],
             'Get spell descriptors'
         );
 
         // Get class levels
-        const classLevels = await timedQuery(
+        const { rows: classLevels } = await timedQuery(
             `SELECT class_id, spell_level
             FROM spell_level_map
             WHERE spell_id = ? and display = 1
@@ -303,7 +303,7 @@ export async function getSpellById(req, res) {
         );
 
         // Get source information
-        const sources = await timedQuery(
+        const { rows: sources } = await timedQuery(
             `SELECT ssm.book_id, ssm.page_number
             FROM spell_source_map ssm
             WHERE ssm.spell_id = ? and ssm.display = 1`,
@@ -354,35 +354,35 @@ export async function updateSpell(req, res) {
 
         if (updateFields.length > 0) {
             const updateQuery = `UPDATE spells SET ${updateFields.join(', ')} WHERE spell_id = ?`;
-            await timedQuery(updateQuery, [...updateValues, spellId], 'Update spell');
+            const updResult = await timedQuery(updateQuery, [...updateValues, spellId], 'Update spell');
         }
 
         // Handle spell schools
-        await timedQuery('DELETE FROM spell_school_map WHERE spell_id = ?', [spellId], 'Delete existing spell schools');
+        const del_school_result = await timedQuery('DELETE FROM spell_school_map WHERE spell_id = ?', [spellId], 'Delete existing spell schools');
         if (schools && schools.length > 0) {
             const schoolInserts = schools.map(school_id => [spellId, school_id]);
-            await timedQuery('INSERT INTO spell_school_map (spell_id, school_id) VALUES ?', [schoolInserts], 'Insert new spell schools');
+            const { raw: result } = await timedQuery('INSERT INTO spell_school_map (spell_id, school_id) VALUES ?', [schoolInserts], 'Insert new spell schools');
         }
 
         // Handle spell subschools
-        await timedQuery('DELETE FROM spell_subschool_map WHERE spell_id = ?', [spellId], 'Delete existing spell subschools');
+        const del_subschool_result = await timedQuery('DELETE FROM spell_subschool_map WHERE spell_id = ?', [spellId], 'Delete existing spell subschools');
         if (subschools && subschools.length > 0) {
             const subschoolInserts = subschools.map(sub_id => [spellId, sub_id]);
-            await timedQuery('INSERT INTO spell_subschool_map (spell_id, sub_id) VALUES ?', [subschoolInserts], 'Insert new spell subschools');
+            const { raw: result } = await timedQuery('INSERT INTO spell_subschool_map (spell_id, sub_id) VALUES ?', [subschoolInserts], 'Insert new spell subschools');
         }
 
         // Handle spell descriptors
-        await timedQuery('DELETE FROM spell_descriptor_map WHERE spell_id = ?', [spellId], 'Delete existing spell descriptors');
+        const del_descriptor_result = await timedQuery('DELETE FROM spell_descriptor_map WHERE spell_id = ?', [spellId], 'Delete existing spell descriptors');
         if (descriptors && descriptors.length > 0) {
             const descriptorInserts = descriptors.map(desc_id => [spellId, desc_id]);
-            await timedQuery('INSERT INTO spell_descriptor_map (spell_id, desc_id) VALUES ?', [descriptorInserts], 'Insert new spell descriptors');
+            const { raw: result } = await timedQuery('INSERT INTO spell_descriptor_map (spell_id, desc_id) VALUES ?', [descriptorInserts], 'Insert new spell descriptors');
         }
 
         // Handle spell components
-        await timedQuery('DELETE FROM spell_component_map WHERE spell_id = ?', [spellId], 'Delete existing spell components');
+        const del_component_result = await timedQuery('DELETE FROM spell_component_map WHERE spell_id = ?', [spellId], 'Delete existing spell components');
         if (components && components.length > 0) {
             const componentInserts = components.map(comp_id => [spellId, comp_id]);
-            await timedQuery('INSERT INTO spell_component_map (spell_id, comp_id) VALUES ?', [componentInserts], 'Insert new spell components');
+            const ins_component_result = await timedQuery('INSERT INTO spell_component_map (spell_id, comp_id) VALUES ?', [componentInserts], 'Insert new spell components');
         }
 
         res.json({ message: 'Spell updated successfully' });

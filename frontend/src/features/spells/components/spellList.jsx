@@ -6,7 +6,6 @@ import api from '@/services/api';
 import { useAuth } from '@/auth/authProvider';
 import GenericList from '@/components/GenericList/GenericList';
 import Input from '@/components/GenericList/Input';
-import Select from '@/components/GenericList/Select';
 import MultiSelect from '@/components/GenericList/MultiSelect';
 import SingleSelect from '@/components/GenericList/SingleSelect';
 import React from 'react';
@@ -191,6 +190,7 @@ function SpellList() {
             navigate={navigate}
             detailPagePath="/spells/:id"
             idKey="spell_id"
+            itemDesc="spell"
         />
     );
 }

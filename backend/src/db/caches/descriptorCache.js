@@ -9,7 +9,7 @@ class DescriptorCache {
     async initialize() {
         if (this.initialized) return;
 
-        const rows = await timedQuery('SELECT * FROM spell_descriptors', [], 'DescriptorCache');
+        const { rows } = await timedQuery('SELECT * FROM spell_descriptors', [], 'DescriptorCache');
         for (const row of rows) {
             this.descriptors.set(row.desc_id, {
                 desc_id: row.desc_id,

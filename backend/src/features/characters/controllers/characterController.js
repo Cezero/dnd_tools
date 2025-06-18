@@ -53,7 +53,7 @@ export async function getAllCharacters(req, res) {
             LIMIT ? OFFSET ?;
         `;
 
-        const rows = await timedQuery(
+        const { rows } = await timedQuery(
             query,
             [...whereValues, parseInt(limit), parseInt(offset)],
             'Get all characters'
@@ -87,9 +87,9 @@ export async function getCharacterById(req, res) {
             LEFT JOIN alignments a ON uc.alignment_id = a.alignment_id
             WHERE character_id = ?;
         `;
-        const [character] = await timedQuery(query, [id], 'Get character by ID');
+        const { rows: character } = await timedQuery(query, [id], 'Get character by ID');
 
-        if (!character) {
+        if (!character.length) {
             return res.status(404).send('Character not found');
         }
         res.json(character);
@@ -116,7 +116,7 @@ export async function createCharacter(req, res) {
                 character_wis, character_cha
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         `;
-        const result = await timedQuery(
+        const { raw: result } = await timedQuery(
             query,
             [
                 newCharacter.user_id,
@@ -173,7 +173,7 @@ export async function updateCharacter(req, res) {
                 character_cha = ?
             WHERE character_id = ?;
         `;
-        const result = await timedQuery(
+        const { raw: result } = await timedQuery(
             query,
             [
                 updatedCharacter.character_name,
@@ -209,7 +209,7 @@ export async function deleteCharacter(req, res) {
     const { id } = req.params;
     try {
         const query = `DELETE FROM user_characters WHERE character_id = ?;`;
-        const result = await timedQuery(query, [id], 'Delete character');
+        const { raw: result } = await timedQuery(query, [id], 'Delete character');
 
         if (result.affectedRows === 0) {
             return res.status(404).send('Character not found');

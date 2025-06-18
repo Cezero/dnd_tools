@@ -1,8 +1,6 @@
 import AdminDashboardPage from '@/features/admin/pages/AdminDashboardPage';
 import AdminDashboardContent from '@/features/admin/pages/AdminDashboardContent';
-import ReferenceTablesList from '@/features/admin/pages/ReferenceTableMgmt/ReferenceTablesList';
-import ReferenceTableEditor from '@/features/admin/pages/ReferenceTableMgmt/ReferenceTableEditor';
-import ReferenceTableViewer from '@/features/admin/pages/ReferenceTableMgmt/ReferenceTableViewer';
+import { routes as referenceTableRoutes } from '@/features/admin/features/ReferenceTableMgmt/config/ReferenceTableConfig';
 
 export const routes = [
     {
@@ -16,19 +14,7 @@ export const routes = [
                 component: AdminDashboardContent,
                 exact: true,
             },
-            {
-                path: 'reference-tables',
-                component: ReferenceTablesList,
-                exact: true,
-            },
-            {
-                path: 'reference-tables/:id/edit',
-                component: ReferenceTableEditor,
-            },
-            {
-                path: 'reference-tables/:id',
-                component: ReferenceTableViewer,
-            },
+            ...referenceTableRoutes,
         ],
     },
 ];

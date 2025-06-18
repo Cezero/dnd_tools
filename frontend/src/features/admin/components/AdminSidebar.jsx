@@ -1,11 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import Icon from '@mdi/react';
 import { mdiTable, mdiChevronRight, mdiChevronLeft, mdiHome } from '@mdi/js';
 
 function AdminSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }) {
     const sidebarRef = useRef(null);
     const [showHandle, setShowHandle] = useState(false); // New state for handle visibility
+    const location = useLocation(); // Get current location
 
     // This button toggles between Expanded and Minimal states
     const toggleExpandedMinimal = () => {
@@ -85,11 +86,12 @@ function AdminSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }) {
                                     to="/admin"
                                     className={`flex items-center px-4 py-2 rounded 
                                         text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 
-                                        ${isExpanded ? 'justify-start' : 'justify-center'}`}
+                                        ${isExpanded ? 'justify-start' : 'justify-center'}
+                                        ${location.pathname === '/admin' ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
                                     title="Admin Dashboard"
                                 >
-                                    <Icon path={mdiHome} size={1} />
-                                    {isExpanded && <span className="ml-3">Dashboard</span>}
+                                    <Icon path={mdiHome} size={1} className={`${location.pathname === '/admin' ? 'text-blue-600 dark:text-blue-400' : ''}`} />
+                                    {isExpanded && <span className={`ml-3 ${location.pathname === '/admin' ? 'text-blue-600 dark:text-blue-400' : ''}`}>Dashboard</span>}
                                 </Link>
                             </li>
                             <li>
@@ -97,11 +99,12 @@ function AdminSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }) {
                                     to="/admin/reference-tables"
                                     className={`flex items-center px-4 py-2 rounded 
                                         text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 
-                                        ${isExpanded ? 'justify-start' : 'justify-center'}`}
+                                        ${isExpanded ? 'justify-start' : 'justify-center'}
+                                        ${location.pathname === '/admin/reference-tables' ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
                                     title="Reference Tables"
                                 >
-                                    <Icon path={mdiTable} size={1} />
-                                    {isExpanded && <span className="ml-3">Reference Tables</span>}
+                                    <Icon path={mdiTable} size={1} className={`${location.pathname === '/admin/reference-tables' ? 'text-blue-600 dark:text-blue-400' : ''}`} />
+                                    {isExpanded && <span className={`ml-3 ${location.pathname === '/admin/reference-tables' ? 'text-blue-600 dark:text-blue-400' : ''}`}>Reference Tables</span>}
                                 </Link>
                             </li>
                             {/* Add other admin functions here */}

@@ -9,7 +9,7 @@ class ComponentCache {
     async initialize() {
         if (this.initialized) return;
 
-        const rows = await timedQuery('SELECT * FROM spell_components', [], 'ComponentCache');
+        const { rows } = await timedQuery('SELECT * FROM spell_components', [], 'ComponentCache');
         for (const row of rows) {
             this.components.set(row.comp_id, {
                 comp_id: row.comp_id,

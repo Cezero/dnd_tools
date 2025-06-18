@@ -1,4 +1,4 @@
-import { timedQuery } from '../../../db/queryTimer.js';
+import { timedQuery, runTransactionWith } from '../../../db/queryTimer.js';
 
 export async function getReferenceTables(req, res) {
     const { page = 1, limit = 20, sort = 'name', order = 'asc', name = '' } = req.query;
@@ -41,7 +41,7 @@ export async function getReferenceTables(req, res) {
             ORDER BY ${sortBy} ${sortOrder}
             LIMIT ? OFFSET ?`;
 
-        const rows = await timedQuery(
+        const { rows } = await timedQuery(
             query,
             [...whereValues, parseInt(limit), parseInt(offset)],
             'Reference tables list query'
@@ -66,7 +66,7 @@ export async function getReferenceTableById(req, res) {
 
     try {
         // Get columns in order
-        const columns = await timedQuery(`
+        const { rows: columns } = await timedQuery(`
             SELECT id, header, column_index
             FROM reference_table_columns
             WHERE table_id = ?
@@ -76,7 +76,7 @@ export async function getReferenceTableById(req, res) {
         const colMap = Object.fromEntries(columns.map(col => [col.id, col]));
 
         // Get all rows
-        const rows = await timedQuery(`
+        const { rows } = await timedQuery(`
             SELECT id, row_index
             FROM reference_table_rows
             WHERE table_id = ?
@@ -86,7 +86,7 @@ export async function getReferenceTableById(req, res) {
         const rowMap = Object.fromEntries(rows.map(row => [row.id, row]));
 
         // Get all cells
-        const cells = await timedQuery(`
+        const { rows: cells } = await timedQuery(`
             SELECT row_id, column_id, value, col_span, row_span
             FROM reference_table_cells
             WHERE row_id IN (${rows.map(r => r.id).join(',')})
@@ -136,25 +136,64 @@ export async function getReferenceTableById(req, res) {
 }
 
 export async function createReferenceTable(req, res) {
-    const { name, description } = req.body;
+    const { name, description, headers, rows: table_rows } = req.body;
 
     if (!name) {
         return res.status(400).send('Reference table name is required.');
     }
 
     try {
-        const result = await timedQuery(
-            `INSERT INTO reference_tables (name, description) VALUES (?, ?)`,
-            [name, description || null],
-            'Create reference table'
-        );
-        const newTableId = result.insertId;
+        const newTable = await runTransactionWith(async (query) => {
+            // 1. Insert into reference_tables
+            const { rows } = await query(
+                `INSERT INTO reference_tables (name, description) VALUES (?, ?)`,
+                [name, description || null],
+                'Create reference table'
+            );
+            const newTableId = rows.insertId;
 
-        const newTable = await timedQuery(
-            `SELECT id, name, description, created_at FROM reference_tables WHERE id = ?`,
-            [newTableId],
-            'Fetch newly created reference table'
-        );
+            // 2. Insert columns
+            const columnIds = [];
+            for (const [index, headerText] of headers.entries()) {
+                const { rows } = await query(
+                    `INSERT INTO reference_table_columns (table_id, column_index, header) VALUES (?, ?, ?)`,
+                    [newTableId, index, headerText],
+                    `Insert column ${index} for table ${newTableId}`
+                );
+                columnIds.push(rows.insertId);
+            }
+
+            // 3. Insert rows and cells
+            const rowIds = [];
+            for (const [rowIndex, rowData] of table_rows.entries()) {
+                const { rows } = await query(
+                    `INSERT INTO reference_table_rows (table_id, row_index) VALUES (?, ?)`,
+                    [newTableId, rowIndex],
+                    `Insert row ${rowIndex} for table ${newTableId}`
+                );
+                const newRowId = rows.insertId;
+                rowIds.push(newRowId);
+
+                for (const [colIndex, cellValue] of rowData.entries()) {
+                    const colId = columnIds[colIndex];
+                    if (colId !== undefined) { // Ensure column exists for this cell
+                        await query(
+                            `INSERT INTO reference_table_cells (row_id, column_id, value) VALUES (?, ?, ?)`,
+                            [newRowId, colId, cellValue || null],
+                            `Insert cell at row ${rowIndex}, col ${colIndex} for table ${newTableId}`
+                        );
+                    }
+                }
+            }
+
+            // Fetch the newly created table details to return
+            const { rows: fetchedTable } = await query(
+                `SELECT id, name, description, created_at FROM reference_tables WHERE id = ?`,
+                [newTableId],
+                'Fetch newly created reference table'
+            );
+            return fetchedTable[0];
+        });
 
         res.status(201).json(newTable);
     } catch (err) {
@@ -165,41 +204,95 @@ export async function createReferenceTable(req, res) {
 
 export async function updateReferenceTable(req, res) {
     const { id } = req.params;
-    const { name, description } = req.body;
+    const { name, description, headers, rows: table_rows } = req.body;
 
-    if (!name && description === undefined) {
-        return res.status(400).send('At least one field (name or description) must be provided for update.');
-    }
-
-    let updateFields = [];
-    let updateValues = [];
-
-    if (name) {
-        updateFields.push('name = ?');
-        updateValues.push(name);
-    }
-
-    if (description !== undefined) {
-        updateFields.push('description = ?');
-        updateValues.push(description);
+    if (!name && description === undefined && (!headers || headers.length === 0) && (!rows || rows.length === 0)) {
+        return res.status(400).send('At least one field (name, description, headers, or rows) must be provided for update.');
     }
 
     try {
-        await timedQuery(
-            `UPDATE reference_tables SET ${updateFields.join(', ')} WHERE id = ?`,
-            [...updateValues, id],
-            'Update reference table'
-        );
+        const updatedTable = await runTransactionWith(async (query) => {
+            // 1. Update the main reference_tables entry if name or description are provided
+            let updateFields = [];
+            let updateValues = [];
 
-        const updatedTable = await timedQuery(
-            `SELECT id, name, description, created_at FROM reference_tables WHERE id = ?`,
-            [id],
-            'Fetch updated reference table'
-        );
+            if (name) {
+                updateFields.push('name = ?');
+                updateValues.push(name);
+            }
 
-        if (updatedTable.length === 0) {
-            return res.status(404).send('Reference table not found.');
-        }
+            if (description !== undefined) {
+                updateFields.push('description = ?');
+                updateValues.push(description);
+            }
+
+            if (updateFields.length > 0) {
+                await query(
+                    `UPDATE reference_tables SET ${updateFields.join(', ')} WHERE id = ?`,
+                    [...updateValues, id],
+                    'Update reference table metadata'
+                );
+            }
+
+            // 2. Delete existing columns, rows, and cells for this table_id
+            // Due to ON DELETE CASCADE, deleting columns and rows will also delete associated cells.
+            await query(
+                `DELETE FROM reference_table_columns WHERE table_id = ?`,
+                [id],
+                'Delete existing columns'
+            );
+            await query(
+                `DELETE FROM reference_table_rows WHERE table_id = ?`,
+                [id],
+                'Delete existing rows'
+            );
+
+            // 3. Insert new columns
+            const columnIds = [];
+            if (headers && headers.length > 0) {
+                for (const [index, headerText] of headers.entries()) {
+                    const { rows } = await query(
+                        `INSERT INTO reference_table_columns (table_id, column_index, header) VALUES (?, ?, ?)`,
+                        [id, index, headerText],
+                        `Insert new column ${index} for table ${id}`);
+                    columnIds.push(rows.insertId);
+                }
+            }
+
+            // 4. Insert new rows and cells
+            if (rows && rows.length > 0) {
+                for (const [rowIndex, rowData] of table_rows.entries()) {
+                    const { rows } = await query(
+                        `INSERT INTO reference_table_rows (table_id, row_index) VALUES (?, ?)`,
+                        [id, rowIndex],
+                        `Insert new row ${rowIndex} for table ${id}`
+                    );
+                    const newRowId = rows.insertId;
+
+                    for (const [colIndex, cellValue] of rowData.entries()) {
+                        const colId = columnIds[colIndex];
+                        if (colId !== undefined) {
+                            await query(
+                                `INSERT INTO reference_table_cells (row_id, column_id, value) VALUES (?, ?, ?)`,
+                                [newRowId, colId, cellValue || null],
+                                `Insert new cell at row ${rowIndex}, col ${colIndex} for table ${id}`
+                            );
+                        }
+                    }
+                }
+            }
+
+            // 5. Fetch the updated table details to return
+            const { rows: fetchedTable } = await query(
+                `SELECT id, name, description, created_at FROM reference_tables WHERE id = ?`,
+                [id],
+                'Fetch updated reference table'
+            );
+            if (fetchedTable.length === 0) {
+                throw new Error('Reference table not found after update.');
+            }
+            return fetchedTable[0];
+        });
 
         res.json(updatedTable);
     } catch (err) {
@@ -212,13 +305,15 @@ export async function deleteReferenceTable(req, res) {
     const { id } = req.params;
 
     try {
-        const result = await timedQuery(
-            `DELETE FROM reference_tables WHERE id = ?`,
-            [id],
-            'Delete reference table'
-        );
+        const { rows } = await runTransactionWith(async (query) => {
+            return await query(
+                `DELETE FROM reference_tables WHERE id = ?`,
+                [id],
+                'Delete reference table'
+            );
+        });
 
-        if (result.affectedRows === 0) {
+        if (rows[0].affectedRows === 0) {
             return res.status(404).send('Reference table not found.');
         }
 
@@ -234,7 +329,7 @@ export async function getReferenceTableRaw(req, res) {
 
     try {
         // Get table details
-        const table = await timedQuery(
+        const { rows: table } = await timedQuery(
             `SELECT id, name, description FROM reference_tables WHERE id = ?`,
             [id],
             'Fetch reference table details'
@@ -245,21 +340,21 @@ export async function getReferenceTableRaw(req, res) {
         }
 
         // Get columns in order
-        const columns = await timedQuery(
+        const { rows: columns } = await timedQuery(
             `SELECT id, header, column_index, span FROM reference_table_columns WHERE table_id = ? ORDER BY column_index`,
             [id],
             'Fetch reference table columns'
         );
 
         // Get all rows
-        const rows = await timedQuery(
+        const { rows } = await timedQuery(
             `SELECT id, row_index, label FROM reference_table_rows WHERE table_id = ? ORDER BY row_index`,
             [id],
             'Fetch reference table rows'
         );
 
         // Get all cells
-        const cells = await timedQuery(
+        const { rows: cells } = await timedQuery(
             `SELECT row_id, column_id, value, col_span, row_span FROM reference_table_cells WHERE row_id IN (?)`,
             [rows.map(r => r.id).join(',')],
             'Fetch reference table cells'

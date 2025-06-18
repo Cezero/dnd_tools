@@ -9,7 +9,7 @@ class ClassCache {
     async initialize() {
         if (this.initialized) return;
 
-        const rows = await timedQuery('SELECT * FROM classes where display = 1', [], 'ClassCache');
+        const { rows } = await timedQuery('SELECT * FROM classes where display = 1', [], 'ClassCache');
         for (const row of rows) {
             this.classes.set(row.class_id, {
                 class_id: row.class_id,

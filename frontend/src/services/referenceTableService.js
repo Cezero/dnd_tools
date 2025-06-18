@@ -6,7 +6,7 @@ export const fetchReferenceTables = async (searchParams) => {
         const queryString = new URLSearchParams(searchParams).toString();
         const url = queryString ? `/reference-tables?${queryString}` : '/reference-tables';
         const response = await api(url, { method: 'GET' });
-        return response;
+        return { data: response.results, total: response.total };
     } catch (error) {
         console.error('Error fetching reference tables:', error);
         throw error;

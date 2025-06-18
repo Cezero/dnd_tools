@@ -9,7 +9,7 @@ class SchoolCache {
     async initialize() {
         if (this.initialized) return;
 
-        const rows = await timedQuery('SELECT * FROM spell_schools', [], 'SchoolCache');
+        const { rows } = await timedQuery('SELECT * FROM spell_schools', [], 'SchoolCache');
         for (const row of rows) {
             this.schools.set(row.school_id, {
                 school_id: row.school_id,

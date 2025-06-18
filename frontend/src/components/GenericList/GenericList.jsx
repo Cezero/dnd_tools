@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import Icon from '@mdi/react';
 import { mdiFilterOutline, mdiSortAscending, mdiSortDescending, mdiCog, mdiFilter } from '@mdi/js';
 import { ColumnConfigModal, useColumnConfig } from '@/components/GenericList/ColumnConfig';
+import { pluralize } from 'pluralize';
 
 function GenericList({
     // Configuration props
@@ -20,6 +21,8 @@ function GenericList({
     navigate,
     detailPagePath, // e.g., '/spells/:id'
     idKey, // e.g., 'spell_id'
+    refreshTrigger, // New prop for triggering data refresh
+    itemDesc = 'items', // New prop for the description of the items being listed (e.g., 'spells', 'characters')
 }) {
     const [data, setData] = useState([]);
     const [total, setTotal] = useState(0);
@@ -76,7 +79,7 @@ function GenericList({
             .finally(() => {
                 setIsLoading(false);
             });
-    }, [searchParams, fetchData]);
+    }, [searchParams, fetchData, refreshTrigger]);
 
     // New useEffect to sync filters state with URL search params
     useEffect(() => {
@@ -345,27 +348,38 @@ function GenericList({
                         </tr>
                     </thead>
                     <tbody>
-                        {data.map(item => (
-                            <tr key={item[idKey]} className="hover:bg-gray-100 dark:hover:bg-gray-800 odd:bg-gray-500 even:bg-white dark:odd:bg-[#141e2d] dark:even:bg-[#121212]">
-                                {visibleColumns.map(columnId => (
-                                    <td
-                                        key={columnId}
-                                        className={`p-1 border border-dotted border-gray-600 text-md ${columnId === requiredColumnId && detailPagePath ? 'cursor-pointer' : ''}`}
-                                        onClick={columnId === requiredColumnId && detailPagePath ? (e) => {
-                                            if (e.target === lastClickedElement.current) {
-                                                e.stopPropagation(); // Prevent navigation
-                                                lastClickedElement.current = null; // Reset for next time
-                                                return;
-                                            }
-                                            navigate(detailPagePath.replace(':id', item[idKey]), { state: { fromListParams: searchParams.toString() } });
-                                        } : undefined}
-                                        title={columnId === requiredColumnId && detailPagePath ? `View ${requiredColumnId.replace(/_/g, ' ')} details` : undefined}
-                                    >
-                                        {renderCell(item, columnId)}
-                                    </td>
-                                ))}
+                        {data.length === 0 ? (
+                            <tr>
+                                <td colSpan={visibleColumns.length} className="p-4 text-center text-gray-500 dark:text-gray-400">
+                                    No {pluralize(itemDesc, 2)} match the current filters.
+                                </td>
                             </tr>
-                        ))}
+                        ) : (
+                            data.map(item => (
+                                <tr key={item[idKey]} className="hover:bg-gray-100 dark:hover:bg-gray-800 odd:bg-gray-500 even:bg-white dark:odd:bg-[#141e2d] dark:even:bg-[#121212]">
+                                    {visibleColumns.map((columnId, colIndex) => {
+                                        const isLastVisibleColumn = colIndex === visibleColumns.length - 1;
+                                        return (
+                                            <td
+                                                key={columnId}
+                                                className={`p-1 border border-dotted border-gray-600 text-md ${columnId === requiredColumnId && detailPagePath ? 'cursor-pointer' : ''}`}
+                                                onClick={columnId === requiredColumnId && detailPagePath ? (e) => {
+                                                    if (e.target === lastClickedElement.current) {
+                                                        e.stopPropagation(); // Prevent navigation
+                                                        lastClickedElement.current = null; // Reset for next time
+                                                        return;
+                                                    }
+                                                    navigate(detailPagePath.replace(':id', item[idKey]), { state: { fromListParams: searchParams.toString() } });
+                                                } : undefined}
+                                                title={columnId === requiredColumnId && detailPagePath ? `View ${itemDesc} details` : undefined}
+                                            >
+                                                {renderCell(item, columnId, isLastVisibleColumn)}
+                                            </td>
+                                        );
+                                    })}
+                                </tr>
+                            ))
+                        )}
                     </tbody>
                 </table>
             </div>

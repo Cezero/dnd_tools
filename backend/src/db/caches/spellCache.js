@@ -11,7 +11,7 @@ class SpellCache {
 
         try {
             console.log('[SpellCache] Initializing...');
-            const rows = await timedQuery('SELECT spell_id, spell_name FROM spells', [], 'spellCache');
+            const { rows } = await timedQuery('SELECT spell_id, spell_name FROM spells', [], 'spellCache');
             rows.forEach(spell => {
                 this.spells.set(spell.spell_name.toLowerCase(), { spell_id: spell.spell_id, spell_name: spell.spell_name });
             });

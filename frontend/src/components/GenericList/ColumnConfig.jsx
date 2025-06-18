@@ -7,6 +7,9 @@ function useColumnConfig(storageKey, defaultColumns, columnDefinitions, required
     const [visibleColumns, setVisibleColumns] = useState(() => {
         const savedColumns = Cookies.get(storageKey);
         let parsedColumns = savedColumns ? JSON.parse(savedColumns) : defaultColumns;
+        // Filter out any columns that are no longer defined in columnDefinitions
+        parsedColumns = parsedColumns.filter(colId => columnDefinitions[colId] !== undefined);
+
         // Ensure requiredColumnId is always included and is the first column if it exists
         if (requiredColumnId && !parsedColumns.includes(requiredColumnId)) {
             parsedColumns = [requiredColumnId, ...parsedColumns];

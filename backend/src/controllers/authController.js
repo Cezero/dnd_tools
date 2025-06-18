@@ -11,7 +11,7 @@ export async function registerUser(req, res) {
         return res.status(400).json({ error: 'Missing fields' });
 
     try {
-        const [existing] = await timedQuery(
+        const { rows: existing } = await timedQuery(
             'SELECT user_id FROM users WHERE username = ? OR email = ?',
             [username, email],
             'Check for existing user'
@@ -20,11 +20,13 @@ export async function registerUser(req, res) {
             return res.status(409).json({ error: 'Username or email already exists' });
 
         const hash = await bcrypt.hash(password, 12);
+
         await timedQuery(
             'INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)',
             [username, email, hash],
             'Create new user'
         );
+        
         return res.status(201).json({ message: 'User created' });
     } catch (err) {
         console.error('Registration error:', err);
@@ -39,15 +41,15 @@ export async function loginUser(req, res) {
         return res.status(400).json({ error: 'Missing credentials' });
 
     try {
-        const rows = await timedQuery(
+        const {rows: users} = await timedQuery(
             'SELECT user_id, username, password_hash, is_admin, preferred_edition_id FROM users WHERE username = ?',
             [username],
             'Login user'
         );
-        if (!rows.length)
+        if (!users.length)
             return res.status(401).json({ error: 'Invalid credentials' });
 
-        const user = rows[0];
+        const user = users[0];
         const match = await bcrypt.compare(password, user.password_hash);
         if (!match)
             return res.status(401).json({ error: 'Invalid credentials' });
@@ -77,7 +79,7 @@ export async function getUserFromToken(req, res) {
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
         // Fetch user from DB to ensure current preferred_edition_id and other up-to-date info
-        const users = await timedQuery(
+        const {rows: users} = await timedQuery(
             'SELECT user_id, username, is_admin, preferred_edition_id FROM users WHERE user_id = ?',
             [decoded.user_id],
             'Get user by ID for token validation'
@@ -107,7 +109,7 @@ export async function refreshToken(req, res) {
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
         // Fetch user from DB to get current preferred_edition_id for new token
-        const users = await timedQuery(
+        const {rows: users} = await timedQuery(
             'SELECT user_id, username, is_admin, preferred_edition_id FROM users WHERE user_id = ?',
             [decoded.user_id],
             'Get user by ID for token refresh'
@@ -116,8 +118,8 @@ export async function refreshToken(req, res) {
         if (!users.length) {
             return res.status(404).json({ error: 'User not found for token refresh' });
         }
-        const user = users[0];
 
+        const user = users[0];
         // Generate a new token with a refreshed expiration and updated preferred_edition_id
         const newToken = jwt.sign(
             { user_id: user.user_id, username: user.username, is_admin: user.is_admin, preferred_edition_id: user.preferred_edition_id },

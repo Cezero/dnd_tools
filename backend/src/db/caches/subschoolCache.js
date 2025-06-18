@@ -9,7 +9,7 @@ class SubschoolCache {
     async initialize() {
         if (this.initialized) return;
 
-        const rows = await timedQuery('SELECT * FROM spell_subschools', [], 'SubschoolCache');
+        const { rows } = await timedQuery('SELECT * FROM spell_subschools', [], 'SubschoolCache');
         for (const row of rows) {
             this.subschools.set(row.sub_id, {
                 sub_id: row.sub_id,

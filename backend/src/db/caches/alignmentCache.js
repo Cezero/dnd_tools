@@ -11,7 +11,7 @@ class AlignmentCache {
 
         try {
             console.log('[AlignmentCache] Initializing...');
-            const rows = await timedQuery('SELECT * FROM alignments', [], 'AlignmentCache');
+            const { rows } = await timedQuery('SELECT * FROM alignments', [], 'AlignmentCache');
             for (const row of rows) {
                 this.alignments.set(row.alignment_id, {
                     alignment_id: row.alignment_id,

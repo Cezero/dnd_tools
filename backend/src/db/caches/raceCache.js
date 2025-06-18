@@ -11,7 +11,7 @@ class RaceCache {
 
         try {
             console.log('[RaceCache] Initializing...');
-            const rows = await timedQuery('SELECT * FROM races', [], 'RaceCache');
+            const { rows } = await timedQuery('SELECT * FROM races', [], 'RaceCache');
             for (const row of rows) {
                 this.races.set(row.race_id, {
                     race_id: row.race_id,
