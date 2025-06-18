@@ -121,21 +121,33 @@ export default function ReferenceTableEditor() {
                 setTableDescription('');
                 setLoading(false);
             } else {
-                const [tableResponse, rawResponse] = await Promise.all([
-                    referenceTableService.getReferenceTableById(id),
-                    referenceTableService.fetchReferenceTableRaw(id)
-                ]);
+                const rawResponse = await referenceTableService.getReferenceTableRaw(id);
+                const { table, headers, rows } = rawResponse;
+                setTableName(table.name);
+                setTableDescription(table.description ?? '');
 
-                const { name, description } = tableResponse.data;
-                setTableName(name);
-                setTableDescription(description);
-
-                const { rows, headers } = rawResponse.data;
-                const colDefs = headers.map((header, i) => ({
-                    accessorKey: `col${i}`,
-                    header,
+                const colDefs = headers.map(({ column_index, header }) => ({
+                    accessorKey: `col${column_index}`,
+                    header: header,
                 }));
-                const rowData = rows.map(row => Object.fromEntries(row.map((cell, i) => [`col${i}`, cell])));
+
+                // Create a mapping from column_id to column_index
+                const columnIdToIndexMap = new Map(headers.map(h => [h.id, h.column_index]));
+
+                const rowData = rows.map(row => {
+                    const newRow = {};
+                    row.cells.forEach(cell => {
+                        const columnIndex = columnIdToIndexMap.get(cell.column_id);
+                        if (columnIndex !== undefined) {
+                            newRow[`col${columnIndex}`] = {
+                                value: cell.value,
+                                colSpan: cell.col_span || 1,
+                                rowSpan: cell.row_span || 1
+                            };
+                        }
+                    });
+                    return newRow;
+                });
                 setColumns(colDefs);
                 setData(rowData);
                 setLoading(false);
@@ -151,7 +163,7 @@ export default function ReferenceTableEditor() {
     });
 
     const handleChange = (rowIndex, columnId, value) => {
-        setData(old => old.map((row, i) => (i === rowIndex ? { ...row, [columnId]: value } : row)));
+        setData(old => old.map((row, i) => (i === rowIndex ? { ...row, [columnId]: { ...row[columnId], value: value } } : row)));
     };
 
     const handleHeaderChange = (columnId, value) => {
@@ -244,7 +256,40 @@ export default function ReferenceTableEditor() {
             name: tableName,
             description: tableDescription,
             headers: columns.map(col => col.header),
-            rows: data.map(row => columns.map(col => row[col.accessorKey]))
+            rows: (() => {
+                const rowsToSave = [];
+                const occupiedCellsForSave = new Set(); // Stores 'rowIndex-colIndex'
+
+                data.forEach((row, rowIndex) => {
+                    const currentRowCells = [];
+                    columns.forEach((col, colIndex) => {
+                        if (occupiedCellsForSave.has(`${rowIndex}-${colIndex}`)) {
+                            return; // Skip this cell as it's part of a span
+                        }
+
+                        const cellData = row[col.accessorKey] || { value: '', colSpan: 1, rowSpan: 1 };
+                        const colSpan = cellData.colSpan || 1;
+                        const rowSpan = cellData.rowSpan || 1;
+
+                        // Mark all cells covered by this span as occupied
+                        for (let r = 0; r < rowSpan; r++) {
+                            for (let c = 0; c < colSpan; c++) {
+                                occupiedCellsForSave.add(`${rowIndex + r}-${colIndex + c}`);
+                            }
+                        }
+
+                        // Add this cell's data to the current row, including its original column_index
+                        currentRowCells.push({
+                            column_index: colIndex,
+                            value: cellData.value ?? '',
+                            col_span: colSpan,
+                            row_span: rowSpan
+                        });
+                    });
+                    rowsToSave.push(currentRowCells);
+                });
+                return rowsToSave;
+            })()
         };
 
         try {
@@ -337,55 +382,82 @@ export default function ReferenceTableEditor() {
                     </tr>
                 </thead>
                 <tbody>
-                    {data.map((row, rowIndex) => (
-                        <tr key={rowIndex}>
-                            {columns.map((col, colIndex) => (
-                                <td key={col.accessorKey} className="border p-2 relative dark:border-gray-700">
-                                    <input
-                                        type="text"
-                                        ref={getCellRef(rowIndex, colIndex)}
-                                        value={row[col.accessorKey] ?? ''}
-                                        onChange={e => handleChange(rowIndex, col.accessorKey, e.target.value)}
-                                        className="w-full bg-transparent border-none focus:outline-none"
-                                        onKeyDown={(e) => handleKeyDown(e, 'cell', rowIndex, colIndex)}
-                                    />
-                                    {colIndex === columns.length - 1 && (
-                                        <div className="absolute top-0 bottom-3/4 right-0 w-4 group">
-                                            <button
-                                                onClick={() => addRowBefore(rowIndex)}
-                                                className="absolute -translate-y-1/2 translate-x-1/2 transform bg-gray-200 dark:bg-gray-800 rounded border dark:border-gray-700 size-7 flex items-center justify-center text-green-500 text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto"
-                                                title="Add row before"
+                    {(() => {
+                        const occupiedCells = new Set(); // Stores 'rowIndex-colIndex' strings
+                        return data.map((row, rowIndex) => {
+                            return (
+                                <tr key={rowIndex}>
+                                    {columns.map((col, colIndex) => {
+                                        if (occupiedCells.has(`${rowIndex}-${colIndex}`)) {
+                                            return null; // Skip rendering this cell
+                                        }
+
+                                        const cellData = row[col.accessorKey] || { value: '', colSpan: 1, rowSpan: 1 };
+                                        const colSpan = cellData.colSpan || 1;
+                                        const rowSpan = cellData.rowSpan || 1;
+
+                                        // Mark all cells covered by this span as occupied
+                                        for (let r = 0; r < rowSpan; r++) {
+                                            for (let c = 0; c < colSpan; c++) {
+                                                occupiedCells.add(`${rowIndex + r}-${colIndex + c}`);
+                                            }
+                                        }
+
+                                        return (
+                                            <td
+                                                key={col.accessorKey}
+                                                className="border p-2 relative dark:border-gray-700"
+                                                colSpan={colSpan}
+                                                rowSpan={rowSpan}
                                             >
-                                                <Icon path={mdiTableRowPlusBefore} size={0.7} />
-                                            </button>
-                                        </div>
-                                    )}
-                                    {colIndex === columns.length - 1 && (
-                                        <div className="absolute top-3/4 bottom-0 right-0 w-4 group">
-                                            <button
-                                                onClick={() => addRowAfter(rowIndex)}
-                                                className="absolute translate-x-1/2 transform bg-gray-200 dark:bg-gray-800 rounded border dark:border-gray-700 size-7 flex items-center justify-center text-green-500 text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto"
-                                                title="Add row after"
-                                            >
-                                                <Icon path={mdiTableRowPlusAfter} size={0.7} />
-                                            </button>
-                                        </div>
-                                    )}
-                                    {colIndex === columns.length - 1 && (
-                                        <div className="absolute right-0 top-1/4 bottom-1/4 w-4 group">
-                                            <button
-                                                onClick={() => deleteRow(rowIndex)}
-                                                className="absolute translate-x-1/2 top-1/2 -translate-y-1/2 transform border dark:bg-gray-800 dark:border-gray-700 rounded size-7 flex items-center justify-center text-red-500 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                                                title="Delete row"
-                                            >
-                                                <Icon path={mdiTableRowRemove} size={0.7} />
-                                            </button>
-                                        </div>
-                                    )}
-                                </td>
-                            ))}
-                        </tr>
-                    ))}
+                                                <input
+                                                    type="text"
+                                                    ref={getCellRef(rowIndex, colIndex)}
+                                                    value={cellData.value ?? ''}
+                                                    onChange={e => handleChange(rowIndex, col.accessorKey, e.target.value)}
+                                                    className="w-full bg-transparent border-none focus:outline-none"
+                                                    onKeyDown={(e) => handleKeyDown(e, 'cell', rowIndex, colIndex)}
+                                                />
+                                                {colIndex === columns.length - 1 && (
+                                                    <div className="absolute top-0 bottom-3/4 right-0 w-4 group">
+                                                        <button
+                                                            onClick={() => addRowBefore(rowIndex)}
+                                                            className="absolute -translate-y-1/2 translate-x-1/2 transform bg-gray-200 dark:bg-gray-800 rounded border dark:border-gray-700 size-7 flex items-center justify-center text-green-500 text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto"
+                                                            title="Add row before"
+                                                        >
+                                                            <Icon path={mdiTableRowPlusBefore} size={0.7} />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                {colIndex === columns.length - 1 && (
+                                                    <div className="absolute top-3/4 bottom-0 right-0 w-4 group">
+                                                        <button
+                                                            onClick={() => addRowAfter(rowIndex)}
+                                                            className="absolute translate-x-1/2 transform bg-gray-200 dark:bg-gray-800 rounded border dark:border-gray-700 size-7 flex items-center justify-center text-green-500 text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto"
+                                                            title="Add row after"
+                                                        >
+                                                            <Icon path={mdiTableRowPlusAfter} size={0.7} />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                {colIndex === columns.length - 1 && (
+                                                    <div className="absolute right-0 top-1/4 bottom-1/4 w-4 group">
+                                                        <button
+                                                            onClick={() => deleteRow(rowIndex)}
+                                                            className="absolute translate-x-1/2 top-1/2 -translate-y-1/2 transform border dark:bg-gray-800 dark:border-gray-700 rounded size-7 flex items-center justify-center text-red-500 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            title="Delete row"
+                                                        >
+                                                            <Icon path={mdiTableRowRemove} size={0.7} />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </td>
+                                        );
+                                    })}
+                                </tr>
+                            );
+                        });
+                    })()}
                 </tbody>
             </table>
             <div className="mt-4 flex justify-end space-x-2">

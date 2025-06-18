@@ -1,4 +1,3 @@
-import descriptorCache from '../../../db/caches/descriptorCache.js';
 import schoolCache from '../../../db/caches/schoolCache.js';
 import { timedQuery } from '../../../db/queryTimer.js';
 

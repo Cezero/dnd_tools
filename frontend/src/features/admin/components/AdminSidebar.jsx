@@ -104,7 +104,7 @@ function AdminSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }) {
                                     title="Reference Tables"
                                 >
                                     <Icon path={mdiTable} size={1} className={`${location.pathname === '/admin/reference-tables' ? 'text-blue-600 dark:text-blue-400' : ''}`} />
-                                    {isExpanded && <span className={`ml-3 ${location.pathname === '/admin/reference-tables' ? 'text-blue-600 dark:text-blue-400' : ''}`}>Reference Tables</span>}
+                                    {isExpanded && <span className={`ml-3 ${location.pathname.startsWith('/admin/reference-tables') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Reference Tables</span>}
                                 </Link>
                             </li>
                             {/* Add other admin functions here */}

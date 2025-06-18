@@ -121,8 +121,6 @@ export async function getReferenceTableById(req, res) {
                     if (cell.col_span > 1) attrs.push(`colspan="${cell.col_span}"`);
                     if (cell.row_span > 1) attrs.push(`rowspan="${cell.row_span}"`);
                     html += `      <td class="border px-2 py-1" ${attrs.join(' ')}>${cell.value}</td>\n`;
-                } else {
-                    html += '      <td class="border px-2 py-1"></td>\n';
                 }
             }
             html += '    </tr>\n';
@@ -153,19 +151,19 @@ export async function createReferenceTable(req, res) {
             const newTableId = rows.insertId;
 
             // 2. Insert columns
-            const columnIds = [];
+            const columnMap = new Map(); // Map column_index to column_id
             for (const [index, headerText] of headers.entries()) {
                 const { rows } = await query(
                     `INSERT INTO reference_table_columns (table_id, column_index, header) VALUES (?, ?, ?)`,
                     [newTableId, index, headerText],
                     `Insert column ${index} for table ${newTableId}`
                 );
-                columnIds.push(rows.insertId);
+                columnMap.set(index, rows.insertId);
             }
 
             // 3. Insert rows and cells
             const rowIds = [];
-            for (const [rowIndex, rowData] of table_rows.entries()) {
+            for (const [rowIndex, rowCells] of table_rows.entries()) { // rowCells is now an array of cell objects
                 const { rows } = await query(
                     `INSERT INTO reference_table_rows (table_id, row_index) VALUES (?, ?)`,
                     [newTableId, rowIndex],
@@ -174,13 +172,13 @@ export async function createReferenceTable(req, res) {
                 const newRowId = rows.insertId;
                 rowIds.push(newRowId);
 
-                for (const [colIndex, cellValue] of rowData.entries()) {
-                    const colId = columnIds[colIndex];
+                for (const cell of rowCells) { // Iterate over cell objects
+                    const colId = columnMap.get(cell.column_index);
                     if (colId !== undefined) { // Ensure column exists for this cell
                         await query(
-                            `INSERT INTO reference_table_cells (row_id, column_id, value) VALUES (?, ?, ?)`,
-                            [newRowId, colId, cellValue || null],
-                            `Insert cell at row ${rowIndex}, col ${colIndex} for table ${newTableId}`
+                            `INSERT INTO reference_table_cells (row_id, column_id, value, col_span, row_span) VALUES (?, ?, ?, ?, ?)`,
+                            [newRowId, colId, cell.value || null, cell.col_span || 1, cell.row_span || 1],
+                            `Insert cell at row ${rowIndex}, col ${cell.column_index} for table ${newTableId}`
                         );
                     }
                 }
@@ -248,20 +246,20 @@ export async function updateReferenceTable(req, res) {
             );
 
             // 3. Insert new columns
-            const columnIds = [];
+            const columnMap = new Map(); // Map column_index to column_id
             if (headers && headers.length > 0) {
                 for (const [index, headerText] of headers.entries()) {
                     const { rows } = await query(
                         `INSERT INTO reference_table_columns (table_id, column_index, header) VALUES (?, ?, ?)`,
                         [id, index, headerText],
                         `Insert new column ${index} for table ${id}`);
-                    columnIds.push(rows.insertId);
+                    columnMap.set(index, rows.insertId);
                 }
             }
 
             // 4. Insert new rows and cells
-            if (rows && rows.length > 0) {
-                for (const [rowIndex, rowData] of table_rows.entries()) {
+            if (table_rows && table_rows.length > 0) {
+                for (const [rowIndex, rowCells] of table_rows.entries()) { // rowCells is now an array of cell objects
                     const { rows } = await query(
                         `INSERT INTO reference_table_rows (table_id, row_index) VALUES (?, ?)`,
                         [id, rowIndex],
@@ -269,13 +267,13 @@ export async function updateReferenceTable(req, res) {
                     );
                     const newRowId = rows.insertId;
 
-                    for (const [colIndex, cellValue] of rowData.entries()) {
-                        const colId = columnIds[colIndex];
+                    for (const cell of rowCells) { // Iterate over cell objects
+                        const colId = columnMap.get(cell.column_index);
                         if (colId !== undefined) {
                             await query(
-                                `INSERT INTO reference_table_cells (row_id, column_id, value) VALUES (?, ?, ?)`,
-                                [newRowId, colId, cellValue || null],
-                                `Insert new cell at row ${rowIndex}, col ${colIndex} for table ${id}`
+                                `INSERT INTO reference_table_cells (row_id, column_id, value, col_span, row_span) VALUES (?, ?, ?, ?, ?)`,
+                                [newRowId, colId, cell.value || null, cell.col_span || 1, cell.row_span || 1],
+                                `Insert new cell at row ${rowIndex}, col ${cell.column_index} for table ${id}`
                             );
                         }
                     }
@@ -347,7 +345,7 @@ export async function getReferenceTableRaw(req, res) {
         );
 
         // Get all rows
-        const { rows } = await timedQuery(
+        const { rows: table_rows } = await timedQuery(
             `SELECT id, row_index, label FROM reference_table_rows WHERE table_id = ? ORDER BY row_index`,
             [id],
             'Fetch reference table rows'
@@ -355,15 +353,15 @@ export async function getReferenceTableRaw(req, res) {
 
         // Get all cells
         const { rows: cells } = await timedQuery(
-            `SELECT row_id, column_id, value, col_span, row_span FROM reference_table_cells WHERE row_id IN (?)`,
-            [rows.map(r => r.id).join(',')],
+            `SELECT row_id, column_id, value, col_span, row_span FROM reference_table_cells WHERE row_id IN (${table_rows.map(() => '?').join(',')})`,
+            table_rows.map(r => r.id),
             'Fetch reference table cells'
         );
 
         const colMap = Object.fromEntries(columns.map(col => [col.id, col]));
-        const rowMap = Object.fromEntries(rows.map(row => [row.id, row]));
+        const rowMap = Object.fromEntries(table_rows.map(row => [row.id, row]));
 
-        const structuredRows = rows.map(row => ({
+        const structuredRows = table_rows.map(row => ({
             id: row.id,
             rowIndex: row.row_index,
             label: row.label,
@@ -377,7 +375,7 @@ export async function getReferenceTableRaw(req, res) {
         });
 
         res.json({
-            table: table,
+            table: table[0],
             headers: columns,
             rows: structuredRows,
         });

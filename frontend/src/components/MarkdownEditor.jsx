@@ -1,12 +1,29 @@
 // src/components/MarkdownEditor.jsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import MDEditor from '@uiw/react-md-editor';
-import remarkGfm from 'remark-gfm';
-import remarkLinkEntities from '@/plugins/remarkLinkEntities';
-import rehypeRaw from 'rehype-raw';
+import { renderMarkdown } from '@/plugins/renderMarkdown';
 import '@/styles/mdeditor.css';
 
 export default function MarkdownEditor({ value, onChange, label = "Description", className = "", id, name }) {
+  const [renderedHtml, setRenderedHtml] = useState('');
+
+  useEffect(() => {
+    const processMarkdown = async () => {
+      if (value) {
+        const html = await renderMarkdown(value);
+        setRenderedHtml(html);
+      } else {
+        setRenderedHtml('');
+      }
+    };
+
+    processMarkdown();
+  }, [value]);
+
+  const customRenderPreview = (markdown, editorProps) => {
+    return <div dangerouslySetInnerHTML={{ __html: renderedHtml }} />;
+  };
+
   return (
     <div className={`w-full ${className}`}>
       {label && <h2 className="text-lg font-semibold mb-2">{label}</h2>}
@@ -16,13 +33,17 @@ export default function MarkdownEditor({ value, onChange, label = "Description",
         value={value}
         onChange={onChange}
         enableScroll={true}
-
-        previewOptions={{
-          remarkPlugins: [remarkGfm, remarkLinkEntities],
-          rehypePlugins: [rehypeRaw]
-        }}
         className="mb-6"
         height="auto"
+        preview="live"
+        components={{
+          preview: (props) => (
+            <div
+              className="wmde-markdown-parsed"
+              dangerouslySetInnerHTML={{ __html: renderedHtml }}
+            />
+          ),
+        }}
       />
     </div>
   );

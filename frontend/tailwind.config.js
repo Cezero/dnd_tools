@@ -18,6 +18,7 @@ export default {
           css: {
             'p': {
               textIndent: '0',
+              marginTop: '0',
               lineHeight: '18px',
               fontSize: '14px'
             },

@@ -43,7 +43,7 @@ export const getReferenceTableById = async (id) => {
     }
 };
 
-export const fetchReferenceTableRaw = async (id) => {
+export const getReferenceTableRaw = async (id) => {
     try {
         const url = `/reference-tables/${id}/raw`;
         const response = await api(url, { method: 'GET' });
@@ -54,4 +54,14 @@ export const fetchReferenceTableRaw = async (id) => {
     }
 };
 
-export default { fetchReferenceTables, createReferenceTable, deleteReferenceTable, getReferenceTableById, fetchReferenceTableRaw };
+export const updateReferenceTable = async (id, tableData) => {
+    try {
+        const response = await api(`/reference-tables/${id}`, { method: 'PUT', body: JSON.stringify(tableData) });
+        return response;
+    } catch (error) {
+        console.error(`Error updating reference table with ID ${id}:`, error);
+        throw error;
+    }
+};
+
+export default { fetchReferenceTables, createReferenceTable, deleteReferenceTable, getReferenceTableById, getReferenceTableRaw, updateReferenceTable };

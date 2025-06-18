@@ -2,10 +2,7 @@ import { useParams, Link, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import lookupService from '@/services/LookupService';
 import api from '@/services/api';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
-import remarkLinkEntities from '@/plugins/remarkLinkEntities';
+import ProcessMarkdown from '@/components/markdown/ProcessMarkdown';
 import { useAuth } from '@/auth/authProvider';
 import { useNavigate } from 'react-router-dom';
 
@@ -82,12 +79,7 @@ function SpellDetail() {
                     {spell.spell_resistance && <p><strong>Spell Resistance:</strong> {spell.spell_resistance}</p>}
                     {spell.sources && spell.sources.length > 0 && <p><strong>Source:</strong> {lookupService.getSourceDisplay(spell.sources)}</p>}
                     <div className="mt-3 p-2 rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert">
-                        <ReactMarkdown
-                            remarkPlugins={[remarkGfm, remarkLinkEntities]}
-                            rehypePlugins={[rehypeRaw]}
-                        >
-                            {spell.spell_description}
-                        </ReactMarkdown>
+                        <ProcessMarkdown markdown={spell.spell_description} />
                     </div>
                     <div className="mt-4 text-right">
                         <button type="button" onClick={() => navigate(`/spells${fromListParams ? `?${fromListParams}` : ''}`)} className="inline-block px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 border dark:border-gray-500">Back to List</button>
