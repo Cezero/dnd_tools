@@ -18,19 +18,16 @@ export default function remarkEntitiesAndEmbeds() {
 
             while ((match = regex.exec(node.value)) !== null) {
                 const [fullMatch, tag1, val1, tag2, val2] = match;
-                const r_type = tag1 || tag2;
-                const r_value = val1 || val2;
-
-                const trimmedType = r_type.trim();
-                const trimmedValue = r_value.trim();
+                const r_type = (tag1 || tag2 || '').trim();
+                const r_value = (val1 || val2 || '').trim();
 
                 if (match.index > lastIndex) {
                     parts.push({ type: 'text', value: node.value.slice(lastIndex, match.index) });
                 }
 
-                if (ENTITY_TYPES[trimmedType]) {
+                if (ENTITY_TYPES[r_type]) {
                     // Queue entity resolution
-                    queueEntityResolution(trimmedType.toLowerCase(), trimmedValue.toLowerCase());
+                    queueEntityResolution(r_type.toLowerCase(), r_value.toLowerCase());
 
                     parts.push({
                         type: 'link',
@@ -39,21 +36,24 @@ export default function remarkEntitiesAndEmbeds() {
                             hName: 'a',
                             hProperties: {
                                 href: '',
-                                dataEntityType: trimmedType.toLowerCase(),
-                                dataEntityValue: trimmedValue.toLowerCase(),
+                                dataEntityType: r_type.toLowerCase(),
+                                dataEntityValue: r_value.toLowerCase(),
                             },
                         },
-                        children: [{ type: 'text', value: trimmedValue.toLowerCase() }],
+                        children: [{ type: 'text', value: r_value.toLowerCase() }],
                     });
-                } else if (trimmedType === 'Table') {
+                } else if (r_type === 'Table') {
                     // Queue table resolution
-                    queueTableResolution(trimmedValue.toLowerCase());
+                    queueTableResolution(r_value.toLowerCase());
 
                     parts.push({
                         type: 'element',
                         tagName: 'div',
-                        properties: {
-                            dataTableSlug: trimmedValue.toLowerCase(),
+                        data: {
+                            hName: 'div',
+                            hProperties: {
+                                dataTableSlug: r_value.toLowerCase(),
+                            },
                         },
                         children: [],
                     });

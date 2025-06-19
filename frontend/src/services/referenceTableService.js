@@ -33,23 +33,12 @@ export const deleteReferenceTable = async (id) => {
     }
 };
 
-export const getReferenceTableById = async (id) => {
+export const getReferenceTable = async (identifier) => {
     try {
-        const response = await api(`/reference-tables/${id}`, { method: 'GET' });
+        const response = await api(`/reference-tables/${identifier}`, { method: 'GET' });
         return response;
     } catch (error) {
-        console.error(`Error fetching reference table with ID ${id}:`, error);
-        throw error;
-    }
-};
-
-export const getReferenceTableRaw = async (id) => {
-    try {
-        const url = `/reference-tables/${id}/raw`;
-        const response = await api(url, { method: 'GET' });
-        return response;
-    } catch (error) {
-        console.error(`Error fetching raw data for reference table with ID ${id}:`, error);
+        console.error(`Error fetching reference table with ID ${identifier}:`, error);
         throw error;
     }
 };
@@ -64,4 +53,4 @@ export const updateReferenceTable = async (id, tableData) => {
     }
 };
 
-export default { fetchReferenceTables, createReferenceTable, deleteReferenceTable, getReferenceTableById, getReferenceTableRaw, updateReferenceTable };
+export default { fetchReferenceTables, createReferenceTable, deleteReferenceTable, getReferenceTable, updateReferenceTable };

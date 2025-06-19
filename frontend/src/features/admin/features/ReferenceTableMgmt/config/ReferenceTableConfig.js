@@ -10,13 +10,20 @@ export const routes = [
 
 export const navigation = null;
 
-export const DEFAULT_COLUMNS = ['name', 'description', 'row_count', 'column_count'];
+export const DEFAULT_COLUMNS = ['name', 'slug', 'description', 'row_count', 'column_count'];
 
 export const COLUMN_DEFINITIONS = {
     name: {
         label: 'Name',
         sortable: true,
-        filterable: false,
+        filterable: true,
+        filterType: 'input'
+    },
+    slug: {
+        label: 'Slug',
+        sortable: true,
+        filterable: true,
+        filterType: 'input'
     },
     description: {
         label: 'Description',

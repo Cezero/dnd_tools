@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import Icon from '@mdi/react';
 import { mdiFilterOutline, mdiSortAscending, mdiSortDescending, mdiCog, mdiFilter } from '@mdi/js';
 import { ColumnConfigModal, useColumnConfig } from '@/components/GenericList/ColumnConfig';
-import { pluralize } from 'pluralize';
+import pluralize from 'pluralize';
 
 function GenericList({
     // Configuration props

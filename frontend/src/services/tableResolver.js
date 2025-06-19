@@ -1,27 +1,41 @@
+import api from './api';
 const tableQueue = new Set();
 const tableCache = new Map();
 
 export function queueTableResolution(slug) {
-  if (tableCache.has(slug)) return tableCache.get(slug);
-  tableQueue.add(slug);
-  return undefined;
+    tableQueue.add(slug);
+    return undefined;
 }
 
 export async function flushTableResolutionQueue() {
-  if (tableQueue.size === 0) return {};
+    const slugsToFetch = new Set();
+    const cachedResults = {};
 
-  const payload = Array.from(tableQueue);
-  const res = await fetch('/api/tables/resolve', {
-    method: 'POST',
-    body: JSON.stringify({ slugs: payload }),
-    headers: { 'Content-Type': 'application/json' },
-  });
-  const result = await res.json();
+    for (const slug of tableQueue) {
+        if (tableCache.has(slug)) {
+            cachedResults[slug] = tableCache.get(slug);
+        } else {
+            slugsToFetch.add(slug);
+        }
+    }
 
-  for (const slug of payload) {
-    tableCache.set(slug, result[slug]);
-  }
+    tableQueue.clear();
 
-  tableQueue.clear();
-  return result;
+    let fetchedResults = {};
+    if (slugsToFetch.size > 0) {
+        const payload = Array.from(slugsToFetch);
+        const res = await api('/reference-tables/resolve', {
+            method: 'POST',
+            body: JSON.stringify({ identifiers: payload }),
+        });
+        fetchedResults = await res;
+
+        for (const slug of payload) {
+            tableCache.set(slug, fetchedResults[slug]);
+        }
+    }
+
+    // Combine all results: existing cache, newly found in cache, and newly fetched.
+    const allAvailableTables = { ...Object.fromEntries(tableCache.entries()), ...cachedResults, ...fetchedResults };
+    return allAvailableTables;
 }

@@ -5,6 +5,7 @@ import GenericList from '@/components/GenericList/GenericList';
 import Icon from '@mdi/react';
 import { mdiTrashCan, mdiPlaylistEdit } from '@mdi/js';
 import { COLUMN_DEFINITIONS, DEFAULT_COLUMNS } from '@/features/admin/features/ReferenceTableMgmt/config/ReferenceTableConfig';
+import Input from '@/components/GenericList/Input';
 
 const ReferenceTablesList = () => {
     const navigate = useNavigate();
@@ -81,6 +82,10 @@ const ReferenceTablesList = () => {
                 navigate={navigate}
                 refreshTrigger={refreshTrigger}
                 itemDesc="reference table"
+                filterOptions={{
+                    name: { component: Input },
+                    slug: { component: Input },
+                }}
             />
         </div>
     );

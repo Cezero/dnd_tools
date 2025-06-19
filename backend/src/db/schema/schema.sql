@@ -230,6 +230,7 @@ CREATE TABLE `reference_table_columns` (
   `table_id` int NOT NULL,
   `column_index` int NOT NULL,
   `header` varchar(255) NOT NULL,
+  `alignment` varchar(10) DEFAULT NULL,
   `span` int DEFAULT '1',
   PRIMARY KEY (`id`),
   KEY `table_id` (`table_id`),

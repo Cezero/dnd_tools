@@ -1,10 +1,84 @@
 import { timedQuery, runTransactionWith } from '../../../db/queryTimer.js';
 
+export async function getReferenceTableData(identifier) {
+    let table;
+    // Determine if the identifier is a number (ID) or a string (slug)
+    const isNumeric = !isNaN(identifier);
+
+    if (isNumeric) {
+        const { rows } = await timedQuery(
+            `SELECT id, name, description, slug FROM reference_tables WHERE id = ?`,
+            [identifier],
+            `Fetch table details by ID: ${identifier}`
+        );
+        table = rows[0];
+    } else {
+        const { rows } = await timedQuery(
+            `SELECT id, name, description, slug FROM reference_tables WHERE slug = ?`,
+            [identifier],
+            `Fetch table details by slug: ${identifier}`
+        );
+        table = rows[0];
+    }
+
+    if (!table) {
+        return null;
+    }
+
+    const tableId = table.id;
+
+    // Get columns in order
+    const { rows: columns } = await timedQuery(
+        `SELECT id, header, column_index, alignment FROM reference_table_columns WHERE table_id = ? ORDER BY column_index`,
+        [tableId],
+        `Fetch columns for table ${tableId}`
+    );
+
+    // Get all rows
+    const { rows: table_rows } = await timedQuery(
+        `SELECT id, row_index, label FROM reference_table_rows WHERE table_id = ? ORDER BY row_index`,
+        [tableId],
+        `Fetch rows for table ${tableId}`
+    );
+
+    // Get all cells
+    let cells = [];
+    if (table_rows.length > 0) {
+        ({ rows: cells } = await timedQuery(
+            `SELECT row_id, column_id, value, col_span, row_span FROM reference_table_cells WHERE row_id IN (${table_rows.map(() => '?').join(',')})`,
+            table_rows.map(r => r.id),
+            `Fetch cells for table ${tableId}`
+        ));
+    }
+
+    const colMap = Object.fromEntries(columns.map(col => [col.id, col]));
+    const rowMap = Object.fromEntries(table_rows.map(row => [row.id, row]));
+
+    const structuredRows = table_rows.map(row => ({
+        id: row.id,
+        rowIndex: row.row_index,
+        label: row.label,
+        cells: []
+    }));
+
+    cells.forEach(cell => {
+        const rowIndex = rowMap[cell.row_id].row_index;
+        const colIndex = colMap[cell.column_id].column_index;
+        structuredRows[rowIndex].cells[colIndex] = cell;
+    });
+
+    return {
+        table: table,
+        headers: columns,
+        rows: structuredRows,
+    };
+}
+
 export async function getReferenceTables(req, res) {
-    const { page = 1, limit = 20, sort = 'name', order = 'asc', name = '' } = req.query;
+    const { page = 1, limit = 20, sort = 'name', order = 'asc', name = '', slug = '' } = req.query;
     const offset = (page - 1) * limit;
 
-    const allowedSorts = ['name'];
+    const allowedSorts = ['name', 'slug'];
     const sortBy = allowedSorts.includes(sort) ? sort : 'name';
     const sortOrder = order === 'desc' ? 'DESC' : 'ASC';
 
@@ -12,8 +86,13 @@ export async function getReferenceTables(req, res) {
     let whereValues = [];
 
     if (name) {
-        whereClauses.push(`name LIKE ?`);
+        whereClauses.push(`rt.name LIKE ?`);
         whereValues.push(`%${name}%`);
+    }
+
+    if (slug) {
+        whereClauses.push(`rt.slug LIKE ?`);
+        whereValues.push(`%${slug}%`);
     }
 
     const where = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
@@ -24,6 +103,7 @@ export async function getReferenceTables(req, res) {
                 rt.id,
                 rt.name,
                 rt.description,
+                rt.slug,
                 COALESCE(rc.row_count, 0) as row_count,
                 COALESCE(cc.column_count, 0) as column_count,
                 COUNT(rt.id) OVER() as total_count
@@ -61,101 +141,33 @@ export async function getReferenceTables(req, res) {
     }
 }
 
-export async function getReferenceTableById(req, res) {
-    const { id } = req.params;
-
-    try {
-        // Get columns in order
-        const { rows: columns } = await timedQuery(`
-            SELECT id, header, column_index
-            FROM reference_table_columns
-            WHERE table_id = ?
-            ORDER BY column_index
-            `, [id], 'Fetch reference table columns by ID');
-
-        const colMap = Object.fromEntries(columns.map(col => [col.id, col]));
-
-        // Get all rows
-        const { rows } = await timedQuery(`
-            SELECT id, row_index
-            FROM reference_table_rows
-            WHERE table_id = ?
-            ORDER BY row_index
-            `, [id], 'Fetch reference table rows by ID');
-
-        const rowMap = Object.fromEntries(rows.map(row => [row.id, row]));
-
-        // Get all cells
-        const { rows: cells } = await timedQuery(`
-            SELECT row_id, column_id, value, col_span, row_span
-            FROM reference_table_cells
-            WHERE row_id IN (${rows.map(r => r.id).join(',')})
-            `, [], 'Fetch reference table cells by ID');
-
-        // Group cells by row
-        const rowsByIndex = {};
-        rows.forEach(r => (rowsByIndex[r.row_index] = []));
-        cells.forEach(cell => {
-            const colIndex = colMap[cell.column_id].column_index;
-            rowsByIndex[rowMap[cell.row_id].row_index][colIndex] = cell;
-        });
-
-        // Build HTML string
-        let html = '<table class="table-auto border-collapse border border-gray-300 dark:border-gray-600 w-full">\n';
-
-        // Header row
-        html += '  <thead>\n    <tr>\n';
-        columns.forEach(col => {
-            html += `      <th class="border px-2 py-1">${col.header}</th>\n`;
-        });
-        html += '    </tr>\n  </thead>\n';
-
-        // Body rows
-        html += '  <tbody>\n';
-        Object.values(rowsByIndex).forEach(row => {
-            html += '    <tr>\n';
-            for (let i = 0; i < columns.length; i++) {
-                const cell = row[i];
-                if (cell) {
-                    const attrs = [];
-                    if (cell.col_span > 1) attrs.push(`colspan="${cell.col_span}"`);
-                    if (cell.row_span > 1) attrs.push(`rowspan="${cell.row_span}"`);
-                    html += `      <td class="border px-2 py-1" ${attrs.join(' ')}>${cell.value}</td>\n`;
-                }
-            }
-            html += '    </tr>\n';
-        });
-        html += '  </tbody>\n</table>';
-        res.json({ html });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Server error');
-    }
-}
-
 export async function createReferenceTable(req, res) {
-    const { name, description, headers, rows: table_rows } = req.body;
+    const { name, description, headers, rows: table_rows, slug } = req.body;
 
     if (!name) {
         return res.status(400).send('Reference table name is required.');
+    }
+
+    if (!slug) {
+        return res.status(400).send('Reference table slug is required.');
     }
 
     try {
         const newTable = await runTransactionWith(async (query) => {
             // 1. Insert into reference_tables
             const { rows } = await query(
-                `INSERT INTO reference_tables (name, description) VALUES (?, ?)`,
-                [name, description || null],
+                `INSERT INTO reference_tables (name, description, slug) VALUES (?, ?, ?)`,
+                [name, description || null, slug],
                 'Create reference table'
             );
             const newTableId = rows.insertId;
 
             // 2. Insert columns
             const columnMap = new Map(); // Map column_index to column_id
-            for (const [index, headerText] of headers.entries()) {
+            for (const [index, headerData] of headers.entries()) {
                 const { rows } = await query(
-                    `INSERT INTO reference_table_columns (table_id, column_index, header) VALUES (?, ?, ?)`,
-                    [newTableId, index, headerText],
+                    `INSERT INTO reference_table_columns (table_id, column_index, header, alignment) VALUES (?, ?, ?, ?)`,
+                    [newTableId, index, headerData.header, headerData.alignment],
                     `Insert column ${index} for table ${newTableId}`
                 );
                 columnMap.set(index, rows.insertId);
@@ -186,7 +198,7 @@ export async function createReferenceTable(req, res) {
 
             // Fetch the newly created table details to return
             const { rows: fetchedTable } = await query(
-                `SELECT id, name, description, created_at FROM reference_tables WHERE id = ?`,
+                `SELECT id, name, description, slug, created_at FROM reference_tables WHERE id = ?`,
                 [newTableId],
                 'Fetch newly created reference table'
             );
@@ -202,10 +214,10 @@ export async function createReferenceTable(req, res) {
 
 export async function updateReferenceTable(req, res) {
     const { id } = req.params;
-    const { name, description, headers, rows: table_rows } = req.body;
+    const { name, description, headers, rows: table_rows, slug } = req.body;
 
-    if (!name && description === undefined && (!headers || headers.length === 0) && (!rows || rows.length === 0)) {
-        return res.status(400).send('At least one field (name, description, headers, or rows) must be provided for update.');
+    if (!name && description === undefined && (!headers || headers.length === 0) && (!rows || rows.length === 0) && !slug) {
+        return res.status(400).send('At least one field (name, description, headers, rows, or slug) must be provided for update.');
     }
 
     try {
@@ -217,6 +229,11 @@ export async function updateReferenceTable(req, res) {
             if (name) {
                 updateFields.push('name = ?');
                 updateValues.push(name);
+            }
+
+            if (slug) {
+                updateFields.push('slug = ?');
+                updateValues.push(slug);
             }
 
             if (description !== undefined) {
@@ -248,10 +265,10 @@ export async function updateReferenceTable(req, res) {
             // 3. Insert new columns
             const columnMap = new Map(); // Map column_index to column_id
             if (headers && headers.length > 0) {
-                for (const [index, headerText] of headers.entries()) {
+                for (const [index, headerData] of headers.entries()) {
                     const { rows } = await query(
-                        `INSERT INTO reference_table_columns (table_id, column_index, header) VALUES (?, ?, ?)`,
-                        [id, index, headerText],
+                        `INSERT INTO reference_table_columns (table_id, column_index, header, alignment) VALUES (?, ?, ?, ?)`,
+                        [id, index, headerData.header, headerData.alignment],
                         `Insert new column ${index} for table ${id}`);
                     columnMap.set(index, rows.insertId);
                 }
@@ -282,7 +299,7 @@ export async function updateReferenceTable(req, res) {
 
             // 5. Fetch the updated table details to return
             const { rows: fetchedTable } = await query(
-                `SELECT id, name, description, created_at FROM reference_tables WHERE id = ?`,
+                `SELECT id, name, description, slug, created_at FROM reference_tables WHERE id = ?`,
                 [id],
                 'Fetch updated reference table'
             );
@@ -322,64 +339,39 @@ export async function deleteReferenceTable(req, res) {
     }
 }
 
-export async function getReferenceTableRaw(req, res) {
-    const { id } = req.params;
+export async function getReferenceTable(req, res) {
+    const { identifier } = req.params;
 
     try {
-        // Get table details
-        const { rows: table } = await timedQuery(
-            `SELECT id, name, description FROM reference_tables WHERE id = ?`,
-            [id],
-            'Fetch reference table details'
-        );
+        const tableData = await getReferenceTableData(identifier);
 
-        if (table.length === 0) {
+        if (!tableData) {
             return res.status(404).send('Reference table not found.');
         }
 
-        // Get columns in order
-        const { rows: columns } = await timedQuery(
-            `SELECT id, header, column_index, span FROM reference_table_columns WHERE table_id = ? ORDER BY column_index`,
-            [id],
-            'Fetch reference table columns'
-        );
+        res.json(tableData);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server error');
+    }
+}
 
-        // Get all rows
-        const { rows: table_rows } = await timedQuery(
-            `SELECT id, row_index, label FROM reference_table_rows WHERE table_id = ? ORDER BY row_index`,
-            [id],
-            'Fetch reference table rows'
-        );
+export async function resolveReferenceTables(req, res) {
+    const { identifiers } = req.body;
 
-        // Get all cells
-        const { rows: cells } = await timedQuery(
-            `SELECT row_id, column_id, value, col_span, row_span FROM reference_table_cells WHERE row_id IN (${table_rows.map(() => '?').join(',')})`,
-            table_rows.map(r => r.id),
-            'Fetch reference table cells'
-        );
+    if (!Array.isArray(identifiers) || identifiers.length === 0) {
+        return res.status(400).send('An array of table IDs or slugs is required.');
+    }
 
-        const colMap = Object.fromEntries(columns.map(col => [col.id, col]));
-        const rowMap = Object.fromEntries(table_rows.map(row => [row.id, row]));
+    const results = {};
 
-        const structuredRows = table_rows.map(row => ({
-            id: row.id,
-            rowIndex: row.row_index,
-            label: row.label,
-            cells: []
-        }));
+    try {
+        for (const identifier of identifiers) {
+            const tableData = await getReferenceTableData(identifier);
+            results[identifier] = tableData;
+        }
 
-        cells.forEach(cell => {
-            const rowIndex = rowMap[cell.row_id].row_index;
-            const colIndex = colMap[cell.column_id].column_index;
-            structuredRows[rowIndex].cells[colIndex] = cell;
-        });
-
-        res.json({
-            table: table[0],
-            headers: columns,
-            rows: structuredRows,
-        });
-
+        res.json(results);
     } catch (err) {
         console.error(err);
         res.status(500).send('Server error');
