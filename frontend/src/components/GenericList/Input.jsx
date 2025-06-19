@@ -1,13 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Icon from '@mdi/react';
 import { mdiCloseCircleOutline } from '@mdi/js';
 
 const Input = ({ onChange, className, selected, open, onOpenChange, ...props }) => {
     const [inputValue, setInputValue] = useState(selected || '');
+    const inputRef = useRef(null);
 
     useEffect(() => {
         setInputValue(selected || '');
     }, [selected]);
+
+    useEffect(() => {
+        if (open && inputRef.current) {
+            inputRef.current.focus();
+        }
+    }, [open]);
 
     const handleInternalChange = (event) => {
         setInputValue(event.target.value);
@@ -42,6 +49,7 @@ const Input = ({ onChange, className, selected, open, onOpenChange, ...props }) 
         <div className="absolute mt-2 p-1 bg-opacity-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-lg" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center relative">
                 <input
+                    ref={inputRef}
                     value={inputValue}
                     onChange={handleInternalChange}
                     onBlur={handleApplyFilter}

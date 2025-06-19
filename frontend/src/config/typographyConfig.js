@@ -50,6 +50,9 @@ const typographyConfig = {
                     'td:not([colspan])': {
                         whiteSpace: 'nowrap',
                     },
+                    'p': {
+                        margin: '0',
+                    },
                     'tbody': {
                         'tr': {
                             '&:nth-child(even)': {
