@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchReferenceTables, deleteReferenceTable } from '@/services/referenceTableService';
-import GenericList from '@/components/GenericList/GenericList';
 import Icon from '@mdi/react';
 import { mdiTrashCan, mdiPlaylistEdit } from '@mdi/js';
+import { fetchReferenceTables, deleteReferenceTable } from '@/features/admin/features/ReferenceTableMgmt/services/referenceTableService';
 import { COLUMN_DEFINITIONS, DEFAULT_COLUMNS } from '@/features/admin/features/ReferenceTableMgmt/config/ReferenceTableConfig';
+import GenericList from '@/components/GenericList/GenericList';
 import Input from '@/components/GenericList/Input';
 
 const ReferenceTablesList = () => {

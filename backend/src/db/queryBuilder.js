@@ -81,10 +81,10 @@ export function createFilterProcessor(filterConfig) {
             }
         }
 
-        processed.pagination.page = processed.pagination.page || 1;
-        processed.pagination.limit = processed.pagination.limit || 20;
-        processed.sort.sortBy = processed.sort.sortBy || 'spell_name'; // Default sort may need to be overridden by specific builder
-        processed.sort.sortOrder = processed.sort.sortOrder || 'asc';
+        processed.pagination.page = processed.pagination.page || filterConfig.page || 1;
+        processed.pagination.limit = processed.pagination.limit || filterConfig.limit || 25;
+        processed.sort.sortBy = processed.sort.sortBy || filterConfig.sort || 'name'; // Default sort may need to be overridden by specific builder
+        processed.sort.sortOrder = processed.sort.sortOrder || filterConfig.order || 'asc';
 
         return processed;
     };

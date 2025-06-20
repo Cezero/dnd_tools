@@ -4,6 +4,7 @@ import Icon from '@mdi/react';
 import { mdiFilterOutline, mdiSortAscending, mdiSortDescending, mdiCog, mdiFilter } from '@mdi/js';
 import { ColumnConfigModal, useColumnConfig } from '@/components/GenericList/ColumnConfig';
 import pluralize from 'pluralize';
+import BooleanInput from '@/components/GenericList/BooleanInput';
 
 function GenericList({
     // Configuration props
@@ -51,6 +52,8 @@ function GenericList({
                 : [];
             const logic = searchParams.get(`${paramName}_logic`) || 'or';
             initialFilters[key] = { values, logic };
+        } else if (filterType === 'boolean') {
+            initialFilters[key] = paramValue === 'true' ? true : (paramValue === 'false' ? false : null);
         } else {
             initialFilters[key] = paramValue || '';
         }
@@ -99,6 +102,10 @@ function GenericList({
                         newParams.set(`${paramName}_logic`, filters[key].logic);
                     }
                 }
+            } else if (filterType === 'boolean') {
+                if (filters[key] !== null) {
+                    newParams.set(paramName, String(filters[key]));
+                }
             } else if (filters[key] !== '') {
                 newParams.set(paramName, filters[key]);
             }
@@ -132,6 +139,8 @@ function GenericList({
             const filterType = columnDefinitions[filterKey]?.filterType;
             if (filterType === 'multi-select') {
                 newFilters[filterKey] = { ...newFilters[filterKey], values: value };
+            } else if (filterType === 'boolean') {
+                newFilters[filterKey] = value;
             } else {
                 newFilters[filterKey] = value;
             }
@@ -141,7 +150,7 @@ function GenericList({
 
         // Optionally, close single-select dropdowns immediately
         const filterType = columnDefinitions[filterKey]?.filterType;
-        if (filterType === 'select') {
+        if (filterType === 'select' || filterType === 'boolean') {
             setDisplayFilter('');
         }
     }, [columnDefinitions]); // Removed 'setSearchParams' and 'filters' from dependency array
@@ -166,6 +175,8 @@ function GenericList({
         } else { // Filter is opening
             if (filterType === 'multi-select') {
                 setActiveMultiSelectFilterId(columnId);
+            } else if (filterType === 'boolean') {
+                // Boolean filters don't have an active state similar to multi-select
             }
             setDisplayFilter(columnId);
         }
@@ -221,6 +232,10 @@ function GenericList({
                         newParams.set(`${paramName}_logic`, filters[key].logic);
                     }
                 }
+            } else if (filterType === 'boolean') {
+                if (filters[key] !== null) {
+                    newParams.set(paramName, String(filters[key]));
+                }
             } else if (filters[key] !== '') { // For single-selects/inputs, check if value is non-empty
                 newParams.set(paramName, filters[key]);
             }
@@ -243,6 +258,10 @@ function GenericList({
                     if (filters[key]?.logic) {
                         newParams.set(`${paramName}_logic`, filters[key].logic);
                     }
+                }
+            } else if (filterType === 'boolean') {
+                if (filters[key] !== null) {
+                    newParams.set(paramName, String(filters[key]));
                 }
             } else if (filters[key] !== '') { // For single-selects/inputs, check if value is non-empty
                 newParams.set(paramName, filters[key]);
@@ -274,22 +293,29 @@ function GenericList({
                     }
                 }}
                 className={`border-b p-1 text-left text-md border-gray-600 dark:border-gray-700 dark:bg-gray-900 ${column.sortable ? 'cursor-pointer' : ''}`}
-                title={column.sortable ? (
-                    sortKey === columnId ? (
-                        sortOrder === 'asc' ? `Sort descending by ${column.label}` : `Clear sort for ${column.label}`
-                    ) : `Sort ascending by ${column.label}`
-                ) : undefined}
             >
                 <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                        {column.label}
+                        <div
+                            title={column.sortable ? (
+                                sortKey === columnId ? (
+                                    sortOrder === 'asc' ? `Sort descending by ${column.label}` : `Clear sort for ${column.label}`
+                                ) : `Sort ascending by ${column.label}`
+                            ) : undefined}
+                        >
+                            {column.label}
+                        </div>
                         {column.filterable && (
                             <button onClick={(e) => { e.stopPropagation(); toggleFilter(columnId); }} className="ml-2" title={`Filter by ${column.label}`}>
                                 <Icon path={isFiltered ? mdiFilter : mdiFilterOutline} size={0.7} />
                             </button>
                         )}
                         {column.sortable && sortKey === columnId && (
-                            <span className="ml-1">
+                            <span className="ml-1"
+                                title={sortKey === columnId ? (
+                                    sortOrder === 'asc' ? `Sort descending by ${column.label}` : `Clear sort for ${column.label}`
+                                ) : `Sort ascending by ${column.label}`}
+                            >
                                 {sortOrder === 'asc' ? (
                                     <Icon path={mdiSortAscending} size={0.7} />
                                 ) : (
@@ -325,6 +351,10 @@ function GenericList({
                             logicType: filters[columnId]?.logic,
                             onLogicChange: (newLogic) => handleLogicChange(columnId, newLogic),
                         }),
+                        ...(filterType === 'boolean' && {
+                            value: filters[columnId],
+                            onToggle: (value) => handleFilterChange(columnId, value),
+                        }),
                         ...filterOptions[columnId].props,
                     })
                 )}
@@ -348,7 +378,7 @@ function GenericList({
                         </tr>
                     </thead>
                     <tbody>
-                        {data.length === 0 ? (
+                        {data === undefined || data.length === 0 ? (
                             <tr>
                                 <td colSpan={visibleColumns.length} className="p-4 text-center text-gray-500 dark:text-gray-400">
                                     No {pluralize(itemDesc, 2)} match the current filters.

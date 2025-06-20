@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useReactTable, getCoreRowModel, flexRender } from '@tanstack/react-table';
-import referenceTableService from '@/services/referenceTableService';
+import referenceTableService from '@/features/admin/features/ReferenceTableMgmt/services/referenceTableService';
 import { Icon } from '@mdi/react';
 import {
     mdiTableColumnRemove,

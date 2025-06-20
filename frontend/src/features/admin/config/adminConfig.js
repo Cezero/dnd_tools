@@ -1,6 +1,8 @@
 import AdminDashboardPage from '@/features/admin/pages/AdminDashboardPage';
 import AdminDashboardContent from '@/features/admin/pages/AdminDashboardContent';
 import { routes as referenceTableRoutes } from '@/features/admin/features/ReferenceTableMgmt/config/ReferenceTableConfig';
+import { routes as raceRoutes } from '@/features/admin/features/raceMgmt/config/raceConfig';
+import { routes as classRoutes } from '@/features/admin/features/classMgmt/config/classConfig';
 
 export const routes = [
     {
@@ -15,6 +17,8 @@ export const routes = [
                 exact: true,
             },
             ...referenceTableRoutes,
+            ...raceRoutes,
+            ...classRoutes,
         ],
     },
 ];

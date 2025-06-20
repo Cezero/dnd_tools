@@ -69,11 +69,7 @@ const spellFilterConfig = {
             }
         },
     },
-    // Pagination and sorting
-    page: {},
-    limit: {},
-    sort: {},
-    order: {},
+    sort: 'spell_name'
 };
 
 export { spellFilterConfig }; 

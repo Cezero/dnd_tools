@@ -107,6 +107,32 @@ function AdminSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }) {
                                     {isExpanded && <span className={`ml-3 ${location.pathname.startsWith('/admin/referencetables') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Reference Tables</span>}
                                 </Link>
                             </li>
+                            <li>
+                                <Link
+                                    to="/admin/classes"
+                                    className={`flex items-center px-4 py-2 rounded 
+                                        text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 
+                                        ${isExpanded ? 'justify-start' : 'justify-center'}
+                                        ${location.pathname === '/admin/classes' ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
+                                    title="Classes"
+                                >
+                                    <Icon path={mdiTable} size={1} className={`${location.pathname === '/admin/classes' ? 'text-blue-600 dark:text-blue-400' : ''}`} />
+                                    {isExpanded && <span className={`ml-3 ${location.pathname.startsWith('/admin/classes') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Classes</span>}
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    to="/admin/races"
+                                    className={`flex items-center px-4 py-2 rounded 
+                                        text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 
+                                        ${isExpanded ? 'justify-start' : 'justify-center'}
+                                        ${location.pathname === '/admin/races' ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
+                                    title="Races"
+                                >
+                                    <Icon path={mdiTable} size={1} className={`${location.pathname === '/admin/races' ? 'text-blue-600 dark:text-blue-400' : ''}`} />
+                                    {isExpanded && <span className={`ml-3 ${location.pathname.startsWith('/admin/races') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Races</span>}
+                                </Link>
+                            </li>
                             {/* Add other admin functions here */}
                         </ul>
                     </nav>
