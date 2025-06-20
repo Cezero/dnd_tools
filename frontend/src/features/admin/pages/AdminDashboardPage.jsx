@@ -14,7 +14,7 @@ function AdminDashboardPage() {
                 isHidden={isSidebarHidden}
                 setIsHidden={setIsSidebarHidden}
             />
-            <div className={`flex-grow p-4 transition-all duration-300 ease-in-out overflow-y-auto
+            <div className={`grow p-4 transition-all duration-300 ease-in-out overflow-y-auto
         ${isSidebarHidden ? 'ml-0' : (isSidebarExpanded ? 'ml-64' : 'ml-16')}`}>
                 {/* The Outlet will render the matched child route component here */}
                 <Outlet />

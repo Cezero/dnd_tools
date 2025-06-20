@@ -79,7 +79,7 @@ function AdminSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }) {
                     </div>
 
                     {/* Navigation Links */}
-                    <nav className="flex-grow">
+                    <nav className="grow">
                         <ul>
                             <li>
                                 <Link
