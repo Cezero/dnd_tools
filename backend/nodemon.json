@@ -1,0 +1,10 @@
+{
+    "watch": [
+        "src/"
+    ],
+    "ext": "js,json",
+    "ignore": [
+        "src/features/**/*Routes.js"
+    ],
+    "exec": "node src/index.js"
+}

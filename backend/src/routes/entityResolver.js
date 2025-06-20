@@ -1,5 +1,5 @@
 import express from 'express';
-import { timedQuery } from '../db/queryTimer.js';
+import { entityResolvers } from '../lib/resolvers.js';
 import { getTableNameForType } from '../db/schemaUtil.js';
 
 const entityResolverRouter = express.Router();
@@ -19,20 +19,13 @@ entityResolverRouter.post('/resolve', async (req, res) => {
 
     for (const type in groupedQueries) {
         const names = groupedQueries[type];
-        const table = getTableNameForType(type);
-        const placeholders = names.map(() => '?').join(', ');
-        if (table === 'spells') {
-            const { rows } = await timedQuery(
-                `SELECT spell_id, spell_name FROM spells WHERE spell_name IN (${placeholders})`,
-                names,
-                `Resolve ${type}:${names.join(', ')}`
-            );
-            results[`${type.toLowerCase()}`] = {};
-            for (const row of rows) {
-                results[`${type.toLowerCase()}`][row.spell_name.toLowerCase()] = row.spell_id;
-            }
+        const resolver = entityResolvers[getTableNameForType(type)];
+
+        if (resolver) {
+            const resolvedData = await resolver(names);
+            results[type.toLowerCase()] = resolvedData;
         } else {
-            throw new Error(`Unknown type: ${type}`);
+            throw new Error(`Unknown or unsupported entity type for resolution: ${type}`);
         }
     }
     res.json(results);

@@ -60,6 +60,7 @@ const Input = ({ onChange, className, selected, open, onOpenChange, ...props }) 
                 {inputValue && (
                     <button
                         onClick={handleClearInput}
+                        onMouseDown={(e) => e.preventDefault()}
                         className="absolute inset-y-0 right-0 pr-1 flex items-center text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                         title="Clear filter"
                     >

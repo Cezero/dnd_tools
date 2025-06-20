@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Icon from '@mdi/react';
-import { mdiCheck } from '@mdi/js';
+import { mdiCheck, mdiSetAll, mdiSetNone } from '@mdi/js';
 
 const MultiSelect = ({ options, displayKey, valueKey, selected, onChange, placeholder, className, open, onOpenChange, logicType, onLogicChange }) => {
     const dropdownRef = useRef(null);
@@ -32,7 +32,6 @@ const MultiSelect = ({ options, displayKey, valueKey, selected, onChange, placeh
 
     const handleClearAll = () => {
         onChange([]);
-        onOpenChange(false);
     };
 
     const handleLogicButtonClick = (logic) => {
@@ -43,7 +42,7 @@ const MultiSelect = ({ options, displayKey, valueKey, selected, onChange, placeh
 
     return (
         <div
-            className={`absolute mt-2 ${className} ` +
+            className={`absolute mt-2 ${className} z-50 ` +
                 (open
                     ? 'p-1 bg-opacity-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-lg'
                     : '')
@@ -53,30 +52,21 @@ const MultiSelect = ({ options, displayKey, valueKey, selected, onChange, placeh
         >
             {open && (
                 <div className="w-full">
-                    {onLogicChange && (
-                        <div className="p-1 border-b border-gray-200 dark:border-gray-600 flex justify-around mb-1 sticky top-0 bg-white dark:bg-gray-700 z-20">
-                            <button
-                                type="button"
-                                onClick={() => handleLogicButtonClick('or')}
-                                className={`px-3 py-1 rounded-md text-sm ${logicType === 'or' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-300'}`}
-                            >
-                                OR
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleLogicButtonClick('and')}
-                                className={`px-3 py-1 rounded-md text-sm ${logicType === 'and' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-300'}`}
-                            >
-                                AND
-                            </button>
-                        </div>
-                    )}
                     <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
                         <div
-                            className={`relative block pl-6 pr-4 py-0.5 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700 cursor-pointer ${selected.length === 0 ? 'font-semibold text-blue-500 dark:text-blue-300' : 'font-normal'}`}
-                            onClick={handleClearAll}
+                            className={`relative block pl-6 pr-4 py-0.5 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700 cursor-pointer ${selected.length === 0 ? 'font-semibold text-blue-500 dark:text-blue-300' : 'font-normal'} flex justify-between items-center`}
                         >
-                            <span className={`block truncate ${selected.length === 0 ? 'font-semibold text-blue-500 dark:text-blue-300' : 'font-normal'}`}>- Clear All -</span>
+                            <span className={`block truncate ${selected.length === 0 ? 'font-semibold text-blue-500 dark:text-blue-300' : 'font-normal'}`} onClick={handleClearAll}>- Clear All -</span>
+                            {onLogicChange && (
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); handleLogicButtonClick(logicType === 'or' ? 'and' : 'or'); }}
+                                    className={`px-2 py-1 rounded-md text-sm flex items-center justify-center`}
+                                    title={`Has ${logicType === 'or' ? 'any' : 'all'} selected ${displayKey}`}
+                                >
+                                    <Icon path={logicType === 'or' ? mdiSetNone : mdiSetAll} size={0.7} className="mr-1" />
+                                </button>
+                            )}
                         </div>
                         {options.map((option) => (
                             <div

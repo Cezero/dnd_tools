@@ -6,13 +6,13 @@ import lookupService from '@/services/LookupService';
 import Icon from '@mdi/react';
 import { mdiTrashCan } from '@mdi/js';
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react';
+import { SPELL_DESCRIPTOR_LIST, SPELL_SCHOOL_LIST, SPELL_COMPONENT_LIST, SPELL_RANGE_LIST, SPELL_SUBSCHOOL_LIST_BY_SCHOOL_ID } from 'shared-data/src/spellData';
 
 function SpellEdit() {
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
     const fromListParams = location.state?.fromListParams || '';
-    console.log('SpellEdit mounted. fromListParams:', fromListParams);
     const [spell, setSpell] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -22,18 +22,14 @@ function SpellEdit() {
     const [spellSources, setSpellSources] = useState([]);
     const [selectedClassToAdd, setSelectedClassToAdd] = useState('');
     const [spellSchools, setSpellSchools] = useState([]);
-    const [spellSubschools, setSpellSubschools] = useState([]);
     const [spellDescriptors, setSpellDescriptors] = useState([]);
-    const [selectedSchoolId, setSelectedSchoolId] = useState('');
-    const [selectedSubschoolId, setSelectedSubschoolId] = useState('');
     const [spellComponents, setSpellComponents] = useState([]);
 
     useEffect(() => {
         const fetchSpellAndLookups = async () => {
             try {
                 await lookupService.initialize();
-                const ranges = lookupService.getAll('ranges');
-                setSpellRanges(ranges);
+                setSpellRanges(SPELL_RANGE_LIST);
 
                 const classes = lookupService.getAll('classes');
                 setSpellClasses(classes);
@@ -41,20 +37,13 @@ function SpellEdit() {
                 const sources = lookupService.getAll('sources');
                 setSpellSources(sources);
 
-                const schools = lookupService.getAll('schools');
-                setSpellSchools(schools);
+                setSpellSchools(SPELL_SCHOOL_LIST);
 
-                const descriptors = lookupService.getAll('descriptors');
-                setSpellDescriptors(descriptors);
+                setSpellDescriptors(SPELL_DESCRIPTOR_LIST);
 
-                const components = lookupService.getAll('components');
-                setSpellComponents(components);
-
-                const subschools = lookupService.getAll('subschools');
-                setSpellSubschools(subschools);
+                setSpellComponents(SPELL_COMPONENT_LIST);
 
                 const data = await api(`/spells/${id}`);
-                console.log('Fetched spell data:', data);
                 setSpell(prevSpell => ({ // Use functional update to ensure latest state
                     ...data,
                     components: data.components || [], // Ensure components is an array
@@ -64,8 +53,6 @@ function SpellEdit() {
                     spell_effect: data.spell_effect || '', // Ensure spell_effect is a string
                     spell_target: data.spell_target || '' // Ensure spell_target is a string
                 }));
-
-                console.log('Initial spell state after setup:', spell); // This will still log previous state due to closure
 
             } catch (err) {
                 setError(err);
@@ -122,7 +109,6 @@ function SpellEdit() {
                 const newSchools = e.target.checked
                     ? [...prevSpell.schools, schoolId]
                     : prevSpell.schools.filter(id => id !== schoolId);
-                console.log('Schools updated to:', newSchools);
                 return { ...prevSpell, schools: newSchools };
             });
         } else if (name === 'subschools') {
@@ -131,7 +117,6 @@ function SpellEdit() {
                 const newSubschools = e.target.checked
                     ? [...prevSpell.subschools, subschoolId]
                     : prevSpell.subschools.filter(id => id !== subschoolId);
-                console.log('Subschools updated to:', newSubschools);
                 return { ...prevSpell, subschools: newSubschools };
             });
         } else if (name === 'descriptors') {
@@ -140,7 +125,6 @@ function SpellEdit() {
                 const newDescriptors = e.target.checked
                     ? [...prevSpell.descriptors, descriptorId]
                     : prevSpell.descriptors.filter(id => id !== descriptorId);
-                console.log('Descriptors updated to:', newDescriptors);
                 return { ...prevSpell, descriptors: newDescriptors };
             });
         } else if (name === 'components') {
@@ -149,7 +133,6 @@ function SpellEdit() {
                 const newComponents = e.target.checked
                     ? [...prevSpell.components, componentId]
                     : prevSpell.components.filter(id => id !== componentId);
-                console.log('Components updated to:', newComponents);
                 return { ...prevSpell, components: newComponents };
             });
         } else {
@@ -217,21 +200,16 @@ function SpellEdit() {
             delete payload.class_id; // Remove the single class_id
             delete payload.spell_level; // Remove the single spell_level
             delete payload.sources; // Remove the sources array, as source_id and page_number are sent separately
-            payload.schools = selectedSchoolId ? [selectedSchoolId] : [];
-            payload.subschools = selectedSubschoolId ? [selectedSubschoolId] : [];
+            payload.schools = spell.schools;
+            payload.subschools = spell.subschools;
             payload.descriptors = spell.descriptors; // Use spell.descriptors directly
             payload.components = spell.components;
-
-            console.log('Payload being sent to API:', payload);
-            console.log('Payload components:', payload.components);
-            console.log('Payload descriptors:', payload.descriptors);
 
             await api(`/spells/${id}`, {
                 method: 'PUT',
                 body: JSON.stringify(payload),
             });
             setMessage('Spell updated successfully!');
-            console.log('Navigating from EditSpell (Save) with params:', fromListParams);
             navigate(`/spells/${id}`, { state: { fromListParams: fromListParams } }); // Redirect to view spell page, passing list params
         } catch (err) {
             setError(err);
@@ -264,8 +242,8 @@ function SpellEdit() {
                             <select id="spell_range_id" name="spell_range_id" value={spell.spell_range_id || ''} onChange={handleChange} className="mt-1 block w-full p-1 border rounded dark:bg-gray-700 dark:border-gray-600">
                                 <option value="">Select a range</option>
                                 {spellRanges.map(range => (
-                                    <option key={range.range_id} value={range.range_id}>
-                                        {range.range_name}
+                                    <option key={range.id} value={range.id}>
+                                        {range.name}
                                     </option>
                                 ))}
                             </select>
@@ -323,32 +301,32 @@ function SpellEdit() {
                         <label htmlFor="schools" className="block text-lg font-medium">Schools & Subschools:</label>
                         <div className="grid grid-cols-1 md:grid-cols-5 gap-y-2 gap-x-2 mt-1">
                             {spellSchools.map(school => (
-                                <div key={school.school_id} className="p-2 border rounded dark:border-gray-600">
+                                <div key={school.id} className="p-2 border rounded dark:border-gray-600">
                                     <label className="inline-flex items-center font-bold text-base">
                                         <input
                                             type="checkbox"
-                                            value={school.school_id}
-                                            checked={spell.schools.includes(school.school_id)}
+                                            value={school.id}
+                                            checked={spell.schools.includes(school.id)}
                                             onChange={handleChange}
                                             name="schools"
                                             className="form-checkbox h-4 w-4 text-blue-600 dark:bg-gray-700 dark:border-gray-600 rounded accent-blue-600 checked:bg-blue-600 dark:checked:bg-blue-600"
                                         />
-                                        <span className="ml-2">{school.school_name}</span>
+                                        <span className="ml-2">{school.name}</span>
                                     </label>
                                     {
-                                        lookupService.getSubschoolsBySchoolId(school.school_id).length > 0 && (
+                                        SPELL_SUBSCHOOL_LIST_BY_SCHOOL_ID[school.id].length > 0 && (
                                             <div className="ml-6 mt-1 grid grid-cols-1 gap-y-0.5">
-                                                {lookupService.getSubschoolsBySchoolId(school.school_id).map(subschool => (
-                                                    <label key={subschool.sub_id} className="inline-flex items-center text-sm">
+                                                {SPELL_SUBSCHOOL_LIST_BY_SCHOOL_ID[school.id].map(subschool => (
+                                                    <label key={subschool.id} className="inline-flex items-center text-sm">
                                                         <input
                                                             type="checkbox"
-                                                            value={subschool.sub_id}
-                                                            checked={spell.subschools.includes(subschool.sub_id)}
+                                                            value={subschool.id}
+                                                            checked={spell.subschools.includes(subschool.id)}
                                                             onChange={handleChange}
                                                             name="subschools"
                                                             className="form-checkbox h-4 w-4 text-blue-600 dark:bg-gray-700 dark:border-gray-600 rounded accent-blue-600 checked:bg-blue-600 dark:checked:bg-blue-600"
                                                         />
-                                                        <span className="ml-2">{subschool.subschool}</span>
+                                                        <span className="ml-2">{subschool.name}</span>
                                                     </label>
                                                 ))}
                                             </div>
@@ -361,17 +339,17 @@ function SpellEdit() {
                             <label htmlFor="descriptors" className="block text-lg font-medium">Descriptors:</label>
                             <div className="grid grid-cols-4 gap-y-0.25 p-2 mt-1 border rounded dark:border-gray-600">
                                 {spellDescriptors.map(descriptor => (
-                                    <div key={descriptor.descriptor_id}>
+                                    <div key={descriptor.id}>
                                         <label className="inline-flex items-center text-base">
                                             <input
                                                 type="checkbox"
                                                 name="descriptors"
-                                                value={descriptor.descriptor_id}
-                                                checked={spell.descriptors.includes(descriptor.descriptor_id)}
+                                                value={descriptor.id}
+                                                checked={spell.descriptors.includes(descriptor.id)}
                                                 onChange={handleChange}
                                                 className="form-checkbox h-4 w-4 text-blue-600 dark:bg-gray-700 dark:border-gray-600 rounded accent-blue-600 checked:bg-blue-600 dark:checked:bg-blue-600"
                                             />
-                                            <span className="ml-2 text-gray-700 dark:text-gray-300">{descriptor.descriptor}</span>
+                                            <span className="ml-2 text-gray-700 dark:text-gray-300">{descriptor.name}</span>
                                         </label>
                                     </div>
                                 ))}
@@ -381,17 +359,17 @@ function SpellEdit() {
                             <label htmlFor="components" className="block text-lg font-medium">Components:</label>
                             <div className="flex items-center gap-3 p-2 mt-1 border rounded dark:border-gray-600">
                                 {spellComponents.map(component => (
-                                    <div key={component.comp_id}>
+                                    <div key={component.id}>
                                         <label className="inline-flex items-center text-base">
                                             <input
                                                 type="checkbox"
                                                 name="components"
-                                                value={component.comp_id}
-                                                checked={spell.components.includes(component.comp_id)}
+                                                value={component.id}
+                                                checked={spell.components.includes(component.id)}
                                                 onChange={handleChange}
                                                 className="form-checkbox h-4 w-4 text-blue-600 dark:bg-gray-700 dark:border-gray-600 rounded accent-blue-600 checked:bg-blue-600 dark:checked:bg-blue-600"
                                             />
-                                            <span className="ml-1 text-gray-700 dark:text-gray-300">{component.comp_name}</span>
+                                            <span className="ml-1 text-gray-700 dark:text-gray-300">{component.name}</span>
                                         </label>
                                     </div>
                                 ))}
@@ -481,7 +459,6 @@ function SpellEdit() {
                 <div className="flex mt-1 gap-2">
                     <button type="submit" className="px-4 py-2 bg-blue-600  rounded hover:bg-blue-700">Save Changes</button>
                     <button type="button" onClick={() => {
-                        console.log('Navigating from EditSpell (Cancel) with params:', fromListParams);
                         navigate(`/spells/${id}`, { state: { fromListParams: fromListParams } });
                     }} className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 dark:bg-gray-600  dark:hover:bg-gray-500">Cancel</button>
                 </div>

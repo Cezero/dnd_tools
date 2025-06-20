@@ -13,7 +13,7 @@ export const sanitizeSchema = {
         ],
         th: [
             ...(defaultSchema.attributes.th || []),
-            'style',
+            ['style', 'key']
         ],
         td: [
             ...(defaultSchema.attributes.td || []),

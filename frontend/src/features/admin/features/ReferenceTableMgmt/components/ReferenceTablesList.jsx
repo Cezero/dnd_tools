@@ -12,7 +12,7 @@ const ReferenceTablesList = () => {
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     const handleNewTableClick = () => {
-        navigate('/admin/reference-tables/new/edit');
+        navigate('/admin/referencetables/new/edit');
     };
 
 
@@ -38,7 +38,7 @@ const ReferenceTablesList = () => {
                     <span>{item[columnId]}</span>
                     <div className="flex items-center">
                         <button
-                            onClick={() => navigate(`/admin/reference-tables/${item.id}/edit`)}
+                            onClick={() => navigate(`/admin/referencetables/${item.id}/edit`)}
                             className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 mr-2"
                             title="Edit Table"
                         >
@@ -77,7 +77,7 @@ const ReferenceTablesList = () => {
                 columnDefinitions={COLUMN_DEFINITIONS}
                 fetchData={fetchReferenceTables}
                 renderCell={renderCell}
-                detailPagePath="/admin/reference-tables/:id"
+                detailPagePath="/admin/referencetables/:id"
                 idKey="id"
                 navigate={navigate}
                 refreshTrigger={refreshTrigger}

@@ -7,14 +7,10 @@ class LookupService {
     constructor() {
         this.lookups = {
             classes: new Map(),
-            components: new Map(),
-            descriptors: new Map(),
-            ranges: new Map(),
-            schools: new Map(),
+            spells: new Map(),
+            races: new Map(),
             sources: new Map(),
             editions: new Map(),
-            subschools: new Map(),
-            spells: new Map()
         };
 
         this.fieldMappings = {
@@ -22,21 +18,13 @@ class LookupService {
                 id: 'class_id',
                 name: 'class_name'
             },
-            components: {
-                id: 'comp_id',
-                name: 'comp_name'
+            spells: {
+                id: 'spell_id',
+                name: 'spell_name'
             },
-            descriptors: {
-                id: 'desc_id',
-                name: 'descriptor'
-            },
-            ranges: {
-                id: 'range_id',
-                name: 'range_name'
-            },
-            schools: {
-                id: 'school_id',
-                name: 'school_name'
+            races: {
+                id: 'race_id',
+                name: 'race_name'
             },
             sources: {
                 id: 'book_id',
@@ -45,14 +33,6 @@ class LookupService {
             editions: {
                 id: 'edition_id',
                 name: 'edition_abbrev'
-            },
-            subschools: {
-                id: 'sub_id',
-                name: 'subschool'
-            },
-            spells: {
-                id: 'spell_id',
-                name: 'spell_name'
             }
         };
     }
@@ -68,13 +48,10 @@ class LookupService {
                 const data = await api('/lookups');
 
                 data.classes.forEach(cls => this.lookups.classes.set(cls.class_id, cls));
-                data.components.forEach(comp => this.lookups.components.set(comp.comp_id, comp));
-                data.descriptors.forEach(desc => this.lookups.descriptors.set(desc.desc_id, desc));
-                data.ranges.forEach(range => this.lookups.ranges.set(range.range_id, range));
-                data.schools.forEach(school => this.lookups.schools.set(school.school_id, school));
+                data.spells.forEach(spell => this.lookups.spells.set(spell.spell_id, spell));
+                data.races.forEach(race => this.lookups.races.set(race.race_id, race));
                 data.sources.forEach(source => this.lookups.sources.set(source.book_id, source));
                 data.editions.forEach(edition => this.lookups.editions.set(edition.edition_id, edition));
-                data.subschools.forEach(subschool => this.lookups.subschools.set(subschool.sub_id, subschool));
 
                 // Populate spells from lookup data
                 data.spells.forEach(spell => this.lookups.spells.set(spell.spell_name.toLowerCase(), spell));
@@ -148,124 +125,9 @@ class LookupService {
         return names.join(', ');
     }
 
-    // Convenience methods for specific types
-    getSchoolNames(ids) {
-        return this.getDisplayNames('schools', ids);
-    }
-
-    getDescriptorNames(ids) {
-        return this.getDisplayNames('descriptors', ids);
-    }
-
-    getComponentNames(ids) {
-        return this.getDisplayNames('components', ids);
-    }
-
-    getComponentAbbreviations(ids) {
-        if (!ids) return '';
-        const names = ids.map(id => {
-            const item = this.getById('components', id);
-            return item?.comp_abbrev || '';
-        });
-        return names.join(', ');
-    }
-
     getClassNames(ids) {
         // Now apply filtering for classes if needed
         return this.getDisplayNames('classes', ids);
-    }
-
-    getClassDisplay(classes, spellLevel) {
-        if (!classes || classes.length === 0) return '';
-
-        const formattedClasses = classes.map(cls => {
-            const classItem = this.getById('classes', cls.class_id);
-            if (classItem) {
-                if (cls.level !== spellLevel) {
-                    return `${classItem.class_abbr} ${cls.level}`;
-                } else {
-                    return classItem.class_abbr;
-                }
-            }
-            return 'Unknown Class';
-        });
-
-        return formattedClasses.join(', ');
-    }
-
-    getSubschoolNames(ids) {
-        return this.getDisplayNames('subschools', ids);
-    }
-
-    getSubschoolsBySchoolId(schoolId) {
-        if (!_isInitialized) {
-            throw new Error('LookupService not initialized');
-        }
-        return Array.from(this.lookups.subschools.values()).filter(subschool => subschool.school_id === schoolId);
-    }
-
-    getClassLevelAbbr(classLevels) {
-        if (!classLevels || classLevels.length === 0) return '';
-
-        // Use a Map to store { spell_level: { sorcererPresent: boolean, wizardPresent: boolean, otherClasses: Set<string> } }
-        const organizedClassLevels = new Map();
-
-        classLevels.forEach(cl => {
-            const classItem = this.getById('classes', cl.class_id);
-            if (classItem) {
-                const levelData = organizedClassLevels.get(cl.spell_level) || {
-                    sorcererPresent: false,
-                    wizardPresent: false,
-                    otherClasses: new Set()
-                };
-
-                const abbr = classItem.class_abbr;
-                if (abbr === 'Sor') {
-                    levelData.sorcererPresent = true;
-                } else if (abbr === 'Wiz') {
-                    levelData.wizardPresent = true;
-                } else {
-                    levelData.otherClasses.add(abbr);
-                }
-                organizedClassLevels.set(cl.spell_level, levelData);
-            }
-        });
-
-        const formattedEntries = [];
-
-        // Sort levels to ensure consistent order
-        const sortedLevels = Array.from(organizedClassLevels.keys()).sort((a, b) => a - b);
-
-        sortedLevels.forEach(level => {
-            const levelData = organizedClassLevels.get(level);
-            let currentLevelAbbrs = [];
-
-            // Handle Sorcerer/Wizard combination first for this level
-            if (levelData.sorcererPresent && levelData.wizardPresent) {
-                currentLevelAbbrs.push('Sor/Wiz');
-            } else {
-                if (levelData.sorcererPresent) {
-                    currentLevelAbbrs.push('Sor');
-                }
-                if (levelData.wizardPresent) {
-                    currentLevelAbbrs.push('Wiz');
-                }
-            }
-
-            // Add other classes, sorted alphabetically
-            const sortedOtherClasses = Array.from(levelData.otherClasses).sort();
-            currentLevelAbbrs.push(...sortedOtherClasses);
-
-            // Format each abbreviation with its level
-            currentLevelAbbrs.forEach(abbr => {
-                formattedEntries.push(`${abbr} ${level}`);
-            });
-        });
-
-        // Sort the final combined entries alphabetically
-        formattedEntries.sort();
-
-        return formattedEntries.join(', ');
     }
 
     getSourceNames(ids) {

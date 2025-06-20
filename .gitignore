@@ -129,8 +129,6 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
-data_extracts
-
 k8s/db-secret.yaml
 
 # Python virtual environment
@@ -156,4 +154,5 @@ wheels/
 *.egg
 
 .pytest_cache/
-cache/*
+/util/cache/
+/util/data_extracts/

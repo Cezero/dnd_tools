@@ -17,92 +17,6 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `alignments`
---
-
-DROP TABLE IF EXISTS `alignments`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `alignments` (
-  `alignment_id` int unsigned NOT NULL AUTO_INCREMENT,
-  `alignment_name` varchar(100) NOT NULL,
-  `alignment_abbr` varchar(20) NOT NULL,
-  PRIMARY KEY (`alignment_id`),
-  UNIQUE KEY `uq_alignment_abbr` (`alignment_abbr`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `attribute_bonus_spells`
---
-
-DROP TABLE IF EXISTS `attribute_bonus_spells`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `attribute_bonus_spells` (
-  `bonus_spell_id` int unsigned NOT NULL AUTO_INCREMENT,
-  `modifier` tinyint NOT NULL,
-  `spell_level` tinyint NOT NULL,
-  `bonus_spells_count` tinyint NOT NULL DEFAULT '0',
-  PRIMARY KEY (`bonus_spell_id`),
-  UNIQUE KEY `attribute_bonus_spells_unique` (`modifier`,`spell_level`),
-  CONSTRAINT `attribute_bonus_spells_ibfk_1` FOREIGN KEY (`modifier`) REFERENCES `attribute_modifiers` (`modifier`)
-) ENGINE=InnoDB AUTO_INCREMENT=120 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `attribute_modifiers`
---
-
-DROP TABLE IF EXISTS `attribute_modifiers`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `attribute_modifiers` (
-  `mod_id` int unsigned NOT NULL AUTO_INCREMENT,
-  `score_min` tinyint NOT NULL,
-  `score_max` tinyint NOT NULL,
-  `modifier` tinyint NOT NULL,
-  PRIMARY KEY (`mod_id`),
-  UNIQUE KEY `attribute_modifiers_unique` (`score_min`,`score_max`),
-  UNIQUE KEY `attribute_modifiers_unique_1` (`modifier`),
-  KEY `attribute_modifiers_modifier_IDX` (`modifier`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `attributes`
---
-
-DROP TABLE IF EXISTS `attributes`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `attributes` (
-  `attribute_id` int unsigned NOT NULL AUTO_INCREMENT,
-  `attribute_name` varchar(100) NOT NULL,
-  `attribute_abbr` varchar(3) NOT NULL,
-  PRIMARY KEY (`attribute_id`),
-  UNIQUE KEY `attributes_unique` (`attribute_abbr`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `class_alignment_map`
---
-
-DROP TABLE IF EXISTS `class_alignment_map`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `class_alignment_map` (
-  `class_id` int unsigned NOT NULL,
-  `alignment_id` int unsigned NOT NULL,
-  PRIMARY KEY (`class_id`,`alignment_id`),
-  KEY `class_alignment_map_alignments_FK` (`alignment_id`),
-  CONSTRAINT `class_alignment_map_alignments_FK` FOREIGN KEY (`alignment_id`) REFERENCES `alignments` (`alignment_id`),
-  CONSTRAINT `class_alignment_map_classes_FK` FOREIGN KEY (`class_id`) REFERENCES `classes` (`class_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
 -- Table structure for table `class_source_map`
 --
 
@@ -130,34 +44,18 @@ DROP TABLE IF EXISTS `classes`;
 CREATE TABLE `classes` (
   `class_id` int unsigned NOT NULL AUTO_INCREMENT,
   `class_name` varchar(100) NOT NULL,
-  `class_abbreviation` varchar(20) NOT NULL,
+  `class_abbr` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `edition_id` int unsigned DEFAULT NULL,
   `is_prestige_class` tinyint(1) NOT NULL DEFAULT '0',
   `display` tinyint(1) DEFAULT '1',
   `caster` tinyint(1) DEFAULT '0',
   `hit_die` int unsigned NOT NULL DEFAULT '1',
   PRIMARY KEY (`class_id`),
-  UNIQUE KEY `uq_class_abbreviation_edition` (`class_abbreviation`,`edition_id`),
+  UNIQUE KEY `uq_class_abbreviation_edition` (`class_abbr`,`edition_id`),
   KEY `fk_classes_edition` (`edition_id`),
   KEY `classes_dice_FK` (`hit_die`),
-  CONSTRAINT `classes_dice_FK` FOREIGN KEY (`hit_die`) REFERENCES `dice` (`dice_id`),
   CONSTRAINT `fk_classes_edition` FOREIGN KEY (`edition_id`) REFERENCES `editions` (`edition_id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=132 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `dice`
---
-
-DROP TABLE IF EXISTS `dice`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `dice` (
-  `dice_id` int unsigned NOT NULL AUTO_INCREMENT,
-  `die_name` varchar(20) DEFAULT NULL,
-  `die_abbr` char(4) NOT NULL,
-  PRIMARY KEY (`dice_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -215,7 +113,7 @@ CREATE TABLE `reference_table_cells` (
   KEY `column_id` (`column_id`),
   CONSTRAINT `reference_table_cells_ibfk_1` FOREIGN KEY (`row_id`) REFERENCES `reference_table_rows` (`id`) ON DELETE CASCADE,
   CONSTRAINT `reference_table_cells_ibfk_2` FOREIGN KEY (`column_id`) REFERENCES `reference_table_columns` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=162 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -230,12 +128,12 @@ CREATE TABLE `reference_table_columns` (
   `table_id` int NOT NULL,
   `column_index` int NOT NULL,
   `header` varchar(255) NOT NULL,
-  `alignment` varchar(10) DEFAULT NULL,
   `span` int DEFAULT '1',
+  `alignment` varchar(10) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `table_id` (`table_id`),
   CONSTRAINT `reference_table_columns_ibfk_1` FOREIGN KEY (`table_id`) REFERENCES `reference_tables` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -253,7 +151,7 @@ CREATE TABLE `reference_table_rows` (
   PRIMARY KEY (`id`),
   KEY `table_id` (`table_id`),
   CONSTRAINT `reference_table_rows_ibfk_1` FOREIGN KEY (`table_id`) REFERENCES `reference_tables` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=52 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -268,8 +166,10 @@ CREATE TABLE `reference_tables` (
   `name` varchar(255) NOT NULL,
   `description` text,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `slug` char(100) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `reference_tables_slug_IDX` (`slug`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -293,8 +193,7 @@ CREATE TABLE `skills` (
   `untrained_desc` varchar(200) DEFAULT NULL,
   `skill_armor_check_penalty` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`skill_id`),
-  KEY `skills_attributes_FK` (`attribute_id`),
-  CONSTRAINT `skills_attributes_FK` FOREIGN KEY (`attribute_id`) REFERENCES `attributes` (`attribute_id`)
+  KEY `skills_attributes_FK` (`attribute_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -332,25 +231,8 @@ CREATE TABLE `spell_component_map` (
   `spell_id` int unsigned NOT NULL,
   `comp_id` int unsigned NOT NULL,
   PRIMARY KEY (`spell_id`,`comp_id`),
-  KEY `comp_id` (`comp_id`),
-  CONSTRAINT `spell_component_map_ibfk_1` FOREIGN KEY (`comp_id`) REFERENCES `spell_components` (`comp_id`)
+  KEY `comp_id` (`comp_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `spell_components`
---
-
-DROP TABLE IF EXISTS `spell_components`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `spell_components` (
-  `comp_id` int unsigned NOT NULL AUTO_INCREMENT,
-  `comp_name` varchar(30) NOT NULL,
-  `comp_abbrev` varchar(10) NOT NULL,
-  PRIMARY KEY (`comp_id`),
-  UNIQUE KEY `comp_name` (`comp_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -365,55 +247,7 @@ CREATE TABLE `spell_descriptor_map` (
   `desc_id` int unsigned NOT NULL,
   PRIMARY KEY (`spell_id`,`desc_id`),
   KEY `spell_descriptor_map_ibfk_1` (`desc_id`),
-  CONSTRAINT `fk_sdesc_school_id` FOREIGN KEY (`spell_id`) REFERENCES `spells` (`spell_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `spell_descriptor_map_ibfk_1` FOREIGN KEY (`desc_id`) REFERENCES `spell_descriptors` (`desc_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `spell_descriptors`
---
-
-DROP TABLE IF EXISTS `spell_descriptors`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `spell_descriptors` (
-  `desc_id` int unsigned NOT NULL AUTO_INCREMENT,
-  `descriptor` varchar(20) DEFAULT NULL,
-  PRIMARY KEY (`desc_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `spell_domain_map`
---
-
-DROP TABLE IF EXISTS `spell_domain_map`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `spell_domain_map` (
-  `spell_id` int unsigned NOT NULL,
-  `domain_id` int unsigned NOT NULL,
-  PRIMARY KEY (`spell_id`,`domain_id`),
-  KEY `domain_id` (`domain_id`),
-  CONSTRAINT `fk_sdomain_school_id` FOREIGN KEY (`spell_id`) REFERENCES `spells` (`spell_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `spell_domain_map_ibfk_1` FOREIGN KEY (`domain_id`) REFERENCES `spell_domains` (`domain_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `spell_domains`
---
-
-DROP TABLE IF EXISTS `spell_domains`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `spell_domains` (
-  `domain_id` int unsigned NOT NULL AUTO_INCREMENT,
-  `domain_name` varchar(30) NOT NULL,
-  `domain_abbrev` varchar(10) NOT NULL,
-  PRIMARY KEY (`domain_id`),
-  UNIQUE KEY `domain_name` (`domain_name`)
+  CONSTRAINT `fk_sdesc_school_id` FOREIGN KEY (`spell_id`) REFERENCES `spells` (`spell_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -439,21 +273,6 @@ CREATE TABLE `spell_level_map` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `spell_ranges`
---
-
-DROP TABLE IF EXISTS `spell_ranges`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `spell_ranges` (
-  `range_id` int unsigned NOT NULL AUTO_INCREMENT,
-  `range_name` varchar(30) DEFAULT NULL,
-  `range_abbr` varchar(10) DEFAULT NULL,
-  PRIMARY KEY (`range_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
 -- Table structure for table `spell_school_map`
 --
 
@@ -465,25 +284,8 @@ CREATE TABLE `spell_school_map` (
   `school_id` int unsigned NOT NULL,
   PRIMARY KEY (`spell_id`,`school_id`),
   KEY `fk_spell_school_id` (`school_id`),
-  CONSTRAINT `fk_spell_school_id` FOREIGN KEY (`school_id`) REFERENCES `spell_schools` (`school_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_ss_school_id` FOREIGN KEY (`spell_id`) REFERENCES `spells` (`spell_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `spell_schools`
---
-
-DROP TABLE IF EXISTS `spell_schools`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `spell_schools` (
-  `school_id` int unsigned NOT NULL AUTO_INCREMENT,
-  `school_name` varchar(30) NOT NULL,
-  `school_abbrev` varchar(10) NOT NULL,
-  PRIMARY KEY (`school_id`),
-  UNIQUE KEY `school_name` (`school_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -517,27 +319,8 @@ CREATE TABLE `spell_subschool_map` (
   `sub_id` int unsigned NOT NULL,
   PRIMARY KEY (`spell_id`,`sub_id`),
   KEY `fk_spell_subschool_id` (`sub_id`),
-  CONSTRAINT `fk_spell_subschool_id` FOREIGN KEY (`sub_id`) REFERENCES `spell_subschools` (`sub_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_ssub_school_id` FOREIGN KEY (`spell_id`) REFERENCES `spells` (`spell_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `spell_subschools`
---
-
-DROP TABLE IF EXISTS `spell_subschools`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `spell_subschools` (
-  `sub_id` int unsigned NOT NULL AUTO_INCREMENT,
-  `subschool` varchar(100) NOT NULL,
-  `school_id` int unsigned DEFAULT NULL,
-  PRIMARY KEY (`sub_id`),
-  UNIQUE KEY `subschool` (`subschool`),
-  KEY `fk_school_id` (`school_id`),
-  CONSTRAINT `fk_school_id` FOREIGN KEY (`school_id`) REFERENCES `spell_schools` (`school_id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -565,10 +348,8 @@ CREATE TABLE `spells` (
   `spell_effect` varchar(200) DEFAULT NULL,
   `spell_target` varchar(200) DEFAULT NULL,
   PRIMARY KEY (`spell_id`),
-  KEY `fk_spell_range` (`spell_range_id`),
   KEY `id_spells_spell_id_edition_id` (`spell_id`,`edition_id`),
   KEY `id_spells_edition_id` (`edition_id`),
-  CONSTRAINT `fk_spell_range` FOREIGN KEY (`spell_range_id`) REFERENCES `spell_ranges` (`range_id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `fk_spells_edition` FOREIGN KEY (`edition_id`) REFERENCES `editions` (`edition_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2800 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -586,7 +367,6 @@ CREATE TABLE `user_char_attr_map` (
   `value` int unsigned NOT NULL DEFAULT '3',
   KEY `user_char_attr_map_attributes_FK` (`attribute_id`),
   KEY `user_char_attr_map_user_characters_FK` (`character_id`),
-  CONSTRAINT `user_char_attr_map_attributes_FK` FOREIGN KEY (`attribute_id`) REFERENCES `attributes` (`attribute_id`),
   CONSTRAINT `user_char_attr_map_user_characters_FK` FOREIGN KEY (`character_id`) REFERENCES `user_characters` (`character_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -615,7 +395,6 @@ CREATE TABLE `user_characters` (
   KEY `user_characters_races_FK` (`race_id`),
   KEY `user_characters_alignments_FK` (`alignment_id`),
   CONSTRAINT `fk_character_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `user_characters_alignments_FK` FOREIGN KEY (`alignment_id`) REFERENCES `alignments` (`alignment_id`),
   CONSTRAINT `user_characters_races_FK` FOREIGN KEY (`race_id`) REFERENCES `races` (`race_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -653,4 +432,4 @@ CREATE TABLE `users` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-06-16 21:09:16
+-- Dump completed on 2025-06-19 21:30:03

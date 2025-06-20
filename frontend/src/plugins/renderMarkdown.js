@@ -26,7 +26,7 @@ export async function renderMarkdown(markdown, tableClass = 'md-table') {
     .use(rehypeRemark, { allowDangerousHtml: true }) // Markdown -> HAST
     .use(rehypeRaw) // Allow inline HTML (e.g., embedded raw HTML tags in markdown)
     .use(rehypeResolveEntitiesAndEmbeds, { tableClass }) // Async: resolve IDs and fetch tables
-    .use(rehypeSanitize, sanitizeSchema) // (optional) prevent unsafe HTML injection
+//    .use(rehypeSanitize, sanitizeSchema) // (optional) prevent unsafe HTML injection
     .use(rehypeStringify); // Serialize to HTML
 
   const file = await processor.process(markdown);

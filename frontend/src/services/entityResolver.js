@@ -8,8 +8,8 @@ let resolveTimeoutPromise = null;
 let pendingResolvers = [];
 let allRequestedKeysInCurrentFlush = new Set();
 
-export function queueEntityResolution(type, name) {
-    const key = `${type}:${name}`;
+export function queueEntityResolution(type, identifier) {
+    const key = `${type}:${identifier}`;
 
     allRequestedKeysInCurrentFlush.add(key);
 
@@ -24,8 +24,8 @@ export function queueEntityResolution(type, name) {
         if (!timeout) {
             timeout = setTimeout(async () => {
                 const payload = Array.from(unresolvedEntities).map(k => {
-                    const [type, name] = k.split(':');
-                    return { type, name };
+                    const [type, identifier] = k.split(':');
+                    return { type, name: identifier }; // Backend expects 'name'
                 });
 
                 const result = await api('/entities/resolve', {
@@ -33,14 +33,14 @@ export function queueEntityResolution(type, name) {
                     body: JSON.stringify({ queries: payload }),
                 });
 
-                for (const [type, entities] of Object.entries(result)) {
-                    for (const [name, id] of Object.entries(entities)) {
-                        if (id === null) {
-                            console.log('no id found for', type, name);
+                for (const [type, entitiesOrTables] of Object.entries(result)) {
+                    for (const [identifier, resolvedData] of Object.entries(entitiesOrTables)) {
+                        if (resolvedData === null) {
+                            console.log('no data found for', type, identifier);
                             continue;
                         }
-                        const cache_key = `${type}:${name}`;
-                        resolvedCache.set(cache_key, id);
+                        const cache_key = `${type}:${identifier}`;
+                        resolvedCache.set(cache_key, resolvedData);
                     }
                 }
 

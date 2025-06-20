@@ -96,15 +96,15 @@ function AdminSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }) {
                             </li>
                             <li>
                                 <Link
-                                    to="/admin/reference-tables"
+                                    to="/admin/referencetables"
                                     className={`flex items-center px-4 py-2 rounded 
                                         text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 
                                         ${isExpanded ? 'justify-start' : 'justify-center'}
-                                        ${location.pathname === '/admin/reference-tables' ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
+                                        ${location.pathname === '/admin/referencetables' ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
                                     title="Reference Tables"
                                 >
-                                    <Icon path={mdiTable} size={1} className={`${location.pathname === '/admin/reference-tables' ? 'text-blue-600 dark:text-blue-400' : ''}`} />
-                                    {isExpanded && <span className={`ml-3 ${location.pathname.startsWith('/admin/reference-tables') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Reference Tables</span>}
+                                    <Icon path={mdiTable} size={1} className={`${location.pathname === '/admin/referencetables' ? 'text-blue-600 dark:text-blue-400' : ''}`} />
+                                    {isExpanded && <span className={`ml-3 ${location.pathname.startsWith('/admin/referencetables') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Reference Tables</span>}
                                 </Link>
                             </li>
                             {/* Add other admin functions here */}

@@ -5,7 +5,7 @@ import pool from './pool.js';
  *
  * @param {Function} queryFn - The asynchronous function to execute and time.
  * @param {string} queryName - The name of the query for logging purposes.
- * @returns {Promise<any>} The result of the query function, or its rows if available.
+ * @returns {Promise<{rows: Array<any>, fields: Array<any>, raw: any}>} The result of the query function
  */
 async function timeQuery(queryFn, queryName) {
     const start = performance.now();
@@ -24,7 +24,7 @@ async function timeQuery(queryFn, queryName) {
  * @param {Array<any>} values - An array of values to be used with the SQL query.
  * @param {string} queryName - The name of the query for logging purposes.
  * @param {pg.Client | pg.Pool | null} client - Optional PostgreSQL client or pool to use for the query.
- * @returns {Promise<any>} The result of the SQL query, or its rows if available.
+ * @returns {Promise<{rows: Array<any>, fields: Array<any>, raw: any}>} The result of the SQL query, with rows, fields, and raw properties.
  */
 export async function timedQuery(sql, values, queryName, client = null) {
     return timeQuery(

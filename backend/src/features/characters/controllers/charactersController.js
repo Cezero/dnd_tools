@@ -1,5 +1,4 @@
 import { timedQuery } from '../../../db/queryTimer.js';
-import alignmentCache from '../../../db/caches/alignmentCache.js'; // To be created
 import raceCache from '../../../db/caches/raceCache.js'; // To be created
 
 // Helper function to validate character data
@@ -43,11 +42,9 @@ export async function getAllCharacters(req, res) {
             SELECT 
                 uc.*,
                 r.race_name,
-                a.alignment_name,
                 COUNT(*) OVER() as total_count
             FROM user_characters uc
             LEFT JOIN races r ON uc.race_id = r.race_id
-            LEFT JOIN alignments a ON uc.alignment_id = a.alignment_id
             ${where}
             ORDER BY ${sortBy} ${sortOrder}
             LIMIT ? OFFSET ?;
@@ -81,10 +78,8 @@ export async function getCharacterById(req, res) {
             SELECT 
                 uc.*,
                 r.race_name,
-                a.alignment_name
             FROM user_characters uc
             LEFT JOIN races r ON uc.race_id = r.race_id
-            LEFT JOIN alignments a ON uc.alignment_id = a.alignment_id
             WHERE character_id = ?;
         `;
         const { rows: character } = await timedQuery(query, [id], 'Get character by ID');
@@ -111,10 +106,8 @@ export async function createCharacter(req, res) {
         const query = `
             INSERT INTO user_characters (
                 user_id, character_name, race_id, alignment_id, character_age, 
-                character_height, character_weight, character_eyes, character_hair, 
-                character_str, character_dex, character_con, character_int, 
-                character_wis, character_cha
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                character_height, character_weight, character_eyes, character_hair
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
         `;
         const { raw: result } = await timedQuery(
             query,
@@ -128,12 +121,6 @@ export async function createCharacter(req, res) {
                 newCharacter.character_weight || null,
                 newCharacter.character_eyes || null,
                 newCharacter.character_hair || null,
-                newCharacter.character_str || null,
-                newCharacter.character_dex || null,
-                newCharacter.character_con || null,
-                newCharacter.character_int || null,
-                newCharacter.character_wis || null,
-                newCharacter.character_cha || null,
             ],
             'Create new character'
         );
@@ -165,12 +152,6 @@ export async function updateCharacter(req, res) {
                 character_weight = ?,
                 character_eyes = ?,
                 character_hair = ?,
-                character_str = ?,
-                character_dex = ?,
-                character_con = ?,
-                character_int = ?,
-                character_wis = ?,
-                character_cha = ?
             WHERE character_id = ?;
         `;
         const { raw: result } = await timedQuery(
@@ -184,12 +165,6 @@ export async function updateCharacter(req, res) {
                 updatedCharacter.character_weight || null,
                 updatedCharacter.character_eyes || null,
                 updatedCharacter.character_hair || null,
-                updatedCharacter.character_str || null,
-                updatedCharacter.character_dex || null,
-                updatedCharacter.character_con || null,
-                updatedCharacter.character_int || null,
-                updatedCharacter.character_wis || null,
-                updatedCharacter.character_cha || null,
                 id,
             ],
             'Update character'
@@ -219,4 +194,18 @@ export async function deleteCharacter(req, res) {
         console.error('Error deleting character:', error);
         res.status(500).send('Server error');
     }
+}
+
+export async function resolve(characterNames) {
+    const placeholders = characterNames.map(() => '?').join(', ');
+    const { rows } = await timedQuery(
+        `SELECT character_id, character_name FROM user_characters WHERE character_name IN (${placeholders})`,
+        characterNames,
+        `Resolve characters: ${characterNames.join(', ')}`
+    );
+    const resolvedCharacters = {};
+    for (const row of rows) {
+        resolvedCharacters[row.character_name.toLowerCase()] = row.character_id;
+    }
+    return resolvedCharacters;
 }

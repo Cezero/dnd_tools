@@ -14,7 +14,7 @@ class ClassCache {
             this.classes.set(row.class_id, {
                 class_id: row.class_id,
                 class_name: row.class_name,
-                class_abbr: row.class_abbreviation,
+                class_abbr: row.class_abbr,
                 caster: row.caster,
                 edition_id: row.edition_id
             });
@@ -35,7 +35,7 @@ class ClassCache {
             return this.classes.has(numericInput) ? numericInput : null;
         }
 
-        // Otherwise try to find by name or abbreviation
+        // Otherwise try to find by name or abbr
         const classInfo = this.getClass(input);
         return classInfo ? classInfo.class_id : null;
     }

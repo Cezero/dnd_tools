@@ -3,9 +3,9 @@ import ReferenceTableDetail from '@/features/admin/features/ReferenceTableMgmt/c
 import ReferenceTableEdit from '@/features/admin/features/ReferenceTableMgmt/components/ReferenceTableEditor';
 
 export const routes = [
-    { path: 'reference-tables', component: ReferenceTableList, exact: true },
-    { path: 'reference-tables/:id', component: ReferenceTableDetail, exact: true },
-    { path: 'reference-tables/:id/edit', component: ReferenceTableEdit, exact: true },
+    { path: 'referencetables', component: ReferenceTableList, exact: true },
+    { path: 'referencetables/:id', component: ReferenceTableDetail, exact: true },
+    { path: 'referencetables/:id/edit', component: ReferenceTableEdit, exact: true },
 ];
 
 export const navigation = null;

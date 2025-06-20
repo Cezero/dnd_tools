@@ -5,6 +5,8 @@ import api from '@/services/api';
 import ProcessMarkdown from '@/components/markdown/ProcessMarkdown';
 import { useAuth } from '@/auth/authProvider';
 import { useNavigate } from 'react-router-dom';
+import { getClassLevelAbbr } from '../lib/spellUtil';
+import { SCHOOL_NAME_LIST, SUBSCHOOL_NAME_LIST, DESCRIPTOR_NAME_LIST, COMPONENT_ABBREVIATION_LIST } from 'shared-data/src/spellData';
 
 function SpellDetail() {
     const { id } = useParams();
@@ -61,14 +63,18 @@ function SpellDetail() {
                 <div className={innerCellContentClasses}>
                     <h1 className="text-2xl font-bold mb-2">{spell.spell_name}</h1>
                     <p>
-                        {lookupService.getSchoolNames(spell.schools)}
+                        {SCHOOL_NAME_LIST(spell.schools)}
                         {(() => {
-                            const descriptorNames = lookupService.getDescriptorNames(spell.descriptors);
+                            const subSchoolNames = SUBSCHOOL_NAME_LIST(spell.subschools);
+                            return subSchoolNames.length > 0 ? ` (${subSchoolNames})` : '';
+                        })()}
+                        {(() => {
+                            const descriptorNames = DESCRIPTOR_NAME_LIST(spell.descriptors);
                             return descriptorNames.length > 0 ? ` [${descriptorNames}]` : '';
                         })()}
                     </p>
-                    <p><strong>Level:</strong> {lookupService.getClassLevelAbbr(spell.class_levels)}</p>
-                    {spell.components && <p><strong>Components:</strong> {lookupService.getComponentAbbreviations(spell.components)}</p>}
+                    <p><strong>Level:</strong> {getClassLevelAbbr(spell.class_levels)}</p>
+                    {spell.components && <p><strong>Components:</strong> {COMPONENT_ABBREVIATION_LIST(spell.components)}</p>}
                     {spell.cast_time && <p><strong>Casting Time:</strong> {spell.cast_time}</p>}
                     {spell.spell_effect && <p><strong>Effect:</strong> {spell.spell_effect}</p>}
                     {spell.spell_area && <p><strong>Area:</strong> {spell.spell_area}</p>}

@@ -1,5 +1,5 @@
 import express from 'express';
-import { getSpells, getSpellById, updateSpell } from '../controllers/spellController.js';
+import { getSpells, getSpellById, updateSpell } from '../controllers/spellsController.js';
 import { requireAdmin } from '../../../middleware/requireAdmin.js';
 
 const router = express.Router();

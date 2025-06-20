@@ -9,7 +9,8 @@ import Input from '@/components/GenericList/Input';
 import MultiSelect from '@/components/GenericList/MultiSelect';
 import SingleSelect from '@/components/GenericList/SingleSelect';
 import React from 'react';
-
+import { getClassDisplay } from '../lib/spellUtil';
+import { SPELL_DESCRIPTOR_LIST, SPELL_SCHOOL_LIST, SPELL_COMPONENT_LIST, SCHOOL_NAME_LIST, DESCRIPTOR_NAME_LIST, COMPONENT_ABBREVIATION_LIST } from 'shared-data/src/spellData';
 
 function SpellList() {
     const navigate = useNavigate();
@@ -37,9 +38,9 @@ function SpellList() {
         school: {
             component: MultiSelect,
             props: {
-                options: lookupsInitialized ? LookupService.getAll('schools') : [],
-                displayKey: 'school_name',
-                valueKey: 'school_id',
+                options: SPELL_SCHOOL_LIST,
+                displayKey: 'name',
+                valueKey: 'id',
                 placeholder: 'Select Schools',
                 className: 'w-48'
             }
@@ -47,9 +48,9 @@ function SpellList() {
         descriptors: {
             component: MultiSelect,
             props: {
-                options: lookupsInitialized ? LookupService.getAll('descriptors') : [],
-                displayKey: 'descriptor',
-                valueKey: 'descriptor_id',
+                options: SPELL_DESCRIPTOR_LIST,
+                displayKey: 'name',
+                valueKey: 'id',
                 placeholder: 'Select Descriptors',
                 className: 'w-48'
             }
@@ -87,9 +88,9 @@ function SpellList() {
         components: {
             component: MultiSelect,
             props: {
-                options: lookupsInitialized ? LookupService.getAll('components') : [],
-                displayKey: 'comp_name',
-                valueKey: 'comp_id',
+                options: SPELL_COMPONENT_LIST,
+                displayKey: 'name',
+                valueKey: 'id',
                 placeholder: 'Select Components',
                 className: 'w-48'
             }
@@ -121,7 +122,7 @@ function SpellList() {
         const processedResults = data.results.map(spell => ({
             ...spell,
             schools: spell.school_ids ? spell.school_ids.split(',').map(Number) : [],
-            descriptors: spell.descriptor_ids ? spell.descriptor_ids.split(',').map(Number) : [],
+            descriptors: spell.desc_ids ? spell.desc_ids.split(',').map(Number) : [],
             components: spell.component_ids ? spell.component_ids.split(',').map(Number) : [],
             sources: spell.source_info ? spell.source_info.split(',').map(s => {
                 const [book_id, page_number] = s.split(':');
@@ -144,9 +145,9 @@ function SpellList() {
             case 'spell_summary':
                 return spell.spell_summary;
             case 'school':
-                return LookupService.getSchoolNames(spell.schools);
+                return SCHOOL_NAME_LIST(spell.schools);
             case 'descriptors':
-                return LookupService.getDescriptorNames(spell.descriptors);
+                return DESCRIPTOR_NAME_LIST(spell.descriptors);
             case 'casting_time':
                 return spell.cast_time;
             case 'spell_range':
@@ -164,11 +165,11 @@ function SpellList() {
             case 'spell_resistance':
                 return spell.spell_resistance;
             case 'components':
-                return LookupService.getComponentAbbreviations(spell.components);
+                return COMPONENT_ABBREVIATION_LIST(spell.components);
             case 'source':
                 return LookupService.getSourceDisplay(spell.sources, true);
             case 'classId':
-                return LookupService.getClassDisplay(spell.classId, spell.spell_level);
+                return getClassDisplay(spell.classId, spell.spell_level);
             default:
                 return null;
         }

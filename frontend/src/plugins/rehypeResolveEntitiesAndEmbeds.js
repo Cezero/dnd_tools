@@ -1,6 +1,5 @@
 import { visit } from 'unist-util-visit';
 import { flushEntityResolutionQueue } from '@/services/entityResolver';
-import { flushTableResolutionQueue } from '@/services/tableResolver';
 import { h } from 'hastscript';
 import { renderMarkdownToHast } from '@/plugins/renderMarkdownToHast';
 
@@ -22,13 +21,12 @@ export default function rehypeResolveEntitiesAndEmbeds(options = {}) {
         });
 
         // Resolve all queued entities and tables
-        const resolvedEntities = await flushEntityResolutionQueue();
-        const resolvedTables = await flushTableResolutionQueue();
+        const resolvedData = await flushEntityResolutionQueue();
 
         // Apply resolved entity IDs to link elements
         for (const node of entityLinks) {
             const { dataEntityType: type, dataEntityValue: name } = node.properties;
-            const id = resolvedEntities[type]?.[name];
+            const id = resolvedData[type]?.[name];
             if (id) {
                 node.properties.href = `/${type}s/${id}`;
                 node.properties.className = node.properties.className
@@ -42,7 +40,7 @@ export default function rehypeResolveEntitiesAndEmbeds(options = {}) {
         // Replace table placeholders with rendered tables
         for (const node of tablePlaceholders) {
             const slug = node.properties.dataTableSlug;
-            const tableData = resolvedTables[slug];
+            const tableData = resolvedData.referencetable?.[slug];
 
             if (tableData) {
                 const tableElement = await renderStructuredTable(tableData, tableClass);
@@ -62,15 +60,43 @@ export default function rehypeResolveEntitiesAndEmbeds(options = {}) {
     }
 }
 
+function estimatePreferredWidthsFromRows(headers, rows) {
+    return headers.map(header => {
+      const colId = header.id;
+  
+      // Extract content lengths for this column across all rows
+      const cellLengths = rows.map(row => {
+        const cell = row.cells.find(c => c.column_id === colId);
+        if (!cell || !cell.value || cell.col_span > 1) return 0;
+        const plain = cell.value.replace(/[*_\[\]\(\)`~^]/g, ''); // Strip basic markdown
+        return plain.length;
+      });
+  
+      const maxLength = Math.max(...cellLengths, 0);
+  
+      return {
+        ...header,
+        preferredWidth: `${maxLength}ch`,
+      };
+    });
+  }
+  
+
 // Example render function for structured table data
 export async function renderStructuredTable(tableData, tableClass) {
     const { headers, rows } = tableData;
     const occupiedCells = new Set(); // Stores 'rowIndex-colIndex' strings
 
+    const headersWithPreferredWidths = estimatePreferredWidthsFromRows(headers, rows);
+    const colgroup = h('colgroup', headersWithPreferredWidths.map(hdr =>
+        h('col', { key: hdr.column_index, style: { width: hdr.preferredWidth || 'auto' } })
+    ));
     return h('table', { className: tableClass }, [
+        colgroup,
         h('thead', [
             h('tr', headers.map(hdr =>
-                h('th', { key: hdr.column_index, style: { 'text-align': hdr.alignment || 'left' } }, hdr.header)
+                h('th', { key: hdr.column_index, style: { 'text-align': hdr.alignment || 'left' } },
+                    [h('div', { style: { display: 'inline-block', maxWidth: '100%' } }, hdr.header)])
             ))
         ]),
         h('tbody', await Promise.all(rows.map(async (row, rowIndex) => {

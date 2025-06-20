@@ -1,6 +1,5 @@
 import { visit } from 'unist-util-visit';
 import { queueEntityResolution } from '@/services/entityResolver';
-import { queueTableResolution } from '@/services/tableResolver';
 
 const ENTITY_TYPES = {
     Spell: '/spells/',
@@ -44,7 +43,7 @@ export default function remarkEntitiesAndEmbeds() {
                     });
                 } else if (r_type === 'Table') {
                     // Queue table resolution
-                    queueTableResolution(r_value.toLowerCase());
+                    queueEntityResolution('referencetable', r_value.toLowerCase());
 
                     parts.push({
                         type: 'element',

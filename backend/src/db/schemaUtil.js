@@ -1,5 +1,6 @@
 const TABLE_NAME_MAP = {
     'spell': 'spells',
+    'referencetable': 'referencetables'
 }
 
 export function getTableNameForType(type) {

@@ -375,10 +375,10 @@ export default function ReferenceTableEditor() {
             if (tableId === 'new') {
                 const response = await referenceTableService.createReferenceTable(tableData);
                 setTableId(response.id); // Update tableId with the new ID
-                navigate('/admin/reference-tables');
+                navigate('/admin/referencetables');
             } else {
                 await referenceTableService.updateReferenceTable(tableId, tableData);
-                navigate('/admin/reference-tables');
+                navigate('/admin/referencetables');
             }
         } catch (error) {
             console.error('Error saving table:', error);
@@ -790,7 +790,7 @@ export default function ReferenceTableEditor() {
             </table>
             <div className="mt-4 flex justify-end space-x-2">
                 <button
-                    onClick={() => navigate('/admin/reference-tables')}
+                    onClick={() => navigate('/admin/referencetables')}
                     ref={cancelButtonRef}
                     onKeyDown={(e) => handleKeyDown(e, 'cancelButton')}
                     className="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-400 dark:hover:bg-gray-600"

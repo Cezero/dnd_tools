@@ -26,22 +26,18 @@ const typographyConfig = {
             'table': {
                 '&.md-table': {
                     width: 'max-content',
-                    tableLayout: 'auto',
+                    fontSize: '14px',
+                    tableLayout: 'fixed',
                     borderCollapse: 'collapse',
                     marginTop: '1em',
                     marginBottom: '1em',
                     border: '1px solid #4a5568',
-                    'thead': {
-                        'tr': {
-                            backgroundColor: '#1a202c',
-                            color: '#ffffff',
-                        },
-                    },
                     'th': {
-                        backgroundColor: '#1a202c',
+                        backgroundColor: '#2A3344',
                         padding: '8px',
                         border: '1px solid #4a5568',
-                        whiteSpace: 'nowrap'
+                        whiteSpace: 'normal',
+                        overflowWrap: 'break-word',
                     },
                     'td': {
                         padding: '8px',
@@ -52,6 +48,7 @@ const typographyConfig = {
                     },
                     'p': {
                         margin: '0',
+                        fontSize: 'inherit',
                     },
                     'tbody': {
                         'tr': {

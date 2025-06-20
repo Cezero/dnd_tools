@@ -1,0 +1,6 @@
+---
+description: Apply this rule when creating or modifying functions
+globs: 
+alwaysApply: false
+---
+Document all functions with JSDoc and explicitly detail any return object properties

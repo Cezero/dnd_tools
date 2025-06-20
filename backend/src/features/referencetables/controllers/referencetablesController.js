@@ -356,24 +356,12 @@ export async function getReferenceTable(req, res) {
     }
 }
 
-export async function resolveReferenceTables(req, res) {
-    const { identifiers } = req.body;
+export async function resolve(identifiers) {
 
-    if (!Array.isArray(identifiers) || identifiers.length === 0) {
-        return res.status(400).send('An array of table IDs or slugs is required.');
+    const resolvedTables = {};
+    for (const identifier of identifiers) {
+        const tableData = await getReferenceTableData(identifier);
+        resolvedTables[identifier] = tableData;
     }
-
-    const results = {};
-
-    try {
-        for (const identifier of identifiers) {
-            const tableData = await getReferenceTableData(identifier);
-            results[identifier] = tableData;
-        }
-
-        res.json(results);
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Server error');
-    }
+    return resolvedTables;
 } 
