@@ -217,12 +217,12 @@ function SpellEdit() {
         }
     };
 
-    if (isLoading) return <div className="p-4 bg-white  dark:bg-[#121212]  min-h-screen">Loading spell for editing...</div>;
-    if (error) return <div className="p-4 bg-white  dark:bg-[#121212] dark:text-red-500 min-h-screen">Error: {error.message}</div>;
-    if (!spell) return <div className="p-4 bg-white  dark:bg-[#121212]  min-h-screen">Spell not found.</div>;
+    if (isLoading) return <div className="p-4 bg-white  dark:bg-[#121212]">Loading spell for editing...</div>;
+    if (error) return <div className="p-4 bg-white  dark:bg-[#121212] dark:text-red-500">Error: {error.message}</div>;
+    if (!spell) return <div className="p-4 bg-white  dark:bg-[#121212]">Spell not found.</div>;
 
     return (
-        <div className="p-4 bg-white dark:bg-[#121212] min-h-screen">
+        <div className="p-4 bg-white dark:bg-[#121212]">
             <h1 className="text-2xl font-bold mb-4">Edit Spell: {spell.spell_name}</h1>
             {message && <div className="mb-4 p-2 rounded text-green-700 bg-green-100 dark:bg-green-800 dark:text-green-200">{message}</div>}
             {error && <div className="mb-4 p-2 rounded text-red-700 bg-red-100 dark:bg-red-800 dark:text-red-200">Error: {error.message || String(error)}</div>}

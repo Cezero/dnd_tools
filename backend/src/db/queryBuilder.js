@@ -22,7 +22,7 @@ export function createFilterProcessor(filterConfig) {
                 continue;
             }
             if (key === 'limit') {
-                processed.pagination.limit = parseInt(queryParams[key]) || 20;
+                processed.pagination.limit = parseInt(queryParams[key]) || 25;
                 continue;
             }
             if (key === 'sort') {

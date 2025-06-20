@@ -15,7 +15,7 @@ function validateCharacterData(character) {
 }
 
 export async function getAllCharacters(req, res) {
-    const { page = 1, limit = 20, sort = 'character_name', order = 'asc', name = '', user_id = null } = req.query;
+    const { page = 1, limit = 25, sort = 'character_name', order = 'asc', name = '', user_id = null } = req.query;
     const offset = (page - 1) * limit;
 
     const allowedSorts = ['character_name', 'created_at', 'character_age'];

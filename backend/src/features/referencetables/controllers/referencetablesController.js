@@ -75,7 +75,7 @@ export async function getReferenceTableData(identifier) {
 }
 
 export async function getReferenceTables(req, res) {
-    const { page = 1, limit = 20, sort = 'name', order = 'asc', name = '', slug = '' } = req.query;
+    const { page = 1, limit = 25, sort = 'name', order = 'asc', name = '', slug = '' } = req.query;
     const offset = (page - 1) * limit;
 
     const allowedSorts = ['name', 'slug'];

@@ -48,19 +48,23 @@ export const getRaceById = async (req, res) => {
     const { id } = req.params;
     try {
         const { rows: races } = await timedQuery(
-            'SELECT race_id, race_name, race_abbr, edition_id, display FROM races WHERE race_id = ?',
+            'SELECT r.* FROM races r WHERE race_id = ?',
             [id],
             'getRaceById'
         );
         if (races.length === 0) {
             return res.status(404).send('Race not found');
         }
+
+        const { rows: languages } = await timedQuery(
+            'SELECT language_id, automatic FROM race_language_map WHERE race_id = ?',
+            [id],
+            'getRaceLanguages'
+        );
+
         res.json({
-            id: races[0].race_id,
-            name: races[0].race_name,
-            abbr: races[0].race_abbr,
-            editionId: races[0].edition_id,
-            display: races[0].display,
+            ...races[0],
+            languages: languages
         });
     } catch (error) {
         console.error('Error fetching race by ID:', error);
@@ -74,15 +78,25 @@ export const getRaceById = async (req, res) => {
  * @param {object} res - Express response object.
  */
 export const createRace = async (req, res) => {
-    const { name, abbr, editionId, display } = req.body;
+    const { name, raceDescription, sizeId, raceSpeed, favoredClassId, editionId, display, languages } = req.body;
     try {
         const result = await runTransactionWith(async (txTimedQuery) => {
             const { raw } = await txTimedQuery(
-                'INSERT INTO races (race_name, race_abbr, edition_id, display) VALUES (?, ?, ?, ?)',
-                [name, abbr, editionId, display],
+                'INSERT INTO races (race_name, race_description, size_id, race_speed, favored_class_id, edition_id, display) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [name, raceDescription, sizeId, raceSpeed, favoredClassId, editionId, display],
                 'createRace'
             );
-            return raw.insertId;
+            const newRaceId = raw.insertId;
+
+            if (languages && languages.length > 0) {
+                const languageInserts = languages.map(langId => [newRaceId, langId]);
+                await txTimedQuery(
+                    'INSERT INTO race_language_map (race_id, language_id) VALUES ?',
+                    [languageInserts],
+                    'insertRaceLanguages'
+                );
+            }
+            return newRaceId;
         });
         res.status(201).json({ id: result, message: 'Race created successfully' });
     } catch (error) {
@@ -98,16 +112,31 @@ export const createRace = async (req, res) => {
  */
 export const updateRace = async (req, res) => {
     const { id } = req.params;
-    const { name, abbr, editionId, display } = req.body;
+    const { name, race_description, size_id, race_speed, favored_class_id, edition_id, display, languages } = req.body;
     try {
         await runTransactionWith(async (txTimedQuery) => {
             const { raw } = await txTimedQuery(
-                'UPDATE races SET race_name = ?, race_abbr = ?, edition_id = ?, display = ? WHERE race_id = ?',
-                [name, abbr, editionId, display, id],
+                'UPDATE races SET race_name = ?, race_description = ?, size_id = ?, race_speed = ?, favored_class_id = ?, edition_id = ?, display = ? WHERE race_id = ?',
+                [name, race_description, size_id, race_speed, favored_class_id, edition_id, display, id],
                 'updateRace'
             );
             if (raw.affectedRows === 0) {
                 throw new Error('Race not found or no changes made');
+            }
+
+            // Update languages
+            await txTimedQuery(
+                'DELETE FROM race_language_map WHERE race_id = ?',
+                [id],
+                'deleteRaceLanguages'
+            );
+            if (languages && languages.length > 0) {
+                const languageInserts = languages.map(lang => [id, lang.language_id, lang.automatic]);
+                await txTimedQuery(
+                    'INSERT INTO race_language_map (race_id, language_id, automatic) VALUES ?',
+                    [languageInserts],
+                    'insertRaceLanguages'
+                );
             }
         });
         res.status(200).json({ message: 'Race updated successfully' });

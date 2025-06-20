@@ -1,4 +1,4 @@
-import typographyConfig from './src/config/typographyConfig.js';
+import { typographyConfig } from './src/config/typographyConfig.js';
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -15,7 +15,7 @@ export default {
             gridAutoRows: {
                 auto: 'auto'
             },
-            typography: typographyConfig
+            typographyConfig
         }
     },
     plugins: [

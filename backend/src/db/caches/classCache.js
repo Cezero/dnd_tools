@@ -9,14 +9,16 @@ class ClassCache {
     async initialize() {
         if (this.initialized) return;
 
-        const { rows } = await timedQuery('SELECT * FROM classes where display = 1', [], 'ClassCache');
+        const { rows } = await timedQuery('SELECT * FROM classes', [], 'ClassCache');
         for (const row of rows) {
             this.classes.set(row.class_id, {
                 class_id: row.class_id,
                 class_name: row.class_name,
                 class_abbr: row.class_abbr,
                 caster: row.caster,
-                edition_id: row.edition_id
+                edition_id: row.edition_id,
+                display: row.display,
+                is_prestige_class: row.is_prestige_class
             });
         }
         this.initialized = true;

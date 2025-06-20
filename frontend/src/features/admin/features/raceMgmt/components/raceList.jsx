@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Icon from '@mdi/react';
 import { mdiTrashCan, mdiPlaylistEdit } from '@mdi/js';
 import GenericList from '@/components/GenericList/GenericList';
@@ -10,15 +10,18 @@ import MultiSelect from '@/components/GenericList/MultiSelect';
 import BooleanInput from '@/components/GenericList/BooleanInput';
 import LookupService from '@/services/LookupService';
 import { useAuth } from '@/auth/authProvider';
+import { SIZE_MAP } from 'shared-data/src/commonData';
 
 const RaceList = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { user, isLoading: isAuthLoading } = useAuth();
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [lookupsInitialized, setLookupsInitialized] = useState(false);
+    const [classes, setClasses] = useState([]);
 
     const raceFilterOptions = React.useMemo(() => ({
-        name: { component: Input, props: { type: 'text', placeholder: 'Filter by name...' } },
+        race_name: { component: Input, props: { type: 'text', placeholder: 'Filter by name...' } },
         edition_id: {
             component: MultiSelect,
             props: {
@@ -28,14 +31,35 @@ const RaceList = () => {
                 className: 'w-32'
             }
         },
-        display: { component: BooleanInput, props: { placeholder: 'Select Display Status' } },
-    }), [lookupsInitialized]);
+        display: { component: BooleanInput },
+        size_id: {
+            component: MultiSelect,
+            props: {
+                options: lookupsInitialized ? Object.values(SIZE_MAP) : [],
+                displayKey: 'name',
+                valueKey: 'id',
+                className: 'w-32'
+            }
+        },
+        race_speed: { component: Input, props: { type: 'number', placeholder: 'Filter by speed...' } },
+        favored_class_id: {
+            component: MultiSelect,
+            props: {
+                options: lookupsInitialized ? classes : [],
+                displayKey: 'class_name',
+                valueKey: 'class_id',
+                className: 'w-32'
+            }
+        }
+    }), [lookupsInitialized, user, classes]);
 
     useEffect(() => {
         const initializeLookups = async () => {
             try {
                 await LookupService.initialize();
                 setLookupsInitialized(true);
+                const allClasses = LookupService.getAll('classes');
+                setClasses(allClasses);
             } catch (error) {
                 console.error('Failed to initialize lookup service:', error);
             }
@@ -48,12 +72,22 @@ const RaceList = () => {
             return { data: [], total: 0 };
         }
 
-        const data = await fetchRaces(params);
-        return { data: data.results, total: data.total };
+        const { data, total } = await fetchRaces(params);
+        const processedResults = data.map(race => ({
+            race_name: race.race_name,
+            edition_id: race.edition_id,
+            display: race.display,
+            race_description: race.race_description,
+            size_id: race.size_id,
+            race_speed: race.race_speed,
+            favored_class_id: race.favored_class_id,
+            id: race.race_id
+        }));
+        return { data: processedResults, total: total };
     }, [lookupsInitialized, user]);
 
     const handleNewRaceClick = () => {
-        navigate('/admin/races/new/edit');
+        navigate('/admin/races/new/edit', { state: { fromListParams: location.search } });
     };
 
     const handleDeleteRace = async (id) => {
@@ -96,7 +130,7 @@ const RaceList = () => {
             );
         }
 
-        if (columnId === 'name') {
+        if (columnId === 'race_name') {
             return (
                 <a
                     onClick={() => navigate(`/admin/races/${item.id}`)}
@@ -108,14 +142,23 @@ const RaceList = () => {
         }
 
         if (columnId === 'edition_id') {
-            return LookupService.getEditionDisplay(item[columnId]);
+            return LookupService.getById('editions', item[columnId]).edition_abbrev;
+        }
+
+        if (columnId === 'size_id') {
+            return SIZE_MAP[item[columnId]].name;
+        }
+
+        if (columnId === 'favored_class_id') {
+            const favoredClass = LookupService.getById('classes', item[columnId]);
+            return favoredClass ? favoredClass.class_name : '';
         }
 
         return item[columnId];
     };
 
     if (!lookupsInitialized || isAuthLoading) {
-        return <div className="p-4 bg-white text-black dark:bg-[#121212] dark:text-white min-h-screen">Loading...</div>;
+        return <div className="p-4 bg-white text-black dark:bg-[#121212] dark:text-white">Loading...</div>;
     }
 
     return (
@@ -132,7 +175,7 @@ const RaceList = () => {
             <GenericList
                 storageKey="races-list"
                 defaultColumns={DEFAULT_COLUMNS}
-                requiredColumnId="name"
+                requiredColumnId="race_name"
                 columnDefinitions={COLUMN_DEFINITIONS}
                 fetchData={raceFetchData}
                 renderCell={renderCell}

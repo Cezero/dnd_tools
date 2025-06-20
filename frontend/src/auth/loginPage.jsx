@@ -17,7 +17,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="p-4 bg-white text-black dark:bg-gray-900 dark:text-white min-h-screen">
+    <div className="p-4 bg-white text-black dark:bg-gray-900 dark:text-white">
       <h1 className="text-2xl font-bold mb-4">Login</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} className="p-2 border rounded w-full dark:bg-gray-800" />

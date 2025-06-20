@@ -31,7 +31,7 @@ function GenericList({
     const [isLoading, setIsLoading] = useState(true);
 
     const page = parseInt(searchParams.get('page') || '1');
-    const [limit, setLimit] = useState(parseInt(searchParams.get('limit') || '20'));
+    const [limit, setLimit] = useState(parseInt(searchParams.get('limit') || '25'));
     const [sortKey, setSortKey] = useState(searchParams.get('sort') || '');
     const [sortOrder, setSortOrder] = useState(searchParams.get('order') || 'asc');
 
@@ -363,11 +363,11 @@ function GenericList({
     };
 
     if (isLoading) {
-        return <div className="p-4 bg-white dark:bg-[#121212] min-h-screen">Loading...</div>;
+        return <div className="p-4 bg-white dark:bg-[#121212]">Loading...</div>;
     }
 
     return (
-        <div className="p-4 bg-white dark:bg-[#121212] min-h-screen">
+        <div className="p-4 bg-white dark:bg-[#121212]">
             <div className="relative">
                 <table className="w-full border-collapse border border-solid border-gray-600">
                     <thead>

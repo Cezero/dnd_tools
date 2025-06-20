@@ -5,12 +5,6 @@ const raceFilterConfig = {
         operator: 'LIKE',
         data_type: 'string',
     },
-    race_abbr: {
-        column: 'r.race_abbr',
-        isSearch: true,
-        operator: 'LIKE',
-        data_type: 'string',
-    },
     edition_id: {
         column: 'r.edition_id',
         isMultiValued: true,
@@ -19,6 +13,15 @@ const raceFilterConfig = {
     display: {
         column: 'r.display',
         data_type: 'boolean',
+    },
+    size_id: {
+        column: 'r.size_id'
+    },
+    race_speed: {
+        column: 'r.race_speed',
+    },
+    favored_class_id: {
+        column: 'r.favored_class_id',
     },
     sort: 'race_name'
 };

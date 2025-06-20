@@ -1,4 +1,4 @@
-const typographyConfig = {
+export const typographyConfig = {
     DEFAULT: {
         css: {
             'p': {
@@ -68,5 +68,3 @@ const typographyConfig = {
         }
     }
 };
-
-export default typographyConfig; 

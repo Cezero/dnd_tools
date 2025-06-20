@@ -14,10 +14,10 @@ export function buildRacesQuery(processedQuery) {
     let sortBy = sort.sortBy;
     if (sortBy === 'race_name') {
         sortBy = 'r.race_name';
-    } else if (sortBy === 'race_abbr') {
-        sortBy = 'r.race_abbr';
-    } else if (sortBy === 'edition_id') {
-        sortBy = 'r.edition_id';
+    } else if (sortBy === 'size_id') {
+        sortBy = 'r.size_id';
+    } else if (sortBy === 'favored_class_id') {
+        sortBy = 'r.favored_class_id';
     }
 
     const sortOrder = sort.sortOrder === 'desc' ? 'DESC' : 'ASC';

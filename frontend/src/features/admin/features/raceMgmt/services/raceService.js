@@ -1,9 +1,9 @@
 import api from '@/services/api';
 
-export const fetchRaces = async ({ page = 1, limit = 10, filters = {} }) => {
+export const fetchRaces = async ({ page = 1, limit = 25, filters = {} }) => {
     try {
         const response = await api('/races', { method: 'GET', params: { page, limit, ...filters } });
-        const races = Array.isArray(response.data) ? response.data : [];
+        const races = Array.isArray(response.results) ? response.results : [];
         const total = response.total !== undefined ? response.total : races.length;
         return { data: races, total: total };
     } catch (error) {
@@ -15,7 +15,7 @@ export const fetchRaces = async ({ page = 1, limit = 10, filters = {} }) => {
 export const fetchRaceById = async (id) => {
     try {
         const response = await api(`/races/${id}`, { method: 'GET' });
-        return response.data;
+        return response;
     } catch (error) {
         console.error(`Error fetching race with ID ${id}:`, error);
         throw error;

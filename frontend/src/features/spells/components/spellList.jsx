@@ -176,7 +176,7 @@ function SpellList() {
     };
 
     if (!lookupsInitialized || isAuthLoading) {
-        return <div className="p-4 bg-white text-black dark:bg-[#121212] dark:text-white min-h-screen">Loading...</div>;
+        return <div className="p-4 bg-white text-black dark:bg-[#121212] dark:text-white">Loading...</div>;
     }
 
     return (
