@@ -141,30 +141,6 @@ const RaceList = () => {
             }
         }
 
-        if (isLastVisibleColumn) {
-            return (
-                <div className="flex justify-between items-center w-full">
-                    <span>{cellContent}</span>
-                    <div className="flex items-center">
-                        <button
-                            onClick={() => navigate(`/admin/races/${item.id}/edit`)}
-                            className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 mr-2"
-                            title="Edit Race"
-                        >
-                            <Icon path={mdiPlaylistEdit} size={0.7} />
-                        </button>
-                        <button
-                            onClick={() => handleDeleteRace(item.id)}
-                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-600"
-                            title="Delete Race"
-                        >
-                            <Icon path={mdiTrashCan} size={0.7} />
-                        </button>
-                    </div>
-                </div>
-            );
-        }
-
         return cellContent;
     };
 
@@ -189,35 +165,11 @@ const RaceList = () => {
             cellContent = item[columnId] ? 'Yes' : 'No';
         }
 
-        if (isLastVisibleColumn) {
-            return (
-                <div className="flex justify-between items-center w-full">
-                    <span>{cellContent}</span>
-                    <div className="flex items-center">
-                        <button
-                            onClick={() => navigate(`/admin/races/traits/${item.id}/edit`)}
-                            className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 mr-2"
-                            title="Edit Trait"
-                        >
-                            <Icon path={mdiPlaylistEdit} size={0.7} />
-                        </button>
-                        <button
-                            onClick={() => handleDeleteRaceTrait(item.id)}
-                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-600"
-                            title="Delete Trait"
-                        >
-                            <Icon path={mdiTrashCan} size={0.7} />
-                        </button>
-                    </div>
-                </div>
-            );
-        }
-
         return cellContent;
     };
 
     if (!lookupsInitialized || isAuthLoading) {
-        return <div className="p-4 bg-white text-black dark:bg-[#121212] dark:text-white">Loading...</div>;
+        return <div className="p-4">Loading...</div>;
     }
 
     return (
@@ -240,9 +192,10 @@ const RaceList = () => {
                 renderCell={renderCell}
                 detailPagePath="/admin/races/:id"
                 idKey="id"
-                navigate={navigate}
                 refreshTrigger={refreshTrigger}
                 itemDesc="race"
+                editHandler={(item) => navigate(`/admin/races/${item.id}/edit`)}
+                deleteHandler={(item) => handleDeleteRace(item.id)}
                 filterOptions={memoizedRaceFilterOptions}
             />
 
@@ -264,9 +217,10 @@ const RaceList = () => {
                 renderCell={renderTraitCell}
                 detailPagePath="/admin/races/traits/:id"
                 idKey="id"
-                navigate={navigate}
                 refreshTrigger={raceTraitRefreshTrigger}
                 itemDesc="race trait"
+                editHandler={(item) => navigate(`/admin/races/traits/${item.id}/edit`)}
+                deleteHandler={(item) => handleDeleteRaceTrait(item.id)}
                 filterOptions={memoizedRaceTraitFilterOptions}
             />
         </div>

@@ -24,17 +24,6 @@ export const ALIGNMENTS_BY_ID = {
 
 export const ALIGNMENT_LIST = Object.values(ALIGNMENTS_BY_ID);
 
-export const ATTRIBUTE_MAP = {
-    1: { id: 1, name: 'Strength', abbr: 'STR' },
-    2: { id: 2, name: 'Dexterity', abbr: 'DEX' },
-    3: { id: 3, name: 'Constitution', abbr: 'CON' },
-    4: { id: 4, name: 'Intelligence', abbr: 'INT' },
-    5: { id: 5, name: 'Wisdom', abbr: 'WIS' },
-    6: { id: 6, name: 'Charisma', abbr: 'CHA' },
-}
-
-export const ATTRIBUTE_LIST = Object.values(ATTRIBUTE_MAP);
-
 export const SIZE_MAP = {
     1: {
         id: 1,

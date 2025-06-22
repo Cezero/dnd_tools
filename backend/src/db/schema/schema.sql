@@ -75,17 +75,17 @@ CREATE TABLE `editions` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `race_attribute_adjustments`
+-- Table structure for table `race_ability_adjustments`
 --
 
-DROP TABLE IF EXISTS `race_attribute_adjustments`;
+DROP TABLE IF EXISTS `race_ability_adjustments`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `race_attribute_adjustments` (
+CREATE TABLE `race_ability_adjustments` (
   `race_id` int unsigned NOT NULL,
-  `attribute_id` tinyint unsigned NOT NULL,
-  `attribute_adjustment` tinyint NOT NULL,
-  PRIMARY KEY (`race_id`,`attribute_id`),
+  `ability_id` tinyint unsigned NOT NULL,
+  `ability_adjustment` tinyint NOT NULL,
+  PRIMARY KEY (`race_id`,`ability_id`),
   CONSTRAINT `race_attribute_adjustments_races_FK` FOREIGN KEY (`race_id`) REFERENCES `races` (`race_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -136,7 +136,6 @@ CREATE TABLE `race_traits` (
   `value_flag` tinyint(1) NOT NULL DEFAULT '0',
   `trait_name` varchar(100) DEFAULT NULL,
   `trait_slug` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `name_flag` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`trait_slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -160,7 +159,7 @@ CREATE TABLE `races` (
   PRIMARY KEY (`race_id`),
   KEY `fk_races_edition` (`edition_id`),
   CONSTRAINT `fk_races_edition` FOREIGN KEY (`edition_id`) REFERENCES `editions` (`edition_id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -252,7 +251,7 @@ CREATE TABLE `skills` (
   `skill_id` int unsigned NOT NULL AUTO_INCREMENT,
   `skill_name` varchar(100) NOT NULL,
   `skill_abbr` varchar(10) DEFAULT NULL,
-  `attribute_id` int unsigned NOT NULL DEFAULT '1',
+  `ability_id` int unsigned NOT NULL DEFAULT '1',
   `skill_check` text,
   `skill_action` varchar(200) DEFAULT NULL,
   `skill_try_again` tinyint(1) DEFAULT NULL,
@@ -262,7 +261,7 @@ CREATE TABLE `skills` (
   `untrained_desc` varchar(200) DEFAULT NULL,
   `skill_armor_check_penalty` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`skill_id`),
-  KEY `skills_attributes_FK` (`attribute_id`)
+  KEY `skills_attributes_FK` (`ability_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -501,4 +500,4 @@ CREATE TABLE `users` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-06-22  9:06:16
+-- Dump completed on 2025-06-22 18:46:44

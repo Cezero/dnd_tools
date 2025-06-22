@@ -3,7 +3,8 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '@/services/api';
 import lookupService from '@/services/LookupService';
 import { SIZE_LIST } from 'shared-data/src/commonData';
-import { LANGUAGE_LIST, LANGUAGE_MAP, ATTRIBUTE_LIST, ATTRIBUTE_MAP } from 'shared-data/src/commonData';
+import { LANGUAGE_LIST, LANGUAGE_MAP } from 'shared-data/src/commonData';
+import { ABILITY_LIST } from 'shared-data/src/abilityData';
 import { fetchRaceById } from '@/features/admin/features/raceMgmt/services/raceService';
 import ProcessMarkdown from '@/components/markdown/ProcessMarkdown';
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption, Transition } from '@headlessui/react';
@@ -26,8 +27,8 @@ export default function RaceEdit() {
     const [classes, setClasses] = useState([]);
     const [allLanguages, setAllLanguages] = useState([]);
     const [isAddTraitModalOpen, setIsAddTraitModalOpen] = useState(false);
-    const [focusedAttributeId, setFocusedAttributeId] = useState(null);
-    const [editingAttributeValue, setEditingAttributeValue] = useState('');
+    const [focusedabilityId, setFocusedabilityId] = useState(null);
+    const [editingabilityValue, setEditingabilityValue] = useState('');
     const fromListParams = location.state?.fromListParams || '';
 
     const filteredClasses = React.useMemo(() => {
@@ -58,7 +59,7 @@ export default function RaceEdit() {
                         race_speed: 30, // Default to 30
                         favored_class_id: -1,
                         languages: [],
-                        attribute_adjustments: ATTRIBUTE_LIST.map(attr => ({ attribute_id: attr.id, attribute_adjustment: 0 })),
+                        ability_adjustments: ABILITY_LIST.map(attr => ({ ability_id: attr.id, ability_adjustment: 0 })),
                     });
                 } else {
                     const data = await fetchRaceById(id);
@@ -71,7 +72,7 @@ export default function RaceEdit() {
                         race_speed: data.race_speed,
                         favored_class_id: data.favored_class_id,
                         languages: data.languages || [],
-                        attribute_adjustments: data.attribute_adjustments || ATTRIBUTE_LIST.map(attr => ({ attribute_id: attr.id, attribute_adjustment: 0 })),
+                        ability_adjustments: data.ability_adjustments || ABILITY_LIST.map(attr => ({ ability_id: attr.id, ability_adjustment: 0 })),
                         traits: data.traits || [],
                     });
                 }
@@ -126,27 +127,27 @@ export default function RaceEdit() {
     }, []);
 
     /**
-     * Handles changes to an attribute adjustment for the race.
-     * It updates the `attribute_adjustments` array in the race state.
-     * If an adjustment for the given `attributeId` already exists, it updates its value;
+     * Handles changes to an ability adjustment for the race.
+     * It updates the `ability_adjustments` array in the race state.
+     * If an adjustment for the given `abilityId` already exists, it updates its value;
      * otherwise, it adds a new adjustment entry.
      * The `value` is parsed as an integer, defaulting to 0 if invalid.
      *
-     * @param {number} attributeId - The ID of the attribute to adjust.
-     * @param {string} value - The new value for the attribute adjustment, as a string.
+     * @param {number} abilityId - The ID of the ability to adjust.
+     * @param {string} value - The new value for the ability adjustment, as a string.
      * @returns {void}
      */
-    const handleAttributeChange = useCallback((attributeId, parsedValue) => {
+    const handleabilityChange = useCallback((abilityId, parsedValue) => {
         setRace(prevRace => {
-            const existingIndex = prevRace.attribute_adjustments.findIndex(adj => adj.attribute_id === attributeId);
-            const newAdjustment = { attribute_id: attributeId, attribute_adjustment: parsedValue };
+            const existingIndex = prevRace.ability_adjustments.findIndex(adj => adj.ability_id === abilityId);
+            const newAdjustment = { ability_id: abilityId, ability_adjustment: parsedValue };
 
             if (existingIndex !== -1) {
-                const updatedAdjustments = [...prevRace.attribute_adjustments];
+                const updatedAdjustments = [...prevRace.ability_adjustments];
                 updatedAdjustments[existingIndex] = newAdjustment;
-                return { ...prevRace, attribute_adjustments: updatedAdjustments };
+                return { ...prevRace, ability_adjustments: updatedAdjustments };
             } else {
-                return { ...prevRace, attribute_adjustments: [...prevRace.attribute_adjustments, newAdjustment] };
+                return { ...prevRace, ability_adjustments: [...prevRace.ability_adjustments, newAdjustment] };
             }
         });
     }, []);
@@ -157,7 +158,7 @@ export default function RaceEdit() {
      *
      * @param {Object} e - The event object from the input change.
      * @param {Object} e.target - The target element of the event.
-     * @param {string} e.target.name - The name attribute of the input element, used as the key in the race state.
+     * @param {string} e.target.name - The name ability of the input element, used as the key in the race state.
      * @param {string|boolean} e.target.value - The new value of the input element.
      * @param {string} e.target.type - The type of the input element (e.g., 'text', 'checkbox').
      * @param {boolean} e.target.checked - The checked state of a checkbox, if applicable.
@@ -248,7 +249,7 @@ export default function RaceEdit() {
     /**
      * Handles the form submission for creating or updating a race.
      * Prevents the default form submission behavior, clears any existing messages or errors,
-     * and constructs the payload based on the current race state. It filters out attribute
+     * and constructs the payload based on the current race state. It filters out ability
      * adjustments with a value of 0 and maps trait objects to include only `trait_slug` and
      * `trait_value`.
      * It then calls the appropriate API endpoint (`POST` for new races, `PUT` for existing) and
@@ -276,9 +277,9 @@ export default function RaceEdit() {
                     automatic: lang.automatic,
                 })),
             };
-            const filteredAttributeAdjustments = race.attribute_adjustments.filter(adj => adj.attribute_adjustment !== 0);
-            if (filteredAttributeAdjustments.length > 0) {
-                payload.attribute_adjustments = filteredAttributeAdjustments;
+            const filteredabilityAdjustments = race.ability_adjustments.filter(adj => adj.ability_adjustment !== 0);
+            if (filteredabilityAdjustments.length > 0) {
+                payload.ability_adjustments = filteredabilityAdjustments;
             }
             if (race.traits && race.traits.length > 0) {
                 payload.traits = race.traits.map(trait => ({
@@ -513,31 +514,31 @@ export default function RaceEdit() {
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
-                            <h3 className="text-lg font-medium">Attribute Adjustments:</h3>
+                            <h3 className="text-lg font-medium">Ability Adjustments:</h3>
                             <div className="p-2 border rounded dark:border-gray-600">
                                 <div className="grid grid-cols-3 gap-2">
-                                    {ATTRIBUTE_LIST.map(attribute => (
-                                        <div key={attribute.id} className="flex items-center gap-2">
-                                            <label htmlFor={`attr-${attribute.id}`} className="text-sm font-medium w-20">{attribute.name}:</label>
+                                    {ABILITY_LIST.map(ability => (
+                                        <div key={ability.id} className="flex items-center gap-2">
+                                            <label htmlFor={`attr-${ability.id}`} className="text-sm font-medium w-20">{ability.name}:</label>
                                             <input
                                                 type="text"
-                                                id={`attr-${attribute.id}`}
-                                                name={`attribute_${attribute.id}`}
-                                                value={focusedAttributeId === attribute.id ? editingAttributeValue : (() => {
-                                                    const adjustment = race.attribute_adjustments.find(adj => adj.attribute_id === attribute.id)?.attribute_adjustment || 0;
+                                                id={`attr-${ability.id}`}
+                                                name={`ability_${ability.id}`}
+                                                value={focusedabilityId === ability.id ? editingabilityValue : (() => {
+                                                    const adjustment = race.ability_adjustments.find(adj => adj.ability_id === ability.id)?.ability_adjustment || 0;
                                                     return adjustment > 0 ? `+${adjustment}` : adjustment;
                                                 })()}
-                                                onChange={(e) => setEditingAttributeValue(e.target.value)}
+                                                onChange={(e) => setEditingabilityValue(e.target.value)}
                                                 onFocus={(e) => {
-                                                    setFocusedAttributeId(attribute.id);
-                                                    const currentAdjustment = race.attribute_adjustments.find(adj => adj.attribute_id === attribute.id)?.attribute_adjustment || 0;
-                                                    setEditingAttributeValue(String(currentAdjustment));
+                                                    setFocusedabilityId(ability.id);
+                                                    const currentAdjustment = race.ability_adjustments.find(adj => adj.ability_id === ability.id)?.ability_adjustment || 0;
+                                                    setEditingabilityValue(String(currentAdjustment));
                                                 }}
                                                 onBlur={() => {
-                                                    const parsedValue = editingAttributeValue === '' || editingAttributeValue === '-' ? 0 : parseInt(editingAttributeValue) || 0;
-                                                    handleAttributeChange(attribute.id, parsedValue);
-                                                    setFocusedAttributeId(null);
-                                                    setEditingAttributeValue('');
+                                                    const parsedValue = editingabilityValue === '' || editingabilityValue === '-' ? 0 : parseInt(editingabilityValue) || 0;
+                                                    handleabilityChange(ability.id, parsedValue);
+                                                    setFocusedabilityId(null);
+                                                    setEditingabilityValue('');
                                                 }}
                                                 className="mt-1 block w-10 p-1 border rounded dark:bg-gray-700 dark:border-gray-600"
                                             />

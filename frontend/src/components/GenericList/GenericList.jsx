@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Icon from '@mdi/react';
-import { mdiFilterOutline, mdiSortAscending, mdiSortDescending, mdiCog, mdiFilter } from '@mdi/js';
+import { mdiFilterOutline, mdiSortAscending, mdiSortDescending, mdiCog, mdiFilter, mdiPlaylistEdit, mdiTrashCan } from '@mdi/js';
 import { ColumnConfigModal, useColumnConfig } from '@/components/GenericList/ColumnConfig';
 import pluralize from 'pluralize';
 
@@ -30,6 +30,8 @@ function GenericList({
     isOptionSelector = false, // New prop to enable option selector mode
     selectedIds = [], // Array of currently selected IDs (controlled by parent)
     onSelectedIdsChange, // Callback to update selected IDs in the parent
+    editHandler, // New prop: Function to call for edit action (item) => void
+    deleteHandler, // New prop: Function to call for delete action (item) => void
 }) {
     const [data, setData] = useState([]);
     const [total, setTotal] = useState(0);
@@ -478,7 +480,31 @@ function GenericList({
                                                 } : undefined}
                                                 title={columnId === requiredColumnId && detailPagePath ? `View ${itemDesc} details` : undefined}
                                             >
-                                                {renderCell(item, columnId, isLastVisibleColumn)}
+                                                <div className="flex justify-between items-center w-full">
+                                                    <span>{renderCell(item, columnId, isLastVisibleColumn)}</span>
+                                                    {isLastVisibleColumn && (editHandler || deleteHandler) && (
+                                                        <div className="flex items-center">
+                                                            {editHandler && (
+                                                                <button
+                                                                    onClick={(e) => { e.stopPropagation(); editHandler(item); }}
+                                                                    className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 mr-2"
+                                                                    title={`Edit ${itemDesc}`}
+                                                                >
+                                                                    <Icon path={mdiPlaylistEdit} size={0.7} />
+                                                                </button>
+                                                            )}
+                                                            {deleteHandler && (
+                                                                <button
+                                                                    onClick={(e) => { e.stopPropagation(); deleteHandler(item); }}
+                                                                    className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-600"
+                                                                    title={`Delete ${itemDesc}`}
+                                                                >
+                                                                    <Icon path={mdiTrashCan} size={0.7} />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </td>
                                         );
                                     })}

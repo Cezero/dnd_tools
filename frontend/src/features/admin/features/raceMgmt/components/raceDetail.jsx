@@ -5,7 +5,8 @@ import { useAuth } from '@/auth/authProvider';
 import { useNavigate } from 'react-router-dom';
 import lookupService from '@/services/LookupService';
 import { fetchRaceById } from '@/features/admin/features/raceMgmt/services/raceService';
-import { SIZE_MAP, LANGUAGE_MAP, ATTRIBUTE_MAP } from 'shared-data/src/commonData';
+import { SIZE_MAP, LANGUAGE_MAP } from 'shared-data/src/commonData';
+import { ABILITY_MAP } from 'shared-data/src/abilityData';
 import pluralize from 'pluralize';
 
 export default function RaceDetail() {
@@ -77,7 +78,7 @@ export default function RaceDetail() {
                         <div>
                             <p><strong>Languages:</strong> {race.languages && race.languages.length > 0 ? race.languages.filter(lang => lang.automatic).map(lang => LANGUAGE_MAP[lang.language_id]?.name).join(', ') : 'None'}</p>
                             <p><strong>Bonus Languages:</strong> {race.languages && race.languages.length > 0 ? race.languages.filter(lang => !lang.automatic).map(lang => LANGUAGE_MAP[lang.language_id]?.name).join(', ') : 'None'}</p>
-                            <p><strong>Attribute Adjustments:</strong> {race.attribute_adjustments && race.attribute_adjustments.length > 0 ? race.attribute_adjustments.map(adj => `${ATTRIBUTE_MAP[adj.attribute_id]?.abbr} ${adj.attribute_adjustment > 0 ? '+' : ''}${adj.attribute_adjustment}`).join(', ') : 'None'}</p>
+                            <p><strong>Ability Adjustments:</strong> {race.ability_adjustments && race.ability_adjustments.length > 0 ? race.ability_adjustments.map(adj => `${ABILITY_MAP[adj.ability_id]?.abbr} ${adj.ability_adjustment > 0 ? '+' : ''}${adj.ability_adjustment}`).join(', ') : 'None'}</p>
                         </div>
                     </div>
                     <div className="mt-3 p-2 w-full rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert">

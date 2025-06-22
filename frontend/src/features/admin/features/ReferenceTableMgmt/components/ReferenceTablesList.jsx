@@ -32,30 +32,6 @@ const ReferenceTablesList = () => {
         const column = COLUMN_DEFINITIONS[columnId];
         if (!column) return null;
 
-        if (isLastVisibleColumn) {
-            return (
-                <div className="flex justify-between items-center w-full">
-                    <span>{item[columnId]}</span>
-                    <div className="flex items-center">
-                        <button
-                            onClick={() => navigate(`/admin/referencetables/${item.id}/edit`)}
-                            className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 mr-2"
-                            title="Edit Table"
-                        >
-                            <Icon path={mdiPlaylistEdit} size={0.7} />
-                        </button>
-                        <button
-                            onClick={() => handleDeleteTable(item.id)}
-                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-600"
-                            title="Delete Table"
-                        >
-                            <Icon path={mdiTrashCan} size={0.7} />
-                        </button>
-                    </div>
-                </div>
-            );
-        }
-
         return item[columnId];
     };
 
@@ -79,9 +55,10 @@ const ReferenceTablesList = () => {
                 renderCell={renderCell}
                 detailPagePath="/admin/referencetables/:id"
                 idKey="id"
-                navigate={navigate}
                 refreshTrigger={refreshTrigger}
                 itemDesc="reference table"
+                editHandler={(item) => navigate(`/admin/referencetables/${item.id}/edit`)}
+                deleteHandler={(item) => handleDeleteTable(item.id)}
                 filterOptions={{
                     name: { component: Input },
                     slug: { component: Input },

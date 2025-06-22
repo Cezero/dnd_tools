@@ -4,10 +4,12 @@ import charactersRouter from '../features/characters/routes/charactersRoutes.js'
 import racesRouter from '../features/races/routes/racesRoutes.js';
 import referencetablesRouter from '../features/referencetables/routes/referencetablesRoutes.js';
 import spellsRouter from '../features/spells/routes/spellsRoutes.js';
+import classesRouter from '../features/classes/routes/classesRoutes.js';
 
 export const featureRoutes = [
     { path: '/api/characters', router: charactersRouter },
     { path: '/api/races', router: racesRouter },
     { path: '/api/referencetables', router: referencetablesRouter },
     { path: '/api/spells', router: spellsRouter },
+    { path: '/api/classes', router: classesRouter },
 ];

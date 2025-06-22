@@ -73,10 +73,10 @@ export const getRaceById = async (req, res) => {
             'getRaceLanguages'
         );
 
-        const { rows: attributeAdjustments } = await timedQuery(
-            'SELECT attribute_id, attribute_adjustment FROM race_attribute_adjustments WHERE race_id = ?',
+        const { rows: abilityAdjustments } = await timedQuery(
+            'SELECT ability_id, ability_adjustment FROM race_ability_adjustments WHERE race_id = ?',
             [id],
-            'getRaceAttributeAdjustments'
+            'getRaceabilityAdjustments'
         );
 
         const { rows: traits } = await timedQuery(
@@ -88,7 +88,7 @@ export const getRaceById = async (req, res) => {
         res.json({
             ...races[0],
             languages: languages,
-            attribute_adjustments: attributeAdjustments,
+            ability_adjustments: abilityAdjustments,
             traits: traits
         });
     } catch (error) {
@@ -193,13 +193,13 @@ export const createRace = async (req, res) => {
                 );
             }
 
-            const { attribute_adjustments } = req.body;
-            if (attribute_adjustments && attribute_adjustments.length > 0) {
-                const adjustmentInserts = attribute_adjustments.map(adj => [newRaceId, adj.attribute_id, adj.attribute_adjustment]);
+            const { ability_adjustments } = req.body;
+            if (ability_adjustments && ability_adjustments.length > 0) {
+                const adjustmentInserts = ability_adjustments.map(adj => [newRaceId, adj.ability_id, adj.ability_adjustment]);
                 await txTimedQuery(
-                    'INSERT INTO race_attribute_adjustments (race_id, attribute_id, attribute_adjustment) VALUES ?',
+                    'INSERT INTO race_ability_adjustments (race_id, ability_id, ability_adjustment) VALUES ?',
                     [adjustmentInserts],
-                    'insertRaceAttributeAdjustments'
+                    'insertRaceabilityAdjustments'
                 );
             }
             const { traits } = req.body;
@@ -275,20 +275,20 @@ export const updateRace = async (req, res) => {
                 );
             }
 
-            // Update attribute adjustments
+            // Update ability adjustments
             await txTimedQuery(
-                'DELETE FROM race_attribute_adjustments WHERE race_id = ?',
+                'DELETE FROM race_ability_adjustments WHERE race_id = ?',
                 [id],
-                'deleteRaceAttributeAdjustments'
+                'deleteRaceabilityAdjustments'
             );
 
-            const { attribute_adjustments, traits } = req.body;
-            if (attribute_adjustments && attribute_adjustments.length > 0) {
-                const adjustmentInserts = attribute_adjustments.map(adj => [id, adj.attribute_id, adj.attribute_adjustment]);
+            const { ability_adjustments, traits } = req.body;
+            if (ability_adjustments && ability_adjustments.length > 0) {
+                const adjustmentInserts = ability_adjustments.map(adj => [id, adj.ability_id, adj.ability_adjustment]);
                 await txTimedQuery(
-                    'INSERT INTO race_attribute_adjustments (race_id, attribute_id, attribute_adjustment) VALUES ?',
+                    'INSERT INTO race_ability_adjustments (race_id, ability_id, ability_adjustment) VALUES ?',
                     [adjustmentInserts],
-                    'insertRaceAttributeAdjustments'
+                    'insertRaceabilityAdjustments'
                 );
             }
 
