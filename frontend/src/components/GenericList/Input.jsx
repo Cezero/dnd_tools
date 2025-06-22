@@ -7,7 +7,6 @@ const Input = ({ onChange, className, selected, open, onOpenChange, dynamic = fa
     const inputRef = useRef(null);
     const debounceTimeoutRef = useRef(null);
 
-    console.log("Input props", { onChange, className, selected, open, onOpenChange, dynamic, multiColumn, dynamicFilterDelay, placeholder, type });
     useEffect(() => {
         setInputValue(selected || '');
     }, [selected]);
@@ -35,7 +34,7 @@ const Input = ({ onChange, className, selected, open, onOpenChange, dynamic = fa
 
     const handleApplyFilter = () => {
         if (!dynamic) {
-            if (onChange) {
+            if (onChange && inputValue !== selected) {
                 onChange(inputValue);
             }
         }
@@ -49,7 +48,7 @@ const Input = ({ onChange, className, selected, open, onOpenChange, dynamic = fa
             clearTimeout(debounceTimeoutRef.current);
         }
         setInputValue('');
-        if (onChange) {
+        if (onChange && selected !== '') {
             onChange('');
         }
         if (onOpenChange) {
@@ -59,10 +58,16 @@ const Input = ({ onChange, className, selected, open, onOpenChange, dynamic = fa
 
     const handleKeyDown = (event) => {
         if (event.key === 'Enter') {
+            event.preventDefault();
             if (debounceTimeoutRef.current) {
                 clearTimeout(debounceTimeoutRef.current);
             }
-            handleApplyFilter();
+            if (onChange) {
+                onChange(inputValue);
+            }
+            if (onOpenChange) {
+                onOpenChange(false);
+            }
         }
     };
 

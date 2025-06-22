@@ -48,7 +48,8 @@ function GenericList({
     const getStoredValue = useCallback((key, defaultValue) => {
         try {
             const stored = localStorage.getItem(`${storageKey}-${key}`);
-            return stored ? JSON.parse(stored) : defaultValue;
+            const parsed = stored ? JSON.parse(stored) : defaultValue;
+            return parsed;
         } catch (error) {
             console.error('Error reading from localStorage', error);
             return defaultValue;
@@ -69,36 +70,56 @@ function GenericList({
     const [sortOrder, setSortOrder] = useState(() => getStoredValue('sortOrder', 'asc'));
 
     // Initialize filters directly from localStorage
-    const getInitialFilters = useCallback(() => {
+    const getInitialFilters = () => {
         const storedFilters = getStoredValue('filters', {});
-        const currentFilters = {};
+        const currentFilters = { ...storedFilters };
 
         for (const key in columnDefinitions) {
             const column = columnDefinitions[key];
             const filterType = column?.filterType;
 
-            if (filterType === 'input' && column.multiColumn && storedFilters[key] !== undefined) {
-                currentFilters[key] = storedFilters[key];
-            } else if (filterType === 'multi-select') {
-                const storedValue = storedFilters[key];
-                currentFilters[key] = {
-                    values: storedValue?.values || [],
-                    logic: storedValue?.logic || 'or'
-                };
-            } else if (filterType === 'boolean') {
-                const storedValue = storedFilters[key];
-                currentFilters[key] = storedValue !== undefined ? storedValue : null;
-            } else {
-                const storedValue = storedFilters[key];
-                currentFilters[key] = storedValue !== undefined ? storedValue : '';
+            if (!(key in currentFilters)) {
+                if (filterType === 'multi-select') {
+                    currentFilters[key] = { values: [], logic: 'or' };
+                } else if (filterType === 'boolean') {
+                    currentFilters[key] = null;
+                } else {
+                    currentFilters[key] = '';
+                }
+            }
+
+            if (storedFilters[key] !== undefined) {
+                if (filterType === 'input' && column.multiColumn) {
+                    currentFilters[key] = storedFilters[key];
+                } else if (filterType === 'multi-select') {
+                    currentFilters[key] = {
+                        values: storedFilters[key]?.values || [],
+                        logic: storedFilters[key]?.logic || 'or'
+                    };
+                } else if (filterType === 'boolean') {
+                    currentFilters[key] = storedFilters[key] !== undefined ? storedFilters[key] : null;
+                } else {
+                    currentFilters[key] = storedFilters[key] !== undefined ? storedFilters[key] : '';
+                }
             }
         }
-        return currentFilters;
-    }, [columnDefinitions, getStoredValue]);
 
-    const [filters, setFilters] = useState(getInitialFilters);
+        for (const key in currentFilters) {
+            if (!columnDefinitions[key] && !['_mclist', '_mcfilter'].includes(key)) {
+                delete currentFilters[key];
+            }
+        }
+
+        return currentFilters;
+    };
+
+    const [filters, setFilters] = useState(() => {
+        const initial = getInitialFilters();
+        return initial;
+    });
 
     const [displayFilter, setDisplayFilter] = useState(''); // Which filter is currently open
+
     const [activeMultiSelectFilterId, setActiveMultiSelectFilterId] = useState(null); // For controlled multi-select open state
     const [visibleColumns, setVisibleColumns] = useColumnConfig(storageKey, defaultColumns, columnDefinitions, requiredColumnId);
     const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -159,7 +180,7 @@ function GenericList({
             .finally(() => {
                 setIsLoading(false);
             });
-    }, [page, limit, sortKey, sortOrder, filters, fetchData, refreshTrigger, columnDefinitions]);
+    }, [page, limit, sortKey, sortOrder, filters, fetchData, columnDefinitions]);
 
     // New useEffect to sync state to localStorage
     useEffect(() => {
@@ -200,8 +221,11 @@ function GenericList({
             } else {
                 newFilters[filterKey] = value;
             }
-            return newFilters; // Only return the newFilters state
+            return newFilters;
         });
+
+        // Reset pagination to page 1 when filters change
+        setPage(1);
 
         // Optionally, close single-select dropdowns immediately
         const filterType = columnDefinitions[filterKey]?.filterType;
@@ -226,7 +250,7 @@ function GenericList({
             if (filterType === 'multi-select') {
                 setActiveMultiSelectFilterId(null);
             }
-            setDisplayFilter(''); // Close the filter
+            setDisplayFilter('');
         } else { // Filter is opening
             if (filterType === 'multi-select') {
                 setActiveMultiSelectFilterId(columnId);
@@ -474,7 +498,7 @@ function GenericList({
                         <select
                             id="limit-select"
                             value={limit}
-                            onChange={handleLimitChange}
+                            onChange={(e) => { e.stopPropagation(); e.preventDefault(); handleLimitChange(e); }}
                             className="p-1 border rounded dark:bg-gray-700 dark:border-gray-600"
                         >
                             <option value="10">10</option>
@@ -485,14 +509,14 @@ function GenericList({
                         </select>
                     </div>
                     <button
-                        onClick={() => handlePageChange(1)}
+                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); handlePageChange(1); }}
                         disabled={page === 1}
                         className="px-3 py-1 border rounded disabled:opacity-50"
                     >
                         First
                     </button>
                     <button
-                        onClick={() => handlePageChange(page - 1)}
+                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); handlePageChange(page - 1); }}
                         disabled={page === 1}
                         className="px-3 py-1 border rounded disabled:opacity-50"
                     >
@@ -502,14 +526,14 @@ function GenericList({
                         Page {page} of {Math.ceil(total / limit)}
                     </span>
                     <button
-                        onClick={() => handlePageChange(page + 1)}
+                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); handlePageChange(page + 1); }}
                         disabled={page >= Math.ceil(total / limit)}
                         className="px-3 py-1 border rounded disabled:opacity-50"
                     >
                         Next
                     </button>
                     <button
-                        onClick={() => handlePageChange(Math.ceil(total / limit))}
+                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); handlePageChange(Math.ceil(total / limit)); }}
                         disabled={page >= Math.ceil(total / limit)}
                         className="px-3 py-1 border rounded disabled:opacity-50"
                     >

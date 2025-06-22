@@ -26,6 +26,8 @@ export default function RaceEdit() {
     const [classes, setClasses] = useState([]);
     const [allLanguages, setAllLanguages] = useState([]);
     const [isAddTraitModalOpen, setIsAddTraitModalOpen] = useState(false);
+    const [focusedAttributeId, setFocusedAttributeId] = useState(null);
+    const [editingAttributeValue, setEditingAttributeValue] = useState('');
     const fromListParams = location.state?.fromListParams || '';
 
     const filteredClasses = React.useMemo(() => {
@@ -134,10 +136,10 @@ export default function RaceEdit() {
      * @param {string} value - The new value for the attribute adjustment, as a string.
      * @returns {void}
      */
-    const handleAttributeChange = useCallback((attributeId, value) => {
+    const handleAttributeChange = useCallback((attributeId, parsedValue) => {
         setRace(prevRace => {
             const existingIndex = prevRace.attribute_adjustments.findIndex(adj => adj.attribute_id === attributeId);
-            const newAdjustment = { attribute_id: attributeId, attribute_adjustment: parseInt(value) || 0 };
+            const newAdjustment = { attribute_id: attributeId, attribute_adjustment: parsedValue };
 
             if (existingIndex !== -1) {
                 const updatedAdjustments = [...prevRace.attribute_adjustments];
@@ -286,12 +288,12 @@ export default function RaceEdit() {
             }
 
             if (id === 'new') {
-                await api('/races', {
+                const response = await api('/races', {
                     method: 'POST',
                     body: JSON.stringify(payload),
                 });
                 setMessage('Race created successfully!');
-                navigate(`/admin/races/${id}`, { state: { fromListParams: fromListParams, refresh: true } });
+                navigate(`/admin/races/${response.id}`, { state: { fromListParams: fromListParams, refresh: true } });
             } else {
                 await api(`/races/${id}`, {
                     method: 'PUT',
@@ -475,7 +477,7 @@ export default function RaceEdit() {
                                                 leaveFrom="opacity-100"
                                                 leaveTo="opacity-0"
                                             >
-                                                <ListboxOptions className="absolute scrollbar-thin z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm dark:bg-gray-800 dark:text-gray-100">
+                                                <ListboxOptions className="absolute scrollbar-thin z-10 mt-1 max-h-60 w-30 overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm dark:bg-gray-800 dark:text-gray-100">
                                                     <ListboxOption
                                                         className={({ active }) =>
                                                             `relative cursor-default select-none py-2 pl-3 pr-9 ${active ? 'bg-blue-600 text-white' : 'text-gray-900 dark:text-gray-100'}`
@@ -521,8 +523,22 @@ export default function RaceEdit() {
                                                 type="text"
                                                 id={`attr-${attribute.id}`}
                                                 name={`attribute_${attribute.id}`}
-                                                value={`${(race.attribute_adjustments.find(adj => adj.attribute_id === attribute.id)?.attribute_adjustment || 0) > 0 ? '+' : ''}${(race.attribute_adjustments.find(adj => adj.attribute_id === attribute.id)?.attribute_adjustment || 0)}`}
-                                                onChange={(e) => handleAttributeChange(attribute.id, e.target.value)}
+                                                value={focusedAttributeId === attribute.id ? editingAttributeValue : (() => {
+                                                    const adjustment = race.attribute_adjustments.find(adj => adj.attribute_id === attribute.id)?.attribute_adjustment || 0;
+                                                    return adjustment > 0 ? `+${adjustment}` : adjustment;
+                                                })()}
+                                                onChange={(e) => setEditingAttributeValue(e.target.value)}
+                                                onFocus={(e) => {
+                                                    setFocusedAttributeId(attribute.id);
+                                                    const currentAdjustment = race.attribute_adjustments.find(adj => adj.attribute_id === attribute.id)?.attribute_adjustment || 0;
+                                                    setEditingAttributeValue(String(currentAdjustment));
+                                                }}
+                                                onBlur={() => {
+                                                    const parsedValue = editingAttributeValue === '' || editingAttributeValue === '-' ? 0 : parseInt(editingAttributeValue) || 0;
+                                                    handleAttributeChange(attribute.id, parsedValue);
+                                                    setFocusedAttributeId(null);
+                                                    setEditingAttributeValue('');
+                                                }}
                                                 className="mt-1 block w-10 p-1 border rounded dark:bg-gray-700 dark:border-gray-600"
                                             />
                                         </div>
@@ -665,7 +681,14 @@ export default function RaceEdit() {
                             {race.traits.map(trait => (
                                 <div key={trait.trait_slug} className="rounded border p-2 dark:border-gray-700 grid grid-cols-[2fr_0.1fr] gap-2 items-center">
                                     <div className="w-full">
-                                        <ProcessMarkdown markdown={trait.trait_description} userVars={{ traitname: trait.trait_name, raceplural: pluralize(race.race_name), raceplurallower: pluralize(race.race_name).toLowerCase(), value: trait.trait_value }} />
+                                        <ProcessMarkdown markdown={trait.trait_description} userVars={{
+                                            traitname: trait.trait_name,
+                                            racename: race.race_name,
+                                            racenamelower: race.race_name.toLowerCase(),
+                                            raceplural: pluralize(race.race_name),
+                                            raceplurallower: pluralize(race.race_name).toLowerCase(),
+                                            value: trait.trait_value
+                                        }} />
                                     </div>
                                     <div className="flex items-center gap-2">
                                         {trait.value_flag === 1 && (
@@ -719,7 +742,7 @@ export default function RaceEdit() {
                     setIsAddTraitModalOpen(false);
                 }}
                 onSave={handleAddOrUpdateTrait}
-                initialSelectedTraitIds={race.traits.map(t => t.trait_slug)}
+                initialSelectedTraitIds={race.traits?.map(t => t.trait_slug) || []}
                 raceId={id}
             />
         </div>

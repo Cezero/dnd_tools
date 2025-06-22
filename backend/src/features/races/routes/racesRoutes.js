@@ -1,6 +1,7 @@
 import express from 'express';
 import {
     getRaces,
+    getAllRaces,
     getRaceById,
     createRace,
     updateRace,
@@ -10,6 +11,7 @@ import {
     createRaceTrait,
     updateRaceTrait,
     deleteRaceTrait,
+    getAllRaceTraits,
 } from '../controllers/racesController.js';
 import { requireAdmin } from '../../../middleware/requireAdmin.js';
 
@@ -80,8 +82,9 @@ const router = express.Router();
  *       500:
  *         description: Server error.
  */
-router.get('/', requireAdmin, getRaces);
+router.get('/', getRaces);
 
+router.get('/all', getAllRaces);
 /**
  * @swagger
  * /api/admin/races/traits:
@@ -117,6 +120,7 @@ router.get('/', requireAdmin, getRaces);
  */
 router.get('/traits', requireAdmin, getRaceTraits);
 
+router.get('/traits/all', getAllRaceTraits);
 /**
  * @swagger
  * /api/admin/races/traits/{id}:
@@ -157,7 +161,7 @@ router.get('/traits', requireAdmin, getRaceTraits);
  *       500:
  *         description: Server error.
  */
-router.get('/traits/:id', requireAdmin, getRaceTraitById);
+router.get('/traits/:id', getRaceTraitById);
 
 /**
  * @swagger
@@ -314,7 +318,7 @@ router.delete('/traits/:id', requireAdmin, deleteRaceTrait);
  *       500:
  *         description: Server error.
  */
-router.get('/:id', requireAdmin, getRaceById);
+router.get('/:id', getRaceById);
 
 /**
  * @swagger

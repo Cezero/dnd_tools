@@ -24,6 +24,9 @@ export default function RaceTraitAssoc({ isOpen, onClose, onSave, initialSelecte
     const [currentSelectedTraitIds, setCurrentSelectedTraitIds] = useState(initialSelectedTraitIds);
     const [availableTraits, setAvailableTraits] = useState([]); // To store all traits fetched by GenericList
 
+    const memoizedNavigate = useCallback(() => { /* no-op for internal list */ }, []);
+    const memoizedDefaultColumns = useMemo(() => ['trait_slug', 'trait_name', 'trait_description'], []);
+
     useEffect(() => {
         setCurrentSelectedTraitIds(initialSelectedTraitIds);
     }, [initialSelectedTraitIds]);
@@ -59,10 +62,10 @@ export default function RaceTraitAssoc({ isOpen, onClose, onSave, initialSelecte
 
     const fetchTraitsForList = useCallback(async (searchParams) => {
         try {
-            const response = await api('/races/traits', { method: 'GET', params: searchParams });
+            const response = await api(`/races/traits?${searchParams.toString()}`);
             const data = Array.isArray(response.results) ? response.results : [];
             setAvailableTraits(data); // Store fetched traits
-            return { data: data, total: data.length };
+            return { data: data, total: response.total };
         } catch (error) {
             console.error('Error fetching traits for GenericList:', error);
             throw error;
@@ -81,12 +84,15 @@ export default function RaceTraitAssoc({ isOpen, onClose, onSave, initialSelecte
     }, []);
 
     const handleSelectedIdsChange = useCallback((selectedIdsFromGenericList) => {
+        console.log('[RaceTraitAssoc] selectedIdsFromGenericList', selectedIdsFromGenericList);
         setCurrentSelectedTraitIds(selectedIdsFromGenericList);
     }, []);
 
-    const handleAddSelectedTraits = useCallback(() => {
+    const handleAddSelectedTraits = useCallback(async () => {
+        const response = await api('/races/traits/all');
+        const allTraits = Array.isArray(response) ? response : [];
         const selectedTraitObjects = currentSelectedTraitIds
-            .map(id => availableTraits.find(trait => trait.trait_slug === id))
+            .map(id => allTraits.find(trait => trait.trait_slug === id))
             .filter(Boolean)
             .map(trait => ({
                 trait_slug: trait.trait_slug,
@@ -95,6 +101,7 @@ export default function RaceTraitAssoc({ isOpen, onClose, onSave, initialSelecte
                 value_flag: trait.value_flag,
                 trait_value: trait.value_flag ? '' : '',
             }));
+        console.log('[RaceTraitAssoc] selectedTraitObjects', selectedTraitObjects);
         onSave(selectedTraitObjects);
         onClose();
     }, [currentSelectedTraitIds, availableTraits, onSave, onClose]);
@@ -135,7 +142,7 @@ export default function RaceTraitAssoc({ isOpen, onClose, onSave, initialSelecte
                                 >
                                     Select Race Trait(s)
                                 </Dialog.Title>
-                                <form className="mt-4">
+                                <form className="mt-4" onSubmit={(e) => e.preventDefault()}>
                                     <div className="mb-4">
                                         <GenericList
                                             storageKey="raceTraitSelectionList"
@@ -143,13 +150,13 @@ export default function RaceTraitAssoc({ isOpen, onClose, onSave, initialSelecte
                                             isOptionSelector={true}
                                             selectedIds={currentSelectedTraitIds}
                                             onSelectedIdsChange={handleSelectedIdsChange}
-                                            defaultColumns={['trait_slug', 'trait_name', 'trait_description']}
+                                            defaultColumns={memoizedDefaultColumns}
                                             columnDefinitions={columnDefinitions}
                                             requiredColumnId="trait_slug"
                                             fetchData={fetchTraitsForList}
                                             renderCell={renderTraitCell}
                                             filterOptions={filterOptions}
-                                            navigate={() => { /* no-op for internal list */ }}
+                                            navigate={memoizedNavigate}
                                             detailPagePath={null}
                                             idKey="trait_slug"
                                             refreshTrigger={isOpen}
@@ -170,7 +177,7 @@ export default function RaceTraitAssoc({ isOpen, onClose, onSave, initialSelecte
                                             className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:bg-blue-700 dark:hover:bg-blue-600 mr-2"
                                             onClick={handleAddSelectedTraits}
                                         >
-                                            Add Selected Traits
+                                            Apply Changes
                                         </button>
                                         <button
                                             type="button"

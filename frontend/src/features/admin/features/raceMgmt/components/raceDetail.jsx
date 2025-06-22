@@ -90,7 +90,14 @@ export default function RaceDetail() {
                                 {race.traits.map(trait => (
                                     <div key={trait.trait_slug} className="gap-2 items-start">
                                         <div className="w-full prose dark:prose-invert">
-                                            <ProcessMarkdown markdown={trait.trait_description} userVars={{ traitname: trait.trait_name, raceplural: pluralize(race.race_name), raceplurallower: pluralize(race.race_name).toLowerCase(), value: trait.trait_value }} />
+                                            <ProcessMarkdown markdown={trait.trait_description} userVars={{
+                                                traitname: trait.trait_name,
+                                                racename: race.race_name,
+                                                racenamelower: race.race_name.toLowerCase(),
+                                                raceplural: pluralize(race.race_name),
+                                                raceplurallower: pluralize(race.race_name).toLowerCase(),
+                                                value: trait.trait_value
+                                            }} />
                                         </div>
                                     </div>
                                 ))}

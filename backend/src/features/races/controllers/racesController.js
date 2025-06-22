@@ -40,6 +40,16 @@ export const getRaces = async (req, res) => {
     }
 };
 
+export const getAllRaces = async (req, res) => {
+    try {
+        const { rows } = await timedQuery('SELECT race_id, race_name FROM races', [], 'getAllRaces');
+        res.json(rows);
+    } catch (error) {
+        console.error('Error fetching all races:', error);
+        res.status(500).send('Server error');
+    }
+};
+
 /**
  * Fetches a single race by its ID.
  * @param {object} req - Express request object.
@@ -148,6 +158,16 @@ export const getRaceTraitById = async (req, res) => {
     }
 };
 
+export const getAllRaceTraits = async (req, res) => {
+    try {
+        const { rows } = await timedQuery('SELECT trait_slug, trait_name, trait_description, value_flag FROM race_traits', [], 'getAllRaceTraits');
+        res.json(rows);
+    } catch (error) {
+        console.error('Error fetching all race traits:', error);
+        res.status(500).send('Server error');
+    }
+};
+
 /**
  * Creates a new race.
  * @param {object} req - Express request object.
@@ -157,12 +177,12 @@ export const createRace = async (req, res) => {
     const { name, race_description, size_id, race_speed, favored_class_id, edition_id, display, languages } = req.body;
     try {
         const result = await runTransactionWith(async (txTimedQuery) => {
-            const { raw } = await txTimedQuery(
+            const { rows } = await txTimedQuery(
                 'INSERT INTO races (race_name, race_description, size_id, race_speed, favored_class_id, edition_id, display) VALUES (?, ?, ?, ?, ?, ?, ?)',
                 [name, race_description, size_id, race_speed, favored_class_id, edition_id, display],
                 'createRace'
             );
-            const newRaceId = raw.insertId;
+            const newRaceId = rows.insertId;
 
             if (languages && languages.length > 0) {
                 const languageInserts = languages.map(lang => [newRaceId, lang.language_id, lang.automatic]);
@@ -281,7 +301,7 @@ export const updateRace = async (req, res) => {
             if (traits && traits.length > 0) {
                 const traitInserts = traits.map(trait => [id, trait.trait_slug, trait.trait_value]);
                 await txTimedQuery(
-                    'INSERT INTO race_trait_map (race_id, trait_slug, trait_value) VALUES (?, ?, ?)',
+                    'INSERT INTO race_trait_map (race_id, trait_slug, trait_value) VALUES ?',
                     [traitInserts],
                     'insertRaceTraits'
                 );

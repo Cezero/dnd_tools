@@ -109,7 +109,7 @@ export async function createCharacter(req, res) {
                 character_height, character_weight, character_eyes, character_hair
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
         `;
-        const { raw: result } = await timedQuery(
+        const { rows } = await timedQuery(
             query,
             [
                 newCharacter.user_id,
