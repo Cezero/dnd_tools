@@ -1,5 +1,5 @@
 const raceFilterConfig = {
-    name: {
+    race_name: {
         column: 'r.race_name',
         isSearch: true,
         operator: 'LIKE',

@@ -1,8 +1,6 @@
 import React, { useRef, useEffect } from 'react';
-import Icon from '@mdi/react';
-import { mdiChevronDown } from '@mdi/js';
 
-const SingleSelect = ({ options, displayKey, valueKey, selected, onChange, placeholder, className, open, onOpenChange }) => {
+const SingleSelect = ({ options, displayKey, valueKey, selected, onChange, placeholder, className, open, onOpenChange, appendClassName }) => {
     const dropdownRef = useRef(null);
 
     const selectedItem = options.find(option => option[valueKey] === selected);
@@ -33,9 +31,9 @@ const SingleSelect = ({ options, displayKey, valueKey, selected, onChange, place
 
     return (
         <div
-            className={`absolute mt-2 ${className} ` +
+            className={`${appendClassName} ${className}` +
                 (open
-                    ? 'p-1 bg-opacity-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-lg'
+                    ? ' p-1 bg-opacity-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-lg'
                     : '')
             }
             ref={dropdownRef}

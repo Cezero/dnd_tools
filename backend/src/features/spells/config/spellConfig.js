@@ -6,7 +6,7 @@ const spellFilterConfig = {
         operator: 'LIKE',
         data_type: 'string',
     },
-    classId: {
+    class_id: {
         column: 'slm.class_id',
         isMultiValued: true,
         logicSupported: true,

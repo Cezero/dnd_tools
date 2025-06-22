@@ -2,10 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import Icon from '@mdi/react';
 import { mdiCloseCircleOutline } from '@mdi/js';
 
-const Input = ({ onChange, className, selected, open, onOpenChange, ...props }) => {
+const Input = ({ onChange, className, selected, open, onOpenChange, dynamic = false, multiColumn = false, dynamicFilterDelay = 500, placeholder = 'Filter ...', type = 'text', appendClassName }) => {
     const [inputValue, setInputValue] = useState(selected || '');
     const inputRef = useRef(null);
+    const debounceTimeoutRef = useRef(null);
 
+    console.log("Input props", { onChange, className, selected, open, onOpenChange, dynamic, multiColumn, dynamicFilterDelay, placeholder, type });
     useEffect(() => {
         setInputValue(selected || '');
     }, [selected]);
@@ -17,12 +19,25 @@ const Input = ({ onChange, className, selected, open, onOpenChange, ...props }) 
     }, [open]);
 
     const handleInternalChange = (event) => {
-        setInputValue(event.target.value);
+        const value = event.target.value;
+        setInputValue(value);
+        if (dynamic) {
+            if (debounceTimeoutRef.current) {
+                clearTimeout(debounceTimeoutRef.current);
+            }
+            debounceTimeoutRef.current = setTimeout(() => {
+                if (onChange) {
+                    onChange(value);
+                }
+            }, dynamicFilterDelay);
+        }
     };
 
     const handleApplyFilter = () => {
-        if (onChange) {
-            onChange(inputValue);
+        if (!dynamic) {
+            if (onChange) {
+                onChange(inputValue);
+            }
         }
         if (onOpenChange) {
             onOpenChange(false);
@@ -30,6 +45,9 @@ const Input = ({ onChange, className, selected, open, onOpenChange, ...props }) 
     };
 
     const handleClearInput = () => {
+        if (debounceTimeoutRef.current) {
+            clearTimeout(debounceTimeoutRef.current);
+        }
         setInputValue('');
         if (onChange) {
             onChange('');
@@ -41,12 +59,15 @@ const Input = ({ onChange, className, selected, open, onOpenChange, ...props }) 
 
     const handleKeyDown = (event) => {
         if (event.key === 'Enter') {
+            if (debounceTimeoutRef.current) {
+                clearTimeout(debounceTimeoutRef.current);
+            }
             handleApplyFilter();
         }
     };
 
     return (
-        <div className="absolute mt-2 p-1 bg-opacity-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-lg" onClick={(e) => e.stopPropagation()}>
+        <div className={`${appendClassName} ${className}` + " p-1 bg-opacity-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-lg"} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center relative">
                 <input
                     ref={inputRef}
@@ -55,7 +76,8 @@ const Input = ({ onChange, className, selected, open, onOpenChange, ...props }) 
                     onBlur={handleApplyFilter}
                     onKeyDown={handleKeyDown}
                     className={`w-full pr-7 px-2 py-1 text-left border rounded shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white font-normal ${className}`}
-                    {...props}
+                    placeholder={placeholder}
+                    type={type}
                 />
                 {inputValue && (
                     <button

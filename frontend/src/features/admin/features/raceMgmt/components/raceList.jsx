@@ -1,16 +1,19 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Icon from '@mdi/react';
 import { mdiTrashCan, mdiPlaylistEdit } from '@mdi/js';
 import GenericList from '@/components/GenericList/GenericList';
 import Input from '@/components/GenericList/Input';
-import { COLUMN_DEFINITIONS, DEFAULT_COLUMNS } from '@/features/admin/features/raceMgmt/config/raceConfig';
+import { COLUMN_DEFINITIONS, DEFAULT_COLUMNS, raceFilterOptions } from '@/features/admin/features/raceMgmt/config/raceConfig';
 import { fetchRaces, deleteRace } from '@/features/admin/features/raceMgmt/services/raceService';
 import MultiSelect from '@/components/GenericList/MultiSelect';
 import BooleanInput from '@/components/GenericList/BooleanInput';
 import LookupService from '@/services/LookupService';
 import { useAuth } from '@/auth/authProvider';
 import { SIZE_MAP } from 'shared-data/src/commonData';
+import { COLUMN_DEFINITIONS as TRAIT_COLUMN_DEFINITIONS, DEFAULT_COLUMNS as DEFAULT_TRAIT_COLUMNS, raceTraitFilterOptions } from '@/features/admin/features/raceMgmt/config/raceTraitConfig';
+import { fetchRaceTraits, deleteRaceTrait } from '@/features/admin/features/raceMgmt/services/raceTraitService';
+import ProcessMarkdown from '@/components/markdown/ProcessMarkdown';
 
 const RaceList = () => {
     const navigate = useNavigate();
@@ -19,39 +22,17 @@ const RaceList = () => {
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [lookupsInitialized, setLookupsInitialized] = useState(false);
     const [classes, setClasses] = useState([]);
+    const [raceTraitRefreshTrigger, setRaceTraitRefreshTrigger] = useState(0);
 
-    const raceFilterOptions = React.useMemo(() => ({
-        race_name: { component: Input, props: { type: 'text', placeholder: 'Filter by name...' } },
-        edition_id: {
-            component: MultiSelect,
-            props: {
-                options: lookupsInitialized ? LookupService.getAll('editions') : [],
-                displayKey: 'edition_abbrev',
-                valueKey: 'edition_id',
-                className: 'w-32'
-            }
-        },
-        display: { component: BooleanInput },
-        size_id: {
-            component: MultiSelect,
-            props: {
-                options: lookupsInitialized ? Object.values(SIZE_MAP) : [],
-                displayKey: 'name',
-                valueKey: 'id',
-                className: 'w-32'
-            }
-        },
-        race_speed: { component: Input, props: { type: 'number', placeholder: 'Filter by speed...' } },
-        favored_class_id: {
-            component: MultiSelect,
-            props: {
-                options: lookupsInitialized ? classes : [],
-                displayKey: 'class_name',
-                valueKey: 'class_id',
-                className: 'w-32'
-            }
-        }
-    }), [lookupsInitialized, user, classes]);
+    const memoizedSizeMapOptions = useMemo(() => Object.values(SIZE_MAP), []);
+
+    const memoizedRaceFilterOptions = useMemo(() => (
+        raceFilterOptions(lookupsInitialized, classes, memoizedSizeMapOptions)
+    ), [lookupsInitialized, classes, memoizedSizeMapOptions]);
+
+    const memoizedRaceTraitFilterOptions = useMemo(() => (
+        raceTraitFilterOptions()
+    ), []);
 
     useEffect(() => {
         const initializeLookups = async () => {
@@ -86,8 +67,24 @@ const RaceList = () => {
         return { data: processedResults, total: total };
     }, [lookupsInitialized, user]);
 
+    const raceTraitFetchData = useCallback(async (params) => {
+        const { data, total } = await fetchRaceTraits(params);
+        const processedResults = data.map(trait => ({
+            trait_name: trait.trait_name,
+            trait_description: trait.trait_description,
+            value_flag: trait.value_flag,
+            trait_slug: trait.trait_slug,
+            id: trait.trait_slug
+        }));
+        return { data: processedResults, total: total };
+    }, []);
+
     const handleNewRaceClick = () => {
         navigate('/admin/races/new/edit', { state: { fromListParams: location.search } });
+    };
+
+    const handleNewRaceTraitClick = () => {
+        navigate('/admin/races/traits/new/edit', { state: { fromListParams: location.search } });
     };
 
     const handleDeleteRace = async (id) => {
@@ -102,14 +99,52 @@ const RaceList = () => {
         }
     };
 
+    const handleDeleteRaceTrait = async (id) => {
+        if (window.confirm('Are you sure you want to delete this race trait?')) {
+            try {
+                await deleteRaceTrait(id);
+                setRaceTraitRefreshTrigger(prev => prev + 1);
+            } catch (error) {
+                console.error('Failed to delete race trait:', error);
+                alert('Failed to delete race trait.');
+            }
+        }
+    };
+
     const renderCell = (item, columnId, isLastVisibleColumn) => {
         const column = COLUMN_DEFINITIONS[columnId];
         if (!column) return null;
 
+        let cellContent = item[columnId];
+
+        if (columnId === 'race_name') {
+            cellContent = (
+                <a
+                    onClick={() => navigate(`/admin/races/${item.id}`)}
+                    className="text-blue-600 hover:underline cursor-pointer"
+                >
+                    {item[columnId]}
+                </a>
+            );
+        } else if (columnId === 'edition_id') {
+            cellContent = LookupService.getById('editions', item[columnId]).edition_abbrev;
+        } else if (columnId === 'display') {
+            cellContent = item[columnId] ? 'Yes' : 'No';
+        } else if (columnId === 'size_id') {
+            cellContent = SIZE_MAP[item[columnId]].name;
+        } else if (columnId === 'favored_class_id') {
+            if (item[columnId] === -1) {
+                cellContent = 'Any';
+            } else {
+                const favoredClass = LookupService.getById('classes', item[columnId]);
+                cellContent = favoredClass ? favoredClass.class_name : '';
+            }
+        }
+
         if (isLastVisibleColumn) {
             return (
                 <div className="flex justify-between items-center w-full">
-                    <span>{item[columnId]}</span>
+                    <span>{cellContent}</span>
                     <div className="flex items-center">
                         <button
                             onClick={() => navigate(`/admin/races/${item.id}/edit`)}
@@ -130,31 +165,55 @@ const RaceList = () => {
             );
         }
 
-        if (columnId === 'race_name') {
-            return (
+        return cellContent;
+    };
+
+    const renderTraitCell = (item, columnId, isLastVisibleColumn) => {
+        const column = TRAIT_COLUMN_DEFINITIONS[columnId];
+        if (!column) return null;
+
+        let cellContent = item[columnId];
+
+        if (columnId === 'trait_slug') {
+            cellContent = (
                 <a
-                    onClick={() => navigate(`/admin/races/${item.id}`)}
+                    onClick={() => navigate(`/admin/races/traits/${item.id}`)}
                     className="text-blue-600 hover:underline cursor-pointer"
                 >
                     {item[columnId]}
                 </a>
             );
+        } else if (columnId === 'trait_description') {
+            cellContent = (<ProcessMarkdown markdown={item[columnId]} userVars={{ traitname: item.trait_name }} />);
+        } else if (columnId === 'value_flag') {
+            cellContent = item[columnId] ? 'Yes' : 'No';
         }
 
-        if (columnId === 'edition_id') {
-            return LookupService.getById('editions', item[columnId]).edition_abbrev;
+        if (isLastVisibleColumn) {
+            return (
+                <div className="flex justify-between items-center w-full">
+                    <span>{cellContent}</span>
+                    <div className="flex items-center">
+                        <button
+                            onClick={() => navigate(`/admin/races/traits/${item.id}/edit`)}
+                            className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 mr-2"
+                            title="Edit Trait"
+                        >
+                            <Icon path={mdiPlaylistEdit} size={0.7} />
+                        </button>
+                        <button
+                            onClick={() => handleDeleteRaceTrait(item.id)}
+                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-600"
+                            title="Delete Trait"
+                        >
+                            <Icon path={mdiTrashCan} size={0.7} />
+                        </button>
+                    </div>
+                </div>
+            );
         }
 
-        if (columnId === 'size_id') {
-            return SIZE_MAP[item[columnId]].name;
-        }
-
-        if (columnId === 'favored_class_id') {
-            const favoredClass = LookupService.getById('classes', item[columnId]);
-            return favoredClass ? favoredClass.class_name : '';
-        }
-
-        return item[columnId];
+        return cellContent;
     };
 
     if (!lookupsInitialized || isAuthLoading) {
@@ -184,7 +243,31 @@ const RaceList = () => {
                 navigate={navigate}
                 refreshTrigger={refreshTrigger}
                 itemDesc="race"
-                filterOptions={raceFilterOptions}
+                filterOptions={memoizedRaceFilterOptions}
+            />
+
+            <h2 className="text-xl font-bold mb-4 mt-8">Race Trait Definitions</h2>
+            <div className="mb-4 flex justify-end">
+                <button
+                    onClick={handleNewRaceTraitClick}
+                    className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded ml-2"
+                >
+                    New Race Trait Definition
+                </button>
+            </div>
+            <GenericList
+                storageKey="race-traits-list"
+                defaultColumns={DEFAULT_TRAIT_COLUMNS}
+                requiredColumnId="trait_slug"
+                columnDefinitions={TRAIT_COLUMN_DEFINITIONS}
+                fetchData={raceTraitFetchData}
+                renderCell={renderTraitCell}
+                detailPagePath="/admin/races/traits/:id"
+                idKey="id"
+                navigate={navigate}
+                refreshTrigger={raceTraitRefreshTrigger}
+                itemDesc="race trait"
+                filterOptions={memoizedRaceTraitFilterOptions}
             />
         </div>
     );

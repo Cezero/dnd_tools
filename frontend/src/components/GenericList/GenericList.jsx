@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import Icon from '@mdi/react';
 import { mdiFilterOutline, mdiSortAscending, mdiSortDescending, mdiCog, mdiFilter } from '@mdi/js';
 import { ColumnConfigModal, useColumnConfig } from '@/components/GenericList/ColumnConfig';
 import pluralize from 'pluralize';
-import BooleanInput from '@/components/GenericList/BooleanInput';
 
 function GenericList({
     // Configuration props
@@ -24,41 +22,81 @@ function GenericList({
     idKey, // e.g., 'spell_id'
     refreshTrigger, // New prop for triggering data refresh
     itemDesc = 'items', // New prop for the description of the items being listed (e.g., 'spells', 'characters')
+    dynamicFilterDelay = 500, // New prop for dynamic filtering delay
+    initialLimit = 25, // Default initial limit
+    isColumnConfigurable = true, // New prop to toggle column configurability
+
+    // Option selector props
+    isOptionSelector = false, // New prop to enable option selector mode
+    selectedIds = [], // Array of currently selected IDs (controlled by parent)
+    onSelectedIdsChange, // Callback to update selected IDs in the parent
 }) {
     const [data, setData] = useState([]);
     const [total, setTotal] = useState(0);
-    const [searchParams, setSearchParams] = useSearchParams();
     const [isLoading, setIsLoading] = useState(true);
 
-    const page = parseInt(searchParams.get('page') || '1');
-    const [limit, setLimit] = useState(parseInt(searchParams.get('limit') || '25'));
-    const [sortKey, setSortKey] = useState(searchParams.get('sort') || '');
-    const [sortOrder, setSortOrder] = useState(searchParams.get('order') || 'asc');
+    // Internal state for selected IDs when in option selector mode
+    const [internalSelectedIds, setInternalSelectedIds] = useState(selectedIds);
 
-    // Initialize filters directly from search params
-    const initialFilters = {};
-    for (const key in filterOptions) {
-        const paramName = columnDefinitions[key]?.paramName || key;
-        const paramValue = searchParams.get(paramName);
-        const filterType = columnDefinitions[key]?.filterType;
-        if (filterType === 'multi-select') {
-            const values = paramValue
-                ? paramValue.split(',')
-                    .filter(val => val !== '')
-                    .map(val => {
-                        const num = Number(val);
-                        return isNaN(num) ? val : num;
-                    })
-                : [];
-            const logic = searchParams.get(`${paramName}_logic`) || 'or';
-            initialFilters[key] = { values, logic };
-        } else if (filterType === 'boolean') {
-            initialFilters[key] = paramValue === 'true' ? true : (paramValue === 'false' ? false : null);
-        } else {
-            initialFilters[key] = paramValue || '';
+    // Call onSelectedIdsChange when internalSelectedIds changes
+    useEffect(() => {
+        if (isOptionSelector && onSelectedIdsChange) {
+            onSelectedIdsChange(internalSelectedIds);
         }
-    }
-    const [filters, setFilters] = useState(initialFilters);
+    }, [internalSelectedIds, isOptionSelector, onSelectedIdsChange]);
+
+    const getStoredValue = useCallback((key, defaultValue) => {
+        try {
+            const stored = localStorage.getItem(`${storageKey}-${key}`);
+            return stored ? JSON.parse(stored) : defaultValue;
+        } catch (error) {
+            console.error('Error reading from localStorage', error);
+            return defaultValue;
+        }
+    }, [storageKey]);
+
+    const setStoredValue = useCallback((key, value) => {
+        try {
+            localStorage.setItem(`${storageKey}-${key}`, JSON.stringify(value));
+        } catch (error) {
+            console.error('Error writing to localStorage', error);
+        }
+    }, [storageKey]);
+
+    const [page, setPage] = useState(() => getStoredValue('page', 1));
+    const [limit, setLimit] = useState(() => getStoredValue('limit', initialLimit));
+    const [sortKey, setSortKey] = useState(() => getStoredValue('sortKey', ''));
+    const [sortOrder, setSortOrder] = useState(() => getStoredValue('sortOrder', 'asc'));
+
+    // Initialize filters directly from localStorage
+    const getInitialFilters = useCallback(() => {
+        const storedFilters = getStoredValue('filters', {});
+        const currentFilters = {};
+
+        for (const key in columnDefinitions) {
+            const column = columnDefinitions[key];
+            const filterType = column?.filterType;
+
+            if (filterType === 'input' && column.multiColumn && storedFilters[key] !== undefined) {
+                currentFilters[key] = storedFilters[key];
+            } else if (filterType === 'multi-select') {
+                const storedValue = storedFilters[key];
+                currentFilters[key] = {
+                    values: storedValue?.values || [],
+                    logic: storedValue?.logic || 'or'
+                };
+            } else if (filterType === 'boolean') {
+                const storedValue = storedFilters[key];
+                currentFilters[key] = storedValue !== undefined ? storedValue : null;
+            } else {
+                const storedValue = storedFilters[key];
+                currentFilters[key] = storedValue !== undefined ? storedValue : '';
+            }
+        }
+        return currentFilters;
+    }, [columnDefinitions, getStoredValue]);
+
+    const [filters, setFilters] = useState(getInitialFilters);
 
     const [displayFilter, setDisplayFilter] = useState(''); // Which filter is currently open
     const [activeMultiSelectFilterId, setActiveMultiSelectFilterId] = useState(null); // For controlled multi-select open state
@@ -68,10 +106,49 @@ function GenericList({
     const thRefs = useRef({});
     const lastClickedElement = useRef(null);
 
+    // Modify visibleColumns if in option selector mode
+    const adjustedVisibleColumns = useMemo(() => {
+        if (isOptionSelector) {
+            return ['__selector_column__', ...visibleColumns];
+        }
+        return visibleColumns;
+    }, [isOptionSelector, visibleColumns]);
+
+    // useEffect for data fetching, now depends on local state variables
     useEffect(() => {
-        const currentSearchParams = new URLSearchParams(searchParams.toString());
+        const currentParams = new URLSearchParams();
+        currentParams.set('page', page.toString());
+        currentParams.set('limit', limit.toString());
+        if (sortKey) currentParams.set('sort', sortKey);
+        if (sortOrder) currentParams.set('order', sortOrder);
+
+        for (const key in filters) {
+            const column = columnDefinitions[key];
+            const filterType = column?.filterType;
+            const paramName = column?.paramName || key;
+            const multiColumns = column?.multiColumn;
+
+            if (filterType === 'input' && multiColumns && filters[key] !== '') {
+                currentParams.set('mclist', multiColumns.join(','));
+                currentParams.set('mcfilter', filters[key]);
+            } else if (filterType === 'multi-select') {
+                if (filters[key]?.values && filters[key].values.length > 0) {
+                    currentParams.set(paramName, filters[key].values.join(','));
+                    if (filters[key]?.logic) {
+                        currentParams.set(`${paramName}_logic`, filters[key].logic);
+                    }
+                }
+            } else if (filterType === 'boolean') {
+                if (filters[key] !== null) {
+                    currentParams.set(paramName, String(filters[key]));
+                }
+            } else if (filters[key] !== '') {
+                currentParams.set(paramName, filters[key]);
+            }
+        }
+
         setIsLoading(true);
-        fetchData(currentSearchParams)
+        fetchData(currentParams)
             .then(result => {
                 setData(result.data);
                 setTotal(result.total);
@@ -82,37 +159,16 @@ function GenericList({
             .finally(() => {
                 setIsLoading(false);
             });
-    }, [searchParams, fetchData, refreshTrigger]);
+    }, [page, limit, sortKey, sortOrder, filters, fetchData, refreshTrigger, columnDefinitions]);
 
-    // New useEffect to sync filters state with URL search params
+    // New useEffect to sync state to localStorage
     useEffect(() => {
-        const newParams = new URLSearchParams();
-        newParams.set('page', page.toString());
-        newParams.set('limit', limit.toString());
-        if (sortKey) newParams.set('sort', sortKey);
-        if (sortOrder) newParams.set('order', sortOrder);
-
-        for (const key in filters) {
-            const filterType = columnDefinitions[key]?.filterType;
-            const paramName = columnDefinitions[key]?.paramName || key;
-            if (filterType === 'multi-select') {
-                if (filters[key]?.values && filters[key].values.length > 0) {
-                    newParams.set(paramName, filters[key].values.join(','));
-                    if (filters[key]?.logic) {
-                        newParams.set(`${paramName}_logic`, filters[key].logic);
-                    }
-                }
-            } else if (filterType === 'boolean') {
-                if (filters[key] !== null) {
-                    newParams.set(paramName, String(filters[key]));
-                }
-            } else if (filters[key] !== '') {
-                newParams.set(paramName, filters[key]);
-            }
-        }
-        console.log('[useEffect - filters changed] Setting URLSearchParams:', newParams.toString());
-        setSearchParams(newParams);
-    }, [filters, page, limit, sortKey, sortOrder, setSearchParams, columnDefinitions]);
+        setStoredValue('page', page);
+        setStoredValue('limit', limit);
+        setStoredValue('sortKey', sortKey);
+        setStoredValue('sortOrder', sortOrder);
+        setStoredValue('filters', filters);
+    }, [page, limit, sortKey, sortOrder, filters, setStoredValue]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -144,7 +200,6 @@ function GenericList({
             } else {
                 newFilters[filterKey] = value;
             }
-            console.log(`[handleFilterChange] Setting filters for ${filterKey}:`, newFilters[filterKey]);
             return newFilters; // Only return the newFilters state
         });
 
@@ -186,93 +241,35 @@ function GenericList({
         if (sortKey === key) {
             if (sortOrder === 'asc') {
                 setSortOrder('desc');
-                setSearchParams(prev => {
-                    prev.set('order', 'desc');
-                    return prev;
-                });
             } else if (sortOrder === 'desc') {
                 setSortKey('');
                 setSortOrder('asc');
-                setSearchParams(prev => {
-                    prev.delete('sort');
-                    prev.set('order', 'asc');
-                    return prev;
-                });
             }
         } else {
             setSortKey(key);
             setSortOrder('asc');
-            setSearchParams(prev => {
-                prev.set('sort', key);
-                prev.set('order', 'asc');
-                return prev;
-            });
         }
     };
 
     const handleLimitChange = (e) => {
         const newLimit = parseInt(e.target.value);
         setLimit(newLimit);
-
-        const newTotalPages = Math.ceil(total / newLimit);
-        const newPage = Math.min(page, newTotalPages || 1);
-
-        const newParams = new URLSearchParams();
-        newParams.set('page', newPage.toString());
-        newParams.set('limit', newLimit.toString());
-        if (sortKey) newParams.set('sort', sortKey);
-        if (sortOrder) newParams.set('order', sortOrder);
-        for (const key in filters) {
-            const filterType = columnDefinitions[key]?.filterType;
-            const paramName = columnDefinitions[key]?.paramName || key;
-            if (filterType === 'multi-select') {
-                if (filters[key]?.values && filters[key].values.length > 0) {
-                    newParams.set(paramName, filters[key].values.join(','));
-                    if (filters[key]?.logic) {
-                        newParams.set(`${paramName}_logic`, filters[key].logic);
-                    }
-                }
-            } else if (filterType === 'boolean') {
-                if (filters[key] !== null) {
-                    newParams.set(paramName, String(filters[key]));
-                }
-            } else if (filters[key] !== '') { // For single-selects/inputs, check if value is non-empty
-                newParams.set(paramName, filters[key]);
-            }
-        }
-        setSearchParams(newParams);
+        setPage(Math.min(page, Math.ceil(total / newLimit) || 1));
     };
 
     const handlePageChange = (newPage) => {
-        const newParams = new URLSearchParams();
-        newParams.set('page', newPage.toString());
-        newParams.set('limit', limit.toString());
-        if (sortKey) newParams.set('sort', sortKey);
-        if (sortOrder) newParams.set('order', sortOrder);
-        for (const key in filters) {
-            const filterType = columnDefinitions[key]?.filterType;
-            const paramName = columnDefinitions[key]?.paramName || key;
-            if (filterType === 'multi-select') {
-                if (filters[key]?.values && filters[key].values.length > 0) {
-                    newParams.set(paramName, filters[key].values.join(','));
-                    if (filters[key]?.logic) {
-                        newParams.set(`${paramName}_logic`, filters[key].logic);
-                    }
-                }
-            } else if (filterType === 'boolean') {
-                if (filters[key] !== null) {
-                    newParams.set(paramName, String(filters[key]));
-                }
-            } else if (filters[key] !== '') { // For single-selects/inputs, check if value is non-empty
-                newParams.set(paramName, filters[key]);
-            }
-        }
-        setSearchParams(newParams);
+        setPage(newPage);
     };
 
     const renderColumnHeader = (columnId, isLastColumn) => {
         const column = columnDefinitions[columnId];
-        if (!column) return null;
+        if (!column) {
+            // If it's the selector column, return an empty header
+            if (columnId === '__selector_column__') {
+                return <th key={columnId} className="relative border-b p-1 text-left text-md border-gray-600 dark:border-gray-700 dark:bg-gray-900"></th>;
+            }
+            return null;
+        }
 
         // Check if a filter is applied to this column
         let isFiltered = false;
@@ -292,7 +289,7 @@ function GenericList({
                         handleSort(columnId);
                     }
                 }}
-                className={`border-b p-1 text-left text-md border-gray-600 dark:border-gray-700 dark:bg-gray-900 ${column.sortable ? 'cursor-pointer' : ''}`}
+                className={`relative border-b p-1 text-left text-md border-gray-600 dark:border-gray-700 dark:bg-gray-900 ${column.sortable ? 'cursor-pointer' : ''}`}
             >
                 <div className="flex items-center justify-between">
                     <div className="flex items-center">
@@ -305,7 +302,7 @@ function GenericList({
                         >
                             {column.label}
                         </div>
-                        {column.filterable && (
+                        {column.filterable && !column.alwaysVisible && (
                             <button onClick={(e) => { e.stopPropagation(); toggleFilter(columnId); }} className="ml-2" title={`Filter by ${column.label}`}>
                                 <Icon path={isFiltered ? mdiFilter : mdiFilterOutline} size={0.7} />
                             </button>
@@ -324,7 +321,7 @@ function GenericList({
                             </span>
                         )}
                     </div>
-                    {isLastColumn && (
+                    {isLastColumn && isColumnConfigurable && !isOptionSelector && (
                         <button
                             onClick={(e) => { e.stopPropagation(); setIsConfigOpen(true); }}
                             className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors ml-2"
@@ -334,7 +331,7 @@ function GenericList({
                         </button>
                     )}
                 </div>
-                {displayFilter === columnId && column.filterable && filterOptions[columnId] && (
+                {displayFilter === columnId && column.filterable && !column.alwaysVisible && filterOptions[columnId] && (
                     React.createElement(filterOptions[columnId].component, {
                         key: columnId,
                         selected: filterType === 'multi-select' ? filters[columnId]?.values : filters[columnId],
@@ -355,6 +352,10 @@ function GenericList({
                             value: filters[columnId],
                             onToggle: (value) => handleFilterChange(columnId, value),
                         }),
+                        dynamic: column.dynamicFilter,
+                        dynamicFilterDelay: dynamicFilterDelay,
+                        multiColumn: column.multiColumn,
+                        appendClassName: 'absolute top-0 left-0 z-50',
                         ...filterOptions[columnId].props,
                     })
                 )}
@@ -369,26 +370,76 @@ function GenericList({
     return (
         <div className="p-4 bg-white dark:bg-[#121212]">
             <div className="relative">
+                {/* Always visible filters */}
+                {Object.entries(columnDefinitions).map(([columnId, column]) => {
+                    if (column.filterType === 'input' && column.alwaysVisible) {
+                        const FilterComponent = filterOptions[columnId]?.component;
+                        if (FilterComponent) {
+                            return (
+                                <div key={columnId} className="mb-2 flex items-center">
+                                    <label htmlFor={`always-visible-filter-${columnId}`} className="mr-2 font-semibold dark:text-white">{column.filterLabel || column.label}:</label>
+                                    {React.createElement(FilterComponent, {
+                                        id: `always-visible-filter-${columnId}`,
+                                        selected: filters[columnId],
+                                        onChange: (value) => handleFilterChange(columnId, value),
+                                        dynamic: column.dynamicFilter,
+                                        dynamicFilterDelay: dynamicFilterDelay,
+                                        // onOpenChange is not relevant for always visible filters
+                                        ...filterOptions[columnId].props,
+                                    })}
+                                </div>
+                            );
+                        }
+                    }
+                    return null;
+                })}
                 <table className="w-full border-collapse border border-solid border-gray-600">
                     <thead>
                         <tr>
-                            {visibleColumns.map((columnId, index) =>
-                                renderColumnHeader(columnId, index === visibleColumns.length - 1)
+                            {adjustedVisibleColumns.map((columnId, index) =>
+                                renderColumnHeader(columnId, index === adjustedVisibleColumns.length - 1)
                             )}
                         </tr>
                     </thead>
                     <tbody>
                         {data === undefined || data.length === 0 ? (
                             <tr>
-                                <td colSpan={visibleColumns.length} className="p-4 text-center text-gray-500 dark:text-gray-400">
+                                <td colSpan={adjustedVisibleColumns.length} className="p-4 text-center text-gray-500 dark:text-gray-400">
                                     No {pluralize(itemDesc, 2)} match the current filters.
                                 </td>
                             </tr>
                         ) : (
                             data.map(item => (
                                 <tr key={item[idKey]} className="hover:bg-gray-100 dark:hover:bg-gray-800 odd:bg-gray-500 even:bg-white dark:odd:bg-[#141e2d] dark:even:bg-[#121212]">
-                                    {visibleColumns.map((columnId, colIndex) => {
-                                        const isLastVisibleColumn = colIndex === visibleColumns.length - 1;
+                                    {adjustedVisibleColumns.map((columnId, colIndex) => {
+                                        const isLastVisibleColumn = colIndex === adjustedVisibleColumns.length - 1;
+
+                                        // Handle selector column
+                                        if (columnId === '__selector_column__') {
+                                            const isChecked = internalSelectedIds.includes(item[idKey]);
+                                            const handleCheckboxChange = (e) => {
+                                                e.stopPropagation(); // Prevent row click navigation
+                                                setInternalSelectedIds(prev => {
+                                                    if (e.target.checked) {
+                                                        return [...prev, item[idKey]];
+                                                    } else {
+                                                        return prev.filter(id => id !== item[idKey]);
+                                                    }
+                                                });
+                                            };
+
+                                            return (
+                                                <td key={columnId} className="p-1 border border-dotted border-gray-600 text-md">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isChecked}
+                                                        onChange={handleCheckboxChange}
+                                                        className="h-4 w-4 accent-blue-600 dark:bg-gray-700 dark:accent-gray-400 dark:border-gray-600 focus:ring-0 focus:ring-offset-0"
+                                                    />
+                                                </td>
+                                            );
+                                        }
+
                                         return (
                                             <td
                                                 key={columnId}
@@ -399,7 +450,7 @@ function GenericList({
                                                         lastClickedElement.current = null; // Reset for next time
                                                         return;
                                                     }
-                                                    navigate(detailPagePath.replace(':id', item[idKey]), { state: { fromListParams: searchParams.toString() } });
+                                                    navigate(detailPagePath.replace(':id', item[idKey]));
                                                 } : undefined}
                                                 title={columnId === requiredColumnId && detailPagePath ? `View ${itemDesc} details` : undefined}
                                             >
@@ -466,14 +517,16 @@ function GenericList({
                     </button>
                 </div>
             </div>
-            <ColumnConfigModal
-                isOpen={isConfigOpen}
-                onClose={() => setIsConfigOpen(false)}
-                visibleColumns={visibleColumns}
-                setVisibleColumns={setVisibleColumns}
-                columnDefinitions={columnDefinitions}
-                requiredColumnId={requiredColumnId}
-            />
+            {isColumnConfigurable && (
+                <ColumnConfigModal
+                    isOpen={isConfigOpen}
+                    onClose={() => setIsConfigOpen(false)}
+                    visibleColumns={visibleColumns}
+                    setVisibleColumns={setVisibleColumns}
+                    columnDefinitions={columnDefinitions}
+                    requiredColumnId={requiredColumnId}
+                />
+            )}
         </div>
     );
 }

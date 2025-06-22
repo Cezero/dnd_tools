@@ -75,6 +75,22 @@ CREATE TABLE `editions` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `race_attribute_adjustments`
+--
+
+DROP TABLE IF EXISTS `race_attribute_adjustments`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `race_attribute_adjustments` (
+  `race_id` int unsigned NOT NULL,
+  `attribute_id` tinyint unsigned NOT NULL,
+  `attribute_adjustment` tinyint NOT NULL,
+  PRIMARY KEY (`race_id`,`attribute_id`),
+  CONSTRAINT `race_attribute_adjustments_races_FK` FOREIGN KEY (`race_id`) REFERENCES `races` (`race_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `race_language_map`
 --
 
@@ -85,7 +101,7 @@ CREATE TABLE `race_language_map` (
   `race_id` int unsigned NOT NULL,
   `language_id` int unsigned NOT NULL,
   `automatic` tinyint(1) NOT NULL DEFAULT '0',
-  KEY `racial_language_map_races_FK` (`race_id`),
+  PRIMARY KEY (`race_id`,`language_id`),
   CONSTRAINT `racial_language_map_races_FK` FOREIGN KEY (`race_id`) REFERENCES `races` (`race_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -99,11 +115,12 @@ DROP TABLE IF EXISTS `race_trait_map`;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `race_trait_map` (
   `race_id` int unsigned NOT NULL,
-  `trait_id` int unsigned NOT NULL,
+  `trait_value` varchar(100) DEFAULT NULL,
+  `trait_slug` varchar(100) NOT NULL,
+  PRIMARY KEY (`trait_slug`,`race_id`),
   KEY `race_trait_map_races_FK` (`race_id`),
-  KEY `race_trait_map_racial_traits_FK` (`trait_id`),
-  CONSTRAINT `race_trait_map_races_FK` FOREIGN KEY (`race_id`) REFERENCES `races` (`race_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `race_trait_map_racial_traits_FK` FOREIGN KEY (`trait_id`) REFERENCES `race_traits` (`trait_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `race_trait_map_race_traits_FK` FOREIGN KEY (`trait_slug`) REFERENCES `race_traits` (`trait_slug`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `race_trait_map_races_FK` FOREIGN KEY (`race_id`) REFERENCES `races` (`race_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -115,9 +132,12 @@ DROP TABLE IF EXISTS `race_traits`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `race_traits` (
-  `trait_id` int unsigned NOT NULL AUTO_INCREMENT,
-  `trait_description` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`trait_id`)
+  `trait_description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  `value_flag` tinyint(1) NOT NULL DEFAULT '0',
+  `trait_name` varchar(100) DEFAULT NULL,
+  `trait_slug` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `name_flag` tinyint(1) NOT NULL DEFAULT '1',
+  PRIMARY KEY (`trait_slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -140,7 +160,7 @@ CREATE TABLE `races` (
   PRIMARY KEY (`race_id`),
   KEY `fk_races_edition` (`edition_id`),
   CONSTRAINT `fk_races_edition` FOREIGN KEY (`edition_id`) REFERENCES `editions` (`edition_id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -481,4 +501,4 @@ CREATE TABLE `users` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-06-20  8:12:15
+-- Dump completed on 2025-06-22  9:06:16

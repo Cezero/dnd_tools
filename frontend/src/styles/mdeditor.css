@@ -1,5 +1,4 @@
 @reference 'tailwindcss';
-
 @plugin '@tailwindcss/typography';
 
 .w-md-editor-area {
@@ -18,7 +17,11 @@
     @apply m-0 p-0 w-full max-w-full;
 }
 
+
 .w-md-editor-preview {
+    p {
+        margin-top: 0;
+    }
     @apply m-1 p-3 rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert border dark:border-gray-500 max-w-full;
 }
 

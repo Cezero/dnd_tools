@@ -9,7 +9,7 @@ export function createFilterProcessor(filterConfig) {
         };
         const allowedParams = Object.keys(filterConfig);
         const allowedLogicParams = allowedParams.filter(key => filterConfig[key].logicSupported).map(key => `${key}_logic`);
-        const allAllowed = [...allowedParams, ...allowedLogicParams, 'page', 'limit', 'sort', 'order'];
+        const allAllowed = [...allowedParams, ...allowedLogicParams, 'page', 'limit', 'sort', 'order', 'mclist', 'mcfilter'];
 
         for (const key in queryParams) {
             if (!allAllowed.includes(key)) {
@@ -31,6 +31,21 @@ export function createFilterProcessor(filterConfig) {
             }
             if (key === 'order') {
                 processed.sort.sortOrder = queryParams[key];
+                continue;
+            }
+
+            if (key === 'mclist') {
+                processed.filters._mclist = queryParams[key].split(',').map(col => col.trim()).filter(col => col.length > 0);
+                // Validate that all columns in mclist are allowed parameters
+                const invalidColumns = processed.filters._mclist.filter(col => !allowedParams.includes(col));
+                if (invalidColumns.length > 0) {
+                    processed.errors.push(`Invalid columns in mclist: ${invalidColumns.join(', ')}`);
+                }
+                continue;
+            }
+
+            if (key === 'mcfilter') {
+                processed.filters._mcfilter = `%${queryParams[key]}%`;
                 continue;
             }
 
@@ -112,6 +127,10 @@ export function buildWhereAndHavingClauses(filters, filterConfig) {
             continue;
         }
 
+        if (key === '_mclist' || key === '_mcfilter') {
+            continue; // These are handled separately
+        }
+
         if (config.specialHandling) {
             config.specialHandling(value, whereClauses, whereValues);
         } else if (config.applyDirectlyToMainQuery) {
@@ -173,5 +192,27 @@ export function buildWhereAndHavingClauses(filters, filterConfig) {
     const where = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
     const having = havingClauses.length > 0 ? `HAVING ${havingClauses.join(' AND ')}` : '';
 
-    return { where, having, whereValues, havingValues };
+    // Handle mclist and mcfilter
+    const mclist = filters._mclist;
+    const mcfilter = filters._mcfilter;
+
+    if (mclist && mcfilter) {
+        const mcWhereClauses = mclist.map(column => `${column} LIKE ?`);
+        if (mcWhereClauses.length > 0) {
+            const mcClause = `(${mcWhereClauses.join(' OR ')})`;
+            if (where.length > 0) {
+                whereClauses.push(mcClause);
+            } else {
+                whereClauses.push(mcClause);
+            }
+            for (let i = 0; i < mclist.length; i++) {
+                whereValues.push(mcfilter);
+            }
+        }
+    }
+
+    const finalWhere = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+    const finalHaving = havingClauses.length > 0 ? `HAVING ${havingClauses.join(' AND ')}` : '';
+
+    return { where: finalWhere, having: finalHaving, whereValues, havingValues };
 } 

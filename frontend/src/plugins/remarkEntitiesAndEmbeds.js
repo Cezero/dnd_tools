@@ -56,6 +56,17 @@ export default function remarkEntitiesAndEmbeds() {
                         },
                         children: [],
                     });
+                } else if (r_type === 'var') {
+                    parts.push({
+                        type: 'variableNode', // Custom node type for variables
+                        data: {
+                            hName: 'span', // Placeholder, will be replaced by rehype plugin
+                            hProperties: {
+                                dataVarName: r_value.toLowerCase(),
+                            },
+                        },
+                        children: [{ type: 'text', value: fullMatch }], // Keep original text as child for now
+                    });
                 } else {
                     // Not recognized, fallback to plain text
                     parts.push({ type: 'text', value: fullMatch });

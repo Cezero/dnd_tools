@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Icon from '@mdi/react';
 import { mdiCheck, mdiSetAll, mdiSetNone } from '@mdi/js';
 
-const MultiSelect = ({ options, displayKey, valueKey, selected, onChange, placeholder, className, open, onOpenChange, logicType, onLogicChange }) => {
+const MultiSelect = ({ options, displayKey, valueKey, selected, onChange, placeholder, className, open, onOpenChange, logicType, onLogicChange, appendClassName }) => {
     const dropdownRef = useRef(null);
 
     useEffect(() => {
@@ -42,7 +42,7 @@ const MultiSelect = ({ options, displayKey, valueKey, selected, onChange, placeh
 
     return (
         <div
-            className={`absolute mt-2 ${className} z-50 ` +
+            className={`${appendClassName} ${className} ` +
                 (open
                     ? 'p-1 bg-opacity-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-lg'
                     : '')

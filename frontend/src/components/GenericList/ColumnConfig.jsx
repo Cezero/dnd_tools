@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import Cookies from 'js-cookie';
 
 // COLUMN_DEFINITIONS and DEFAULT_COLUMNS will now be passed in
 
 function useColumnConfig(storageKey, defaultColumns, columnDefinitions, requiredColumnId) {
     const [visibleColumns, setVisibleColumns] = useState(() => {
-        const savedColumns = Cookies.get(storageKey);
+        const savedColumns = localStorage.getItem(storageKey);
         let parsedColumns = savedColumns ? JSON.parse(savedColumns) : defaultColumns;
         // Filter out any columns that are no longer defined in columnDefinitions
         parsedColumns = parsedColumns.filter(colId => columnDefinitions[colId] !== undefined);
@@ -27,7 +26,7 @@ function useColumnConfig(storageKey, defaultColumns, columnDefinitions, required
         } else if (requiredColumnId && columnsToSave.includes(requiredColumnId)) {
             columnsToSave = [requiredColumnId, ...columnsToSave.filter(id => id !== requiredColumnId)];
         }
-        Cookies.set(storageKey, JSON.stringify(columnsToSave), { expires: 365 });
+        localStorage.setItem(storageKey, JSON.stringify(columnsToSave));
     }, [visibleColumns, storageKey, requiredColumnId]);
 
     return [visibleColumns, setVisibleColumns];

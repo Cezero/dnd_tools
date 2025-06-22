@@ -4,13 +4,13 @@ import MDEditor from '@uiw/react-md-editor';
 import { renderMarkdown } from '@/plugins/renderMarkdown';
 import '@/styles/mdeditor.css';
 
-export default function MarkdownEditor({ value, onChange, label = "Description", className = "", id, name }) {
+export default function MarkdownEditor({ value, onChange, label = "Description", className = "", id, name, userVars = {} }) {
   const [renderedHtml, setRenderedHtml] = useState('');
 
   useEffect(() => {
     const processMarkdown = async () => {
       if (value) {
-        const html = await renderMarkdown(value);
+        const html = await renderMarkdown({ markdown: value, userVars });
         setRenderedHtml(html);
       } else {
         setRenderedHtml('');
@@ -18,11 +18,7 @@ export default function MarkdownEditor({ value, onChange, label = "Description",
     };
 
     processMarkdown();
-  }, [value]);
-
-  const customRenderPreview = (markdown, editorProps) => {
-    return <div dangerouslySetInnerHTML={{ __html: renderedHtml }} />;
-  };
+  }, [value, userVars]);
 
   return (
     <div className={`w-full ${className}`}>

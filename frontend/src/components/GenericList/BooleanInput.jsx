@@ -11,7 +11,7 @@ import { mdiCheck } from '@mdi/js';
  * @param {function} props.onOpenChange - Callback function to change the open state of the dropdown.
  * @param {string} props.className - Additional CSS classes for styling.
  */
-const BooleanInput = ({ value, onToggle, open, onOpenChange, className }) => {
+const BooleanInput = ({ value, onToggle, open, onOpenChange, className, appendClassName }) => {
     const dropdownRef = useRef(null);
 
     useEffect(() => {
@@ -47,7 +47,7 @@ const BooleanInput = ({ value, onToggle, open, onOpenChange, className }) => {
 
     return (
         <div
-            className={`absolute mt-2 ${className} z-50 ` +
+            className={`${appendClassName} ${className} ` +
                 (open
                     ? 'p-1 bg-opacity-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-lg'
                     : '')

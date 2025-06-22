@@ -39,7 +39,7 @@ function SpellDetail() {
     const outerContainerClasses = "w-3/5 mx-auto border-2 border-gray-400 dark:border-gray-500 rounded-lg shadow-lg p-1";
 
     if (isLoading) return (
-        <div className="bg-gray-100 dark:bg-gray-900 pt-8">
+        <div className="pt-8">
             <div className={outerContainerClasses}>
                 <div className={innerCellContentClasses}>
                     Loading...
@@ -48,7 +48,7 @@ function SpellDetail() {
         </div>
     );
     if (!spell) return (
-        <div className="bg-gray-100 dark:bg-gray-900 pt-8">
+        <div className="pt-8">
             <div className={outerContainerClasses}>
                 <div className={innerCellContentClasses}>
                     Spell not found
@@ -58,7 +58,7 @@ function SpellDetail() {
     );
 
     return (
-        <div className="bg-gray-100 dark:bg-gray-900 pt-8">
+        <div className="pt-8">
             <div className={outerContainerClasses}>
                 <div className={innerCellContentClasses}>
                     <h1 className="text-2xl font-bold mb-2">{spell.spell_name}</h1>

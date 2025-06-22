@@ -17,6 +17,7 @@ import {
     mdiBorderRight,
     mdiBorderBottom,
 } from '@mdi/js';
+import ReactDOM from 'react-dom';
 
 export default function ReferenceTableEditor() {
     const { id } = useParams();
@@ -524,7 +525,7 @@ export default function ReferenceTableEditor() {
 
     return (
         <div className="p-4">
-            {contextMenu && (
+            {contextMenu && ReactDOM.createPortal(
                 <div
                     className="context-menu absolute bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg z-50 py-1 flex flex-row"
                     style={{ top: contextMenu.y, left: contextMenu.x }}
@@ -571,9 +572,9 @@ export default function ReferenceTableEditor() {
                         })()
                     )}
                 </div>
-            )}
+                , document.getElementById('context-menu-root'))}
             <div className="mb-4">
-                <label htmlFor="tableName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Table Name</label>
+                <label htmlFor="tableName" className="block font-medium text-gray-700 dark:text-gray-300">Table Name</label>
                 <input
                     type="text"
                     id="tableName"
@@ -581,11 +582,11 @@ export default function ReferenceTableEditor() {
                     value={tableName}
                     onChange={(e) => setTableName(e.target.value)}
                     onKeyDown={(e) => handleKeyDown(e, 'tableName')}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border dark:border-gray-700"
+                    className="mt-1 block p-1.5 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border dark:border-gray-700"
                 />
             </div>
             <div className="mb-4">
-                <label htmlFor="tableSlug" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Slug</label>
+                <label htmlFor="tableSlug" className="block font-medium text-gray-700 dark:text-gray-300">Slug</label>
                 <input
                     type="text"
                     id="tableSlug"
@@ -593,7 +594,7 @@ export default function ReferenceTableEditor() {
                     value={tableSlug}
                     onChange={(e) => setTableSlug(e.target.value)}
                     onKeyDown={(e) => handleKeyDown(e, 'tableSlug')}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border dark:border-gray-700"
+                    className="mt-1 block p-1.5 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border dark:border-gray-700"
                 />
             </div>
             <div className="mb-8">
@@ -605,10 +606,10 @@ export default function ReferenceTableEditor() {
                     onChange={(e) => setTableDescription(e.target.value)}
                     rows="3"
                     onKeyDown={(e) => handleKeyDown(e, 'tableDescription')}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border dark:border-gray-700"
+                    className="mt-1 block p-1.5 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border dark:border-gray-700"
                 ></textarea>
             </div>
-            <table className="table-auto border border-gray-300 dark:border-gray-700 w-full">
+            <table className="table-auto border border-gray-300 dark:border-gray-700 w-98/100">
                 <thead>
                     <tr>
                         {columns.map((col, colIndex) => (
