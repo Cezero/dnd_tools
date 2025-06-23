@@ -1,13 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import Icon from '@mdi/react';
-import { mdiTrashCan, mdiPlaylistEdit } from '@mdi/js';
 import GenericList from '@/components/GenericList/GenericList';
-import Input from '@/components/GenericList/Input';
 import { COLUMN_DEFINITIONS, DEFAULT_COLUMNS, raceFilterOptions } from '@/features/admin/features/raceMgmt/config/raceConfig';
 import { fetchRaces, deleteRace } from '@/features/admin/features/raceMgmt/services/raceService';
-import MultiSelect from '@/components/GenericList/MultiSelect';
-import BooleanInput from '@/components/GenericList/BooleanInput';
 import LookupService from '@/services/LookupService';
 import { useAuth } from '@/auth/authProvider';
 import { SIZE_MAP } from 'shared-data/src/commonData';

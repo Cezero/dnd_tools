@@ -1,4 +1,9 @@
 export const raceTraitFilterConfig = {
+    base: {
+        table: 'race_traits',
+        sort: 'trait_slug',
+        groupColumn: 'trait_slug',
+    },
     trait_name: {
         column: 'trait_name',
         isSearch: true,
@@ -17,5 +22,4 @@ export const raceTraitFilterConfig = {
         type: 'string',
         operators: ['LIKE']
     },
-    'sort': 'trait_slug'
 }; 

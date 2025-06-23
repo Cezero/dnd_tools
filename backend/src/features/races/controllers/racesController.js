@@ -1,6 +1,7 @@
 import { timedQuery, runTransactionWith } from '../../../db/queryTimer.js';
-import { processRacesQuery, buildRacesQuery } from '../lib/raceQueryBuilder.js';
-import { processRaceTraitsQuery, buildRaceTraitsQuery } from '../lib/raceTraitQueryBuilder.js';
+import { processQuery, buildQuery } from '../../../db/queryBuilder.js';
+import { raceFilterConfig } from '../config/raceConfig.js';
+import { raceTraitFilterConfig } from '../config/raceTraitConfig.js';
 
 /**
  * Fetches all races from the database with pagination and filtering.
@@ -8,7 +9,7 @@ import { processRaceTraitsQuery, buildRaceTraitsQuery } from '../lib/raceTraitQu
  * @param {object} res - Express response object.
  */
 export const getRaces = async (req, res) => {
-    const processedQuery = processRacesQuery(req.query);
+    const processedQuery = processQuery(req.query, raceFilterConfig);
 
     if (processedQuery.errors.length > 0) {
         return res.status(400).json({ error: processedQuery.errors.join('; ') });
@@ -16,7 +17,7 @@ export const getRaces = async (req, res) => {
 
     const { page, limit } = processedQuery.pagination;
     try {
-        const { mainQuery, queryValues } = buildRacesQuery(processedQuery);
+        const { mainQuery, queryValues } = buildQuery(raceFilterConfig, processedQuery);
         console.log('Final SQL Query:', mainQuery);
         console.log('Query Values:', queryValues);
 
@@ -103,7 +104,7 @@ export const getRaceById = async (req, res) => {
  * @param {object} res - Express response object.
  */
 export const getRaceTraits = async (req, res) => {
-    const processedQuery = processRaceTraitsQuery(req.query);
+    const processedQuery = processQuery(req.query, raceTraitFilterConfig);
 
     if (processedQuery.errors.length > 0) {
         return res.status(400).json({ error: processedQuery.errors.join('; ') });
@@ -111,7 +112,7 @@ export const getRaceTraits = async (req, res) => {
 
     const { page, limit } = processedQuery.pagination;
     try {
-        const { mainQuery, queryValues } = buildRaceTraitsQuery(processedQuery);
+        const { mainQuery, queryValues } = buildQuery(raceTraitFilterConfig, processedQuery);
         console.log('Final SQL Query (Race Traits):', mainQuery);
         console.log('Query Values (Race Traits):', queryValues);
 

@@ -1,8 +1,9 @@
 import { timedQuery } from '../../../db/queryTimer.js';
-import { processSpellsQuery, buildSpellsQuery } from '../lib/spellQueryBuilder.js';
+import { spellFilterConfig } from '../config/spellConfig.js';
+import { processQuery, buildQuery } from '../../../db/queryBuilder.js';
 
 export async function getSpells(req, res) {
-    const processed = processSpellsQuery(req.query);
+    const processed = processQuery(req.query, spellFilterConfig);
 
     if (processed.errors.length > 0) {
         return res.status(400).json({ error: processed.errors.join('; ') });
@@ -11,7 +12,7 @@ export async function getSpells(req, res) {
     const { page, limit } = processed.pagination;
 
     try {
-        const { mainQuery, queryValues } = buildSpellsQuery(processed);
+        const { mainQuery, queryValues } = buildQuery(spellFilterConfig, processed);
 
         console.log('Final SQL Query:', mainQuery);
         console.log('Query Values:', queryValues);

@@ -41,8 +41,8 @@ const BooleanInput = ({ value, onToggle, open, onOpenChange, className, appendCl
     };
 
     const options = [
-        { display: 'True', value: true },
-        { display: 'False', value: false },
+        { display: 'True', value: 1 },
+        { display: 'False', value: 0 },
     ];
 
     return (

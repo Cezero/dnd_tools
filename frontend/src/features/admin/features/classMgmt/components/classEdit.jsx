@@ -6,6 +6,7 @@ import { fetchClassById } from '@/features/admin/features/classMgmt/services/cla
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption, Transition } from '@headlessui/react';
 import { ChevronUpDownIcon } from '@heroicons/react/24/solid';
 import { RPG_DICE } from 'shared-data/src/commonData';
+import MarkdownEditor from '@/components/markdown/MarkdownEditor';
 
 export default function ClassEdit() {
     const { id } = useParams();
@@ -34,6 +35,7 @@ export default function ClassEdit() {
                         display: true,
                         caster: false,
                         hit_die: 1,
+                        class_description: ''
                     });
                 } else {
                     const data = await fetchClassById(id);
@@ -45,6 +47,7 @@ export default function ClassEdit() {
                         display: data.display === 1,
                         caster: data.caster === 1,
                         hit_die: data.hit_die,
+                        class_description: data.class_description || ''
                     });
                 }
             } catch (err) {
@@ -80,6 +83,7 @@ export default function ClassEdit() {
                 display: cls.display ? 1 : 0,
                 caster: cls.caster ? 1 : 0,
                 hit_die: cls.hit_die ? parseInt(cls.hit_die) : 1,
+                class_description: cls.class_description
             };
 
             if (id === 'new') {
@@ -117,10 +121,6 @@ export default function ClassEdit() {
                     <div className="flex items-center gap-2">
                         <label htmlFor="class_name" className="block text-lg font-medium w-30">Class Name:</label>
                         <input type="text" id="class_name" name="class_name" value={cls.class_name || ''} onChange={handleChange} className="mt-1 block w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <label htmlFor="class_abbr" className="block text-lg font-medium w-30">Abbreviation:</label>
-                        <input type="text" id="class_abbr" name="class_abbr" value={cls.class_abbr || ''} onChange={handleChange} className="mt-1 block w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" />
                     </div>
                     <div className="flex items-center gap-2 justify-end">
                         <div className="flex items-center gap-2 pr-2">
@@ -178,71 +178,90 @@ export default function ClassEdit() {
                             </Listbox>
                         </div>
                         <div className="flex items-center gap-2">
-                            <label htmlFor="is_prestige_class" className="ml-2 text-lg font-medium">Prestige Class</label>
-                            <input type="checkbox" id="is_prestige_class" name="is_prestige_class" checked={cls.is_prestige_class} onChange={handleChange} className="form-checkbox h-5 w-5 text-blue-600 rounded dark:bg-gray-700 dark:border-gray-600 accent-blue-600 checked:bg-blue-600 dark:checked:bg-blue-600" />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <label htmlFor="caster" className="ml-2 text-lg font-medium">Caster</label>
-                            <input type="checkbox" id="caster" name="caster" checked={cls.caster} onChange={handleChange} className="form-checkbox h-5 w-5 text-blue-600 rounded dark:bg-gray-700 dark:border-gray-600 accent-blue-600 checked:bg-blue-600 dark:checked:bg-blue-600" />
-                        </div>
-                        <div className="flex items-center gap-2">
                             <label htmlFor="display" className="ml-2 text-lg font-medium">Display</label>
                             <input type="checkbox" id="display" name="display" checked={cls.display} onChange={handleChange} className="form-checkbox h-5 w-5 text-blue-600 rounded dark:bg-gray-700 dark:border-gray-600 accent-blue-600 checked:bg-blue-600 dark:checked:bg-blue-600" />
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <label htmlFor="hit_die" className="block text-lg font-medium w-30">Hit Die:</label>
-                        <Listbox
-                            value={cls.hit_die || ''}
-                            onChange={(selectedId) => handleChange({ target: { name: 'hit_die', value: selectedId } })}
-                        >
-                            {({ open }) => (
-                                <div className="relative mt-1">
-                                    <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-2 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-gray-100 dark:ring-gray-600">
-                                        <span className="block truncate">{RPG_DICE[cls.hit_die]?.name || 'Select a hit die'}</span>
-                                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                            <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
-                                        </span>
-                                    </ListboxButton>
-                                    <Transition
-                                        show={open}
-                                        leave="transition ease-in duration-100"
-                                        leaveFrom="opacity-100"
-                                        leaveTo="opacity-0"
-                                    >
-                                        <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto scrollbar-thin rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm dark:bg-gray-800 dark:text-gray-100">
-                                            <ListboxOption
-                                                className={({ active }) =>
-                                                    `relative cursor-default select-none py-2 pl-3 pr-9 ${active ? 'bg-blue-600 text-white' : 'text-gray-900 dark:text-gray-100'}`
-                                                }
-                                                value={null}
-                                            >
-                                                {({ selected, active }) => (
-                                                    <span className={`block truncate ${selected ? 'font-semibold' : 'font-normal'}`}>
-                                                        Select a hit die
-                                                    </span>
-                                                )}
-                                            </ListboxOption>
-                                            {Object.keys(RPG_DICE).map(dieKey => (
-                                                <ListboxOption
-                                                    key={dieKey}
-                                                    className={({ active }) =>
-                                                        `relative cursor-default select-none py-2 pl-3 pr-9 ${active ? 'bg-blue-600 text-white' : 'text-gray-900 dark:text-gray-100'}`
-                                                    }
-                                                    value={parseInt(dieKey)}
-                                                >
-                                                    {({ selected, active }) => (
-                                                        <span className={`block truncate ${selected ? 'font-semibold' : 'font-normal'}`}>
-                                                            {RPG_DICE[dieKey].name}
-                                                        </span>
-                                                    )}
-                                                </ListboxOption>
-                                            ))}
-                                        </ListboxOptions>
-                                    </Transition>
+                    <div className="md:col-span-2 mb-0">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-0">
+                            <div className="flex items-center gap-2">
+                                <label htmlFor="class_abbr" className="block text-lg font-medium w-30">Abbreviation:</label>
+                                <input type="text" id="class_abbr" name="class_abbr" value={cls.class_abbr || ''} onChange={handleChange} className="mt-1 block w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                            </div>
+                            <div className="flex items-center gap-2 justify-end">
+                                <div className="flex items-center gap-2">
+                                    <label htmlFor="is_prestige_class" className="ml-2 text-lg font-medium">Prestige Class</label>
+                                    <input type="checkbox" id="is_prestige_class" name="is_prestige_class" checked={cls.is_prestige_class} onChange={handleChange} className="form-checkbox h-5 w-5 text-blue-600 rounded dark:bg-gray-700 dark:border-gray-600 accent-blue-600 checked:bg-blue-600 dark:checked:bg-blue-600" />
                                 </div>
-                            )}
-                        </Listbox>
+                                <div className="flex items-center gap-2">
+                                    <label htmlFor="caster" className="ml-2 text-lg font-medium">Caster</label>
+                                    <input type="checkbox" id="caster" name="caster" checked={cls.caster} onChange={handleChange} className="form-checkbox h-5 w-5 text-blue-600 rounded dark:bg-gray-700 dark:border-gray-600 accent-blue-600 checked:bg-blue-600 dark:checked:bg-blue-600" />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <label htmlFor="hit_die" className="block text-lg font-medium">Hit Die:</label>
+                                    <Listbox
+                                        value={cls.hit_die || ''}
+                                        onChange={(selectedId) => handleChange({ target: { name: 'hit_die', value: selectedId } })}
+                                    >
+                                        {({ open }) => (
+                                            <div className="relative mt-1">
+                                                <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-2 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-gray-100 dark:ring-gray-600">
+                                                    <span className="block truncate">{RPG_DICE[cls.hit_die]?.name || 'Select a hit die'}</span>
+                                                    <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                                                        <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                                                    </span>
+                                                </ListboxButton>
+                                                <Transition
+                                                    show={open}
+                                                    leave="transition ease-in duration-100"
+                                                    leaveFrom="opacity-100"
+                                                    leaveTo="opacity-0"
+                                                >
+                                                    <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto scrollbar-thin rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm dark:bg-gray-800 dark:text-gray-100">
+                                                        <ListboxOption
+                                                            className={({ active }) =>
+                                                                `relative cursor-default select-none py-2 pl-3 pr-9 ${active ? 'bg-blue-600 text-white' : 'text-gray-900 dark:text-gray-100'}`
+                                                            }
+                                                            value={null}
+                                                        >
+                                                            {({ selected, active }) => (
+                                                                <span className={`block truncate ${selected ? 'font-semibold' : 'font-normal'}`}>
+                                                                    Select a hit die
+                                                                </span>
+                                                            )}
+                                                        </ListboxOption>
+                                                        {Object.keys(RPG_DICE).map(dieKey => (
+                                                            <ListboxOption
+                                                                key={dieKey}
+                                                                className={({ active }) =>
+                                                                    `relative cursor-default select-none py-2 pl-3 pr-9 ${active ? 'bg-blue-600 text-white' : 'text-gray-900 dark:text-gray-100'}`
+                                                                }
+                                                                value={parseInt(dieKey)}
+                                                            >
+                                                                {({ selected, active }) => (
+                                                                    <span className={`block truncate ${selected ? 'font-semibold' : 'font-normal'}`}>
+                                                                        {RPG_DICE[dieKey].name}
+                                                                    </span>
+                                                                )}
+                                                            </ListboxOption>
+                                                        ))}
+                                                    </ListboxOptions>
+                                                </Transition>
+                                            </div>
+                                        )}
+                                    </Listbox>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex flex-col gap-2 md:col-span-2 mb-0">
+                        <MarkdownEditor
+                            value={cls.class_description || ''}
+                            onChange={(newDescription) => setCls(prevCls => ({ ...prevCls, class_description: newDescription }))}
+                            label="Class Description"
+                            id="class_description"
+                            name="class_description"
+                        />
                     </div>
                 </div>
                 <div className="flex mt-4 gap-2 justify-end">

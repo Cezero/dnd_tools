@@ -84,7 +84,6 @@ export default function RaceTraitAssoc({ isOpen, onClose, onSave, initialSelecte
     }, []);
 
     const handleSelectedIdsChange = useCallback((selectedIdsFromGenericList) => {
-        console.log('[RaceTraitAssoc] selectedIdsFromGenericList', selectedIdsFromGenericList);
         setCurrentSelectedTraitIds(selectedIdsFromGenericList);
     }, []);
 

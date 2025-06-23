@@ -1,29 +1,36 @@
 const raceFilterConfig = {
+    base: {
+        table: 'races',
+        sort: 'race_name',
+        groupColumn: 'race_id',
+    },
     race_name: {
-        column: 'r.race_name',
+        column: 'race_name',
         isSearch: true,
         operator: 'LIKE',
-        data_type: 'string',
+        dataType: 'string',
     },
     edition_id: {
-        column: 'r.edition_id',
-        isMultiValued: true,
+        column: 'edition_id',
+        multiValue: {
+            column: 'edition_id',
+            alias: 'edition_ids'
+        },
         logicSupported: true,
     },
     display: {
-        column: 'r.display',
-        data_type: 'boolean',
+        column: 'display',
+        dataType: 'boolean',
     },
     size_id: {
-        column: 'r.size_id'
+        column: 'size_id'
     },
     race_speed: {
-        column: 'r.race_speed',
+        column: 'race_speed',
     },
     favored_class_id: {
-        column: 'r.favored_class_id',
+        column: 'favored_class_id',
     },
-    sort: 'race_name'
 };
 
 export { raceFilterConfig };

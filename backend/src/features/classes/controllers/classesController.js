@@ -1,5 +1,6 @@
 import { timedQuery, runTransactionWith } from '../../../db/queryTimer.js';
-import { processClassesQuery, buildClassesQuery } from '../lib/classQueryBuilder.js';
+import { buildQuery, processQuery } from '../../../db/queryBuilder.js';
+import { classFilterConfig } from '../config/classConfig.js';
 
 /**
  * Fetches all classes from the database with pagination and filtering.
@@ -7,7 +8,7 @@ import { processClassesQuery, buildClassesQuery } from '../lib/classQueryBuilder
  * @param {object} res - Express response object.
  */
 export const getClasses = async (req, res) => {
-    const processedQuery = processClassesQuery(req.query);
+    const processedQuery = processQuery(req.query, classFilterConfig);
 
     if (processedQuery.errors.length > 0) {
         return res.status(400).json({ error: processedQuery.errors.join('; ') });
@@ -15,7 +16,7 @@ export const getClasses = async (req, res) => {
 
     const { page, limit } = processedQuery.pagination;
     try {
-        const { mainQuery, queryValues } = buildClassesQuery(processedQuery);
+        const { mainQuery, queryValues } = buildQuery(classFilterConfig, processedQuery);
         console.log('Final SQL Query:', mainQuery);
         console.log('Query Values:', queryValues);
 

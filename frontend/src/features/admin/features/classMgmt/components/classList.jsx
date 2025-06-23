@@ -1,15 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import Icon from '@mdi/react';
-import { mdiTrashCan, mdiPlaylistEdit } from '@mdi/js';
 import GenericList from '@/components/GenericList/GenericList';
-import Input from '@/components/GenericList/Input';
 import { COLUMN_DEFINITIONS, DEFAULT_COLUMNS, classFilterOptions } from '@/features/admin/features/classMgmt/config/classConfig';
 import { fetchClasses, deleteClass } from '@/features/admin/features/classMgmt/services/classService';
-import MultiSelect from '@/components/GenericList/MultiSelect';
-import BooleanInput from '@/components/GenericList/BooleanInput';
 import LookupService from '@/services/LookupService';
 import { useAuth } from '@/auth/authProvider';
+import { RPG_DICE } from 'shared-data/src/commonData';
 
 export default function ClassList() {
     const navigate = useNavigate();
@@ -89,7 +85,7 @@ export default function ClassList() {
         } else if (columnId === 'is_prestige_class' || columnId === 'display' || columnId === 'caster') {
             cellContent = item[columnId] ? 'Yes' : 'No';
         } else if (columnId === 'hit_die') {
-            cellContent = `d${item[columnId]}`;
+            cellContent = `${RPG_DICE[item[columnId]].name}`;
         }
 
         return cellContent;

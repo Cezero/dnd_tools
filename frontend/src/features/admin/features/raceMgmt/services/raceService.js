@@ -1,8 +1,8 @@
 import api from '@/services/api';
 
-export const fetchRaces = async ({ page = 1, limit = 25, filters = {} }) => {
+export const fetchRaces = async (searchParams) => {
     try {
-        const response = await api('/races', { method: 'GET', params: { page, limit, ...filters } });
+        const response = await api(`/races?${searchParams.toString()}`);
         const races = Array.isArray(response.results) ? response.results : [];
         const total = response.total !== undefined ? response.total : races.length;
         return { data: races, total: total };

@@ -4,6 +4,7 @@ import ClassEdit from '@/features/admin/features/classMgmt/components/classEdit'
 import Input from '@/components/GenericList/Input';
 import MultiSelect from '@/components/GenericList/MultiSelect';
 import BooleanInput from '@/components/GenericList/BooleanInput';
+import SingleSelect from '@/components/GenericList/SingleSelect';
 import LookupService from '@/services/LookupService';
 import { RPG_DICE } from 'shared-data/src/commonData';
 
@@ -25,8 +26,7 @@ export const COLUMN_DEFINITIONS = {
         label: 'Abbreviation',
         type: 'text',
         sortable: true,
-        filterable: true,
-        filterType: 'input'
+        filterable: false
     },
     edition_id: {
         label: 'Edition',
@@ -37,13 +37,6 @@ export const COLUMN_DEFINITIONS = {
     },
     is_prestige_class: {
         label: 'Prestige Class',
-        type: 'boolean',
-        sortable: true,
-        filterable: true,
-        filterType: 'boolean'
-    },
-    display: {
-        label: 'Display',
         type: 'boolean',
         sortable: true,
         filterable: true,
@@ -61,13 +54,25 @@ export const COLUMN_DEFINITIONS = {
         type: 'number',
         sortable: true,
         filterable: true,
-        filterType: 'input'
+        filterType: 'single-select'
+    },
+    display: {
+        label: 'Display',
+        type: 'boolean',
+        sortable: true,
+        filterable: true,
+        filterType: 'boolean'
+    },
+    source: {
+        label: 'Sources',
+        sortable: false,
+        filterable: true,
+        filterType: 'multi-select'
     }
 };
 
 export const classFilterOptions = (lookupsInitialized) => ({
     class_name: { component: Input, props: { type: 'text', placeholder: 'Filter by name...' } },
-    class_abbr: { component: Input, props: { type: 'text', placeholder: 'Filter by abbreviation...' } },
     edition_id: {
         component: MultiSelect,
         props: {
@@ -81,14 +86,34 @@ export const classFilterOptions = (lookupsInitialized) => ({
     display: { component: BooleanInput },
     caster: { component: BooleanInput },
     hit_die: {
-        component: MultiSelect,
+        component: SingleSelect,
         props: {
             options: Object.values(RPG_DICE),
             displayKey: 'name',
-            valueKey: 'value',
+            valueKey: 'id',
             className: 'w-32'
+        }
+    },
+    source: {
+        component: MultiSelect,
+        props: {
+            options: lookupsInitialized ? LookupService.getAll('sources').sort((a, b) => {
+                if (a.sort_order !== 999 && b.sort_order !== 999) {
+                    return a.sort_order - b.sort_order;
+                } else if (a.sort_order !== 999) {
+                    return -1;
+                } else if (b.sort_order !== 999) {
+                    return 1;
+                } else {
+                    return a.book_id - b.book_id;
+                }
+            }) : [],
+            displayKey: 'title',
+            valueKey: 'book_id',
+            placeholder: 'Select Sources',
+            className: 'w-52'
         }
     },
 });
 
-export const DEFAULT_COLUMNS = ['class_name', 'class_abbr', 'edition_id', 'is_prestige_class', 'display', 'caster', 'hit_die'];
+export const DEFAULT_COLUMNS = ['class_name', 'class_abbr', 'edition_id', 'is_prestige_class', 'source', 'caster', 'hit_die'];

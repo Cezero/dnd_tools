@@ -1,8 +1,8 @@
 import api from '@/services/api';
 
-export const fetchClasses = async ({ page = 1, limit = 25, filters = {} }) => {
+export const fetchClasses = async (searchParams) => {
     try {
-        const response = await api('/classes', { method: 'GET', params: { page, limit, ...filters } });
+        const response = await api(`/classes?${searchParams.toString()}`);
         const classes = Array.isArray(response.results) ? response.results : [];
         const total = response.total !== undefined ? response.total : classes.length;
         return { data: classes, total: total };
