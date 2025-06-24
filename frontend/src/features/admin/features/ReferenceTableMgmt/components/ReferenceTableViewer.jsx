@@ -1,4 +1,5 @@
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
+import { Fragment } from 'react';
 import ProcessMarkdown from '@/components/markdown/ProcessMarkdown';
 
 const ReferenceTableViewer = () => {
@@ -6,7 +7,14 @@ const ReferenceTableViewer = () => {
 
 
     return (
+        <Fragment>
             <ProcessMarkdown markdown={`[Table: ${id}]`} />
+            <div className="mt-4">
+                <Link to={`/admin/referencetables/${id}/edit`} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    Edit Table
+                </Link>
+            </div>
+        </Fragment>
     );
 };
 

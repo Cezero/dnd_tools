@@ -106,12 +106,12 @@ export const createClass = async (req, res) => {
  */
 export const updateClass = async (req, res) => {
     const { id } = req.params;
-    const { class_name, class_abbr, edition_id, is_prestige_class, display, caster, hit_die } = req.body;
+    const { class_name, class_abbr, edition_id, is_prestige_class, display, caster, hit_die, skill_points, cast_ability, class_description } = req.body;
     try {
         await runTransactionWith(async (txTimedQuery) => {
             const { raw } = await txTimedQuery(
-                'UPDATE classes SET class_name = ?, class_abbr = ?, edition_id = ?, is_prestige_class = ?, display = ?, caster = ?, hit_die = ? WHERE class_id = ?',
-                [class_name, class_abbr, edition_id, is_prestige_class, display, caster, hit_die, id],
+                'UPDATE classes SET class_name = ?, class_abbr = ?, class_description = ?, edition_id = ?, is_prestige_class = ?, display = ?, caster = ?, hit_die = ?, skill_points = ?, cast_ability = ? WHERE class_id = ?',
+                [class_name, class_abbr, class_description, edition_id, is_prestige_class, display, caster, hit_die, skill_points, cast_ability, id],
                 'updateClass'
             );
             if (raw.affectedRows === 0) {

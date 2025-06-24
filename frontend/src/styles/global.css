@@ -26,9 +26,9 @@ a.entity-link {
 }
 
 table.md-table {
-    width: max-content;
+    width: auto;
     font-size: 14px;
-    table-layout: fixed;
+    table-layout: auto;
     border-collapse: collapse;
     margin-top: 1em;
     margin-bottom: 1em;
@@ -44,6 +44,7 @@ table.md-table {
     }
     td:not([colspan]) {
         white-space: nowrap;
+        overflow-wrap: normal;
     }
     td[colspan]:not([colspan="1"]) {
         white-space: normal;

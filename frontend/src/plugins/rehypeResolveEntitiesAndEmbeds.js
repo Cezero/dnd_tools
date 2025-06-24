@@ -72,7 +72,7 @@ function estimatePreferredWidthsFromRows(headers, rows) {
         return plain.length;
       });
   
-      const maxLength = Math.max(...cellLengths, 0);
+      const maxLength = Math.min(Math.max(...cellLengths), 80);
   
       return {
         ...header,
@@ -94,11 +94,19 @@ export async function renderStructuredTable(tableData, tableClass) {
     return h('table', { className: tableClass }, [
         colgroup,
         h('thead', [
-            h('tr', headers.map(hdr =>
-                h('th', { key: hdr.column_index, style: { 'text-align': hdr.alignment || 'left' } },
-                    [h('div', { style: { display: 'inline-block', maxWidth: '100%' } }, hdr.header)])
-            ))
+            h('tr', await Promise.all(headers.map(async (hdr) => {
+                const hdrHast = await renderMarkdownToHast(hdr.header ?? '', { allowRawHtml: true });
+                return h(
+                    'th',
+                    {
+                        key: hdr.column_index,
+                        style: { 'text-align': hdr.alignment || 'left' }
+                    },
+                    h('div', { style: { display: 'inline-block', maxWidth: '100%' } }, hdrHast.children)
+                );
+            })))
         ]),
+        
         h('tbody', await Promise.all(rows.map(async (row, rowIndex) => {
             const currentRowCells = [];
             // Assuming `headers` defines the total number of conceptual columns
@@ -123,12 +131,18 @@ export async function renderStructuredTable(tableData, tableClass) {
                         occupiedCells.add(`${rowIndex + r}-${colId + c}`);
                     }
                 }
+
+                const cell_len = value.replace(/[*_\[\]\(\)`~^]/g, '').length;
+
                 const hast = await renderMarkdownToHast(value, { allowRawHtml: true });
 
                 currentRowCells.push(
                     h('td', {
                         key: `${rowIndex}-${colId}`,
-                        style: { 'text-align': headers[colIndex]?.alignment || 'left' },
+                        style: {
+                            'text-align': headers[colIndex]?.alignment || 'left',
+                            'white-space': cell_len > 80 ? 'normal' : 'nowrap'
+                        },
                         ...(colSpan > 1 && { colSpan: colSpan }),
                         ...(rowSpan > 1 && { rowSpan: rowSpan })
                     }, hast.children)

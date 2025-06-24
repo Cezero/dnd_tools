@@ -5,6 +5,7 @@ import racesRouter from '../features/races/routes/racesRoutes.js';
 import referencetablesRouter from '../features/referencetables/routes/referencetablesRoutes.js';
 import spellsRouter from '../features/spells/routes/spellsRoutes.js';
 import classesRouter from '../features/classes/routes/classesRoutes.js';
+import skillsRouter from '../features/skills/routes/skillsRoutes.js';
 
 export const featureRoutes = [
     { path: '/api/characters', router: charactersRouter },
@@ -12,4 +13,5 @@ export const featureRoutes = [
     { path: '/api/referencetables', router: referencetablesRouter },
     { path: '/api/spells', router: spellsRouter },
     { path: '/api/classes', router: classesRouter },
+    { path: '/api/skills', router: skillsRouter },
 ];

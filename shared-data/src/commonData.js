@@ -6,9 +6,18 @@ export const RPG_DICE = {
     4: { id: 4, name: 'd12', sides: 12, min: 1, max: 12 },
     5: { id: 5, name: 'd20', sides: 20, min: 1, max: 20 },
     6: { id: 6, name: 'd100', sides: 100, min: 1, max: 100 },
+    7: { id: 7, name: 'd2', sides: 2, min: 1, max: 2 },
+    8: { id: 8, name: 'd3', sides: 3, min: 1, max: 3 },
 }
 
 export const RPG_DICE_LIST = Object.values(RPG_DICE);
+
+export const CURRENCY = {
+    1: { id: 1, name: 'Copper', abbr: 'cp', gp_value: .01 },
+    2: { id: 2, name: 'Silver', abbr: 'sp', gp_value: .1 },
+    3: { id: 3, name: 'Gold', abbr: 'gp', gp_value: 1 },
+    4: { id: 4, name: 'Platinum', abbr: 'pp', gp_value: 10 },
+}
 
 export const ALIGNMENTS_BY_ID = {
     0: { id: 0, name: 'Lawful Good', abbr: 'LG' },

@@ -3,6 +3,7 @@ import AdminDashboardContent from '@/features/admin/pages/AdminDashboardContent'
 import { routes as referenceTableRoutes } from '@/features/admin/features/ReferenceTableMgmt/config/ReferenceTableConfig';
 import { routes as raceRoutes } from '@/features/admin/features/raceMgmt/config/raceConfig';
 import { routes as classRoutes } from '@/features/admin/features/classMgmt/config/classConfig';
+import { routes as skillRoutes } from '@/features/admin/features/skillMgmt/config/skillConfig';
 
 export const routes = [
     {
@@ -19,6 +20,7 @@ export const routes = [
             ...referenceTableRoutes,
             ...raceRoutes,
             ...classRoutes,
+            ...skillRoutes,
         ],
     },
 ];

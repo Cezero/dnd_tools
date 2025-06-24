@@ -4,7 +4,9 @@ import { useAuth } from '@/auth/authProvider';
 import { useNavigate } from 'react-router-dom';
 import lookupService from '@/services/LookupService';
 import { RPG_DICE } from 'shared-data/src/commonData';
+import { ABILITY_MAP } from 'shared-data/src/abilityData';
 import { fetchClassById } from '@/features/admin/features/classMgmt/services/classService';
+import ProcessMarkdown from '@/components/markdown/ProcessMarkdown';
 
 export default function ClassDetail() {
     const { id } = useParams();
@@ -57,20 +59,21 @@ export default function ClassDetail() {
             <div className={outerContainerClasses}>
                 <div className={innerCellContentClasses}>
                     <div className="flex justify-between items-start mb-2">
-                        <h1 className="text-2xl font-bold">{cls.class_name}</h1>
+                        <div>
+                            <h1 className="text-2xl font-bold mb-2">{cls.class_name}</h1>
+                            <p><strong>Hit Die:</strong> {RPG_DICE[cls.hit_die]?.name}</p>
+                            <p><strong>Skill Points:</strong> {cls.skill_points}</p>
+                            <p><strong>Casting Ability:</strong> {ABILITY_MAP[cls.cast_ability]?.name || 'None'}</p>
+                        </div>
                         <div className="text-right">
                             <p><strong>Edition:</strong> {lookupService.getById('editions', cls.edition_id)?.edition_abbrev}</p>
                             <p><strong>Display:</strong> {cls.display ? 'Yes' : 'No'}</p>
-                            
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <p><strong>Abbreviation:</strong> {cls.class_abbr}</p>
                             <p><strong>Prestige Class:</strong> {cls.is_prestige_class ? 'Yes' : 'No'}</p>
                             <p><strong>Caster:</strong> {cls.caster ? 'Yes' : 'No'}</p>
-                            <p><strong>Hit Die:</strong> {RPG_DICE[cls.hit_die]?.name}</p>
                         </div>
+                    </div>
+                    <div className="mt-3 p-2 w-full rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert">
+                        <ProcessMarkdown markdown={cls.class_description} />
                     </div>
                     <div className="mt-4 text-right">
                         <button type="button" onClick={() => navigate(`/admin/classes${fromListParams ? `?${fromListParams}` : ''}`)} className="inline-block px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 border dark:border-gray-500">Back to List</button>

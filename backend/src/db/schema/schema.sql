@@ -17,6 +17,101 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- Table structure for table `armor`
+--
+
+DROP TABLE IF EXISTS `armor`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `armor` (
+  `armor_id` int unsigned NOT NULL AUTO_INCREMENT,
+  `armor_name` varchar(100) NOT NULL,
+  `armor_description` text,
+  `armor_category` tinyint unsigned NOT NULL,
+  `armor_cost` decimal(5,2) DEFAULT NULL,
+  `armor_bonus` tinyint unsigned DEFAULT NULL,
+  `armor_dex_cap` tinyint unsigned DEFAULT NULL,
+  `armor_check_penalty` tinyint DEFAULT NULL,
+  `armor_arcane_spell_failure` tinyint unsigned DEFAULT NULL,
+  `armor_speed_cap_thirty` tinyint unsigned DEFAULT NULL,
+  `armor_speed_cap_twenty` tinyint unsigned DEFAULT NULL,
+  `armor_weight` tinyint unsigned DEFAULT NULL,
+  PRIMARY KEY (`armor_id`,`armor_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `class_features`
+--
+
+DROP TABLE IF EXISTS `class_features`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `class_features` (
+  `class_id` int unsigned NOT NULL,
+  `feature_name` varchar(200) NOT NULL,
+  `feature_description` text,
+  `feature_level` tinyint unsigned DEFAULT NULL,
+  `feature_id` int unsigned NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (`feature_id`),
+  KEY `class_features_class_id_IDX` (`class_id`,`feature_id`) USING BTREE,
+  CONSTRAINT `class_features_classes_FK` FOREIGN KEY (`class_id`) REFERENCES `classes` (`class_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `class_level_attributes`
+--
+
+DROP TABLE IF EXISTS `class_level_attributes`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `class_level_attributes` (
+  `class_id` int unsigned NOT NULL,
+  `level` tinyint unsigned NOT NULL,
+  `base_attack_bonus` tinyint unsigned NOT NULL,
+  `fort_save` tinyint unsigned NOT NULL,
+  `ref_save` tinyint unsigned NOT NULL,
+  `will_save` tinyint unsigned NOT NULL,
+  PRIMARY KEY (`class_id`,`level`),
+  CONSTRAINT `class_level_attributes_classes_FK` FOREIGN KEY (`class_id`) REFERENCES `classes` (`class_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `class_level_spells`
+--
+
+DROP TABLE IF EXISTS `class_level_spells`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `class_level_spells` (
+  `class_id` int unsigned NOT NULL,
+  `level` tinyint unsigned NOT NULL,
+  `spell_level` tinyint unsigned NOT NULL,
+  PRIMARY KEY (`class_id`,`level`,`spell_level`),
+  CONSTRAINT `class_level_spells_classes_FK` FOREIGN KEY (`class_id`) REFERENCES `classes` (`class_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `class_skill_map`
+--
+
+DROP TABLE IF EXISTS `class_skill_map`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `class_skill_map` (
+  `class_id` int unsigned NOT NULL,
+  `skill_id` int unsigned NOT NULL,
+  PRIMARY KEY (`class_id`,`skill_id`),
+  KEY `class_skill_map_skills_FK` (`skill_id`),
+  CONSTRAINT `class_skill_map_classes_FK` FOREIGN KEY (`class_id`) REFERENCES `classes` (`class_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `class_skill_map_skills_FK` FOREIGN KEY (`skill_id`) REFERENCES `skills` (`skill_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `class_source_map`
 --
 
@@ -50,6 +145,9 @@ CREATE TABLE `classes` (
   `display` tinyint(1) DEFAULT '1',
   `caster` tinyint(1) DEFAULT '0',
   `hit_die` int unsigned NOT NULL DEFAULT '1',
+  `class_description` text,
+  `skill_points` tinyint unsigned NOT NULL,
+  `cast_ability` tinyint unsigned DEFAULT NULL,
   PRIMARY KEY (`class_id`),
   UNIQUE KEY `uq_class_abbreviation_edition` (`class_abbr`,`edition_id`),
   KEY `fk_classes_edition` (`edition_id`),
@@ -260,6 +358,8 @@ CREATE TABLE `skills` (
   `skill_synergy_desc` text,
   `untrained_desc` varchar(200) DEFAULT NULL,
   `skill_armor_check_penalty` tinyint(1) NOT NULL DEFAULT '0',
+  `skill_description` text,
+  `trained_only` tinyint(1) DEFAULT NULL,
   PRIMARY KEY (`skill_id`),
   KEY `skills_attributes_FK` (`ability_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -490,6 +590,44 @@ CREATE TABLE `users` (
   CONSTRAINT `fk_users_preferred_edition` FOREIGN KEY (`preferred_edition_id`) REFERENCES `editions` (`edition_id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `weapon_dmg_type_map`
+--
+
+DROP TABLE IF EXISTS `weapon_dmg_type_map`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `weapon_dmg_type_map` (
+  `weapon_id` int unsigned NOT NULL,
+  `damage_type` tinyint unsigned NOT NULL,
+  PRIMARY KEY (`weapon_id`,`damage_type`),
+  CONSTRAINT `weapon_dmg_type_map_weapons_FK` FOREIGN KEY (`weapon_id`) REFERENCES `weapons` (`weapon_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `weapons`
+--
+
+DROP TABLE IF EXISTS `weapons`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `weapons` (
+  `weapon_id` int unsigned NOT NULL AUTO_INCREMENT,
+  `weapon_name` varchar(100) NOT NULL,
+  `weapon_description` text,
+  `weapon_category` tinyint unsigned NOT NULL,
+  `weapon_type` tinyint unsigned NOT NULL,
+  `weapon_cost` decimal(5,2) DEFAULT NULL,
+  `weapon_dmg_s` varchar(20) DEFAULT NULL,
+  `weapon_dmg_m` varchar(20) DEFAULT NULL,
+  `weapon_crit` varchar(20) DEFAULT NULL,
+  `weapon_range` varchar(20) DEFAULT NULL,
+  `weapon_weight` decimal(5,2) DEFAULT NULL,
+  PRIMARY KEY (`weapon_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -500,4 +638,4 @@ CREATE TABLE `users` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-06-22 18:46:44
+-- Dump completed on 2025-06-23 18:00:50

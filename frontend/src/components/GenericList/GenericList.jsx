@@ -3,6 +3,7 @@ import Icon from '@mdi/react';
 import { mdiFilterOutline, mdiSortAscending, mdiSortDescending, mdiCog, mdiFilter, mdiPlaylistEdit, mdiTrashCan } from '@mdi/js';
 import { ColumnConfigModal, useColumnConfig } from '@/components/GenericList/ColumnConfig';
 import pluralize from 'pluralize';
+import { useNavigate } from 'react-router-dom';
 
 function GenericList({
     // Configuration props
@@ -17,7 +18,6 @@ function GenericList({
     headerActions, // Optional: Additional actions in the header row
 
     // Routing props
-    navigate,
     detailPagePath, // e.g., '/spells/:id'
     idKey, // e.g., 'spell_id'
     refreshTrigger, // New prop for triggering data refresh
@@ -36,6 +36,7 @@ function GenericList({
     const [data, setData] = useState([]);
     const [total, setTotal] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
+    const navigate = useNavigate();
 
     // Internal state for selected IDs when in option selector mode
     const [internalSelectedIds, setInternalSelectedIds] = useState(selectedIds);

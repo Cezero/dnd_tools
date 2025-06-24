@@ -133,6 +133,19 @@ function AdminSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }) {
                                     {isExpanded && <span className={`ml-3 ${location.pathname.startsWith('/admin/races') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Races</span>}
                                 </Link>
                             </li>
+                            <li>
+                                <Link
+                                    to="/admin/skills"
+                                    className={`flex items-center px-4 py-2 rounded 
+                                        text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 
+                                        ${isExpanded ? 'justify-start' : 'justify-center'}
+                                        ${location.pathname === '/admin/skills' ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
+                                    title="Skills"
+                                >
+                                    <Icon path={mdiTable} size={1} className={`${location.pathname === '/admin/skills' ? 'text-blue-600 dark:text-blue-400' : ''}`} />
+                                    {isExpanded && <span className={`ml-3 ${location.pathname.startsWith('/admin/skills') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Skills</span>}
+                                </Link>
+                            </li>
                             {/* Add other admin functions here */}
                         </ul>
                     </nav>
