@@ -42,3 +42,11 @@ export const getBonusSpellsForAbility = (abilityScore) => {
 
     return bonusSpells;
 }
+
+export const SAVING_THROW_MAP = {
+    1: { id: 1, "name": "Fortitude", "abbr": "Fort" },
+    2: { id: 2, "name": "Will", "abbr": "Will" },
+    3: { id: 3, "name": "Reflex", "abbr": "Ref" },
+}
+
+export const SAVING_THROW_LIST = Object.values(SAVING_THROW_MAP)

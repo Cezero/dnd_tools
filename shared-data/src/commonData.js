@@ -19,7 +19,9 @@ export const CURRENCY = {
     4: { id: 4, name: 'Platinum', abbr: 'pp', gp_value: 10 },
 }
 
-export const ALIGNMENTS_BY_ID = {
+export const CURRENCY_LIST = Object.values(CURRENCY);
+
+export const ALIGNMENT_MAP = {
     0: { id: 0, name: 'Lawful Good', abbr: 'LG' },
     1: { id: 1, name: 'Neutral Good', abbr: 'NG' },
     2: { id: 2, name: 'Chaotic Good', abbr: 'CG' },
@@ -31,7 +33,7 @@ export const ALIGNMENTS_BY_ID = {
     8: { id: 8, name: 'Chaotic Evil', abbr: 'CE' },
 }
 
-export const ALIGNMENT_LIST = Object.values(ALIGNMENTS_BY_ID);
+export const ALIGNMENT_LIST = Object.values(ALIGNMENT_MAP);
 
 export const SIZE_MAP = {
     1: {

@@ -4,6 +4,7 @@ import sourceCache from '../db/caches/sourceCache.js';
 import editionCache from '../db/caches/editionCache.js';
 import spellCache from '../db/caches/spellCache.js';
 import raceCache from '../db/caches/raceCache.js';
+import skillCache from '../db/caches/skillCache.js';
 
 const router = express.Router();
 
@@ -15,7 +16,8 @@ router.get('/', async (req, res) => {
             spellCache.initialize(),
             sourceCache.initialize(),
             editionCache.initialize(),
-            raceCache.initialize()
+            raceCache.initialize(),
+            skillCache.initialize()
         ]);
 
         // Get all data from caches
@@ -24,7 +26,8 @@ router.get('/', async (req, res) => {
             sources: Array.from(sourceCache.sources.values()),
             editions: Array.from(editionCache.editions.values()),
             spells: Array.from(spellCache.spells.values()),
-            races: Array.from(raceCache.races.values())
+            races: Array.from(raceCache.races.values()),
+            skills: Array.from(skillCache.skills.values())
         };
 
         res.json(lookups);

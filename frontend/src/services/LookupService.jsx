@@ -11,6 +11,7 @@ class LookupService {
             races: new Map(),
             sources: new Map(),
             editions: new Map(),
+            skills: new Map(),
         };
 
         this.fieldMappings = {
@@ -33,6 +34,10 @@ class LookupService {
             editions: {
                 id: 'edition_id',
                 name: 'edition_abbrev'
+            },
+            skills: {
+                id: 'skill_id',
+                name: 'skill_name'
             }
         };
     }
@@ -55,6 +60,7 @@ class LookupService {
 
                 // Populate spells from lookup data
                 data.spells.forEach(spell => this.lookups.spells.set(spell.spell_name.toLowerCase(), spell));
+                data.skills.forEach(skill => this.lookups.skills.set(skill.skill_id, skill));
 
                 _isInitialized = true;
                 console.log('[LookupService] Initialized with lookup data');
@@ -128,6 +134,10 @@ class LookupService {
     getClassNames(ids) {
         // Now apply filtering for classes if needed
         return this.getDisplayNames('classes', ids);
+    }
+
+    getSkillNames(ids) {
+        return this.getDisplayNames('skills', ids);
     }
 
     getSourceNames(ids) {

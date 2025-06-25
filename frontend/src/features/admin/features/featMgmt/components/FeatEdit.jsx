@@ -2,12 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import MarkdownEditor from '@/components/markdown/MarkdownEditor';
 import { createFeat, updateFeat, fetchFeatById } from '@/features/admin/features/featMgmt/services/featService';
-import FeatBenefitAssoc from '@/features/admin/features/featMgmt/components/FeatBenefitAssoc';
 import FeatPrereqAssoc from '@/features/admin/features/featMgmt/components/FeatPrereqAssoc';
 import { TrashIcon, UserPlusIcon } from '@heroicons/react/24/outline';
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption, Transition } from '@headlessui/react';
 import { ChevronUpDownIcon } from '@heroicons/react/24/solid';
 import { FEAT_TYPES, FEAT_BENEFIT_TYPES, FEAT_PREREQUISITE_TYPES, FEAT_TYPE_LIST } from 'shared-data/src/featData';
+import FeatBenefitEdit from './FeatBenefitEdit';
 
 export default function FeatEdit() {
     const { id } = useParams();
@@ -19,6 +19,7 @@ export default function FeatEdit() {
     const [message, setMessage] = useState('');
     const [isAddBenefitModalOpen, setIsAddBenefitModalOpen] = useState(false);
     const [isAddPrereqModalOpen, setIsAddPrereqModalOpen] = useState(false);
+    const [editingBenefit, setEditingBenefit] = useState(null);
     const fromListParams = location.state?.fromListParams || '';
 
     useEffect(() => {
@@ -34,6 +35,7 @@ export default function FeatEdit() {
                         feat_special: '',
                         feat_prereq: '',
                         feat_multi_times: false,
+                        feat_fighter_bonus: false,
                         benefits: [],
                         prereqs: []
                     });
@@ -48,6 +50,7 @@ export default function FeatEdit() {
                         feat_special: data.feat_special || '',
                         feat_prereq: data.feat_prereq || '',
                         feat_multi_times: data.feat_multi_times === 1,
+                        feat_fighter_bonus: data.feat_fighter_bonus === 1,
                         benefits: data.benefits || [],
                         prereqs: data.prereqs || []
                     });
@@ -77,21 +80,29 @@ export default function FeatEdit() {
         }));
     };
 
-    const handleAddOrUpdateBenefit = useCallback((selectedBenefitObjects) => {
-        setFeat(prevFeat => {
-            const existingBenefitsMap = new Map(prevFeat.benefits.map(b => [b.benefit_id, b]));
+    const handleAddBenefitClick = useCallback(() => {
+        setEditingBenefit({ benefit_id: 'new', feat_id: id, benefit_type: null, benefit_type_id: '', benefit_amount: '' });
+        setIsAddBenefitModalOpen(true);
+    }, [feat]);
 
-            const updatedBenefits = selectedBenefitObjects.map(selectedBenefit => {
-                const existingBenefit = existingBenefitsMap.get(selectedBenefit.benefit_id);
-                return {
-                    ...selectedBenefit,
-                    benefit_amount: existingBenefit ? existingBenefit.benefit_amount : '',
-                    benefit_type_id: existingBenefit ? existingBenefit.benefit_type_id : '',
-                };
-            });
-            return { ...prevFeat, benefits: updatedBenefits };
+    const handleEditBenefitClick = useCallback((benefit) => {
+        setEditingBenefit(benefit);
+        setIsAddBenefitModalOpen(true);
+    }, []);
+
+    const handleSaveBenefit = useCallback((savedBenefit) => {
+        setFeat(prevFeat => {
+            const existingIndex = prevFeat.benefits.findIndex(b => b.benefit_id === savedBenefit.benefit_id);
+            if (existingIndex !== -1) {
+                const updatedBenefits = [...prevFeat.benefits];
+                updatedBenefits[existingIndex] = savedBenefit;
+                return { ...prevFeat, benefits: updatedBenefits };
+            } else {
+                return { ...prevFeat, benefits: [...prevFeat.benefits, savedBenefit] };
+            }
         });
         setIsAddBenefitModalOpen(false);
+        setEditingBenefit(null);
     }, []);
 
     const handleDeleteBenefit = useCallback(async (benefitId) => {
@@ -146,6 +157,7 @@ export default function FeatEdit() {
                 feat_special: feat.feat_special,
                 feat_prereq: feat.feat_prereq,
                 feat_multi_times: feat.feat_multi_times ? 1 : 0,
+                feat_fighter_bonus: feat.feat_fighter_bonus ? 1 : 0,
             };
 
             if (feat.benefits && feat.benefits.length > 0) {
@@ -248,9 +260,15 @@ export default function FeatEdit() {
                                 )}
                             </Listbox>
                         </div>
+                        <div>
                         <div className="flex items-center gap-2">
-                            <label htmlFor="feat_multi_times" className="ml-2 text-lg font-medium">Multi-Times</label>
+                            <label htmlFor="feat_multi_times" className="ml-2 text-lg font-medium">Multiple Times:</label>
                             <input type="checkbox" id="feat_multi_times" name="feat_multi_times" checked={feat.feat_multi_times} onChange={handleChange} className="form-checkbox h-5 w-5 text-blue-600 rounded dark:bg-gray-700 dark:border-gray-600 accent-blue-600 checked:bg-blue-600 dark:checked:bg-blue-600" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <label htmlFor="feat_fighter_bonus" className="ml-2 text-lg font-medium">Fighter Bonus Feat:</label>
+                            <input type="checkbox" id="feat_fighter_bonus" name="feat_fighter_bonus" checked={feat.feat_multi_times} onChange={handleChange} className="form-checkbox h-5 w-5 text-blue-600 rounded dark:bg-gray-700 dark:border-gray-600 accent-blue-600 checked:bg-blue-600 dark:checked:bg-blue-600" />
+                        </div>
                         </div>
                     </div>
                     <div className="md:col-span-2 mb-0">
@@ -319,6 +337,9 @@ export default function FeatEdit() {
                                         <button type="button" onClick={() => handleDeleteBenefit(benefit.benefit_id)} className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600">
                                             <TrashIcon className="h-5 w-5" />
                                         </button>
+                                        <button type="button" onClick={() => handleEditBenefitClick(benefit)} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-600">
+                                            Edit
+                                        </button>
                                     </div>
                                 </div>
                             ))}
@@ -329,7 +350,7 @@ export default function FeatEdit() {
 
                     <button
                         type="button"
-                        onClick={() => setIsAddBenefitModalOpen(true)}
+                        onClick={handleAddBenefitClick}
                         className="px-4 py-2 bg-green-600 rounded hover:bg-green-700 text-white"
                     >
                         Add Benefit
@@ -432,15 +453,18 @@ export default function FeatEdit() {
                     }} className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-200">Cancel</button>
                 </div>
             </form>
-            <FeatBenefitAssoc
-                isOpen={isAddBenefitModalOpen}
-                onClose={() => {
-                    setIsAddBenefitModalOpen(false);
-                }}
-                onSave={handleAddOrUpdateBenefit}
-                initialSelectedBenefitIds={feat.benefits?.map(b => b.benefit_id) || []}
-                featId={id}
-            />
+            {editingBenefit && (
+                <FeatBenefitEdit
+                    isOpen={isAddBenefitModalOpen}
+                    onClose={() => {
+                        setIsAddBenefitModalOpen(false);
+                        setEditingBenefit(null);
+                    }}
+                    onSave={handleSaveBenefit}
+                    initialBenefitData={editingBenefit}
+                />
+            )}
+
             <FeatPrereqAssoc
                 isOpen={isAddPrereqModalOpen}
                 onClose={() => {
