@@ -6,8 +6,9 @@ import FeatPrereqAssoc from '@/features/admin/features/featMgmt/components/FeatP
 import { TrashIcon, UserPlusIcon } from '@heroicons/react/24/outline';
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption, Transition } from '@headlessui/react';
 import { ChevronUpDownIcon } from '@heroicons/react/24/solid';
-import { FEAT_TYPES, FEAT_BENEFIT_TYPES, FEAT_PREREQUISITE_TYPES, FEAT_TYPE_LIST } from 'shared-data/src/featData';
+import { FEAT_TYPE_BY_ID, FEAT_PREREQUISITE_TYPES, FEAT_TYPE_LIST, FEAT_BENEFIT_TYPE_BY_ID } from 'shared-data/src/featData';
 import FeatBenefitEdit from './FeatBenefitEdit';
+import featOptions from '@/lib/featUtil';
 
 export default function FeatEdit() {
     const { id } = useParams();
@@ -20,7 +21,21 @@ export default function FeatEdit() {
     const [isAddBenefitModalOpen, setIsAddBenefitModalOpen] = useState(false);
     const [isAddPrereqModalOpen, setIsAddPrereqModalOpen] = useState(false);
     const [editingBenefit, setEditingBenefit] = useState(null);
+
     const fromListParams = location.state?.fromListParams || '';
+    
+    useEffect(() => {
+        const initialize = async () => {
+            try {
+                await featOptions.initialize();
+                setIsLoading(false);
+            } catch (error) {
+                console.error('Failed to initialize:', error);
+                setIsLoading(false);
+            }
+        };
+        initialize();
+    }, []);
 
     useEffect(() => {
         const fetchFeatData = async () => {
@@ -81,7 +96,7 @@ export default function FeatEdit() {
     };
 
     const handleAddBenefitClick = useCallback(() => {
-        setEditingBenefit({ benefit_id: 'new', feat_id: id, benefit_type: null, benefit_type_id: '', benefit_amount: '' });
+        setEditingBenefit({ benefit_index: benefts.length, feat_id: id, benefit_type: null, benefit_type_id: '', benefit_amount: '' });
         setIsAddBenefitModalOpen(true);
     }, [feat]);
 
@@ -92,24 +107,19 @@ export default function FeatEdit() {
 
     const handleSaveBenefit = useCallback((savedBenefit) => {
         setFeat(prevFeat => {
-            const existingIndex = prevFeat.benefits.findIndex(b => b.benefit_id === savedBenefit.benefit_id);
-            if (existingIndex !== -1) {
-                const updatedBenefits = [...prevFeat.benefits];
-                updatedBenefits[existingIndex] = savedBenefit;
-                return { ...prevFeat, benefits: updatedBenefits };
-            } else {
-                return { ...prevFeat, benefits: [...prevFeat.benefits, savedBenefit] };
-            }
+            const updatedBenefits = prevFeat.benefits;
+            updatedBenefits[savedBenefit.benefit_index] = savedBenefit;
+            return { ...prevFeat, benefits: updatedBenefits };
         });
         setIsAddBenefitModalOpen(false);
         setEditingBenefit(null);
     }, []);
 
-    const handleDeleteBenefit = useCallback(async (benefitId) => {
+    const handleDeleteBenefit = useCallback(async (benefitIndex) => {
         if (window.confirm('Are you sure you want to remove this benefit from the feat?')) {
             setFeat(prevFeat => ({
                 ...prevFeat,
-                benefits: prevFeat.benefits.filter(benefit => benefit.benefit_id !== benefitId)
+                benefits: prevFeat.benefits.filter((_, i) => i !== benefitIndex)
             }));
             setMessage('Benefit removed successfully from feat!');
         }
@@ -215,7 +225,7 @@ export default function FeatEdit() {
                                 {({ open }) => (
                                     <div className="relative mt-1">
                                         <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-2 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-gray-100 dark:ring-gray-600">
-                                            <span className="block truncate">{FEAT_TYPES[feat.feat_type]?.name || 'Select a feat type'}</span>
+                                            <span className="block truncate">{FEAT_TYPE_BY_ID[feat.feat_type]?.name || 'Select a feat type'}</span>
                                             <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
                                                 <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
                                             </span>
@@ -295,46 +305,20 @@ export default function FeatEdit() {
                     {feat.benefits && feat.benefits.length > 0 ? (
                         <div className="space-y-2 border p-3 rounded dark:border-gray-600 mb-2">
                             {feat.benefits.map(benefit => (
-                                <div key={benefit.benefit_id} className="rounded border p-2 dark:border-gray-700 grid grid-cols-[2fr_0.1fr] gap-2 items-center">
-                                    <div className="w-full">
-                                        <p><strong>Type:</strong> {FEAT_BENEFIT_TYPES[benefit.benefit_type]?.name || benefit.benefit_type}</p>
-                                        <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 text-sm">
-                                            <span>Benefit Type ID:</span>
-                                            <input
-                                                type="text"
-                                                value={benefit.benefit_type_id || ''}
-                                                onChange={(e) => {
-                                                    const newValue = e.target.value;
-                                                    setFeat(prevFeat => ({
-                                                        ...prevFeat,
-                                                        benefits: prevFeat.benefits.map(b =>
-                                                            b.benefit_id === benefit.benefit_id ? { ...b, benefit_type_id: newValue } : b
-                                                        )
-                                                    }));
-                                                }}
-                                                className="w-20 p-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                                            />
+                                <div key={benefit.benefit_index} className="rounded border p-2 dark:border-gray-700 grid grid-cols-[2fr_0.1fr] gap-2 items-center">
+                                    <div className="flex items-center gap-2">
+                                        <div>
+                                            {FEAT_BENEFIT_TYPE_BY_ID[benefit.benefit_type]?.name}:
                                         </div>
-                                        <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 text-sm">
-                                            <span>Benefit Amount:</span>
-                                            <input
-                                                type="text"
-                                                value={benefit.benefit_amount || ''}
-                                                onChange={(e) => {
-                                                    const newValue = e.target.value;
-                                                    setFeat(prevFeat => ({
-                                                        ...prevFeat,
-                                                        benefits: prevFeat.benefits.map(b =>
-                                                            b.benefit_id === benefit.benefit_id ? { ...b, benefit_amount: newValue } : b
-                                                        )
-                                                    }));
-                                                }}
-                                                className="w-20 p-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                                            />
+                                        <div>
+                                            {featOptions.get(benefit.benefit_type)[benefit.benefit_type_id].name || ''}
+                                        </div>
+                                        <div>
+                                            {(benefit.benefit_amount > 0 ? `+${benefit.benefit_amount}` : `${benefit.benefit_amount}`) || ''}
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <button type="button" onClick={() => handleDeleteBenefit(benefit.benefit_id)} className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600">
+                                        <button type="button" onClick={() => handleDeleteBenefit(benefit.benefit_index)} className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600">
                                             <TrashIcon className="h-5 w-5" />
                                         </button>
                                         <button type="button" onClick={() => handleEditBenefitClick(benefit)} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-600">
