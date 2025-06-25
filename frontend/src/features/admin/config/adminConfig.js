@@ -4,6 +4,7 @@ import { routes as referenceTableRoutes } from '@/features/admin/features/Refere
 import { routes as raceRoutes } from '@/features/admin/features/raceMgmt/config/raceConfig';
 import { routes as classRoutes } from '@/features/admin/features/classMgmt/config/classConfig';
 import { routes as skillRoutes } from '@/features/admin/features/skillMgmt/config/skillConfig';
+import { routes as featRoutes } from '@/features/admin/features/featMgmt/config/featConfig';
 
 export const routes = [
     {
@@ -21,6 +22,7 @@ export const routes = [
             ...raceRoutes,
             ...classRoutes,
             ...skillRoutes,
+            ...featRoutes,
         ],
     },
 ];

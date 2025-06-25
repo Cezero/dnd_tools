@@ -5,8 +5,10 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
+    "generate": "node scripts/generateFeatureRoutes.js",
+    "watch:generate": "chokidar 'src/features/**/routes/*.js' -c 'npm run generate'",
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "dev": "concurrently -n WATCH,BACKEND -c magenta,cyan \"npm run watch:generate\" \"nodemon\""
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -19,6 +21,8 @@
     "shared-data": "file:../shared-data"
   },
   "devDependencies": {
+    "chokidar-cli": "^3.0.0",
+    "concurrently": "^8.2.2",
     "nodemon": "^3.0.3"
   },
   "engines": {

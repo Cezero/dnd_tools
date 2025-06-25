@@ -1,9 +1,9 @@
 ---
 description: 
-globs: 
-alwaysApply: true
+globs: backend/src/**/controllers/*.js
+alwaysApply: false
 ---
-- reference the database schema stored at [schema.sql](mdc:backend/src/db/schema/schema.sql)
+- reference appropriate schema files under backend/src/db/schema
 - database queries should use the functions defined in [queryTimer.js](mdc:backend/src/db/queryTimer.js)
 - use the timedQuery() function for database queries that do not require transaction support.
 - use the runTransactionWith() function to run multiple queries wrapped in a transaction.
