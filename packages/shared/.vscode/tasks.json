@@ -1,0 +1,15 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Lint: Static Data",
+            "type": "shell",
+            "command": "pnpm --filter @shared/static-data lint",
+            "group": "test",
+            "problemMatcher": [
+                "$eslint-stylish"
+            ],
+            "detail": "Run ESLint on static-data package"
+        }
+    ]
+}

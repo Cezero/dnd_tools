@@ -1,0 +1,10 @@
+{
+  "name": "eslint-plugin-custom",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "keywords": ["eslint", "eslintplugin"],
+  "author": "Steven Kordik",
+  "license": "ISC",
+  "type": "module"
+}

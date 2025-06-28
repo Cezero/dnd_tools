@@ -1,0 +1,443 @@
+generator client {
+    provider = "prisma-client-js"
+    output   = "../../../packages/shared/prisma-client/client"
+}
+
+datasource db {
+    provider = "mysql"
+    url      = env("DATABASE_URL")
+}
+
+// =================
+// Class related
+// =================
+
+model Class {
+    id               Int     @id @default(autoincrement())
+    name             String
+    abbreviation     String
+    editionId        Int?
+    isPrestige       Boolean @default(false)
+    isVisible        Boolean @default(true)
+    canCastSpells    Boolean @default(false)
+    hitDie           Int     @default(1)
+    description      String?
+    skillPoints      Int
+    castingAbilityId Int?
+
+    features         ClassFeature[]
+    attributes       ClassLevelAttribute[]
+    spellProgression ClassSpellLevel[]
+    skills           ClassSkillMap[]
+    sources          ClassSourceMap[]
+    spellLevels      SpellLevelMap[]
+}
+
+model ClassFeature {
+    id          Int     @id @default(autoincrement())
+    classId     Int
+    name        String
+    description String?
+    level       Int?
+
+    class Class @relation(fields: [classId], references: [id])
+}
+
+model ClassSpellLevel {
+    id         Int @id @default(autoincrement())
+    classId    Int
+    spellLevel Int
+
+    class Class @relation(fields: [classId], references: [id])
+}
+
+model ClassLevelAttribute {
+    id              Int @id @default(autoincrement())
+    classId         Int
+    baseAttackBonus Int
+    fortSave        Int
+    refSave         Int
+    willSave        Int
+
+    class Class @relation(fields: [classId], references: [id])
+}
+
+model ClassSkillMap {
+    id      Int   @id @default(autoincrement())
+    classId Int
+    skillId Int
+    Class   Class @relation(fields: [classId], references: [id])
+    Skill   Skill @relation(fields: [skillId], references: [id])
+}
+
+model ClassSourceMap {
+    id         Int  @id @default(autoincrement())
+    classId    Int
+    bookId     Int
+    pageNumber Int?
+
+    class        Class       @relation(fields: [classId], references: [id])
+    SourceBook   SourceBook? @relation(fields: [sourceBookId], references: [id])
+    sourceBookId Int?
+}
+
+model SpellLevelMap {
+    id        Int     @id @default(autoincrement())
+    classId   Int
+    spellId   Int
+    level     Int
+    isVisible Boolean @default(true)
+
+    spell Spell @relation(fields: [spellId], references: [id])
+    class Class @relation(fields: [classId], references: [id])
+}
+
+// =================
+// Spell info
+// =================
+
+model Spell {
+    id              Int     @id @default(autoincrement())
+    name            String
+    summary         String
+    description     String?
+    castingTime     String?
+    range           String?
+    rangeTypeId     Int?
+    rangeValue      String?
+    area            String?
+    duration        String?
+    savingThrow     String?
+    spellResistance String?
+    editionId       Int
+    baseLevel       Int
+    effect          String?
+    target          String?
+
+    descriptors  SpellDescriptorMap[]
+    levelMapping SpellLevelMap[]
+    schools      SpellSchoolMap[]
+    sources      SpellSourceMap[]
+    subschools   SpellSubschoolMap[]
+}
+
+model SpellDescriptorMap {
+    id           Int   @id @default(autoincrement())
+    spellId      Int
+    descriptorId Int
+    Spell        Spell @relation(fields: [spellId], references: [id])
+}
+
+model SpellSchoolMap {
+    id       Int   @id @default(autoincrement())
+    spellId  Int
+    schoolId Int
+    Spell    Spell @relation(fields: [spellId], references: [id])
+}
+
+model SpellSourceMap {
+    id           Int         @id @default(autoincrement())
+    spellId      Int
+    bookId       Int
+    pageNumber   Int?
+    Spell        Spell       @relation(fields: [spellId], references: [id])
+    SourceBook   SourceBook? @relation(fields: [sourceBookId], references: [id])
+    sourceBookId Int?
+}
+
+model SpellSubschoolMap {
+    id       Int   @id @default(autoincrement())
+    spellId  Int
+    schoolId Int
+    Spell    Spell @relation(fields: [spellId], references: [id])
+}
+
+model SpellComponentMap {
+    id          Int @id @default(autoincrement())
+    spellId     Int
+    componentId Int
+}
+
+// =================
+// Skill Info
+// =================
+
+model Skill {
+    id                Int      @id @default(autoincrement())
+    name              String
+    abilityId         Int      @default(1)
+    checkDescription  String?
+    actionDescription String?
+    retryTypeId       Int?
+    retryDescription  String?
+    specialNotes      String?
+    synergyNotes      String?
+    untrainedNotes    String?
+    affectedByArmor   Boolean  @default(false)
+    description       String?
+    trainedOnly       Boolean?
+
+    classes ClassSkillMap[]
+}
+
+// =================
+// Feats and related info
+// =================
+
+model Feat {
+    id            Int      @id @default(autoincrement())
+    name          String
+    typeId        Int
+    description   String?
+    benefit       String?
+    normalEffect  String?
+    specialEffect String?
+    prerequisites String?
+    repeatable    Boolean?
+    fighterBonus  Boolean?
+
+    benefits         FeatBenefitMap[]
+    prerequisitesMap FeatPrerequisiteMap[]
+}
+
+model FeatBenefitMap {
+    featId      Int
+    typeId      Int
+    referenceId Int?
+    amount      Int?
+    index       Int
+
+    feat Feat @relation(fields: [featId], references: [id])
+
+    @@id([featId, index])
+}
+
+model FeatPrerequisiteMap {
+    featId      Int
+    typeId      Int
+    referenceId Int?
+    amount      Int?
+    index       Int
+
+    feat Feat @relation(fields: [featId], references: [id])
+
+    @@id([featId, index])
+}
+
+// =================
+// Race and related info
+// =================
+
+model Race {
+    id             Int     @id @default(autoincrement())
+    name           String
+    editionId      Int?
+    isVisible      Boolean @default(true)
+    description    String?
+    sizeId         Int     @default(5)
+    speed          Int     @default(30)
+    favoredClassId Int     @default(0)
+
+    abilityAdjustments RaceAbilityAdjustment[]
+    languages          RaceLanguageMap[]
+    sources            RaceSourceMap[]
+    traits             RaceTraitMap[]
+    UserCharacter      UserCharacter[]
+}
+
+model RaceTrait {
+    slug        String  @id
+    name        String?
+    description String?
+    hasValue    Boolean @default(false)
+
+    raceLinks RaceTraitMap[]
+}
+
+model RaceTraitMap {
+    raceId  Int
+    traitId String
+    value   String?
+
+    race  Race      @relation(fields: [raceId], references: [id])
+    trait RaceTrait @relation(fields: [traitId], references: [slug])
+
+    @@id([raceId, traitId])
+}
+
+model RaceAbilityAdjustment {
+    raceId    Int
+    abilityId Int
+    value     Int
+
+    race Race @relation(fields: [raceId], references: [id])
+
+    @@id([raceId, abilityId])
+}
+
+model RaceLanguageMap {
+    raceId      Int
+    languageId  Int
+    isAutomatic Boolean @default(false)
+
+    race Race @relation(fields: [raceId], references: [id])
+
+    @@id([raceId, languageId])
+}
+
+model RaceSourceMap {
+    id           Int         @id @default(autoincrement())
+    raceId       Int
+    bookId       Int
+    pageNumber   Int?
+    Race         Race        @relation(fields: [raceId], references: [id])
+    SourceBook   SourceBook? @relation(fields: [sourceBookId], references: [id])
+    sourceBookId Int?
+}
+
+// =================
+// Mundane Armor, Weapons etc.
+// =================
+
+model Armor {
+    id                 Int      @id @default(autoincrement())
+    name               String   @db.VarChar(100)
+    description        String?  @db.Text
+    category           Int
+    cost               Decimal? @db.Decimal(5, 2)
+    bonus              Int?
+    dexterityCap       Int?
+    checkPenalty       Int?
+    arcaneSpellFailure Int?
+    speedCapThirty     Int?
+    speedCapTwenty     Int?
+    weight             Int?
+}
+
+model Weapon {
+    id           Int      @id @default(autoincrement())
+    name         String
+    description  String?
+    category     Int
+    cost         Decimal? @db.Decimal(5, 2)
+    damageSmall  String?
+    damageMedium String?
+    critical     String?
+    range        String?
+    weight       Decimal? @db.Decimal(5, 2)
+    damageTypeId Int?
+}
+
+// =================
+// Source Books
+// =================
+
+model SourceBook {
+    id           Int       @id @default(autoincrement())
+    name         String
+    abbreviation String
+    releaseDate  DateTime?
+    editionId    Int?
+    description  String?
+    isVisible    Boolean   @default(true)
+
+    classes ClassSourceMap[]
+    races   RaceSourceMap[]
+    spells  SpellSourceMap[]
+}
+
+// =================
+// Reference Tables
+// =================
+
+model ReferenceTable {
+    slug        String  @id
+    name        String
+    description String?
+
+    columns ReferenceTableColumn[]
+    rows    ReferenceTableRow[]
+}
+
+model ReferenceTableColumn {
+    id          Int     @id @default(autoincrement())
+    tableSlug   String
+    columnIndex Int
+    header      String
+    span        Int?
+    alignment   String?
+
+    cells ReferenceTableCell[]
+    table ReferenceTable       @relation(fields: [tableSlug], references: [slug])
+}
+
+model ReferenceTableRow {
+    id        Int     @id @default(autoincrement())
+    tableSlug String
+    rowIndex  Int
+    label     String?
+
+    cells ReferenceTableCell[]
+    table ReferenceTable       @relation(fields: [tableSlug], references: [slug])
+}
+
+model ReferenceTableCell {
+    id       Int     @id @default(autoincrement())
+    rowId    Int
+    columnId Int
+    value    String?
+    colSpan  Int?
+    rowSpan  Int?
+
+    column ReferenceTableColumn @relation(fields: [columnId], references: [id])
+    row    ReferenceTableRow    @relation(fields: [rowId], references: [id])
+}
+
+// =================
+// User Characters
+// =================
+
+model UserCharacter {
+    id          Int     @id @default(autoincrement())
+    userId      Int
+    name        String
+    raceId      Int
+    alignmentId Int
+    age         Int?
+    height      Int?
+    weight      Int?
+    eyes        String?
+    hair        String?
+    gender      String?
+    notes       String?
+
+    attributes UserCharacterAttribute[]
+    race       Race                     @relation(fields: [raceId], references: [id])
+    user       User                     @relation(fields: [userId], references: [id])
+}
+
+model UserCharacterAttribute {
+    id          Int @id @default(autoincrement())
+    characterId Int
+    attributeId Int
+    value       Int
+
+    character UserCharacter @relation(fields: [characterId], references: [id])
+}
+
+// =================
+// User related
+// =================
+
+model User {
+    id                 Int      @id @default(autoincrement())
+    username           String
+    email              String
+    password           String
+    isAdmin            Boolean  @default(false)
+    createdAt          DateTime @default(now())
+    updatedAt          DateTime @updatedAt
+    preferredEditionId Int?
+
+    characters UserCharacter[]
+}

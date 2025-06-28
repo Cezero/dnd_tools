@@ -1,0 +1,15 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Lint: Backend",
+            "type": "shell",
+            "command": "pnpm --filter backend lint",
+            "group": "test",
+            "problemMatcher": [
+                "$eslint-stylish"
+            ],
+            "detail": "Run ESLint on backend code"
+        }
+    ]
+}

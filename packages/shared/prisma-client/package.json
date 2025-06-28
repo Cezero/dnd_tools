@@ -1,0 +1,6 @@
+{
+  "name": "@shared/prisma-client",
+  "version": "1.0.0",
+  "main": "./client/index.js",
+  "types": "./client/index.d.ts"
+}

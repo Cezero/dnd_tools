@@ -1,0 +1,38 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Lint: Backend",
+      "type": "shell",
+      "command": "pnpm --filter backend lint",
+      "group": "test",
+      "problemMatcher": ["$eslint-stylish"],
+      "detail": "Run ESLint on backend code"
+    },
+    {
+      "label": "Lint: Frontend",
+      "type": "shell",
+      "command": "pnpm --filter frontend lint",
+      "group": "test",
+      "problemMatcher": ["$eslint-stylish"],
+      "detail": "Run ESLint on frontend code"
+    },
+    {
+      "label": "Lint: Static Data",
+      "type": "shell",
+      "command": "pnpm --filter @shared/static-data lint",
+      "group": "test",
+      "problemMatcher": ["$eslint-stylish"],
+      "detail": "Run ESLint on static-data package"
+    },
+    {
+      "label": "Lint: All",
+      "type": "shell",
+      "command": "pnpm lint",
+      "group": "test",
+      "problemMatcher": ["$eslint-stylish"],
+      "detail": "Run ESLint on all workspaces"
+    }
+  ]
+}
+

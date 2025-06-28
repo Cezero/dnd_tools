@@ -1,0 +1,7 @@
+packages:
+  - apps/*
+  - packages/shared/*
+
+onlyBuiltDependencies:
+  - '@tailwindcss/oxide'
+  - bcrypt

@@ -1,9 +1,0 @@
----
-description: Use this rule when trying to determine where files should be placed or found
-globs: 
-alwaysApply: false
----
-- store generic and reusable components in folders under src/
-- store components that are specific to a feature and not reusable by other features in subfolders under src/features/
-- use seperate controllers/, middleware/, and routes/ folders as appropriate
-- use the db/ folder for wrappers, schemas and reusable utility functions for interacting with mysql

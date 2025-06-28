@@ -13,10 +13,10 @@ def parse_markdown(filepath):
 
     for spell_block in spell_blocks:
         lines = spell_block.split('\n')
-        spell_name = lines.pop(0)
-        if spell_name == '':
-            spell_name = lines.pop(0)
-        spell_name = spell_name[2:].strip()
+        name = lines.pop(0)
+        if name == '':
+            name = lines.pop(0)
+        name = name[2:].strip()
         if len(lines) > 0:
             lines.pop(0) # remove the school
         if len(lines) == 0:
@@ -29,12 +29,12 @@ def parse_markdown(filepath):
         description = '\n'.join(description_lines).strip()
 
         spells.append({
-            'name': spell_name,
+            'name': name,
             'description': description
         })
     return spells
 
-def update_spell_descriptions(spells_data):
+def update_descs(spells_data):
     try:
         conn = mysql.connector.connect(
             host=os.getenv('DB_HOST'),
@@ -45,7 +45,7 @@ def update_spell_descriptions(spells_data):
         cursor = conn.cursor()
 
         for spell in spells_data:
-            update_query = "UPDATE spells SET spell_description = %s WHERE spell_name = %s"
+            update_query = "UPDATE spells SET desc = %s WHERE name = %s"
             cursor.execute(update_query, (spell['description'], spell['name']))
             print(f"Updated description for {spell['name']}")
 
@@ -70,4 +70,4 @@ if __name__ == "__main__":
         print(f"Parsing {markdown_filepath}...")
         spells = parse_markdown(markdown_filepath)
         print(f"Found {len(spells)} spells. Updating database...")
-        update_spell_descriptions(spells) 
+        update_descs(spells) 

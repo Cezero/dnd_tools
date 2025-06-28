@@ -1,0 +1,54 @@
+import { AbilityMap, SavingThrowMap } from './types';
+
+export const ABILITY_MAP: AbilityMap = {
+    1: { id: 1, name: 'Strength', abbr: 'STR' },
+    2: { id: 2, name: 'Dexterity', abbr: 'DEX' },
+    3: { id: 3, name: 'Constitution', abbr: 'CON' },
+    4: { id: 4, name: 'Intelligence', abbr: 'INT' },
+    5: { id: 5, name: 'Wisdom', abbr: 'WIS' },
+    6: { id: 6, name: 'Charisma', abbr: 'CHA' },
+}
+
+export const ABILITY_LIST = Object.values(ABILITY_MAP);
+
+export const GetAbilityModifier = (abilityScore: number): number => {
+    return Math.floor((abilityScore - 10) / 2);
+}
+
+export const GetAbilityModifierString = (abilityScore: number): string => {
+    const modifier = GetAbilityModifier(abilityScore);
+    return modifier > 0 ? `+${modifier}` : modifier.toString();
+}
+
+export const GetBonusSpellsForAbility = (abilityScore: number): number[] => {
+    if (abilityScore < 12) {
+        return [];
+    }
+
+    const bonusSpells = Array(9).fill(0); // For spell levels 1–9
+
+    const maxBonusLevel = Math.floor((abilityScore - 10) / 2);
+    const totalBonusSpells = Math.floor((abilityScore - 10) / 4) + 1;
+
+    let spellIndex = 0;
+    let spellsRemaining = totalBonusSpells;
+
+    // Distribute bonus spells from lowest eligible level upward
+    while (spellsRemaining > 0 && spellIndex < 9) {
+        if (spellIndex < maxBonusLevel) {
+            bonusSpells[spellIndex]++;
+            spellsRemaining--;
+        }
+        spellIndex = (spellIndex + 1) % 9; // Cycle through levels
+    }
+
+    return bonusSpells;
+}
+
+export const SAVING_THROW_MAP: SavingThrowMap = {
+    1: { id: 1, "name": "Fortitude", "abbr": "Fort" },
+    2: { id: 2, "name": "Will", "abbr": "Will" },
+    3: { id: 3, "name": "Reflex", "abbr": "Ref" },
+}
+
+export const SAVING_THROW_LIST = Object.values(SAVING_THROW_MAP) 

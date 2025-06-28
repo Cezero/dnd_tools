@@ -1,0 +1,35 @@
+@reference 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+.w-md-editor-area {
+    @apply m-1 p-1 rounded bg-gray-50 dark:bg-gray-700 border dark:border-gray-500;
+}
+
+.w-md-editor-input {
+    width: 49%;
+}
+
+.w-md-editor-text {
+    @apply p-0 m-2;
+}
+
+.w-md-editor-text-input {
+    @apply m-0 p-0 w-full max-w-full;
+}
+
+.w-md-editor-preview {
+    p {
+        margin-top: 0;
+        line-height: 18px;
+    }
+
+    p + p {
+        text-indent: 1rem;
+    }
+
+    @apply m-1 p-3 rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert border dark:border-gray-500 max-w-full;
+}
+
+.wmde-markdown {
+    @apply m-1 p-1 bg-gray-50 dark:bg-gray-700;
+}

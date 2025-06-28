@@ -2,7 +2,7 @@ import csv
 import re
 
 # Read spell names from CSV
-def read_spell_names(csv_path):
+def read_names(csv_path):
     with open(csv_path, newline='') as f:
         reader = csv.reader(f)
         # Return the first column
@@ -14,11 +14,11 @@ def read_text_file(file_path):
         return f.readlines()
 
 # Main logic
-def insert_delimiters(spell_names, lines):
+def insert_delimiters(names, lines):
     current_line = 0
     found_spells = []
 
-    for spell in spell_names:
+    for spell in names:
         print(f"Processing spell: {spell}")
         spell_lower = spell.lower()
         spell_len = len(lines)
@@ -82,10 +82,10 @@ if __name__ == '__main__':
     text_path = '../cache/raw_text/phb35/spells.txt'
     updated_text_path = '../cache/raw_text/phb35/spells_updated.txt'
 
-    spell_names = read_spell_names(spell_csv)
+    names = read_names(spell_csv)
     lines = read_text_file(text_path)
 
-    updated_lines, found = insert_delimiters(spell_names, lines)
+    updated_lines, found = insert_delimiters(names, lines)
 
     write_text_file(updated_text_path, updated_lines)
 

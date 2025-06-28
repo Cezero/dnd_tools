@@ -1,0 +1,48 @@
+{
+    "name": "backend",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.ts",
+    "type": "module",
+    "scripts": {
+        "dev": "pnpm exec tsx watch src/index.ts",
+        "build": "tsc",
+        "start": "node dist/app.js",
+        "migrate": "prisma migrate dev",
+        "generate": "prisma generate",
+        "studio": "prisma studio",
+        "typecheck": "tsc --noEmit",
+        "lint": "eslint . --ext .ts,.tsx,.js,.jsx"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "packageManager": "pnpm@10.12.4",
+    "dependencies": {
+        "@types/bcrypt": "^5.0.2",
+        "@types/jsonwebtoken": "^9.0.10",
+        "bcrypt": "^6.0.0",
+        "cors": "^2.8.5",
+        "express": "^5.1.0",
+        "jsonwebtoken": "^9.0.2",
+        "path-to-regexp": "^8.2.0",
+        "prisma": "^6.10.1",
+        "@shared/prisma-client": "workspace:*"
+    },
+    "devDependencies": {
+        "@types/cors": "^2.8.19",
+        "@types/express": "^5.0.3",
+        "@typescript-eslint/eslint-plugin": "^8.35.0",
+        "@typescript-eslint/parser": "^8.35.0",
+        "eslint": "^9.30.0",
+        "eslint-import-resolver-node": "^0.3.9",
+        "eslint-plugin-import": "^2.32.0",
+        "eslint-plugin-prisma": "^1.0.1",
+        "ts-node": "^10.9.2",
+        "tsx": "^4.20.3",
+        "typescript": "^5.8.3"
+    },
+    "engines": {
+        "node": ">=24.0.0"
+    }
+}

@@ -1,0 +1,16 @@
+{
+    "name": "@shared/static-data",
+    "version": "1.0.0",
+    "description": "Shared data and utilities for dnd_tools",
+    "main": "index.ts",
+    "types": "index.ts",
+    "keywords": [
+        "typescript",
+        "dnd",
+        "data"
+    ],
+    "type": "module",
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx,.js,.jsx"
+    }
+}

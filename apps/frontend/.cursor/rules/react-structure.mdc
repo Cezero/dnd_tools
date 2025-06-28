@@ -1,0 +1,9 @@
+---
+description: This rule defines the structure for React components
+globs: 
+alwaysApply: false
+---
+React components should follow this layout:
+- Props interface at the top
+- Component as named export
+- Styles at the bottom

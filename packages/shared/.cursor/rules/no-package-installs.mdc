@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Do not ever run npm or pnpm to install packages. Instead ask the user.

@@ -76,9 +76,9 @@ def format_spell_block(block: str) -> str:
     """
     Formats a spell block into a markdown string, cleaning up common OCR errors.
     """
-    spell_name = ""
+    name = ""
     spell_school = ""
-    spell_level = ""
+    base_level = ""
     # Normalize whitespace: replace multiple spaces with a single space
     block = re.sub(r'\s+', ' ', block)
 
@@ -131,11 +131,11 @@ def format_spell_block(block: str) -> str:
     for school in spell_schools:
         school_index = clean_block.find(school)
         if school_index != -1:
-            spell_name = clean_block[:school_index].strip()
+            name = clean_block[:school_index].strip()
             clean_block = clean_block[school_index:].strip()
             break
     else:
-        spell_name = clean_block.split()[0] # no spell school found, use the first word as the spell name
+        name = clean_block.split()[0] # no spell school found, use the first word as the spell name
     # after the spell school there should be the Level entry
     level_index = clean_block.find("Level")
     levels = []
@@ -156,12 +156,12 @@ def format_spell_block(block: str) -> str:
                 levels.append(f"{level_type} {level_number}")
                 clean_block = clean_block[match.end():]
         if len(levels) > 0:
-            spell_level = ", ".join(levels)
+            base_level = ", ".join(levels)
         else:
-            print(f"Unable to parse spell levels for {spell_name}, cannot format spell block")
+            print(f"Unable to parse spell levels for {name}, cannot format spell block")
             return clean_block
     else:
-        print(f"Unable to find 'Level' for {spell_name}, cannot format spell block")
+        print(f"Unable to find 'Level' for {name}, cannot format spell block")
         return clean_block.strip()
     
     optional_entries_found = []
@@ -192,7 +192,7 @@ def format_spell_block(block: str) -> str:
         else:
             optional_entries[label] = clean_block[index + len(label):].strip()
 
-    spell_description = ""
+    desc = ""
     # if spell resistance is found, validate the value and the remainder will be the spell description
     if "Spell Resistance" in optional_entries:
         #valid_values = ['No or Yes (harmless)', 'Yes (harmless)', 'Yes (object)', 'Yes (harmless, object)', 'Yes (harmless) or Yes (harmless, object)', 'Yes; See text', 'No; See text', 'No (object) and Yes; see text', 'Yes', 'No', 'See text']
@@ -220,19 +220,19 @@ def format_spell_block(block: str) -> str:
         sr_value = optional_entries["Spell Resistance"].rstrip()
         match = SPELL_RESISTANCE_RE.match(sr_value)
         if match:
-            spell_description = sr_value[match.end():].strip()
+            desc = sr_value[match.end():].strip()
             optional_entries["Spell Resistance"] = match.group(1)
         else:
-            print(f"Invalid spell resistance value for {spell_name}: {optional_entries['Spell Resistance']}")
+            print(f"Invalid spell resistance value for {name}: {optional_entries['Spell Resistance']}")
     
     if "Duration" in optional_entries:
         duration_match = duration_pattern.match(optional_entries["Duration"])
         if duration_match:
-            if spell_description == "":
-                spell_description = optional_entries["Duration"][duration_match.end():].strip()
+            if desc == "":
+                desc = optional_entries["Duration"][duration_match.end():].strip()
             optional_entries["Duration"] = duration_match.group(0)
         else:
-            print(f"Invalid duration value for {spell_name}: {optional_entries['Duration']}")
+            print(f"Invalid duration value for {name}: {optional_entries['Duration']}")
 
     if "Components" in optional_entries:
         pos = 0
@@ -247,22 +247,22 @@ def format_spell_block(block: str) -> str:
             found_components.append(token)
             pos = match.end()
         if len(found_components) > 0:
-            if spell_description == "":
-                spell_description = optional_entries["Components"][pos:].strip()
+            if desc == "":
+                desc = optional_entries["Components"][pos:].strip()
             cleaned = ', '.join(found_components)
             optional_entries["Components"] = cleaned
         else:
-            print(f"No components found for {spell_name}")
+            print(f"No components found for {name}")
 
-    if "Targets" in optional_entries and spell_description == "":
-        targets, spell_description = split_targets_and_description(optional_entries["Targets"])
+    if "Targets" in optional_entries and desc == "":
+        targets, desc = split_targets_and_description(optional_entries["Targets"])
         optional_entries["Targets"] = targets
 
-    if "Target" in optional_entries and spell_description == "":
-        targets, spell_description = split_targets_and_description(optional_entries["Target"])
+    if "Target" in optional_entries and desc == "":
+        targets, desc = split_targets_and_description(optional_entries["Target"])
         optional_entries["Target"] = targets
 
-    if "Saving Throw" in optional_entries and spell_description == "":
+    if "Saving Throw" in optional_entries and desc == "":
         SAVING_THROW_RE = re.compile(
             r"""
             ^(
@@ -286,22 +286,22 @@ def format_spell_block(block: str) -> str:
         saving_throw = optional_entries["Saving Throw"]
         match = SAVING_THROW_RE.match(saving_throw)
         if match:
-            spell_description = saving_throw[match.end():].strip()
+            desc = saving_throw[match.end():].strip()
             optional_entries["Saving Throw"] = match.group(1)
         else:
-            print(f"Invalid saving throw value for {spell_name}: {optional_entries['Saving Throw']}")
+            print(f"Invalid saving throw value for {name}: {optional_entries['Saving Throw']}")
 
-    if spell_description == "":
-        print(f"No description found for {spell_name}, using entire block as description")
-        spell_description = clean_block
+    if desc == "":
+        print(f"No description found for {name}, using entire block as description")
+        desc = clean_block
 
-    formatted_block = f"## {spell_name}\n"
+    formatted_block = f"## {name}\n"
     formatted_block += f"{spell_school}\n"
-    formatted_block += f"**Level:** {spell_level}\n"
+    formatted_block += f"**Level:** {base_level}\n"
     for entry in optional_entries:
         if optional_entries[entry] != "":
             formatted_block += f"**{entry}:** {optional_entries[entry]}\n"
-    formatted_block += f"{spell_description.rstrip()}"
+    formatted_block += f"{desc.rstrip()}"
 
     return formatted_block
 

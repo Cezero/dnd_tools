@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "k8s"
+		},
+		{
+			"path": "util"
+		},
+		{
+			"path": "apps/backend"
+		},
+		{
+			"path": "apps/frontend"
+		},
+		{
+			"path": "packages/shared"
+		}
+	],
+	"settings": {}
+}
