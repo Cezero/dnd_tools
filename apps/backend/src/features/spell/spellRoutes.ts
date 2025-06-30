@@ -1,12 +1,14 @@
 import express, { RequestHandler } from 'express';
-import { GetSpells, GetSpellById, UpdateSpell } from './spellController';
-import { requireAdmin } from '../../middleware/authMiddleware';
-import { validateRequest } from '../../middleware/validateRequest.js';
+
 import {
     SpellQuerySchema,
     SpellIdParamSchema,
     UpdateSpellSchema
 } from '@shared/schema';
+
+import { GetSpells, GetSpellById, UpdateSpell } from './spellController';
+import { requireAdmin } from '../../middleware/authMiddleware';
+import { validateRequest } from '../../middleware/validateRequest.js';
 
 export const SpellRouter = express.Router();
 

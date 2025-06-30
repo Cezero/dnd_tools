@@ -1,4 +1,5 @@
 import { Router } from 'express';
+
 import { authRoutes } from '../features/auth';
 import { characterRoutes } from '../features/character';
 import { classRoutes } from '../features/class';

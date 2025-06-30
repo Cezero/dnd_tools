@@ -1,4 +1,12 @@
 import express, { RequestHandler } from 'express';
+
+import {
+    ReferenceTableQuerySchema,
+    ReferenceTableIdentifierParamSchema,
+    CreateReferenceTableSchema,
+    UpdateReferenceTableSchema
+} from '@shared/schema';
+
 import {
     GetReferenceTables,
     GetReferenceTable,
@@ -8,12 +16,6 @@ import {
 } from './referenceTableController.js';
 import { requireAdmin } from '../../middleware/authMiddleware.js';
 import { validateRequest } from '../../middleware/validateRequest.js';
-import {
-    ReferenceTableQuerySchema,
-    ReferenceTableIdentifierParamSchema,
-    CreateReferenceTableSchema,
-    UpdateReferenceTableSchema
-} from '@shared/schema';
 
 export const ReferenceTableRouter = express.Router();
 

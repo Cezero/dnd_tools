@@ -1,5 +1,6 @@
-import { match } from 'path-to-regexp';
 import { Request, Response, NextFunction } from 'express';
+import { match } from 'path-to-regexp';
+
 import { requireAuth } from './authMiddleware';
 
 const publicPaths = [

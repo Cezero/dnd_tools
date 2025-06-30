@@ -1,4 +1,12 @@
 import express, { RequestHandler } from 'express';
+
+import {
+    SkillQuerySchema,
+    SkillIdParamSchema,
+    CreateSkillSchema,
+    UpdateSkillSchema
+} from '@shared/schema';
+
 import {
     GetSkills,
     GetAllSkills,
@@ -9,12 +17,6 @@ import {
 } from './skillController.js';
 import { requireAdmin } from '../../middleware/authMiddleware.js';
 import { validateRequest } from '../../middleware/validateRequest.js';
-import {
-    SkillQuerySchema,
-    SkillIdParamSchema,
-    CreateSkillSchema,
-    UpdateSkillSchema
-} from '@shared/schema';
 
 export const SkillRouter = express.Router();
 

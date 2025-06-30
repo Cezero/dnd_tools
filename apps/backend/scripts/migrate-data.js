@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-
-import { PrismaClient } from '@shared/prisma-client';
 import dotenv from 'dotenv';
 import mysql from 'mysql2/promise';
+
+import { PrismaClient } from '@shared/prisma-client';
 
 
 dotenv.config();

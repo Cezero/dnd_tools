@@ -1,17 +1,19 @@
-import type { Spell, Class } from '@shared/prisma-client/client';
+import type { Request } from 'express';
 
-export interface SpellQueryParams {
-    name?: string;
+import type { Spell, Class } from '@shared/prisma-client';
+
+// Extend Prisma Spell type for query parameters, making all fields optional and string-based
+export type SpellQueryParams = Partial<Record<keyof Spell, string | string[]>> & {
     classId?: string | string[];
     spellLevel?: string | string[];
     schools?: string | string[];
     descriptors?: string | string[];
     source?: string | string[];
     components?: string | string[];
-    editionId?: string;
     page?: string;
     limit?: string;
-}
+    [key: string]: string | string[] | undefined;
+};
 
 export interface UpdateSpellRequest {
     summary?: string;
@@ -31,6 +33,24 @@ export interface UpdateSpellRequest {
     components?: number[];
     effect?: string;
     target?: string;
+}
+
+// Request interfaces extending Express Request
+export interface SpellRequest extends Request {
+    query: SpellQueryParams;
+}
+
+export interface SpellCreateRequest extends Request {
+    body: Partial<Spell>;
+}
+
+export interface SpellUpdateRequest extends Request {
+    params: { id: string };
+    body: UpdateSpellRequest;
+}
+
+export interface SpellDeleteRequest extends Request {
+    params: { id: string };
 }
 
 // Use Prisma types for spell with level mapping

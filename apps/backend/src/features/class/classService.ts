@@ -1,4 +1,5 @@
 import { PrismaClient, Prisma } from '@shared/prisma-client';
+
 import type { ClassData, ClassQuery, ClassResponse, ClassListResponse } from './types';
 
 const prisma = new PrismaClient();

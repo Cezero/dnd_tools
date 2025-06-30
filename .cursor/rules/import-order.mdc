@@ -1,0 +1,46 @@
+---
+description: 
+globs: **/*.ts,**/*.tsx,**/*.js
+alwaysApply: false
+---
+description: Enforce import order and spacing conventions
+
+Organize imports in the following order:
+1. Built-in Node.js modules
+2. External packages (e.g., React, lodash, express, cors)
+3. Aliased/internal packages (e.g., @shared/schema, @shared/prisma-client, @/lib/foo)
+4. Parent imports (e.g., ../foo)
+5. Sibling imports (e.g., ./bar)
+6. Index imports (e.g., ./)
+
+Separate each group with a blank line.
+
+Within each group, sort imports alphabetically (case-insensitive).
+
+Special notes for aliases:
+- Imports starting with @shared/ or @/ are considered internal/aliased and should come after external packages but before parent/sibling/index imports.
+- Alphabetize alias imports with respect to each other and with other internal imports.
+
+Type-only imports:
+- Type-only imports follow the same order and grouping as value imports.
+
+No empty lines:
+- Do not add empty lines within a group.
+
+Example:
+// 1. External packages
+import cors from 'cors';
+import express, { Request, Response } from 'express';
+
+// 2. Aliased/internal packages
+import { PrismaClient } from '@shared/prisma-client';
+import { UpdateUserProfileSchema } from '@shared/schema';
+
+// 3. Parent imports
+import { something } from '../parentModule';
+
+// 4. Sibling imports
+import { helper } from './helper';
+
+// 5. Index imports
+import main from './';

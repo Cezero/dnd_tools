@@ -59,10 +59,14 @@ export default [
             'import/order': [
                 'warn',
                 {
-                    groups: [['builtin', 'external'], ['internal', 'parent', 'sibling', 'index']],
+                    groups: [['builtin', 'external'], ['internal'], ['parent', 'sibling'], ['index']],
                     pathGroups: [
                         {
                             pattern: '@/**',
+                            group: 'internal'
+                        },
+                        {
+                            pattern: '@shared/**',
                             group: 'internal'
                         }
                     ],

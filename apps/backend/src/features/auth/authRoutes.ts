@@ -1,7 +1,10 @@
 import express, { RequestHandler } from 'express';
+
+import { RegisterUserSchema, LoginUserSchema, AuthHeaderSchema } from '@shared/schema';
+
 import { RegisterUser, LoginUser, GetUserFromToken, RefreshToken } from './authController.js';
 import { validateRequest } from '../../middleware/validateRequest.js';
-import { RegisterUserSchema, LoginUserSchema, AuthHeaderSchema } from '@shared/schema';
+
 
 export const AuthRouter = express.Router();
 AuthRouter.post('/register', validateRequest({ body: RegisterUserSchema }) as RequestHandler, RegisterUser as unknown as RequestHandler);

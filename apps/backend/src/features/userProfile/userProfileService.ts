@@ -1,5 +1,7 @@
 import jwt from 'jsonwebtoken';
+
 import { PrismaClient } from '@shared/prisma-client';
+
 import type { UpdateUserProfileRequest, UserProfile, UserProfileUpdateResponse } from './types';
 
 const prisma = new PrismaClient();

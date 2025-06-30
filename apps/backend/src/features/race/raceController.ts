@@ -1,105 +1,19 @@
 import { Request, Response } from 'express';
+
 import { PrismaClient, Prisma } from '@shared/prisma-client';
 
+import type {
+    RaceRequest,
+    RaceCreateRequest,
+    RaceUpdateRequest,
+    RaceDeleteRequest,
+    RaceTraitRequest,
+    RaceTraitCreateRequest,
+    RaceTraitUpdateRequest,
+    RaceTraitDeleteRequest
+} from './types';
+
 const prisma = new PrismaClient();
-
-interface RaceRequest extends Request {
-    query: {
-        page?: string;
-        limit?: string;
-        name?: string;
-        editionId?: string;
-        isVisible?: string;
-        sizeId?: string;
-        speed?: string;
-        favoredClassId?: string;
-    };
-}
-
-interface RaceCreateRequest extends Request {
-    body: {
-        name: string;
-        description?: string;
-        sizeId: number;
-        speed: number;
-        favoredClassId: number;
-        editionId?: number;
-        isVisible: boolean;
-        languages?: Array<{
-            languageId: number;
-            isAutomatic: boolean;
-        }>;
-        adjustments?: Array<{
-            abilityId: number;
-            value: number;
-        }>;
-        traits?: Array<{
-            traitId: string;
-            value?: string;
-        }>;
-    };
-}
-
-interface RaceUpdateRequest extends Request {
-    params: { id: string };
-    body: {
-        name: string;
-        description?: string;
-        sizeId: number;
-        speed: number;
-        favoredClassId: number;
-        editionId?: number;
-        isVisible: boolean;
-        languages?: Array<{
-            languageId: number;
-            isAutomatic: boolean;
-        }>;
-        adjustments?: Array<{
-            abilityId: number;
-            value: number;
-        }>;
-        traits?: Array<{
-            traitId: string;
-            value?: string;
-        }>;
-    };
-}
-
-interface RaceDeleteRequest extends Request {
-    params: { id: string };
-}
-
-interface RaceTraitRequest extends Request {
-    query: {
-        page?: string;
-        limit?: string;
-        slug?: string;
-        name?: string;
-        hasValue?: string;
-    };
-}
-
-interface RaceTraitCreateRequest extends Request {
-    body: {
-        slug: string;
-        name?: string;
-        description?: string;
-        hasValue: boolean;
-    };
-}
-
-interface RaceTraitUpdateRequest extends Request {
-    params: { slug: string };
-    body: {
-        name?: string;
-        description?: string;
-        hasValue: boolean;
-    };
-}
-
-interface RaceTraitDeleteRequest extends Request {
-    params: { slug: string };
-}
 
 /**
  * Fetches all races from the database with pagination and filtering.

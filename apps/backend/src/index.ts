@@ -1,5 +1,6 @@
-import express, { Request, Response, RequestHandler } from 'express';
 import cors from 'cors';
+import express, { Request, Response, RequestHandler } from 'express';
+
 import { RequireAuthExcept } from './middleware/requireAuthExcept';
 import { routes } from './routes';
 

@@ -1,16 +1,36 @@
-import type { Class } from '@shared/prisma-client/client';
+import type { Request } from 'express';
+
+import type { Class } from '@shared/prisma-client';
 
 // Use Prisma types for the base class data
 export type ClassData = Pick<Class, 'name' | 'hitDie' | 'abbreviation' | 'isPrestige' | 'canCastSpells' | 'skillPoints' | 'editionId' | 'isVisible'> &
     Partial<Pick<Class, 'description' | 'castingAbilityId'>>;
 
-export interface ClassQuery {
+// Extend Prisma Class type for query parameters, making all fields optional and string-based
+export type ClassQuery = Partial<Record<keyof Class, string>> & {
     page?: string;
     limit?: string;
     sort?: string;
     order?: string;
-    name?: string;
-    editionId?: string;
+    [key: string]: string | undefined;
+};
+
+// Request interfaces extending Express Request
+export interface ClassRequest extends Request {
+    query: ClassQuery;
+}
+
+export interface ClassCreateRequest extends Request {
+    body: ClassData;
+}
+
+export interface ClassUpdateRequest extends Request {
+    params: { id: string };
+    body: ClassData;
+}
+
+export interface ClassDeleteRequest extends Request {
+    params: { id: string };
 }
 
 // Use Prisma type directly for class response

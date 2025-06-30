@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+
 import { authService } from '../features/auth/authService';
 import type { AuthUser } from '../features/auth/types';
 

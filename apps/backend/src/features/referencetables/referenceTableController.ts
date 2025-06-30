@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+
 import { Prisma, PrismaClient, ReferenceTable, ReferenceTableCell } from '@shared/prisma-client';
 
 const prisma = new PrismaClient();
@@ -143,16 +144,16 @@ export async function GetReferenceTableData(identifier: string | number): Promis
     cells.forEach(cell => {
         const row = rowMap[cell.rowId];
         const col = colMap[cell.columnId];
-        
+
         if (row && col) {
             const rowIndex = row.rowIndex;
             const colIndex = col.columnIndex;
-            
+
             // Ensure the cells array is large enough
             while (structuredRows[rowIndex].cells.length <= colIndex) {
                 structuredRows[rowIndex].cells.push(null as ReferenceTableCell | null);
             }
-            
+
             structuredRows[rowIndex].cells[colIndex] = cell;
         }
     });

@@ -1,4 +1,12 @@
 import express, { RequestHandler } from 'express';
+
+import {
+    ClassQuerySchema,
+    ClassIdParamSchema,
+    CreateClassSchema,
+    UpdateClassSchema
+} from '@shared/schema';
+
 import {
     GetClasses,
     GetAllClasses,
@@ -9,12 +17,6 @@ import {
 } from './classController.js';
 import { requireAdmin } from '../../middleware/authMiddleware.js';
 import { validateRequest } from '../../middleware/validateRequest.js';
-import {
-    ClassQuerySchema,
-    ClassIdParamSchema,
-    CreateClassSchema,
-    UpdateClassSchema
-} from '@shared/schema';
 
 export const ClassRouter = express.Router();
 

@@ -1,4 +1,15 @@
 import express, { RequestHandler } from 'express';
+
+import {
+    RaceQuerySchema,
+    RaceIdParamSchema,
+    RaceTraitSlugParamSchema,
+    CreateRaceSchema,
+    UpdateRaceSchema,
+    CreateRaceTraitSchema,
+    UpdateRaceTraitSchema
+} from '@shared/schema';
+
 import {
     GetRaces,
     GetAllRaces,
@@ -15,15 +26,7 @@ import {
 } from './raceController.js';
 import { requireAdmin } from '../../middleware/authMiddleware.js';
 import { validateRequest } from '../../middleware/validateRequest.js';
-import {
-    RaceQuerySchema,
-    RaceIdParamSchema,
-    RaceTraitSlugParamSchema,
-    CreateRaceSchema,
-    UpdateRaceSchema,
-    CreateRaceTraitSchema,
-    UpdateRaceTraitSchema
-} from '@shared/schema';
+
 
 export const RaceRouter = express.Router();
 

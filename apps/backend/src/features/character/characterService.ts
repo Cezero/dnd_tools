@@ -1,4 +1,5 @@
 import { PrismaClient, Prisma } from '@shared/prisma-client';
+
 import type { CharacterData, CharacterQuery, CharacterWithRace, CharacterListResponse } from './types';
 
 const prisma = new PrismaClient();

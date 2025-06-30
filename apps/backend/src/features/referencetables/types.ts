@@ -1,14 +1,15 @@
+import type { Request } from 'express';
+
 import type { ReferenceTable, ReferenceTableColumn, ReferenceTableCell } from '@shared/prisma-client';
 
-export interface ReferenceTableQuery {
+// Extend Prisma ReferenceTable type for query parameters, making all fields optional and string-based
+export type ReferenceTableQuery = Partial<Record<keyof ReferenceTable, string>> & {
     page?: string;
     limit?: string;
     sort?: string;
     order?: string;
-    name?: string;
-    slug?: string;
     [key: string]: string | undefined;
-}
+};
 
 // Use Prisma types for create/update operations
 export type ReferenceTableCreateData = Pick<ReferenceTable, 'name' | 'slug'> &
@@ -32,6 +33,24 @@ export type ReferenceTableCreateData = Pick<ReferenceTable, 'name' | 'slug'> &
     };
 
 export type ReferenceTableUpdateData = ReferenceTableCreateData;
+
+// Request interfaces extending Express Request
+export interface ReferenceTableRequest extends Request {
+    query: ReferenceTableQuery;
+}
+
+export interface ReferenceTableCreateRequest extends Request {
+    body: ReferenceTableCreateData;
+}
+
+export interface ReferenceTableUpdateRequest extends Request {
+    params: { id: string };
+    body: ReferenceTableUpdateData;
+}
+
+export interface ReferenceTableDeleteRequest extends Request {
+    params: { id: string };
+}
 
 // Use Prisma types for reference table with relationships
 export interface ReferenceTableData {

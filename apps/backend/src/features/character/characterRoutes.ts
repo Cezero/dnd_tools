@@ -1,4 +1,12 @@
 import express, { RequestHandler } from 'express';
+
+import {
+    CharacterQuerySchema,
+    CharacterIdParamSchema,
+    CreateCharacterSchema,
+    UpdateCharacterSchema
+} from '@shared/schema';
+
 import {
     GetAllCharacters,
     GetCharacterById,
@@ -6,13 +14,9 @@ import {
     UpdateCharacter,
     DeleteCharacter
 } from './characterController';
+import { requireAuth } from '../../middleware/authMiddleware.js';
 import { validateRequest } from '../../middleware/validateRequest.js';
-import {
-    CharacterQuerySchema,
-    CharacterIdParamSchema,
-    CreateCharacterSchema,
-    UpdateCharacterSchema
-} from '@shared/schema';
+
 
 export const CharacterRouter = express.Router();
 
@@ -117,7 +121,7 @@ export const CharacterRouter = express.Router();
  *       500:
  *         description: Server error.
  */
-CharacterRouter.get('/', validateRequest({ query: CharacterQuerySchema }) as RequestHandler, GetAllCharacters as RequestHandler);
+CharacterRouter.get('/', requireAuth as RequestHandler, validateRequest({ query: CharacterQuerySchema }) as RequestHandler, GetAllCharacters as RequestHandler);
 
 /**
  * @swagger
@@ -178,7 +182,7 @@ CharacterRouter.get('/', validateRequest({ query: CharacterQuerySchema }) as Req
  *       500:
  *         description: Server error.
  */
-CharacterRouter.get('/:id', validateRequest({ params: CharacterIdParamSchema }) as RequestHandler, GetCharacterById as unknown as RequestHandler);
+CharacterRouter.get('/:id', requireAuth as RequestHandler, validateRequest({ params: CharacterIdParamSchema }) as RequestHandler, GetCharacterById as unknown as RequestHandler);
 
 /**
  * @swagger
@@ -242,7 +246,7 @@ CharacterRouter.get('/:id', validateRequest({ params: CharacterIdParamSchema }) 
  *       500:
  *         description: Server error.
  */
-CharacterRouter.post('/', validateRequest({ body: CreateCharacterSchema }) as RequestHandler, CreateCharacter as RequestHandler);
+CharacterRouter.post('/', requireAuth as RequestHandler, validateRequest({ body: CreateCharacterSchema }) as RequestHandler, CreateCharacter as RequestHandler);
 
 /**
  * @swagger
@@ -312,7 +316,7 @@ CharacterRouter.post('/', validateRequest({ body: CreateCharacterSchema }) as Re
  *       500:
  *         description: Server error.
  */
-CharacterRouter.put('/:id', validateRequest({ params: CharacterIdParamSchema, body: UpdateCharacterSchema }) as RequestHandler, UpdateCharacter as unknown as RequestHandler);
+CharacterRouter.put('/:id', requireAuth as RequestHandler, validateRequest({ params: CharacterIdParamSchema, body: UpdateCharacterSchema }) as RequestHandler, UpdateCharacter as unknown as RequestHandler);
 
 /**
  * @swagger
@@ -343,4 +347,4 @@ CharacterRouter.put('/:id', validateRequest({ params: CharacterIdParamSchema, bo
  *       500:
  *         description: Server error.
  */
-CharacterRouter.delete('/:id', validateRequest({ params: CharacterIdParamSchema }) as RequestHandler, DeleteCharacter as unknown as RequestHandler); 
+CharacterRouter.delete('/:id', requireAuth as RequestHandler, validateRequest({ params: CharacterIdParamSchema }) as RequestHandler, DeleteCharacter as unknown as RequestHandler); 

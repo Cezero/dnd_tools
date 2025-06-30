@@ -1,58 +1,15 @@
 import { Request, Response } from 'express';
+
 import { PrismaClient, Prisma } from '@shared/prisma-client';
 
+import type {
+    ClassRequest,
+    ClassCreateRequest,
+    ClassUpdateRequest,
+    ClassDeleteRequest
+} from './types';
+
 const prisma = new PrismaClient();
-
-interface ClassRequest extends Request {
-    query: {
-        page?: string;
-        limit?: string;
-        name?: string;
-        abbreviation?: string;
-        editionId?: string;
-        isPrestige?: string;
-        isVisible?: string;
-        canCastSpells?: string;
-        hitDie?: string;
-        skillPoints?: string;
-        castingAbilityId?: string;
-    };
-}
-
-interface ClassCreateRequest extends Request {
-    body: {
-        name: string;
-        abbreviation: string;
-        editionId?: number;
-        isPrestige: boolean;
-        isVisible: boolean;
-        canCastSpells: boolean;
-        hitDie: number;
-        skillPoints: number;
-        castingAbilityId?: number;
-        description?: string;
-    };
-}
-
-interface ClassUpdateRequest extends Request {
-    params: { id: string };
-    body: {
-        name: string;
-        abbreviation: string;
-        editionId?: number;
-        isPrestige: boolean;
-        isVisible: boolean;
-        canCastSpells: boolean;
-        hitDie: number;
-        skillPoints: number;
-        castingAbilityId?: number;
-        description?: string;
-    };
-}
-
-interface ClassDeleteRequest extends Request {
-    params: { id: string };
-}
 
 /**
  * Fetches all classes from the database with pagination and filtering.

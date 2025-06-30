@@ -1,13 +1,13 @@
-import type { Skill } from '@shared/prisma-client/client';
+import type { Request } from 'express';
 
-export interface SkillQuery {
+import type { Skill } from '@shared/prisma-client';
+
+// Extend Prisma Skill type for query parameters, making all fields optional and string-based
+export type SkillQuery = Partial<Record<keyof Skill, string>> & {
     page?: string;
     limit?: string;
-    name?: string;
-    abilityId?: string;
-    trainedOnly?: string;
-    affectedByArmor?: string;
-}
+    [key: string]: string | undefined;
+};
 
 export interface SkillCreateData {
     name: string;
@@ -25,6 +25,24 @@ export interface SkillCreateData {
 }
 
 export type SkillUpdateData = SkillCreateData;
+
+// Request interfaces extending Express Request
+export interface SkillRequest extends Request {
+    query: SkillQuery;
+}
+
+export interface SkillCreateRequest extends Request {
+    body: SkillCreateData;
+}
+
+export interface SkillUpdateRequest extends Request {
+    params: { id: string };
+    body: SkillUpdateData;
+}
+
+export interface SkillDeleteRequest extends Request {
+    params: { id: string };
+}
 
 // Use Prisma type directly for skill response
 export type SkillResponse = Skill;

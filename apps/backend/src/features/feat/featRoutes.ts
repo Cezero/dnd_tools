@@ -1,4 +1,12 @@
 import express, { RequestHandler } from 'express';
+
+import {
+    FeatQuerySchema,
+    FeatIdParamSchema,
+    CreateFeatSchema,
+    UpdateFeatSchema
+} from '@shared/schema';
+
 import {
     GetFeats,
     GetAllFeats,
@@ -9,12 +17,7 @@ import {
 } from './featController.js';
 import { requireAdmin } from '../../middleware/authMiddleware.js';
 import { validateRequest } from '../../middleware/validateRequest.js';
-import {
-    FeatQuerySchema,
-    FeatIdParamSchema,
-    CreateFeatSchema,
-    UpdateFeatSchema
-} from '@shared/schema';
+
 
 export const FeatRouter = express.Router();
 
