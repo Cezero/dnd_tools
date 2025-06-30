@@ -18,27 +18,33 @@ export const ReferenceTableIdentifierParamSchema = z.object({
     }),
 });
 
-// Schema for table header
-export const TableHeaderSchema = z.object({
+// Schema for table column (matches Prisma ReferenceTableColumn)
+export const TableColumnSchema = z.object({
+    columnIndex: z.number().int().min(0, 'Column index must be non-negative'),
     header: z.string()
         .min(1, 'Header is required')
         .max(100, 'Header must be less than 100 characters')
         .trim(),
+    span: z.number().int().min(1, 'Span must be at least 1').max(10, 'Span must be at most 10').optional(),
     alignment: z.enum(['left', 'center', 'right']).optional().default('left'),
 });
 
-// Schema for table cell
+// Schema for table cell (matches Prisma ReferenceTableCell)
 export const TableCellSchema = z.object({
-    column_index: z.number().int().min(0, 'Column index must be non-negative'),
     value: z.string().max(1000, 'Cell value must be less than 1000 characters').optional(),
-    col_span: z.number().int().min(1, 'Column span must be at least 1').max(10, 'Column span must be at most 10').optional(),
-    row_span: z.number().int().min(1, 'Row span must be at least 1').max(10, 'Row span must be at most 10').optional(),
+    colSpan: z.number().int().min(1, 'Column span must be at least 1').max(10, 'Column span must be at most 10').optional(),
+    rowSpan: z.number().int().min(1, 'Row span must be at least 1').max(10, 'Row span must be at most 10').optional(),
+    columnIndex: z.number().int().min(0, 'Column index must be non-negative'),
 });
 
-// Schema for table row
-export const TableRowSchema = z.array(TableCellSchema);
+// Schema for table row (matches Prisma ReferenceTableRow)
+export const TableRowSchema = z.object({
+    rowIndex: z.number().int().min(0, 'Row index must be non-negative'),
+    label: z.string().max(200, 'Label must be less than 200 characters').optional(),
+    cells: z.array(TableCellSchema).optional(),
+});
 
-// Schema for creating a reference table
+// Schema for creating a reference table (matches Prisma ReferenceTableCreateInput)
 export const CreateReferenceTableSchema = z.object({
     name: z.string()
         .min(1, 'Table name is required')
@@ -50,16 +56,20 @@ export const CreateReferenceTableSchema = z.object({
         .max(100, 'Table slug must be less than 100 characters')
         .regex(/^[a-z0-9-]+$/, 'Table slug can only contain lowercase letters, numbers, and hyphens')
         .trim(),
-    headers: z.array(TableHeaderSchema)
-        .min(1, 'At least one header is required')
-        .max(20, 'Maximum 20 headers allowed'),
-    rows: z.array(TableRowSchema)
-        .min(0, 'Rows cannot be negative')
-        .max(1000, 'Maximum 1000 rows allowed'),
+    columns: z.object({
+        create: z.array(TableColumnSchema)
+            .min(1, 'At least one column is required')
+            .max(20, 'Maximum 20 columns allowed'),
+    }),
+    rows: z.object({
+        create: z.array(TableRowSchema)
+            .min(0, 'Rows cannot be negative')
+            .max(1000, 'Maximum 1000 rows allowed'),
+    }),
 });
 
-// Schema for updating a reference table (same as create but all fields optional)
-export const UpdateReferenceTableSchema = CreateReferenceTableSchema.partial().extend({
+// Schema for updating a reference table (matches Prisma ReferenceTableUpdateInput)
+export const UpdateReferenceTableSchema = z.object({
     name: z.string()
         .min(1, 'Table name is required')
         .max(200, 'Table name must be less than 200 characters')
@@ -69,9 +79,19 @@ export const UpdateReferenceTableSchema = CreateReferenceTableSchema.partial().e
         .max(100, 'Table slug must be less than 100 characters')
         .regex(/^[a-z0-9-]+$/, 'Table slug can only contain lowercase letters, numbers, and hyphens')
         .trim(),
-    headers: z.array(TableHeaderSchema)
-        .min(1, 'At least one header is required')
-        .max(20, 'Maximum 20 headers allowed'),
+    description: z.string().max(2000, 'Description must be less than 2000 characters').optional(),
+    columns: z.object({
+        deleteMany: z.object({}),
+        create: z.array(TableColumnSchema)
+            .min(1, 'At least one column is required')
+            .max(20, 'Maximum 20 columns allowed'),
+    }),
+    rows: z.object({
+        deleteMany: z.object({}),
+        create: z.array(TableRowSchema)
+            .min(0, 'Rows cannot be negative')
+            .max(1000, 'Maximum 1000 rows allowed'),
+    }),
 });
 
 // Type inference from schemas

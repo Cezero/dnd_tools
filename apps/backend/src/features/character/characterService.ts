@@ -1,26 +1,8 @@
 import { PrismaClient, Prisma } from '@shared/prisma-client';
 
-import type { CharacterData, CharacterQuery, CharacterWithRace, CharacterListResponse } from './types';
+import type { CharacterData, CharacterService } from './types';
 
 const prisma = new PrismaClient();
-
-export interface CharacterService {
-    getAllCharacters: (query: CharacterQuery) => Promise<CharacterListResponse>;
-    getCharacterById: (id: number) => Promise<CharacterWithRace | null>;
-    createCharacter: (data: CharacterData) => Promise<{ id: number; message: string }>;
-    updateCharacter: (id: number, data: CharacterData) => Promise<{ message: string }>;
-    deleteCharacter: (id: number) => Promise<{ message: string }>;
-    validateCharacterData: (data: CharacterData) => string | null;
-    resolve: (characterNames: string[]) => Promise<Prisma.UserCharacterGetPayload<{
-        include: {
-            race: {
-                select: {
-                    name: true;
-                };
-            };
-        };
-    }>[]>;
-}
 
 // Helper function to validate character data
 function validateCharacterData(character: CharacterData): string | null {
@@ -95,19 +77,7 @@ export const characterService: CharacterService = {
 
     async createCharacter(data) {
         const result = await prisma.userCharacter.create({
-            data: {
-                userId: data.userId,
-                name: data.name,
-                raceId: data.raceId,
-                alignmentId: data.alignmentId,
-                age: data.age || null,
-                height: data.height || null,
-                weight: data.weight || null,
-                eyes: data.eyes || null,
-                hair: data.hair || null,
-                gender: data.gender || null,
-                notes: data.notes || null,
-            },
+            data,
         });
 
         return { id: result.id, message: 'Character created successfully' };
@@ -116,19 +86,7 @@ export const characterService: CharacterService = {
     async updateCharacter(id, data) {
         await prisma.userCharacter.update({
             where: { id },
-            data: {
-                userId: data.userId,
-                name: data.name,
-                raceId: data.raceId,
-                alignmentId: data.alignmentId,
-                age: data.age || null,
-                height: data.height || null,
-                weight: data.weight || null,
-                eyes: data.eyes || null,
-                hair: data.hair || null,
-                gender: data.gender || null,
-                notes: data.notes || null,
-            },
+            data,
         });
 
         return { message: 'Character updated successfully' };

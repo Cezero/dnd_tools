@@ -1,30 +1,9 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 
 import { characterService } from './characterService';
-import type { CharacterData, CharacterQuery } from './types';
+import type { AllCharacterGetRequest, CharacterCreateRequest, CharacterUpdateRequest, CharacterDeleteRequest, CharacterGetRequest } from './types';
 
-interface CharacterRequest extends Request {
-    query: CharacterQuery;
-}
-
-interface CharacterCreateRequest extends Request {
-    body: CharacterData;
-}
-
-interface CharacterUpdateRequest extends Request {
-    params: { id: string };
-    body: CharacterData;
-}
-
-interface CharacterDeleteRequest extends Request {
-    params: { id: string };
-}
-
-interface CharacterGetRequest extends Request {
-    params: { id: string };
-}
-
-export async function GetAllCharacters(req: CharacterRequest, res: Response): Promise<void> {
+export async function GetAllCharacters(req: AllCharacterGetRequest, res: Response): Promise<void> {
     try {
         const result = await characterService.getAllCharacters(req.query);
         res.json(result);

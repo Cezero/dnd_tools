@@ -1,6 +1,10 @@
 import type { Request } from 'express';
 
 import type { ReferenceTable, ReferenceTableColumn, ReferenceTableCell } from '@shared/prisma-client';
+import type {
+    CreateReferenceTableRequest,
+    UpdateReferenceTableRequest
+} from '@shared/schema';
 
 // Extend Prisma ReferenceTable type for query parameters, making all fields optional and string-based
 export type ReferenceTableQuery = Partial<Record<keyof ReferenceTable, string>> & {
@@ -11,45 +15,26 @@ export type ReferenceTableQuery = Partial<Record<keyof ReferenceTable, string>> 
     [key: string]: string | undefined;
 };
 
-// Use Prisma types for create/update operations
-export type ReferenceTableCreateData = Pick<ReferenceTable, 'name' | 'slug'> &
-    Partial<Pick<ReferenceTable, 'description'>> & {
-        columns: Array<{
-            columnIndex: number;
-            header: string;
-            span?: number | null;
-            alignment?: string | null;
-        }>;
-        rows: Array<{
-            rowIndex: number;
-            label?: string | null;
-            cells: Array<{
-                columnIndex: number;
-                value?: string | null;
-                colSpan?: number | null;
-                rowSpan?: number | null;
-            }>;
-        }>;
-    };
-
-export type ReferenceTableUpdateData = ReferenceTableCreateData;
-
 // Request interfaces extending Express Request
 export interface ReferenceTableRequest extends Request {
     query: ReferenceTableQuery;
 }
 
 export interface ReferenceTableCreateRequest extends Request {
-    body: ReferenceTableCreateData;
+    body: CreateReferenceTableRequest;
 }
 
 export interface ReferenceTableUpdateRequest extends Request {
     params: { id: string };
-    body: ReferenceTableUpdateData;
+    body: UpdateReferenceTableRequest;
 }
 
 export interface ReferenceTableDeleteRequest extends Request {
     params: { id: string };
+}
+
+export interface ReferenceTableGetRequest extends Request {
+    params: { identifier: string };
 }
 
 // Use Prisma types for reference table with relationships
@@ -64,6 +49,7 @@ export interface ReferenceTableData {
     }>;
 }
 
+// Use Prisma types directly for the list response
 export interface ReferenceTableListResponse {
     page: number;
     limit: number;
@@ -74,4 +60,21 @@ export interface ReferenceTableListResponse {
             columns: number;
         };
     }>;
+}
+
+// Service interface
+export interface ReferenceTableService {
+    getAllReferenceTables: (query: {
+        page?: string;
+        limit?: string;
+        sort?: string;
+        order?: string;
+        name?: string;
+        slug?: string;
+    }) => Promise<ReferenceTableListResponse>;
+    getReferenceTableData: (identifier: string | number) => Promise<ReferenceTableData | null>;
+    createReferenceTable: (data: import('@shared/prisma-client').Prisma.ReferenceTableCreateInput) => Promise<{ id: string; message: string }>;
+    updateReferenceTable: (slug: string, data: import('@shared/prisma-client').Prisma.ReferenceTableUpdateInput) => Promise<{ message: string }>;
+    deleteReferenceTable: (slug: string) => Promise<{ message: string }>;
+    resolve: (identifiers: string[]) => Promise<ReferenceTableData[]>;
 } 

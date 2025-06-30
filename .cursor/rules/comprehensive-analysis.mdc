@@ -1,0 +1,14 @@
+---
+description: Perform comprehensive analysis before implementation
+globs: ["**/*"]
+alwaysApply: true
+---
+
+**Analysis Requirements:**
+1. Check cursor rules to ensure compliance
+2. Search the codebase for similar implementations
+3. Check for any documentation about established patterns
+4. Examine the Prisma client for available types
+5. Look at how other features handle similar operations
+6. Verify that your approach matches existing patterns
+

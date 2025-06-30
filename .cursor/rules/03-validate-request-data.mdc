@@ -1,0 +1,6 @@
+---
+description: Handling incoming requests
+globs: 
+alwaysApply: false
+---
+Use schema validation libraries like Zod to validate request params, query, and body before using them.

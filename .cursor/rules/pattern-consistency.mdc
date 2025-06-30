@@ -1,0 +1,12 @@
+---
+description: Ensure consistency with existing codebase patterns
+globs: ["**/*"]
+alwaysApply: true
+---
+
+**Pattern Consistency Requirements:**
+1. Before creating new types/interfaces, check how similar features handle them
+2. Look for existing examples in the codebase that solve the same problem
+3. Follow established naming conventions and structure patterns
+4. If a pattern exists, use it; don't create new patterns unless necessary
+5. Check for any refactor summaries or documentation about established patterns

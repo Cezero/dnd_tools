@@ -1,17 +1,8 @@
 import { PrismaClient, Prisma } from '@shared/prisma-client';
 
-import type { ClassData, ClassQuery, ClassResponse, ClassListResponse } from './types';
+import type { ClassData, ClassService } from './types';
 
 const prisma = new PrismaClient();
-
-export interface ClassService {
-    getAllClasses: (query: ClassQuery) => Promise<ClassListResponse>;
-    getClassById: (id: number) => Promise<ClassResponse | null>;
-    createClass: (data: ClassData) => Promise<{ id: number; message: string }>;
-    updateClass: (id: number, data: ClassData) => Promise<{ message: string }>;
-    deleteClass: (id: number) => Promise<{ message: string }>;
-    validateClassData: (data: ClassData) => string | null;
-}
 
 function validateClassData(classData: ClassData): string | null {
     const { name, hitDie, abbreviation, editionId } = classData;
@@ -76,18 +67,7 @@ export const classService: ClassService = {
 
     async createClass(data) {
         const result = await prisma.class.create({
-            data: {
-                name: data.name,
-                description: data.description || null,
-                hitDie: data.hitDie,
-                abbreviation: data.abbreviation,
-                isPrestige: data.isPrestige,
-                canCastSpells: data.canCastSpells,
-                skillPoints: data.skillPoints,
-                castingAbilityId: data.castingAbilityId || null,
-                editionId: data.editionId,
-                isVisible: data.isVisible,
-            },
+            data,
         });
 
         return { id: result.id, message: 'Class created successfully' };
@@ -96,18 +76,7 @@ export const classService: ClassService = {
     async updateClass(id, data) {
         await prisma.class.update({
             where: { id },
-            data: {
-                name: data.name,
-                description: data.description || null,
-                hitDie: data.hitDie,
-                abbreviation: data.abbreviation,
-                isPrestige: data.isPrestige,
-                canCastSpells: data.canCastSpells,
-                skillPoints: data.skillPoints,
-                castingAbilityId: data.castingAbilityId || null,
-                editionId: data.editionId,
-                isVisible: data.isVisible,
-            },
+            data,
         });
 
         return { message: 'Class updated successfully' };

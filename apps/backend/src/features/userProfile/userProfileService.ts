@@ -1,19 +1,17 @@
 import jwt from 'jsonwebtoken';
-
 import { PrismaClient } from '@shared/prisma-client';
-
-import type { UpdateUserProfileRequest, UserProfile, UserProfileUpdateResponse } from './types';
+import type { UpdateUserProfileRequest, UserProfileResponse, UserProfileUpdateResponse } from '@shared/schema';
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'your_dev_secret';
 
 export interface UserProfileService {
-    getUserProfile: (userId: number) => Promise<UserProfile | null>;
+    getUserProfile: (userId: number) => Promise<UserProfileResponse | null>;
     updateUserProfile: (userId: number, data: UpdateUserProfileRequest) => Promise<UserProfileUpdateResponse>;
 }
 
 export const userProfileService: UserProfileService = {
-    async getUserProfile(userId: number) {
+    async getUserProfile(userId: number): Promise<UserProfileResponse | null> {
         const user = await prisma.user.findUnique({
             where: { id: userId },
             select: {
@@ -40,7 +38,7 @@ export const userProfileService: UserProfileService = {
         };
     },
 
-    async updateUserProfile(userId: number, data: UpdateUserProfileRequest) {
+    async updateUserProfile(userId: number, data: UpdateUserProfileRequest): Promise<UserProfileUpdateResponse> {
         const { preferredEditionId } = data;
 
         const updatedUser = await prisma.user.update({

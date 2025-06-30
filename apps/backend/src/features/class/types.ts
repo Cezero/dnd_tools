@@ -41,4 +41,14 @@ export interface ClassListResponse {
     limit: number;
     total: number;
     results: ClassResponse[];
+}
+
+// Service interface
+export interface ClassService {
+    getAllClasses: (query: ClassQuery) => Promise<ClassListResponse>;
+    getClassById: (id: number) => Promise<ClassResponse | null>;
+    createClass: (data: ClassData) => Promise<{ id: number; message: string }>;
+    updateClass: (id: number, data: ClassData) => Promise<{ message: string }>;
+    deleteClass: (id: number) => Promise<{ message: string }>;
+    validateClassData: (data: ClassData) => string | null;
 } 

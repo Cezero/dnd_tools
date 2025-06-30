@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Make sure to check the project rules before making any architectural decisions.

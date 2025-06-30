@@ -13,7 +13,11 @@
         "studio": "prisma studio",
         "typecheck": "tsc --noEmit",
         "lint": "eslint . --ext .ts,.tsx,.js,.jsx --config ../../eslint.config.js --no-cache",
-        "migrate-data": "node scripts/migrate-data.js"
+        "migrate-data": "node scripts/migrate-data.js",
+        "test": "vitest",
+        "test:run": "vitest run",
+        "test:watch": "vitest watch",
+        "test:coverage": "vitest run --coverage"
     },
     "keywords": [],
     "author": "",
@@ -33,6 +37,7 @@
         "mysql2": "^3.14.1",
         "path-to-regexp": "^8.2.0",
         "prisma": "^6.10.1",
+        "vitest": "^3.2.4",
         "zod": "^3.25.67",
         "zod-prisma-types": "^3.2.4"
     },

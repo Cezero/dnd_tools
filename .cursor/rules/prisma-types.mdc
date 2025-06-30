@@ -1,0 +1,13 @@
+---
+description: Using Prisma types consistently
+globs: ["backend/**/*"]
+alwaysApply: true
+---
+**Prisma Types Requirements:**
+1. ALWAYS import `Prisma` namespace: `import type { Prisma } from '@shared/prisma-client'`
+2. Use `Prisma.ModelCreateInput` and `Prisma.ModelUpdateInput` for create/update operations
+3. Let Prisma handle nested relationships automatically - don't manually manage them
+4. Use Prisma types directly. Don't create aliases unless absolutely necessary
+5. Don't create custom types that duplicate Prisma input types
+6. Use Prisma's generated types as the single source of truth
+7. For complex operations, use Prisma's nested input types (e.g., `RaceCreateNestedManyWithoutRaceInput`)

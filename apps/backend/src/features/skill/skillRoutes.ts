@@ -112,7 +112,7 @@ export const SkillRouter = express.Router();
  *       500:
  *         description: Server error.
  */
-SkillRouter.get('/', validateRequest({ query: SkillQuerySchema }) as RequestHandler, GetSkills as RequestHandler);
+SkillRouter.get('/', validateRequest({ query: SkillQuerySchema }) as RequestHandler, GetSkills as unknown as RequestHandler);
 
 /**
  * @swagger
@@ -141,7 +141,7 @@ SkillRouter.get('/', validateRequest({ query: SkillQuerySchema }) as RequestHand
  *       500:
  *         description: Server error.
  */
-SkillRouter.get('/all', GetAllSkills as RequestHandler);
+SkillRouter.get('/all', GetAllSkills as unknown as RequestHandler);
 
 /**
  * @swagger
@@ -295,7 +295,7 @@ SkillRouter.get('/:id', validateRequest({ params: SkillIdParamSchema }) as Reque
  *       500:
  *         description: Server error.
  */
-SkillRouter.post('/', requireAdmin as RequestHandler, validateRequest({ body: CreateSkillSchema }) as RequestHandler, CreateSkill as RequestHandler);
+SkillRouter.post('/', requireAdmin as RequestHandler, validateRequest({ body: CreateSkillSchema }) as RequestHandler, CreateSkill as unknown as RequestHandler);
 
 /**
  * @swagger

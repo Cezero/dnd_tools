@@ -3,6 +3,14 @@ import type { Request } from 'express';
 import type { User } from '@shared/prisma-client';
 import type { LoginUserRequest, RegisterUserRequest } from '@shared/schema';
 
+
+export interface AuthService {
+    registerUser: (data: RegisterUserRequest) => Promise<AuthServiceResult>;
+    loginUser: (data: LoginUserRequest) => Promise<AuthServiceResult>;
+    getUserFromToken: (token: string) => Promise<AuthServiceResult>;
+    refreshToken: (token: string) => Promise<AuthServiceResult>;
+}
+
 export interface JwtPayload {
     id: number;
     username: string;

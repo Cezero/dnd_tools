@@ -1,0 +1,12 @@
+---
+description: Before making any changes, systematically discover and apply all relevant rules
+globs: ["**/*"]
+alwaysApply: true
+---
+
+**Rule Discovery Process:**
+1. Fetch all rules related to the feature/domain you're working on
+2. Check for any "alwaysApply" rules that might be relevant
+3. Examine existing codebase patterns in similar features
+4. Apply ALL relevant rules together, not individually
+5. Verify compliance with the complete rule set before proceeding

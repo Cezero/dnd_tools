@@ -51,21 +51,9 @@ export const LoginResponseSchema = z.object({
     }),
 });
 
-// Schema for user profile response (matches the API response format)
-export const UserProfileResponseSchema = z.object({
-    user: z.object({
-        id: z.number(),
-        username: z.string(),
-        email: z.string(),
-        is_admin: z.boolean(), // API uses snake_case for compatibility
-        preferred_edition_id: z.number().nullable(), // API uses snake_case for compatibility
-    }),
-});
-
 // Type inference from schemas
 export type RegisterUserRequest = z.infer<typeof RegisterUserSchema>;
 export type LoginUserRequest = z.infer<typeof LoginUserSchema>;
 export type AuthHeaderRequest = z.infer<typeof AuthHeaderSchema>;
 export type JwtPayload = z.infer<typeof JwtPayloadSchema>;
-export type LoginResponse = z.infer<typeof LoginResponseSchema>;
-export type UserProfileResponse = z.infer<typeof UserProfileResponseSchema>; 
+export type LoginResponse = z.infer<typeof LoginResponseSchema>; 

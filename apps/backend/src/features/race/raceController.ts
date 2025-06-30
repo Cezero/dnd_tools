@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 
-import { PrismaClient, Prisma } from '@shared/prisma-client';
-
+import { raceService } from './raceService';
 import type {
     RaceRequest,
     RaceCreateRequest,
@@ -13,74 +12,38 @@ import type {
     RaceTraitDeleteRequest
 } from './types';
 
-const prisma = new PrismaClient();
-
 /**
  * Fetches all races from the database with pagination and filtering.
  */
 export const GetRaces = async (req: RaceRequest, res: Response): Promise<void> => {
     try {
-        const page = parseInt(req.query.page || '1');
-        const limit = parseInt(req.query.limit || '10');
-        const skip = (page - 1) * limit;
-
-        // Build where clause for filtering
-        const where: Prisma.RaceWhereInput = {};
-
-        if (req.query.name) {
-            where.name = { contains: req.query.name };
-        }
-        if (req.query.editionId) {
-            where.editionId = parseInt(req.query.editionId);
-        }
-        if (req.query.isVisible !== undefined) {
-            where.isVisible = req.query.isVisible === 'true';
-        }
-        if (req.query.sizeId) {
-            where.sizeId = parseInt(req.query.sizeId);
-        }
-        if (req.query.speed) {
-            where.speed = parseInt(req.query.speed);
-        }
-        if (req.query.favoredClassId) {
-            where.favoredClassId = parseInt(req.query.favoredClassId);
-        }
-
-        const [races, total] = await Promise.all([
-            prisma.race.findMany({
-                where,
-                skip,
-                take: limit,
-                orderBy: { name: 'asc' },
-            }),
-            prisma.race.count({ where }),
-        ]);
-
+        const result = await raceService.getAllRaces(req.query);
         res.json({
-            page,
-            limit,
-            total,
-            results: races,
+            success: true,
+            data: result,
         });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Server error');
+    } catch (error) {
+        console.error('Error fetching races:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch races',
+        });
     }
 };
 
 export const GetAllRaces = async (req: Request, res: Response): Promise<void> => {
     try {
-        const races = await prisma.race.findMany({
-            select: {
-                id: true,
-                name: true,
-            },
-            orderBy: { name: 'asc' },
+        const races = await raceService.getAllRacesSimple();
+        res.json({
+            success: true,
+            data: races,
         });
-        res.json(races);
     } catch (error) {
         console.error('Error fetching all races:', error);
-        res.status(500).send('Server error');
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch all races',
+        });
     }
 };
 
@@ -90,28 +53,26 @@ export const GetAllRaces = async (req: Request, res: Response): Promise<void> =>
 export const GetRaceById = async (req: Request<{ id: string }>, res: Response): Promise<void> => {
     const { id } = req.params;
     try {
-        const race = await prisma.race.findUnique({
-            where: { id: parseInt(id) },
-            include: {
-                languages: true,
-                abilityAdjustments: true,
-                traits: {
-                    include: {
-                        trait: true,
-                    },
-                },
-            },
-        });
+        const race = await raceService.getRaceById(parseInt(id));
 
         if (!race) {
-            res.status(404).send('Race not found');
+            res.status(404).json({
+                success: false,
+                error: 'Race not found',
+            });
             return;
         }
 
-        res.json(race);
+        res.json({
+            success: true,
+            data: race,
+        });
     } catch (error) {
         console.error('Error fetching race by ID:', error);
-        res.status(500).send('Server error');
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch race',
+        });
     }
 };
 
@@ -120,42 +81,17 @@ export const GetRaceById = async (req: Request<{ id: string }>, res: Response): 
  */
 export const GetRaceTraits = async (req: RaceTraitRequest, res: Response): Promise<void> => {
     try {
-        const page = parseInt(req.query.page || '1');
-        const limit = parseInt(req.query.limit || '10');
-        const skip = (page - 1) * limit;
-
-        // Build where clause for filtering
-        const where: Prisma.RaceTraitWhereInput = {};
-
-        if (req.query.slug) {
-            where.slug = { contains: req.query.slug };
-        }
-        if (req.query.name) {
-            where.name = { contains: req.query.name };
-        }
-        if (req.query.hasValue !== undefined) {
-            where.hasValue = req.query.hasValue === 'true';
-        }
-
-        const [traits, total] = await Promise.all([
-            prisma.raceTrait.findMany({
-                where,
-                skip,
-                take: limit,
-                orderBy: { slug: 'asc' },
-            }),
-            prisma.raceTrait.count({ where }),
-        ]);
-
+        const result = await raceService.getAllRaceTraits(req.query);
         res.json({
-            page,
-            limit,
-            total,
-            results: traits,
+            success: true,
+            data: result,
         });
     } catch (error) {
         console.error('Error fetching race traits:', error);
-        res.status(500).send('Server error');
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch race traits',
+        });
     }
 };
 
@@ -165,37 +101,42 @@ export const GetRaceTraits = async (req: RaceTraitRequest, res: Response): Promi
 export const GetRaceTraitBySlug = async (req: Request<{ slug: string }>, res: Response): Promise<void> => {
     const { slug } = req.params;
     try {
-        const trait = await prisma.raceTrait.findUnique({
-            where: { slug },
-        });
+        const trait = await raceService.getRaceTraitBySlug(slug);
 
         if (!trait) {
-            res.status(404).send('Race trait not found');
+            res.status(404).json({
+                success: false,
+                error: 'Race trait not found',
+            });
             return;
         }
 
-        res.json(trait);
+        res.json({
+            success: true,
+            data: trait,
+        });
     } catch (error) {
         console.error('Error fetching race trait by slug:', error);
-        res.status(500).send('Server error');
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch race trait',
+        });
     }
 };
 
 export const GetAllRaceTraits = async (req: Request, res: Response): Promise<void> => {
     try {
-        const traits = await prisma.raceTrait.findMany({
-            select: {
-                slug: true,
-                name: true,
-                description: true,
-                hasValue: true,
-            },
-            orderBy: { slug: 'asc' },
+        const traits = await raceService.getAllRaceTraitsSimple();
+        res.json({
+            success: true,
+            data: traits,
         });
-        res.json(traits);
     } catch (error) {
         console.error('Error fetching all race traits:', error);
-        res.status(500).send('Server error');
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch all race traits',
+        });
     }
 };
 
@@ -203,70 +144,25 @@ export const GetAllRaceTraits = async (req: Request, res: Response): Promise<voi
  * Creates a new race.
  */
 export const CreateRace = async (req: RaceCreateRequest, res: Response): Promise<void> => {
-    const {
-        name,
-        description,
-        sizeId,
-        speed,
-        favoredClassId,
-        editionId,
-        isVisible,
-        languages,
-        adjustments,
-        traits
-    } = req.body;
-
     try {
-        const result = await prisma.$transaction(async (tx) => {
-            const newRace = await tx.race.create({
-                data: {
-                    name,
-                    description,
-                    sizeId,
-                    speed,
-                    favoredClassId,
-                    editionId,
-                    isVisible,
-                },
-            });
-
-            if (languages && languages.length > 0) {
-                await tx.raceLanguageMap.createMany({
-                    data: languages.map(lang => ({
-                        raceId: newRace.id,
-                        languageId: lang.languageId,
-                        isAutomatic: lang.isAutomatic,
-                    })),
-                });
-            }
-
-            if (adjustments && adjustments.length > 0) {
-                await tx.raceAbilityAdjustment.createMany({
-                    data: adjustments.map(adj => ({
-                        raceId: newRace.id,
-                        abilityId: adj.abilityId,
-                        value: adj.value,
-                    })),
-                });
-            }
-
-            if (traits && traits.length > 0) {
-                await tx.raceTraitMap.createMany({
-                    data: traits.map(trait => ({
-                        raceId: newRace.id,
-                        traitId: trait.traitId,
-                        value: trait.value,
-                    })),
-                });
-            }
-
-            return newRace.id;
+        const result = await raceService.createRace(req.body);
+        res.status(201).json({
+            success: true,
+            data: result,
         });
-
-        res.status(201).json({ id: result, message: 'Race created successfully' });
     } catch (error) {
         console.error('Error creating race:', error);
-        res.status(500).send('Server error');
+        if (error instanceof Error) {
+            res.status(400).json({
+                success: false,
+                error: error.message,
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: 'Failed to create race',
+            });
+        }
     }
 };
 
@@ -274,22 +170,25 @@ export const CreateRace = async (req: RaceCreateRequest, res: Response): Promise
  * Creates a new race trait.
  */
 export const CreateRaceTrait = async (req: RaceTraitCreateRequest, res: Response): Promise<void> => {
-    const { slug, name, description, hasValue } = req.body;
-
     try {
-        const result = await prisma.raceTrait.create({
-            data: {
-                slug,
-                name,
-                description,
-                hasValue,
-            },
+        const result = await raceService.createRaceTrait(req.body);
+        res.status(201).json({
+            success: true,
+            data: result,
         });
-
-        res.status(201).json({ slug: result.slug, message: 'Race trait created successfully' });
     } catch (error) {
         console.error('Error creating race trait:', error);
-        res.status(500).send('Server error');
+        if (error instanceof Error) {
+            res.status(400).json({
+                success: false,
+                error: error.message,
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: 'Failed to create race trait',
+            });
+        }
     }
 };
 
@@ -298,86 +197,31 @@ export const CreateRaceTrait = async (req: RaceTraitCreateRequest, res: Response
  */
 export const UpdateRace = async (req: RaceUpdateRequest, res: Response): Promise<void> => {
     const { id } = req.params;
-    const {
-        name,
-        description,
-        sizeId,
-        speed,
-        favoredClassId,
-        editionId,
-        isVisible,
-        languages,
-        adjustments,
-        traits
-    } = req.body;
-
     try {
-        await prisma.$transaction(async (tx) => {
-            const updatedRace = await tx.race.update({
-                where: { id: parseInt(id) },
-                data: {
-                    name,
-                    description,
-                    sizeId,
-                    speed,
-                    favoredClassId,
-                    editionId,
-                    isVisible,
-                },
-            });
-
-            // Update languages
-            await tx.raceLanguageMap.deleteMany({
-                where: { raceId: parseInt(id) },
-            });
-            if (languages && languages.length > 0) {
-                await tx.raceLanguageMap.createMany({
-                    data: languages.map(lang => ({
-                        raceId: parseInt(id),
-                        languageId: lang.languageId,
-                        isAutomatic: lang.isAutomatic,
-                    })),
-                });
-            }
-
-            // Update ability adjustments
-            await tx.raceAbilityAdjustment.deleteMany({
-                where: { raceId: parseInt(id) },
-            });
-            if (adjustments && adjustments.length > 0) {
-                await tx.raceAbilityAdjustment.createMany({
-                    data: adjustments.map(adj => ({
-                        raceId: parseInt(id),
-                        abilityId: adj.abilityId,
-                        value: adj.value,
-                    })),
-                });
-            }
-
-            // Update traits
-            await tx.raceTraitMap.deleteMany({
-                where: { raceId: parseInt(id) },
-            });
-            if (traits && traits.length > 0) {
-                await tx.raceTraitMap.createMany({
-                    data: traits.map(trait => ({
-                        raceId: parseInt(id),
-                        traitId: trait.traitId,
-                        value: trait.value,
-                    })),
-                });
-            }
-
-            return updatedRace;
+        const result = await raceService.updateRace(parseInt(id), req.body);
+        res.json({
+            success: true,
+            data: result,
         });
-
-        res.status(200).json({ message: 'Race updated successfully' });
     } catch (error) {
         console.error('Error updating race:', error);
-        if (error instanceof Error && error.message.includes('Record to update not found')) {
-            res.status(404).send('Race not found or no changes made');
+        if (error instanceof Error) {
+            if (error.message.includes('Record to update not found')) {
+                res.status(404).json({
+                    success: false,
+                    error: 'Race not found',
+                });
+            } else {
+                res.status(400).json({
+                    success: false,
+                    error: error.message,
+                });
+            }
         } else {
-            res.status(500).send('Server error');
+            res.status(500).json({
+                success: false,
+                error: 'Failed to update race',
+            });
         }
     }
 };
@@ -387,25 +231,31 @@ export const UpdateRace = async (req: RaceUpdateRequest, res: Response): Promise
  */
 export const UpdateRaceTrait = async (req: RaceTraitUpdateRequest, res: Response): Promise<void> => {
     const { slug } = req.params;
-    const { name, description, hasValue } = req.body;
-
     try {
-        const _updatedTrait = await prisma.raceTrait.update({
-            where: { slug },
-            data: {
-                name,
-                description,
-                hasValue,
-            },
+        const result = await raceService.updateRaceTrait(slug, req.body);
+        res.json({
+            success: true,
+            data: result,
         });
-
-        res.status(200).json({ message: 'Race trait updated successfully' });
     } catch (error) {
         console.error('Error updating race trait:', error);
-        if (error instanceof Error && error.message.includes('Record to update not found')) {
-            res.status(404).send('Race trait not found or no changes made');
+        if (error instanceof Error) {
+            if (error.message.includes('Record to update not found')) {
+                res.status(404).json({
+                    success: false,
+                    error: 'Race trait not found',
+                });
+            } else {
+                res.status(400).json({
+                    success: false,
+                    error: error.message,
+                });
+            }
         } else {
-            res.status(500).send('Server error');
+            res.status(500).json({
+                success: false,
+                error: 'Failed to update race trait',
+            });
         }
     }
 };
@@ -416,16 +266,23 @@ export const UpdateRaceTrait = async (req: RaceTraitUpdateRequest, res: Response
 export const DeleteRace = async (req: RaceDeleteRequest, res: Response): Promise<void> => {
     const { id } = req.params;
     try {
-        await prisma.race.delete({
-            where: { id: parseInt(id) },
+        const result = await raceService.deleteRace(parseInt(id));
+        res.json({
+            success: true,
+            data: result,
         });
-        res.status(200).send('Race deleted successfully');
     } catch (error) {
         console.error('Error deleting race:', error);
         if (error instanceof Error && error.message.includes('Record to delete does not exist')) {
-            res.status(404).send('Race not found');
+            res.status(404).json({
+                success: false,
+                error: 'Race not found',
+            });
         } else {
-            res.status(500).send('Server error');
+            res.status(500).json({
+                success: false,
+                error: 'Failed to delete race',
+            });
         }
     }
 };
@@ -436,16 +293,23 @@ export const DeleteRace = async (req: RaceDeleteRequest, res: Response): Promise
 export const DeleteRaceTrait = async (req: RaceTraitDeleteRequest, res: Response): Promise<void> => {
     const { slug } = req.params;
     try {
-        await prisma.raceTrait.delete({
-            where: { slug },
+        const result = await raceService.deleteRaceTrait(slug);
+        res.json({
+            success: true,
+            data: result,
         });
-        res.status(200).send('Race trait deleted successfully');
     } catch (error) {
         console.error('Error deleting race trait:', error);
         if (error instanceof Error && error.message.includes('Record to delete does not exist')) {
-            res.status(404).send('Race trait not found');
+            res.status(404).json({
+                success: false,
+                error: 'Race trait not found',
+            });
         } else {
-            res.status(500).send('Server error');
+            res.status(500).json({
+                success: false,
+                error: 'Failed to delete race trait',
+            });
         }
     }
 }; 

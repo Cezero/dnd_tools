@@ -3,17 +3,10 @@ import jwt from 'jsonwebtoken';
 
 import { PrismaClient } from '@shared/prisma-client';
 
-import type { LoginUserRequest, RegisterUserRequest, JwtPayload, AuthServiceResult } from './types';
+import type { JwtPayload, AuthService } from './types';
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'your_dev_secret';
-
-export interface AuthService {
-    registerUser: (data: RegisterUserRequest) => Promise<AuthServiceResult>;
-    loginUser: (data: LoginUserRequest) => Promise<AuthServiceResult>;
-    getUserFromToken: (token: string) => Promise<AuthServiceResult>;
-    refreshToken: (token: string) => Promise<AuthServiceResult>;
-}
 
 export const authService: AuthService = {
     async registerUser({ username, email, password }) {

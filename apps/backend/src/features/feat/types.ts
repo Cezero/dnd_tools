@@ -8,21 +8,15 @@ export type FeatQuery = Partial<Record<keyof Feat, string>> & {
     [key: string]: string | undefined;
 };
 
+// Type for creating benefit/prerequisite entries (without featId since it's set by the service)
+export type FeatBenefitCreateData = Omit<FeatBenefitMap, 'featId'>;
+export type FeatPrerequisiteCreateData = Omit<FeatPrerequisiteMap, 'featId'>;
+
 // Use Prisma types for create/update operations
 export type FeatCreateData = Pick<Feat, 'name' | 'typeId'> &
     Partial<Pick<Feat, 'description' | 'benefit' | 'normalEffect' | 'specialEffect' | 'prerequisites' | 'repeatable' | 'fighterBonus'>> & {
-        benefits?: Array<{
-            index: number;
-            typeId: number;
-            referenceId?: number;
-            amount?: number;
-        }>;
-        prereqs?: Array<{
-            index: number;
-            typeId: number;
-            referenceId?: number;
-            amount?: number;
-        }>;
+        benefits?: FeatBenefitCreateData[];
+        prereqs?: FeatPrerequisiteCreateData[];
     };
 
 export type FeatUpdateData = FeatCreateData;
@@ -56,4 +50,14 @@ export interface FeatListResponse {
     limit: number;
     total: number;
     results: FeatWithRelations[];
+}
+
+// Service interface
+export interface FeatService {
+    getAllFeats: (query: FeatQuery) => Promise<FeatListResponse>;
+    getAllFeatsSimple: () => Promise<Array<{ id: number; name: string }>>;
+    getFeatById: (id: number) => Promise<FeatWithRelations | null>;
+    createFeat: (data: FeatCreateData) => Promise<{ id: number; message: string }>;
+    updateFeat: (id: number, data: FeatUpdateData) => Promise<{ message: string }>;
+    deleteFeat: (id: number) => Promise<{ message: string }>;
 } 

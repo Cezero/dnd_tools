@@ -10,4 +10,5 @@ export {
 export { RequireAuthExcept } from './requireAuthExcept';
 
 // Other middleware
-export { validateRequest } from './validateRequest'; 
+export { validateRequest } from './validateRequest';
+export { errorHandler, asyncHandler } from './errorMiddleware'; 

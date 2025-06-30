@@ -9,41 +9,6 @@ export type SkillQuery = Partial<Record<keyof Skill, string>> & {
     [key: string]: string | undefined;
 };
 
-export interface SkillCreateData {
-    name: string;
-    abilityId: number;
-    trainedOnly: boolean;
-    affectedByArmor: boolean;
-    description?: string;
-    checkDescription?: string;
-    actionDescription?: string;
-    retryTypeId?: number;
-    retryDescription?: string;
-    specialNotes?: string;
-    synergyNotes?: string;
-    untrainedNotes?: string;
-}
-
-export type SkillUpdateData = SkillCreateData;
-
-// Request interfaces extending Express Request
-export interface SkillRequest extends Request {
-    query: SkillQuery;
-}
-
-export interface SkillCreateRequest extends Request {
-    body: SkillCreateData;
-}
-
-export interface SkillUpdateRequest extends Request {
-    params: { id: string };
-    body: SkillUpdateData;
-}
-
-export interface SkillDeleteRequest extends Request {
-    params: { id: string };
-}
-
 // Use Prisma type directly for skill response
 export type SkillResponse = Skill;
 
@@ -52,4 +17,14 @@ export interface SkillListResponse {
     limit: number;
     total: number;
     results: SkillResponse[];
+}
+
+// Service interface
+export interface SkillService {
+    getAllSkills: (query: SkillQuery) => Promise<SkillListResponse>;
+    getAllSkillsSimple: () => Promise<Array<{ id: number; name: string }>>;
+    getSkillById: (id: number) => Promise<SkillResponse | null>;
+    createSkill: (data: import('@shared/prisma-client').Prisma.SkillCreateInput) => Promise<{ id: number; message: string }>;
+    updateSkill: (id: number, data: import('@shared/prisma-client').Prisma.SkillUpdateInput) => Promise<{ message: string }>;
+    deleteSkill: (id: number) => Promise<{ message: string }>;
 } 

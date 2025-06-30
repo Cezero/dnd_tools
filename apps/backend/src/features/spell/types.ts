@@ -1,47 +1,20 @@
 import type { Request } from 'express';
+import type { z } from 'zod';
 
-import type { Spell, Class } from '@shared/prisma-client';
+import type { Spell, Class, Prisma } from '@shared/prisma-client';
+import type { UpdateSpellRequest, SpellQueryRequest } from '@shared/schema';
+import { SpellQuerySchema } from '@shared/schema';
 
-// Extend Prisma Spell type for query parameters, making all fields optional and string-based
-export type SpellQueryParams = Partial<Record<keyof Spell, string | string[]>> & {
-    classId?: string | string[];
-    spellLevel?: string | string[];
-    schools?: string | string[];
-    descriptors?: string | string[];
-    source?: string | string[];
-    components?: string | string[];
-    page?: string;
-    limit?: string;
-    [key: string]: string | string[] | undefined;
-};
-
-export interface UpdateSpellRequest {
-    summary?: string;
-    description?: string;
-    castingTime?: string;
-    range?: string;
-    rangeTypeId?: number;
-    rangeValue?: string;
-    area?: string;
-    duration?: string;
-    savingThrow?: string;
-    spellResistance?: string;
-    editionId?: number;
-    schools?: number[];
-    subschools?: number[];
-    descriptors?: number[];
-    components?: number[];
-    effect?: string;
-    target?: string;
-}
+// Raw query parameters type for Express (before Zod transformation)
+export type SpellQueryRaw = z.input<typeof SpellQuerySchema>;
 
 // Request interfaces extending Express Request
 export interface SpellRequest extends Request {
-    query: SpellQueryParams;
+    query: SpellQueryRaw;
 }
 
 export interface SpellCreateRequest extends Request {
-    body: Partial<Spell>;
+    body: Prisma.SpellCreateInput;
 }
 
 export interface SpellUpdateRequest extends Request {
@@ -70,4 +43,12 @@ export interface SpellListResponse {
     limit: number;
     total: number;
     results: SpellWithLevelMapping[];
+}
+
+// Service interface using the transformed Zod schema type
+export interface SpellService {
+    getAllSpells(query: SpellQueryRequest): Promise<SpellListResponse>;
+    getSpellById(id: number): Promise<SpellWithLevelMapping | null>;
+    updateSpell(id: number, data: UpdateSpellRequest): Promise<{ message: string }>;
+    resolveSpellNames(spellNames: string[]): Promise<Record<string, number>>;
 } 
