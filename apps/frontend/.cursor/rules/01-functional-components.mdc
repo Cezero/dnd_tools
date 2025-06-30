@@ -1,0 +1,6 @@
+---
+description: Creating a new React component
+globs: 
+alwaysApply: false
+---
+Use a functional component written in TypeScript with typed props (via interfaces or `React.FC` if appropriate)

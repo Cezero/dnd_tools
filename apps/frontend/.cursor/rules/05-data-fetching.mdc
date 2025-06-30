@@ -1,0 +1,6 @@
+---
+description: Fetching remote data in a React component
+globs: 
+alwaysApply: false
+---
+Use `useEffect` with async functions, or use a library like SWR or React Query

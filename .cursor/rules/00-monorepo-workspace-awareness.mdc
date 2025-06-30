@@ -1,0 +1,36 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Monorepo Workspace Awareness
+
+## Project Structure
+The DnD Tools project follows a monorepo model with multiple workspaces in /home/countzero/git/dnd_tools/:
+- `/home/countzero/git/dnd_tools/k8s/` - Kubernetes deployment files
+- `/home/countzero/git/dnd_tools/apps/frontend/` - React frontend application
+- `/home/countzero/git/dnd_tools/apps/backend/` - Backend API application
+- `/home/countzero/git/dnd_tools/packages/shared/prisma-client/` - Shared Prisma client and Prisma types
+- `/home/countzero/git/dnd_tools/packages/shared/schema/` - Shared Zod schema files for validation
+- `/home/countzero/git/dnd_tools/packages/shared/static-data/` - Shared static data, mostly used by the frontend for id -> name mappings
+
+## Workspace Verification Rules
+ALWAYS verify you're in the correct workspace before performing any file operations:
+- **Frontend work** should be in `/home/countzero/git/dnd_tools/apps/frontend/`
+- **Backend work** should be in `/home/countzero/git/dnd_tools/apps/backend/`
+- **K8s work** should be in `/home/countzero/git/dnd_tools/k8s/`
+- **Zod schema work** should be stored in `/home/countzero/git/dnd_tools/packages/shared/schema`
+
+## Safety Checks
+- NEVER assume the workspace root - always verify it matches the expected project structure
+- Before any file operation, list the current directory contents to confirm you're in the expected project structure
+- If you see `k8s/` in the path but the user is asking about frontend/backend code, you're in the wrong workspace
+- When the user mentions 'frontend', 'backend', or specific project folders, confirm you're in the correct workspace first
+- If the user's request involves specific project files (like React components, package.json, etc.), verify you're in the correct project workspace
+- When in doubt about workspace context, ask the user to clarify the correct directory or project structure
+- Never proceed with file operations if there's any uncertainty about the workspace location
+
+## Workspace-Specific Operations
+- When working with React components or frontend assets, you MUST be in the frontend workspace
+- When working with API routes, database models, or backend logic, you MUST be in the backend workspace
+- When working with deployment manifests, you MUST be in the k8s workspace

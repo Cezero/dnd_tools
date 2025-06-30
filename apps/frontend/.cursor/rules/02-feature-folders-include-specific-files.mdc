@@ -1,0 +1,6 @@
+---
+description: Organizing a feature folder
+globs: 
+alwaysApply: false
+---
+Each feature folder should include related files such as `routes.ts`, and `types.ts` where applicable.

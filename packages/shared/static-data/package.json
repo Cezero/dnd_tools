@@ -11,6 +11,9 @@
     ],
     "type": "module",
     "scripts": {
-        "lint": "eslint . --ext .ts,.tsx,.js,.jsx"
+        "lint": "eslint . --ext .ts,.tsx,.js,.jsx --no-cache"
+    },
+    "dependencies": {
+        "@shared/prisma-client": "workspace:*"
     }
 }

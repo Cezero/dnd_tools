@@ -1,0 +1,6 @@
+---
+description: Adding reusable logic to routes
+globs: 
+alwaysApply: false
+---
+Use Express middleware for reusable tasks such as authentication, logging, or input validation.

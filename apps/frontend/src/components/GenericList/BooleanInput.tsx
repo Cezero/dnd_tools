@@ -1,15 +1,6 @@
 import React, { useRef, useEffect } from 'react';
-import Icon from '@mdi/react';
-import { mdiCheck } from '@mdi/js';
-
-interface BooleanInputProps {
-    value?: boolean | number | null;
-    onToggle: (value: boolean | number | null) => void;
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    className?: string;
-    appendClassName?: string;
-}
+import { CheckIcon } from '@heroicons/react/24/outline';
+import type { BooleanInputProps } from './types';
 
 /**
  * A boolean input component for GenericList, similar to MultiSelect but with hardcoded 'True' and 'False' options.
@@ -86,7 +77,7 @@ export const BooleanInput = ({
                                     <span
                                         className="absolute inset-y-0 left-0 flex items-center pl-0 text-blue-500 dark:text-blue-300"
                                     >
-                                        <Icon path={mdiCheck} size={0.7} aria-hidden="true" />
+                                        <CheckIcon className="w-4 h-4 text-blue-500 dark:text-blue-300" />
                                     </span>
                                 )}
                             </div>

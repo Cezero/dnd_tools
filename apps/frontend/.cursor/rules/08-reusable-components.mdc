@@ -1,0 +1,6 @@
+---
+description: You repeat UI patterns or elements in multiple places
+globs: 
+alwaysApply: false
+---
+Extract them into separate components with clearly defined props and responsibility

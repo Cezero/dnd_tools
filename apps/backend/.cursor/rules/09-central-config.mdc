@@ -1,0 +1,6 @@
+---
+description: Adding configuration
+globs: 
+alwaysApply: false
+---
+Store environment config and constants in a top-level `config/` folder with structured access.

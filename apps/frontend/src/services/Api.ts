@@ -1,8 +1,10 @@
+import { Prisma } from '@shared/prisma-client';
+
 interface ApiOptions extends RequestInit {
     headers?: Record<string, string>;
 }
 
-export const Api = async (endpoint: string, options: ApiOptions = {}): Promise<any> => {
+export const Api = async <T = unknown>(endpoint: string, options: ApiOptions = {}): Promise<T> => {
     const token = localStorage.getItem('token');
     let defaultHeaders: Record<string, string> = {
         // Default headers can be added here if common to all requests

@@ -7,19 +7,22 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint . --ext .ts,.tsx,.js,.jsx"
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx --config ../../eslint.config.js --no-cache"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",
     "@heroicons/react": "^2.2.0",
     "@shared/prisma-client": "workspace:*",
+    "@shared/schema": "workspace:*",
     "@shared/static-data": "workspace:*",
     "@uiw/react-md-editor": "^4.0.7",
+    "eslint-plugin-import": "^2.32.0",
     "pluralize": "^8.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^6.30.1",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "zod": "^3.25.67"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",

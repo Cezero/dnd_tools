@@ -1,0 +1,7 @@
+---
+description: Validating request data
+globs: 
+alwaysApply: false
+---
+Use the shared/schema component to import Zod validation schema details.
+If new schemas still need to be created, prompt the user

@@ -1,9 +1,8 @@
 ---
-description: Use this when constructing API calls to the backend
+description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
-This rule provides standards for interfacing with the backend API
-- import Prisma types from the shared prisma-client package
+- Import Prisma types from the shared prisma-client package
 - Only import the type, for example: import type { User } from '@shared/prisma-client/client'
-- Use these types for API submissions to ensure data sent to the backend is correct
+- Prisma types are the source of truth for backend and static-data objects

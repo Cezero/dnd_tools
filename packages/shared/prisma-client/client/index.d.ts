@@ -11346,7 +11346,7 @@ export namespace Prisma {
   export type SpellGroupByOutputType = {
     id: number
     name: string
-    summary: string
+    summary: string | null
     description: string | null
     castingTime: string | null
     range: string | null
@@ -11449,7 +11449,7 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       id: number
       name: string
-      summary: string
+      summary: string | null
       description: string | null
       castingTime: string | null
       range: string | null
@@ -38373,7 +38373,7 @@ export namespace Prisma {
     NOT?: SpellWhereInput | SpellWhereInput[]
     id?: IntFilter<"Spell"> | number
     name?: StringFilter<"Spell"> | string
-    summary?: StringFilter<"Spell"> | string
+    summary?: StringNullableFilter<"Spell"> | string | null
     description?: StringNullableFilter<"Spell"> | string | null
     castingTime?: StringNullableFilter<"Spell"> | string | null
     range?: StringNullableFilter<"Spell"> | string | null
@@ -38397,7 +38397,7 @@ export namespace Prisma {
   export type SpellOrderByWithRelationInput = {
     id?: SortOrder
     name?: SortOrder
-    summary?: SortOrder
+    summary?: SortOrderInput | SortOrder
     description?: SortOrderInput | SortOrder
     castingTime?: SortOrderInput | SortOrder
     range?: SortOrderInput | SortOrder
@@ -38425,7 +38425,7 @@ export namespace Prisma {
     OR?: SpellWhereInput[]
     NOT?: SpellWhereInput | SpellWhereInput[]
     name?: StringFilter<"Spell"> | string
-    summary?: StringFilter<"Spell"> | string
+    summary?: StringNullableFilter<"Spell"> | string | null
     description?: StringNullableFilter<"Spell"> | string | null
     castingTime?: StringNullableFilter<"Spell"> | string | null
     range?: StringNullableFilter<"Spell"> | string | null
@@ -38449,7 +38449,7 @@ export namespace Prisma {
   export type SpellOrderByWithAggregationInput = {
     id?: SortOrder
     name?: SortOrder
-    summary?: SortOrder
+    summary?: SortOrderInput | SortOrder
     description?: SortOrderInput | SortOrder
     castingTime?: SortOrderInput | SortOrder
     range?: SortOrderInput | SortOrder
@@ -38476,7 +38476,7 @@ export namespace Prisma {
     NOT?: SpellScalarWhereWithAggregatesInput | SpellScalarWhereWithAggregatesInput[]
     id?: IntWithAggregatesFilter<"Spell"> | number
     name?: StringWithAggregatesFilter<"Spell"> | string
-    summary?: StringWithAggregatesFilter<"Spell"> | string
+    summary?: StringNullableWithAggregatesFilter<"Spell"> | string | null
     description?: StringNullableWithAggregatesFilter<"Spell"> | string | null
     castingTime?: StringNullableWithAggregatesFilter<"Spell"> | string | null
     range?: StringNullableWithAggregatesFilter<"Spell"> | string | null
@@ -40501,7 +40501,7 @@ export namespace Prisma {
 
   export type SpellCreateInput = {
     name: string
-    summary: string
+    summary?: string | null
     description?: string | null
     castingTime?: string | null
     range?: string | null
@@ -40525,7 +40525,7 @@ export namespace Prisma {
   export type SpellUncheckedCreateInput = {
     id?: number
     name: string
-    summary: string
+    summary?: string | null
     description?: string | null
     castingTime?: string | null
     range?: string | null
@@ -40548,7 +40548,7 @@ export namespace Prisma {
 
   export type SpellUpdateInput = {
     name?: StringFieldUpdateOperationsInput | string
-    summary?: StringFieldUpdateOperationsInput | string
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     castingTime?: NullableStringFieldUpdateOperationsInput | string | null
     range?: NullableStringFieldUpdateOperationsInput | string | null
@@ -40572,7 +40572,7 @@ export namespace Prisma {
   export type SpellUncheckedUpdateInput = {
     id?: IntFieldUpdateOperationsInput | number
     name?: StringFieldUpdateOperationsInput | string
-    summary?: StringFieldUpdateOperationsInput | string
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     castingTime?: NullableStringFieldUpdateOperationsInput | string | null
     range?: NullableStringFieldUpdateOperationsInput | string | null
@@ -40596,7 +40596,7 @@ export namespace Prisma {
   export type SpellCreateManyInput = {
     id?: number
     name: string
-    summary: string
+    summary?: string | null
     description?: string | null
     castingTime?: string | null
     range?: string | null
@@ -40614,7 +40614,7 @@ export namespace Prisma {
 
   export type SpellUpdateManyMutationInput = {
     name?: StringFieldUpdateOperationsInput | string
-    summary?: StringFieldUpdateOperationsInput | string
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     castingTime?: NullableStringFieldUpdateOperationsInput | string | null
     range?: NullableStringFieldUpdateOperationsInput | string | null
@@ -40633,7 +40633,7 @@ export namespace Prisma {
   export type SpellUncheckedUpdateManyInput = {
     id?: IntFieldUpdateOperationsInput | number
     name?: StringFieldUpdateOperationsInput | string
-    summary?: StringFieldUpdateOperationsInput | string
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     castingTime?: NullableStringFieldUpdateOperationsInput | string | null
     range?: NullableStringFieldUpdateOperationsInput | string | null
@@ -46980,7 +46980,7 @@ export namespace Prisma {
 
   export type SpellCreateWithoutLevelMappingInput = {
     name: string
-    summary: string
+    summary?: string | null
     description?: string | null
     castingTime?: string | null
     range?: string | null
@@ -47003,7 +47003,7 @@ export namespace Prisma {
   export type SpellUncheckedCreateWithoutLevelMappingInput = {
     id?: number
     name: string
-    summary: string
+    summary?: string | null
     description?: string | null
     castingTime?: string | null
     range?: string | null
@@ -47083,7 +47083,7 @@ export namespace Prisma {
 
   export type SpellUpdateWithoutLevelMappingInput = {
     name?: StringFieldUpdateOperationsInput | string
-    summary?: StringFieldUpdateOperationsInput | string
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     castingTime?: NullableStringFieldUpdateOperationsInput | string | null
     range?: NullableStringFieldUpdateOperationsInput | string | null
@@ -47106,7 +47106,7 @@ export namespace Prisma {
   export type SpellUncheckedUpdateWithoutLevelMappingInput = {
     id?: IntFieldUpdateOperationsInput | number
     name?: StringFieldUpdateOperationsInput | string
-    summary?: StringFieldUpdateOperationsInput | string
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     castingTime?: NullableStringFieldUpdateOperationsInput | string | null
     range?: NullableStringFieldUpdateOperationsInput | string | null
@@ -47397,7 +47397,7 @@ export namespace Prisma {
 
   export type SpellCreateWithoutDescriptorsInput = {
     name: string
-    summary: string
+    summary?: string | null
     description?: string | null
     castingTime?: string | null
     range?: string | null
@@ -47420,7 +47420,7 @@ export namespace Prisma {
   export type SpellUncheckedCreateWithoutDescriptorsInput = {
     id?: number
     name: string
-    summary: string
+    summary?: string | null
     description?: string | null
     castingTime?: string | null
     range?: string | null
@@ -47458,7 +47458,7 @@ export namespace Prisma {
 
   export type SpellUpdateWithoutDescriptorsInput = {
     name?: StringFieldUpdateOperationsInput | string
-    summary?: StringFieldUpdateOperationsInput | string
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     castingTime?: NullableStringFieldUpdateOperationsInput | string | null
     range?: NullableStringFieldUpdateOperationsInput | string | null
@@ -47481,7 +47481,7 @@ export namespace Prisma {
   export type SpellUncheckedUpdateWithoutDescriptorsInput = {
     id?: IntFieldUpdateOperationsInput | number
     name?: StringFieldUpdateOperationsInput | string
-    summary?: StringFieldUpdateOperationsInput | string
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     castingTime?: NullableStringFieldUpdateOperationsInput | string | null
     range?: NullableStringFieldUpdateOperationsInput | string | null
@@ -47503,7 +47503,7 @@ export namespace Prisma {
 
   export type SpellCreateWithoutSchoolsInput = {
     name: string
-    summary: string
+    summary?: string | null
     description?: string | null
     castingTime?: string | null
     range?: string | null
@@ -47526,7 +47526,7 @@ export namespace Prisma {
   export type SpellUncheckedCreateWithoutSchoolsInput = {
     id?: number
     name: string
-    summary: string
+    summary?: string | null
     description?: string | null
     castingTime?: string | null
     range?: string | null
@@ -47564,7 +47564,7 @@ export namespace Prisma {
 
   export type SpellUpdateWithoutSchoolsInput = {
     name?: StringFieldUpdateOperationsInput | string
-    summary?: StringFieldUpdateOperationsInput | string
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     castingTime?: NullableStringFieldUpdateOperationsInput | string | null
     range?: NullableStringFieldUpdateOperationsInput | string | null
@@ -47587,7 +47587,7 @@ export namespace Prisma {
   export type SpellUncheckedUpdateWithoutSchoolsInput = {
     id?: IntFieldUpdateOperationsInput | number
     name?: StringFieldUpdateOperationsInput | string
-    summary?: StringFieldUpdateOperationsInput | string
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     castingTime?: NullableStringFieldUpdateOperationsInput | string | null
     range?: NullableStringFieldUpdateOperationsInput | string | null
@@ -47609,7 +47609,7 @@ export namespace Prisma {
 
   export type SpellCreateWithoutSourcesInput = {
     name: string
-    summary: string
+    summary?: string | null
     description?: string | null
     castingTime?: string | null
     range?: string | null
@@ -47632,7 +47632,7 @@ export namespace Prisma {
   export type SpellUncheckedCreateWithoutSourcesInput = {
     id?: number
     name: string
-    summary: string
+    summary?: string | null
     description?: string | null
     castingTime?: string | null
     range?: string | null
@@ -47698,7 +47698,7 @@ export namespace Prisma {
 
   export type SpellUpdateWithoutSourcesInput = {
     name?: StringFieldUpdateOperationsInput | string
-    summary?: StringFieldUpdateOperationsInput | string
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     castingTime?: NullableStringFieldUpdateOperationsInput | string | null
     range?: NullableStringFieldUpdateOperationsInput | string | null
@@ -47721,7 +47721,7 @@ export namespace Prisma {
   export type SpellUncheckedUpdateWithoutSourcesInput = {
     id?: IntFieldUpdateOperationsInput | number
     name?: StringFieldUpdateOperationsInput | string
-    summary?: StringFieldUpdateOperationsInput | string
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     castingTime?: NullableStringFieldUpdateOperationsInput | string | null
     range?: NullableStringFieldUpdateOperationsInput | string | null
@@ -47777,7 +47777,7 @@ export namespace Prisma {
 
   export type SpellCreateWithoutSubschoolsInput = {
     name: string
-    summary: string
+    summary?: string | null
     description?: string | null
     castingTime?: string | null
     range?: string | null
@@ -47800,7 +47800,7 @@ export namespace Prisma {
   export type SpellUncheckedCreateWithoutSubschoolsInput = {
     id?: number
     name: string
-    summary: string
+    summary?: string | null
     description?: string | null
     castingTime?: string | null
     range?: string | null
@@ -47838,7 +47838,7 @@ export namespace Prisma {
 
   export type SpellUpdateWithoutSubschoolsInput = {
     name?: StringFieldUpdateOperationsInput | string
-    summary?: StringFieldUpdateOperationsInput | string
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     castingTime?: NullableStringFieldUpdateOperationsInput | string | null
     range?: NullableStringFieldUpdateOperationsInput | string | null
@@ -47861,7 +47861,7 @@ export namespace Prisma {
   export type SpellUncheckedUpdateWithoutSubschoolsInput = {
     id?: IntFieldUpdateOperationsInput | number
     name?: StringFieldUpdateOperationsInput | string
-    summary?: StringFieldUpdateOperationsInput | string
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     castingTime?: NullableStringFieldUpdateOperationsInput | string | null
     range?: NullableStringFieldUpdateOperationsInput | string | null

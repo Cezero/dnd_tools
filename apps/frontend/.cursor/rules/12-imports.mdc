@@ -1,0 +1,6 @@
+---
+description: Writing import statements
+globs: 
+alwaysApply: false
+---
+Use absolute imports with aliases defined in `tsconfig.json` or `vite.config.ts`, and group them by type

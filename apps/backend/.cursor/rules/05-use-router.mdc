@@ -1,0 +1,6 @@
+---
+description: Organizing routes
+globs: 
+alwaysApply: false
+---
+Group related endpoints using `express.Router()` and place them in separate modules.

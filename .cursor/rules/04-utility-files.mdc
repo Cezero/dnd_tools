@@ -1,0 +1,6 @@
+---
+description: Naming utility files
+globs: 
+alwaysApply: false
+---
+Use camelCase for utility/helper files, e.g., `formatDate.ts`.

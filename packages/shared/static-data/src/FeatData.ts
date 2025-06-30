@@ -1,17 +1,4 @@
-interface FeatType {
-    id: number;
-    name: string;
-}
-
-interface FeatBenefitType {
-    id: number;
-    name: string;
-}
-
-interface FeatPrerequisiteType {
-    id: number;
-    name: string;
-}
+import type { FeatType, FeatBenefitType, FeatPrerequisiteType } from './types';
 
 export const FEAT_TYPES: { [key: string]: FeatType } = {
     GENERAL: { id: 1, name: 'General' },

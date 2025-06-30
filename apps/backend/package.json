@@ -12,22 +12,29 @@
         "generate": "prisma generate",
         "studio": "prisma studio",
         "typecheck": "tsc --noEmit",
-        "lint": "eslint . --ext .ts,.tsx,.js,.jsx"
+        "lint": "eslint . --ext .ts,.tsx,.js,.jsx --config ../../eslint.config.js --no-cache",
+        "migrate-data": "node scripts/migrate-data.js"
     },
     "keywords": [],
     "author": "",
     "license": "ISC",
     "packageManager": "pnpm@10.12.4",
     "dependencies": {
+        "@prisma/client": "6.10.1",
+        "@shared/prisma-client": "workspace:*",
+        "@shared/schema": "workspace:*",
         "@types/bcrypt": "^5.0.2",
         "@types/jsonwebtoken": "^9.0.10",
         "bcrypt": "^6.0.0",
         "cors": "^2.8.5",
+        "dotenv": "^17.0.0",
         "express": "^5.1.0",
         "jsonwebtoken": "^9.0.2",
+        "mysql2": "^3.14.1",
         "path-to-regexp": "^8.2.0",
         "prisma": "^6.10.1",
-        "@shared/prisma-client": "workspace:*"
+        "zod": "^3.25.67",
+        "zod-prisma-types": "^3.2.4"
     },
     "devDependencies": {
         "@types/cors": "^2.8.19",

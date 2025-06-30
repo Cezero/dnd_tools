@@ -1,17 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
-import { UseAuth } from '@/auth/AuthProvider';
-import { ThemeToggle } from '@/components/NavBar/ThemeToggle';
+import { withAuth } from '@/components/auth/withAuth';
+import { ThemeToggle } from '@/components/navBar/themeToggle';
 import React, { useState, useRef, useEffect } from 'react';
 import { FeatureNavigation } from '@/features/FeatureRoutes';
 import { EDITION_LIST } from '@shared/static-data';
+import type { NavBarProps, EditionOption } from './types';
 
-interface EditionOption {
-    value: string;
-    label: string;
-}
-
-export function NavBar(): React.JSX.Element {
-    const { user, Logout, UpdatePreferredEdition } = UseAuth();
+function NavBarComponent({ auth }: NavBarProps): React.JSX.Element {
     const location = useLocation();
     const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -23,7 +18,7 @@ export function NavBar(): React.JSX.Element {
     };
 
     const HandleLogout = (): void => {
-        Logout();
+        auth.Logout();
         setIsDropdownOpen(false);
     };
 
@@ -39,8 +34,8 @@ export function NavBar(): React.JSX.Element {
             setEditions(editionOptions);
 
             // Set initial selected edition from user profile or default
-            if (user?.preferred_edition_id) {
-                setSelectedEdition(String(user.preferred_edition_id));
+            if (auth.user?.preferred_edition_id) {
+                setSelectedEdition(String(auth.user.preferred_edition_id));
             } else {
                 setSelectedEdition('4');
             }
@@ -57,14 +52,14 @@ export function NavBar(): React.JSX.Element {
         return () => {
             document.removeEventListener("mousedown", HandleClickOutside);
         };
-    }, [user]); // Depend on user to re-evaluate preferred edition on login/logout
+    }, [auth.user]); // Depend on user to re-evaluate preferred edition on login/logout
 
     const HandleEditionChange = async (event: React.ChangeEvent<HTMLSelectElement>): Promise<void> => {
         const newEditionId = event.target.value;
         setSelectedEdition(newEditionId);
         // Send the actual edition ID for the combined option (which is 4) to the backend
         const editionIdForBackend = parseInt(newEditionId, 10);
-        await UpdatePreferredEdition(editionIdForBackend);
+        await auth.UpdatePreferredEdition(editionIdForBackend);
     };
 
     return (
@@ -88,7 +83,7 @@ export function NavBar(): React.JSX.Element {
                 })}
             </div>
             <div className="flex items-end space-x-1 mr-6 ml-auto">
-                {user && user.is_admin && (
+                {auth.user && auth.user.is_admin && (
                     <Link
                         to="/admin"
                         className={`px-2 border border-b-0 border-gray-300 dark:border-gray-600 rounded-t-lg 
@@ -113,10 +108,10 @@ export function NavBar(): React.JSX.Element {
                     </select>
                 )}
 
-                {user ? (
+                {auth.user ? (
                     <div className="relative">
                         <button onClick={ToggleDropdown} className="text-sm items-center rounded hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none">
-                            Logged in as <strong>{user.username}</strong>
+                            Logged in as <strong>{auth.user.username}</strong>
                         </button>
                         {isDropdownOpen && (
                             <div ref={dropdownRef} className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg py-1 z-20">
@@ -132,4 +127,7 @@ export function NavBar(): React.JSX.Element {
             </div>
         </nav>
     );
-} 
+}
+
+// Export the component wrapped with auth
+export const NavBar = withAuth(NavBarComponent); 

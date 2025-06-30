@@ -1,0 +1,6 @@
+---
+description: Applying Tailwind classes in JSX
+globs: 
+alwaysApply: false
+---
+Group related utility classes (e.g., layout, spacing, color) logically for readability; avoid class duplication

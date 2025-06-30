@@ -1,0 +1,6 @@
+---
+description: Exporting from a feature folder
+globs: 
+alwaysApply: false
+---
+Use an `index.ts` file in each feature folder to re-export module elements for cleaner imports.

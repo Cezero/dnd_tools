@@ -1,0 +1,6 @@
+---
+description: Writing tests
+globs: 
+alwaysApply: false
+---
+Colocate test files next to the source files they test, using `.test.ts` or `.spec.ts` suffixes.

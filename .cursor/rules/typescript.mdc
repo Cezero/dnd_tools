@@ -1,0 +1,6 @@
+---
+description: When creating type and interface definitions
+globs: 
+alwaysApply: false
+---
+- Avoid the use of any and unknown when generating types

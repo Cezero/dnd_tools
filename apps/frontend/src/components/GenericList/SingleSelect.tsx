@@ -1,22 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { CheckIcon } from '@heroicons/react/24/outline';
-
-interface SingleSelectOption {
-    [key: string]: string | number;
-}
-
-interface SingleSelectProps {
-    options: SingleSelectOption[];
-    displayKey: string;
-    valueKey: string;
-    selected?: string | number | null;
-    onChange: (value: string | number | null) => void;
-    placeholder?: string;
-    className?: string;
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    appendClassName?: string;
-}
+import type { SingleSelectProps } from './types';
 
 export const SingleSelect = ({
     options,

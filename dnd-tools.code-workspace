@@ -1,10 +1,7 @@
 {
 	"folders": [
 		{
-			"path": "k8s"
-		},
-		{
-			"path": "util"
+			"path": "."
 		},
 		{
 			"path": "apps/backend"
@@ -14,7 +11,32 @@
 		},
 		{
 			"path": "packages/shared"
+		},
+		{
+			"path": "k8s"
+		},
+		{
+			"path": "util"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"eslint.workingDirectories": [
+			{
+				"directory": "./apps/frontend",
+				"changeProcessCWD": true
+			},
+			{
+				"directory": "./apps/backend",
+				"changeProcessCWD": true
+			},
+			{
+				"directory": "./packages/shared",
+				"changeProcessCWD": true
+			}
+		],
+		"eslint.nodePath": "/home/countzero/dnd_tools/node_modules",
+		"eslint.useFlatConfig": true,
+		"eslint.runtime": "node",
+		"eslint.debug": false
+	}
 }

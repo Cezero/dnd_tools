@@ -1,0 +1,6 @@
+---
+description: Writing business logic
+globs: 
+alwaysApply: false
+---
+Extract logic from route handlers into a separate service layer to improve testability and separation of concerns.

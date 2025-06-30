@@ -1,0 +1,66 @@
+{
+    "name": "@shared/schema",
+    "version": "1.0.0",
+    "description": "Shared validation schemas for D&D Tools",
+    "main": "dist/index.js",
+    "module": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "type": "module",
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch",
+        "clean": "rm -rf dist"
+    },
+    "dependencies": {
+        "zod": "^3.25.67"
+    },
+    "devDependencies": {
+        "typescript": "^5.3.3"
+    },
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        },
+        "./common": {
+            "types": "./dist/common.d.ts",
+            "import": "./dist/common.js"
+        },
+        "./auth": {
+            "types": "./dist/auth.d.ts",
+            "import": "./dist/auth.js"
+        },
+        "./character": {
+            "types": "./dist/character.d.ts",
+            "import": "./dist/character.js"
+        },
+        "./class": {
+            "types": "./dist/class.d.ts",
+            "import": "./dist/class.js"
+        },
+        "./feat": {
+            "types": "./dist/feat.d.ts",
+            "import": "./dist/feat.js"
+        },
+        "./race": {
+            "types": "./dist/race.d.ts",
+            "import": "./dist/race.js"
+        },
+        "./referencetables": {
+            "types": "./dist/referencetables.d.ts",
+            "import": "./dist/referencetables.js"
+        },
+        "./skill": {
+            "types": "./dist/skill.d.ts",
+            "import": "./dist/skill.js"
+        },
+        "./spell": {
+            "types": "./dist/spell.d.ts",
+            "import": "./dist/spell.js"
+        },
+        "./userProfile": {
+            "types": "./dist/userProfile.d.ts",
+            "import": "./dist/userProfile.js"
+        }
+    }
+}

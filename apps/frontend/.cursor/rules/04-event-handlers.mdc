@@ -1,0 +1,6 @@
+---
+description: Defining event handlers in a component
+globs: 
+alwaysApply: false
+---
+Use arrow functions and avoid inline JSX handlers where possible to improve readability and performance

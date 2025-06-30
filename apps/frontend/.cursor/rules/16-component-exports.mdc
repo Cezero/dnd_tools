@@ -1,0 +1,6 @@
+---
+description: Exporting a component from its own file
+globs: 
+alwaysApply: false
+---
+Use default export for the primary component, and named exports for related helpers or subcomponents

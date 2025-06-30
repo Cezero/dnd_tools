@@ -1,0 +1,6 @@
+---
+description: Adding interactivity or state to a component
+globs: 
+alwaysApply: false
+---
+Use React Hooks like `useState`, `useEffect`, `useCallback`, and `useMemo`, and avoid class components

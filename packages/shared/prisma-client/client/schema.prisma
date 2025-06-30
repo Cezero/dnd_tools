@@ -21,7 +21,7 @@ model Class {
   isVisible        Boolean @default(true)
   canCastSpells    Boolean @default(false)
   hitDie           Int     @default(1)
-  description      String?
+  description      String? @db.Text
   skillPoints      Int
   castingAbilityId Int?
 
@@ -37,7 +37,7 @@ model ClassFeature {
   id          Int     @id @default(autoincrement())
   classId     Int
   name        String
-  description String?
+  description String? @db.Text
   level       Int?
 
   class Class @relation(fields: [classId], references: [id])
@@ -99,8 +99,8 @@ model SpellLevelMap {
 model Spell {
   id              Int     @id @default(autoincrement())
   name            String
-  summary         String
-  description     String?
+  summary         String? @db.Text
+  description     String? @db.Text
   castingTime     String?
   range           String?
   rangeTypeId     Int?
@@ -166,15 +166,15 @@ model Skill {
   id                Int      @id @default(autoincrement())
   name              String
   abilityId         Int      @default(1)
-  checkDescription  String?
-  actionDescription String?
+  checkDescription  String?  @db.Text
+  actionDescription String?  @db.Text
   retryTypeId       Int?
-  retryDescription  String?
-  specialNotes      String?
-  synergyNotes      String?
-  untrainedNotes    String?
+  retryDescription  String?  @db.Text
+  specialNotes      String?  @db.Text
+  synergyNotes      String?  @db.Text
+  untrainedNotes    String?  @db.Text
   affectedByArmor   Boolean  @default(false)
-  description       String?
+  description       String?  @db.Text
   trainedOnly       Boolean?
 
   classes ClassSkillMap[]
@@ -188,11 +188,11 @@ model Feat {
   id            Int      @id @default(autoincrement())
   name          String
   typeId        Int
-  description   String?
-  benefit       String?
-  normalEffect  String?
-  specialEffect String?
-  prerequisites String?
+  description   String?  @db.Text
+  benefit       String?  @db.Text
+  normalEffect  String?  @db.Text
+  specialEffect String?  @db.Text
+  prerequisites String?  @db.Text
   repeatable    Boolean?
   fighterBonus  Boolean?
 
@@ -233,7 +233,7 @@ model Race {
   name           String
   editionId      Int?
   isVisible      Boolean @default(true)
-  description    String?
+  description    String? @db.Text
   sizeId         Int     @default(5)
   speed          Int     @default(30)
   favoredClassId Int     @default(0)
@@ -248,7 +248,7 @@ model Race {
 model RaceTrait {
   slug        String  @id
   name        String?
-  description String?
+  description String? @db.Text
   hasValue    Boolean @default(false)
 
   raceLinks RaceTraitMap[]
@@ -317,7 +317,7 @@ model Armor {
 model Weapon {
   id           Int      @id @default(autoincrement())
   name         String
-  description  String?
+  description  String?  @db.Text
   category     Int
   cost         Decimal? @db.Decimal(5, 2)
   damageSmall  String?
@@ -338,7 +338,7 @@ model SourceBook {
   abbreviation String
   releaseDate  DateTime?
   editionId    Int?
-  description  String?
+  description  String?   @db.Text
   isVisible    Boolean   @default(true)
 
   classes ClassSourceMap[]
@@ -353,7 +353,7 @@ model SourceBook {
 model ReferenceTable {
   slug        String  @id
   name        String
-  description String?
+  description String? @db.Text
 
   columns ReferenceTableColumn[]
   rows    ReferenceTableRow[]
@@ -385,7 +385,7 @@ model ReferenceTableCell {
   id       Int     @id @default(autoincrement())
   rowId    Int
   columnId Int
-  value    String?
+  value    String? @db.Text
   colSpan  Int?
   rowSpan  Int?
 
@@ -409,7 +409,7 @@ model UserCharacter {
   eyes        String?
   hair        String?
   gender      String?
-  notes       String?
+  notes       String? @db.Text
 
   attributes UserCharacterAttribute[]
   race       Race                     @relation(fields: [raceId], references: [id])

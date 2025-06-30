@@ -1,18 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { XCircleIcon } from '@heroicons/react/24/outline';
-
-interface TextInputProps {
-    onChange: (value: string) => void;
-    className?: string;
-    selected?: string;
-    open?: boolean;
-    onOpenChange?: (open: boolean) => void;
-    dynamic?: boolean;
-    dynamicFilterDelay?: number;
-    placeholder?: string;
-    type?: string;
-    appendClassName?: string;
-}
+import type { TextInputProps } from './types';
 
 export const TextInput = ({
     onChange,

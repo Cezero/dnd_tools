@@ -1,0 +1,6 @@
+---
+description: Using shared helpers
+globs: 
+alwaysApply: false
+---
+Put shared utilities or helpers in a `lib/` folder with stable APIs, not in feature folders.

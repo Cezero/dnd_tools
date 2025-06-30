@@ -1,8 +1,7 @@
 ---
-description: This rule provides rules for using Prisma
+description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
-Use this rule when creating controllers that interface with the database.
 - The Prisma Schema is the source of truth, always use the field names defined there
 - Do not edit the Prisma Schema

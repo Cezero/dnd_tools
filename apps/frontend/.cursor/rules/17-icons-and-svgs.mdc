@@ -1,0 +1,6 @@
+---
+description: Adding icons or SVGs
+globs: 
+alwaysApply: false
+---
+Prefer `heroicons` components and fallback to `mdi/js` if no appropriate heroicon exists.

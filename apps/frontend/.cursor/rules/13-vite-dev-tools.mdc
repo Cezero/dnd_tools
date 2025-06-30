@@ -1,0 +1,6 @@
+---
+description: Setting up the development server or build tooling
+globs: 
+alwaysApply: false
+---
+Use Vite as the build tool for fast startup, hot reload, and optimized builds

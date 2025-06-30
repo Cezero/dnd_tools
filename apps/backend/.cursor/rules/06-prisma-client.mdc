@@ -1,0 +1,6 @@
+---
+description: Accessing the database
+globs: 
+alwaysApply: false
+---
+Use Prisma Client for all database interactions, and prefer parameterized queries and `select`/`include` to limit data.

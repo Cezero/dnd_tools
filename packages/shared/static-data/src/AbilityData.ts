@@ -1,12 +1,12 @@
 import { AbilityMap, SavingThrowMap } from './types';
 
 export const ABILITY_MAP: AbilityMap = {
-    1: { id: 1, name: 'Strength', abbr: 'STR' },
-    2: { id: 2, name: 'Dexterity', abbr: 'DEX' },
-    3: { id: 3, name: 'Constitution', abbr: 'CON' },
-    4: { id: 4, name: 'Intelligence', abbr: 'INT' },
-    5: { id: 5, name: 'Wisdom', abbr: 'WIS' },
-    6: { id: 6, name: 'Charisma', abbr: 'CHA' },
+    1: { id: 1, name: 'Strength', abbreviation: 'STR' },
+    2: { id: 2, name: 'Dexterity', abbreviation: 'DEX' },
+    3: { id: 3, name: 'Constitution', abbreviation: 'CON' },
+    4: { id: 4, name: 'Intelligence', abbreviation: 'INT' },
+    5: { id: 5, name: 'Wisdom', abbreviation: 'WIS' },
+    6: { id: 6, name: 'Charisma', abbreviation: 'CHA' },
 }
 
 export const ABILITY_LIST = Object.values(ABILITY_MAP);
@@ -46,9 +46,9 @@ export const GetBonusSpellsForAbility = (abilityScore: number): number[] => {
 }
 
 export const SAVING_THROW_MAP: SavingThrowMap = {
-    1: { id: 1, "name": "Fortitude", "abbr": "Fort" },
-    2: { id: 2, "name": "Will", "abbr": "Will" },
-    3: { id: 3, "name": "Reflex", "abbr": "Ref" },
+    1: { id: 1, name: "Fortitude", abbreviation: "Fort" },
+    2: { id: 2, name: "Will", abbreviation: "Will" },
+    3: { id: 3, name: "Reflex", abbreviation: "Ref" },
 }
 
 export const SAVING_THROW_LIST = Object.values(SAVING_THROW_MAP) 

@@ -1,0 +1,6 @@
+---
+description: Writing JSX elements
+globs: 
+alwaysApply: false
+---
+Use semantic HTML and include accessibility features like ARIA labels or roles where needed

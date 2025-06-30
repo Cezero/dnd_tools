@@ -1,0 +1,6 @@
+---
+description: Naming source files
+globs: 
+alwaysApply: false
+---
+Use PascalCase for components, camelCase for hooks and utility functions

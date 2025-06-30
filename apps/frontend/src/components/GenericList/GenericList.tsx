@@ -1,29 +1,18 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { FunnelIcon as FunnelIconOutline, Cog6ToothIcon as Cog6ToothIcon , PencilSquareIcon} from '@heroicons/react/24/outline';
+import { FunnelIcon as FunnelIconOutline, Cog6ToothIcon as Cog6ToothIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import { FunnelIcon as FunnelIconSolid, TrashIcon, ChevronDoubleUpIcon, ChevronDoubleDownIcon } from '@heroicons/react/24/solid';
-import { ColumnConfigModal, UseColumnConfig } from '@/components/GenericList/ColumnConfig';
+import { ColumnConfigModal, UseColumnConfig } from './ColumnConfig';
 import pluralize from 'pluralize';
 import { useNavigate } from 'react-router-dom';
-
-// Type definitions
-interface ColumnDefinition {
-    label: string;
-    sortable?: boolean;
-    filterable?: boolean;
-    filterType?: 'input' | 'select' | 'multi-select' | 'boolean';
-    alwaysVisible?: boolean;
-    dynamicFilter?: boolean;
-    multiColumn?: string[];
-    paramName?: string;
-    filterLabel?: string;
-}
-
-// Discriminated union for filter values based on actual usage patterns
-type FilterValue = 
-    | { type: 'input'; value: string }
-    | { type: 'select'; value: string | number | null }
-    | { type: 'multi-select'; value: { values: string[]; logic: 'or' | 'and' } }
-    | { type: 'boolean'; value: boolean | null };
+import type {
+    ColumnDefinition,
+    FilterValue,
+    FilterState,
+    DataItem,
+    FilterComponentProps,
+    FilterOption,
+    GenericListProps
+} from './types';
 
 // Type guards for filter values
 function isInputFilter(value: unknown): value is { type: 'input'; value: string } {
@@ -51,66 +40,7 @@ function isStringArray(value: unknown): value is string[] {
     return Array.isArray(value) && value.every(item => typeof item === 'string');
 }
 
-// Filter component props that match actual usage
-interface FilterComponentProps {
-    selected?: string | boolean | string[];
-    onChange: (value: string | boolean | string[]) => void;
-    open?: boolean;
-    onOpenChange?: (open: boolean) => void;
-    logicType?: string;
-    onLogicChange?: (logic: string) => void;
-    value?: boolean;
-    onToggle?: (value: boolean) => void;
-    dynamic?: boolean;
-    dynamicFilterDelay?: number;
-    multiColumn?: string[];
-    appendClassName?: string;
-    id?: string;
-}
-
-interface FilterOption {
-    component: React.ComponentType<FilterComponentProps>;
-    props?: Partial<FilterComponentProps>;
-}
-
-// New discriminated union for FilterState
-interface FilterState {
-    [key: string]: FilterValue;
-}
-
-// Define the data item type based on usage - ensure id is always string or number
-interface DataItem {
-    [key: string]: string | number | boolean | null | undefined;
-    id: string | number;
-}
-
-interface GenericListProps {
-    // Configuration props
-    storageKey: string;
-    defaultColumns: string[];
-    columnDefinitions: Record<string, ColumnDefinition>;
-    requiredColumnId: string;
-    fetchData: (params: URLSearchParams) => Promise<{ data: DataItem[]; total: number }>;
-    renderCell: (item: DataItem, columnId: string, isLastVisibleColumn?: boolean) => React.ReactNode;
-    filterOptions?: Record<string, FilterOption>;
-
-    // Routing props
-    detailPagePath?: string;
-    idKey?: string;
-    itemDesc?: string;
-    dynamicFilterDelay?: number;
-    initialLimit?: number;
-    isColumnConfigurable?: boolean;
-
-    // Option selector props
-    isOptionSelector?: boolean;
-    selectedIds?: (string | number)[];
-    onSelectedIdsChange?: (ids: (string | number)[]) => void;
-    editHandler?: (item: DataItem) => void;
-    deleteHandler?: (item: DataItem) => void;
-}
-
-export function GenericList({
+export function GenericList<T = DataItem>({
     // Configuration props
     storageKey,
     defaultColumns,
@@ -134,8 +64,8 @@ export function GenericList({
     onSelectedIdsChange,
     editHandler,
     deleteHandler,
-}: GenericListProps): React.JSX.Element {
-    const [data, setData] = useState<DataItem[]>([]);
+}: GenericListProps<T>): React.JSX.Element {
+    const [data, setData] = useState<T[]>([]);
     const [total, setTotal] = useState<number>(0);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const navigate = useNavigate();
@@ -390,7 +320,7 @@ export function GenericList({
         setFilters(prev => {
             const newFilters = { ...prev };
             const filterType = columnDefinitions[filterKey]?.filterType;
-            
+
             if (filterType === 'multi-select') {
                 newFilters[filterKey] = {
                     type: 'multi-select',
@@ -429,12 +359,12 @@ export function GenericList({
         setFilters(prev => {
             const newFilters = { ...prev };
             const currentFilter = prev[filterKey];
-            
+
             if (isMultiSelectFilter(currentFilter)) {
                 newFilters[filterKey] = {
                     type: 'multi-select',
-                    value: { 
-                        ...currentFilter.value, 
+                    value: {
+                        ...currentFilter.value,
                         logic: (newLogic === 'and' ? 'and' : 'or') as 'or' | 'and'
                     }
                 };

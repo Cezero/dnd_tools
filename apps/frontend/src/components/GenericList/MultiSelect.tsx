@@ -1,25 +1,7 @@
 import React, { useRef, useEffect } from 'react';
-import { CheckIcon, PlusCircleIcon} from '@heroicons/react/24/outline';
+import { CheckIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
 import { PlusCircleIcon as PlusCircleIconSolid } from '@heroicons/react/24/solid';
-
-
-interface MultiSelectOption {
-    [key: string]: string | number;
-}
-
-interface MultiSelectProps {
-    options: MultiSelectOption[];
-    displayKey: string;
-    valueKey: string;
-    selected: (string | number)[];
-    onChange: (values: (string | number)[]) => void;
-    className?: string;
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    logicType?: 'or' | 'and';
-    onLogicChange?: (logic: 'or' | 'and') => void;
-    appendClassName?: string;
-}
+import type { MultiSelectProps } from './types';
 
 export const MultiSelect = ({
     options,

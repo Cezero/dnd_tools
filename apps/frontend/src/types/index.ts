@@ -1,7 +1,9 @@
+import React from 'react';
+
 // Common types used throughout the application
 
 // API Response types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
     data: T;
     message?: string;
     success: boolean;
@@ -36,11 +38,12 @@ export interface RegisterCredentials extends LoginCredentials {
 // Route configuration types
 export interface RouteConfig {
     path: string;
-    component: React.ComponentType<any>;
+    component: React.ComponentType<Record<string, unknown>>;
     exact?: boolean;
     children?: RouteConfig[];
-    auth?: boolean;
-    admin?: boolean;
+    requireAuth?: boolean; // Requires authentication
+    requireAdmin?: boolean; // Requires admin privileges
+    redirectTo?: string; // Custom redirect path for unauthorized access
 }
 
 export interface NavigationItem {
@@ -53,7 +56,7 @@ export interface NavigationItem {
 // Generic list types
 export interface ListItem {
     id: string;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export interface ListState<T extends ListItem> {
@@ -89,7 +92,7 @@ export interface BaseComponentProps {
 export interface AppError {
     message: string;
     code?: string;
-    details?: any;
+    details?: unknown;
 }
 
 // Loading states

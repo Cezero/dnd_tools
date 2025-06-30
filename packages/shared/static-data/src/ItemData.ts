@@ -1,27 +1,4 @@
-interface WeaponCategory {
-    id: number;
-    name: string;
-}
-
-interface WeaponType {
-    id: number;
-    name: string;
-}
-
-interface DamageType {
-    id: number;
-    name: string;
-}
-
-interface ArmorCategory {
-    id: number;
-    name: string;
-}
-
-interface ProficiencyType {
-    id: number;
-    name: string;
-}
+import type { WeaponCategory, WeaponType, DamageType, ArmorCategory, ProficiencyType } from './types';
 
 export const WEAPON_CATEGORIES: { [key: number]: WeaponCategory } = {
     1: { id: 1, name: 'Simple' },

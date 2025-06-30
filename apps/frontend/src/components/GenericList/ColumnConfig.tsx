@@ -1,21 +1,5 @@
 import React, { useState, useEffect } from 'react';
-
-interface ColumnDefinition {
-    label: string;
-    sortable?: boolean;
-    filterable?: boolean;
-    filterType?: 'input' | 'select' | 'multi-select' | 'boolean';
-    alwaysVisible?: boolean;
-    dynamicFilter?: boolean;
-    multiColumn?: string[];
-    paramName?: string;
-    filterLabel?: string;
-}
-
-interface UseColumnConfigReturn {
-    visibleColumns: string[];
-    setVisibleColumns: React.Dispatch<React.SetStateAction<string[]>>;
-}
+import type { ColumnDefinition, UseColumnConfigReturn, ColumnConfigModalProps } from './types';
 
 export function UseColumnConfig(
     storageKey: string,
@@ -50,15 +34,6 @@ export function UseColumnConfig(
     }, [visibleColumns, storageKey, requiredColumnId]);
 
     return { visibleColumns, setVisibleColumns };
-}
-
-interface ColumnConfigModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    visibleColumns: string[];
-    setVisibleColumns: React.Dispatch<React.SetStateAction<string[]>>;
-    columnDefinitions: Record<string, ColumnDefinition>;
-    requiredColumnId: string;
 }
 
 export function ColumnConfigModal({

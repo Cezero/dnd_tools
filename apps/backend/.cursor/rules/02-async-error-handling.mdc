@@ -1,0 +1,6 @@
+---
+description: Writing async route handlers
+globs: 
+alwaysApply: false
+---
+Use `try/catch` blocks to handle errors gracefully and pass them to Express's error middleware.

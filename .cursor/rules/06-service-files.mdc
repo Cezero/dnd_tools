@@ -1,0 +1,6 @@
+---
+description: Naming API or service files
+globs: 
+alwaysApply: false
+---
+Use camelCase for files such as `authService.ts` or `api.ts`.

@@ -1,0 +1,6 @@
+---
+description: Structuring API responses
+globs: 
+alwaysApply: false
+---
+Return JSON responses with consistent shapes like `{ success, data, error }` for frontend-friendly APIs.

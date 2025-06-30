@@ -1,0 +1,6 @@
+---
+description: Registering routes
+globs: 
+alwaysApply: false
+---
+Register routes in a central `routes/index.ts` file by importing feature-level `routes.ts` and attaching them to the Express app.

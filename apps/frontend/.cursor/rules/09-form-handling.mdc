@@ -1,0 +1,6 @@
+---
+description: Creating a form with user inputs
+globs: 
+alwaysApply: false
+---
+Use controlled components and consider using `react-hook-form` for better performance and validation
