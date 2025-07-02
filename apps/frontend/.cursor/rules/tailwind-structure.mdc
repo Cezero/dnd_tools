@@ -1,0 +1,8 @@
+---
+description: Applying Tailwind classes in JSX
+globs: 
+alwaysApply: false
+---
+Group related utility classes (e.g., layout, spacing, color) logically for readability; avoid class duplication
+Use Tailwind utility classes instead of inline styles or CSS modules
+Use `clsx`, `classnames`, or `tailwind-variants` for clearer, maintainable class logic

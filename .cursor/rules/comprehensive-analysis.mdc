@@ -3,7 +3,6 @@ description: Perform comprehensive analysis before implementation
 globs: ["**/*"]
 alwaysApply: true
 ---
-
 **Analysis Requirements:**
 1. Check cursor rules to ensure compliance
 2. Search the codebase for similar implementations

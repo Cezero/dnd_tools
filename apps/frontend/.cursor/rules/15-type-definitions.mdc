@@ -1,6 +1,0 @@
----
-description: Declaring component props or shared types
-globs: 
-alwaysApply: false
----
-Use `interface` for props and `type` for unions; always prefer explicit over inferred types for public APIs

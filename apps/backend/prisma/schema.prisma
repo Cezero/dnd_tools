@@ -119,6 +119,7 @@ model Spell {
     schools      SpellSchoolMap[]
     sources      SpellSourceMap[]
     subschools   SpellSubschoolMap[]
+    components   SpellComponentMap[]
 }
 
 model SpellDescriptorMap {
@@ -156,6 +157,7 @@ model SpellComponentMap {
     id          Int @id @default(autoincrement())
     spellId     Int
     componentId Int
+    Spell   Spell @relation(fields: [spellId], references: [id])
 }
 
 // =================
@@ -350,6 +352,12 @@ model SourceBook {
 // Reference Tables
 // =================
 
+enum TextAlignment {
+    left
+    center
+    right
+}
+
 model ReferenceTable {
     slug        String  @id
     name        String
@@ -357,6 +365,7 @@ model ReferenceTable {
 
     columns ReferenceTableColumn[]
     rows    ReferenceTableRow[]
+    cells   ReferenceTableCell[]
 }
 
 model ReferenceTableColumn {
@@ -365,7 +374,7 @@ model ReferenceTableColumn {
     columnIndex Int
     header      String
     span        Int?
-    alignment   String?
+    alignment   TextAlignment?
 
     cells ReferenceTableCell[]
     table ReferenceTable       @relation(fields: [tableSlug], references: [slug])
@@ -383,6 +392,7 @@ model ReferenceTableRow {
 
 model ReferenceTableCell {
     id       Int     @id @default(autoincrement())
+    tableSlug   String
     rowId    Int
     columnId Int
     value    String? @db.Text
@@ -391,6 +401,7 @@ model ReferenceTableCell {
 
     column ReferenceTableColumn @relation(fields: [columnId], references: [id])
     row    ReferenceTableRow    @relation(fields: [rowId], references: [id])
+    table  ReferenceTable       @relation(fields: [tableSlug], references: [slug])
 }
 
 // =================

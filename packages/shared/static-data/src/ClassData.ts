@@ -1,8 +1,8 @@
-import type { Class } from '@shared/prisma-client/client';
+import type { ClassResponse } from '@shared/schema';
 import type { ClassMap, StaticClassData } from './types';
 
 // Function to convert StaticClassData to full Class type with defaults
-export function toClassData(staticData: StaticClassData): Class {
+export function toClassData(staticData: StaticClassData): ClassResponse {
     return {
         ...staticData,
         hitDie: staticData.hitDie ?? 1,
@@ -147,7 +147,7 @@ const _CLASS_MAP: ClassMap = {
 };
 
 // Wrapper that provides Class objects with defaults applied
-export const CLASS_MAP: { [key: number]: Class } = Object.fromEntries(
+export const CLASS_MAP: ClassMap = Object.fromEntries(
     Object.entries(_CLASS_MAP).map(([key, value]) => [key, toClassData(value)])
 );
 

@@ -2,7 +2,7 @@ import { visit } from 'unist-util-visit';
 import { FlushEntityResolutionQueue } from '@/services/EntityResolver';
 import { h } from 'hastscript';
 import { RenderMarkdownToHast } from '@/plugins/RenderMarkdownToHast';
-import { Root, Element } from 'hast';
+import type { Root, Element } from 'hast';
 
 interface RehypeResolveEntitiesAndEmbedsOptions {
     tableClass?: string;
@@ -30,17 +30,6 @@ interface TableRow {
 interface TableData {
     headers: TableHeader[];
     rows: TableRow[];
-}
-
-interface ElementWithProperties extends Element {
-    properties?: {
-        dataEntityType?: string;
-        dataEntityValue?: string;
-        dataTableSlug?: string;
-        href?: string;
-        className?: string;
-        [key: string]: any;
-    };
 }
 
 function EstimatePreferredWidthsFromRows(headers: TableHeader[], rows: TableRow[]): TableHeader[] {
@@ -144,14 +133,22 @@ export async function RenderStructuredTable(tableData: TableData, tableClass: st
     ]);
 }
 
+type PropsWithEntityData = {
+    dataEntityType?: string;
+    dataEntityValue?: string;
+    dataTableSlug?: string;
+    href?: string;
+    className?: string | string[];
+    [key: string]: any;
+};
+
 export function RehypeResolveEntitiesAndEmbeds(options: RehypeResolveEntitiesAndEmbedsOptions = {}) {
     const { tableClass = 'md-table' } = options;
     return async function transformer(tree: Root) {
-        const entityLinks: ElementWithProperties[] = [];
-        const tablePlaceholders: ElementWithProperties[] = [];
-        visit(tree, 'element', (node: ElementWithProperties) => {
-            if (!node || typeof node !== 'object') return;
-            const props = node.properties || {};
+        const entityLinks: Element[] = [];
+        const tablePlaceholders: Element[] = [];
+        visit(tree, 'element', (node: Element) => {
+            const props = node.properties as PropsWithEntityData;
             if (node.tagName === 'a' && props.dataEntityType) {
                 entityLinks.push(node);
             }
@@ -166,24 +163,26 @@ export function RehypeResolveEntitiesAndEmbeds(options: RehypeResolveEntitiesAnd
 
         // Apply resolved entity IDs to link elements
         for (const node of entityLinks) {
-            const { dataEntityType: type, dataEntityValue: name } = node.properties || {};
+            const props = node.properties as PropsWithEntityData;
+            const { dataEntityType: type, dataEntityValue: name } = props;
+
             if (type && name) {
                 const id = resolvedData[type]?.[name];
                 if (id) {
-                    node.properties = node.properties || {};
-                    node.properties.href = `/${type}s/${id}`;
-                    node.properties.className = node.properties.className
-                        ? `${node.properties.className} entity-link`
+                    props.href = `/${type}s/${id}`;
+                    props.className = props.className
+                        ? `${props.className} entity-link`
                         : 'entity-link';
                 }
-                delete node.properties.dataEntityType;
-                delete node.properties.dataEntityValue;
+                delete props.dataEntityType;
+                delete props.dataEntityValue;
             }
         }
 
         // Replace table placeholders with rendered tables
         for (const node of tablePlaceholders) {
-            const slug = node.properties?.dataTableSlug;
+            const props = node.properties as PropsWithEntityData;
+            const slug = props.dataTableSlug;
             if (slug) {
                 const tableData = resolvedData.referencetable?.[slug];
 
@@ -200,7 +199,7 @@ export function RehypeResolveEntitiesAndEmbeds(options: RehypeResolveEntitiesAnd
                     node.children = [{ type: 'text', value: `[Missing table: ${slug}]` }];
                 }
 
-                delete node.properties.dataTableSlug;
+                delete props.dataTableSlug;
             }
         }
     }

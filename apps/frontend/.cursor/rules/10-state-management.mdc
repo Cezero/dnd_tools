@@ -1,6 +1,0 @@
----
-description: Managing shared state across multiple components
-globs: 
-alwaysApply: false
----
-Use React Context or a modern state library like Zustand; avoid excessive prop drilling

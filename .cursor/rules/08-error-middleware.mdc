@@ -1,8 +1,0 @@
----
-description: Handling application errors
-globs: 
-alwaysApply: false
----
-Implement centralized error-handling middleware for consistent and secure API responses.
-Leverage Zod middleware for input validation, leveraging Prisma types
-

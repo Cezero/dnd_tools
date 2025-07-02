@@ -1,33 +1,41 @@
 import { PrismaClient, Prisma } from '@shared/prisma-client';
+import {
+    CreateReferenceTableRequest,
+    ReferenceTableDataResponse,
+    ReferenceTableIdentifierRequest,
+    ReferenceTableQueryRequest,
+    ReferenceTableQueryResponse,
+    UpdateReferenceTableRequest
+} from '@shared/schema';
 
-import type { ReferenceTableData, ReferenceTableService } from './types';
+import { ReferenceTableService } from './types';
 
 const prisma = new PrismaClient();
 
 export const referenceTableService: ReferenceTableService = {
-    async getAllReferenceTables(query) {
-        const { page = '1', limit = '25', sort = 'name', order = 'asc', name = '', slug = '' } = query;
-        const offset = (parseInt(page) - 1) * parseInt(limit);
+    async getReferenceTables(query: ReferenceTableQueryRequest): Promise<ReferenceTableQueryResponse> {
+
+        const offset = (query.page - 1) * query.limit;
 
         const allowedSorts = ['name', 'slug'];
-        const sortBy = allowedSorts.includes(sort) ? sort : 'name';
-        const sortOrder = order === 'desc' ? 'desc' : 'asc';
+        const sortBy = allowedSorts.includes(query.sort) ? query.sort : 'name';
+        const sortOrder = query.order === 'desc' ? 'desc' : 'asc';
 
         // Build where clause for filtering
         const where: Prisma.ReferenceTableWhereInput = {};
 
-        if (name) {
-            where.name = { contains: name };
+        if (query.name) {
+            where.name = { contains: query.name };
         }
-        if (slug) {
-            where.slug = { contains: slug };
+        if (query.slug) {
+            where.slug = { contains: query.slug };
         }
 
         const [tables, total] = await Promise.all([
             prisma.referenceTable.findMany({
                 where,
                 skip: offset,
-                take: parseInt(limit),
+                take: query.limit,
                 orderBy: { [sortBy]: sortOrder },
                 include: {
                     _count: {
@@ -42,121 +50,32 @@ export const referenceTableService: ReferenceTableService = {
         ]);
 
         return {
-            page: parseInt(page),
-            limit: parseInt(limit),
+            page: query.page,
+            limit: query.limit,
             total,
-            results: tables,
+            results: tables
         };
     },
 
-    async getReferenceTableData(identifier: string | number): Promise<ReferenceTableData | null> {
-        let table;
-
-        // Determine if the identifier is a number (ID) or a string (slug)
-        const isNumeric = !isNaN(Number(identifier));
-
-        if (isNumeric) {
-            // ReferenceTable doesn't have an id field, only slug
-            return null;
-        } else {
-            table = await prisma.referenceTable.findUnique({
-                where: { slug: identifier as string },
-            });
-        }
-
-        if (!table) {
-            return null;
-        }
-
-        const tableSlug = table.slug;
-
-        // Get columns in order
-        const columns = await prisma.referenceTableColumn.findMany({
-            where: { tableSlug },
-            orderBy: { columnIndex: 'asc' },
-        });
-
-        // Get all rows
-        const tableRows = await prisma.referenceTableRow.findMany({
-            where: { tableSlug },
-            orderBy: { rowIndex: 'asc' },
-        });
-
-        // Get all cells with their related data
-        let cells: Array<Prisma.ReferenceTableCellGetPayload<{
+    async getReferenceTableData(identifier: ReferenceTableIdentifierRequest): Promise<ReferenceTableDataResponse | null> {
+        const table = await prisma.referenceTable.findUnique({
+            where: { slug: identifier.identifier },
             include: {
-                column: true;
-                row: true;
-            };
-        }>> = [];
-
-        if (tableRows.length > 0) {
-            cells = await prisma.referenceTableCell.findMany({
-                where: {
-                    rowId: {
-                        in: tableRows.map(row => row.id),
-                    },
+                columns: {
+                    orderBy: {
+                        columnIndex: 'asc',
+                    }
                 },
-                include: {
-                    column: true,
-                    row: true,
-                },
-            });
-        }
-
-        // Create maps for quick lookup
-        const colMap = Object.fromEntries(columns.map(col => [col.id, col]));
-        const rowMap = Object.fromEntries(tableRows.map(row => [row.id, row]));
-
-        // Initialize structured rows with empty cells array
-        const structuredRows = tableRows.map(row => ({
-            id: row.id,
-            rowIndex: row.rowIndex,
-            label: row.label,
-            cells: [] as Array<Prisma.ReferenceTableCellGetPayload<{
-                include: {
-                    column: true;
-                    row: true;
-                };
-            }> | null>,
-        }));
-
-        // Assign cells to their correct positions
-        cells.forEach(cell => {
-            const row = rowMap[cell.rowId];
-            const col = colMap[cell.columnId];
-
-            if (row && col) {
-                const rowIndex = row.rowIndex;
-                const colIndex = col.columnIndex;
-
-                // Ensure the cells array is large enough
-                while (structuredRows[rowIndex].cells.length <= colIndex) {
-                    structuredRows[rowIndex].cells.push(null);
-                }
-
-                structuredRows[rowIndex].cells[colIndex] = cell;
-            }
-        });
-
-        return {
-            table: table,
-            headers: columns,
-            rows: structuredRows,
-        };
-    },
-
-    async createReferenceTable(data: Prisma.ReferenceTableCreateInput) {
-        // Use Prisma's nested input types to handle the complex relationships
-        const newTable = await prisma.referenceTable.create({
-            data,
-            include: {
-                columns: true,
                 rows: {
+                    orderBy: {
+                        rowIndex: 'asc',
+                    },
                     include: {
                         cells: {
-                            include: {
-                                column: true,
+                            orderBy: {
+                                column: {
+                                    columnIndex: 'asc',
+                                }
                             }
                         }
                     }
@@ -164,36 +83,128 @@ export const referenceTableService: ReferenceTableService = {
             }
         });
 
-        return { id: newTable.slug, message: 'Reference table created successfully' };
-    },
-
-    async updateReferenceTable(slug: string, data: Prisma.ReferenceTableUpdateInput) {
-        // Use Prisma's nested input types for complex update operations
-        await prisma.referenceTable.update({
-            where: { slug },
-            data,
-        });
-
-        return { message: 'Reference table updated successfully' };
-    },
-
-    async deleteReferenceTable(slug) {
-        await prisma.referenceTable.delete({
-            where: { slug },
-        });
-        return { message: 'Reference table deleted successfully' };
-    },
-
-    async resolve(identifiers: string[]): Promise<ReferenceTableData[]> {
-        const results: ReferenceTableData[] = [];
-
-        for (const identifier of identifiers) {
-            const tableData = await this.getReferenceTableData(identifier);
-            if (tableData) {
-                results.push(tableData);
-            }
+        if (!table) {
+            return null;
         }
 
-        return results;
+        return table;
     },
-}; 
+
+    async createReferenceTable(data: CreateReferenceTableRequest): Promise<{ id: string; message: string }> {
+        return prisma.$transaction(async (tx) => {
+            // 1. Create ReferenceTable main fields
+            const createdTable = await tx.referenceTable.create({
+                data: {
+                    ...data,
+                    columns: {
+                        create: data.columns?.map(col => ({
+                            ...col,
+                            tableSlug: data.slug,
+                        }))
+                    },
+                    rows: {
+                        create: data.rows?.map(row => ({
+                            ...row,
+                            tableSlug: data.slug,
+                        }))
+                    },
+                    cells: {
+                        create: data.cells?.map(cell => ({
+                            ...cell,
+                            tableSlug: data.slug,
+                        }))
+                    }
+                }
+            });
+
+            return { id: createdTable.slug, message: 'Reference table created successfully' };
+        });
+    },
+
+    async updateReferenceTable(identifier: ReferenceTableIdentifierRequest, data: UpdateReferenceTableRequest) {
+        return prisma.$transaction(async (tx) => {
+            // 1. Update ReferenceTable main fields
+            const _updatedTable = await tx.referenceTable.update({
+                where: { slug: identifier.identifier },
+                data: {
+                    name: data.name,
+                    description: data.description,
+                },
+            });
+
+            // 2. Delete existing columns
+            if (data.columns) {
+                await tx.referenceTableColumn.deleteMany({
+                    where: {
+                        tableSlug: identifier.identifier,
+                    }
+                });
+            
+                // 3. Create new columns
+                for (const col of data.columns) {
+                    await tx.referenceTableColumn.create({
+                        data: {
+                            tableSlug: identifier.identifier,
+                            columnIndex: col.columnIndex,
+                            header: col.header,
+                            span: col.span ?? null,
+                            alignment: col.alignment ?? null,
+                        },
+                    });
+                }
+            }
+
+            // 4. Delete existing rows
+            if (data.rows) {
+            await tx.referenceTableRow.deleteMany({
+                where: {
+                    tableSlug: identifier.identifier,
+                    }
+                });
+
+                // 5. Create new rows
+                for (const row of data.rows) {
+                    await tx.referenceTableRow.create({
+                        data: {
+                            tableSlug: identifier.identifier,
+                            rowIndex: row.rowIndex,
+                            label: row.label ?? null,
+                        },
+                    });
+                }
+            }
+
+            // 6. Delete existing cells
+            if (data.cells) {
+            await tx.referenceTableCell.deleteMany({
+                where: {
+                    tableSlug: identifier.identifier,
+                    }
+                });
+
+                // 7. Create new cells
+                for (const cell of data.cells) {
+                    await tx.referenceTableCell.create({
+                        data: {
+                            tableSlug: identifier.identifier,
+                            rowId: cell.rowId,
+                            columnId: cell.columnId,
+                            value: cell.value ?? null,
+                            colSpan: cell.colSpan ?? null,
+                            rowSpan: cell.rowSpan ?? null,
+                        },
+                    });
+                }
+            }
+
+            return { message: 'Reference table updated successfully' };
+        });
+    },
+
+    async deleteReferenceTable(identifier: ReferenceTableIdentifierRequest) {
+        await prisma.referenceTable.delete({
+            where: { slug: identifier.identifier },
+        });
+        return { message: 'Reference table deleted successfully' };
+    }
+};

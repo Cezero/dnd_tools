@@ -1,24 +1,24 @@
 import { visit } from 'unist-util-visit';
-import { Root, Element } from 'hast';
-
-interface ElementWithProperties extends Element {
-    properties?: {
-        href?: string;
-        className?: string[];
-        'data-preview'?: string;
-        [key: string]: any;
-    };
-}
+import type { Root, Element } from 'hast';
 
 export function RehypeLinkPreviews() {
     return (tree: Root) => {
-        visit(tree, 'element', (node: ElementWithProperties) => {
-            if (node.tagName === 'a' && node.properties?.href?.includes('/spells/')) {
-                node.properties.className = ['entity-link', 'hover-preview'];
+        visit(tree, 'element', (node: Element) => {
+            if (
+                node.tagName === 'a' &&
+                typeof node.properties?.href === 'string' &&
+                node.properties.href.includes('/spells/')
+            ) {
+                const props = node.properties as {
+                    href?: string;
+                    className?: string[];
+                    'data-preview'?: string;
+                    [key: string]: any;
+                };
 
-                // You could later enhance this with tooltips or popovers
-                node.properties['data-preview'] = node.properties.href;
+                props.className = ['entity-link', 'hover-preview'];
+                props['data-preview'] = props.href;
             }
         });
     };
-} 
+}

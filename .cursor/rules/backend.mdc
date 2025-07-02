@@ -1,7 +1,0 @@
----
-description: 
-globs: 
-alwaysApply: true
----
-- The Prisma Schema is the source of truth, always use the field names defined there
-- Do not edit the Prisma Schema

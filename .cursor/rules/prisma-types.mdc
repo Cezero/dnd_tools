@@ -1,7 +1,7 @@
 ---
-description: Using Prisma types consistently
-globs: ["backend/**/*"]
-alwaysApply: true
+description: Interacting with the database
+globs: 
+alwaysApply: false
 ---
 **Prisma Types Requirements:**
 1. ALWAYS import `Prisma` namespace: `import type { Prisma } from '@shared/prisma-client'`

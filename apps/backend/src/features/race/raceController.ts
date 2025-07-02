@@ -1,315 +1,161 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
+
+import {
+    ValidatedQueryT,
+    ValidatedParamsT,
+    ValidatedParamsBodyT,
+    ValidatedBodyT,
+    ValidatedNoInput
+} from '@/util/validated-types'
+import {
+    RaceTraitResponse,
+    RaceResponse,
+    RaceTraitQueryRequest,
+    RaceQueryRequest,
+    RaceIdParamRequest,
+    RaceTraitSlugParamRequest,
+    CreateRaceRequest,
+    CreateRaceTraitRequest,
+    UpdateRaceRequest,
+    UpdateRaceTraitRequest,
+    RaceQueryResponse,
+    RaceTraitQueryResponse,
+    RaceTraitGetAllResponse,
+} from '@shared/schema';
 
 import { raceService } from './raceService';
-import type {
-    RaceRequest,
-    RaceCreateRequest,
-    RaceUpdateRequest,
-    RaceDeleteRequest,
-    RaceTraitRequest,
-    RaceTraitCreateRequest,
-    RaceTraitUpdateRequest,
-    RaceTraitDeleteRequest
-} from './types';
-
 /**
  * Fetches all races from the database with pagination and filtering.
  */
-export const GetRaces = async (req: RaceRequest, res: Response): Promise<void> => {
-    try {
-        const result = await raceService.getAllRaces(req.query);
-        res.json({
-            success: true,
-            data: result,
-        });
-    } catch (error) {
-        console.error('Error fetching races:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to fetch races',
-        });
-    }
-};
-
-export const GetAllRaces = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const races = await raceService.getAllRacesSimple();
-        res.json({
-            success: true,
-            data: races,
-        });
-    } catch (error) {
-        console.error('Error fetching all races:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to fetch all races',
-        });
-    }
-};
+export async function GetRaces(req: ValidatedQueryT<RaceQueryRequest, RaceQueryResponse>, res: Response) {
+    const result = await raceService.getRaces(req.query);
+    res.json({
+        success: true,
+        data: result,
+    });
+}
 
 /**
  * Fetches a single race by its ID.
  */
-export const GetRaceById = async (req: Request<{ id: string }>, res: Response): Promise<void> => {
-    const { id } = req.params;
-    try {
-        const race = await raceService.getRaceById(parseInt(id));
+export async function GetRaceById(req: ValidatedParamsT<RaceIdParamRequest, RaceResponse>, res: Response) {
+    const race = await raceService.getRaceById(req.params);
 
-        if (!race) {
-            res.status(404).json({
-                success: false,
-                error: 'Race not found',
-            });
-            return;
-        }
-
-        res.json({
-            success: true,
-            data: race,
-        });
-    } catch (error) {
-        console.error('Error fetching race by ID:', error);
-        res.status(500).json({
+    if (!race) {
+        res.status(404).json({
             success: false,
-            error: 'Failed to fetch race',
+            error: 'Race not found',
         });
+        return;
     }
-};
+
+    res.json({
+        success: true,
+        data: race,
+    });
+}
 
 /**
  * Fetches all race traits from the database.
  */
-export const GetRaceTraits = async (req: RaceTraitRequest, res: Response): Promise<void> => {
-    try {
-        const result = await raceService.getAllRaceTraits(req.query);
-        res.json({
-            success: true,
-            data: result,
-        });
-    } catch (error) {
-        console.error('Error fetching race traits:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to fetch race traits',
-        });
-    }
-};
+export async function GetRaceTraits(req: ValidatedQueryT<RaceTraitQueryRequest, RaceTraitQueryResponse>, res: Response) {
+    const result = await raceService.getRaceTraits(req.query);
+    res.json({
+        success: true,
+        data: result,
+    });
+}
 
 /**
  * Fetches a single race trait by its slug.
  */
-export const GetRaceTraitBySlug = async (req: Request<{ slug: string }>, res: Response): Promise<void> => {
-    const { slug } = req.params;
-    try {
-        const trait = await raceService.getRaceTraitBySlug(slug);
+export async function GetRaceTraitBySlug(req: ValidatedParamsT<RaceTraitSlugParamRequest, RaceTraitResponse>, res: Response) {
+    const trait = await raceService.getRaceTraitBySlug(req.params);
 
-        if (!trait) {
-            res.status(404).json({
-                success: false,
-                error: 'Race trait not found',
-            });
-            return;
-        }
-
-        res.json({
-            success: true,
-            data: trait,
-        });
-    } catch (error) {
-        console.error('Error fetching race trait by slug:', error);
-        res.status(500).json({
+    if (!trait) {
+        res.status(404).json({
             success: false,
-            error: 'Failed to fetch race trait',
+            error: 'Race trait not found',
         });
+        return;
     }
-};
 
-export const GetAllRaceTraits = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const traits = await raceService.getAllRaceTraitsSimple();
-        res.json({
-            success: true,
-            data: traits,
-        });
-    } catch (error) {
-        console.error('Error fetching all race traits:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to fetch all race traits',
-        });
-    }
-};
+    res.json({
+        success: true,
+        data: trait,
+    });
+}
+
+export async function GetAllRaceTraits(req: ValidatedNoInput<RaceTraitGetAllResponse>, res: Response) {
+    const traits = await raceService.getRaceTraitsList();
+    res.json({
+        success: true,
+        data: traits,
+    });
+}
 
 /**
  * Creates a new race.
  */
-export const CreateRace = async (req: RaceCreateRequest, res: Response): Promise<void> => {
-    try {
-        const result = await raceService.createRace(req.body);
-        res.status(201).json({
-            success: true,
-            data: result,
-        });
-    } catch (error) {
-        console.error('Error creating race:', error);
-        if (error instanceof Error) {
-            res.status(400).json({
-                success: false,
-                error: error.message,
-            });
-        } else {
-            res.status(500).json({
-                success: false,
-                error: 'Failed to create race',
-            });
-        }
-    }
-};
+export async function CreateRace(req: ValidatedBodyT<CreateRaceRequest>, res: Response) {
+    const result = await raceService.createRace(req.body);
+    res.status(201).json({
+        success: true,
+        data: result,
+    });
+}
 
 /**
  * Creates a new race trait.
  */
-export const CreateRaceTrait = async (req: RaceTraitCreateRequest, res: Response): Promise<void> => {
-    try {
-        const result = await raceService.createRaceTrait(req.body);
-        res.status(201).json({
-            success: true,
-            data: result,
-        });
-    } catch (error) {
-        console.error('Error creating race trait:', error);
-        if (error instanceof Error) {
-            res.status(400).json({
-                success: false,
-                error: error.message,
-            });
-        } else {
-            res.status(500).json({
-                success: false,
-                error: 'Failed to create race trait',
-            });
-        }
-    }
-};
+export async function CreateRaceTrait(req: ValidatedBodyT<CreateRaceTraitRequest>, res: Response) {
+    const result = await raceService.createRaceTrait(req.body);
+    res.status(201).json({
+        success: true,
+        data: result,
+    });
+}
 
 /**
  * Updates an existing race.
  */
-export const UpdateRace = async (req: RaceUpdateRequest, res: Response): Promise<void> => {
-    const { id } = req.params;
-    try {
-        const result = await raceService.updateRace(parseInt(id), req.body);
-        res.json({
-            success: true,
-            data: result,
-        });
-    } catch (error) {
-        console.error('Error updating race:', error);
-        if (error instanceof Error) {
-            if (error.message.includes('Record to update not found')) {
-                res.status(404).json({
-                    success: false,
-                    error: 'Race not found',
-                });
-            } else {
-                res.status(400).json({
-                    success: false,
-                    error: error.message,
-                });
-            }
-        } else {
-            res.status(500).json({
-                success: false,
-                error: 'Failed to update race',
-            });
-        }
-    }
-};
+export async function UpdateRace(req: ValidatedParamsBodyT<RaceIdParamRequest, UpdateRaceRequest, RaceResponse>, res: Response) {
+    const result = await raceService.updateRace(req.params, req.body);
+    res.json({
+        success: true,
+        data: result,
+    });
+}
 
 /**
  * Updates an existing race trait.
  */
-export const UpdateRaceTrait = async (req: RaceTraitUpdateRequest, res: Response): Promise<void> => {
-    const { slug } = req.params;
-    try {
-        const result = await raceService.updateRaceTrait(slug, req.body);
-        res.json({
-            success: true,
-            data: result,
-        });
-    } catch (error) {
-        console.error('Error updating race trait:', error);
-        if (error instanceof Error) {
-            if (error.message.includes('Record to update not found')) {
-                res.status(404).json({
-                    success: false,
-                    error: 'Race trait not found',
-                });
-            } else {
-                res.status(400).json({
-                    success: false,
-                    error: error.message,
-                });
-            }
-        } else {
-            res.status(500).json({
-                success: false,
-                error: 'Failed to update race trait',
-            });
-        }
-    }
-};
+export async function UpdateRaceTrait(req: ValidatedParamsBodyT<RaceTraitSlugParamRequest, UpdateRaceTraitRequest, RaceTraitResponse>, res: Response) {
+    const result = await raceService.updateRaceTrait(req.params, req.body);
+    res.json({
+        success: true,
+        data: result,
+    });
+}
 
 /**
- * Deletes a race by its ID.
+ * Deletes a race.
  */
-export const DeleteRace = async (req: RaceDeleteRequest, res: Response): Promise<void> => {
-    const { id } = req.params;
-    try {
-        const result = await raceService.deleteRace(parseInt(id));
-        res.json({
-            success: true,
-            data: result,
-        });
-    } catch (error) {
-        console.error('Error deleting race:', error);
-        if (error instanceof Error && error.message.includes('Record to delete does not exist')) {
-            res.status(404).json({
-                success: false,
-                error: 'Race not found',
-            });
-        } else {
-            res.status(500).json({
-                success: false,
-                error: 'Failed to delete race',
-            });
-        }
-    }
-};
+export async function DeleteRace(req: ValidatedParamsT<RaceIdParamRequest>, res: Response) {
+    const result = await raceService.deleteRace(req.params);
+    res.json({
+        success: true,
+        data: result,
+    });
+}
 
 /**
- * Deletes a race trait by its slug.
+ * Deletes a race trait.
  */
-export const DeleteRaceTrait = async (req: RaceTraitDeleteRequest, res: Response): Promise<void> => {
-    const { slug } = req.params;
-    try {
-        const result = await raceService.deleteRaceTrait(slug);
-        res.json({
-            success: true,
-            data: result,
-        });
-    } catch (error) {
-        console.error('Error deleting race trait:', error);
-        if (error instanceof Error && error.message.includes('Record to delete does not exist')) {
-            res.status(404).json({
-                success: false,
-                error: 'Race trait not found',
-            });
-        } else {
-            res.status(500).json({
-                success: false,
-                error: 'Failed to delete race trait',
-            });
-        }
-    }
-}; 
+export async function DeleteRaceTrait(req: ValidatedParamsT<RaceTraitSlugParamRequest>, res: Response) {
+    const result = await raceService.deleteRaceTrait(req.params);
+    res.json({
+        success: true,
+        data: result,
+    });
+} 

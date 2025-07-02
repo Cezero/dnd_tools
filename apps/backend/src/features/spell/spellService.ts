@@ -1,12 +1,12 @@
 import { PrismaClient, Prisma } from '@shared/prisma-client';
+import type { SpellIdParamRequest, UpdateSpellRequest, SpellQueryRequest } from '@shared/schema';
 
 import type { SpellService } from './types';
-import type { UpdateSpellRequest, SpellQueryRequest } from '@shared/schema';
 
 const prisma = new PrismaClient();
 
 export const spellService: SpellService = {
-    async getAllSpells(query) {
+    async getSpells(query: SpellQueryRequest) {
         const page = query.page;
         const limit = query.limit;
         const skip = (page - 1) * limit;
@@ -105,9 +105,9 @@ export const spellService: SpellService = {
         };
     },
 
-    async getSpellById(id) {
+    async getSpellById(id: SpellIdParamRequest) {
         const spell = await prisma.spell.findUnique({
-            where: { id },
+            where: { id: id.id },
             include: {
                 levelMapping: {
                     where: { isVisible: true },
@@ -124,49 +124,41 @@ export const spellService: SpellService = {
         return spell;
     },
 
-    async updateSpell(id: number, data: UpdateSpellRequest) {
-        // Use Prisma's nested input types for complex relationships
-        const updateData: Prisma.SpellUpdateInput = {
-            ...data,
-        };
+    async updateSpell(id: SpellIdParamRequest, data: UpdateSpellRequest) {
+        // Update the spell with nested relationships
+        await prisma.$transaction(async (tx) => {
+            await tx.spellDescriptorMap.deleteMany({ where: { spellId: id.id } });
+            await tx.spellSchoolMap.deleteMany({ where: { spellId: id.id } });
+            await tx.spellSubschoolMap.deleteMany({ where: { spellId: id.id } });
+            await tx.spellComponentMap.deleteMany({ where: { spellId: id.id } });
 
-        // Handle components through the separate mapping table since it's not a direct Prisma relation
-        const components = (data as any).components;
-        if (components !== undefined) {
-            await prisma.$transaction(async (tx) => {
-                await tx.spellComponentMap.deleteMany({ where: { spellId: id } });
-                if (components.length > 0) {
-                    await tx.spellComponentMap.createMany({
-                        data: components.map((componentId: number) => ({ spellId: id, componentId }))
-                    });
+            await tx.spell.update({
+                where: { id: id.id },
+                data: {
+                    ...data,
+                    descriptors: {
+                        create: data.descriptors?.map(descriptorId => ({ descriptorId: descriptorId.descriptorId }))
+                    },
+                    schools: {
+                        create: data.schools?.map(schoolId => ({ schoolId: schoolId.schoolId }))
+                    },
+                    subschools: {
+                        create: data.subschools?.map(subschoolId => ({ schoolId: subschoolId.schoolId }))
+                    },
+                    components: {
+                        create: data.components?.map(componentId => ({ componentId: componentId.componentId }))
+                    }
                 }
             });
-        }
-
-        // Update the spell with nested relationships
-        await prisma.spell.update({
-            where: { id },
-            data: updateData
         });
 
         return { message: 'Spell updated successfully' };
     },
 
-    async resolveSpellNames(spellNames: string[]) {
-        const spells = await prisma.spell.findMany({
-            where: {
-                name: { in: spellNames }
-            },
-            select: {
-                id: true,
-                name: true
-            }
+    async deleteSpell(id: SpellIdParamRequest) {
+        await prisma.spell.delete({
+            where: { id: id.id }
         });
-
-        const resolvedSpells: Record<string, number> = {};
-        for (const spell of spells) {
-            resolvedSpells[spell.name.toLowerCase()] = spell.id;
+            return { message: 'Spell deleted successfully' };
         }
-        return resolvedSpells;
-    }
-}; 
+    };

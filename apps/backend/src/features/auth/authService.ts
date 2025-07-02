@@ -2,51 +2,52 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 import { PrismaClient } from '@shared/prisma-client';
+import { AuthServiceResult, JwtPayload, LoginUserRequest, RegisterUserRequest } from '@shared/schema';
 
-import type { JwtPayload, AuthService } from './types';
+import type { AuthService } from './types';
+import { config } from '../../config';
 
 const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || 'your_dev_secret';
 
 export const authService: AuthService = {
-    async registerUser({ username, email, password }) {
+    async registerUser(data: RegisterUserRequest): Promise<AuthServiceResult> {
         try {
             // Check for existing user
             const existingUser = await prisma.user.findFirst({
                 where: {
                     OR: [
-                        { username },
-                        { email }
+                        { username: data.username },
+                        { email: data.email }
                     ]
                 }
             });
 
             if (existingUser) {
-                return { success: false, error: 'Username or email already exists' };
+                return { success: false, error: 'Username or email already exists', token: null, user: null };
             }
 
-            const hash = await bcrypt.hash(password, 12);
+            const hash = await bcrypt.hash(data.password, 12);
 
             // Create new user
             await prisma.user.create({
                 data: {
-                    username,
-                    email,
+                    username: data.username,
+                    email: data.email,
                     password: hash
                 }
             });
 
-            return { success: true };
+            return { success: true, error: null, token: null, user: null };
         } catch (err) {
             console.error('Registration error:', err);
-            return { success: false, error: 'Server error' };
+            return { success: false, error: 'Server error', token: null, user: null };
         }
     },
 
-    async loginUser({ username, password }) {
+    async loginUser(data: LoginUserRequest): Promise<AuthServiceResult> {
         try {
             const user = await prisma.user.findFirst({
-                where: { username },
+                where: { username: data.username },
                 select: {
                     id: true,
                     username: true,
@@ -57,12 +58,12 @@ export const authService: AuthService = {
             });
 
             if (!user) {
-                return { success: false, error: 'Invalid credentials' };
+                return { success: false, error: 'Invalid credentials', token: null, user: null };
             }
 
-            const match = await bcrypt.compare(password, user.password);
+            const match = await bcrypt.compare(data.password, user.password);
             if (!match) {
-                return { success: false, error: 'Invalid credentials' };
+                return { success: false, error: 'Invalid credentials', token: null, user: null };
             }
 
             const token = jwt.sign(
@@ -72,31 +73,30 @@ export const authService: AuthService = {
                     is_admin: user.isAdmin,
                     preferred_edition_id: user.preferredEditionId
                 },
-                JWT_SECRET,
-                { expiresIn: '12h' }
+                config.jwt.secret,
+                { expiresIn: config.jwt.expiresIn }
             );
 
             return {
                 success: true,
+                error: null,
                 token,
                 user: {
                     id: user.id,
                     username: user.username,
-                    isAdmin: user.isAdmin,
-                    preferredEditionId: user.preferredEditionId,
                     is_admin: user.isAdmin,
                     preferred_edition_id: user.preferredEditionId
                 }
             };
         } catch (err) {
             console.error('Login error:', err);
-            return { success: false, error: 'Server error' };
+            return { success: false, error: 'Server error', token: null, user: null };
         }
     },
 
-    async getUserFromToken(token: string) {
+    async getUserFromToken(token: string): Promise<AuthServiceResult> {
         try {
-            const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+            const decoded = jwt.verify(token, config.jwt.secret) as JwtPayload;
 
             // Fetch user from DB to ensure current preferred_edition_id and other up-to-date info
             const user = await prisma.user.findUnique({
@@ -110,29 +110,29 @@ export const authService: AuthService = {
             });
 
             if (!user) {
-                return { success: false, error: 'User not found' };
+                return { success: false, error: 'User not found', token: null, user: null };
             }
 
             return {
                 success: true,
+                error: null,
+                token: null,
                 user: {
                     id: user.id,
                     username: user.username,
-                    isAdmin: user.isAdmin,
-                    preferredEditionId: user.preferredEditionId,
                     is_admin: user.isAdmin,
                     preferred_edition_id: user.preferredEditionId
                 }
             };
         } catch (err) {
             console.error('Token verification error:', err);
-            return { success: false, error: 'Invalid or expired token' };
+            return { success: false, error: 'Invalid or expired token', token: null, user: null };
         }
     },
 
-    async refreshToken(token: string) {
+    async refreshToken(token: string): Promise<AuthServiceResult> {
         try {
-            const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+            const decoded = jwt.verify(token, config.jwt.secret) as JwtPayload;
 
             // Fetch user from DB to get current preferred_edition_id for new token
             const user = await prisma.user.findUnique({
@@ -146,7 +146,7 @@ export const authService: AuthService = {
             });
 
             if (!user) {
-                return { success: false, error: 'User not found for token refresh' };
+                return { success: false, error: 'User not found for token refresh', token: null, user: null };
             }
 
             // Generate a new token with a refreshed expiration and updated preferred_edition_id
@@ -157,14 +157,19 @@ export const authService: AuthService = {
                     is_admin: user.isAdmin,
                     preferred_edition_id: user.preferredEditionId
                 },
-                JWT_SECRET,
-                { expiresIn: '12h' }
+                config.jwt.secret,
+                { expiresIn: config.jwt.expiresIn }
             );
 
-            return { success: true, newToken };
+            return { success: true, error: null, token: newToken, user: {
+                id: user.id,
+                username: user.username,
+                is_admin: user.isAdmin,
+                preferred_edition_id: user.preferredEditionId
+            } };
         } catch (err) {
             console.error('Token refresh error:', err);
-            return { success: false, error: 'Invalid or expired token' };
+            return { success: false, error: 'Invalid or expired token', token: null, user: null };
         }
     }
 }; 

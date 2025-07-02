@@ -1,6 +1,7 @@
 import { visit } from 'unist-util-visit';
 import { QueueEntityResolution } from '@/services/EntityResolver';
-import { Root, Node, Parent, Text, Link, Element } from 'unist';
+import type { Node, Parent } from 'unist';
+import type { Root, Text, Link } from 'mdast';
 
 const ENTITY_TYPES: Record<string, string> = {
     Spell: '/spells/',
@@ -18,10 +19,10 @@ interface LinkNode extends Link {
         hName: string;
         hProperties: Record<string, any>;
     };
-    children: Node[];
 }
 
-interface ElementNode extends Element {
+interface ElementNode extends Node {
+    type: 'element';
     tagName: string;
     data?: {
         hName: string;
@@ -30,14 +31,16 @@ interface ElementNode extends Element {
     children: Node[];
 }
 
-interface VariableNode extends Element {
+interface VariableNode extends Node {
     type: 'variableNode';
     data?: {
         hName: string;
-        hProperties: Record<string, any>;
+        hProperties: { dataVarName: string };
     };
-    children: Node[];
+    children: Text[];
 }
+
+
 
 type ProcessedNode = TextNode | LinkNode | ElementNode | VariableNode;
 

@@ -1,5 +1,5 @@
-import type { Spell } from '@shared/prisma-client/client';
-import type { SpellComponentMap, SpellDescriptorMap, SpellRangeMap, SpellSchoolMap, SpellSubschoolMap } from './types';
+import type { SpellResponse } from '@shared/schema';
+import type { SpellComponentMap, SpellDescriptorMap, SpellRangeMap, SpellSchoolMap, SpellSubschoolMap, SpellMap, StaticSpellData } from './types';
 
 export const SPELL_COMPONENT_MAP: SpellComponentMap = {
     0: { id: 0, abbreviation: 'V', name: 'Verbal' },
@@ -112,7 +112,7 @@ export const SpellSubschoolNameList = (subschools: number[]): string => {
 }
 
 // Function to convert StaticClassData to full Class type with defaults
-export function toSpellData(staticData: StaticSpellData): Spell {
+export function toSpellData(staticData: StaticSpellData): SpellResponse {
     return {
         ...staticData,
         summary: staticData.summary ?? null,
@@ -2906,7 +2906,7 @@ export const _SPELL_ID_MAP: SpellMap = {
 }
 
 // Wrapper that provides Class objects with defaults applied
-export const SPELL_ID_MAP: { [key: number]: Spell } = Object.fromEntries(
+export const SPELL_ID_MAP: { [key: number]: SpellResponse } = Object.fromEntries(
     Object.entries(_SPELL_ID_MAP).map(([key, value]) => [key, toSpellData(value)])
 );
 

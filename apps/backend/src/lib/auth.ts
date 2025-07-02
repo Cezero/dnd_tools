@@ -1,28 +1,25 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
-interface User {
+import { config } from '@/config';
+
+export interface JwtPayload {
     id: number;
-    email: string;
     username: string;
+    is_admin: boolean;
+    preferred_edition_id: number | null;
 }
 
-interface JWTPayload {
-    id: number;
-    email: string;
-    username: string;
-    iat?: number;
-    exp?: number;
+export function verifyToken(token: string): JwtPayload | null {
+    try {
+        return jwt.verify(token, config.jwt.secret) as JwtPayload;
+    } catch (_error) {
+        return null;
+    }
 }
 
-const SECRET = process.env.JWT_SECRET || 'supersecret';
-
-export function GenerateToken(user: User): string {
-    return jwt.sign({ id: user.id, email: user.email, username: user.username }, SECRET, { expiresIn: '12h' });
-}
-
-export function VerifyToken(token: string): JWTPayload {
-    return jwt.verify(token, SECRET) as JWTPayload;
+export function generateToken(payload: Omit<JwtPayload, 'id'> & { id: number }): string {
+    return jwt.sign(payload, config.jwt.secret, { expiresIn: config.jwt.expiresIn });
 }
 
 export async function HashPassword(password: string): Promise<string> {
@@ -31,4 +28,4 @@ export async function HashPassword(password: string): Promise<string> {
 
 export async function ComparePassword(password: string, hash: string): Promise<boolean> {
     return await bcrypt.compare(password, hash);
-} 
+}

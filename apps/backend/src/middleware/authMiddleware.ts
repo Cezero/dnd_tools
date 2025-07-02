@@ -1,18 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
 
-import { authService } from '../features/auth/authService';
-import type { AuthUser } from '../features/auth/types';
+import { ForbiddenError } from '@/errors/ForbiddenError';
+import { UnauthorizedError } from '@/errors/UnauthorizedError';
+import { authService } from '@/features/auth/authService';
+import type { AuthUser } from '@shared/schema';
+
+import { AuthOptions } from './types';
 
 // Extend Express Request interface to include user property
 declare module 'express' {
     interface Request {
         user?: AuthUser;
     }
-}
-
-export interface AuthOptions {
-    requireAuth?: boolean;
-    requireAdmin?: boolean;
 }
 
 /**
@@ -31,21 +30,21 @@ export function createAuthMiddleware(options: AuthOptions = {}) {
 
         const authHeader = req.headers.authorization;
         if (!authHeader?.startsWith('Bearer ')) {
-            return res.status(401).json({ error: 'Missing or invalid auth header' });
+            throw new UnauthorizedError('Missing or invalid auth header');
         }
 
         const token = authHeader.split(' ')[1];
         const result = await authService.getUserFromToken(token);
 
         if (!result.success) {
-            return res.status(403).json({ error: result.error || 'Invalid or expired token' });
+            throw new ForbiddenError(result.error || 'Invalid or expired token');
         }
 
         req.user = result.user!;
 
         // Check admin requirement if specified
-        if (requireAdmin && !req.user.isAdmin) {
-            return res.status(403).json({ error: 'Admin access required' });
+        if (requireAdmin && !req.user.is_admin) {
+            throw new ForbiddenError('Admin access required');
         }
 
         next();

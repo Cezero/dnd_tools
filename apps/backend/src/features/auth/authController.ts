@@ -1,72 +1,83 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
+
+import { ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types'
+import { LoginUserRequest, RegisterUserRequest, AuthServiceResult } from '@shared/schema';
 
 import { authService } from './authService';
 
 // Register
-export async function RegisterUser(req: Request, res: Response) {
+export async function RegisterUser(req: ValidatedBodyT<RegisterUserRequest>, res: Response) {
     const { username, email, password } = req.body;
     if (!username || !email || !password) {
-        return res.status(400).json({ error: 'Missing fields' });
+        res.status(400).json({ error: 'Missing fields' });
+        return;
     }
 
     const result = await authService.registerUser({ username, email, password });
 
     if (!result.success) {
-        return res.status(409).json({ error: result.error });
+        res.status(409).json({ error: result.error });
+        return;
     }
 
-    return res.status(201).json({ message: 'User created' });
+    res.status(201).json({ message: 'User created' });
 }
 
 // Login
-export async function LoginUser(req: Request, res: Response) {
+export async function LoginUser(req: ValidatedBodyT<LoginUserRequest>, res: Response) {
     const { username, password } = req.body;
     if (!username || !password) {
-        return res.status(400).json({ error: 'Missing credentials' });
+        res.status(400).json({ error: 'Missing credentials' });
+        return;
     }
 
     const result = await authService.loginUser({ username, password });
 
     if (!result.success) {
-        return res.status(401).json({ error: result.error });
+        res.status(401).json({ error: result.error });
+        return;
     }
 
-    return res.json({
+    res.json({
         token: result.token,
         user: result.user
     });
 }
 
 // Get User from Token
-export async function GetUserFromToken(req: Request, res: Response) {
+export async function GetUserFromToken(req: ValidatedNoInput<AuthServiceResult>, res: Response) {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-        return res.status(401).json({ error: 'No token provided' });
+        res.status(401).json({ error: 'No token provided' });
+        return;
     }
 
     const token = authHeader.split(' ')[1];
     const result = await authService.getUserFromToken(token);
 
     if (!result.success) {
-        return res.status(403).json({ error: result.error });
+        res.status(403).json({ error: result.error });
+        return;
     }
 
-    return res.json({ user: result.user });
+    res.json({ user: result.user });
 }
 
 // Refresh Token
-export async function RefreshToken(req: Request, res: Response) {
+export async function RefreshToken(req: ValidatedNoInput<AuthServiceResult>, res: Response) {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-        return res.status(401).json({ error: 'No token provided' });
+        res.status(401).json({ error: 'No token provided' });
+        return;
     }
 
     const token = authHeader.split(' ')[1];
     const result = await authService.refreshToken(token);
 
     if (!result.success) {
-        return res.status(403).json({ error: result.error });
+        res.status(403).json({ error: result.error });
+        return;
     }
 
-    return res.json({ token: result.newToken });
-} 
+    res.json({ token: result.token });
+}

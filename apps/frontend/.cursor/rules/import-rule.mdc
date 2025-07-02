@@ -1,0 +1,6 @@
+---
+description: When organizing imports
+globs: 
+alwaysApply: false
+---
+See the monorepo rule `import-order` for guidance on organizing imports

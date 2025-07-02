@@ -1,4 +1,8 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
+import { z, ZodError } from 'zod';
+
+import { BaseError } from '@/errors/BaseError';
+import { PrismaClientKnownRequestError } from '@shared/prisma-client/client/runtime/library';
 
 /**
  * Centralized error handling middleware
@@ -8,13 +12,21 @@ export function errorHandler(
     error: Error,
     req: Request,
     res: Response,
-    next: NextFunction
+    _next: NextFunction
 ): void {
     console.error('Error occurred:', error);
 
+    if (error instanceof BaseError) {
+        res.status(error.status).json({
+            success: false,
+            error: error.message,
+        });
+        return;
+    }
+
     // Handle Prisma errors
     if (error.name === 'PrismaClientKnownRequestError') {
-        const prismaError = error as any;
+        const prismaError = error as PrismaClientKnownRequestError;
 
         switch (prismaError.code) {
             case 'P2002':
@@ -45,10 +57,10 @@ export function errorHandler(
     }
 
     // Handle validation errors
-    if (error.name === 'ValidationError') {
+    if (error instanceof ZodError) {
         res.status(400).json({
             success: false,
-            error: error.message,
+            error: error.errors,
         });
         return;
     }
@@ -81,10 +93,19 @@ export function errorHandler(
  * Async error wrapper for route handlers
  * Automatically catches async errors and passes them to error middleware
  */
-export function asyncHandler<T extends Request, U extends Response>(
-    fn: (req: T, res: U, next: NextFunction) => Promise<void>
-) {
-    return (req: T, res: U, next: NextFunction) => {
+export function asyncHandler<
+    P = z.ZodUndefined,
+    ResBody = unknown,
+    ReqBody = z.ZodUndefined,
+    ReqQuery = z.ZodUndefined
+>(
+    fn: (
+        req: Request<P, ResBody, ReqBody, ReqQuery>,
+        res: Response<ResBody>,
+        next: NextFunction
+    ) => Promise<void>
+): RequestHandler<P, ResBody, ReqBody, ReqQuery> {
+    return (req, res, next) => {
         Promise.resolve(fn(req, res, next)).catch(next);
     };
-} 
+}

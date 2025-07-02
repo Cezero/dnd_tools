@@ -1,8 +1,8 @@
-import type { SourceBook } from '@shared/prisma-client/client';
+import type { SourceBookWithSpellsResponse } from '@shared/schema';
 import type { SourceBookMap, StaticSourceBookData } from './types';
 
 // Function to convert StaticClassData to full Class type with defaults
-export function toSourceBookData(staticData: StaticSourceBookData): SourceBookWithSpells {
+export function toSourceBookData(staticData: StaticSourceBookData): SourceBookWithSpellsResponse {
     return {
         ...staticData,
         isVisible: staticData.isVisible ?? true,
@@ -160,7 +160,7 @@ export const _SOURCE_BOOK_MAP: SourceBookMap = {
 }
 
 // Wrapper that provides Class objects with defaults applied
-export const SOURCE_BOOK_MAP: { [key: number]: SourceBookWithSpells } = Object.fromEntries(
+export const SOURCE_BOOK_MAP: SourceBookMap = Object.fromEntries(
     Object.entries(_SOURCE_BOOK_MAP).map(([key, value]) => [key, toSourceBookData(value)])
 );
 

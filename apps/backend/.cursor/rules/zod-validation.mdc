@@ -1,0 +1,7 @@
+---
+description: Request and Response validation
+globs: 
+alwaysApply: false
+---
+Use the exported Zod inferred types from @shared/schema to validated all inputs and responses
+Use the helper type templates in @/util/validated-types

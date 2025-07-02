@@ -1,4 +1,4 @@
-import type { Class, Skill, SourceBook, Spell } from '@shared/prisma-client/client';
+import { ClassResponse, SkillResponse, SpellResponse, SourceBookWithSpellsResponse } from '@shared/schema';
 
 export interface Ability {
     id: number;
@@ -151,7 +151,7 @@ export interface ProficiencyType {
 }
 
 
-export type StaticClassData = Pick<Class, 'id' | 'name' | 'abbreviation' | 'editionId' | 'isPrestige' | 'isVisible' | 'canCastSpells'> & {
+export type StaticClassData = Pick<ClassResponse, 'id' | 'name' | 'abbreviation' | 'editionId' | 'isPrestige' | 'isVisible' | 'canCastSpells'> & {
     // Optional fields with defaults that will be applied when converting to full Class type
     hitDie?: number;
     description?: string | null;
@@ -159,7 +159,7 @@ export type StaticClassData = Pick<Class, 'id' | 'name' | 'abbreviation' | 'edit
     castingAbilityId?: number | null;
 };
 
-export type StaticSkillData = Pick<Skill, 'id' | 'name' | 'abilityId' | 'trainedOnly'> & {
+export type StaticSkillData = Pick<SkillResponse, 'id' | 'name' | 'abilityId' | 'trainedOnly'> & {
     // Optional fields with defaults that will be applied when converting to full Skill type
     checkDescription?: string | null;
     actionDescription?: string | null;
@@ -172,19 +172,15 @@ export type StaticSkillData = Pick<Skill, 'id' | 'name' | 'abilityId' | 'trained
     description?: string | null;
 };
 
-export type SourceBookWithSpells = SourceBook & {
-    hasSpells: boolean;
-};
-
 // Type for our static data that includes only the fields we have
-export type StaticSourceBookData = Pick<SourceBookWithSpells, 'id' | 'name' | 'abbreviation' | 'editionId' | 'hasSpells'> & {
+export type StaticSourceBookData = Pick<SourceBookWithSpellsResponse, 'id' | 'name' | 'abbreviation' | 'editionId' | 'hasSpells'> & {
     // Optional fields with defaults that will be applied when converting to full Class type
     isVisible?: boolean;
     description?: string | null;
     releaseDate?: Date | null;
 };
 
-export type StaticSpellData = Pick<Spell, 'id' | 'name' | 'editionId'> & {
+export type StaticSpellData = Pick<SpellResponse, 'id' | 'name' | 'editionId'> & {
     // Optional fields with defaults that will be applied when converting to full Class type
     description?: string | null;
     summary?: string | null;

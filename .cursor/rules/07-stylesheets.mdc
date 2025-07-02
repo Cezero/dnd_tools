@@ -1,6 +1,0 @@
----
-description: Naming CSS module files
-globs: 
-alwaysApply: false
----
-Use camelCase to match the component, e.g., `userProfile.module.css`.

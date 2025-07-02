@@ -1,6 +1,0 @@
----
-description: Naming files for types and interfaces
-globs: 
-alwaysApply: false
----
-Use camelCase for files containing types or interfaces, e.g., `authTypes.ts` or `types.ts`.

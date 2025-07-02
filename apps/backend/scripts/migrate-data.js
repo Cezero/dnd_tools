@@ -908,9 +908,11 @@ async function migrateReferenceTableRows(connection) {
 async function migrateReferenceTableCells(connection) {
     console.log('Migrating reference table cells...');
     const [rows] = await connection.execute(`
-        SELECT id, row_id as rowId, column_id as columnId, value,
-               col_span as colSpan, row_span as rowSpan
-        FROM reference_table_cells
+        SELECT rtc.id, rtc.row_id as rowId, rtc.column_id as columnId, rtc.value,
+               rtc.col_span as colSpan, rtc.row_span as rowSpan, rt.slug as tableSlug
+        FROM reference_table_cells rtc
+        join reference_table_rows rtr on rtr.id = rtc.row_id
+        join reference_tables rt on rt.id = rtr.table_id
     `);
 
     for (const row of rows) {
@@ -921,7 +923,8 @@ async function migrateReferenceTableCells(connection) {
                 columnId: row.columnId,
                 value: row.value,
                 colSpan: row.colSpan,
-                rowSpan: row.rowSpan
+                rowSpan: row.rowSpan,
+                tableSlug: row.tableSlug
             },
             create: {
                 id: row.id,
@@ -929,7 +932,8 @@ async function migrateReferenceTableCells(connection) {
                 columnId: row.columnId,
                 value: row.value,
                 colSpan: row.colSpan,
-                rowSpan: row.rowSpan
+                rowSpan: row.rowSpan,
+                tableSlug: row.tableSlug
             }
         });
     }

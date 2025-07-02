@@ -1,0 +1,6 @@
+---
+description: Organizing routes
+globs: 
+alwaysApply: false
+---
+Group related endpoints using buildValidatedRouter and place them in separate modules.

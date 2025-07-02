@@ -8,4 +8,4 @@ export * from './race.js';
 export * from './referencetables.js';
 export * from './skill.js';
 export * from './spell.js';
-export * from './userProfile.js'; 
+export * from './sourcebook.js';

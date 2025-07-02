@@ -1,0 +1,9 @@
+---
+description: Writing tests
+globs: 
+alwaysApply: false
+---
+Colocate test files next to the source files they test, using `.test.ts` or `.spec.ts` suffixes.
+Use vitest for all tests
+Do not create Service tests, only Controller tests
+Do not mock the database, vitest is configured to use a test database

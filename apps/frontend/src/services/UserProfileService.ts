@@ -1,47 +1,24 @@
-import { Api } from '@/services/Api';
+import {
+    UserProfileResponseSchema,
+    UserProfileUpdateResponseSchema,
+    UpdateUserProfileSchema,
+} from '@shared/schema';
 
-interface UserProfile {
-    id: number;
-    username: string;
-    email: string;
-    is_admin: boolean;
-    preferred_edition_id?: number;
-}
-
-interface UpdateProfileData {
-    preferred_edition_id?: number;
-    email?: string;
-    username?: string;
-}
-
-interface UpdateProfileResponse {
-    user: UserProfile;
-    token: string;
-}
+import { typedApi } from './Api';
 
 const USER_PROFILE_API_BASE_URL = '/user/profile';
 
 export const UserProfileService = {
-    async getUserProfile(): Promise<UserProfile> {
-        try {
-            const response = await Api(USER_PROFILE_API_BASE_URL, { method: 'GET' });
-            return response.user;
-        } catch (error) {
-            console.error('Error fetching user profile:', error);
-            throw error;
-        }
-    },
+    getUserProfile: typedApi<undefined, typeof UserProfileResponseSchema>({
+        path: USER_PROFILE_API_BASE_URL,
+        method: 'GET',
+        responseSchema: UserProfileResponseSchema,
+    }),
 
-    async updateUserProfile(profileData: UpdateProfileData): Promise<UpdateProfileResponse> {
-        try {
-            const response = await Api(USER_PROFILE_API_BASE_URL, {
-                method: 'PUT',
-                body: JSON.stringify(profileData),
-            });
-            return response;
-        } catch (error) {
-            console.error('Error updating user profile:', error);
-            throw error;
-        }
-    },
-}; 
+    updateUserProfile: typedApi<typeof UpdateUserProfileSchema, typeof UserProfileUpdateResponseSchema>({
+        path: USER_PROFILE_API_BASE_URL,
+        method: 'PUT',
+        requestSchema: UpdateUserProfileSchema,
+        responseSchema: UserProfileUpdateResponseSchema,
+    }),
+};

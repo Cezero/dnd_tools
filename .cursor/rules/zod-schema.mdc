@@ -3,4 +3,4 @@ description: When building or verifying validation schemas
 globs: 
 alwaysApply: false
 ---
-All validation schemas should be stored in the packages/shared/schema package to be shared between the frontend and backend
+All Zod schema definitions shoulld be created in the @shared/schema package

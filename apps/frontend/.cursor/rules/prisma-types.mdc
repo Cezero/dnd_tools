@@ -1,8 +1,0 @@
----
-description: 
-globs: 
-alwaysApply: true
----
-- Import Prisma types from the shared prisma-client package
-- Only import the type, for example: import type { User } from '@shared/prisma-client/client'
-- Prisma types are the source of truth for backend and static-data objects

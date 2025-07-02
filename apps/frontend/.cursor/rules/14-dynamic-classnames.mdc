@@ -1,6 +1,0 @@
----
-description: Creating dynamic or conditional class names
-globs: 
-alwaysApply: false
----
-Use `clsx`, `classnames`, or `tailwind-variants` for clearer, maintainable class logic

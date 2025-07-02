@@ -1,23 +1,5 @@
 import React from 'react';
 
-// Common types used throughout the application
-
-// API Response types
-export interface ApiResponse<T = unknown> {
-    data: T;
-    message?: string;
-    success: boolean;
-}
-
-// User types
-export interface User {
-    id: string;
-    email: string;
-    username?: string;
-    createdAt: string;
-    updatedAt: string;
-}
-
 // Authentication types
 export interface AuthState {
     user: User | null;

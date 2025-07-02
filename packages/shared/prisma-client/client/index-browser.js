@@ -382,6 +382,7 @@ exports.Prisma.ReferenceTableRowScalarFieldEnum = {
 
 exports.Prisma.ReferenceTableCellScalarFieldEnum = {
   id: 'id',
+  tableSlug: 'tableSlug',
   rowId: 'rowId',
   columnId: 'columnId',
   value: 'value',
@@ -522,8 +523,7 @@ exports.Prisma.ReferenceTableOrderByRelevanceFieldEnum = {
 
 exports.Prisma.ReferenceTableColumnOrderByRelevanceFieldEnum = {
   tableSlug: 'tableSlug',
-  header: 'header',
-  alignment: 'alignment'
+  header: 'header'
 };
 
 exports.Prisma.ReferenceTableRowOrderByRelevanceFieldEnum = {
@@ -532,6 +532,7 @@ exports.Prisma.ReferenceTableRowOrderByRelevanceFieldEnum = {
 };
 
 exports.Prisma.ReferenceTableCellOrderByRelevanceFieldEnum = {
+  tableSlug: 'tableSlug',
   value: 'value'
 };
 
@@ -548,7 +549,11 @@ exports.Prisma.UserOrderByRelevanceFieldEnum = {
   email: 'email',
   password: 'password'
 };
-
+exports.TextAlignment = exports.$Enums.TextAlignment = {
+  left: 'left',
+  center: 'center',
+  right: 'right'
+};
 
 exports.Prisma.ModelName = {
   Class: 'Class',

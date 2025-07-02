@@ -1,0 +1,7 @@
+---
+description: Configuration and environment variables
+globs: 
+alwaysApply: false
+---
+Load environment variables using `dotenv`, and access them through a validated config module to prevent typos.
+Store environment config and constants in a top-level `config/` folder with structured access.

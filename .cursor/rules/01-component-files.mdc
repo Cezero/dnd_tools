@@ -1,6 +1,0 @@
----
-description: Naming React component files
-globs: 
-alwaysApply: false
----
-Use PascalCase for component filenames, e.g., `UserProfile.tsx`.

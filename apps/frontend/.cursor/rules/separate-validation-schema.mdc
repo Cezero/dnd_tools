@@ -1,0 +1,7 @@
+---
+description: Validating request data
+globs: 
+alwaysApply: false
+---
+Use the @shared/schema package to import Zod validation schema details.
+If no appropriate schema exists in this package, stop and seek further instruction.

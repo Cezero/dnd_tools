@@ -1,4 +1,5 @@
 import type { Request } from 'express';
+
 import type { UpdateUserProfileRequest } from '@shared/schema';
 
 // Request interfaces extending Express Request

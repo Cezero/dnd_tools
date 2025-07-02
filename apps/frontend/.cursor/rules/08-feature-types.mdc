@@ -1,6 +1,0 @@
----
-description: Typing inputs and outputs
-globs: 
-alwaysApply: false
----
-Place TypeScript types and interfaces in a `types.ts` file within the feature folder.

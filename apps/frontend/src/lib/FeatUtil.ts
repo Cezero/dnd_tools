@@ -1,7 +1,4 @@
-import { FEAT_BENEFIT_TYPES } from '@shared/static-data/FeatData';
-import { SAVING_THROW_LIST } from '@shared/static-data/AbilityData';
-import { PROFICIENCY_TYPE_LIST } from '@shared/static-data/ItemData';
-import { SKILL_LIST } from '@shared/static-data/SkillData';
+import { FEAT_BENEFIT_TYPES, SAVING_THROW_LIST, PROFICIENCY_TYPE_LIST, SKILL_LIST } from '@shared/static-data';
 
 interface FeatOption {
     id: number;

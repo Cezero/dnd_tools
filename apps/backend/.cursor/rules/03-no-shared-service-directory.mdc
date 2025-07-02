@@ -1,6 +1,0 @@
----
-description: Creating utility functions
-globs: 
-alwaysApply: false
----
-Avoid a large shared `services/` directory. Instead, place reusable logic in a `lib/` folder or colocate within the relevant feature folder.

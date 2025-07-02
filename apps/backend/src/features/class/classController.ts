@@ -1,218 +1,63 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 
-import { PrismaClient, Prisma } from '@shared/prisma-client';
+import { ValidatedQueryT, ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types'
+import {
+    ClassIdParamRequest,
+    ClassQueryRequest,ClassResponse,
+    ClassQueryResponse,
+    GetAllClassesResponse,
+    CreateClassRequest,
+    UpdateClassRequest
+} from '@shared/schema';
 
-import type {
-    ClassRequest,
-    ClassCreateRequest,
-    ClassUpdateRequest,
-    ClassDeleteRequest
-} from './types';
-
-const prisma = new PrismaClient();
-
+import { classService } from './classService';
 /**
  * Fetches all classes from the database with pagination and filtering.
  */
-export const GetClasses = async (req: ClassRequest, res: Response): Promise<void> => {
-    try {
-        const page = parseInt(req.query.page || '1');
-        const limit = parseInt(req.query.limit || '10');
-        const skip = (page - 1) * limit;
+export async function GetClasses(req: ValidatedQueryT<ClassQueryRequest, ClassQueryResponse>, res: Response) {
+    const result = await classService.getClasses(req.query);
+    res.json(result);
+}
 
-        // Build where clause for filtering
-        const where: Prisma.ClassWhereInput = {};
-
-        if (req.query.name) {
-            where.name = { contains: req.query.name };
-        }
-        if (req.query.abbreviation) {
-            where.abbreviation = { contains: req.query.abbreviation };
-        }
-        if (req.query.editionId) {
-            where.editionId = parseInt(req.query.editionId);
-        }
-        if (req.query.isPrestige !== undefined) {
-            where.isPrestige = req.query.isPrestige === 'true';
-        }
-        if (req.query.isVisible !== undefined) {
-            where.isVisible = req.query.isVisible === 'true';
-        }
-        if (req.query.canCastSpells !== undefined) {
-            where.canCastSpells = req.query.canCastSpells === 'true';
-        }
-        if (req.query.hitDie) {
-            where.hitDie = parseInt(req.query.hitDie);
-        }
-        if (req.query.skillPoints) {
-            where.skillPoints = parseInt(req.query.skillPoints);
-        }
-        if (req.query.castingAbilityId) {
-            where.castingAbilityId = parseInt(req.query.castingAbilityId);
-        }
-
-        const [classes, total] = await Promise.all([
-            prisma.class.findMany({
-                where,
-                skip,
-                take: limit,
-                orderBy: { name: 'asc' },
-            }),
-            prisma.class.count({ where }),
-        ]);
-
-        res.json({
-            page,
-            limit,
-            total,
-            results: classes,
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Server error');
-    }
-};
-
-export const GetAllClasses = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const classes = await prisma.class.findMany({
-            select: {
-                id: true,
-                name: true,
-            },
-            orderBy: { name: 'asc' },
-        });
-        res.json(classes);
-    } catch (error) {
-        console.error('Error fetching all classes:', error);
-        res.status(500).send('Server error');
-    }
-};
+export async function GetAllClasses(req: ValidatedNoInput<GetAllClassesResponse>, res: Response) {
+    const classes = await classService.getAllClasses();
+    res.json(classes);
+}
 
 /**
  * Fetches a single class by its ID.
  */
-export const GetClassById = async (req: Request<{ id: string }>, res: Response): Promise<void> => {
-    const { id } = req.params;
-    try {
-        const cls = await prisma.class.findUnique({
-            where: { id: parseInt(id) },
-        });
+export async function GetClassById(req: ValidatedParamsT<ClassIdParamRequest, ClassResponse>, res: Response) {
+    const cls = await classService.getClassById(req.params);
 
-        if (!cls) {
-            res.status(404).send('Class not found');
-            return;
-        }
-
-        res.json(cls);
-    } catch (error) {
-        console.error('Error fetching class by ID:', error);
-        res.status(500).send('Server error');
+    if (!cls) {
+        res.status(404).send('Class not found');
+        return;
     }
-};
+
+    res.json(cls);
+}
 
 /**
  * Creates a new class.
  */
-export const CreateClass = async (req: ClassCreateRequest, res: Response): Promise<void> => {
-    const {
-        name,
-        abbreviation,
-        editionId,
-        isPrestige,
-        isVisible,
-        canCastSpells,
-        hitDie,
-        skillPoints,
-        castingAbilityId,
-        description
-    } = req.body;
-
-    try {
-        const result = await prisma.class.create({
-            data: {
-                name,
-                abbreviation,
-                editionId,
-                isPrestige,
-                isVisible,
-                canCastSpells,
-                hitDie,
-                skillPoints,
-                castingAbilityId,
-                description,
-            },
-        });
-
-        res.status(201).json({ id: result.id, message: 'Class created successfully' });
-    } catch (error) {
-        console.error('Error creating class:', error);
-        res.status(500).send('Server error');
-    }
-};
+export async function CreateClass(req: ValidatedBodyT<CreateClassRequest>, res: Response) {
+    const result = await classService.createClass(req.body);
+    res.status(201).json(result);
+}
 
 /**
  * Updates an existing class.
  */
-export const UpdateClass = async (req: ClassUpdateRequest, res: Response): Promise<void> => {
-    const { id } = req.params;
-    const {
-        name,
-        abbreviation,
-        editionId,
-        isPrestige,
-        isVisible,
-        canCastSpells,
-        hitDie,
-        skillPoints,
-        castingAbilityId,
-        description
-    } = req.body;
-
-    try {
-        const _updatedClass = await prisma.class.update({
-            where: { id: parseInt(id) },
-            data: {
-                name,
-                abbreviation,
-                editionId,
-                isPrestige,
-                isVisible,
-                canCastSpells,
-                hitDie,
-                skillPoints,
-                castingAbilityId,
-                description,
-            },
-        });
-
-        res.status(200).json({ message: 'Class updated successfully' });
-    } catch (error) {
-        console.error('Error updating class:', error);
-        if (error instanceof Error && error.message.includes('Record to update not found')) {
-            res.status(404).send('Class not found or no changes made');
-        } else {
-            res.status(500).send('Server error');
-        }
-    }
-};
+export async function UpdateClass(req: ValidatedParamsBodyT<ClassIdParamRequest, UpdateClassRequest>, res: Response) {
+    const result = await classService.updateClass(req.params, req.body);
+    res.status(200).json(result);
+}
 
 /**
- * Deletes a class by its ID.
+ * Deletes a class.
  */
-export const DeleteClass = async (req: ClassDeleteRequest, res: Response): Promise<void> => {
-    const { id } = req.params;
-    try {
-        await prisma.class.delete({
-            where: { id: parseInt(id) },
-        });
-        res.status(200).send('Class deleted successfully');
-    } catch (error) {
-        console.error('Error deleting class:', error);
-        if (error instanceof Error && error.message.includes('Record to delete does not exist')) {
-            res.status(404).send('Class not found');
-        } else {
-            res.status(500).send('Server error');
-        }
-    }
-}; 
+export async function DeleteClass(req: ValidatedParamsT<ClassIdParamRequest>, res: Response) {
+    const result = await classService.deleteClass(req.params);
+    res.json(result);
+}

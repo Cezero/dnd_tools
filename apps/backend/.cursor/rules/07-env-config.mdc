@@ -1,6 +1,0 @@
----
-description: Using environment variables
-globs: 
-alwaysApply: false
----
-Load environment variables using `dotenv`, and access them through a validated config module to prevent typos.

@@ -1,6 +1,0 @@
----
-description: Naming project folders
-globs: 
-alwaysApply: false
----
-Use kebab-case for folders across the project, e.g., `auth/`, `product-list/`.

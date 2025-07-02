@@ -1,0 +1,8 @@
+---
+description: Declaring component props or shared types
+globs: 
+alwaysApply: false
+---
+Use `interface` for props and `type` for unions; always prefer explicit over inferred types for public APIs
+Use a functional component written in TypeScript with typed props
+Do not re-export types imported from other packages

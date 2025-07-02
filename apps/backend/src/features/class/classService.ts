@@ -1,71 +1,58 @@
 import { PrismaClient, Prisma } from '@shared/prisma-client';
+import { ClassIdParamRequest, ClassQueryRequest, ClassResponse, CreateClassRequest, GetAllClassesResponse, UpdateClassRequest } from '@shared/schema';
 
-import type { ClassData, ClassService } from './types';
+import type { ClassService } from './types';
 
 const prisma = new PrismaClient();
 
-function validateClassData(classData: ClassData): string | null {
-    const { name, hitDie, abbreviation, editionId } = classData;
-    if (!name || name.trim() === '') {
-        return 'Class name cannot be empty.';
-    }
-    if (!hitDie || hitDie <= 0) {
-        return 'Hit die must be a positive number.';
-    }
-    if (!abbreviation || abbreviation.trim() === '') {
-        return 'Abbreviation cannot be empty.';
-    }
-    if (!editionId || editionId <= 0) {
-        return 'Edition ID is required.';
-    }
-    return null;
-}
 
 export const classService: ClassService = {
-    async getAllClasses(query) {
-        const { page = '1', limit = '25', sort = 'name', order = 'asc', name = '', editionId = '' } = query;
-        const offset = (parseInt(page) - 1) * parseInt(limit);
-
-        const allowedSorts = ['name', 'createdAt', 'hitDie'];
-        const sortBy = allowedSorts.includes(sort) ? sort : 'name';
-        const sortOrder = order === 'desc' ? 'desc' : 'asc';
+    async getClasses(query: ClassQueryRequest) {
+        const page = query.page;
+        const limit = query.limit;
+        const offset = (page - 1) * limit;
 
         const where: Prisma.ClassWhereInput = {};
 
-        if (name) {
-            where.name = { contains: name };
+        if (query.name) {
+            where.name = { contains: query.name };
         }
-        if (editionId) {
-            where.editionId = parseInt(editionId);
+        if (query.editionId) {
+            where.editionId = query.editionId;
         }
 
         const [classes, total] = await Promise.all([
             prisma.class.findMany({
                 where,
                 skip: offset,
-                take: parseInt(limit),
-                orderBy: { [sortBy]: sortOrder },
+                take: limit,
+                orderBy: { name: 'asc' },
             }),
             prisma.class.count({ where }),
         ]);
 
         return {
-            page: parseInt(page),
-            limit: parseInt(limit),
+            page,
+            limit,
             total,
             results: classes,
         };
     },
 
-    async getClassById(id) {
-        const classData = await prisma.class.findUnique({
-            where: { id },
-        });
-
-        return classData;
+    async getAllClasses() {
+        const classes = await prisma.class.findMany() as GetAllClassesResponse;
+        return classes;
     },
 
-    async createClass(data) {
+    async getClassById(query: ClassIdParamRequest) {
+        const classData = await prisma.class.findUnique({
+            where: { id: query.id },
+        });
+
+        return classData as ClassResponse;
+    },
+
+    async createClass(data: CreateClassRequest) {
         const result = await prisma.class.create({
             data,
         });
@@ -73,22 +60,20 @@ export const classService: ClassService = {
         return { id: result.id, message: 'Class created successfully' };
     },
 
-    async updateClass(id, data) {
+    async updateClass(query: ClassIdParamRequest, data: UpdateClassRequest) {
         await prisma.class.update({
-            where: { id },
+            where: { id: query.id },
             data,
         });
 
         return { message: 'Class updated successfully' };
     },
 
-    async deleteClass(id) {
+    async deleteClass(query: ClassIdParamRequest) {
         await prisma.class.delete({
-            where: { id },
+            where: { id: query.id },
         });
 
         return { message: 'Class deleted successfully' };
     },
-
-    validateClassData,
 };

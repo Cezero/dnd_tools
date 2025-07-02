@@ -1,0 +1,9 @@
+---
+description: Adding reusable logic to routes
+globs: 
+alwaysApply: false
+---
+Use Express middleware for reusable tasks such as authentication, logging, or input validation.
+Current middleware:
+- authMiddleware for handling user authentication and entitlements
+- errorMiddleware for centralized error handling

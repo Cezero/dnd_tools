@@ -180,6 +180,24 @@ export type UserCharacterAttribute = $Result.DefaultSelection<Prisma.$UserCharac
 export type User = $Result.DefaultSelection<Prisma.$UserPayload>
 
 /**
+ * Enums
+ */
+export namespace $Enums {
+  export const TextAlignment: {
+  left: 'left',
+  center: 'center',
+  right: 'right'
+};
+
+export type TextAlignment = (typeof TextAlignment)[keyof typeof TextAlignment]
+
+}
+
+export type TextAlignment = $Enums.TextAlignment
+
+export const TextAlignment: typeof $Enums.TextAlignment
+
+/**
  * ##  Prisma Client ʲˢ
  *
  * Type-safe database client for TypeScript & Node.js
@@ -3598,6 +3616,7 @@ export namespace Prisma {
     schools: number
     sources: number
     subschools: number
+    components: number
   }
 
   export type SpellCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3606,6 +3625,7 @@ export namespace Prisma {
     schools?: boolean | SpellCountOutputTypeCountSchoolsArgs
     sources?: boolean | SpellCountOutputTypeCountSourcesArgs
     subschools?: boolean | SpellCountOutputTypeCountSubschoolsArgs
+    components?: boolean | SpellCountOutputTypeCountComponentsArgs
   }
 
   // Custom InputTypes
@@ -3652,6 +3672,13 @@ export namespace Prisma {
    */
   export type SpellCountOutputTypeCountSubschoolsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: SpellSubschoolMapWhereInput
+  }
+
+  /**
+   * SpellCountOutputType without action
+   */
+  export type SpellCountOutputTypeCountComponentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SpellComponentMapWhereInput
   }
 
 
@@ -3880,11 +3907,13 @@ export namespace Prisma {
   export type ReferenceTableCountOutputType = {
     columns: number
     rows: number
+    cells: number
   }
 
   export type ReferenceTableCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     columns?: boolean | ReferenceTableCountOutputTypeCountColumnsArgs
     rows?: boolean | ReferenceTableCountOutputTypeCountRowsArgs
+    cells?: boolean | ReferenceTableCountOutputTypeCountCellsArgs
   }
 
   // Custom InputTypes
@@ -3910,6 +3939,13 @@ export namespace Prisma {
    */
   export type ReferenceTableCountOutputTypeCountRowsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ReferenceTableRowWhereInput
+  }
+
+  /**
+   * ReferenceTableCountOutputType without action
+   */
+  export type ReferenceTableCountOutputTypeCountCellsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ReferenceTableCellWhereInput
   }
 
 
@@ -11403,6 +11439,7 @@ export namespace Prisma {
     schools?: boolean | Spell$schoolsArgs<ExtArgs>
     sources?: boolean | Spell$sourcesArgs<ExtArgs>
     subschools?: boolean | Spell$subschoolsArgs<ExtArgs>
+    components?: boolean | Spell$componentsArgs<ExtArgs>
     _count?: boolean | SpellCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["spell"]>
 
@@ -11434,6 +11471,7 @@ export namespace Prisma {
     schools?: boolean | Spell$schoolsArgs<ExtArgs>
     sources?: boolean | Spell$sourcesArgs<ExtArgs>
     subschools?: boolean | Spell$subschoolsArgs<ExtArgs>
+    components?: boolean | Spell$componentsArgs<ExtArgs>
     _count?: boolean | SpellCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -11445,6 +11483,7 @@ export namespace Prisma {
       schools: Prisma.$SpellSchoolMapPayload<ExtArgs>[]
       sources: Prisma.$SpellSourceMapPayload<ExtArgs>[]
       subschools: Prisma.$SpellSubschoolMapPayload<ExtArgs>[]
+      components: Prisma.$SpellComponentMapPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -11808,6 +11847,7 @@ export namespace Prisma {
     schools<T extends Spell$schoolsArgs<ExtArgs> = {}>(args?: Subset<T, Spell$schoolsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SpellSchoolMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     sources<T extends Spell$sourcesArgs<ExtArgs> = {}>(args?: Subset<T, Spell$sourcesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SpellSourceMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     subschools<T extends Spell$subschoolsArgs<ExtArgs> = {}>(args?: Subset<T, Spell$subschoolsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SpellSubschoolMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    components<T extends Spell$componentsArgs<ExtArgs> = {}>(args?: Subset<T, Spell$componentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SpellComponentMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -12313,6 +12353,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: SpellSubschoolMapScalarFieldEnum | SpellSubschoolMapScalarFieldEnum[]
+  }
+
+  /**
+   * Spell.components
+   */
+  export type Spell$componentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SpellComponentMap
+     */
+    select?: SpellComponentMapSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SpellComponentMap
+     */
+    omit?: SpellComponentMapOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SpellComponentMapInclude<ExtArgs> | null
+    where?: SpellComponentMapWhereInput
+    orderBy?: SpellComponentMapOrderByWithRelationInput | SpellComponentMapOrderByWithRelationInput[]
+    cursor?: SpellComponentMapWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SpellComponentMapScalarFieldEnum | SpellComponentMapScalarFieldEnum[]
   }
 
   /**
@@ -16373,6 +16437,7 @@ export namespace Prisma {
     id?: boolean
     spellId?: boolean
     componentId?: boolean
+    Spell?: boolean | SpellDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["spellComponentMap"]>
 
 
@@ -16384,10 +16449,15 @@ export namespace Prisma {
   }
 
   export type SpellComponentMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "spellId" | "componentId", ExtArgs["result"]["spellComponentMap"]>
+  export type SpellComponentMapInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    Spell?: boolean | SpellDefaultArgs<ExtArgs>
+  }
 
   export type $SpellComponentMapPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "SpellComponentMap"
-    objects: {}
+    objects: {
+      Spell: Prisma.$SpellPayload<ExtArgs>
+    }
     scalars: $Extensions.GetPayloadResult<{
       id: number
       spellId: number
@@ -16732,6 +16802,7 @@ export namespace Prisma {
    */
   export interface Prisma__SpellComponentMapClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    Spell<T extends SpellDefaultArgs<ExtArgs> = {}>(args?: Subset<T, SpellDefaultArgs<ExtArgs>>): Prisma__SpellClient<$Result.GetResult<Prisma.$SpellPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -16781,6 +16852,10 @@ export namespace Prisma {
      */
     omit?: SpellComponentMapOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SpellComponentMapInclude<ExtArgs> | null
+    /**
      * Filter, which SpellComponentMap to fetch.
      */
     where: SpellComponentMapWhereUniqueInput
@@ -16799,6 +16874,10 @@ export namespace Prisma {
      */
     omit?: SpellComponentMapOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SpellComponentMapInclude<ExtArgs> | null
+    /**
      * Filter, which SpellComponentMap to fetch.
      */
     where: SpellComponentMapWhereUniqueInput
@@ -16816,6 +16895,10 @@ export namespace Prisma {
      * Omit specific fields from the SpellComponentMap
      */
     omit?: SpellComponentMapOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SpellComponentMapInclude<ExtArgs> | null
     /**
      * Filter, which SpellComponentMap to fetch.
      */
@@ -16865,6 +16948,10 @@ export namespace Prisma {
      */
     omit?: SpellComponentMapOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SpellComponentMapInclude<ExtArgs> | null
+    /**
      * Filter, which SpellComponentMap to fetch.
      */
     where?: SpellComponentMapWhereInput
@@ -16913,6 +17000,10 @@ export namespace Prisma {
      */
     omit?: SpellComponentMapOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SpellComponentMapInclude<ExtArgs> | null
+    /**
      * Filter, which SpellComponentMaps to fetch.
      */
     where?: SpellComponentMapWhereInput
@@ -16956,6 +17047,10 @@ export namespace Prisma {
      */
     omit?: SpellComponentMapOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SpellComponentMapInclude<ExtArgs> | null
+    /**
      * The data needed to create a SpellComponentMap.
      */
     data: XOR<SpellComponentMapCreateInput, SpellComponentMapUncheckedCreateInput>
@@ -16984,6 +17079,10 @@ export namespace Prisma {
      * Omit specific fields from the SpellComponentMap
      */
     omit?: SpellComponentMapOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SpellComponentMapInclude<ExtArgs> | null
     /**
      * The data needed to update a SpellComponentMap.
      */
@@ -17025,6 +17124,10 @@ export namespace Prisma {
      */
     omit?: SpellComponentMapOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SpellComponentMapInclude<ExtArgs> | null
+    /**
      * The filter to search for the SpellComponentMap to update in case it exists.
      */
     where: SpellComponentMapWhereUniqueInput
@@ -17050,6 +17153,10 @@ export namespace Prisma {
      * Omit specific fields from the SpellComponentMap
      */
     omit?: SpellComponentMapOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SpellComponentMapInclude<ExtArgs> | null
     /**
      * Filter which SpellComponentMap to delete.
      */
@@ -17082,6 +17189,10 @@ export namespace Prisma {
      * Omit specific fields from the SpellComponentMap
      */
     omit?: SpellComponentMapOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SpellComponentMapInclude<ExtArgs> | null
   }
 
 
@@ -30387,6 +30498,7 @@ export namespace Prisma {
     description?: boolean
     columns?: boolean | ReferenceTable$columnsArgs<ExtArgs>
     rows?: boolean | ReferenceTable$rowsArgs<ExtArgs>
+    cells?: boolean | ReferenceTable$cellsArgs<ExtArgs>
     _count?: boolean | ReferenceTableCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["referenceTable"]>
 
@@ -30402,6 +30514,7 @@ export namespace Prisma {
   export type ReferenceTableInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     columns?: boolean | ReferenceTable$columnsArgs<ExtArgs>
     rows?: boolean | ReferenceTable$rowsArgs<ExtArgs>
+    cells?: boolean | ReferenceTable$cellsArgs<ExtArgs>
     _count?: boolean | ReferenceTableCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -30410,6 +30523,7 @@ export namespace Prisma {
     objects: {
       columns: Prisma.$ReferenceTableColumnPayload<ExtArgs>[]
       rows: Prisma.$ReferenceTableRowPayload<ExtArgs>[]
+      cells: Prisma.$ReferenceTableCellPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       slug: string
@@ -30757,6 +30871,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     columns<T extends ReferenceTable$columnsArgs<ExtArgs> = {}>(args?: Subset<T, ReferenceTable$columnsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReferenceTableColumnPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     rows<T extends ReferenceTable$rowsArgs<ExtArgs> = {}>(args?: Subset<T, ReferenceTable$rowsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReferenceTableRowPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    cells<T extends ReferenceTable$cellsArgs<ExtArgs> = {}>(args?: Subset<T, ReferenceTable$cellsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReferenceTableCellPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -31180,6 +31295,30 @@ export namespace Prisma {
   }
 
   /**
+   * ReferenceTable.cells
+   */
+  export type ReferenceTable$cellsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ReferenceTableCell
+     */
+    select?: ReferenceTableCellSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ReferenceTableCell
+     */
+    omit?: ReferenceTableCellOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReferenceTableCellInclude<ExtArgs> | null
+    where?: ReferenceTableCellWhereInput
+    orderBy?: ReferenceTableCellOrderByWithRelationInput | ReferenceTableCellOrderByWithRelationInput[]
+    cursor?: ReferenceTableCellWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ReferenceTableCellScalarFieldEnum | ReferenceTableCellScalarFieldEnum[]
+  }
+
+  /**
    * ReferenceTable without action
    */
   export type ReferenceTableDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -31228,7 +31367,7 @@ export namespace Prisma {
     columnIndex: number | null
     header: string | null
     span: number | null
-    alignment: string | null
+    alignment: $Enums.TextAlignment | null
   }
 
   export type ReferenceTableColumnMaxAggregateOutputType = {
@@ -31237,7 +31376,7 @@ export namespace Prisma {
     columnIndex: number | null
     header: string | null
     span: number | null
-    alignment: string | null
+    alignment: $Enums.TextAlignment | null
   }
 
   export type ReferenceTableColumnCountAggregateOutputType = {
@@ -31383,7 +31522,7 @@ export namespace Prisma {
     columnIndex: number
     header: string
     span: number | null
-    alignment: string | null
+    alignment: $Enums.TextAlignment | null
     _count: ReferenceTableColumnCountAggregateOutputType | null
     _avg: ReferenceTableColumnAvgAggregateOutputType | null
     _sum: ReferenceTableColumnSumAggregateOutputType | null
@@ -31447,7 +31586,7 @@ export namespace Prisma {
       columnIndex: number
       header: string
       span: number | null
-      alignment: string | null
+      alignment: $Enums.TextAlignment | null
     }, ExtArgs["result"]["referenceTableColumn"]>
     composites: {}
   }
@@ -31824,7 +31963,7 @@ export namespace Prisma {
     readonly columnIndex: FieldRef<"ReferenceTableColumn", 'Int'>
     readonly header: FieldRef<"ReferenceTableColumn", 'String'>
     readonly span: FieldRef<"ReferenceTableColumn", 'Int'>
-    readonly alignment: FieldRef<"ReferenceTableColumn", 'String'>
+    readonly alignment: FieldRef<"ReferenceTableColumn", 'TextAlignment'>
   }
     
 
@@ -33226,6 +33365,7 @@ export namespace Prisma {
 
   export type ReferenceTableCellMinAggregateOutputType = {
     id: number | null
+    tableSlug: string | null
     rowId: number | null
     columnId: number | null
     value: string | null
@@ -33235,6 +33375,7 @@ export namespace Prisma {
 
   export type ReferenceTableCellMaxAggregateOutputType = {
     id: number | null
+    tableSlug: string | null
     rowId: number | null
     columnId: number | null
     value: string | null
@@ -33244,6 +33385,7 @@ export namespace Prisma {
 
   export type ReferenceTableCellCountAggregateOutputType = {
     id: number
+    tableSlug: number
     rowId: number
     columnId: number
     value: number
@@ -33271,6 +33413,7 @@ export namespace Prisma {
 
   export type ReferenceTableCellMinAggregateInputType = {
     id?: true
+    tableSlug?: true
     rowId?: true
     columnId?: true
     value?: true
@@ -33280,6 +33423,7 @@ export namespace Prisma {
 
   export type ReferenceTableCellMaxAggregateInputType = {
     id?: true
+    tableSlug?: true
     rowId?: true
     columnId?: true
     value?: true
@@ -33289,6 +33433,7 @@ export namespace Prisma {
 
   export type ReferenceTableCellCountAggregateInputType = {
     id?: true
+    tableSlug?: true
     rowId?: true
     columnId?: true
     value?: true
@@ -33385,6 +33530,7 @@ export namespace Prisma {
 
   export type ReferenceTableCellGroupByOutputType = {
     id: number
+    tableSlug: string
     rowId: number
     columnId: number
     value: string | null
@@ -33413,6 +33559,7 @@ export namespace Prisma {
 
   export type ReferenceTableCellSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    tableSlug?: boolean
     rowId?: boolean
     columnId?: boolean
     value?: boolean
@@ -33420,12 +33567,14 @@ export namespace Prisma {
     rowSpan?: boolean
     column?: boolean | ReferenceTableColumnDefaultArgs<ExtArgs>
     row?: boolean | ReferenceTableRowDefaultArgs<ExtArgs>
+    table?: boolean | ReferenceTableDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["referenceTableCell"]>
 
 
 
   export type ReferenceTableCellSelectScalar = {
     id?: boolean
+    tableSlug?: boolean
     rowId?: boolean
     columnId?: boolean
     value?: boolean
@@ -33433,10 +33582,11 @@ export namespace Prisma {
     rowSpan?: boolean
   }
 
-  export type ReferenceTableCellOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "rowId" | "columnId" | "value" | "colSpan" | "rowSpan", ExtArgs["result"]["referenceTableCell"]>
+  export type ReferenceTableCellOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tableSlug" | "rowId" | "columnId" | "value" | "colSpan" | "rowSpan", ExtArgs["result"]["referenceTableCell"]>
   export type ReferenceTableCellInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     column?: boolean | ReferenceTableColumnDefaultArgs<ExtArgs>
     row?: boolean | ReferenceTableRowDefaultArgs<ExtArgs>
+    table?: boolean | ReferenceTableDefaultArgs<ExtArgs>
   }
 
   export type $ReferenceTableCellPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -33444,9 +33594,11 @@ export namespace Prisma {
     objects: {
       column: Prisma.$ReferenceTableColumnPayload<ExtArgs>
       row: Prisma.$ReferenceTableRowPayload<ExtArgs>
+      table: Prisma.$ReferenceTablePayload<ExtArgs>
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
+      tableSlug: string
       rowId: number
       columnId: number
       value: string | null
@@ -33794,6 +33946,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     column<T extends ReferenceTableColumnDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ReferenceTableColumnDefaultArgs<ExtArgs>>): Prisma__ReferenceTableColumnClient<$Result.GetResult<Prisma.$ReferenceTableColumnPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     row<T extends ReferenceTableRowDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ReferenceTableRowDefaultArgs<ExtArgs>>): Prisma__ReferenceTableRowClient<$Result.GetResult<Prisma.$ReferenceTableRowPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    table<T extends ReferenceTableDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ReferenceTableDefaultArgs<ExtArgs>>): Prisma__ReferenceTableClient<$Result.GetResult<Prisma.$ReferenceTablePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -33824,6 +33977,7 @@ export namespace Prisma {
    */
   interface ReferenceTableCellFieldRefs {
     readonly id: FieldRef<"ReferenceTableCell", 'Int'>
+    readonly tableSlug: FieldRef<"ReferenceTableCell", 'String'>
     readonly rowId: FieldRef<"ReferenceTableCell", 'Int'>
     readonly columnId: FieldRef<"ReferenceTableCell", 'Int'>
     readonly value: FieldRef<"ReferenceTableCell", 'String'>
@@ -37641,6 +37795,7 @@ export namespace Prisma {
 
   export const ReferenceTableCellScalarFieldEnum: {
     id: 'id',
+    tableSlug: 'tableSlug',
     rowId: 'rowId',
     columnId: 'columnId',
     value: 'value',
@@ -37835,8 +37990,7 @@ export namespace Prisma {
 
   export const ReferenceTableColumnOrderByRelevanceFieldEnum: {
     tableSlug: 'tableSlug',
-    header: 'header',
-    alignment: 'alignment'
+    header: 'header'
   };
 
   export type ReferenceTableColumnOrderByRelevanceFieldEnum = (typeof ReferenceTableColumnOrderByRelevanceFieldEnum)[keyof typeof ReferenceTableColumnOrderByRelevanceFieldEnum]
@@ -37851,6 +38005,7 @@ export namespace Prisma {
 
 
   export const ReferenceTableCellOrderByRelevanceFieldEnum: {
+    tableSlug: 'tableSlug',
     value: 'value'
   };
 
@@ -37914,6 +38069,13 @@ export namespace Prisma {
    * Reference to a field of type 'DateTime'
    */
   export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
+    
+
+
+  /**
+   * Reference to a field of type 'TextAlignment'
+   */
+  export type EnumTextAlignmentFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TextAlignment'>
     
 
 
@@ -38392,6 +38554,7 @@ export namespace Prisma {
     schools?: SpellSchoolMapListRelationFilter
     sources?: SpellSourceMapListRelationFilter
     subschools?: SpellSubschoolMapListRelationFilter
+    components?: SpellComponentMapListRelationFilter
   }
 
   export type SpellOrderByWithRelationInput = {
@@ -38416,6 +38579,7 @@ export namespace Prisma {
     schools?: SpellSchoolMapOrderByRelationAggregateInput
     sources?: SpellSourceMapOrderByRelationAggregateInput
     subschools?: SpellSubschoolMapOrderByRelationAggregateInput
+    components?: SpellComponentMapOrderByRelationAggregateInput
     _relevance?: SpellOrderByRelevanceInput
   }
 
@@ -38444,6 +38608,7 @@ export namespace Prisma {
     schools?: SpellSchoolMapListRelationFilter
     sources?: SpellSourceMapListRelationFilter
     subschools?: SpellSubschoolMapListRelationFilter
+    components?: SpellComponentMapListRelationFilter
   }, "id">
 
   export type SpellOrderByWithAggregationInput = {
@@ -38700,12 +38865,14 @@ export namespace Prisma {
     id?: IntFilter<"SpellComponentMap"> | number
     spellId?: IntFilter<"SpellComponentMap"> | number
     componentId?: IntFilter<"SpellComponentMap"> | number
+    Spell?: XOR<SpellScalarRelationFilter, SpellWhereInput>
   }
 
   export type SpellComponentMapOrderByWithRelationInput = {
     id?: SortOrder
     spellId?: SortOrder
     componentId?: SortOrder
+    Spell?: SpellOrderByWithRelationInput
   }
 
   export type SpellComponentMapWhereUniqueInput = Prisma.AtLeast<{
@@ -38715,6 +38882,7 @@ export namespace Prisma {
     NOT?: SpellComponentMapWhereInput | SpellComponentMapWhereInput[]
     spellId?: IntFilter<"SpellComponentMap"> | number
     componentId?: IntFilter<"SpellComponentMap"> | number
+    Spell?: XOR<SpellScalarRelationFilter, SpellWhereInput>
   }, "id">
 
   export type SpellComponentMapOrderByWithAggregationInput = {
@@ -39639,6 +39807,7 @@ export namespace Prisma {
     description?: StringNullableFilter<"ReferenceTable"> | string | null
     columns?: ReferenceTableColumnListRelationFilter
     rows?: ReferenceTableRowListRelationFilter
+    cells?: ReferenceTableCellListRelationFilter
   }
 
   export type ReferenceTableOrderByWithRelationInput = {
@@ -39647,6 +39816,7 @@ export namespace Prisma {
     description?: SortOrderInput | SortOrder
     columns?: ReferenceTableColumnOrderByRelationAggregateInput
     rows?: ReferenceTableRowOrderByRelationAggregateInput
+    cells?: ReferenceTableCellOrderByRelationAggregateInput
     _relevance?: ReferenceTableOrderByRelevanceInput
   }
 
@@ -39659,6 +39829,7 @@ export namespace Prisma {
     description?: StringNullableFilter<"ReferenceTable"> | string | null
     columns?: ReferenceTableColumnListRelationFilter
     rows?: ReferenceTableRowListRelationFilter
+    cells?: ReferenceTableCellListRelationFilter
   }, "slug">
 
   export type ReferenceTableOrderByWithAggregationInput = {
@@ -39688,7 +39859,7 @@ export namespace Prisma {
     columnIndex?: IntFilter<"ReferenceTableColumn"> | number
     header?: StringFilter<"ReferenceTableColumn"> | string
     span?: IntNullableFilter<"ReferenceTableColumn"> | number | null
-    alignment?: StringNullableFilter<"ReferenceTableColumn"> | string | null
+    alignment?: EnumTextAlignmentNullableFilter<"ReferenceTableColumn"> | $Enums.TextAlignment | null
     cells?: ReferenceTableCellListRelationFilter
     table?: XOR<ReferenceTableScalarRelationFilter, ReferenceTableWhereInput>
   }
@@ -39714,7 +39885,7 @@ export namespace Prisma {
     columnIndex?: IntFilter<"ReferenceTableColumn"> | number
     header?: StringFilter<"ReferenceTableColumn"> | string
     span?: IntNullableFilter<"ReferenceTableColumn"> | number | null
-    alignment?: StringNullableFilter<"ReferenceTableColumn"> | string | null
+    alignment?: EnumTextAlignmentNullableFilter<"ReferenceTableColumn"> | $Enums.TextAlignment | null
     cells?: ReferenceTableCellListRelationFilter
     table?: XOR<ReferenceTableScalarRelationFilter, ReferenceTableWhereInput>
   }, "id">
@@ -39742,7 +39913,7 @@ export namespace Prisma {
     columnIndex?: IntWithAggregatesFilter<"ReferenceTableColumn"> | number
     header?: StringWithAggregatesFilter<"ReferenceTableColumn"> | string
     span?: IntNullableWithAggregatesFilter<"ReferenceTableColumn"> | number | null
-    alignment?: StringNullableWithAggregatesFilter<"ReferenceTableColumn"> | string | null
+    alignment?: EnumTextAlignmentNullableWithAggregatesFilter<"ReferenceTableColumn"> | $Enums.TextAlignment | null
   }
 
   export type ReferenceTableRowWhereInput = {
@@ -39806,6 +39977,7 @@ export namespace Prisma {
     OR?: ReferenceTableCellWhereInput[]
     NOT?: ReferenceTableCellWhereInput | ReferenceTableCellWhereInput[]
     id?: IntFilter<"ReferenceTableCell"> | number
+    tableSlug?: StringFilter<"ReferenceTableCell"> | string
     rowId?: IntFilter<"ReferenceTableCell"> | number
     columnId?: IntFilter<"ReferenceTableCell"> | number
     value?: StringNullableFilter<"ReferenceTableCell"> | string | null
@@ -39813,10 +39985,12 @@ export namespace Prisma {
     rowSpan?: IntNullableFilter<"ReferenceTableCell"> | number | null
     column?: XOR<ReferenceTableColumnScalarRelationFilter, ReferenceTableColumnWhereInput>
     row?: XOR<ReferenceTableRowScalarRelationFilter, ReferenceTableRowWhereInput>
+    table?: XOR<ReferenceTableScalarRelationFilter, ReferenceTableWhereInput>
   }
 
   export type ReferenceTableCellOrderByWithRelationInput = {
     id?: SortOrder
+    tableSlug?: SortOrder
     rowId?: SortOrder
     columnId?: SortOrder
     value?: SortOrderInput | SortOrder
@@ -39824,6 +39998,7 @@ export namespace Prisma {
     rowSpan?: SortOrderInput | SortOrder
     column?: ReferenceTableColumnOrderByWithRelationInput
     row?: ReferenceTableRowOrderByWithRelationInput
+    table?: ReferenceTableOrderByWithRelationInput
     _relevance?: ReferenceTableCellOrderByRelevanceInput
   }
 
@@ -39832,6 +40007,7 @@ export namespace Prisma {
     AND?: ReferenceTableCellWhereInput | ReferenceTableCellWhereInput[]
     OR?: ReferenceTableCellWhereInput[]
     NOT?: ReferenceTableCellWhereInput | ReferenceTableCellWhereInput[]
+    tableSlug?: StringFilter<"ReferenceTableCell"> | string
     rowId?: IntFilter<"ReferenceTableCell"> | number
     columnId?: IntFilter<"ReferenceTableCell"> | number
     value?: StringNullableFilter<"ReferenceTableCell"> | string | null
@@ -39839,10 +40015,12 @@ export namespace Prisma {
     rowSpan?: IntNullableFilter<"ReferenceTableCell"> | number | null
     column?: XOR<ReferenceTableColumnScalarRelationFilter, ReferenceTableColumnWhereInput>
     row?: XOR<ReferenceTableRowScalarRelationFilter, ReferenceTableRowWhereInput>
+    table?: XOR<ReferenceTableScalarRelationFilter, ReferenceTableWhereInput>
   }, "id">
 
   export type ReferenceTableCellOrderByWithAggregationInput = {
     id?: SortOrder
+    tableSlug?: SortOrder
     rowId?: SortOrder
     columnId?: SortOrder
     value?: SortOrderInput | SortOrder
@@ -39860,6 +40038,7 @@ export namespace Prisma {
     OR?: ReferenceTableCellScalarWhereWithAggregatesInput[]
     NOT?: ReferenceTableCellScalarWhereWithAggregatesInput | ReferenceTableCellScalarWhereWithAggregatesInput[]
     id?: IntWithAggregatesFilter<"ReferenceTableCell"> | number
+    tableSlug?: StringWithAggregatesFilter<"ReferenceTableCell"> | string
     rowId?: IntWithAggregatesFilter<"ReferenceTableCell"> | number
     columnId?: IntWithAggregatesFilter<"ReferenceTableCell"> | number
     value?: StringNullableWithAggregatesFilter<"ReferenceTableCell"> | string | null
@@ -40520,6 +40699,7 @@ export namespace Prisma {
     schools?: SpellSchoolMapCreateNestedManyWithoutSpellInput
     sources?: SpellSourceMapCreateNestedManyWithoutSpellInput
     subschools?: SpellSubschoolMapCreateNestedManyWithoutSpellInput
+    components?: SpellComponentMapCreateNestedManyWithoutSpellInput
   }
 
   export type SpellUncheckedCreateInput = {
@@ -40544,6 +40724,7 @@ export namespace Prisma {
     schools?: SpellSchoolMapUncheckedCreateNestedManyWithoutSpellInput
     sources?: SpellSourceMapUncheckedCreateNestedManyWithoutSpellInput
     subschools?: SpellSubschoolMapUncheckedCreateNestedManyWithoutSpellInput
+    components?: SpellComponentMapUncheckedCreateNestedManyWithoutSpellInput
   }
 
   export type SpellUpdateInput = {
@@ -40567,6 +40748,7 @@ export namespace Prisma {
     schools?: SpellSchoolMapUpdateManyWithoutSpellNestedInput
     sources?: SpellSourceMapUpdateManyWithoutSpellNestedInput
     subschools?: SpellSubschoolMapUpdateManyWithoutSpellNestedInput
+    components?: SpellComponentMapUpdateManyWithoutSpellNestedInput
   }
 
   export type SpellUncheckedUpdateInput = {
@@ -40591,6 +40773,7 @@ export namespace Prisma {
     schools?: SpellSchoolMapUncheckedUpdateManyWithoutSpellNestedInput
     sources?: SpellSourceMapUncheckedUpdateManyWithoutSpellNestedInput
     subschools?: SpellSubschoolMapUncheckedUpdateManyWithoutSpellNestedInput
+    components?: SpellComponentMapUncheckedUpdateManyWithoutSpellNestedInput
   }
 
   export type SpellCreateManyInput = {
@@ -40815,8 +40998,8 @@ export namespace Prisma {
   }
 
   export type SpellComponentMapCreateInput = {
-    spellId: number
     componentId: number
+    Spell: SpellCreateNestedOneWithoutComponentsInput
   }
 
   export type SpellComponentMapUncheckedCreateInput = {
@@ -40826,8 +41009,8 @@ export namespace Prisma {
   }
 
   export type SpellComponentMapUpdateInput = {
-    spellId?: IntFieldUpdateOperationsInput | number
     componentId?: IntFieldUpdateOperationsInput | number
+    Spell?: SpellUpdateOneRequiredWithoutComponentsNestedInput
   }
 
   export type SpellComponentMapUncheckedUpdateInput = {
@@ -40843,7 +41026,6 @@ export namespace Prisma {
   }
 
   export type SpellComponentMapUpdateManyMutationInput = {
-    spellId?: IntFieldUpdateOperationsInput | number
     componentId?: IntFieldUpdateOperationsInput | number
   }
 
@@ -41774,6 +41956,7 @@ export namespace Prisma {
     description?: string | null
     columns?: ReferenceTableColumnCreateNestedManyWithoutTableInput
     rows?: ReferenceTableRowCreateNestedManyWithoutTableInput
+    cells?: ReferenceTableCellCreateNestedManyWithoutTableInput
   }
 
   export type ReferenceTableUncheckedCreateInput = {
@@ -41782,6 +41965,7 @@ export namespace Prisma {
     description?: string | null
     columns?: ReferenceTableColumnUncheckedCreateNestedManyWithoutTableInput
     rows?: ReferenceTableRowUncheckedCreateNestedManyWithoutTableInput
+    cells?: ReferenceTableCellUncheckedCreateNestedManyWithoutTableInput
   }
 
   export type ReferenceTableUpdateInput = {
@@ -41790,6 +41974,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     columns?: ReferenceTableColumnUpdateManyWithoutTableNestedInput
     rows?: ReferenceTableRowUpdateManyWithoutTableNestedInput
+    cells?: ReferenceTableCellUpdateManyWithoutTableNestedInput
   }
 
   export type ReferenceTableUncheckedUpdateInput = {
@@ -41798,6 +41983,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     columns?: ReferenceTableColumnUncheckedUpdateManyWithoutTableNestedInput
     rows?: ReferenceTableRowUncheckedUpdateManyWithoutTableNestedInput
+    cells?: ReferenceTableCellUncheckedUpdateManyWithoutTableNestedInput
   }
 
   export type ReferenceTableCreateManyInput = {
@@ -41822,7 +42008,7 @@ export namespace Prisma {
     columnIndex: number
     header: string
     span?: number | null
-    alignment?: string | null
+    alignment?: $Enums.TextAlignment | null
     cells?: ReferenceTableCellCreateNestedManyWithoutColumnInput
     table: ReferenceTableCreateNestedOneWithoutColumnsInput
   }
@@ -41833,7 +42019,7 @@ export namespace Prisma {
     columnIndex: number
     header: string
     span?: number | null
-    alignment?: string | null
+    alignment?: $Enums.TextAlignment | null
     cells?: ReferenceTableCellUncheckedCreateNestedManyWithoutColumnInput
   }
 
@@ -41841,7 +42027,7 @@ export namespace Prisma {
     columnIndex?: IntFieldUpdateOperationsInput | number
     header?: StringFieldUpdateOperationsInput | string
     span?: NullableIntFieldUpdateOperationsInput | number | null
-    alignment?: NullableStringFieldUpdateOperationsInput | string | null
+    alignment?: NullableEnumTextAlignmentFieldUpdateOperationsInput | $Enums.TextAlignment | null
     cells?: ReferenceTableCellUpdateManyWithoutColumnNestedInput
     table?: ReferenceTableUpdateOneRequiredWithoutColumnsNestedInput
   }
@@ -41852,7 +42038,7 @@ export namespace Prisma {
     columnIndex?: IntFieldUpdateOperationsInput | number
     header?: StringFieldUpdateOperationsInput | string
     span?: NullableIntFieldUpdateOperationsInput | number | null
-    alignment?: NullableStringFieldUpdateOperationsInput | string | null
+    alignment?: NullableEnumTextAlignmentFieldUpdateOperationsInput | $Enums.TextAlignment | null
     cells?: ReferenceTableCellUncheckedUpdateManyWithoutColumnNestedInput
   }
 
@@ -41862,14 +42048,14 @@ export namespace Prisma {
     columnIndex: number
     header: string
     span?: number | null
-    alignment?: string | null
+    alignment?: $Enums.TextAlignment | null
   }
 
   export type ReferenceTableColumnUpdateManyMutationInput = {
     columnIndex?: IntFieldUpdateOperationsInput | number
     header?: StringFieldUpdateOperationsInput | string
     span?: NullableIntFieldUpdateOperationsInput | number | null
-    alignment?: NullableStringFieldUpdateOperationsInput | string | null
+    alignment?: NullableEnumTextAlignmentFieldUpdateOperationsInput | $Enums.TextAlignment | null
   }
 
   export type ReferenceTableColumnUncheckedUpdateManyInput = {
@@ -41878,7 +42064,7 @@ export namespace Prisma {
     columnIndex?: IntFieldUpdateOperationsInput | number
     header?: StringFieldUpdateOperationsInput | string
     span?: NullableIntFieldUpdateOperationsInput | number | null
-    alignment?: NullableStringFieldUpdateOperationsInput | string | null
+    alignment?: NullableEnumTextAlignmentFieldUpdateOperationsInput | $Enums.TextAlignment | null
   }
 
   export type ReferenceTableRowCreateInput = {
@@ -41936,10 +42122,12 @@ export namespace Prisma {
     rowSpan?: number | null
     column: ReferenceTableColumnCreateNestedOneWithoutCellsInput
     row: ReferenceTableRowCreateNestedOneWithoutCellsInput
+    table: ReferenceTableCreateNestedOneWithoutCellsInput
   }
 
   export type ReferenceTableCellUncheckedCreateInput = {
     id?: number
+    tableSlug: string
     rowId: number
     columnId: number
     value?: string | null
@@ -41953,10 +42141,12 @@ export namespace Prisma {
     rowSpan?: NullableIntFieldUpdateOperationsInput | number | null
     column?: ReferenceTableColumnUpdateOneRequiredWithoutCellsNestedInput
     row?: ReferenceTableRowUpdateOneRequiredWithoutCellsNestedInput
+    table?: ReferenceTableUpdateOneRequiredWithoutCellsNestedInput
   }
 
   export type ReferenceTableCellUncheckedUpdateInput = {
     id?: IntFieldUpdateOperationsInput | number
+    tableSlug?: StringFieldUpdateOperationsInput | string
     rowId?: IntFieldUpdateOperationsInput | number
     columnId?: IntFieldUpdateOperationsInput | number
     value?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41966,6 +42156,7 @@ export namespace Prisma {
 
   export type ReferenceTableCellCreateManyInput = {
     id?: number
+    tableSlug: string
     rowId: number
     columnId: number
     value?: string | null
@@ -41981,6 +42172,7 @@ export namespace Prisma {
 
   export type ReferenceTableCellUncheckedUpdateManyInput = {
     id?: IntFieldUpdateOperationsInput | number
+    tableSlug?: StringFieldUpdateOperationsInput | string
     rowId?: IntFieldUpdateOperationsInput | number
     columnId?: IntFieldUpdateOperationsInput | number
     value?: NullableStringFieldUpdateOperationsInput | string | null
@@ -42746,6 +42938,12 @@ export namespace Prisma {
     none?: SpellSubschoolMapWhereInput
   }
 
+  export type SpellComponentMapListRelationFilter = {
+    every?: SpellComponentMapWhereInput
+    some?: SpellComponentMapWhereInput
+    none?: SpellComponentMapWhereInput
+  }
+
   export type SpellDescriptorMapOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -42759,6 +42957,10 @@ export namespace Prisma {
   }
 
   export type SpellSubschoolMapOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type SpellComponentMapOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -43786,11 +43988,21 @@ export namespace Prisma {
     none?: ReferenceTableRowWhereInput
   }
 
+  export type ReferenceTableCellListRelationFilter = {
+    every?: ReferenceTableCellWhereInput
+    some?: ReferenceTableCellWhereInput
+    none?: ReferenceTableCellWhereInput
+  }
+
   export type ReferenceTableColumnOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
   export type ReferenceTableRowOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type ReferenceTableCellOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -43818,19 +44030,16 @@ export namespace Prisma {
     description?: SortOrder
   }
 
-  export type ReferenceTableCellListRelationFilter = {
-    every?: ReferenceTableCellWhereInput
-    some?: ReferenceTableCellWhereInput
-    none?: ReferenceTableCellWhereInput
+  export type EnumTextAlignmentNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.TextAlignment | EnumTextAlignmentFieldRefInput<$PrismaModel> | null
+    in?: $Enums.TextAlignment[] | null
+    notIn?: $Enums.TextAlignment[] | null
+    not?: NestedEnumTextAlignmentNullableFilter<$PrismaModel> | $Enums.TextAlignment | null
   }
 
   export type ReferenceTableScalarRelationFilter = {
     is?: ReferenceTableWhereInput
     isNot?: ReferenceTableWhereInput
-  }
-
-  export type ReferenceTableCellOrderByRelationAggregateInput = {
-    _count?: SortOrder
   }
 
   export type ReferenceTableColumnOrderByRelevanceInput = {
@@ -43876,6 +44085,16 @@ export namespace Prisma {
     id?: SortOrder
     columnIndex?: SortOrder
     span?: SortOrder
+  }
+
+  export type EnumTextAlignmentNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.TextAlignment | EnumTextAlignmentFieldRefInput<$PrismaModel> | null
+    in?: $Enums.TextAlignment[] | null
+    notIn?: $Enums.TextAlignment[] | null
+    not?: NestedEnumTextAlignmentNullableWithAggregatesFilter<$PrismaModel> | $Enums.TextAlignment | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumTextAlignmentNullableFilter<$PrismaModel>
+    _max?: NestedEnumTextAlignmentNullableFilter<$PrismaModel>
   }
 
   export type ReferenceTableRowOrderByRelevanceInput = {
@@ -43933,6 +44152,7 @@ export namespace Prisma {
 
   export type ReferenceTableCellCountOrderByAggregateInput = {
     id?: SortOrder
+    tableSlug?: SortOrder
     rowId?: SortOrder
     columnId?: SortOrder
     value?: SortOrder
@@ -43950,6 +44170,7 @@ export namespace Prisma {
 
   export type ReferenceTableCellMaxOrderByAggregateInput = {
     id?: SortOrder
+    tableSlug?: SortOrder
     rowId?: SortOrder
     columnId?: SortOrder
     value?: SortOrder
@@ -43959,6 +44180,7 @@ export namespace Prisma {
 
   export type ReferenceTableCellMinOrderByAggregateInput = {
     id?: SortOrder
+    tableSlug?: SortOrder
     rowId?: SortOrder
     columnId?: SortOrder
     value?: SortOrder
@@ -44617,6 +44839,13 @@ export namespace Prisma {
     connect?: SpellSubschoolMapWhereUniqueInput | SpellSubschoolMapWhereUniqueInput[]
   }
 
+  export type SpellComponentMapCreateNestedManyWithoutSpellInput = {
+    create?: XOR<SpellComponentMapCreateWithoutSpellInput, SpellComponentMapUncheckedCreateWithoutSpellInput> | SpellComponentMapCreateWithoutSpellInput[] | SpellComponentMapUncheckedCreateWithoutSpellInput[]
+    connectOrCreate?: SpellComponentMapCreateOrConnectWithoutSpellInput | SpellComponentMapCreateOrConnectWithoutSpellInput[]
+    createMany?: SpellComponentMapCreateManySpellInputEnvelope
+    connect?: SpellComponentMapWhereUniqueInput | SpellComponentMapWhereUniqueInput[]
+  }
+
   export type SpellDescriptorMapUncheckedCreateNestedManyWithoutSpellInput = {
     create?: XOR<SpellDescriptorMapCreateWithoutSpellInput, SpellDescriptorMapUncheckedCreateWithoutSpellInput> | SpellDescriptorMapCreateWithoutSpellInput[] | SpellDescriptorMapUncheckedCreateWithoutSpellInput[]
     connectOrCreate?: SpellDescriptorMapCreateOrConnectWithoutSpellInput | SpellDescriptorMapCreateOrConnectWithoutSpellInput[]
@@ -44650,6 +44879,13 @@ export namespace Prisma {
     connectOrCreate?: SpellSubschoolMapCreateOrConnectWithoutSpellInput | SpellSubschoolMapCreateOrConnectWithoutSpellInput[]
     createMany?: SpellSubschoolMapCreateManySpellInputEnvelope
     connect?: SpellSubschoolMapWhereUniqueInput | SpellSubschoolMapWhereUniqueInput[]
+  }
+
+  export type SpellComponentMapUncheckedCreateNestedManyWithoutSpellInput = {
+    create?: XOR<SpellComponentMapCreateWithoutSpellInput, SpellComponentMapUncheckedCreateWithoutSpellInput> | SpellComponentMapCreateWithoutSpellInput[] | SpellComponentMapUncheckedCreateWithoutSpellInput[]
+    connectOrCreate?: SpellComponentMapCreateOrConnectWithoutSpellInput | SpellComponentMapCreateOrConnectWithoutSpellInput[]
+    createMany?: SpellComponentMapCreateManySpellInputEnvelope
+    connect?: SpellComponentMapWhereUniqueInput | SpellComponentMapWhereUniqueInput[]
   }
 
   export type SpellDescriptorMapUpdateManyWithoutSpellNestedInput = {
@@ -44722,6 +44958,20 @@ export namespace Prisma {
     deleteMany?: SpellSubschoolMapScalarWhereInput | SpellSubschoolMapScalarWhereInput[]
   }
 
+  export type SpellComponentMapUpdateManyWithoutSpellNestedInput = {
+    create?: XOR<SpellComponentMapCreateWithoutSpellInput, SpellComponentMapUncheckedCreateWithoutSpellInput> | SpellComponentMapCreateWithoutSpellInput[] | SpellComponentMapUncheckedCreateWithoutSpellInput[]
+    connectOrCreate?: SpellComponentMapCreateOrConnectWithoutSpellInput | SpellComponentMapCreateOrConnectWithoutSpellInput[]
+    upsert?: SpellComponentMapUpsertWithWhereUniqueWithoutSpellInput | SpellComponentMapUpsertWithWhereUniqueWithoutSpellInput[]
+    createMany?: SpellComponentMapCreateManySpellInputEnvelope
+    set?: SpellComponentMapWhereUniqueInput | SpellComponentMapWhereUniqueInput[]
+    disconnect?: SpellComponentMapWhereUniqueInput | SpellComponentMapWhereUniqueInput[]
+    delete?: SpellComponentMapWhereUniqueInput | SpellComponentMapWhereUniqueInput[]
+    connect?: SpellComponentMapWhereUniqueInput | SpellComponentMapWhereUniqueInput[]
+    update?: SpellComponentMapUpdateWithWhereUniqueWithoutSpellInput | SpellComponentMapUpdateWithWhereUniqueWithoutSpellInput[]
+    updateMany?: SpellComponentMapUpdateManyWithWhereWithoutSpellInput | SpellComponentMapUpdateManyWithWhereWithoutSpellInput[]
+    deleteMany?: SpellComponentMapScalarWhereInput | SpellComponentMapScalarWhereInput[]
+  }
+
   export type SpellDescriptorMapUncheckedUpdateManyWithoutSpellNestedInput = {
     create?: XOR<SpellDescriptorMapCreateWithoutSpellInput, SpellDescriptorMapUncheckedCreateWithoutSpellInput> | SpellDescriptorMapCreateWithoutSpellInput[] | SpellDescriptorMapUncheckedCreateWithoutSpellInput[]
     connectOrCreate?: SpellDescriptorMapCreateOrConnectWithoutSpellInput | SpellDescriptorMapCreateOrConnectWithoutSpellInput[]
@@ -44790,6 +45040,20 @@ export namespace Prisma {
     update?: SpellSubschoolMapUpdateWithWhereUniqueWithoutSpellInput | SpellSubschoolMapUpdateWithWhereUniqueWithoutSpellInput[]
     updateMany?: SpellSubschoolMapUpdateManyWithWhereWithoutSpellInput | SpellSubschoolMapUpdateManyWithWhereWithoutSpellInput[]
     deleteMany?: SpellSubschoolMapScalarWhereInput | SpellSubschoolMapScalarWhereInput[]
+  }
+
+  export type SpellComponentMapUncheckedUpdateManyWithoutSpellNestedInput = {
+    create?: XOR<SpellComponentMapCreateWithoutSpellInput, SpellComponentMapUncheckedCreateWithoutSpellInput> | SpellComponentMapCreateWithoutSpellInput[] | SpellComponentMapUncheckedCreateWithoutSpellInput[]
+    connectOrCreate?: SpellComponentMapCreateOrConnectWithoutSpellInput | SpellComponentMapCreateOrConnectWithoutSpellInput[]
+    upsert?: SpellComponentMapUpsertWithWhereUniqueWithoutSpellInput | SpellComponentMapUpsertWithWhereUniqueWithoutSpellInput[]
+    createMany?: SpellComponentMapCreateManySpellInputEnvelope
+    set?: SpellComponentMapWhereUniqueInput | SpellComponentMapWhereUniqueInput[]
+    disconnect?: SpellComponentMapWhereUniqueInput | SpellComponentMapWhereUniqueInput[]
+    delete?: SpellComponentMapWhereUniqueInput | SpellComponentMapWhereUniqueInput[]
+    connect?: SpellComponentMapWhereUniqueInput | SpellComponentMapWhereUniqueInput[]
+    update?: SpellComponentMapUpdateWithWhereUniqueWithoutSpellInput | SpellComponentMapUpdateWithWhereUniqueWithoutSpellInput[]
+    updateMany?: SpellComponentMapUpdateManyWithWhereWithoutSpellInput | SpellComponentMapUpdateManyWithWhereWithoutSpellInput[]
+    deleteMany?: SpellComponentMapScalarWhereInput | SpellComponentMapScalarWhereInput[]
   }
 
   export type SpellCreateNestedOneWithoutDescriptorsInput = {
@@ -44862,6 +45126,20 @@ export namespace Prisma {
     upsert?: SpellUpsertWithoutSubschoolsInput
     connect?: SpellWhereUniqueInput
     update?: XOR<XOR<SpellUpdateToOneWithWhereWithoutSubschoolsInput, SpellUpdateWithoutSubschoolsInput>, SpellUncheckedUpdateWithoutSubschoolsInput>
+  }
+
+  export type SpellCreateNestedOneWithoutComponentsInput = {
+    create?: XOR<SpellCreateWithoutComponentsInput, SpellUncheckedCreateWithoutComponentsInput>
+    connectOrCreate?: SpellCreateOrConnectWithoutComponentsInput
+    connect?: SpellWhereUniqueInput
+  }
+
+  export type SpellUpdateOneRequiredWithoutComponentsNestedInput = {
+    create?: XOR<SpellCreateWithoutComponentsInput, SpellUncheckedCreateWithoutComponentsInput>
+    connectOrCreate?: SpellCreateOrConnectWithoutComponentsInput
+    upsert?: SpellUpsertWithoutComponentsInput
+    connect?: SpellWhereUniqueInput
+    update?: XOR<XOR<SpellUpdateToOneWithWhereWithoutComponentsInput, SpellUpdateWithoutComponentsInput>, SpellUncheckedUpdateWithoutComponentsInput>
   }
 
   export type ClassSkillMapCreateNestedManyWithoutSkillInput = {
@@ -45512,6 +45790,13 @@ export namespace Prisma {
     connect?: ReferenceTableRowWhereUniqueInput | ReferenceTableRowWhereUniqueInput[]
   }
 
+  export type ReferenceTableCellCreateNestedManyWithoutTableInput = {
+    create?: XOR<ReferenceTableCellCreateWithoutTableInput, ReferenceTableCellUncheckedCreateWithoutTableInput> | ReferenceTableCellCreateWithoutTableInput[] | ReferenceTableCellUncheckedCreateWithoutTableInput[]
+    connectOrCreate?: ReferenceTableCellCreateOrConnectWithoutTableInput | ReferenceTableCellCreateOrConnectWithoutTableInput[]
+    createMany?: ReferenceTableCellCreateManyTableInputEnvelope
+    connect?: ReferenceTableCellWhereUniqueInput | ReferenceTableCellWhereUniqueInput[]
+  }
+
   export type ReferenceTableColumnUncheckedCreateNestedManyWithoutTableInput = {
     create?: XOR<ReferenceTableColumnCreateWithoutTableInput, ReferenceTableColumnUncheckedCreateWithoutTableInput> | ReferenceTableColumnCreateWithoutTableInput[] | ReferenceTableColumnUncheckedCreateWithoutTableInput[]
     connectOrCreate?: ReferenceTableColumnCreateOrConnectWithoutTableInput | ReferenceTableColumnCreateOrConnectWithoutTableInput[]
@@ -45524,6 +45809,13 @@ export namespace Prisma {
     connectOrCreate?: ReferenceTableRowCreateOrConnectWithoutTableInput | ReferenceTableRowCreateOrConnectWithoutTableInput[]
     createMany?: ReferenceTableRowCreateManyTableInputEnvelope
     connect?: ReferenceTableRowWhereUniqueInput | ReferenceTableRowWhereUniqueInput[]
+  }
+
+  export type ReferenceTableCellUncheckedCreateNestedManyWithoutTableInput = {
+    create?: XOR<ReferenceTableCellCreateWithoutTableInput, ReferenceTableCellUncheckedCreateWithoutTableInput> | ReferenceTableCellCreateWithoutTableInput[] | ReferenceTableCellUncheckedCreateWithoutTableInput[]
+    connectOrCreate?: ReferenceTableCellCreateOrConnectWithoutTableInput | ReferenceTableCellCreateOrConnectWithoutTableInput[]
+    createMany?: ReferenceTableCellCreateManyTableInputEnvelope
+    connect?: ReferenceTableCellWhereUniqueInput | ReferenceTableCellWhereUniqueInput[]
   }
 
   export type ReferenceTableColumnUpdateManyWithoutTableNestedInput = {
@@ -45554,6 +45846,20 @@ export namespace Prisma {
     deleteMany?: ReferenceTableRowScalarWhereInput | ReferenceTableRowScalarWhereInput[]
   }
 
+  export type ReferenceTableCellUpdateManyWithoutTableNestedInput = {
+    create?: XOR<ReferenceTableCellCreateWithoutTableInput, ReferenceTableCellUncheckedCreateWithoutTableInput> | ReferenceTableCellCreateWithoutTableInput[] | ReferenceTableCellUncheckedCreateWithoutTableInput[]
+    connectOrCreate?: ReferenceTableCellCreateOrConnectWithoutTableInput | ReferenceTableCellCreateOrConnectWithoutTableInput[]
+    upsert?: ReferenceTableCellUpsertWithWhereUniqueWithoutTableInput | ReferenceTableCellUpsertWithWhereUniqueWithoutTableInput[]
+    createMany?: ReferenceTableCellCreateManyTableInputEnvelope
+    set?: ReferenceTableCellWhereUniqueInput | ReferenceTableCellWhereUniqueInput[]
+    disconnect?: ReferenceTableCellWhereUniqueInput | ReferenceTableCellWhereUniqueInput[]
+    delete?: ReferenceTableCellWhereUniqueInput | ReferenceTableCellWhereUniqueInput[]
+    connect?: ReferenceTableCellWhereUniqueInput | ReferenceTableCellWhereUniqueInput[]
+    update?: ReferenceTableCellUpdateWithWhereUniqueWithoutTableInput | ReferenceTableCellUpdateWithWhereUniqueWithoutTableInput[]
+    updateMany?: ReferenceTableCellUpdateManyWithWhereWithoutTableInput | ReferenceTableCellUpdateManyWithWhereWithoutTableInput[]
+    deleteMany?: ReferenceTableCellScalarWhereInput | ReferenceTableCellScalarWhereInput[]
+  }
+
   export type ReferenceTableColumnUncheckedUpdateManyWithoutTableNestedInput = {
     create?: XOR<ReferenceTableColumnCreateWithoutTableInput, ReferenceTableColumnUncheckedCreateWithoutTableInput> | ReferenceTableColumnCreateWithoutTableInput[] | ReferenceTableColumnUncheckedCreateWithoutTableInput[]
     connectOrCreate?: ReferenceTableColumnCreateOrConnectWithoutTableInput | ReferenceTableColumnCreateOrConnectWithoutTableInput[]
@@ -45582,6 +45888,20 @@ export namespace Prisma {
     deleteMany?: ReferenceTableRowScalarWhereInput | ReferenceTableRowScalarWhereInput[]
   }
 
+  export type ReferenceTableCellUncheckedUpdateManyWithoutTableNestedInput = {
+    create?: XOR<ReferenceTableCellCreateWithoutTableInput, ReferenceTableCellUncheckedCreateWithoutTableInput> | ReferenceTableCellCreateWithoutTableInput[] | ReferenceTableCellUncheckedCreateWithoutTableInput[]
+    connectOrCreate?: ReferenceTableCellCreateOrConnectWithoutTableInput | ReferenceTableCellCreateOrConnectWithoutTableInput[]
+    upsert?: ReferenceTableCellUpsertWithWhereUniqueWithoutTableInput | ReferenceTableCellUpsertWithWhereUniqueWithoutTableInput[]
+    createMany?: ReferenceTableCellCreateManyTableInputEnvelope
+    set?: ReferenceTableCellWhereUniqueInput | ReferenceTableCellWhereUniqueInput[]
+    disconnect?: ReferenceTableCellWhereUniqueInput | ReferenceTableCellWhereUniqueInput[]
+    delete?: ReferenceTableCellWhereUniqueInput | ReferenceTableCellWhereUniqueInput[]
+    connect?: ReferenceTableCellWhereUniqueInput | ReferenceTableCellWhereUniqueInput[]
+    update?: ReferenceTableCellUpdateWithWhereUniqueWithoutTableInput | ReferenceTableCellUpdateWithWhereUniqueWithoutTableInput[]
+    updateMany?: ReferenceTableCellUpdateManyWithWhereWithoutTableInput | ReferenceTableCellUpdateManyWithWhereWithoutTableInput[]
+    deleteMany?: ReferenceTableCellScalarWhereInput | ReferenceTableCellScalarWhereInput[]
+  }
+
   export type ReferenceTableCellCreateNestedManyWithoutColumnInput = {
     create?: XOR<ReferenceTableCellCreateWithoutColumnInput, ReferenceTableCellUncheckedCreateWithoutColumnInput> | ReferenceTableCellCreateWithoutColumnInput[] | ReferenceTableCellUncheckedCreateWithoutColumnInput[]
     connectOrCreate?: ReferenceTableCellCreateOrConnectWithoutColumnInput | ReferenceTableCellCreateOrConnectWithoutColumnInput[]
@@ -45600,6 +45920,10 @@ export namespace Prisma {
     connectOrCreate?: ReferenceTableCellCreateOrConnectWithoutColumnInput | ReferenceTableCellCreateOrConnectWithoutColumnInput[]
     createMany?: ReferenceTableCellCreateManyColumnInputEnvelope
     connect?: ReferenceTableCellWhereUniqueInput | ReferenceTableCellWhereUniqueInput[]
+  }
+
+  export type NullableEnumTextAlignmentFieldUpdateOperationsInput = {
+    set?: $Enums.TextAlignment | null
   }
 
   export type ReferenceTableCellUpdateManyWithoutColumnNestedInput = {
@@ -45706,6 +46030,12 @@ export namespace Prisma {
     connect?: ReferenceTableRowWhereUniqueInput
   }
 
+  export type ReferenceTableCreateNestedOneWithoutCellsInput = {
+    create?: XOR<ReferenceTableCreateWithoutCellsInput, ReferenceTableUncheckedCreateWithoutCellsInput>
+    connectOrCreate?: ReferenceTableCreateOrConnectWithoutCellsInput
+    connect?: ReferenceTableWhereUniqueInput
+  }
+
   export type ReferenceTableColumnUpdateOneRequiredWithoutCellsNestedInput = {
     create?: XOR<ReferenceTableColumnCreateWithoutCellsInput, ReferenceTableColumnUncheckedCreateWithoutCellsInput>
     connectOrCreate?: ReferenceTableColumnCreateOrConnectWithoutCellsInput
@@ -45720,6 +46050,14 @@ export namespace Prisma {
     upsert?: ReferenceTableRowUpsertWithoutCellsInput
     connect?: ReferenceTableRowWhereUniqueInput
     update?: XOR<XOR<ReferenceTableRowUpdateToOneWithWhereWithoutCellsInput, ReferenceTableRowUpdateWithoutCellsInput>, ReferenceTableRowUncheckedUpdateWithoutCellsInput>
+  }
+
+  export type ReferenceTableUpdateOneRequiredWithoutCellsNestedInput = {
+    create?: XOR<ReferenceTableCreateWithoutCellsInput, ReferenceTableUncheckedCreateWithoutCellsInput>
+    connectOrCreate?: ReferenceTableCreateOrConnectWithoutCellsInput
+    upsert?: ReferenceTableUpsertWithoutCellsInput
+    connect?: ReferenceTableWhereUniqueInput
+    update?: XOR<XOR<ReferenceTableUpdateToOneWithWhereWithoutCellsInput, ReferenceTableUpdateWithoutCellsInput>, ReferenceTableUncheckedUpdateWithoutCellsInput>
   }
 
   export type UserCharacterAttributeCreateNestedManyWithoutCharacterInput = {
@@ -46070,6 +46408,23 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedDateTimeNullableFilter<$PrismaModel>
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type NestedEnumTextAlignmentNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.TextAlignment | EnumTextAlignmentFieldRefInput<$PrismaModel> | null
+    in?: $Enums.TextAlignment[] | null
+    notIn?: $Enums.TextAlignment[] | null
+    not?: NestedEnumTextAlignmentNullableFilter<$PrismaModel> | $Enums.TextAlignment | null
+  }
+
+  export type NestedEnumTextAlignmentNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.TextAlignment | EnumTextAlignmentFieldRefInput<$PrismaModel> | null
+    in?: $Enums.TextAlignment[] | null
+    notIn?: $Enums.TextAlignment[] | null
+    not?: NestedEnumTextAlignmentNullableWithAggregatesFilter<$PrismaModel> | $Enums.TextAlignment | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumTextAlignmentNullableFilter<$PrismaModel>
+    _max?: NestedEnumTextAlignmentNullableFilter<$PrismaModel>
   }
 
   export type NestedDateTimeFilter<$PrismaModel = never> = {
@@ -46998,6 +47353,7 @@ export namespace Prisma {
     schools?: SpellSchoolMapCreateNestedManyWithoutSpellInput
     sources?: SpellSourceMapCreateNestedManyWithoutSpellInput
     subschools?: SpellSubschoolMapCreateNestedManyWithoutSpellInput
+    components?: SpellComponentMapCreateNestedManyWithoutSpellInput
   }
 
   export type SpellUncheckedCreateWithoutLevelMappingInput = {
@@ -47021,6 +47377,7 @@ export namespace Prisma {
     schools?: SpellSchoolMapUncheckedCreateNestedManyWithoutSpellInput
     sources?: SpellSourceMapUncheckedCreateNestedManyWithoutSpellInput
     subschools?: SpellSubschoolMapUncheckedCreateNestedManyWithoutSpellInput
+    components?: SpellComponentMapUncheckedCreateNestedManyWithoutSpellInput
   }
 
   export type SpellCreateOrConnectWithoutLevelMappingInput = {
@@ -47101,6 +47458,7 @@ export namespace Prisma {
     schools?: SpellSchoolMapUpdateManyWithoutSpellNestedInput
     sources?: SpellSourceMapUpdateManyWithoutSpellNestedInput
     subschools?: SpellSubschoolMapUpdateManyWithoutSpellNestedInput
+    components?: SpellComponentMapUpdateManyWithoutSpellNestedInput
   }
 
   export type SpellUncheckedUpdateWithoutLevelMappingInput = {
@@ -47124,6 +47482,7 @@ export namespace Prisma {
     schools?: SpellSchoolMapUncheckedUpdateManyWithoutSpellNestedInput
     sources?: SpellSourceMapUncheckedUpdateManyWithoutSpellNestedInput
     subschools?: SpellSubschoolMapUncheckedUpdateManyWithoutSpellNestedInput
+    components?: SpellComponentMapUncheckedUpdateManyWithoutSpellNestedInput
   }
 
   export type ClassUpsertWithoutSpellLevelsInput = {
@@ -47277,6 +47636,25 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type SpellComponentMapCreateWithoutSpellInput = {
+    componentId: number
+  }
+
+  export type SpellComponentMapUncheckedCreateWithoutSpellInput = {
+    id?: number
+    componentId: number
+  }
+
+  export type SpellComponentMapCreateOrConnectWithoutSpellInput = {
+    where: SpellComponentMapWhereUniqueInput
+    create: XOR<SpellComponentMapCreateWithoutSpellInput, SpellComponentMapUncheckedCreateWithoutSpellInput>
+  }
+
+  export type SpellComponentMapCreateManySpellInputEnvelope = {
+    data: SpellComponentMapCreateManySpellInput | SpellComponentMapCreateManySpellInput[]
+    skipDuplicates?: boolean
+  }
+
   export type SpellDescriptorMapUpsertWithWhereUniqueWithoutSpellInput = {
     where: SpellDescriptorMapWhereUniqueInput
     update: XOR<SpellDescriptorMapUpdateWithoutSpellInput, SpellDescriptorMapUncheckedUpdateWithoutSpellInput>
@@ -47395,6 +47773,31 @@ export namespace Prisma {
     schoolId?: IntFilter<"SpellSubschoolMap"> | number
   }
 
+  export type SpellComponentMapUpsertWithWhereUniqueWithoutSpellInput = {
+    where: SpellComponentMapWhereUniqueInput
+    update: XOR<SpellComponentMapUpdateWithoutSpellInput, SpellComponentMapUncheckedUpdateWithoutSpellInput>
+    create: XOR<SpellComponentMapCreateWithoutSpellInput, SpellComponentMapUncheckedCreateWithoutSpellInput>
+  }
+
+  export type SpellComponentMapUpdateWithWhereUniqueWithoutSpellInput = {
+    where: SpellComponentMapWhereUniqueInput
+    data: XOR<SpellComponentMapUpdateWithoutSpellInput, SpellComponentMapUncheckedUpdateWithoutSpellInput>
+  }
+
+  export type SpellComponentMapUpdateManyWithWhereWithoutSpellInput = {
+    where: SpellComponentMapScalarWhereInput
+    data: XOR<SpellComponentMapUpdateManyMutationInput, SpellComponentMapUncheckedUpdateManyWithoutSpellInput>
+  }
+
+  export type SpellComponentMapScalarWhereInput = {
+    AND?: SpellComponentMapScalarWhereInput | SpellComponentMapScalarWhereInput[]
+    OR?: SpellComponentMapScalarWhereInput[]
+    NOT?: SpellComponentMapScalarWhereInput | SpellComponentMapScalarWhereInput[]
+    id?: IntFilter<"SpellComponentMap"> | number
+    spellId?: IntFilter<"SpellComponentMap"> | number
+    componentId?: IntFilter<"SpellComponentMap"> | number
+  }
+
   export type SpellCreateWithoutDescriptorsInput = {
     name: string
     summary?: string | null
@@ -47415,6 +47818,7 @@ export namespace Prisma {
     schools?: SpellSchoolMapCreateNestedManyWithoutSpellInput
     sources?: SpellSourceMapCreateNestedManyWithoutSpellInput
     subschools?: SpellSubschoolMapCreateNestedManyWithoutSpellInput
+    components?: SpellComponentMapCreateNestedManyWithoutSpellInput
   }
 
   export type SpellUncheckedCreateWithoutDescriptorsInput = {
@@ -47438,6 +47842,7 @@ export namespace Prisma {
     schools?: SpellSchoolMapUncheckedCreateNestedManyWithoutSpellInput
     sources?: SpellSourceMapUncheckedCreateNestedManyWithoutSpellInput
     subschools?: SpellSubschoolMapUncheckedCreateNestedManyWithoutSpellInput
+    components?: SpellComponentMapUncheckedCreateNestedManyWithoutSpellInput
   }
 
   export type SpellCreateOrConnectWithoutDescriptorsInput = {
@@ -47476,6 +47881,7 @@ export namespace Prisma {
     schools?: SpellSchoolMapUpdateManyWithoutSpellNestedInput
     sources?: SpellSourceMapUpdateManyWithoutSpellNestedInput
     subschools?: SpellSubschoolMapUpdateManyWithoutSpellNestedInput
+    components?: SpellComponentMapUpdateManyWithoutSpellNestedInput
   }
 
   export type SpellUncheckedUpdateWithoutDescriptorsInput = {
@@ -47499,6 +47905,7 @@ export namespace Prisma {
     schools?: SpellSchoolMapUncheckedUpdateManyWithoutSpellNestedInput
     sources?: SpellSourceMapUncheckedUpdateManyWithoutSpellNestedInput
     subschools?: SpellSubschoolMapUncheckedUpdateManyWithoutSpellNestedInput
+    components?: SpellComponentMapUncheckedUpdateManyWithoutSpellNestedInput
   }
 
   export type SpellCreateWithoutSchoolsInput = {
@@ -47521,6 +47928,7 @@ export namespace Prisma {
     levelMapping?: SpellLevelMapCreateNestedManyWithoutSpellInput
     sources?: SpellSourceMapCreateNestedManyWithoutSpellInput
     subschools?: SpellSubschoolMapCreateNestedManyWithoutSpellInput
+    components?: SpellComponentMapCreateNestedManyWithoutSpellInput
   }
 
   export type SpellUncheckedCreateWithoutSchoolsInput = {
@@ -47544,6 +47952,7 @@ export namespace Prisma {
     levelMapping?: SpellLevelMapUncheckedCreateNestedManyWithoutSpellInput
     sources?: SpellSourceMapUncheckedCreateNestedManyWithoutSpellInput
     subschools?: SpellSubschoolMapUncheckedCreateNestedManyWithoutSpellInput
+    components?: SpellComponentMapUncheckedCreateNestedManyWithoutSpellInput
   }
 
   export type SpellCreateOrConnectWithoutSchoolsInput = {
@@ -47582,6 +47991,7 @@ export namespace Prisma {
     levelMapping?: SpellLevelMapUpdateManyWithoutSpellNestedInput
     sources?: SpellSourceMapUpdateManyWithoutSpellNestedInput
     subschools?: SpellSubschoolMapUpdateManyWithoutSpellNestedInput
+    components?: SpellComponentMapUpdateManyWithoutSpellNestedInput
   }
 
   export type SpellUncheckedUpdateWithoutSchoolsInput = {
@@ -47605,6 +48015,7 @@ export namespace Prisma {
     levelMapping?: SpellLevelMapUncheckedUpdateManyWithoutSpellNestedInput
     sources?: SpellSourceMapUncheckedUpdateManyWithoutSpellNestedInput
     subschools?: SpellSubschoolMapUncheckedUpdateManyWithoutSpellNestedInput
+    components?: SpellComponentMapUncheckedUpdateManyWithoutSpellNestedInput
   }
 
   export type SpellCreateWithoutSourcesInput = {
@@ -47627,6 +48038,7 @@ export namespace Prisma {
     levelMapping?: SpellLevelMapCreateNestedManyWithoutSpellInput
     schools?: SpellSchoolMapCreateNestedManyWithoutSpellInput
     subschools?: SpellSubschoolMapCreateNestedManyWithoutSpellInput
+    components?: SpellComponentMapCreateNestedManyWithoutSpellInput
   }
 
   export type SpellUncheckedCreateWithoutSourcesInput = {
@@ -47650,6 +48062,7 @@ export namespace Prisma {
     levelMapping?: SpellLevelMapUncheckedCreateNestedManyWithoutSpellInput
     schools?: SpellSchoolMapUncheckedCreateNestedManyWithoutSpellInput
     subschools?: SpellSubschoolMapUncheckedCreateNestedManyWithoutSpellInput
+    components?: SpellComponentMapUncheckedCreateNestedManyWithoutSpellInput
   }
 
   export type SpellCreateOrConnectWithoutSourcesInput = {
@@ -47716,6 +48129,7 @@ export namespace Prisma {
     levelMapping?: SpellLevelMapUpdateManyWithoutSpellNestedInput
     schools?: SpellSchoolMapUpdateManyWithoutSpellNestedInput
     subschools?: SpellSubschoolMapUpdateManyWithoutSpellNestedInput
+    components?: SpellComponentMapUpdateManyWithoutSpellNestedInput
   }
 
   export type SpellUncheckedUpdateWithoutSourcesInput = {
@@ -47739,6 +48153,7 @@ export namespace Prisma {
     levelMapping?: SpellLevelMapUncheckedUpdateManyWithoutSpellNestedInput
     schools?: SpellSchoolMapUncheckedUpdateManyWithoutSpellNestedInput
     subschools?: SpellSubschoolMapUncheckedUpdateManyWithoutSpellNestedInput
+    components?: SpellComponentMapUncheckedUpdateManyWithoutSpellNestedInput
   }
 
   export type SourceBookUpsertWithoutSpellsInput = {
@@ -47795,6 +48210,7 @@ export namespace Prisma {
     levelMapping?: SpellLevelMapCreateNestedManyWithoutSpellInput
     schools?: SpellSchoolMapCreateNestedManyWithoutSpellInput
     sources?: SpellSourceMapCreateNestedManyWithoutSpellInput
+    components?: SpellComponentMapCreateNestedManyWithoutSpellInput
   }
 
   export type SpellUncheckedCreateWithoutSubschoolsInput = {
@@ -47818,6 +48234,7 @@ export namespace Prisma {
     levelMapping?: SpellLevelMapUncheckedCreateNestedManyWithoutSpellInput
     schools?: SpellSchoolMapUncheckedCreateNestedManyWithoutSpellInput
     sources?: SpellSourceMapUncheckedCreateNestedManyWithoutSpellInput
+    components?: SpellComponentMapUncheckedCreateNestedManyWithoutSpellInput
   }
 
   export type SpellCreateOrConnectWithoutSubschoolsInput = {
@@ -47856,6 +48273,7 @@ export namespace Prisma {
     levelMapping?: SpellLevelMapUpdateManyWithoutSpellNestedInput
     schools?: SpellSchoolMapUpdateManyWithoutSpellNestedInput
     sources?: SpellSourceMapUpdateManyWithoutSpellNestedInput
+    components?: SpellComponentMapUpdateManyWithoutSpellNestedInput
   }
 
   export type SpellUncheckedUpdateWithoutSubschoolsInput = {
@@ -47879,6 +48297,117 @@ export namespace Prisma {
     levelMapping?: SpellLevelMapUncheckedUpdateManyWithoutSpellNestedInput
     schools?: SpellSchoolMapUncheckedUpdateManyWithoutSpellNestedInput
     sources?: SpellSourceMapUncheckedUpdateManyWithoutSpellNestedInput
+    components?: SpellComponentMapUncheckedUpdateManyWithoutSpellNestedInput
+  }
+
+  export type SpellCreateWithoutComponentsInput = {
+    name: string
+    summary?: string | null
+    description?: string | null
+    castingTime?: string | null
+    range?: string | null
+    rangeTypeId?: number | null
+    rangeValue?: string | null
+    area?: string | null
+    duration?: string | null
+    savingThrow?: string | null
+    spellResistance?: string | null
+    editionId: number
+    baseLevel: number
+    effect?: string | null
+    target?: string | null
+    descriptors?: SpellDescriptorMapCreateNestedManyWithoutSpellInput
+    levelMapping?: SpellLevelMapCreateNestedManyWithoutSpellInput
+    schools?: SpellSchoolMapCreateNestedManyWithoutSpellInput
+    sources?: SpellSourceMapCreateNestedManyWithoutSpellInput
+    subschools?: SpellSubschoolMapCreateNestedManyWithoutSpellInput
+  }
+
+  export type SpellUncheckedCreateWithoutComponentsInput = {
+    id?: number
+    name: string
+    summary?: string | null
+    description?: string | null
+    castingTime?: string | null
+    range?: string | null
+    rangeTypeId?: number | null
+    rangeValue?: string | null
+    area?: string | null
+    duration?: string | null
+    savingThrow?: string | null
+    spellResistance?: string | null
+    editionId: number
+    baseLevel: number
+    effect?: string | null
+    target?: string | null
+    descriptors?: SpellDescriptorMapUncheckedCreateNestedManyWithoutSpellInput
+    levelMapping?: SpellLevelMapUncheckedCreateNestedManyWithoutSpellInput
+    schools?: SpellSchoolMapUncheckedCreateNestedManyWithoutSpellInput
+    sources?: SpellSourceMapUncheckedCreateNestedManyWithoutSpellInput
+    subschools?: SpellSubschoolMapUncheckedCreateNestedManyWithoutSpellInput
+  }
+
+  export type SpellCreateOrConnectWithoutComponentsInput = {
+    where: SpellWhereUniqueInput
+    create: XOR<SpellCreateWithoutComponentsInput, SpellUncheckedCreateWithoutComponentsInput>
+  }
+
+  export type SpellUpsertWithoutComponentsInput = {
+    update: XOR<SpellUpdateWithoutComponentsInput, SpellUncheckedUpdateWithoutComponentsInput>
+    create: XOR<SpellCreateWithoutComponentsInput, SpellUncheckedCreateWithoutComponentsInput>
+    where?: SpellWhereInput
+  }
+
+  export type SpellUpdateToOneWithWhereWithoutComponentsInput = {
+    where?: SpellWhereInput
+    data: XOR<SpellUpdateWithoutComponentsInput, SpellUncheckedUpdateWithoutComponentsInput>
+  }
+
+  export type SpellUpdateWithoutComponentsInput = {
+    name?: StringFieldUpdateOperationsInput | string
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    castingTime?: NullableStringFieldUpdateOperationsInput | string | null
+    range?: NullableStringFieldUpdateOperationsInput | string | null
+    rangeTypeId?: NullableIntFieldUpdateOperationsInput | number | null
+    rangeValue?: NullableStringFieldUpdateOperationsInput | string | null
+    area?: NullableStringFieldUpdateOperationsInput | string | null
+    duration?: NullableStringFieldUpdateOperationsInput | string | null
+    savingThrow?: NullableStringFieldUpdateOperationsInput | string | null
+    spellResistance?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: IntFieldUpdateOperationsInput | number
+    baseLevel?: IntFieldUpdateOperationsInput | number
+    effect?: NullableStringFieldUpdateOperationsInput | string | null
+    target?: NullableStringFieldUpdateOperationsInput | string | null
+    descriptors?: SpellDescriptorMapUpdateManyWithoutSpellNestedInput
+    levelMapping?: SpellLevelMapUpdateManyWithoutSpellNestedInput
+    schools?: SpellSchoolMapUpdateManyWithoutSpellNestedInput
+    sources?: SpellSourceMapUpdateManyWithoutSpellNestedInput
+    subschools?: SpellSubschoolMapUpdateManyWithoutSpellNestedInput
+  }
+
+  export type SpellUncheckedUpdateWithoutComponentsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    name?: StringFieldUpdateOperationsInput | string
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    castingTime?: NullableStringFieldUpdateOperationsInput | string | null
+    range?: NullableStringFieldUpdateOperationsInput | string | null
+    rangeTypeId?: NullableIntFieldUpdateOperationsInput | number | null
+    rangeValue?: NullableStringFieldUpdateOperationsInput | string | null
+    area?: NullableStringFieldUpdateOperationsInput | string | null
+    duration?: NullableStringFieldUpdateOperationsInput | string | null
+    savingThrow?: NullableStringFieldUpdateOperationsInput | string | null
+    spellResistance?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: IntFieldUpdateOperationsInput | number
+    baseLevel?: IntFieldUpdateOperationsInput | number
+    effect?: NullableStringFieldUpdateOperationsInput | string | null
+    target?: NullableStringFieldUpdateOperationsInput | string | null
+    descriptors?: SpellDescriptorMapUncheckedUpdateManyWithoutSpellNestedInput
+    levelMapping?: SpellLevelMapUncheckedUpdateManyWithoutSpellNestedInput
+    schools?: SpellSchoolMapUncheckedUpdateManyWithoutSpellNestedInput
+    sources?: SpellSourceMapUncheckedUpdateManyWithoutSpellNestedInput
+    subschools?: SpellSubschoolMapUncheckedUpdateManyWithoutSpellNestedInput
   }
 
   export type ClassSkillMapCreateWithoutSkillInput = {
@@ -48975,7 +49504,7 @@ export namespace Prisma {
     columnIndex: number
     header: string
     span?: number | null
-    alignment?: string | null
+    alignment?: $Enums.TextAlignment | null
     cells?: ReferenceTableCellCreateNestedManyWithoutColumnInput
   }
 
@@ -48984,7 +49513,7 @@ export namespace Prisma {
     columnIndex: number
     header: string
     span?: number | null
-    alignment?: string | null
+    alignment?: $Enums.TextAlignment | null
     cells?: ReferenceTableCellUncheckedCreateNestedManyWithoutColumnInput
   }
 
@@ -49021,6 +49550,33 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type ReferenceTableCellCreateWithoutTableInput = {
+    value?: string | null
+    colSpan?: number | null
+    rowSpan?: number | null
+    column: ReferenceTableColumnCreateNestedOneWithoutCellsInput
+    row: ReferenceTableRowCreateNestedOneWithoutCellsInput
+  }
+
+  export type ReferenceTableCellUncheckedCreateWithoutTableInput = {
+    id?: number
+    rowId: number
+    columnId: number
+    value?: string | null
+    colSpan?: number | null
+    rowSpan?: number | null
+  }
+
+  export type ReferenceTableCellCreateOrConnectWithoutTableInput = {
+    where: ReferenceTableCellWhereUniqueInput
+    create: XOR<ReferenceTableCellCreateWithoutTableInput, ReferenceTableCellUncheckedCreateWithoutTableInput>
+  }
+
+  export type ReferenceTableCellCreateManyTableInputEnvelope = {
+    data: ReferenceTableCellCreateManyTableInput | ReferenceTableCellCreateManyTableInput[]
+    skipDuplicates?: boolean
+  }
+
   export type ReferenceTableColumnUpsertWithWhereUniqueWithoutTableInput = {
     where: ReferenceTableColumnWhereUniqueInput
     update: XOR<ReferenceTableColumnUpdateWithoutTableInput, ReferenceTableColumnUncheckedUpdateWithoutTableInput>
@@ -49046,7 +49602,7 @@ export namespace Prisma {
     columnIndex?: IntFilter<"ReferenceTableColumn"> | number
     header?: StringFilter<"ReferenceTableColumn"> | string
     span?: IntNullableFilter<"ReferenceTableColumn"> | number | null
-    alignment?: StringNullableFilter<"ReferenceTableColumn"> | string | null
+    alignment?: EnumTextAlignmentNullableFilter<"ReferenceTableColumn"> | $Enums.TextAlignment | null
   }
 
   export type ReferenceTableRowUpsertWithWhereUniqueWithoutTableInput = {
@@ -49075,15 +49631,46 @@ export namespace Prisma {
     label?: StringNullableFilter<"ReferenceTableRow"> | string | null
   }
 
+  export type ReferenceTableCellUpsertWithWhereUniqueWithoutTableInput = {
+    where: ReferenceTableCellWhereUniqueInput
+    update: XOR<ReferenceTableCellUpdateWithoutTableInput, ReferenceTableCellUncheckedUpdateWithoutTableInput>
+    create: XOR<ReferenceTableCellCreateWithoutTableInput, ReferenceTableCellUncheckedCreateWithoutTableInput>
+  }
+
+  export type ReferenceTableCellUpdateWithWhereUniqueWithoutTableInput = {
+    where: ReferenceTableCellWhereUniqueInput
+    data: XOR<ReferenceTableCellUpdateWithoutTableInput, ReferenceTableCellUncheckedUpdateWithoutTableInput>
+  }
+
+  export type ReferenceTableCellUpdateManyWithWhereWithoutTableInput = {
+    where: ReferenceTableCellScalarWhereInput
+    data: XOR<ReferenceTableCellUpdateManyMutationInput, ReferenceTableCellUncheckedUpdateManyWithoutTableInput>
+  }
+
+  export type ReferenceTableCellScalarWhereInput = {
+    AND?: ReferenceTableCellScalarWhereInput | ReferenceTableCellScalarWhereInput[]
+    OR?: ReferenceTableCellScalarWhereInput[]
+    NOT?: ReferenceTableCellScalarWhereInput | ReferenceTableCellScalarWhereInput[]
+    id?: IntFilter<"ReferenceTableCell"> | number
+    tableSlug?: StringFilter<"ReferenceTableCell"> | string
+    rowId?: IntFilter<"ReferenceTableCell"> | number
+    columnId?: IntFilter<"ReferenceTableCell"> | number
+    value?: StringNullableFilter<"ReferenceTableCell"> | string | null
+    colSpan?: IntNullableFilter<"ReferenceTableCell"> | number | null
+    rowSpan?: IntNullableFilter<"ReferenceTableCell"> | number | null
+  }
+
   export type ReferenceTableCellCreateWithoutColumnInput = {
     value?: string | null
     colSpan?: number | null
     rowSpan?: number | null
     row: ReferenceTableRowCreateNestedOneWithoutCellsInput
+    table: ReferenceTableCreateNestedOneWithoutCellsInput
   }
 
   export type ReferenceTableCellUncheckedCreateWithoutColumnInput = {
     id?: number
+    tableSlug: string
     rowId: number
     value?: string | null
     colSpan?: number | null
@@ -49105,6 +49692,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     rows?: ReferenceTableRowCreateNestedManyWithoutTableInput
+    cells?: ReferenceTableCellCreateNestedManyWithoutTableInput
   }
 
   export type ReferenceTableUncheckedCreateWithoutColumnsInput = {
@@ -49112,6 +49700,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     rows?: ReferenceTableRowUncheckedCreateNestedManyWithoutTableInput
+    cells?: ReferenceTableCellUncheckedCreateNestedManyWithoutTableInput
   }
 
   export type ReferenceTableCreateOrConnectWithoutColumnsInput = {
@@ -49135,18 +49724,6 @@ export namespace Prisma {
     data: XOR<ReferenceTableCellUpdateManyMutationInput, ReferenceTableCellUncheckedUpdateManyWithoutColumnInput>
   }
 
-  export type ReferenceTableCellScalarWhereInput = {
-    AND?: ReferenceTableCellScalarWhereInput | ReferenceTableCellScalarWhereInput[]
-    OR?: ReferenceTableCellScalarWhereInput[]
-    NOT?: ReferenceTableCellScalarWhereInput | ReferenceTableCellScalarWhereInput[]
-    id?: IntFilter<"ReferenceTableCell"> | number
-    rowId?: IntFilter<"ReferenceTableCell"> | number
-    columnId?: IntFilter<"ReferenceTableCell"> | number
-    value?: StringNullableFilter<"ReferenceTableCell"> | string | null
-    colSpan?: IntNullableFilter<"ReferenceTableCell"> | number | null
-    rowSpan?: IntNullableFilter<"ReferenceTableCell"> | number | null
-  }
-
   export type ReferenceTableUpsertWithoutColumnsInput = {
     update: XOR<ReferenceTableUpdateWithoutColumnsInput, ReferenceTableUncheckedUpdateWithoutColumnsInput>
     create: XOR<ReferenceTableCreateWithoutColumnsInput, ReferenceTableUncheckedCreateWithoutColumnsInput>
@@ -49163,6 +49740,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     rows?: ReferenceTableRowUpdateManyWithoutTableNestedInput
+    cells?: ReferenceTableCellUpdateManyWithoutTableNestedInput
   }
 
   export type ReferenceTableUncheckedUpdateWithoutColumnsInput = {
@@ -49170,6 +49748,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     rows?: ReferenceTableRowUncheckedUpdateManyWithoutTableNestedInput
+    cells?: ReferenceTableCellUncheckedUpdateManyWithoutTableNestedInput
   }
 
   export type ReferenceTableCellCreateWithoutRowInput = {
@@ -49177,10 +49756,12 @@ export namespace Prisma {
     colSpan?: number | null
     rowSpan?: number | null
     column: ReferenceTableColumnCreateNestedOneWithoutCellsInput
+    table: ReferenceTableCreateNestedOneWithoutCellsInput
   }
 
   export type ReferenceTableCellUncheckedCreateWithoutRowInput = {
     id?: number
+    tableSlug: string
     columnId: number
     value?: string | null
     colSpan?: number | null
@@ -49202,6 +49783,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     columns?: ReferenceTableColumnCreateNestedManyWithoutTableInput
+    cells?: ReferenceTableCellCreateNestedManyWithoutTableInput
   }
 
   export type ReferenceTableUncheckedCreateWithoutRowsInput = {
@@ -49209,6 +49791,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     columns?: ReferenceTableColumnUncheckedCreateNestedManyWithoutTableInput
+    cells?: ReferenceTableCellUncheckedCreateNestedManyWithoutTableInput
   }
 
   export type ReferenceTableCreateOrConnectWithoutRowsInput = {
@@ -49248,6 +49831,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     columns?: ReferenceTableColumnUpdateManyWithoutTableNestedInput
+    cells?: ReferenceTableCellUpdateManyWithoutTableNestedInput
   }
 
   export type ReferenceTableUncheckedUpdateWithoutRowsInput = {
@@ -49255,13 +49839,14 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     columns?: ReferenceTableColumnUncheckedUpdateManyWithoutTableNestedInput
+    cells?: ReferenceTableCellUncheckedUpdateManyWithoutTableNestedInput
   }
 
   export type ReferenceTableColumnCreateWithoutCellsInput = {
     columnIndex: number
     header: string
     span?: number | null
-    alignment?: string | null
+    alignment?: $Enums.TextAlignment | null
     table: ReferenceTableCreateNestedOneWithoutColumnsInput
   }
 
@@ -49271,7 +49856,7 @@ export namespace Prisma {
     columnIndex: number
     header: string
     span?: number | null
-    alignment?: string | null
+    alignment?: $Enums.TextAlignment | null
   }
 
   export type ReferenceTableColumnCreateOrConnectWithoutCellsInput = {
@@ -49297,6 +49882,27 @@ export namespace Prisma {
     create: XOR<ReferenceTableRowCreateWithoutCellsInput, ReferenceTableRowUncheckedCreateWithoutCellsInput>
   }
 
+  export type ReferenceTableCreateWithoutCellsInput = {
+    slug: string
+    name: string
+    description?: string | null
+    columns?: ReferenceTableColumnCreateNestedManyWithoutTableInput
+    rows?: ReferenceTableRowCreateNestedManyWithoutTableInput
+  }
+
+  export type ReferenceTableUncheckedCreateWithoutCellsInput = {
+    slug: string
+    name: string
+    description?: string | null
+    columns?: ReferenceTableColumnUncheckedCreateNestedManyWithoutTableInput
+    rows?: ReferenceTableRowUncheckedCreateNestedManyWithoutTableInput
+  }
+
+  export type ReferenceTableCreateOrConnectWithoutCellsInput = {
+    where: ReferenceTableWhereUniqueInput
+    create: XOR<ReferenceTableCreateWithoutCellsInput, ReferenceTableUncheckedCreateWithoutCellsInput>
+  }
+
   export type ReferenceTableColumnUpsertWithoutCellsInput = {
     update: XOR<ReferenceTableColumnUpdateWithoutCellsInput, ReferenceTableColumnUncheckedUpdateWithoutCellsInput>
     create: XOR<ReferenceTableColumnCreateWithoutCellsInput, ReferenceTableColumnUncheckedCreateWithoutCellsInput>
@@ -49312,7 +49918,7 @@ export namespace Prisma {
     columnIndex?: IntFieldUpdateOperationsInput | number
     header?: StringFieldUpdateOperationsInput | string
     span?: NullableIntFieldUpdateOperationsInput | number | null
-    alignment?: NullableStringFieldUpdateOperationsInput | string | null
+    alignment?: NullableEnumTextAlignmentFieldUpdateOperationsInput | $Enums.TextAlignment | null
     table?: ReferenceTableUpdateOneRequiredWithoutColumnsNestedInput
   }
 
@@ -49322,7 +49928,7 @@ export namespace Prisma {
     columnIndex?: IntFieldUpdateOperationsInput | number
     header?: StringFieldUpdateOperationsInput | string
     span?: NullableIntFieldUpdateOperationsInput | number | null
-    alignment?: NullableStringFieldUpdateOperationsInput | string | null
+    alignment?: NullableEnumTextAlignmentFieldUpdateOperationsInput | $Enums.TextAlignment | null
   }
 
   export type ReferenceTableRowUpsertWithoutCellsInput = {
@@ -49347,6 +49953,33 @@ export namespace Prisma {
     tableSlug?: StringFieldUpdateOperationsInput | string
     rowIndex?: IntFieldUpdateOperationsInput | number
     label?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type ReferenceTableUpsertWithoutCellsInput = {
+    update: XOR<ReferenceTableUpdateWithoutCellsInput, ReferenceTableUncheckedUpdateWithoutCellsInput>
+    create: XOR<ReferenceTableCreateWithoutCellsInput, ReferenceTableUncheckedCreateWithoutCellsInput>
+    where?: ReferenceTableWhereInput
+  }
+
+  export type ReferenceTableUpdateToOneWithWhereWithoutCellsInput = {
+    where?: ReferenceTableWhereInput
+    data: XOR<ReferenceTableUpdateWithoutCellsInput, ReferenceTableUncheckedUpdateWithoutCellsInput>
+  }
+
+  export type ReferenceTableUpdateWithoutCellsInput = {
+    slug?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    columns?: ReferenceTableColumnUpdateManyWithoutTableNestedInput
+    rows?: ReferenceTableRowUpdateManyWithoutTableNestedInput
+  }
+
+  export type ReferenceTableUncheckedUpdateWithoutCellsInput = {
+    slug?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    columns?: ReferenceTableColumnUncheckedUpdateManyWithoutTableNestedInput
+    rows?: ReferenceTableRowUncheckedUpdateManyWithoutTableNestedInput
   }
 
   export type UserCharacterAttributeCreateWithoutCharacterInput = {
@@ -49836,6 +50469,11 @@ export namespace Prisma {
     schoolId: number
   }
 
+  export type SpellComponentMapCreateManySpellInput = {
+    id?: number
+    componentId: number
+  }
+
   export type SpellDescriptorMapUpdateWithoutSpellInput = {
     descriptorId?: IntFieldUpdateOperationsInput | number
   }
@@ -49916,6 +50554,20 @@ export namespace Prisma {
   export type SpellSubschoolMapUncheckedUpdateManyWithoutSpellInput = {
     id?: IntFieldUpdateOperationsInput | number
     schoolId?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type SpellComponentMapUpdateWithoutSpellInput = {
+    componentId?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type SpellComponentMapUncheckedUpdateWithoutSpellInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    componentId?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type SpellComponentMapUncheckedUpdateManyWithoutSpellInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    componentId?: IntFieldUpdateOperationsInput | number
   }
 
   export type ClassSkillMapCreateManySkillInput = {
@@ -50243,7 +50895,7 @@ export namespace Prisma {
     columnIndex: number
     header: string
     span?: number | null
-    alignment?: string | null
+    alignment?: $Enums.TextAlignment | null
   }
 
   export type ReferenceTableRowCreateManyTableInput = {
@@ -50252,11 +50904,20 @@ export namespace Prisma {
     label?: string | null
   }
 
+  export type ReferenceTableCellCreateManyTableInput = {
+    id?: number
+    rowId: number
+    columnId: number
+    value?: string | null
+    colSpan?: number | null
+    rowSpan?: number | null
+  }
+
   export type ReferenceTableColumnUpdateWithoutTableInput = {
     columnIndex?: IntFieldUpdateOperationsInput | number
     header?: StringFieldUpdateOperationsInput | string
     span?: NullableIntFieldUpdateOperationsInput | number | null
-    alignment?: NullableStringFieldUpdateOperationsInput | string | null
+    alignment?: NullableEnumTextAlignmentFieldUpdateOperationsInput | $Enums.TextAlignment | null
     cells?: ReferenceTableCellUpdateManyWithoutColumnNestedInput
   }
 
@@ -50265,7 +50926,7 @@ export namespace Prisma {
     columnIndex?: IntFieldUpdateOperationsInput | number
     header?: StringFieldUpdateOperationsInput | string
     span?: NullableIntFieldUpdateOperationsInput | number | null
-    alignment?: NullableStringFieldUpdateOperationsInput | string | null
+    alignment?: NullableEnumTextAlignmentFieldUpdateOperationsInput | $Enums.TextAlignment | null
     cells?: ReferenceTableCellUncheckedUpdateManyWithoutColumnNestedInput
   }
 
@@ -50274,7 +50935,7 @@ export namespace Prisma {
     columnIndex?: IntFieldUpdateOperationsInput | number
     header?: StringFieldUpdateOperationsInput | string
     span?: NullableIntFieldUpdateOperationsInput | number | null
-    alignment?: NullableStringFieldUpdateOperationsInput | string | null
+    alignment?: NullableEnumTextAlignmentFieldUpdateOperationsInput | $Enums.TextAlignment | null
   }
 
   export type ReferenceTableRowUpdateWithoutTableInput = {
@@ -50296,8 +50957,35 @@ export namespace Prisma {
     label?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
+  export type ReferenceTableCellUpdateWithoutTableInput = {
+    value?: NullableStringFieldUpdateOperationsInput | string | null
+    colSpan?: NullableIntFieldUpdateOperationsInput | number | null
+    rowSpan?: NullableIntFieldUpdateOperationsInput | number | null
+    column?: ReferenceTableColumnUpdateOneRequiredWithoutCellsNestedInput
+    row?: ReferenceTableRowUpdateOneRequiredWithoutCellsNestedInput
+  }
+
+  export type ReferenceTableCellUncheckedUpdateWithoutTableInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    rowId?: IntFieldUpdateOperationsInput | number
+    columnId?: IntFieldUpdateOperationsInput | number
+    value?: NullableStringFieldUpdateOperationsInput | string | null
+    colSpan?: NullableIntFieldUpdateOperationsInput | number | null
+    rowSpan?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type ReferenceTableCellUncheckedUpdateManyWithoutTableInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    rowId?: IntFieldUpdateOperationsInput | number
+    columnId?: IntFieldUpdateOperationsInput | number
+    value?: NullableStringFieldUpdateOperationsInput | string | null
+    colSpan?: NullableIntFieldUpdateOperationsInput | number | null
+    rowSpan?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
   export type ReferenceTableCellCreateManyColumnInput = {
     id?: number
+    tableSlug: string
     rowId: number
     value?: string | null
     colSpan?: number | null
@@ -50309,10 +50997,12 @@ export namespace Prisma {
     colSpan?: NullableIntFieldUpdateOperationsInput | number | null
     rowSpan?: NullableIntFieldUpdateOperationsInput | number | null
     row?: ReferenceTableRowUpdateOneRequiredWithoutCellsNestedInput
+    table?: ReferenceTableUpdateOneRequiredWithoutCellsNestedInput
   }
 
   export type ReferenceTableCellUncheckedUpdateWithoutColumnInput = {
     id?: IntFieldUpdateOperationsInput | number
+    tableSlug?: StringFieldUpdateOperationsInput | string
     rowId?: IntFieldUpdateOperationsInput | number
     value?: NullableStringFieldUpdateOperationsInput | string | null
     colSpan?: NullableIntFieldUpdateOperationsInput | number | null
@@ -50321,6 +51011,7 @@ export namespace Prisma {
 
   export type ReferenceTableCellUncheckedUpdateManyWithoutColumnInput = {
     id?: IntFieldUpdateOperationsInput | number
+    tableSlug?: StringFieldUpdateOperationsInput | string
     rowId?: IntFieldUpdateOperationsInput | number
     value?: NullableStringFieldUpdateOperationsInput | string | null
     colSpan?: NullableIntFieldUpdateOperationsInput | number | null
@@ -50329,6 +51020,7 @@ export namespace Prisma {
 
   export type ReferenceTableCellCreateManyRowInput = {
     id?: number
+    tableSlug: string
     columnId: number
     value?: string | null
     colSpan?: number | null
@@ -50340,10 +51032,12 @@ export namespace Prisma {
     colSpan?: NullableIntFieldUpdateOperationsInput | number | null
     rowSpan?: NullableIntFieldUpdateOperationsInput | number | null
     column?: ReferenceTableColumnUpdateOneRequiredWithoutCellsNestedInput
+    table?: ReferenceTableUpdateOneRequiredWithoutCellsNestedInput
   }
 
   export type ReferenceTableCellUncheckedUpdateWithoutRowInput = {
     id?: IntFieldUpdateOperationsInput | number
+    tableSlug?: StringFieldUpdateOperationsInput | string
     columnId?: IntFieldUpdateOperationsInput | number
     value?: NullableStringFieldUpdateOperationsInput | string | null
     colSpan?: NullableIntFieldUpdateOperationsInput | number | null
@@ -50352,6 +51046,7 @@ export namespace Prisma {
 
   export type ReferenceTableCellUncheckedUpdateManyWithoutRowInput = {
     id?: IntFieldUpdateOperationsInput | number
+    tableSlug?: StringFieldUpdateOperationsInput | string
     columnId?: IntFieldUpdateOperationsInput | number
     value?: NullableStringFieldUpdateOperationsInput | string | null
     colSpan?: NullableIntFieldUpdateOperationsInput | number | null

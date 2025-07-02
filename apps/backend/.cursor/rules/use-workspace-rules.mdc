@@ -1,6 +1,0 @@
----
-description: 
-globs: 
-alwaysApply: true
----
-Include all workspace rules located at the workspace root.

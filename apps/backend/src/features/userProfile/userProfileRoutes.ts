@@ -1,12 +1,12 @@
-import express, { RequestHandler } from 'express';
+import { buildValidatedRouter } from '@/lib/buildValidatedRouter';
+import { requireAuth } from '@/middleware/authMiddleware';
+import { UpdateUserProfileSchema, UserProfileIdParamSchema } from '@shared/schema';
 
-import { UpdateUserProfileSchema } from '@shared/schema';
+import { GetUserProfile, UpdateUserProfile } from './userProfileController';
 
-import { GetUserProfile, UpdateUserProfile } from './userProfileController.js';
-import { requireAuth } from '../../middleware/authMiddleware.js';
-import { validateRequest } from '../../middleware/validateRequest.js';
+const { router: UserProfileRouter, get, put } = buildValidatedRouter();
 
-export const UserProfileRouter = express.Router();
+get('/', requireAuth, { params: UserProfileIdParamSchema }, GetUserProfile);
+put('/', requireAuth, { params: UserProfileIdParamSchema, body: UpdateUserProfileSchema }, UpdateUserProfile);
 
-UserProfileRouter.get('/', requireAuth as RequestHandler, GetUserProfile as unknown as RequestHandler);
-UserProfileRouter.put('/', requireAuth as RequestHandler, validateRequest({ body: UpdateUserProfileSchema }) as RequestHandler, UpdateUserProfile as unknown as RequestHandler); 
+export { UserProfileRouter };

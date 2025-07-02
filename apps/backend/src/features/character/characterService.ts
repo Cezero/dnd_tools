@@ -1,46 +1,32 @@
 import { PrismaClient, Prisma } from '@shared/prisma-client';
+import { CharacterIdParamRequest, CharacterQueryRequest, CharacterResponse, CreateCharacterRequest, GetAllCharactersResponse, UpdateCharacterRequest } from '@shared/schema';
 
-import type { CharacterData, CharacterService } from './types';
+import type { CharacterService } from './types';
 
 const prisma = new PrismaClient();
 
-// Helper function to validate character data
-function validateCharacterData(character: CharacterData): string | null {
-    const { name, userId } = character;
-    if (!name || name.trim() === '') {
-        return 'Character name cannot be empty.';
-    }
-    if (!userId) {
-        return 'User ID is required.';
-    }
-    return null; // No error
-}
-
 export const characterService: CharacterService = {
-    async getAllCharacters(query) {
-        const { page = '1', limit = '25', sort = 'name', order = 'asc', name = '', userId = '' } = query;
-        const offset = (parseInt(page) - 1) * parseInt(limit);
-
-        const allowedSorts = ['name', 'createdAt', 'age'];
-        const sortBy = allowedSorts.includes(sort) ? sort : 'name';
-        const sortOrder = order === 'desc' ? 'desc' : 'asc';
+    async getCharacters(query: CharacterQueryRequest) {
+        const page = query.page;
+        const limit = query.limit;
+        const offset = (page - 1) * limit;
 
         // Build where clause for filtering
         const where: Prisma.UserCharacterWhereInput = {};
 
-        if (name) {
-            where.name = { contains: name };
+        if (query.name) {
+            where.name = { contains: query.name };
         }
-        if (userId) {
-            where.userId = parseInt(userId);
+        if (query.userId) {
+            where.userId = query.userId;
         }
 
         const [characters, total] = await Promise.all([
             prisma.userCharacter.findMany({
                 where,
                 skip: offset,
-                take: parseInt(limit),
-                orderBy: { [sortBy]: sortOrder },
+                take: limit,
+                orderBy: { name: 'asc' },
                 include: {
                     race: {
                         select: {
@@ -53,16 +39,16 @@ export const characterService: CharacterService = {
         ]);
 
         return {
-            page: parseInt(page),
-            limit: parseInt(limit),
+            page,
+            limit,
             total,
             results: characters,
         };
     },
 
-    async getCharacterById(id) {
+    async getCharacterById(query: CharacterIdParamRequest) {
         const character = await prisma.userCharacter.findUnique({
-            where: { id },
+            where: { id: query.id },
             include: {
                 race: {
                     select: {
@@ -72,10 +58,10 @@ export const characterService: CharacterService = {
             },
         });
 
-        return character;
+        return character as CharacterResponse;
     },
 
-    async createCharacter(data) {
+    async createCharacter(data: CreateCharacterRequest) {
         const result = await prisma.userCharacter.create({
             data,
         });
@@ -83,32 +69,25 @@ export const characterService: CharacterService = {
         return { id: result.id, message: 'Character created successfully' };
     },
 
-    async updateCharacter(id, data) {
+    async updateCharacter(query: CharacterIdParamRequest, data: UpdateCharacterRequest) {
         await prisma.userCharacter.update({
-            where: { id },
+            where: { id: query.id },
             data,
         });
 
         return { message: 'Character updated successfully' };
     },
 
-    async deleteCharacter(id) {
+    async deleteCharacter(query: CharacterIdParamRequest) {
         await prisma.userCharacter.delete({
-            where: { id },
+            where: { id: query.id },
         });
 
         return { message: 'Character deleted successfully' };
     },
 
-    validateCharacterData,
-
-    async resolve(characterNames: string[]) {
+    async getAllCharacters() {
         const characters = await prisma.userCharacter.findMany({
-            where: {
-                name: {
-                    in: characterNames,
-                },
-            },
             include: {
                 race: {
                     select: {
@@ -118,6 +97,6 @@ export const characterService: CharacterService = {
             },
         });
 
-        return characters;
+        return characters as GetAllCharactersResponse;
     },
 }; 

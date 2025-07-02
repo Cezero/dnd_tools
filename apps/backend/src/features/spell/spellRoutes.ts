@@ -1,17 +1,19 @@
-import express, { RequestHandler } from 'express';
-
+import { buildValidatedRouter } from '@/lib/buildValidatedRouter';
+import { requireAdmin } from '@/middleware/authMiddleware';
 import {
     SpellQuerySchema,
     SpellIdParamSchema,
     UpdateSpellSchema
 } from '@shared/schema';
 
-import { GetSpells, GetSpellById, UpdateSpell } from './spellController';
-import { requireAdmin } from '../../middleware/authMiddleware';
-import { validateRequest } from '../../middleware/validateRequest.js';
+import { GetSpells, GetSpellById, UpdateSpell, DeleteSpell } from './spellController';
 
-export const SpellRouter = express.Router();
+const { router: SpellRouter, get, put, delete: deleteRoute } = buildValidatedRouter();
 
-SpellRouter.get('/', validateRequest({ query: SpellQuerySchema }) as RequestHandler, GetSpells as unknown as RequestHandler);
-SpellRouter.get('/:id', validateRequest({ params: SpellIdParamSchema }) as RequestHandler, GetSpellById as unknown as RequestHandler);
-SpellRouter.put('/:id', requireAdmin as unknown as RequestHandler, validateRequest({ params: SpellIdParamSchema, body: UpdateSpellSchema }) as RequestHandler, UpdateSpell as unknown as RequestHandler); 
+
+get('/', { query: SpellQuerySchema }, GetSpells);
+get('/:id', { params: SpellIdParamSchema }, GetSpellById);
+put('/:id', requireAdmin, { params: SpellIdParamSchema, body: UpdateSpellSchema }, UpdateSpell);
+deleteRoute('/:id', requireAdmin, { params: SpellIdParamSchema }, DeleteSpell);
+
+export { SpellRouter };

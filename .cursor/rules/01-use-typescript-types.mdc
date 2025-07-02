@@ -1,6 +1,0 @@
----
-description: Defining types for API or DB models
-globs: 
-alwaysApply: false
----
-Use TypeScript types or interfaces to enforce strict typing, and prefer Prisma-generated types where applicable.

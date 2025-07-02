@@ -1,0 +1,16 @@
+---
+description: Naming files and folders
+globs: 
+alwaysApply: false
+---
+Folder naming conventions:
+- Use kebab-case for feature folders, e.g., `user-profile/`.
+- Use kebab-case for folders across the project, e.g., `auth/`, `product-list/`.
+
+File naming conventions:
+- Use PascalCase for React component filenames, e.g., `UserProfile.tsx`.
+- Use camelCase for React hook filenames prefixed with `use`, e.g., `useAuth.ts`.
+- Use camelCase for utility/helper files, e.g., `formatDate.ts`.
+- Use camelCase for files containing types or interfaces, e.g., `authTypes.ts` or `types.ts`.
+- Use camelCase for service files such as `authService.ts` or `api.ts`.
+- Use camelCase for CSS files to match the component, e.g., `userProfile.module.css`.

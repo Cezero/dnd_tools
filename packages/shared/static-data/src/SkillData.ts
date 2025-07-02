@@ -1,8 +1,8 @@
-import type { Skill } from '@shared/prisma-client/client';
+import type { SkillResponse } from '@shared/schema';
 import type { SkillMap, StaticSkillData } from './types';
 
 // Function to convert StaticClassData to full Class type with defaults
-export function toSkillData(staticData: StaticSkillData): Skill {
+export function toSkillData(staticData: StaticSkillData): SkillResponse {
     return {
         ...staticData,
         retryTypeId: staticData.retryTypeId ?? null,
@@ -66,7 +66,7 @@ export const _SKILL_MAP: SkillMap = {
 };
 
 // Wrapper that provides Class objects with defaults applied
-export const SKILL_MAP: { [key: number]: Skill } = Object.fromEntries(
+export const SKILL_MAP: SkillMap = Object.fromEntries(
     Object.entries(_SKILL_MAP).map(([key, value]) => [key, toSkillData(value)])
 );
 

@@ -7,6 +7,7 @@ import prismaPlugin from "eslint-plugin-prisma";
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from "globals";
+import { noTypeofSchemaParse } from './eslint-rules/no-typeof-schema-parse.ts'
 
 export default [
     {
@@ -51,6 +52,11 @@ export default [
         plugins: {
             prisma: prismaPlugin,
             "@typescript-eslint": typescriptPlugin,
+						local: {
+              rules: {
+                'no-type-of-schema-parse': noTypeofSchemaParse,
+              },
+						},
             reactHooks: reactHooks,
             reactRefresh: reactRefresh
         },
@@ -78,7 +84,7 @@ export default [
                     }
                 }
             ],
-
+            "local/no-type-of-schema-parse": 'error',
             "import/no-unresolved": "error",
             "import/no-named-default": "error",
             "import/named": "error",

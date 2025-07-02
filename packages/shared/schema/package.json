@@ -58,9 +58,9 @@
             "types": "./dist/spell.d.ts",
             "import": "./dist/spell.js"
         },
-        "./userProfile": {
-            "types": "./dist/userProfile.d.ts",
-            "import": "./dist/userProfile.js"
+        "./sourcebook": {
+            "types": "./dist/sourcebook.d.ts",
+            "import": "./dist/sourcebook.js"
         }
     }
 }

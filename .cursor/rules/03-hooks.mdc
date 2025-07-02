@@ -1,6 +1,0 @@
----
-description: Naming React hooks
-globs: 
-alwaysApply: false
----
-Use camelCase prefixed with `use`, e.g., `useAuth.ts`.

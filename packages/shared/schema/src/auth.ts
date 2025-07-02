@@ -15,6 +15,13 @@ export const RegisterUserSchema = z.object({
         .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain at least one lowercase letter, one uppercase letter, and one number'),
 });
 
+export const AuthUserSchema = z.object({
+    id: z.number(),
+    username: z.string(),
+    isAdmin: z.boolean(),
+    preferredEditionId: z.number().nullable(),
+});
+
 // Schema for user login
 export const LoginUserSchema = z.object({
     username: z.string()
@@ -30,26 +37,52 @@ export const AuthHeaderSchema = z.object({
         .min(7, 'Authorization header is too short'),
 });
 
-// Schema for JWT token payload (matches the API response format)
-export const JwtPayloadSchema = z.object({
-    id: z.number(),
-    username: z.string(),
-    is_admin: z.boolean(), // API uses snake_case for compatibility
-    preferred_edition_id: z.number().nullable(), // API uses snake_case for compatibility
+// Schema for JWT token payload
+export const JwtPayloadSchema = AuthUserSchema.extend({
     iat: z.number(),
     exp: z.number(),
 });
 
-// Schema for login response (matches the API response format)
+// Schema for login response
 export const LoginResponseSchema = z.object({
     token: z.string(),
-    user: z.object({
-        id: z.number(),
-        username: z.string(),
-        is_admin: z.boolean(), // API uses snake_case for compatibility
-        preferred_edition_id: z.number().nullable(), // API uses snake_case for compatibility
-    }),
+    user: AuthUserSchema,
 });
+
+export const AuthServiceResultSchema = z.object({
+    success: z.boolean(),
+    error: z.string().nullable(),
+    token: z.string().nullable(),
+    user: AuthUserSchema.nullable(),
+});
+
+// Schema for updating user profile (matches Prisma User model field names)
+export const UpdateUserProfileSchema = z.object({
+    preferredEditionId: z.number().int().positive().optional(),
+});
+
+export const UserProfileIdParamSchema = z.object({
+    id: z.string().transform((val: string) => parseInt(val)),
+});
+
+// Schema for user profile response
+export const UserProfileResponseSchema = AuthUserSchema.extend({
+    email: z.string(),
+});
+
+// Schema for user profile update response
+export const UserProfileUpdateResponseSchema = z.object({
+    message: z.string(),
+    user: UserProfileResponseSchema,
+    token: z.string(),
+});
+
+// Type inference from schemas
+export type UpdateUserProfileRequest = z.infer<typeof UpdateUserProfileSchema>;
+export type UserProfileResponse = z.infer<typeof UserProfileResponseSchema>;
+export type UserProfileUpdateResponse = z.infer<typeof UserProfileUpdateResponseSchema>;
+export type UserProfileIdParamRequest = z.infer<typeof UserProfileIdParamSchema>;
+
 
 // Type inference from schemas
 export type RegisterUserRequest = z.infer<typeof RegisterUserSchema>;
@@ -57,3 +90,5 @@ export type LoginUserRequest = z.infer<typeof LoginUserSchema>;
 export type AuthHeaderRequest = z.infer<typeof AuthHeaderSchema>;
 export type JwtPayload = z.infer<typeof JwtPayloadSchema>;
 export type LoginResponse = z.infer<typeof LoginResponseSchema>; 
+export type AuthServiceResult = z.infer<typeof AuthServiceResultSchema>;
+export type AuthUser = z.infer<typeof AuthUserSchema>;
