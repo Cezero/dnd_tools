@@ -1,54 +1,78 @@
-import { Api } from '@/services/Api';
+import { z } from 'zod';
 
-export const FetchReferenceTables = async (searchParams: URLSearchParams): Promise<{ data: any[]; total: number }> => {
-    try {
-        // Build query string from searchParams
-        const queryString = new URLSearchParams(searchParams).toString();
-        const url = queryString ? `/referencetables?${queryString}` : '/referencetables';
-        const response = await Api(url, { method: 'GET' });
-        return { data: response.results, total: response.total };
-    } catch (error) {
-        console.error('Error fetching reference tables:', error);
-        throw error;
-    }
-};
+import { typedApi } from '@/services/Api';
+import {
+    ReferenceTableQuerySchema,
+    ReferenceTableSlugParamSchema,
+    CreateReferenceTableSchema,
+    UpdateReferenceTableSchema,
+    ReferenceTableQueryResponseSchema,
+    ReferenceTableSchema,
+    ReferenceTableDataResponseSchema,
+} from '@shared/schema';
 
-export const CreateReferenceTable = async (tableData: any): Promise<any> => {
-    try {
-        const response = await Api('/referencetables', { method: 'POST', body: JSON.stringify(tableData) });
-        return response;
-    } catch (error) {
-        console.error('Error creating reference table:', error);
-        throw error;
-    }
-};
+/**
+ * ReferenceTableService with path parameter support
+ * 
+ * Usage examples:
+ * 
+ * // Get reference tables with query parameters
+ * const tables = await ReferenceTableService.getReferenceTables({ page: 1, limit: 10 });
+ * 
+ * // Get reference table by identifier (path parameter)
+ * const table = await ReferenceTableService.getReferenceTableByIdentifier(undefined, { identifier: "example-table" });
+ * 
+ * // Create reference table
+ * const newTable = await ReferenceTableService.createReferenceTable({ name: "Example Table", slug: "example-table" });
+ * 
+ * // Update reference table (path parameter + body)
+ * const updatedTable = await ReferenceTableService.updateReferenceTable(
+ *   { name: "Updated Example Table" }, 
+ *   { identifier: "example-table" }
+ * );
+ * 
+ * // Delete reference table (path parameter)
+ * await ReferenceTableService.deleteReferenceTable(undefined, { identifier: "example-table" });
+ */
+export const ReferenceTableService = {
+    // Get reference tables with query parameters
+    getReferenceTables: typedApi<typeof ReferenceTableQuerySchema, typeof ReferenceTableQueryResponseSchema>({
+        path: '/referencetables',
+        method: 'GET',
+        requestSchema: ReferenceTableQuerySchema,
+        responseSchema: ReferenceTableQueryResponseSchema,
+    }),
 
-export const DeleteReferenceTable = async (id: number): Promise<any> => {
-    try {
-        const response = await Api(`/referencetables/${id}`, { method: 'DELETE' });
-        return response;
-    } catch (error) {
-        console.error(`Error deleting reference table with ID ${id}:`, error);
-        throw error;
-    }
-};
+    // Get reference table by identifier with path parameter
+    getReferenceTableByIdentifier: typedApi<undefined, typeof ReferenceTableDataResponseSchema, typeof ReferenceTableSlugParamSchema>({
+        path: '/referencetables/:slug',
+        method: 'GET',
+        paramsSchema: ReferenceTableSlugParamSchema,
+        responseSchema: ReferenceTableDataResponseSchema,
+    }),
 
-export const GetReferenceTable = async (identifier: string): Promise<any> => {
-    try {
-        const response = await Api(`/referencetables/${identifier}`, { method: 'GET' });
-        return response;
-    } catch (error) {
-        console.error(`Error fetching reference table with ID ${identifier}:`, error);
-        throw error;
-    }
-};
+    // Create reference table
+    createReferenceTable: typedApi<typeof CreateReferenceTableSchema, typeof ReferenceTableSchema>({
+        path: '/referencetables',
+        method: 'POST',
+        requestSchema: CreateReferenceTableSchema,
+        responseSchema: ReferenceTableSchema,
+    }),
 
-export const UpdateReferenceTable = async (id: string, tableData: any): Promise<any> => {
-    try {
-        const response = await Api(`/referencetables/${id}`, { method: 'PUT', body: JSON.stringify(tableData) });
-        return response;
-    } catch (error) {
-        console.error(`Error updating reference table with ID ${id}:`, error);
-        throw error;
-    }
+    // Update reference table with path parameter
+    updateReferenceTable: typedApi<typeof UpdateReferenceTableSchema, typeof ReferenceTableSchema, typeof ReferenceTableSlugParamSchema>({
+        path: '/referencetables/:slug',
+        method: 'PUT',
+        requestSchema: UpdateReferenceTableSchema,
+        paramsSchema: ReferenceTableSlugParamSchema,
+        responseSchema: ReferenceTableSchema,
+    }),
+
+    // Delete reference table with path parameter
+    deleteReferenceTable: typedApi<undefined, z.ZodObject<Record<string, never>>, typeof ReferenceTableSlugParamSchema>({
+        path: '/referencetables/:slug',
+        method: 'DELETE',
+        paramsSchema: ReferenceTableSlugParamSchema,
+        responseSchema: z.object({}),
+    }),
 };

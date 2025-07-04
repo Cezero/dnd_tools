@@ -19,7 +19,7 @@ export async function GetSkillById(req: ValidatedParamsT<SkillIdParamRequest, Sk
     const skill = await skillService.getSkillById({ id: req.params.id });
 
     if (!skill) {
-        res.status(404).send('Skill not found');
+        res.status(404).json({error: 'Skill not found'});
         return;
     }
 
@@ -30,17 +30,15 @@ export async function GetSkillById(req: ValidatedParamsT<SkillIdParamRequest, Sk
  * Creates a new skill.
  */
 export async function CreateSkill(req: ValidatedBodyT<CreateSkillRequest>, res: Response) {
-    const skillData = req.body;
-    const result = await skillService.createSkill(skillData);
-    res.status(201).json(result);
+    await skillService.createSkill(req.body);
+    res.status(201).json({message: 'Skill created successfully'});
 }
 
 /**
  * Updates an existing skill.
  */
 export async function UpdateSkill(req: ValidatedParamsBodyT<SkillIdParamRequest, UpdateSkillRequest>, res: Response) {
-    const skillData = req.body;
-    await skillService.updateSkill({ id: req.params.id }, skillData);
+    await skillService.updateSkill({ id: req.params.id }, req.body);
     res.status(200).json({ message: 'Skill updated successfully' });
 }
 
@@ -49,5 +47,5 @@ export async function UpdateSkill(req: ValidatedParamsBodyT<SkillIdParamRequest,
  */
 export async function DeleteSkill(req: ValidatedParamsT<SkillIdParamRequest>, res: Response) {
     await skillService.deleteSkill({ id: req.params.id });
-    res.status(200).send('Skill deleted successfully');
+    res.status(200).json({message: 'Skill deleted successfully'});
 }

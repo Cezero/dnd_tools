@@ -1,52 +1,77 @@
-import { Api } from '@/services/Api';
+import { z } from 'zod';
 
-export const FetchClasses = async (searchParams) => {
-    try {
-        const response = await Api(`/classes?${searchParams.toString()}`);
-        const classes = Array.isArray(response.results) ? response.results : [];
-        const total = response.total !== undefined ? response.total : classes.length;
-        return { data: classes, total: total };
-    } catch (error) {
-        console.error('Error fetching classes:', error);
-        throw error;
-    }
-};
+import { typedApi } from '@/services/Api';
+import {
+    ClassQuerySchema,
+    ClassIdParamSchema,
+    CreateClassSchema,
+    UpdateClassSchema,
+    ClassQueryResponseSchema,
+    ClassSchema,
+} from '@shared/schema';
 
-export const FetchClassById = async (id) => {
-    try {
-        const response = await Api(`/classes/${id}`, { method: 'GET' });
-        return response;
-    } catch (error) {
-        console.error(`Error fetching class with ID ${id}:`, error);
-        throw error;
-    }
-};
+/**
+ * ClassService with path parameter support
+ * 
+ * Usage examples:
+ * 
+ * // Get classes with query parameters
+ * const classes = await ClassService.getClasses({ page: 1, limit: 10 });
+ * 
+ * // Get class by ID (path parameter)
+ * const class = await ClassService.getClassById(undefined, { id: 123 });
+ * 
+ * // Create class
+ * const newClass = await ClassService.createClass({ name: "Wizard", hitDie: 6 });
+ * 
+ * // Update class (path parameter + body)
+ * const updatedClass = await ClassService.updateClass(
+ *   { name: "Updated Wizard" }, 
+ *   { id: 123 }
+ * );
+ * 
+ * // Delete class (path parameter)
+ * await ClassService.deleteClass(undefined, { id: 123 });
+ */
+export const ClassService = {
+    // Get classes with query parameters
+    getClasses: typedApi<typeof ClassQuerySchema, typeof ClassQueryResponseSchema>({
+        path: '/classes',
+        method: 'GET',
+        requestSchema: ClassQuerySchema,
+        responseSchema: ClassQueryResponseSchema,
+    }),
 
-export const CreateClass = async (classData) => {
-    try {
-        const response = await Api('/classes', { method: 'POST', body: JSON.stringify(classData) });
-        return response.data;
-    } catch (error) {
-        console.error('Error creating class:', error);
-        throw error;
-    }
-};
+    // Get class by ID with path parameter
+    getClassById: typedApi<undefined, typeof ClassSchema, typeof ClassIdParamSchema>({
+        path: '/classes/:id',
+        method: 'GET',
+        paramsSchema: ClassIdParamSchema,
+        responseSchema: ClassSchema,
+    }),
 
-export const UpdateClass = async (id, classData) => {
-    try {
-        const response = await Api(`/classes/${id}`, { method: 'PUT', body: JSON.stringify(classData) });
-        return response.data;
-    } catch (error) {
-        console.error(`Error updating class with ID ${id}:`, error);
-        throw error;
-    }
-};
+    // Create class
+    createClass: typedApi<typeof CreateClassSchema, typeof ClassSchema>({
+        path: '/classes',
+        method: 'POST',
+        requestSchema: CreateClassSchema,
+        responseSchema: ClassSchema,
+    }),
 
-export const DeleteClass = async (id) => {
-    try {
-        await Api(`/classes/${id}`, { method: 'DELETE' });
-    } catch (error) {
-        console.error(`Error deleting class with ID ${id}:`, error);
-        throw error;
-    }
+    // Update class with path parameter
+    updateClass: typedApi<typeof UpdateClassSchema, typeof ClassSchema, typeof ClassIdParamSchema>({
+        path: '/classes/:id',
+        method: 'PUT',
+        requestSchema: UpdateClassSchema,
+        paramsSchema: ClassIdParamSchema,
+        responseSchema: ClassSchema,
+    }),
+
+    // Delete class with path parameter
+    deleteClass: typedApi<undefined, z.ZodObject<Record<string, never>>, typeof ClassIdParamSchema>({
+        path: '/classes/:id',
+        method: 'DELETE',
+        paramsSchema: ClassIdParamSchema,
+        responseSchema: z.object({}),
+    }),
 };

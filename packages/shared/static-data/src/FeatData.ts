@@ -11,6 +11,10 @@ export const FEAT_TYPE_BY_ID: { [key: number]: FeatType } = Object.fromEntries(
 );
 
 export const FEAT_TYPE_LIST = Object.values(FEAT_TYPES);
+export const FEAT_TYPE_SELECT_LIST = FEAT_TYPE_LIST.map(featType => ({
+    value: featType.id,
+    label: featType.name
+}));
 
 export const FEAT_BENEFIT_TYPES: { [key: string]: FeatBenefitType } = {
     SKILL: { id: 1, name: 'Skill' },
@@ -23,6 +27,10 @@ export const FEAT_BENEFIT_TYPE_BY_ID: { [key: number]: FeatBenefitType } = Objec
 );
 
 export const FEAT_BENEFIT_TYPE_LIST = Object.values(FEAT_BENEFIT_TYPES);
+export const FEAT_BENEFIT_TYPE_SELECT_LIST = FEAT_BENEFIT_TYPE_LIST.map(featBenefitType => ({
+    value: featBenefitType.id,
+    label: featBenefitType.name
+}));
 
 export const FEAT_PREREQUISITE_TYPES: { [key: string]: FeatPrerequisiteType } = {
     ABILITY: { id: 1, name: 'Ability' },
@@ -37,4 +45,8 @@ export const FEAT_PREREQ_BY_ID: { [key: number]: FeatPrerequisiteType } = Object
     Object.values(FEAT_PREREQUISITE_TYPES).map(obj => [obj.id, obj])
 );
 
-export const FEAT_PREREQUISITE_TYPE_LIST = Object.values(FEAT_PREREQUISITE_TYPES); 
+export const FEAT_PREREQUISITE_TYPE_LIST = Object.values(FEAT_PREREQUISITE_TYPES);
+export const FEAT_PREREQUISITE_TYPE_SELECT_LIST = FEAT_PREREQUISITE_TYPE_LIST.map(featPrereqType => ({
+    value: featPrereqType.id,
+    label: featPrereqType.name
+}));

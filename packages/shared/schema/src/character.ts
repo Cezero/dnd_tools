@@ -1,12 +1,13 @@
 import { z } from 'zod';
 import { PageQueryResponseSchema, PageQuerySchema } from './query.js';
+import { optionalIntegerParam, optionalStringParam } from './utils.js';
 
 // Schema for character query parameters
 export const CharacterQuerySchema = PageQuerySchema.extend({
     sort: z.enum(['name', 'createdAt', 'age']).optional().default('name'),
     order: z.enum(['asc', 'desc']).optional().default('asc'),
-    name: z.string().optional(),
-    userId: z.string().optional().transform((val: string | undefined) => val ? parseInt(val) : undefined),
+    name: optionalStringParam(),
+    userId: optionalIntegerParam(),
 });
 
 // Schema for character path parameters

@@ -1,4 +1,4 @@
-import { CharactersPage } from '@/features/characters/components/CharactersPage';
+import { CharactersPage } from '@/features/character/CharacterPage';
 import { RouteConfig, NavigationItem } from '@/types';
 
 export const routes: RouteConfig[] = [

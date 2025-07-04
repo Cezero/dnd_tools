@@ -134,51 +134,33 @@ async function migrateClassFeatures(connection) {
     console.log(`Migrated ${rows.length} class features`);
 }
 
-async function migrateClassSpellLevels(connection) {
-    console.log('Migrating class spell levels...');
-    const [rows] = await connection.execute(`
-        SELECT id, level as classId, spell_level as spellLevel
-        FROM class_level_spells
-    `);
-
-    for (const row of rows) {
-        await prisma.classSpellLevel.upsert({
-            where: { id: row.id },
-            update: {
-                classId: row.classId,
-                spellLevel: row.spellLevel
-            },
-            create: {
-                id: row.id,
-                classId: row.classId,
-                spellLevel: row.spellLevel
-            }
-        });
-    }
-    console.log(`Migrated ${rows.length} class spell levels`);
-}
-
 async function migrateClassLevelAttributes(connection) {
     console.log('Migrating class level attributes...');
     const [rows] = await connection.execute(`
-        SELECT id as classId, base_attack_bonus as baseAttackBonus, 
+        SELECT id as classId, level, base_attack_bonus as baseAttackBonus, 
                fort_save as fortSave, ref_save as refSave, will_save as willSave
         FROM class_level_attributes
     `);
 
     for (const row of rows) {
         await prisma.classLevelAttribute.upsert({
-            where: { id: row.classId },
+            where: {
+                classId_level: {
+                    classId: row.classId,
+                    level: row.level
+                }
+            },
             update: {
                 classId: row.classId,
+                level: row.level,
                 baseAttackBonus: row.baseAttackBonus,
                 fortSave: row.fortSave,
                 refSave: row.refSave,
                 willSave: row.willSave
             },
             create: {
-                id: row.classId,
                 classId: row.classId,
+                level: row.level,
                 baseAttackBonus: row.baseAttackBonus,
                 fortSave: row.fortSave,
                 refSave: row.refSave,
@@ -241,20 +223,24 @@ async function migrateSkills(connection) {
 async function migrateClassSkillMap(connection) {
     console.log('Migrating class skill mappings...');
     const [rows] = await connection.execute(`
-        SELECT id, skill_id as skillId
+        SELECT id as classId, skill_id as skillId
         FROM class_skill_map
     `);
 
     for (const row of rows) {
         await prisma.classSkillMap.upsert({
-            where: { id: row.id },
+            where: {
+                classId_skillId: {
+                    classId: row.classId,
+                    skillId: row.skillId
+                }
+            },
             update: {
-                classId: row.id,
+                classId: row.classId,
                 skillId: row.skillId
             },
             create: {
-                id: row.id,
-                classId: row.id,
+                classId: row.classId,
                 skillId: row.skillId
             }
         });
@@ -265,25 +251,27 @@ async function migrateClassSkillMap(connection) {
 async function migrateClassSourceMap(connection) {
     console.log('Migrating class source mappings...');
     const [rows] = await connection.execute(`
-        SELECT id, book_id as bookId, page_number as pageNumber
+        SELECT id as classId, book_id as sourceBookId, page_number as pageNumber
         FROM class_source_map
     `);
 
     for (const row of rows) {
         await prisma.classSourceMap.upsert({
-            where: { id: row.id },
+            where: {
+                classId_sourceBookId: {
+                    classId: row.classId,
+                    sourceBookId: row.sourceBookId
+                }
+            },
             update: {
-                classId: row.id,
-                bookId: row.bookId,
-                pageNumber: row.pageNumber,
-                sourceBookId: row.bookId
+                classId: row.classId,
+                sourceBookId: row.sourceBookId,
+                pageNumber: row.pageNumber
             },
             create: {
-                id: row.id,
-                classId: row.id,
-                bookId: row.bookId,
-                pageNumber: row.pageNumber,
-                sourceBookId: row.bookId
+                classId: row.classId,
+                sourceBookId: row.sourceBookId,
+                pageNumber: row.pageNumber
             }
         });
     }
@@ -353,7 +341,12 @@ async function migrateSpellLevelMap(connection) {
 
     for (const row of rows) {
         await prisma.spellLevelMap.upsert({
-            where: { id: row.spellId },
+            where: {
+                spellId_classId: {
+                    spellId: row.spellId,
+                    classId: row.classId
+                }
+            },
             update: {
                 spellId: row.spellId,
                 classId: row.classId,
@@ -361,7 +354,6 @@ async function migrateSpellLevelMap(connection) {
                 isVisible: Boolean(row.isVisible)
             },
             create: {
-                id: row.spellId,
                 spellId: row.spellId,
                 classId: row.classId,
                 level: row.level,
@@ -381,13 +373,17 @@ async function migrateSpellDescriptorMap(connection) {
 
     for (const row of rows) {
         await prisma.spellDescriptorMap.upsert({
-            where: { id: row.spellId },
+            where: {
+                spellId_descriptorId: {
+                    spellId: row.spellId,
+                    descriptorId: row.descriptorId
+                }
+            },
             update: {
                 spellId: row.spellId,
                 descriptorId: row.descriptorId
             },
             create: {
-                id: row.spellId,
                 spellId: row.spellId,
                 descriptorId: row.descriptorId
             }
@@ -405,13 +401,17 @@ async function migrateSpellSchoolMap(connection) {
 
     for (const row of rows) {
         await prisma.spellSchoolMap.upsert({
-            where: { id: row.spellId },
+            where: {
+                spellId_schoolId: {
+                    spellId: row.spellId,
+                    schoolId: row.schoolId
+                }
+            },
             update: {
                 spellId: row.spellId,
                 schoolId: row.schoolId
             },
             create: {
-                id: row.spellId,
                 spellId: row.spellId,
                 schoolId: row.schoolId
             }
@@ -423,25 +423,27 @@ async function migrateSpellSchoolMap(connection) {
 async function migrateSpellSourceMap(connection) {
     console.log('Migrating spell source mappings...');
     const [rows] = await connection.execute(`
-        SELECT id as spellId, book_id as bookId, page_number as pageNumber
+        SELECT id as spellId, book_id as sourceBookId, page_number as pageNumber
         FROM spell_source_map
     `);
 
     for (const row of rows) {
         await prisma.spellSourceMap.upsert({
-            where: { id: row.spellId },
+            where: {
+                spellId_sourceBookId: {
+                    spellId: row.spellId,
+                    sourceBookId: row.sourceBookId
+                }
+            },
             update: {
                 spellId: row.spellId,
-                bookId: row.bookId,
-                pageNumber: row.pageNumber,
-                sourceBookId: row.bookId
+                sourceBookId: row.sourceBookId,
+                pageNumber: row.pageNumber
             },
             create: {
-                id: row.spellId,
                 spellId: row.spellId,
-                bookId: row.bookId,
-                pageNumber: row.pageNumber,
-                sourceBookId: row.bookId
+                sourceBookId: row.sourceBookId,
+                pageNumber: row.pageNumber
             }
         });
     }
@@ -451,25 +453,57 @@ async function migrateSpellSourceMap(connection) {
 async function migrateSpellSubschoolMap(connection) {
     console.log('Migrating spell subschool mappings...');
     const [rows] = await connection.execute(`
-        SELECT id as spellId, sub_id as schoolId
+        SELECT id as spellId, sub_id as subSchoolId
         FROM spell_subschool_map
     `);
 
     for (const row of rows) {
         await prisma.spellSubschoolMap.upsert({
-            where: { id: row.spellId },
+            where: {
+                spellId_subSchoolId: {
+                    spellId: row.spellId,
+                    subSchoolId: row.subSchoolId
+                }
+            },
             update: {
                 spellId: row.spellId,
-                schoolId: row.schoolId
+                subSchoolId: row.subSchoolId
             },
             create: {
-                id: row.spellId,
                 spellId: row.spellId,
-                schoolId: row.schoolId
+                subSchoolId: row.subSchoolId
             }
         });
     }
     console.log(`Migrated ${rows.length} spell subschool mappings`);
+}
+
+async function migrateSpellComponentMap(connection) {
+    console.log('Migrating spell component mappings...');
+    const [rows] = await connection.execute(`
+        SELECT id as spellId, comp_id as componentId
+        FROM spell_component_map
+    `);
+
+    for (const row of rows) {
+        await prisma.spellComponentMap.upsert({
+            where: {
+                spellId_componentId: {
+                    spellId: row.spellId,
+                    componentId: row.componentId
+                }
+            },
+            update: {
+                spellId: row.spellId,
+                componentId: row.componentId
+            },
+            create: {
+                spellId: row.spellId,
+                componentId: row.componentId
+            }
+        });
+    }
+    console.log(`Migrated ${rows.length} spell component mappings`);
 }
 
 async function migrateFeats(connection) {
@@ -635,22 +669,27 @@ async function migrateRaceTraits(connection) {
 async function migrateRaceTraitMap(connection) {
     console.log('Migrating race trait mappings...');
     const [rows] = await connection.execute(`
-        SELECT id as raceId, slug as traitId, value
+        SELECT id as raceId, slug as traitSlug, value
         FROM race_trait_map
     `);
 
     for (const row of rows) {
         await prisma.raceTraitMap.upsert({
-            where: { raceId_traitId: { raceId: row.raceId, traitId: row.traitId } },
+            where: {
+                raceId_traitSlug: {
+                    raceId: row.raceId,
+                    traitSlug: row.traitSlug
+                }
+            },
             update: {
                 raceId: row.raceId,
-                traitId: row.traitId,
-                value: row.value
+                traitSlug: row.traitSlug,
+                value: row.value ? parseInt(row.value) : null
             },
             create: {
                 raceId: row.raceId,
-                traitId: row.traitId,
-                value: row.value
+                traitSlug: row.traitSlug,
+                value: row.value ? parseInt(row.value) : null
             }
         });
     }
@@ -666,7 +705,12 @@ async function migrateRaceAbilityAdjustments(connection) {
 
     for (const row of rows) {
         await prisma.raceAbilityAdjustment.upsert({
-            where: { raceId_abilityId: { raceId: row.raceId, abilityId: row.abilityId } },
+            where: {
+                raceId_abilityId: {
+                    raceId: row.raceId,
+                    abilityId: row.abilityId
+                }
+            },
             update: {
                 raceId: row.raceId,
                 abilityId: row.abilityId,
@@ -691,7 +735,12 @@ async function migrateRaceLanguageMap(connection) {
 
     for (const row of rows) {
         await prisma.raceLanguageMap.upsert({
-            where: { raceId_languageId: { raceId: row.raceId, languageId: row.languageId } },
+            where: {
+                raceId_languageId: {
+                    raceId: row.raceId,
+                    languageId: row.languageId
+                }
+            },
             update: {
                 raceId: row.raceId,
                 languageId: row.languageId,
@@ -710,25 +759,27 @@ async function migrateRaceLanguageMap(connection) {
 async function migrateRaceSourceMap(connection) {
     console.log('Migrating race source mappings...');
     const [rows] = await connection.execute(`
-        SELECT id as raceId, book_id as bookId, page_number as pageNumber
+        SELECT id as raceId, book_id as sourceBookId, page_number as pageNumber
         FROM race_source_map
     `);
 
     for (const row of rows) {
         await prisma.raceSourceMap.upsert({
-            where: { id: row.raceId },
+            where: {
+                raceId_sourceBookId: {
+                    raceId: row.raceId,
+                    sourceBookId: row.sourceBookId
+                }
+            },
             update: {
                 raceId: row.raceId,
-                bookId: row.bookId,
-                pageNumber: row.pageNumber,
-                sourceBookId: row.bookId
+                sourceBookId: row.sourceBookId,
+                pageNumber: row.pageNumber
             },
             create: {
-                id: row.raceId,
                 raceId: row.raceId,
-                bookId: row.bookId,
-                pageNumber: row.pageNumber,
-                sourceBookId: row.bookId
+                sourceBookId: row.sourceBookId,
+                pageNumber: row.pageNumber
             }
         });
     }
@@ -787,7 +838,7 @@ async function migrateWeapons(connection) {
     const [rows] = await connection.execute(`
         SELECT id, name, \`desc\` as description, category, cost_gp as cost,
                dmg_s as damageSmall, dmg_m as damageMedium, crit_str as critical,
-               range_str as \`range\`, weight
+               range_str as \`range\`, weight, damage_type_id as damageTypeId
         FROM weapons
     `);
 
@@ -803,7 +854,8 @@ async function migrateWeapons(connection) {
                 damageMedium: row.damageMedium,
                 critical: row.critical,
                 range: row.range,
-                weight: row.weight
+                weight: row.weight,
+                damageTypeId: row.damageTypeId
             },
             create: {
                 id: row.id,
@@ -815,7 +867,8 @@ async function migrateWeapons(connection) {
                 damageMedium: row.damageMedium,
                 critical: row.critical,
                 range: row.range,
-                weight: row.weight
+                weight: row.weight,
+                damageTypeId: row.damageTypeId
             }
         });
     }
@@ -849,26 +902,29 @@ async function migrateReferenceTables(connection) {
 async function migrateReferenceTableColumns(connection) {
     console.log('Migrating reference table columns...');
     const [rows] = await connection.execute(`
-        SELECT rtc.id, rt.slug as tableSlug, rtc.column_index as columnIndex,
-               rtc.header, rtc.span, rtc.alignment
+        SELECT rt.slug as tableSlug, rtc.column_index as \`index\`, rtc.header, rtc.span, rtc.alignment
         FROM reference_table_columns rtc
         JOIN reference_tables rt ON rtc.table_id = rt.id
-    `);
+        `);
 
     for (const row of rows) {
         await prisma.referenceTableColumn.upsert({
-            where: { id: row.id },
+            where: {
+                tableSlug_index: {
+                    tableSlug: row.tableSlug,
+                    index: row.index
+                }
+            },
             update: {
                 tableSlug: row.tableSlug,
-                columnIndex: row.columnIndex,
+                index: row.index,
                 header: row.header,
                 span: row.span,
                 alignment: row.alignment
             },
             create: {
-                id: row.id,
                 tableSlug: row.tableSlug,
-                columnIndex: row.columnIndex,
+                index: row.index,
                 header: row.header,
                 span: row.span,
                 alignment: row.alignment
@@ -881,24 +937,26 @@ async function migrateReferenceTableColumns(connection) {
 async function migrateReferenceTableRows(connection) {
     console.log('Migrating reference table rows...');
     const [rows] = await connection.execute(`
-        SELECT rtr.id, rt.slug as tableSlug, rtr.row_index as rowIndex, rtr.label
+        SELECT rt.slug as tableSlug, rtr.row_index as \`index\`
         FROM reference_table_rows rtr
         JOIN reference_tables rt ON rtr.table_id = rt.id
     `);
 
     for (const row of rows) {
         await prisma.referenceTableRow.upsert({
-            where: { id: row.id },
+            where: {
+                tableSlug_index: {
+                    tableSlug: row.tableSlug,
+                    index: row.index
+                }
+            },
             update: {
                 tableSlug: row.tableSlug,
-                rowIndex: row.rowIndex,
-                label: row.label
+                index: row.index
             },
             create: {
-                id: row.id,
                 tableSlug: row.tableSlug,
-                rowIndex: row.rowIndex,
-                label: row.label
+                index: row.index
             }
         });
     }
@@ -908,32 +966,38 @@ async function migrateReferenceTableRows(connection) {
 async function migrateReferenceTableCells(connection) {
     console.log('Migrating reference table cells...');
     const [rows] = await connection.execute(`
-        SELECT rtc.id, rtc.row_id as rowId, rtc.column_id as columnId, rtc.value,
-               rtc.col_span as colSpan, rtc.row_span as rowSpan, rt.slug as tableSlug
+        SELECT rt.slug as tableSlug, rtcol.column_index as columnIndex, rtr.row_index as rowIndex, 
+               rtc.value, rtc.col_span as colSpan, rtc.row_span as rowSpan
         FROM reference_table_cells rtc
-        join reference_table_rows rtr on rtr.id = rtc.row_id
-        join reference_tables rt on rt.id = rtr.table_id
+        JOIN reference_table_columns rtcol ON rtcol.id = rtc.column_id
+        JOIN reference_table_rows rtr ON rtr.id = rtc.row_id
+        JOIN reference_tables rt ON rt.id = rtr.table_id
     `);
 
     for (const row of rows) {
         await prisma.referenceTableCell.upsert({
-            where: { id: row.id },
+            where: {
+                tableSlug_columnIndex_rowIndex: {
+                    tableSlug: row.tableSlug,
+                    columnIndex: row.columnIndex,
+                    rowIndex: row.rowIndex
+                }
+            },
             update: {
-                rowId: row.rowId,
-                columnId: row.columnId,
+                tableSlug: row.tableSlug,
+                columnIndex: row.columnIndex,
+                rowIndex: row.rowIndex,
                 value: row.value,
                 colSpan: row.colSpan,
-                rowSpan: row.rowSpan,
-                tableSlug: row.tableSlug
+                rowSpan: row.rowSpan
             },
             create: {
-                id: row.id,
-                rowId: row.rowId,
-                columnId: row.columnId,
+                tableSlug: row.tableSlug,
+                columnIndex: row.columnIndex,
+                rowIndex: row.rowIndex,
                 value: row.value,
                 colSpan: row.colSpan,
-                rowSpan: row.rowSpan,
-                tableSlug: row.tableSlug
+                rowSpan: row.rowSpan
             }
         });
     }
@@ -997,7 +1061,7 @@ async function migrateUserCharacters(connection) {
                 weight: row.weight,
                 eyes: row.eyes,
                 hair: row.hair,
-                gender: row.gender
+                gender: row.gender,
             },
             create: {
                 id: row.id,
@@ -1010,7 +1074,7 @@ async function migrateUserCharacters(connection) {
                 weight: row.weight,
                 eyes: row.eyes,
                 hair: row.hair,
-                gender: row.gender
+                gender: row.gender,
             }
         });
     }
@@ -1025,15 +1089,8 @@ async function migrateUserCharacterAttributes(connection) {
     `);
 
     for (const row of rows) {
-        await prisma.userCharacterAttribute.upsert({
-            where: { id: row.characterId },
-            update: {
-                characterId: row.characterId,
-                attributeId: row.attributeId,
-                value: row.value
-            },
-            create: {
-                id: row.characterId,
+        await prisma.userCharacterAttribute.create({
+            data: {
                 characterId: row.characterId,
                 attributeId: row.attributeId,
                 value: row.value
@@ -1057,7 +1114,6 @@ async function migrateData() {
         await migrateSourceBooks(connection);
         await migrateClasses(connection);
         await migrateClassFeatures(connection);
-        await migrateClassSpellLevels(connection);
         await migrateClassLevelAttributes(connection);
         await migrateSkills(connection);
         await migrateClassSkillMap(connection);
@@ -1067,7 +1123,8 @@ async function migrateData() {
         await migrateSpellDescriptorMap(connection);
         await migrateSpellSchoolMap(connection);
         await migrateSpellSourceMap(connection);
-        await migrateSpellSubschoolMap(connection);
+        await migrateSpellSubschoolMap(connection); 
+        await migrateSpellComponentMap(connection);
         await migrateFeats(connection);
         await migrateFeatBenefitMap(connection);
         await migrateFeatPrerequisiteMap(connection);
@@ -1083,7 +1140,7 @@ async function migrateData() {
         await migrateReferenceTableColumns(connection);
         await migrateReferenceTableRows(connection);
         await migrateReferenceTableCells(connection);
-        await migrateUsers(connection);
+//        await migrateUsers(connection);
         await migrateUserCharacters(connection);
         await migrateUserCharacterAttributes(connection);
 

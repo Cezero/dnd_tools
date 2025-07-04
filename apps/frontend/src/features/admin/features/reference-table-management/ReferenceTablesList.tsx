@@ -1,41 +1,65 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FetchReferenceTables, DeleteReferenceTable } from '@/features/admin/features/ReferenceTableMgmt/ReferenceTableService';
-import { COLUMN_DEFINITIONS, DEFAULT_COLUMNS } from '@/features/admin/features/ReferenceTableMgmt/ReferenceTableConfig';
+import { useNavigate, useLocation } from 'react-router-dom';
+
+import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
-import { TextInput } from '@/components/generic-list/TextInput';
-import { Prisma } from '@shared/prisma-client';
+import { COLUMN_DEFINITIONS } from '@/features/admin/features/reference-table-management/ReferenceTableConfig';
+import { ReferenceTableService } from '@/features/admin/features/reference-table-management/ReferenceTableService';
+import { ReferenceTableQuerySchema, ReferenceTableSummary } from '@shared/schema';
 
-// Use Prisma type for reference table items
-type ReferenceTableItem = Prisma.ReferenceTableGetPayload<Record<string, never>>;
-
-export const ReferenceTablesList = (): React.JSX.Element => {
+export function ReferenceTablesList(): React.JSX.Element {
     const navigate = useNavigate();
+    const location = useLocation();
+    const { isLoading: isAuthLoading } = useAuthAuto();
     const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
 
     const HandleNewTableClick = (): void => {
-        navigate('/admin/referencetables/new/edit');
+        navigate('/admin/referencetables/new/edit', { state: { fromListParams: location.search } });
     };
 
-
-    const HandleDeleteTable = async (id: number): Promise<void> => {
-        if (window.confirm('Are you sure you want to delete this table?')) {
+    const HandleDeleteTable = async (slug: string): Promise<void> => {
+        if (window.confirm('Are you sure you want to delete this reference table?')) {
             try {
-                await DeleteReferenceTable(id);
+                await ReferenceTableService.deleteReferenceTable(undefined, { slug });
                 setRefreshTrigger(prev => prev + 1);
             } catch (error) {
-                console.error('Failed to delete table:', error);
-                alert('Failed to delete table.');
+                console.error('Failed to delete reference table:', error);
+                alert('Failed to delete reference table.');
             }
         }
     };
 
-    const RenderCell = (item: ReferenceTableItem, columnId: string): React.ReactNode => {
+    const RenderCell = (item: ReferenceTableSummary, columnId: string): React.ReactNode => {
         const column = COLUMN_DEFINITIONS[columnId];
         if (!column) return null;
 
-        return String(item[columnId as keyof ReferenceTableItem] || '');
+        let cellContent: React.ReactNode = String(item[columnId] || '');
+
+        if (columnId === 'name') {
+            cellContent = (
+                <a
+                    onClick={() => navigate(`/admin/referencetables/${item.slug}`)}
+                    className="text-blue-600 hover:underline cursor-pointer"
+                >
+                    {item.name}
+                </a>
+            );
+        } else if (columnId === 'slug') {
+            cellContent = item.slug;
+        } else if (columnId === 'description') {
+            cellContent = item.description || '';
+        } else if (columnId === 'rows') {
+            cellContent = item.rows || 0;
+        } else if (columnId === 'columns') {
+            cellContent = item.columns || 0;
+        }
+
+        return cellContent;
     };
+
+    if (isAuthLoading) {
+        return <div className="p-4">Loading...</div>;
+    }
 
     return (
         <div className="p-4">
@@ -48,24 +72,18 @@ export const ReferenceTablesList = (): React.JSX.Element => {
                     New Table
                 </button>
             </div>
-            <GenericList<ReferenceTableItem>
+            <GenericList<any>
                 storageKey="reference-tables-list"
-                defaultColumns={DEFAULT_COLUMNS}
-                requiredColumnId="name"
                 columnDefinitions={COLUMN_DEFINITIONS}
-                fetchData={FetchReferenceTables}
+                querySchema={ReferenceTableQuerySchema}
+                serviceFunction={ReferenceTableService.getReferenceTables}
                 renderCell={RenderCell}
-                detailPagePath="/admin/referencetables/:id"
+                detailPagePath="/admin/referencetables/:identifier"
                 idKey="slug"
-                refreshTrigger={refreshTrigger}
                 itemDesc="reference table"
-                editHandler={(item: ReferenceTableItem) => navigate(`/admin/referencetables/${item.slug}/edit`)}
-                deleteHandler={(item: ReferenceTableItem) => HandleDeleteTable(parseInt(item.slug))}
-                filterOptions={{
-                    name: { component: TextInput, props: { placeholder: 'Filter by name...' } },
-                    slug: { component: TextInput, props: { placeholder: 'Filter by slug...' } },
-                }}
+                editHandler={(item) => navigate(`/admin/referencetables/${item.slug}/edit`)}
+                deleteHandler={(item) => HandleDeleteTable(item.slug)}
             />
         </div>
     );
-};
+}

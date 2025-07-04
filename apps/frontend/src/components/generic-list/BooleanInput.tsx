@@ -1,6 +1,7 @@
-import React, { useRef, useEffect } from 'react';
 import { CheckIcon } from '@heroicons/react/24/outline';
-import type { BooleanInputProps } from './types';
+import React, { useRef, useEffect } from 'react';
+
+import type { BooleanFilterComponentProps } from './types';
 
 /**
  * A boolean input component for GenericList, similar to MultiSelect but with hardcoded 'True' and 'False' options.
@@ -12,7 +13,7 @@ export const BooleanInput = ({
     onOpenChange,
     className = '',
     appendClassName = ''
-}: BooleanInputProps): React.JSX.Element => {
+}: BooleanFilterComponentProps): React.JSX.Element => {
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -33,7 +34,7 @@ export const BooleanInput = ({
         };
     }, [open, onOpenChange]);
 
-    const HandleOptionClick = (optionValue: number): void => {
+    const HandleOptionClick = (optionValue: boolean): void => {
         onToggle(optionValue === value ? null : optionValue);
     };
 
@@ -42,8 +43,8 @@ export const BooleanInput = ({
     };
 
     const options = [
-        { display: 'True', value: 1 },
-        { display: 'False', value: 0 },
+        { display: 'True', value: true },
+        { display: 'False', value: false },
     ];
 
     return (

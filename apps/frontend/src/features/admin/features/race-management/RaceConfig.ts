@@ -1,10 +1,12 @@
-import { RaceList } from '@/features/admin/features/raceMgmt/components/RaceList';
-import { RaceDetail } from '@/features/admin/features/raceMgmt/components/RaceDetail';
-import { RaceEdit } from '@/features/admin/features/raceMgmt/components/RaceEdit';
-import { RaceTraitDetail } from '@/features/admin/features/raceMgmt/components/RaceTraitDetail';
-import { RaceTraitEdit } from '@/features/admin/features/raceMgmt/components/RaceTraitEdit';
-import { TextInput, MultiSelect, BooleanInput } from '@/components/generic-list';
-import { EDITION_LIST } from '@shared/static-data';
+import React from 'react';
+
+import { ColumnDefinition } from '@/components/generic-list';
+import { RaceDetail } from '@/features/admin/features/race-management/RaceDetail';
+import { RaceEdit } from '@/features/admin/features/race-management/RaceEdit';
+import { RaceList } from '@/features/admin/features/race-management/RaceList';
+import { RaceTraitDetail } from '@/features/admin/features/race-management/RaceTraitDetail';
+import { RaceTraitEdit } from '@/features/admin/features/race-management/RaceTraitEdit';
+import { EDITION_SELECT_LIST, RPG_DICE_SELECT_LIST, ABILITY_SELECT_LIST } from '@shared/static-data';
 
 export const routes = [
     { path: 'races', component: RaceList, exact: true, requireAuth: true, requireAdmin: true },
@@ -13,88 +15,68 @@ export const routes = [
     { path: 'races/traits/:slug', component: RaceTraitDetail, exact: true, requireAuth: true, requireAdmin: true },
     { path: 'races/traits/:slug/edit', component: RaceTraitEdit, exact: true, requireAuth: true, requireAdmin: true },
 ];
-export const COLUMN_DEFINITIONS = {
+
+export const COLUMN_DEFINITIONS: Record<string, ColumnDefinition> = {
     name: {
         label: 'Name',
-        type: 'text',
         sortable: true,
-        filterable: true,
-        filterType: 'input'
+        isRequired: true,
+        isDefault: true,
+        filterConfig: {
+            type: 'text-input',
+            props: { placeholder: 'Filter by name...' }
+        }
     },
-    edition_id: {
+    editionId: {
         label: 'Edition',
-        type: 'text',
-        sortable: true, filterable: true, filterType: 'multi-select'
+        sortable: true,
+        isDefault: true,
+        filterConfig: {
+            type: 'multi-select',
+            props: {
+                options: EDITION_SELECT_LIST,
+                className: 'w-32'
+            }
+        }
     },
-    display: {
+    isVisible: {
         label: 'Display',
-        type: 'boolean',
         sortable: true,
-        filterable: true,
-        filterType: 'boolean'
+        isDefault: true,
+        filterConfig: {
+            type: 'boolean'
+        }
     },
-    desc: {
+    description: {
         label: 'Description',
-        type: 'text',
-        sortable: false,
-        filterable: false,
-        textArea: true
     },
-    size_id: {
+    sizeId: {
         label: 'Size',
-        type: 'select',
         sortable: true,
-        filterable: true,
-        filterType: 'select'
+        isDefault: true,
+        filterConfig: {
+            type: 'single-select',
+            props: {
+                options: RPG_DICE_SELECT_LIST,
+                className: 'w-32'
+            }
+        }
     },
     speed: {
         label: 'Speed',
-        type: 'number',
         sortable: true,
-        filterable: true,
-        filterType: 'input'
+        isDefault: true,
     },
-    favored_class_id: {
+    favoredClassId: {
         label: 'Favored Class',
-        type: 'select',
         sortable: true,
-        filterable: true,
-        filterType: 'select'
+        isDefault: true,
+        filterConfig: {
+            type: 'single-select',
+            props: {
+                options: ABILITY_SELECT_LIST,
+                className: 'w-32'
+            }
+        }
     }
 };
-
-export const RaceFilterOptions = (lookupsInitialized, classes, memoizedSizeMapOptions) => ({
-    name: { component: TextInput, props: { type: 'text', placeholder: 'Filter by name...' } },
-    edition_id: {
-        component: MultiSelect,
-        props: {
-            options: EDITION_LIST,
-            displayKey: 'abbr',
-            valueKey: 'id',
-            className: 'w-32'
-        }
-    },
-    display: { component: BooleanInput },
-    size_id: {
-        component: MultiSelect,
-        props: {
-            options: lookupsInitialized ? memoizedSizeMapOptions : [],
-            displayKey: 'name',
-            valueKey: 'id',
-            className: 'w-32'
-        }
-    },
-    speed: { component: TextInput, props: { type: 'number', placeholder: 'Filter by speed...' } },
-    favored_class_id: {
-        component: MultiSelect,
-        props: {
-            options: lookupsInitialized ? classes : [],
-            displayKey: 'class_name',
-            valueKey: 'class_id',
-            className: 'w-32'
-        }
-    }
-});
-
-export const DEFAULT_COLUMNS = ['name', 'edition_id', 'display', 'size_id', 'speed', 'favored_class_id'];
-

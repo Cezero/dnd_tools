@@ -1,33 +1,32 @@
-import { TextInput } from '@/components/generic-list';
+import { ColumnDefinition } from '@/components/generic-list';
 
-export const COLUMN_DEFINITIONS = {
+export const COLUMN_DEFINITIONS: Record<string, ColumnDefinition> = {
     slug: {
         label: 'Slug',
-        id: 'slug',
         sortable: true,
-        filterable: true,
-        filterType: 'input',
-        filterLabel: 'Search Traits',
-        multiColumn: ['slug', 'name', 'desc']
+        isRequired: true,
+        isDefault: true,
+        filterConfig: {
+            type: 'text-input',
+            props: { placeholder: 'Filter by name...' }
+        },
+        multiColumn: ['slug', 'name', 'description']
     },
     name: {
         label: 'Name',
-        id: 'name',
         sortable: true,
+        isDefault: true,
     },
-    desc: {
+    description: {
         label: 'Description',
-        id: 'desc',
-        sortable: false
+        sortable: false,
     },
-    has_value: {
+    hasValue: {
         label: 'Has Value',
-        sortable: false
+        sortable: true,
+        isDefault: true,
+        filterConfig: {
+            type: 'boolean'
+        }
     },
 };
-
-export const DEFAULT_COLUMNS = ['slug', 'name', 'has_value'];
-
-export const RaceTraitFilterOptions = () => ({
-    slug: { component: TextInput, props: { type: 'text', placeholder: 'Search Traits' } }
-}); 

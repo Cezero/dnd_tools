@@ -3,6 +3,6 @@ description: Creating types and interface definitions
 globs: 
 alwaysApply: false
 ---
-- Avoid the use of any and unknown when generating types
+- Avoid the use of any when generating types
 - Use TypeScript types or interfaces to enforce strict typing
 - Generated types should be placed in types.ts and not inline

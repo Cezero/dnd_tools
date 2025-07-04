@@ -1,8 +1,8 @@
+import type { Root, Element } from 'hast';
 import { visit } from 'unist-util-visit';
-import type { Root, Element, Text } from 'hast';
 
 interface RehypeReplaceVariablesOptions {
-    userVars?: Record<string, any>;
+    userVars?: Record<string, unknown>;
 }
 
 export function RehypeReplaceVariables(options: RehypeReplaceVariablesOptions = {}) {
@@ -11,7 +11,7 @@ export function RehypeReplaceVariables(options: RehypeReplaceVariablesOptions = 
         visit(tree, 'element', (node: Element) => {
             const properties = node.properties as {
                 dataVarName?: string;
-                [key: string]: any;
+                [key: string]: unknown;
             };
 
             if (typeof properties.dataVarName === 'string') {

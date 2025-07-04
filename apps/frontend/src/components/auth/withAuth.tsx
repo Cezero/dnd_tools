@@ -1,4 +1,5 @@
 import React, { ComponentType } from 'react';
+
 import { UseAuth } from './AuthProvider';
 import type { WithAuthProps } from './types';
 

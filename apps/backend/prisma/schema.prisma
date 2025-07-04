@@ -44,45 +44,49 @@ model ClassFeature {
 }
 
 model ClassSpellLevel {
-    id         Int @id @default(autoincrement())
     classId    Int
+    level      Int
     spellLevel Int
+    numSpells  Int
 
     class Class @relation(fields: [classId], references: [id])
+
+    @@id([classId, level, spellLevel])
 }
 
 model ClassLevelAttribute {
-    id              Int @id @default(autoincrement())
     classId         Int
+    level           Int
     baseAttackBonus Int
     fortSave        Int
     refSave         Int
     willSave        Int
 
     class Class @relation(fields: [classId], references: [id])
+    @@id([classId, level])
 }
 
 model ClassSkillMap {
-    id      Int   @id @default(autoincrement())
     classId Int
     skillId Int
     Class   Class @relation(fields: [classId], references: [id])
     Skill   Skill @relation(fields: [skillId], references: [id])
+
+    @@id([classId, skillId])
 }
 
 model ClassSourceMap {
-    id         Int  @id @default(autoincrement())
-    classId    Int
-    bookId     Int
-    pageNumber Int?
+    classId      Int
+    pageNumber   Int?
+    sourceBookId Int
 
     class        Class       @relation(fields: [classId], references: [id])
     SourceBook   SourceBook? @relation(fields: [sourceBookId], references: [id])
-    sourceBookId Int?
+    
+    @@id([classId, sourceBookId])
 }
 
 model SpellLevelMap {
-    id        Int     @id @default(autoincrement())
     classId   Int
     spellId   Int
     level     Int
@@ -90,6 +94,8 @@ model SpellLevelMap {
 
     spell Spell @relation(fields: [spellId], references: [id])
     class Class @relation(fields: [classId], references: [id])
+
+    @@id([spellId, classId])
 }
 
 // =================
@@ -114,50 +120,57 @@ model Spell {
     effect          String?
     target          String?
 
-    descriptors  SpellDescriptorMap[]
-    levelMapping SpellLevelMap[]
-    schools      SpellSchoolMap[]
-    sources      SpellSourceMap[]
-    subschools   SpellSubschoolMap[]
-    components   SpellComponentMap[]
+    descriptorIds  SpellDescriptorMap[]
+    levelMapping   SpellLevelMap[]
+    schoolIds      SpellSchoolMap[]
+    sourceBookInfo SpellSourceMap[]
+    subSchoolIds   SpellSubschoolMap[]
+    componentIds   SpellComponentMap[]
 }
 
 model SpellDescriptorMap {
-    id           Int   @id @default(autoincrement())
     spellId      Int
     descriptorId Int
     Spell        Spell @relation(fields: [spellId], references: [id])
+
+    @@id([spellId, descriptorId])
 }
 
 model SpellSchoolMap {
-    id       Int   @id @default(autoincrement())
     spellId  Int
     schoolId Int
     Spell    Spell @relation(fields: [spellId], references: [id])
+
+    @@id([spellId, schoolId])
 }
 
 model SpellSourceMap {
-    id           Int         @id @default(autoincrement())
-    spellId      Int
-    bookId       Int
-    pageNumber   Int?
-    Spell        Spell       @relation(fields: [spellId], references: [id])
-    SourceBook   SourceBook? @relation(fields: [sourceBookId], references: [id])
-    sourceBookId Int?
+    spellId       Int
+    sourceBookId  Int
+    pageNumber    Int?
+
+    Spell         Spell       @relation(fields: [spellId], references: [id])
+    SourceBook    SourceBook @relation(fields: [sourceBookId], references: [id])
+
+    @@id([spellId, sourceBookId])
 }
 
 model SpellSubschoolMap {
-    id       Int   @id @default(autoincrement())
     spellId  Int
-    schoolId Int
+    subSchoolId Int
+
     Spell    Spell @relation(fields: [spellId], references: [id])
+
+    @@id([spellId, subSchoolId])
 }
 
 model SpellComponentMap {
-    id          Int @id @default(autoincrement())
     spellId     Int
     componentId Int
+
     Spell   Spell @relation(fields: [spellId], references: [id])
+
+    @@id([spellId, componentId])
 }
 
 // =================
@@ -257,14 +270,14 @@ model RaceTrait {
 }
 
 model RaceTraitMap {
-    raceId  Int
-    traitId String
-    value   String?
+    raceId    Int
+    traitSlug String
+    value     Int?
 
     race  Race      @relation(fields: [raceId], references: [id])
-    trait RaceTrait @relation(fields: [traitId], references: [slug])
+    trait RaceTrait @relation(fields: [traitSlug], references: [slug])
 
-    @@id([raceId, traitId])
+    @@id([raceId, traitSlug])
 }
 
 model RaceAbilityAdjustment {
@@ -288,13 +301,14 @@ model RaceLanguageMap {
 }
 
 model RaceSourceMap {
-    id           Int         @id @default(autoincrement())
-    raceId       Int
-    bookId       Int
-    pageNumber   Int?
+    raceId        Int
+    sourceBookId  Int
+    pageNumber    Int?
+
     Race         Race        @relation(fields: [raceId], references: [id])
     SourceBook   SourceBook? @relation(fields: [sourceBookId], references: [id])
-    sourceBookId Int?
+
+    @@id([raceId, sourceBookId])
 }
 
 // =================
@@ -321,6 +335,7 @@ model Weapon {
     name         String
     description  String?  @db.Text
     category     Int
+    type         Int
     cost         Decimal? @db.Decimal(5, 2)
     damageSmall  String?
     damageMedium String?
@@ -369,39 +384,41 @@ model ReferenceTable {
 }
 
 model ReferenceTableColumn {
-    id          Int     @id @default(autoincrement())
     tableSlug   String
-    columnIndex Int
+    index       Int
     header      String
     span        Int?
     alignment   TextAlignment?
 
     cells ReferenceTableCell[]
     table ReferenceTable       @relation(fields: [tableSlug], references: [slug])
+
+    @@id([tableSlug, index])
 }
 
 model ReferenceTableRow {
-    id        Int     @id @default(autoincrement())
     tableSlug String
-    rowIndex  Int
-    label     String?
+    index  Int
 
     cells ReferenceTableCell[]
     table ReferenceTable       @relation(fields: [tableSlug], references: [slug])
+
+    @@id([tableSlug, index])
 }
 
 model ReferenceTableCell {
-    id       Int     @id @default(autoincrement())
     tableSlug   String
-    rowId    Int
-    columnId Int
-    value    String? @db.Text
-    colSpan  Int?
-    rowSpan  Int?
+    columnIndex Int
+    rowIndex    Int
+    value       String? @db.Text
+    colSpan     Int?
+    rowSpan     Int?
 
-    column ReferenceTableColumn @relation(fields: [columnId], references: [id])
-    row    ReferenceTableRow    @relation(fields: [rowId], references: [id])
+    column ReferenceTableColumn @relation(fields: [tableSlug, columnIndex], references: [tableSlug, index])
+    row    ReferenceTableRow    @relation(fields: [tableSlug, rowIndex], references: [tableSlug, index])
     table  ReferenceTable       @relation(fields: [tableSlug], references: [slug])
+
+    @@id([tableSlug, columnIndex, rowIndex])
 }
 
 // =================

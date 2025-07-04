@@ -1,21 +1,28 @@
 import { PrismaClient, Prisma } from '@shared/prisma-client';
-import type { SpellIdParamRequest, UpdateSpellRequest, SpellQueryRequest } from '@shared/schema';
+import type { SpellIdParamRequest, UpdateSpellRequest, SpellQueryRequest, SpellQueryResponse, GetSpellResponse } from '@shared/schema';
 
 import type { SpellService } from './types';
 
 const prisma = new PrismaClient();
 
 export const spellService: SpellService = {
-    async getSpells(query: SpellQueryRequest) {
+    async getSpells(query: SpellQueryRequest): Promise<SpellQueryResponse> {
         const page = query.page;
         const limit = query.limit;
         const skip = (page - 1) * limit;
 
-        // Build Prisma where clause based on filters
         const where: Prisma.SpellWhereInput = {};
 
         if (query.name) {
             where.name = { contains: query.name };
+        }
+
+        if (query.sourceId) {
+            where.sourceBookInfo = {
+                some: {
+                    sourceBookId: { in: query.sourceId }
+                }
+            };
         }
 
         if (query.editionId) {
@@ -26,7 +33,6 @@ export const spellService: SpellService = {
             }
         }
 
-        // Handle class filtering through levelMapping relation
         if (query.classId) {
             where.levelMapping = {
                 some: {
@@ -36,7 +42,6 @@ export const spellService: SpellService = {
             };
         }
 
-        // Handle spell level filtering using baseLevel from Prisma schema
         if (query.spellLevel) {
             where.levelMapping = {
                 some: {
@@ -46,35 +51,28 @@ export const spellService: SpellService = {
             };
         }
 
-        // Handle schools filtering
-        if (query.schools) {
-            where.schools = {
+        if (query.schoolId) {
+            where.schoolIds = {
                 some: {
-                    schoolId: { in: query.schools }
+                    schoolId: { in: query.schoolId }
                 }
             };
         }
 
-        // Handle descriptors filtering
-        if (query.descriptors) {
-            where.descriptors = {
+        if (query.descriptorId) {
+            where.descriptorIds = {
                 some: {
-                    descriptorId: { in: query.descriptors }
+                    descriptorId: { in: query.descriptorId }
                 }
             };
         }
 
-        // Handle components filtering using Prisma's type-safe approach
-        if (query.components) {
-            // Get spell IDs that have these components
-            const spellIdsWithComponents = await prisma.spellComponentMap.findMany({
-                where: {
-                    componentId: { in: query.components }
-                },
-                select: { spellId: true }
-            });
-
-            where.id = { in: spellIdsWithComponents.map(s => s.spellId) };
+        if (query.componentId) {
+            where.componentIds = {
+                some: {
+                    componentId: { in: query.componentId }
+                }
+            };
         }
 
         const [spells, total] = await Promise.all([
@@ -82,11 +80,36 @@ export const spellService: SpellService = {
                 where,
                 include: {
                     levelMapping: {
+                        select: {
+                            classId: true,
+                            level: true
+                        },
                         where: { isVisible: true },
-                        include: {
-                            class: {
-                                select: { name: true, abbreviation: true }
-                            }
+                    },
+                    descriptorIds: {
+                        select: {
+                            descriptorId: true
+                        }
+                    },
+                    schoolIds: {
+                        select: {
+                            schoolId: true
+                        }
+                    },
+                    subSchoolIds: {
+                        select: {
+                            subSchoolId: true
+                        }
+                    },
+                    componentIds: {
+                        select: {
+                            componentId: true
+                        }
+                    },
+                    sourceBookInfo: {
+                        select: {
+                            sourceBookId: true,
+                            pageNumber: true
                         }
                     }
                 },
@@ -105,22 +128,46 @@ export const spellService: SpellService = {
         };
     },
 
-    async getSpellById(id: SpellIdParamRequest) {
+    async getSpellById(id: SpellIdParamRequest): Promise<GetSpellResponse | null> {
         const spell = await prisma.spell.findUnique({
             where: { id: id.id },
             include: {
                 levelMapping: {
-                    where: { isVisible: true },
-                    include: {
-                        class: {
-                            select: { name: true, abbreviation: true }
-                        }
+                    select: {
+                        classId: true,
+                        level: true
                     },
-                    orderBy: { classId: 'asc' }
+                    where: { isVisible: true },
+                },
+                descriptorIds: {
+                    select: {
+                        descriptorId: true
+                    }
+                },
+                schoolIds: {
+                    select: {
+                        schoolId: true
+                    }
+                },
+                subSchoolIds: {
+                    select: {
+                        subSchoolId: true
+                    }
+                },
+                componentIds: {
+                    select: {
+                        componentId: true
+                    }
+                },
+                sourceBookInfo: {
+                    select: {
+                        sourceBookId: true,
+                        pageNumber: true
+                    }
                 }
             }
         });
-
+        console.log('[GetSpellById] spell', spell);
         return spell;
     },
 
@@ -131,22 +178,36 @@ export const spellService: SpellService = {
             await tx.spellSchoolMap.deleteMany({ where: { spellId: id.id } });
             await tx.spellSubschoolMap.deleteMany({ where: { spellId: id.id } });
             await tx.spellComponentMap.deleteMany({ where: { spellId: id.id } });
+            await tx.spellLevelMap.deleteMany({ where: { spellId: id.id } });
+            await tx.spellSourceMap.deleteMany({ where: { spellId: id.id } });
 
             await tx.spell.update({
                 where: { id: id.id },
                 data: {
                     ...data,
-                    descriptors: {
-                        create: data.descriptors?.map(descriptorId => ({ descriptorId: descriptorId.descriptorId }))
+                    descriptorIds: {
+                        create: data.descriptorIds?.map(descriptorId => ({ descriptorId: descriptorId.descriptorId })) || []
                     },
-                    schools: {
-                        create: data.schools?.map(schoolId => ({ schoolId: schoolId.schoolId }))
+                    schoolIds: {
+                        create: data.schoolIds?.map(schoolId => ({ schoolId: schoolId.schoolId })) || []
                     },
-                    subschools: {
-                        create: data.subschools?.map(subschoolId => ({ schoolId: subschoolId.schoolId }))
+                    subSchoolIds: {
+                        create: data.subSchoolIds?.map(subschoolId => ({ subSchoolId: subschoolId.subSchoolId })) || []
                     },
-                    components: {
-                        create: data.components?.map(componentId => ({ componentId: componentId.componentId }))
+                    componentIds: {
+                        create: data.componentIds?.map(componentId => ({ componentId: componentId.componentId })) || []
+                    },
+                    levelMapping: {
+                        create: data.levelMapping?.map(levelMapping => ({
+                            classId: levelMapping.classId,
+                            level: levelMapping.level
+                        })) || []
+                    },
+                    sourceBookInfo: {
+                        create: data.sourceBookInfo?.map(sourceBookInfo => ({
+                            sourceBookId: sourceBookInfo.sourceBookId,
+                            pageNumber: sourceBookInfo.pageNumber
+                        })) || []
                     }
                 }
             });

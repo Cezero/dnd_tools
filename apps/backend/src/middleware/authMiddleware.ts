@@ -43,7 +43,7 @@ export function createAuthMiddleware(options: AuthOptions = {}) {
         req.user = result.user!;
 
         // Check admin requirement if specified
-        if (requireAdmin && !req.user.is_admin) {
+        if (requireAdmin && !req.user.isAdmin) {
             throw new ForbiddenError('Admin access required');
         }
 

@@ -1,17 +1,19 @@
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+
 import { withAuthContext } from '@/components/auth/withAuth';
 import { ThemeToggle } from '@/components/navbar/themeToggle';
-import React, { useState, useRef, useEffect } from 'react';
 import { FeatureNavigation } from '@/features/FeatureRoutes';
-import { EDITION_LIST } from '@shared/static-data';
 import { NavBarService } from '@/services/NavBarService';
-import type { NavBarProps, EditionOption } from './types';
+import { EDITION_SELECT_LIST, EditionSelect } from '@shared/static-data';
+
+import type { NavBarProps } from './types';
 
 function NavBarComponent({ auth }: NavBarProps): React.JSX.Element {
     const location = useLocation();
     const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const [editions, setEditions] = useState<EditionOption[]>([]);
+    const [editions, setEditions] = useState<EditionSelect[]>([]);
     const [selectedEdition, setSelectedEdition] = useState<string>('4');
     const [isUpdatingEdition, setIsUpdatingEdition] = useState<boolean>(false);
 
@@ -26,14 +28,7 @@ function NavBarComponent({ auth }: NavBarProps): React.JSX.Element {
 
     useEffect(() => {
         async function LoadEditions(): Promise<void> {
-            let editionOptions: EditionOption[] = EDITION_LIST
-                .filter(e => e.id !== 5)
-                .map(e => {
-                    const myLabel = (e.id === 4 ? '3E/3.5E Combined' : (e as any).abbreviation);
-                    return { value: String(e.id), label: myLabel }
-                });
-
-            setEditions(editionOptions);
+            setEditions(EDITION_SELECT_LIST);
 
             // Set initial selected edition from user profile or default
             if (auth.user?.preferredEditionId) {

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
 import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect } from 'react';
 
 export function ThemeToggle(): React.JSX.Element {
     const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -27,10 +27,10 @@ export function ThemeToggle(): React.JSX.Element {
     return (
         <button
             onClick={ToggleTheme}
-            className="p-1 border rounded text-sm dark:bg-[#141e2d] dark:text-white bg-gray-200 text-black"
+            className="p-1 border rounded flex items-center justify-center"
             title={isDarkMode ? "Enable light mode" : "Enable dark mode"}
         >
-            {isDarkMode ? <SunIcon className="mr-1" /> : <MoonIcon className="mr-1" />}
+            {isDarkMode ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
         </button>
     );
 } 

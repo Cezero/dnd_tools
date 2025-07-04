@@ -1,45 +1,22 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { z } from 'zod';
+
+import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
-import { COLUMN_DEFINITIONS, DEFAULT_COLUMNS, RaceFilterOptions } from '@/features/admin/features/race-management/RaceConfig';
-import { FetchRaces, DeleteRace } from '@/features/admin/features/race-management/RaceService';
-import { UseAuth } from '@/components/auth/AuthProvider';
-import { SIZE_MAP, EDITION_MAP } from '@shared/static-data';
-import { CLASS_MAP } from '@shared/static-data';
-import { COLUMN_DEFINITIONS as TRAIT_COLUMN_DEFINITIONS, DEFAULT_COLUMNS as DEFAULT_TRAIT_COLUMNS, RaceTraitFilterOptions } from '@/features/admin/features/race-management/RaceTraitConfig';
-import { FetchRaceTraits, DeleteRaceTrait } from '@/features/admin/features/raceMgmt/services/RaceTraitService';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { Prisma } from '@shared/prisma-client';
+import { COLUMN_DEFINITIONS } from '@/features/admin/features/race-management/RaceConfig';
+import { RaceService } from '@/features/admin/features/race-management/RaceService';
+import { COLUMN_DEFINITIONS as TRAIT_COLUMN_DEFINITIONS } from '@/features/admin/features/race-management/RaceTraitConfig';
+import { RaceTraitService } from '@/features/admin/features/race-management/RaceTraitService';
+import { RaceQuerySchema, RaceResponse, RaceTraitQuerySchema, RaceTraitSchema } from '@shared/schema';
+import { SIZE_MAP, EDITION_MAP, CLASS_MAP } from '@shared/static-data';
 
-// Use Prisma types for race and race trait items
-type RaceItem = Prisma.RaceGetPayload<Record<string, never>>;
-type RaceTraitItem = Prisma.RaceTraitGetPayload<Record<string, never>>;
 
-export const RaceList = (): React.JSX.Element => {
+export function RaceList(): React.JSX.Element {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, isLoading: isAuthLoading } = UseAuth();
-    const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
-
-    const [raceTraitRefreshTrigger, setRaceTraitRefreshTrigger] = useState<number>(0);
-
-    const memoizedRaceTraitFilterOptions = useMemo(() => (
-        RaceTraitFilterOptions()
-    ), []);
-
-    const memoizedRaceFilterOptions = useMemo(() => (
-        RaceFilterOptions()
-    ), []);
-
-    const RaceFetchData = useCallback(async (params: URLSearchParams) => {
-        const { data, total } = await FetchRaces(params);
-        return { data, total };
-    }, [user]);
-
-    const RaceTraitFetchData = useCallback(async (params: URLSearchParams) => {
-        const { data, total } = await FetchRaceTraits(params);
-        return { data, total };
-    }, []);
+    const { isLoading: isAuthLoading } = useAuthAuto();
 
     const HandleNewRaceClick = (): void => {
         navigate('/admin/races/new/edit', { state: { fromListParams: location.search } });
@@ -52,8 +29,7 @@ export const RaceList = (): React.JSX.Element => {
     const HandleDeleteRace = async (id: number): Promise<void> => {
         if (window.confirm('Are you sure you want to delete this race?')) {
             try {
-                await DeleteRace(id);
-                setRefreshTrigger(prev => prev + 1);
+                await RaceService.deleteRace(undefined, { id });
             } catch (error) {
                 console.error('Failed to delete race:', error);
                 alert('Failed to delete race.');
@@ -64,8 +40,7 @@ export const RaceList = (): React.JSX.Element => {
     const HandleDeleteRaceTrait = async (slug: string): Promise<void> => {
         if (window.confirm('Are you sure you want to delete this race trait?')) {
             try {
-                await DeleteRaceTrait(slug);
-                setRaceTraitRefreshTrigger(prev => prev + 1);
+                await RaceTraitService.deleteRaceTrait(undefined, { slug });
             } catch (error) {
                 console.error('Failed to delete race trait:', error);
                 alert('Failed to delete race trait.');
@@ -73,11 +48,11 @@ export const RaceList = (): React.JSX.Element => {
         }
     };
 
-    const RenderCell = (item: RaceItem, columnId: string): React.ReactNode => {
+    const RenderCell = (item: RaceResponse, columnId: string): React.ReactNode => {
         const column = COLUMN_DEFINITIONS[columnId];
         if (!column) return null;
 
-        let cellContent: React.ReactNode = String(item[columnId as keyof RaceItem] || '');
+        let cellContent: React.ReactNode = String(item[columnId as keyof RaceResponse] || '');
 
         if (columnId === 'name') {
             cellContent = (
@@ -88,28 +63,30 @@ export const RaceList = (): React.JSX.Element => {
                     {item.name}
                 </a>
             );
-        } else if (columnId === 'edition_id') {
-            cellContent = EDITION_MAP[item.editionId]?.abbr;
-        } else if (columnId === 'display') {
+        } else if (columnId === 'editionId') {
+            cellContent = EDITION_MAP[item.editionId]?.abbreviation;
+        } else if (columnId === 'isVisible') {
             cellContent = item.isVisible ? 'Yes' : 'No';
-        } else if (columnId === 'size_id') {
+        } else if (columnId === 'sizeId') {
             cellContent = SIZE_MAP[item.sizeId]?.name;
-        } else if (columnId === 'favored_class_id') {
+        } else if (columnId === 'favoredClassId') {
             if (item.favoredClassId === -1) {
                 cellContent = 'Any';
             } else {
                 cellContent = CLASS_MAP[item.favoredClassId]?.name || '';
             }
+        } else if (columnId === 'description') {
+            cellContent = (<ProcessMarkdown markdown={String(item.description || '')} />);
         }
 
         return cellContent;
     };
 
-    const RenderTraitCell = (item: RaceTraitItem, columnId: string): React.ReactNode => {
+    const RenderTraitCell = (item: z.infer<typeof RaceTraitSchema>, columnId: string): React.ReactNode => {
         const column = TRAIT_COLUMN_DEFINITIONS[columnId];
         if (!column) return null;
 
-        let cellContent: React.ReactNode = String(item[columnId as keyof RaceTraitItem] || '');
+        let cellContent: React.ReactNode = String(item[columnId as keyof z.infer<typeof RaceTraitSchema>] || '');
 
         if (columnId === 'slug') {
             cellContent = (
@@ -120,9 +97,9 @@ export const RaceList = (): React.JSX.Element => {
                     {item.slug}
                 </a>
             );
-        } else if (columnId === 'desc') {
+        } else if (columnId === 'description') {
             cellContent = (<ProcessMarkdown markdown={item.description || ''} userVars={{ traitname: item.name || '' }} />);
-        } else if (columnId === 'has_value') {
+        } else if (columnId === 'hasValue') {
             cellContent = item.hasValue ? 'Yes' : 'No';
         }
 
@@ -144,20 +121,17 @@ export const RaceList = (): React.JSX.Element => {
                     New Race
                 </button>
             </div>
-            <GenericList<RaceItem>
+            <GenericList<RaceResponse>
                 storageKey="races-list"
-                defaultColumns={DEFAULT_COLUMNS}
-                requiredColumnId="name"
                 columnDefinitions={COLUMN_DEFINITIONS}
-                fetchData={RaceFetchData}
+                querySchema={RaceQuerySchema}
+                serviceFunction={RaceService.getRaces}
                 renderCell={RenderCell}
                 detailPagePath="/admin/races/:id"
                 idKey="id"
-                refreshTrigger={refreshTrigger}
                 itemDesc="race"
-                editHandler={(item: RaceItem) => navigate(`/admin/races/${item.id}/edit`)}
-                deleteHandler={(item: RaceItem) => HandleDeleteRace(item.id)}
-                filterOptions={memoizedRaceFilterOptions}
+                editHandler={(item: RaceResponse) => navigate(`/admin/races/${item.id}/edit`)}
+                deleteHandler={(item: RaceResponse) => HandleDeleteRace(item.id)}
             />
 
             <h2 className="text-xl font-bold mb-4 mt-8">Race Trait Definitions</h2>
@@ -169,22 +143,19 @@ export const RaceList = (): React.JSX.Element => {
                     New Race Trait Definition
                 </button>
             </div>
-            <GenericList<RaceTraitItem>
+            <GenericList<z.infer<typeof RaceTraitSchema>>
                 storageKey="race-traits-list"
-                defaultColumns={DEFAULT_TRAIT_COLUMNS}
-                requiredColumnId="slug"
                 columnDefinitions={TRAIT_COLUMN_DEFINITIONS}
-                fetchData={RaceTraitFetchData}
+                querySchema={RaceTraitQuerySchema}
+                serviceFunction={RaceTraitService.getRaceTraits}
                 renderCell={RenderTraitCell}
                 detailPagePath="/admin/races/traits/:id"
                 idKey="slug"
-                refreshTrigger={raceTraitRefreshTrigger}
                 itemDesc="race trait"
-                editHandler={(item: RaceTraitItem) => navigate(`/admin/races/traits/${item.slug}/edit`)}
-                deleteHandler={(item: RaceTraitItem) => HandleDeleteRaceTrait(item.slug)}
-                filterOptions={memoizedRaceTraitFilterOptions}
+                editHandler={(item: z.infer<typeof RaceTraitSchema>) => navigate(`/admin/races/traits/${item.slug}/edit`)}
+                deleteHandler={(item: z.infer<typeof RaceTraitSchema>) => HandleDeleteRaceTrait(item.slug)}
             />
         </div>
     );
-};
+}
 

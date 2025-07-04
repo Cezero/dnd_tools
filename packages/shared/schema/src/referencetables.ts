@@ -1,31 +1,32 @@
 import { z } from 'zod';
 import { PageQueryResponseSchema, PageQuerySchema } from './query.js';
+import { optionalStringParam } from './utils.js';
 
 // Schema for reference table query parameters
 export const ReferenceTableQuerySchema = PageQuerySchema.extend({
     sort: z.enum(['name', 'slug']).optional().default('name'),
     order: z.enum(['asc', 'desc']).optional().default('asc'),
-    name: z.string().optional(),
-    slug: z.string().optional(),
+    name: optionalStringParam(),
+    slug: optionalStringParam(),
 });
 
-// Schema for reference table identifier (slug)
-export const ReferenceTableIdentifierSchema = z.object({
-    identifier: z.string().min(1, 'Table slug is required')
+// Schema for reference table slug - path parameter
+export const ReferenceTableSlugParamSchema = z.object({
+    slug: z.string().min(1, 'Table slug is required')
         .max(100, 'Table slug must be less than 100 characters')
         .regex(/^[a-z0-9-]+$/, 'Table slug can only contain lowercase letters, numbers, and hyphens')
         .trim(),
 });
 
 export const ReferenceTableSchema = z.object({
-    name: z.string().min(1, 'Table name is required')
-        .max(200, 'Table name must be less than 200 characters')
-        .trim(),
-    description: z.string().max(2000, 'Description must be less than 2000 characters').nullable(),
     slug: z.string().min(1, 'Table slug is required')
         .max(100, 'Table slug must be less than 100 characters')
         .regex(/^[a-z0-9-]+$/, 'Table slug can only contain lowercase letters, numbers, and hyphens')
         .trim(),
+    name: z.string().min(1, 'Table name is required')
+        .max(200, 'Table name must be less than 200 characters')
+        .trim(),
+    description: z.string().max(2000, 'Description must be less than 2000 characters').nullable(),
 });
 
 // Schema for table column (matches Prisma ReferenceTableColumn)
@@ -72,38 +73,47 @@ export const TableRowSchema = z.object({
 // Schema for creating a reference table (matches Prisma ReferenceTableCreateInput)
 export const CreateReferenceTableSchema = ReferenceTableSchema.extend({
     columns: z.array(TableColumnSchema)
-            .min(1, 'At least one column is required')
-            .max(20, 'Maximum 20 columns allowed'),
+        .min(1, 'At least one column is required')
+        .max(20, 'Maximum 20 columns allowed'),
     rows: z.array(TableRowSchema)
-            .min(0, 'Rows cannot be negative')
-            .max(1000, 'Maximum 1000 rows allowed'),
+        .min(0, 'Rows cannot be negative')
+        .max(1000, 'Maximum 1000 rows allowed'),
     cells: z.array(TableCellSchema)
-            .min(0, 'Cells cannot be negative')
-            .max(1000, 'Maximum 1000 cells allowed'),
+        .min(0, 'Cells cannot be negative')
+        .max(1000, 'Maximum 1000 cells allowed'),
+});
+
+export const ReferenceTableRowsWithCellsSchema = TableRowSchema.extend({
+    cells: z.array(TableCellSchema).nullable(),
 });
 
 export const UpdateReferenceTableSchema = CreateReferenceTableSchema.partial();
 
 export const ReferenceTableDataResponseSchema = ReferenceTableSchema.extend({
     columns: z.array(TableColumnSchema).nullable(),
-    rows: z.array(TableRowSchema.extend({
-        cells: z.array(TableCellSchema).nullable(),
-    }).nullable()),
+    rows: z.array(ReferenceTableRowsWithCellsSchema).nullable(),
+});
+
+export const ReferenceTableSummarySchema = ReferenceTableSchema.extend({
+    rows: z.number().int().min(0, 'Rows must be non-negative'),
+    columns: z.number().int().min(0, 'Columns must be non-negative'),
 });
 
 export const ReferenceTableQueryResponseSchema = PageQueryResponseSchema.extend({
-    results: z.array(ReferenceTableSchema.extend({
-        _count: z.object({
-            rows: z.number().int().min(0, 'Rows must be non-negative'),
-            columns: z.number().int().min(0, 'Columns must be non-negative'),
-        })
-    })),
+    results: z.array(ReferenceTableSummarySchema),
 });
 
 // Type inference from schemas
 export type ReferenceTableQueryRequest = z.infer<typeof ReferenceTableQuerySchema>;
-export type ReferenceTableIdentifierRequest = z.infer<typeof ReferenceTableIdentifierSchema>;
+export type ReferenceTableSlugParamRequest = z.infer<typeof ReferenceTableSlugParamSchema>;
 export type CreateReferenceTableRequest = z.infer<typeof CreateReferenceTableSchema>;
 export type UpdateReferenceTableRequest = z.infer<typeof UpdateReferenceTableSchema>;
 export type ReferenceTableDataResponse = z.infer<typeof ReferenceTableDataResponseSchema>;
 export type ReferenceTableQueryResponse = z.infer<typeof ReferenceTableQueryResponseSchema>;
+export type ReferenceTableSummary = z.infer<typeof ReferenceTableSummarySchema>;
+export type ReferenceTable = z.infer<typeof ReferenceTableSchema>;
+
+export type ReferenceTableColumn = z.infer<typeof TableColumnSchema>;
+export type ReferenceTableRow = z.infer<typeof TableRowSchema>;
+export type ReferenceTableCell = z.infer<typeof TableCellSchema>;
+export type ReferenceTableRowsWithCells = z.infer<typeof ReferenceTableRowsWithCellsSchema>;

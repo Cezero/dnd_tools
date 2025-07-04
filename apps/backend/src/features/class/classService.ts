@@ -8,6 +8,7 @@ const prisma = new PrismaClient();
 
 export const classService: ClassService = {
     async getClasses(query: ClassQueryRequest) {
+        console.log('[classService] getClasses query:', query);
         const page = query.page;
         const limit = query.limit;
         const offset = (page - 1) * limit;
@@ -20,7 +21,23 @@ export const classService: ClassService = {
         if (query.editionId) {
             where.editionId = query.editionId;
         }
+        if (query.isPrestige !== undefined) {
+            where.isPrestige = query.isPrestige;
+        }
+        if (query.isVisible !== undefined) {
+            where.isVisible = query.isVisible;
+        }
+        if (query.canCastSpells !== undefined) {
+            where.canCastSpells = query.canCastSpells;
+        }
+        if (query.hitDie) {
+            where.hitDie = query.hitDie;
+        }
+        if (query.castingAbilityId) {
+            where.castingAbilityId = query.castingAbilityId;
+        }
 
+        console.log(where);
         const [classes, total] = await Promise.all([
             prisma.class.findMany({
                 where,

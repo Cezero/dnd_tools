@@ -1,22 +1,10 @@
 import React from 'react';
-
-// Column definition interface
-export interface ColumnDefinition {
-    label: string;
-    sortable?: boolean;
-    filterable?: boolean;
-    filterType?: 'input' | 'select' | 'multi-select' | 'boolean';
-    alwaysVisible?: boolean;
-    dynamicFilter?: boolean;
-    multiColumn?: string[];
-    paramName?: string;
-    filterLabel?: string;
-}
+import { z } from 'zod';
 
 // Filter value discriminated union
 export type FilterValue =
     | { type: 'input'; value: string }
-    | { type: 'select'; value: string | number | null }
+    | { type: 'single-select'; value: string | number | null }
     | { type: 'multi-select'; value: { values: string[]; logic: 'or' | 'and' } }
     | { type: 'boolean'; value: boolean | null };
 
@@ -31,39 +19,111 @@ export interface DataItem {
     id: string | number;
 }
 
-// Filter component props
-export interface FilterComponentProps {
-    selected?: string | boolean | string[];
-    onChange: (value: string | boolean | string[]) => void;
+// Base filter component props that all filter types share
+export interface BaseFilterComponentProps {
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
-    logicType?: string;
-    onLogicChange?: (logic: string) => void;
-    value?: boolean;
-    onToggle?: (value: boolean) => void;
     dynamic?: boolean;
     dynamicFilterDelay?: number;
     multiColumn?: string[];
     appendClassName?: string;
     id?: string;
+    className?: string;
 }
 
-// Filter option interface
-export interface FilterOption {
-    component: React.ComponentType<FilterComponentProps>;
-    props?: Partial<FilterComponentProps>;
+// Input filter component props
+export interface InputFilterComponentProps extends BaseFilterComponentProps {
+    selected?: string;
+    onChange: (value: string) => void;
+    placeholder?: string;
+    type?: string;
 }
 
-// GenericList props interface
+// Boolean filter component props
+export interface BooleanFilterComponentProps extends BaseFilterComponentProps {
+    value?: boolean | null;
+    onToggle: (value: boolean) => void;
+}
+
+// Generic option interface for both single and multi select
+export interface SelectOption {
+    [key: string]: string | number;
+}
+
+// Single select filter component props
+export interface SingleSelectFilterComponentProps extends BaseFilterComponentProps {
+    options: SelectOption[];
+    displayKey?: string;
+    valueKey?: string;
+    selected?: string | number | null;
+    onChange: (value: string | number | null) => void;
+    placeholder?: string;
+}
+
+// Multi select filter component props
+export interface MultiSelectFilterComponentProps extends BaseFilterComponentProps {
+    options: SelectOption[];
+    displayKey?: string;
+    valueKey?: string;
+    selected: (string | number)[];
+    onChange: (values: (string | number)[]) => void;
+    logicType?: 'or' | 'and';
+    onLogicChange?: (logic: 'or' | 'and') => void;
+}
+
+// Filter type enum - determines which component to use
+export type FilterType = 'text-input' | 'single-select' | 'boolean' | 'multi-select';
+
+// Filter configuration for different filter types
+export type FilterConfig =
+    | {
+        type: 'text-input';
+        props?: Partial<InputFilterComponentProps>;
+    }
+    | {
+        type: 'boolean';
+        props?: Partial<BooleanFilterComponentProps>;
+    }
+    | {
+        type: 'single-select';
+        props: Partial<SingleSelectFilterComponentProps> & {
+            options: SelectOption[];
+            displayKey?: string;
+            valueKey?: string;
+        };
+    }
+    | {
+        type: 'multi-select';
+        props: Partial<MultiSelectFilterComponentProps> & {
+            options: SelectOption[];
+            displayKey?: string;
+            valueKey?: string;
+        };
+    };
+
+// Column definition interface - now includes filter configuration
+export interface ColumnDefinition {
+    label: string;
+    sortable?: boolean; // Defaults to false
+    alwaysVisible?: boolean;
+    dynamicFilter?: boolean;
+    multiColumn?: string[];
+    paramName?: string;
+    filterLabel?: string;
+    isDefault?: boolean; // Defaults to false
+    isRequired?: boolean; // Defaults to false - whether this column is required for navigation
+    // Filter configuration - presence makes column filterable, type determines filter type
+    filterConfig?: FilterConfig;
+}
+
+// GenericList props interface - simplified to use column definitions only
 export interface GenericListProps<T = DataItem> {
     // Configuration props
     storageKey: string;
-    defaultColumns: string[];
     columnDefinitions: Record<string, ColumnDefinition>;
-    requiredColumnId: string;
-    fetchData: (params: URLSearchParams) => Promise<{ data: T[]; total: number }>;
+    querySchema: z.ZodSchema<unknown>;
+    serviceFunction: (queryParams: unknown) => Promise<{ results: T[]; total: number }>;
     renderCell: (item: T, columnId: string, isLastVisibleColumn?: boolean) => React.ReactNode;
-    filterOptions?: Record<string, FilterOption>;
 
     // Routing props
     detailPagePath?: string;
@@ -94,17 +154,11 @@ export interface ColumnConfigModalProps {
     visibleColumns: string[];
     setVisibleColumns: React.Dispatch<React.SetStateAction<string[]>>;
     columnDefinitions: Record<string, ColumnDefinition>;
-    requiredColumnId: string;
 }
 
-// MultiSelect option interface
-export interface MultiSelectOption {
-    [key: string]: string | number;
-}
-
-// MultiSelect props interface
+// Prop interfaces for the actual filter components
 export interface MultiSelectProps {
-    options: MultiSelectOption[];
+    options: SelectOption[];
     displayKey: string;
     valueKey: string;
     selected: (string | number)[];
@@ -117,14 +171,8 @@ export interface MultiSelectProps {
     appendClassName?: string;
 }
 
-// SingleSelect option interface
-export interface SingleSelectOption {
-    [key: string]: string | number;
-}
-
-// SingleSelect props interface
 export interface SingleSelectProps {
-    options: SingleSelectOption[];
+    options: SelectOption[];
     displayKey: string;
     valueKey: string;
     selected?: string | number | null;
@@ -136,17 +184,6 @@ export interface SingleSelectProps {
     appendClassName?: string;
 }
 
-// BooleanInput props interface
-export interface BooleanInputProps {
-    value?: boolean | number | null;
-    onToggle: (value: boolean | number | null) => void;
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    className?: string;
-    appendClassName?: string;
-}
-
-// TextInput props interface
 export interface TextInputProps {
     onChange: (value: string) => void;
     className?: string;
@@ -158,4 +195,13 @@ export interface TextInputProps {
     placeholder?: string;
     type?: string;
     appendClassName?: string;
-} 
+}
+
+export interface BooleanInputProps {
+    value?: boolean | number | null;
+    onToggle: (value: boolean | number | null) => void;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    className?: string;
+    appendClassName?: string;
+}

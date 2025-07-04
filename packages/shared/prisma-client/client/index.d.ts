@@ -709,8 +709,8 @@ export namespace Prisma {
   export import Exact = $Public.Exact
 
   /**
-   * Prisma Client JS version: 6.10.1
-   * Query Engine version: 9b628578b3b7cae625e8c927178f15a170e74a9c
+   * Prisma Client JS version: 6.11.0
+   * Query Engine version: 9c30299f5a0ea26a96790e13f796dc6094db3173
    */
   export type PrismaVersion = {
     client: string
@@ -3611,21 +3611,21 @@ export namespace Prisma {
    */
 
   export type SpellCountOutputType = {
-    descriptors: number
+    descriptorIds: number
     levelMapping: number
-    schools: number
-    sources: number
-    subschools: number
-    components: number
+    schoolIds: number
+    sourceBookInfo: number
+    subSchoolIds: number
+    componentIds: number
   }
 
   export type SpellCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    descriptors?: boolean | SpellCountOutputTypeCountDescriptorsArgs
+    descriptorIds?: boolean | SpellCountOutputTypeCountDescriptorIdsArgs
     levelMapping?: boolean | SpellCountOutputTypeCountLevelMappingArgs
-    schools?: boolean | SpellCountOutputTypeCountSchoolsArgs
-    sources?: boolean | SpellCountOutputTypeCountSourcesArgs
-    subschools?: boolean | SpellCountOutputTypeCountSubschoolsArgs
-    components?: boolean | SpellCountOutputTypeCountComponentsArgs
+    schoolIds?: boolean | SpellCountOutputTypeCountSchoolIdsArgs
+    sourceBookInfo?: boolean | SpellCountOutputTypeCountSourceBookInfoArgs
+    subSchoolIds?: boolean | SpellCountOutputTypeCountSubSchoolIdsArgs
+    componentIds?: boolean | SpellCountOutputTypeCountComponentIdsArgs
   }
 
   // Custom InputTypes
@@ -3642,7 +3642,7 @@ export namespace Prisma {
   /**
    * SpellCountOutputType without action
    */
-  export type SpellCountOutputTypeCountDescriptorsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SpellCountOutputTypeCountDescriptorIdsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: SpellDescriptorMapWhereInput
   }
 
@@ -3656,28 +3656,28 @@ export namespace Prisma {
   /**
    * SpellCountOutputType without action
    */
-  export type SpellCountOutputTypeCountSchoolsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SpellCountOutputTypeCountSchoolIdsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: SpellSchoolMapWhereInput
   }
 
   /**
    * SpellCountOutputType without action
    */
-  export type SpellCountOutputTypeCountSourcesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SpellCountOutputTypeCountSourceBookInfoArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: SpellSourceMapWhereInput
   }
 
   /**
    * SpellCountOutputType without action
    */
-  export type SpellCountOutputTypeCountSubschoolsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SpellCountOutputTypeCountSubSchoolIdsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: SpellSubschoolMapWhereInput
   }
 
   /**
    * SpellCountOutputType without action
    */
-  export type SpellCountOutputTypeCountComponentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SpellCountOutputTypeCountComponentIdsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: SpellComponentMapWhereInput
   }
 
@@ -6272,65 +6272,75 @@ export namespace Prisma {
   }
 
   export type ClassSpellLevelAvgAggregateOutputType = {
-    id: number | null
     classId: number | null
+    level: number | null
     spellLevel: number | null
+    numSpells: number | null
   }
 
   export type ClassSpellLevelSumAggregateOutputType = {
-    id: number | null
     classId: number | null
+    level: number | null
     spellLevel: number | null
+    numSpells: number | null
   }
 
   export type ClassSpellLevelMinAggregateOutputType = {
-    id: number | null
     classId: number | null
+    level: number | null
     spellLevel: number | null
+    numSpells: number | null
   }
 
   export type ClassSpellLevelMaxAggregateOutputType = {
-    id: number | null
     classId: number | null
+    level: number | null
     spellLevel: number | null
+    numSpells: number | null
   }
 
   export type ClassSpellLevelCountAggregateOutputType = {
-    id: number
     classId: number
+    level: number
     spellLevel: number
+    numSpells: number
     _all: number
   }
 
 
   export type ClassSpellLevelAvgAggregateInputType = {
-    id?: true
     classId?: true
+    level?: true
     spellLevel?: true
+    numSpells?: true
   }
 
   export type ClassSpellLevelSumAggregateInputType = {
-    id?: true
     classId?: true
+    level?: true
     spellLevel?: true
+    numSpells?: true
   }
 
   export type ClassSpellLevelMinAggregateInputType = {
-    id?: true
     classId?: true
+    level?: true
     spellLevel?: true
+    numSpells?: true
   }
 
   export type ClassSpellLevelMaxAggregateInputType = {
-    id?: true
     classId?: true
+    level?: true
     spellLevel?: true
+    numSpells?: true
   }
 
   export type ClassSpellLevelCountAggregateInputType = {
-    id?: true
     classId?: true
+    level?: true
     spellLevel?: true
+    numSpells?: true
     _all?: true
   }
 
@@ -6421,9 +6431,10 @@ export namespace Prisma {
   }
 
   export type ClassSpellLevelGroupByOutputType = {
-    id: number
     classId: number
+    level: number
     spellLevel: number
+    numSpells: number
     _count: ClassSpellLevelCountAggregateOutputType | null
     _avg: ClassSpellLevelAvgAggregateOutputType | null
     _sum: ClassSpellLevelSumAggregateOutputType | null
@@ -6446,21 +6457,23 @@ export namespace Prisma {
 
 
   export type ClassSpellLevelSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
     classId?: boolean
+    level?: boolean
     spellLevel?: boolean
+    numSpells?: boolean
     class?: boolean | ClassDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["classSpellLevel"]>
 
 
 
   export type ClassSpellLevelSelectScalar = {
-    id?: boolean
     classId?: boolean
+    level?: boolean
     spellLevel?: boolean
+    numSpells?: boolean
   }
 
-  export type ClassSpellLevelOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "classId" | "spellLevel", ExtArgs["result"]["classSpellLevel"]>
+  export type ClassSpellLevelOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"classId" | "level" | "spellLevel" | "numSpells", ExtArgs["result"]["classSpellLevel"]>
   export type ClassSpellLevelInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     class?: boolean | ClassDefaultArgs<ExtArgs>
   }
@@ -6471,9 +6484,10 @@ export namespace Prisma {
       class: Prisma.$ClassPayload<ExtArgs>
     }
     scalars: $Extensions.GetPayloadResult<{
-      id: number
       classId: number
+      level: number
       spellLevel: number
+      numSpells: number
     }, ExtArgs["result"]["classSpellLevel"]>
     composites: {}
   }
@@ -6557,8 +6571,8 @@ export namespace Prisma {
      * // Get first 10 ClassSpellLevels
      * const classSpellLevels = await prisma.classSpellLevel.findMany({ take: 10 })
      * 
-     * // Only select the `id`
-     * const classSpellLevelWithIdOnly = await prisma.classSpellLevel.findMany({ select: { id: true } })
+     * // Only select the `classId`
+     * const classSpellLevelWithClassIdOnly = await prisma.classSpellLevel.findMany({ select: { classId: true } })
      * 
      */
     findMany<T extends ClassSpellLevelFindManyArgs>(args?: SelectSubset<T, ClassSpellLevelFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ClassSpellLevelPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -6844,9 +6858,10 @@ export namespace Prisma {
    * Fields of the ClassSpellLevel model
    */
   interface ClassSpellLevelFieldRefs {
-    readonly id: FieldRef<"ClassSpellLevel", 'Int'>
     readonly classId: FieldRef<"ClassSpellLevel", 'Int'>
+    readonly level: FieldRef<"ClassSpellLevel", 'Int'>
     readonly spellLevel: FieldRef<"ClassSpellLevel", 'Int'>
+    readonly numSpells: FieldRef<"ClassSpellLevel", 'Int'>
   }
     
 
@@ -7221,8 +7236,8 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeAvgAggregateOutputType = {
-    id: number | null
     classId: number | null
+    level: number | null
     baseAttackBonus: number | null
     fortSave: number | null
     refSave: number | null
@@ -7230,8 +7245,8 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeSumAggregateOutputType = {
-    id: number | null
     classId: number | null
+    level: number | null
     baseAttackBonus: number | null
     fortSave: number | null
     refSave: number | null
@@ -7239,8 +7254,8 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeMinAggregateOutputType = {
-    id: number | null
     classId: number | null
+    level: number | null
     baseAttackBonus: number | null
     fortSave: number | null
     refSave: number | null
@@ -7248,8 +7263,8 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeMaxAggregateOutputType = {
-    id: number | null
     classId: number | null
+    level: number | null
     baseAttackBonus: number | null
     fortSave: number | null
     refSave: number | null
@@ -7257,8 +7272,8 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeCountAggregateOutputType = {
-    id: number
     classId: number
+    level: number
     baseAttackBonus: number
     fortSave: number
     refSave: number
@@ -7268,8 +7283,8 @@ export namespace Prisma {
 
 
   export type ClassLevelAttributeAvgAggregateInputType = {
-    id?: true
     classId?: true
+    level?: true
     baseAttackBonus?: true
     fortSave?: true
     refSave?: true
@@ -7277,8 +7292,8 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeSumAggregateInputType = {
-    id?: true
     classId?: true
+    level?: true
     baseAttackBonus?: true
     fortSave?: true
     refSave?: true
@@ -7286,8 +7301,8 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeMinAggregateInputType = {
-    id?: true
     classId?: true
+    level?: true
     baseAttackBonus?: true
     fortSave?: true
     refSave?: true
@@ -7295,8 +7310,8 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeMaxAggregateInputType = {
-    id?: true
     classId?: true
+    level?: true
     baseAttackBonus?: true
     fortSave?: true
     refSave?: true
@@ -7304,8 +7319,8 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeCountAggregateInputType = {
-    id?: true
     classId?: true
+    level?: true
     baseAttackBonus?: true
     fortSave?: true
     refSave?: true
@@ -7400,8 +7415,8 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeGroupByOutputType = {
-    id: number
     classId: number
+    level: number
     baseAttackBonus: number
     fortSave: number
     refSave: number
@@ -7428,8 +7443,8 @@ export namespace Prisma {
 
 
   export type ClassLevelAttributeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
     classId?: boolean
+    level?: boolean
     baseAttackBonus?: boolean
     fortSave?: boolean
     refSave?: boolean
@@ -7440,15 +7455,15 @@ export namespace Prisma {
 
 
   export type ClassLevelAttributeSelectScalar = {
-    id?: boolean
     classId?: boolean
+    level?: boolean
     baseAttackBonus?: boolean
     fortSave?: boolean
     refSave?: boolean
     willSave?: boolean
   }
 
-  export type ClassLevelAttributeOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "classId" | "baseAttackBonus" | "fortSave" | "refSave" | "willSave", ExtArgs["result"]["classLevelAttribute"]>
+  export type ClassLevelAttributeOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"classId" | "level" | "baseAttackBonus" | "fortSave" | "refSave" | "willSave", ExtArgs["result"]["classLevelAttribute"]>
   export type ClassLevelAttributeInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     class?: boolean | ClassDefaultArgs<ExtArgs>
   }
@@ -7459,8 +7474,8 @@ export namespace Prisma {
       class: Prisma.$ClassPayload<ExtArgs>
     }
     scalars: $Extensions.GetPayloadResult<{
-      id: number
       classId: number
+      level: number
       baseAttackBonus: number
       fortSave: number
       refSave: number
@@ -7548,8 +7563,8 @@ export namespace Prisma {
      * // Get first 10 ClassLevelAttributes
      * const classLevelAttributes = await prisma.classLevelAttribute.findMany({ take: 10 })
      * 
-     * // Only select the `id`
-     * const classLevelAttributeWithIdOnly = await prisma.classLevelAttribute.findMany({ select: { id: true } })
+     * // Only select the `classId`
+     * const classLevelAttributeWithClassIdOnly = await prisma.classLevelAttribute.findMany({ select: { classId: true } })
      * 
      */
     findMany<T extends ClassLevelAttributeFindManyArgs>(args?: SelectSubset<T, ClassLevelAttributeFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ClassLevelAttributePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -7835,8 +7850,8 @@ export namespace Prisma {
    * Fields of the ClassLevelAttribute model
    */
   interface ClassLevelAttributeFieldRefs {
-    readonly id: FieldRef<"ClassLevelAttribute", 'Int'>
     readonly classId: FieldRef<"ClassLevelAttribute", 'Int'>
+    readonly level: FieldRef<"ClassLevelAttribute", 'Int'>
     readonly baseAttackBonus: FieldRef<"ClassLevelAttribute", 'Int'>
     readonly fortSave: FieldRef<"ClassLevelAttribute", 'Int'>
     readonly refSave: FieldRef<"ClassLevelAttribute", 'Int'>
@@ -8215,31 +8230,26 @@ export namespace Prisma {
   }
 
   export type ClassSkillMapAvgAggregateOutputType = {
-    id: number | null
     classId: number | null
     skillId: number | null
   }
 
   export type ClassSkillMapSumAggregateOutputType = {
-    id: number | null
     classId: number | null
     skillId: number | null
   }
 
   export type ClassSkillMapMinAggregateOutputType = {
-    id: number | null
     classId: number | null
     skillId: number | null
   }
 
   export type ClassSkillMapMaxAggregateOutputType = {
-    id: number | null
     classId: number | null
     skillId: number | null
   }
 
   export type ClassSkillMapCountAggregateOutputType = {
-    id: number
     classId: number
     skillId: number
     _all: number
@@ -8247,31 +8257,26 @@ export namespace Prisma {
 
 
   export type ClassSkillMapAvgAggregateInputType = {
-    id?: true
     classId?: true
     skillId?: true
   }
 
   export type ClassSkillMapSumAggregateInputType = {
-    id?: true
     classId?: true
     skillId?: true
   }
 
   export type ClassSkillMapMinAggregateInputType = {
-    id?: true
     classId?: true
     skillId?: true
   }
 
   export type ClassSkillMapMaxAggregateInputType = {
-    id?: true
     classId?: true
     skillId?: true
   }
 
   export type ClassSkillMapCountAggregateInputType = {
-    id?: true
     classId?: true
     skillId?: true
     _all?: true
@@ -8364,7 +8369,6 @@ export namespace Prisma {
   }
 
   export type ClassSkillMapGroupByOutputType = {
-    id: number
     classId: number
     skillId: number
     _count: ClassSkillMapCountAggregateOutputType | null
@@ -8389,7 +8393,6 @@ export namespace Prisma {
 
 
   export type ClassSkillMapSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
     classId?: boolean
     skillId?: boolean
     Class?: boolean | ClassDefaultArgs<ExtArgs>
@@ -8399,12 +8402,11 @@ export namespace Prisma {
 
 
   export type ClassSkillMapSelectScalar = {
-    id?: boolean
     classId?: boolean
     skillId?: boolean
   }
 
-  export type ClassSkillMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "classId" | "skillId", ExtArgs["result"]["classSkillMap"]>
+  export type ClassSkillMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"classId" | "skillId", ExtArgs["result"]["classSkillMap"]>
   export type ClassSkillMapInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     Class?: boolean | ClassDefaultArgs<ExtArgs>
     Skill?: boolean | SkillDefaultArgs<ExtArgs>
@@ -8417,7 +8419,6 @@ export namespace Prisma {
       Skill: Prisma.$SkillPayload<ExtArgs>
     }
     scalars: $Extensions.GetPayloadResult<{
-      id: number
       classId: number
       skillId: number
     }, ExtArgs["result"]["classSkillMap"]>
@@ -8503,8 +8504,8 @@ export namespace Prisma {
      * // Get first 10 ClassSkillMaps
      * const classSkillMaps = await prisma.classSkillMap.findMany({ take: 10 })
      * 
-     * // Only select the `id`
-     * const classSkillMapWithIdOnly = await prisma.classSkillMap.findMany({ select: { id: true } })
+     * // Only select the `classId`
+     * const classSkillMapWithClassIdOnly = await prisma.classSkillMap.findMany({ select: { classId: true } })
      * 
      */
     findMany<T extends ClassSkillMapFindManyArgs>(args?: SelectSubset<T, ClassSkillMapFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ClassSkillMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -8791,7 +8792,6 @@ export namespace Prisma {
    * Fields of the ClassSkillMap model
    */
   interface ClassSkillMapFieldRefs {
-    readonly id: FieldRef<"ClassSkillMap", 'Int'>
     readonly classId: FieldRef<"ClassSkillMap", 'Int'>
     readonly skillId: FieldRef<"ClassSkillMap", 'Int'>
   }
@@ -9168,41 +9168,31 @@ export namespace Prisma {
   }
 
   export type ClassSourceMapAvgAggregateOutputType = {
-    id: number | null
     classId: number | null
-    bookId: number | null
     pageNumber: number | null
     sourceBookId: number | null
   }
 
   export type ClassSourceMapSumAggregateOutputType = {
-    id: number | null
     classId: number | null
-    bookId: number | null
     pageNumber: number | null
     sourceBookId: number | null
   }
 
   export type ClassSourceMapMinAggregateOutputType = {
-    id: number | null
     classId: number | null
-    bookId: number | null
     pageNumber: number | null
     sourceBookId: number | null
   }
 
   export type ClassSourceMapMaxAggregateOutputType = {
-    id: number | null
     classId: number | null
-    bookId: number | null
     pageNumber: number | null
     sourceBookId: number | null
   }
 
   export type ClassSourceMapCountAggregateOutputType = {
-    id: number
     classId: number
-    bookId: number
     pageNumber: number
     sourceBookId: number
     _all: number
@@ -9210,41 +9200,31 @@ export namespace Prisma {
 
 
   export type ClassSourceMapAvgAggregateInputType = {
-    id?: true
     classId?: true
-    bookId?: true
     pageNumber?: true
     sourceBookId?: true
   }
 
   export type ClassSourceMapSumAggregateInputType = {
-    id?: true
     classId?: true
-    bookId?: true
     pageNumber?: true
     sourceBookId?: true
   }
 
   export type ClassSourceMapMinAggregateInputType = {
-    id?: true
     classId?: true
-    bookId?: true
     pageNumber?: true
     sourceBookId?: true
   }
 
   export type ClassSourceMapMaxAggregateInputType = {
-    id?: true
     classId?: true
-    bookId?: true
     pageNumber?: true
     sourceBookId?: true
   }
 
   export type ClassSourceMapCountAggregateInputType = {
-    id?: true
     classId?: true
-    bookId?: true
     pageNumber?: true
     sourceBookId?: true
     _all?: true
@@ -9337,11 +9317,9 @@ export namespace Prisma {
   }
 
   export type ClassSourceMapGroupByOutputType = {
-    id: number
     classId: number
-    bookId: number
     pageNumber: number | null
-    sourceBookId: number | null
+    sourceBookId: number
     _count: ClassSourceMapCountAggregateOutputType | null
     _avg: ClassSourceMapAvgAggregateOutputType | null
     _sum: ClassSourceMapSumAggregateOutputType | null
@@ -9364,9 +9342,7 @@ export namespace Prisma {
 
 
   export type ClassSourceMapSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
     classId?: boolean
-    bookId?: boolean
     pageNumber?: boolean
     sourceBookId?: boolean
     class?: boolean | ClassDefaultArgs<ExtArgs>
@@ -9376,14 +9352,12 @@ export namespace Prisma {
 
 
   export type ClassSourceMapSelectScalar = {
-    id?: boolean
     classId?: boolean
-    bookId?: boolean
     pageNumber?: boolean
     sourceBookId?: boolean
   }
 
-  export type ClassSourceMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "classId" | "bookId" | "pageNumber" | "sourceBookId", ExtArgs["result"]["classSourceMap"]>
+  export type ClassSourceMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"classId" | "pageNumber" | "sourceBookId", ExtArgs["result"]["classSourceMap"]>
   export type ClassSourceMapInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     class?: boolean | ClassDefaultArgs<ExtArgs>
     SourceBook?: boolean | ClassSourceMap$SourceBookArgs<ExtArgs>
@@ -9396,11 +9370,9 @@ export namespace Prisma {
       SourceBook: Prisma.$SourceBookPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
-      id: number
       classId: number
-      bookId: number
       pageNumber: number | null
-      sourceBookId: number | null
+      sourceBookId: number
     }, ExtArgs["result"]["classSourceMap"]>
     composites: {}
   }
@@ -9484,8 +9456,8 @@ export namespace Prisma {
      * // Get first 10 ClassSourceMaps
      * const classSourceMaps = await prisma.classSourceMap.findMany({ take: 10 })
      * 
-     * // Only select the `id`
-     * const classSourceMapWithIdOnly = await prisma.classSourceMap.findMany({ select: { id: true } })
+     * // Only select the `classId`
+     * const classSourceMapWithClassIdOnly = await prisma.classSourceMap.findMany({ select: { classId: true } })
      * 
      */
     findMany<T extends ClassSourceMapFindManyArgs>(args?: SelectSubset<T, ClassSourceMapFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ClassSourceMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -9772,9 +9744,7 @@ export namespace Prisma {
    * Fields of the ClassSourceMap model
    */
   interface ClassSourceMapFieldRefs {
-    readonly id: FieldRef<"ClassSourceMap", 'Int'>
     readonly classId: FieldRef<"ClassSourceMap", 'Int'>
-    readonly bookId: FieldRef<"ClassSourceMap", 'Int'>
     readonly pageNumber: FieldRef<"ClassSourceMap", 'Int'>
     readonly sourceBookId: FieldRef<"ClassSourceMap", 'Int'>
   }
@@ -10170,21 +10140,18 @@ export namespace Prisma {
   }
 
   export type SpellLevelMapAvgAggregateOutputType = {
-    id: number | null
     classId: number | null
     spellId: number | null
     level: number | null
   }
 
   export type SpellLevelMapSumAggregateOutputType = {
-    id: number | null
     classId: number | null
     spellId: number | null
     level: number | null
   }
 
   export type SpellLevelMapMinAggregateOutputType = {
-    id: number | null
     classId: number | null
     spellId: number | null
     level: number | null
@@ -10192,7 +10159,6 @@ export namespace Prisma {
   }
 
   export type SpellLevelMapMaxAggregateOutputType = {
-    id: number | null
     classId: number | null
     spellId: number | null
     level: number | null
@@ -10200,7 +10166,6 @@ export namespace Prisma {
   }
 
   export type SpellLevelMapCountAggregateOutputType = {
-    id: number
     classId: number
     spellId: number
     level: number
@@ -10210,21 +10175,18 @@ export namespace Prisma {
 
 
   export type SpellLevelMapAvgAggregateInputType = {
-    id?: true
     classId?: true
     spellId?: true
     level?: true
   }
 
   export type SpellLevelMapSumAggregateInputType = {
-    id?: true
     classId?: true
     spellId?: true
     level?: true
   }
 
   export type SpellLevelMapMinAggregateInputType = {
-    id?: true
     classId?: true
     spellId?: true
     level?: true
@@ -10232,7 +10194,6 @@ export namespace Prisma {
   }
 
   export type SpellLevelMapMaxAggregateInputType = {
-    id?: true
     classId?: true
     spellId?: true
     level?: true
@@ -10240,7 +10201,6 @@ export namespace Prisma {
   }
 
   export type SpellLevelMapCountAggregateInputType = {
-    id?: true
     classId?: true
     spellId?: true
     level?: true
@@ -10335,7 +10295,6 @@ export namespace Prisma {
   }
 
   export type SpellLevelMapGroupByOutputType = {
-    id: number
     classId: number
     spellId: number
     level: number
@@ -10362,7 +10321,6 @@ export namespace Prisma {
 
 
   export type SpellLevelMapSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
     classId?: boolean
     spellId?: boolean
     level?: boolean
@@ -10374,14 +10332,13 @@ export namespace Prisma {
 
 
   export type SpellLevelMapSelectScalar = {
-    id?: boolean
     classId?: boolean
     spellId?: boolean
     level?: boolean
     isVisible?: boolean
   }
 
-  export type SpellLevelMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "classId" | "spellId" | "level" | "isVisible", ExtArgs["result"]["spellLevelMap"]>
+  export type SpellLevelMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"classId" | "spellId" | "level" | "isVisible", ExtArgs["result"]["spellLevelMap"]>
   export type SpellLevelMapInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     spell?: boolean | SpellDefaultArgs<ExtArgs>
     class?: boolean | ClassDefaultArgs<ExtArgs>
@@ -10394,7 +10351,6 @@ export namespace Prisma {
       class: Prisma.$ClassPayload<ExtArgs>
     }
     scalars: $Extensions.GetPayloadResult<{
-      id: number
       classId: number
       spellId: number
       level: number
@@ -10482,8 +10438,8 @@ export namespace Prisma {
      * // Get first 10 SpellLevelMaps
      * const spellLevelMaps = await prisma.spellLevelMap.findMany({ take: 10 })
      * 
-     * // Only select the `id`
-     * const spellLevelMapWithIdOnly = await prisma.spellLevelMap.findMany({ select: { id: true } })
+     * // Only select the `classId`
+     * const spellLevelMapWithClassIdOnly = await prisma.spellLevelMap.findMany({ select: { classId: true } })
      * 
      */
     findMany<T extends SpellLevelMapFindManyArgs>(args?: SelectSubset<T, SpellLevelMapFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SpellLevelMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -10770,7 +10726,6 @@ export namespace Prisma {
    * Fields of the SpellLevelMap model
    */
   interface SpellLevelMapFieldRefs {
-    readonly id: FieldRef<"SpellLevelMap", 'Int'>
     readonly classId: FieldRef<"SpellLevelMap", 'Int'>
     readonly spellId: FieldRef<"SpellLevelMap", 'Int'>
     readonly level: FieldRef<"SpellLevelMap", 'Int'>
@@ -11434,12 +11389,12 @@ export namespace Prisma {
     baseLevel?: boolean
     effect?: boolean
     target?: boolean
-    descriptors?: boolean | Spell$descriptorsArgs<ExtArgs>
+    descriptorIds?: boolean | Spell$descriptorIdsArgs<ExtArgs>
     levelMapping?: boolean | Spell$levelMappingArgs<ExtArgs>
-    schools?: boolean | Spell$schoolsArgs<ExtArgs>
-    sources?: boolean | Spell$sourcesArgs<ExtArgs>
-    subschools?: boolean | Spell$subschoolsArgs<ExtArgs>
-    components?: boolean | Spell$componentsArgs<ExtArgs>
+    schoolIds?: boolean | Spell$schoolIdsArgs<ExtArgs>
+    sourceBookInfo?: boolean | Spell$sourceBookInfoArgs<ExtArgs>
+    subSchoolIds?: boolean | Spell$subSchoolIdsArgs<ExtArgs>
+    componentIds?: boolean | Spell$componentIdsArgs<ExtArgs>
     _count?: boolean | SpellCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["spell"]>
 
@@ -11466,24 +11421,24 @@ export namespace Prisma {
 
   export type SpellOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "summary" | "description" | "castingTime" | "range" | "rangeTypeId" | "rangeValue" | "area" | "duration" | "savingThrow" | "spellResistance" | "editionId" | "baseLevel" | "effect" | "target", ExtArgs["result"]["spell"]>
   export type SpellInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    descriptors?: boolean | Spell$descriptorsArgs<ExtArgs>
+    descriptorIds?: boolean | Spell$descriptorIdsArgs<ExtArgs>
     levelMapping?: boolean | Spell$levelMappingArgs<ExtArgs>
-    schools?: boolean | Spell$schoolsArgs<ExtArgs>
-    sources?: boolean | Spell$sourcesArgs<ExtArgs>
-    subschools?: boolean | Spell$subschoolsArgs<ExtArgs>
-    components?: boolean | Spell$componentsArgs<ExtArgs>
+    schoolIds?: boolean | Spell$schoolIdsArgs<ExtArgs>
+    sourceBookInfo?: boolean | Spell$sourceBookInfoArgs<ExtArgs>
+    subSchoolIds?: boolean | Spell$subSchoolIdsArgs<ExtArgs>
+    componentIds?: boolean | Spell$componentIdsArgs<ExtArgs>
     _count?: boolean | SpellCountOutputTypeDefaultArgs<ExtArgs>
   }
 
   export type $SpellPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Spell"
     objects: {
-      descriptors: Prisma.$SpellDescriptorMapPayload<ExtArgs>[]
+      descriptorIds: Prisma.$SpellDescriptorMapPayload<ExtArgs>[]
       levelMapping: Prisma.$SpellLevelMapPayload<ExtArgs>[]
-      schools: Prisma.$SpellSchoolMapPayload<ExtArgs>[]
-      sources: Prisma.$SpellSourceMapPayload<ExtArgs>[]
-      subschools: Prisma.$SpellSubschoolMapPayload<ExtArgs>[]
-      components: Prisma.$SpellComponentMapPayload<ExtArgs>[]
+      schoolIds: Prisma.$SpellSchoolMapPayload<ExtArgs>[]
+      sourceBookInfo: Prisma.$SpellSourceMapPayload<ExtArgs>[]
+      subSchoolIds: Prisma.$SpellSubschoolMapPayload<ExtArgs>[]
+      componentIds: Prisma.$SpellComponentMapPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -11842,12 +11797,12 @@ export namespace Prisma {
    */
   export interface Prisma__SpellClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
-    descriptors<T extends Spell$descriptorsArgs<ExtArgs> = {}>(args?: Subset<T, Spell$descriptorsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SpellDescriptorMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    descriptorIds<T extends Spell$descriptorIdsArgs<ExtArgs> = {}>(args?: Subset<T, Spell$descriptorIdsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SpellDescriptorMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     levelMapping<T extends Spell$levelMappingArgs<ExtArgs> = {}>(args?: Subset<T, Spell$levelMappingArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SpellLevelMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    schools<T extends Spell$schoolsArgs<ExtArgs> = {}>(args?: Subset<T, Spell$schoolsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SpellSchoolMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    sources<T extends Spell$sourcesArgs<ExtArgs> = {}>(args?: Subset<T, Spell$sourcesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SpellSourceMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    subschools<T extends Spell$subschoolsArgs<ExtArgs> = {}>(args?: Subset<T, Spell$subschoolsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SpellSubschoolMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    components<T extends Spell$componentsArgs<ExtArgs> = {}>(args?: Subset<T, Spell$componentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SpellComponentMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    schoolIds<T extends Spell$schoolIdsArgs<ExtArgs> = {}>(args?: Subset<T, Spell$schoolIdsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SpellSchoolMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    sourceBookInfo<T extends Spell$sourceBookInfoArgs<ExtArgs> = {}>(args?: Subset<T, Spell$sourceBookInfoArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SpellSourceMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    subSchoolIds<T extends Spell$subSchoolIdsArgs<ExtArgs> = {}>(args?: Subset<T, Spell$subSchoolIdsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SpellSubschoolMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    componentIds<T extends Spell$componentIdsArgs<ExtArgs> = {}>(args?: Subset<T, Spell$componentIdsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SpellComponentMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -12236,9 +12191,9 @@ export namespace Prisma {
   }
 
   /**
-   * Spell.descriptors
+   * Spell.descriptorIds
    */
-  export type Spell$descriptorsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type Spell$descriptorIdsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
      * Select specific fields to fetch from the SpellDescriptorMap
      */
@@ -12284,9 +12239,9 @@ export namespace Prisma {
   }
 
   /**
-   * Spell.schools
+   * Spell.schoolIds
    */
-  export type Spell$schoolsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type Spell$schoolIdsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
      * Select specific fields to fetch from the SpellSchoolMap
      */
@@ -12308,9 +12263,9 @@ export namespace Prisma {
   }
 
   /**
-   * Spell.sources
+   * Spell.sourceBookInfo
    */
-  export type Spell$sourcesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type Spell$sourceBookInfoArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
      * Select specific fields to fetch from the SpellSourceMap
      */
@@ -12332,9 +12287,9 @@ export namespace Prisma {
   }
 
   /**
-   * Spell.subschools
+   * Spell.subSchoolIds
    */
-  export type Spell$subschoolsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type Spell$subSchoolIdsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
      * Select specific fields to fetch from the SpellSubschoolMap
      */
@@ -12356,9 +12311,9 @@ export namespace Prisma {
   }
 
   /**
-   * Spell.components
+   * Spell.componentIds
    */
-  export type Spell$componentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type Spell$componentIdsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
      * Select specific fields to fetch from the SpellComponentMap
      */
@@ -12411,31 +12366,26 @@ export namespace Prisma {
   }
 
   export type SpellDescriptorMapAvgAggregateOutputType = {
-    id: number | null
     spellId: number | null
     descriptorId: number | null
   }
 
   export type SpellDescriptorMapSumAggregateOutputType = {
-    id: number | null
     spellId: number | null
     descriptorId: number | null
   }
 
   export type SpellDescriptorMapMinAggregateOutputType = {
-    id: number | null
     spellId: number | null
     descriptorId: number | null
   }
 
   export type SpellDescriptorMapMaxAggregateOutputType = {
-    id: number | null
     spellId: number | null
     descriptorId: number | null
   }
 
   export type SpellDescriptorMapCountAggregateOutputType = {
-    id: number
     spellId: number
     descriptorId: number
     _all: number
@@ -12443,31 +12393,26 @@ export namespace Prisma {
 
 
   export type SpellDescriptorMapAvgAggregateInputType = {
-    id?: true
     spellId?: true
     descriptorId?: true
   }
 
   export type SpellDescriptorMapSumAggregateInputType = {
-    id?: true
     spellId?: true
     descriptorId?: true
   }
 
   export type SpellDescriptorMapMinAggregateInputType = {
-    id?: true
     spellId?: true
     descriptorId?: true
   }
 
   export type SpellDescriptorMapMaxAggregateInputType = {
-    id?: true
     spellId?: true
     descriptorId?: true
   }
 
   export type SpellDescriptorMapCountAggregateInputType = {
-    id?: true
     spellId?: true
     descriptorId?: true
     _all?: true
@@ -12560,7 +12505,6 @@ export namespace Prisma {
   }
 
   export type SpellDescriptorMapGroupByOutputType = {
-    id: number
     spellId: number
     descriptorId: number
     _count: SpellDescriptorMapCountAggregateOutputType | null
@@ -12585,7 +12529,6 @@ export namespace Prisma {
 
 
   export type SpellDescriptorMapSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
     spellId?: boolean
     descriptorId?: boolean
     Spell?: boolean | SpellDefaultArgs<ExtArgs>
@@ -12594,12 +12537,11 @@ export namespace Prisma {
 
 
   export type SpellDescriptorMapSelectScalar = {
-    id?: boolean
     spellId?: boolean
     descriptorId?: boolean
   }
 
-  export type SpellDescriptorMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "spellId" | "descriptorId", ExtArgs["result"]["spellDescriptorMap"]>
+  export type SpellDescriptorMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"spellId" | "descriptorId", ExtArgs["result"]["spellDescriptorMap"]>
   export type SpellDescriptorMapInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     Spell?: boolean | SpellDefaultArgs<ExtArgs>
   }
@@ -12610,7 +12552,6 @@ export namespace Prisma {
       Spell: Prisma.$SpellPayload<ExtArgs>
     }
     scalars: $Extensions.GetPayloadResult<{
-      id: number
       spellId: number
       descriptorId: number
     }, ExtArgs["result"]["spellDescriptorMap"]>
@@ -12696,8 +12637,8 @@ export namespace Prisma {
      * // Get first 10 SpellDescriptorMaps
      * const spellDescriptorMaps = await prisma.spellDescriptorMap.findMany({ take: 10 })
      * 
-     * // Only select the `id`
-     * const spellDescriptorMapWithIdOnly = await prisma.spellDescriptorMap.findMany({ select: { id: true } })
+     * // Only select the `spellId`
+     * const spellDescriptorMapWithSpellIdOnly = await prisma.spellDescriptorMap.findMany({ select: { spellId: true } })
      * 
      */
     findMany<T extends SpellDescriptorMapFindManyArgs>(args?: SelectSubset<T, SpellDescriptorMapFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SpellDescriptorMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -12983,7 +12924,6 @@ export namespace Prisma {
    * Fields of the SpellDescriptorMap model
    */
   interface SpellDescriptorMapFieldRefs {
-    readonly id: FieldRef<"SpellDescriptorMap", 'Int'>
     readonly spellId: FieldRef<"SpellDescriptorMap", 'Int'>
     readonly descriptorId: FieldRef<"SpellDescriptorMap", 'Int'>
   }
@@ -13360,31 +13300,26 @@ export namespace Prisma {
   }
 
   export type SpellSchoolMapAvgAggregateOutputType = {
-    id: number | null
     spellId: number | null
     schoolId: number | null
   }
 
   export type SpellSchoolMapSumAggregateOutputType = {
-    id: number | null
     spellId: number | null
     schoolId: number | null
   }
 
   export type SpellSchoolMapMinAggregateOutputType = {
-    id: number | null
     spellId: number | null
     schoolId: number | null
   }
 
   export type SpellSchoolMapMaxAggregateOutputType = {
-    id: number | null
     spellId: number | null
     schoolId: number | null
   }
 
   export type SpellSchoolMapCountAggregateOutputType = {
-    id: number
     spellId: number
     schoolId: number
     _all: number
@@ -13392,31 +13327,26 @@ export namespace Prisma {
 
 
   export type SpellSchoolMapAvgAggregateInputType = {
-    id?: true
     spellId?: true
     schoolId?: true
   }
 
   export type SpellSchoolMapSumAggregateInputType = {
-    id?: true
     spellId?: true
     schoolId?: true
   }
 
   export type SpellSchoolMapMinAggregateInputType = {
-    id?: true
     spellId?: true
     schoolId?: true
   }
 
   export type SpellSchoolMapMaxAggregateInputType = {
-    id?: true
     spellId?: true
     schoolId?: true
   }
 
   export type SpellSchoolMapCountAggregateInputType = {
-    id?: true
     spellId?: true
     schoolId?: true
     _all?: true
@@ -13509,7 +13439,6 @@ export namespace Prisma {
   }
 
   export type SpellSchoolMapGroupByOutputType = {
-    id: number
     spellId: number
     schoolId: number
     _count: SpellSchoolMapCountAggregateOutputType | null
@@ -13534,7 +13463,6 @@ export namespace Prisma {
 
 
   export type SpellSchoolMapSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
     spellId?: boolean
     schoolId?: boolean
     Spell?: boolean | SpellDefaultArgs<ExtArgs>
@@ -13543,12 +13471,11 @@ export namespace Prisma {
 
 
   export type SpellSchoolMapSelectScalar = {
-    id?: boolean
     spellId?: boolean
     schoolId?: boolean
   }
 
-  export type SpellSchoolMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "spellId" | "schoolId", ExtArgs["result"]["spellSchoolMap"]>
+  export type SpellSchoolMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"spellId" | "schoolId", ExtArgs["result"]["spellSchoolMap"]>
   export type SpellSchoolMapInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     Spell?: boolean | SpellDefaultArgs<ExtArgs>
   }
@@ -13559,7 +13486,6 @@ export namespace Prisma {
       Spell: Prisma.$SpellPayload<ExtArgs>
     }
     scalars: $Extensions.GetPayloadResult<{
-      id: number
       spellId: number
       schoolId: number
     }, ExtArgs["result"]["spellSchoolMap"]>
@@ -13645,8 +13571,8 @@ export namespace Prisma {
      * // Get first 10 SpellSchoolMaps
      * const spellSchoolMaps = await prisma.spellSchoolMap.findMany({ take: 10 })
      * 
-     * // Only select the `id`
-     * const spellSchoolMapWithIdOnly = await prisma.spellSchoolMap.findMany({ select: { id: true } })
+     * // Only select the `spellId`
+     * const spellSchoolMapWithSpellIdOnly = await prisma.spellSchoolMap.findMany({ select: { spellId: true } })
      * 
      */
     findMany<T extends SpellSchoolMapFindManyArgs>(args?: SelectSubset<T, SpellSchoolMapFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SpellSchoolMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -13932,7 +13858,6 @@ export namespace Prisma {
    * Fields of the SpellSchoolMap model
    */
   interface SpellSchoolMapFieldRefs {
-    readonly id: FieldRef<"SpellSchoolMap", 'Int'>
     readonly spellId: FieldRef<"SpellSchoolMap", 'Int'>
     readonly schoolId: FieldRef<"SpellSchoolMap", 'Int'>
   }
@@ -14309,85 +14234,65 @@ export namespace Prisma {
   }
 
   export type SpellSourceMapAvgAggregateOutputType = {
-    id: number | null
     spellId: number | null
-    bookId: number | null
-    pageNumber: number | null
     sourceBookId: number | null
+    pageNumber: number | null
   }
 
   export type SpellSourceMapSumAggregateOutputType = {
-    id: number | null
     spellId: number | null
-    bookId: number | null
-    pageNumber: number | null
     sourceBookId: number | null
+    pageNumber: number | null
   }
 
   export type SpellSourceMapMinAggregateOutputType = {
-    id: number | null
     spellId: number | null
-    bookId: number | null
-    pageNumber: number | null
     sourceBookId: number | null
+    pageNumber: number | null
   }
 
   export type SpellSourceMapMaxAggregateOutputType = {
-    id: number | null
     spellId: number | null
-    bookId: number | null
-    pageNumber: number | null
     sourceBookId: number | null
+    pageNumber: number | null
   }
 
   export type SpellSourceMapCountAggregateOutputType = {
-    id: number
     spellId: number
-    bookId: number
-    pageNumber: number
     sourceBookId: number
+    pageNumber: number
     _all: number
   }
 
 
   export type SpellSourceMapAvgAggregateInputType = {
-    id?: true
     spellId?: true
-    bookId?: true
-    pageNumber?: true
     sourceBookId?: true
+    pageNumber?: true
   }
 
   export type SpellSourceMapSumAggregateInputType = {
-    id?: true
     spellId?: true
-    bookId?: true
-    pageNumber?: true
     sourceBookId?: true
+    pageNumber?: true
   }
 
   export type SpellSourceMapMinAggregateInputType = {
-    id?: true
     spellId?: true
-    bookId?: true
-    pageNumber?: true
     sourceBookId?: true
+    pageNumber?: true
   }
 
   export type SpellSourceMapMaxAggregateInputType = {
-    id?: true
     spellId?: true
-    bookId?: true
-    pageNumber?: true
     sourceBookId?: true
+    pageNumber?: true
   }
 
   export type SpellSourceMapCountAggregateInputType = {
-    id?: true
     spellId?: true
-    bookId?: true
-    pageNumber?: true
     sourceBookId?: true
+    pageNumber?: true
     _all?: true
   }
 
@@ -14478,11 +14383,9 @@ export namespace Prisma {
   }
 
   export type SpellSourceMapGroupByOutputType = {
-    id: number
     spellId: number
-    bookId: number
+    sourceBookId: number
     pageNumber: number | null
-    sourceBookId: number | null
     _count: SpellSourceMapCountAggregateOutputType | null
     _avg: SpellSourceMapAvgAggregateOutputType | null
     _sum: SpellSourceMapSumAggregateOutputType | null
@@ -14505,43 +14408,37 @@ export namespace Prisma {
 
 
   export type SpellSourceMapSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
     spellId?: boolean
-    bookId?: boolean
-    pageNumber?: boolean
     sourceBookId?: boolean
+    pageNumber?: boolean
     Spell?: boolean | SpellDefaultArgs<ExtArgs>
-    SourceBook?: boolean | SpellSourceMap$SourceBookArgs<ExtArgs>
+    SourceBook?: boolean | SourceBookDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["spellSourceMap"]>
 
 
 
   export type SpellSourceMapSelectScalar = {
-    id?: boolean
     spellId?: boolean
-    bookId?: boolean
-    pageNumber?: boolean
     sourceBookId?: boolean
+    pageNumber?: boolean
   }
 
-  export type SpellSourceMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "spellId" | "bookId" | "pageNumber" | "sourceBookId", ExtArgs["result"]["spellSourceMap"]>
+  export type SpellSourceMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"spellId" | "sourceBookId" | "pageNumber", ExtArgs["result"]["spellSourceMap"]>
   export type SpellSourceMapInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     Spell?: boolean | SpellDefaultArgs<ExtArgs>
-    SourceBook?: boolean | SpellSourceMap$SourceBookArgs<ExtArgs>
+    SourceBook?: boolean | SourceBookDefaultArgs<ExtArgs>
   }
 
   export type $SpellSourceMapPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "SpellSourceMap"
     objects: {
       Spell: Prisma.$SpellPayload<ExtArgs>
-      SourceBook: Prisma.$SourceBookPayload<ExtArgs> | null
+      SourceBook: Prisma.$SourceBookPayload<ExtArgs>
     }
     scalars: $Extensions.GetPayloadResult<{
-      id: number
       spellId: number
-      bookId: number
+      sourceBookId: number
       pageNumber: number | null
-      sourceBookId: number | null
     }, ExtArgs["result"]["spellSourceMap"]>
     composites: {}
   }
@@ -14625,8 +14522,8 @@ export namespace Prisma {
      * // Get first 10 SpellSourceMaps
      * const spellSourceMaps = await prisma.spellSourceMap.findMany({ take: 10 })
      * 
-     * // Only select the `id`
-     * const spellSourceMapWithIdOnly = await prisma.spellSourceMap.findMany({ select: { id: true } })
+     * // Only select the `spellId`
+     * const spellSourceMapWithSpellIdOnly = await prisma.spellSourceMap.findMany({ select: { spellId: true } })
      * 
      */
     findMany<T extends SpellSourceMapFindManyArgs>(args?: SelectSubset<T, SpellSourceMapFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SpellSourceMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -14883,7 +14780,7 @@ export namespace Prisma {
   export interface Prisma__SpellSourceMapClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     Spell<T extends SpellDefaultArgs<ExtArgs> = {}>(args?: Subset<T, SpellDefaultArgs<ExtArgs>>): Prisma__SpellClient<$Result.GetResult<Prisma.$SpellPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-    SourceBook<T extends SpellSourceMap$SourceBookArgs<ExtArgs> = {}>(args?: Subset<T, SpellSourceMap$SourceBookArgs<ExtArgs>>): Prisma__SourceBookClient<$Result.GetResult<Prisma.$SourceBookPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    SourceBook<T extends SourceBookDefaultArgs<ExtArgs> = {}>(args?: Subset<T, SourceBookDefaultArgs<ExtArgs>>): Prisma__SourceBookClient<$Result.GetResult<Prisma.$SourceBookPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -14913,11 +14810,9 @@ export namespace Prisma {
    * Fields of the SpellSourceMap model
    */
   interface SpellSourceMapFieldRefs {
-    readonly id: FieldRef<"SpellSourceMap", 'Int'>
     readonly spellId: FieldRef<"SpellSourceMap", 'Int'>
-    readonly bookId: FieldRef<"SpellSourceMap", 'Int'>
-    readonly pageNumber: FieldRef<"SpellSourceMap", 'Int'>
     readonly sourceBookId: FieldRef<"SpellSourceMap", 'Int'>
+    readonly pageNumber: FieldRef<"SpellSourceMap", 'Int'>
   }
     
 
@@ -15261,25 +15156,6 @@ export namespace Prisma {
   }
 
   /**
-   * SpellSourceMap.SourceBook
-   */
-  export type SpellSourceMap$SourceBookArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the SourceBook
-     */
-    select?: SourceBookSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the SourceBook
-     */
-    omit?: SourceBookOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: SourceBookInclude<ExtArgs> | null
-    where?: SourceBookWhereInput
-  }
-
-  /**
    * SpellSourceMap without action
    */
   export type SpellSourceMapDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -15311,65 +15187,55 @@ export namespace Prisma {
   }
 
   export type SpellSubschoolMapAvgAggregateOutputType = {
-    id: number | null
     spellId: number | null
-    schoolId: number | null
+    subSchoolId: number | null
   }
 
   export type SpellSubschoolMapSumAggregateOutputType = {
-    id: number | null
     spellId: number | null
-    schoolId: number | null
+    subSchoolId: number | null
   }
 
   export type SpellSubschoolMapMinAggregateOutputType = {
-    id: number | null
     spellId: number | null
-    schoolId: number | null
+    subSchoolId: number | null
   }
 
   export type SpellSubschoolMapMaxAggregateOutputType = {
-    id: number | null
     spellId: number | null
-    schoolId: number | null
+    subSchoolId: number | null
   }
 
   export type SpellSubschoolMapCountAggregateOutputType = {
-    id: number
     spellId: number
-    schoolId: number
+    subSchoolId: number
     _all: number
   }
 
 
   export type SpellSubschoolMapAvgAggregateInputType = {
-    id?: true
     spellId?: true
-    schoolId?: true
+    subSchoolId?: true
   }
 
   export type SpellSubschoolMapSumAggregateInputType = {
-    id?: true
     spellId?: true
-    schoolId?: true
+    subSchoolId?: true
   }
 
   export type SpellSubschoolMapMinAggregateInputType = {
-    id?: true
     spellId?: true
-    schoolId?: true
+    subSchoolId?: true
   }
 
   export type SpellSubschoolMapMaxAggregateInputType = {
-    id?: true
     spellId?: true
-    schoolId?: true
+    subSchoolId?: true
   }
 
   export type SpellSubschoolMapCountAggregateInputType = {
-    id?: true
     spellId?: true
-    schoolId?: true
+    subSchoolId?: true
     _all?: true
   }
 
@@ -15460,9 +15326,8 @@ export namespace Prisma {
   }
 
   export type SpellSubschoolMapGroupByOutputType = {
-    id: number
     spellId: number
-    schoolId: number
+    subSchoolId: number
     _count: SpellSubschoolMapCountAggregateOutputType | null
     _avg: SpellSubschoolMapAvgAggregateOutputType | null
     _sum: SpellSubschoolMapSumAggregateOutputType | null
@@ -15485,21 +15350,19 @@ export namespace Prisma {
 
 
   export type SpellSubschoolMapSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
     spellId?: boolean
-    schoolId?: boolean
+    subSchoolId?: boolean
     Spell?: boolean | SpellDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["spellSubschoolMap"]>
 
 
 
   export type SpellSubschoolMapSelectScalar = {
-    id?: boolean
     spellId?: boolean
-    schoolId?: boolean
+    subSchoolId?: boolean
   }
 
-  export type SpellSubschoolMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "spellId" | "schoolId", ExtArgs["result"]["spellSubschoolMap"]>
+  export type SpellSubschoolMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"spellId" | "subSchoolId", ExtArgs["result"]["spellSubschoolMap"]>
   export type SpellSubschoolMapInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     Spell?: boolean | SpellDefaultArgs<ExtArgs>
   }
@@ -15510,9 +15373,8 @@ export namespace Prisma {
       Spell: Prisma.$SpellPayload<ExtArgs>
     }
     scalars: $Extensions.GetPayloadResult<{
-      id: number
       spellId: number
-      schoolId: number
+      subSchoolId: number
     }, ExtArgs["result"]["spellSubschoolMap"]>
     composites: {}
   }
@@ -15596,8 +15458,8 @@ export namespace Prisma {
      * // Get first 10 SpellSubschoolMaps
      * const spellSubschoolMaps = await prisma.spellSubschoolMap.findMany({ take: 10 })
      * 
-     * // Only select the `id`
-     * const spellSubschoolMapWithIdOnly = await prisma.spellSubschoolMap.findMany({ select: { id: true } })
+     * // Only select the `spellId`
+     * const spellSubschoolMapWithSpellIdOnly = await prisma.spellSubschoolMap.findMany({ select: { spellId: true } })
      * 
      */
     findMany<T extends SpellSubschoolMapFindManyArgs>(args?: SelectSubset<T, SpellSubschoolMapFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SpellSubschoolMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -15883,9 +15745,8 @@ export namespace Prisma {
    * Fields of the SpellSubschoolMap model
    */
   interface SpellSubschoolMapFieldRefs {
-    readonly id: FieldRef<"SpellSubschoolMap", 'Int'>
     readonly spellId: FieldRef<"SpellSubschoolMap", 'Int'>
-    readonly schoolId: FieldRef<"SpellSubschoolMap", 'Int'>
+    readonly subSchoolId: FieldRef<"SpellSubschoolMap", 'Int'>
   }
     
 
@@ -16260,31 +16121,26 @@ export namespace Prisma {
   }
 
   export type SpellComponentMapAvgAggregateOutputType = {
-    id: number | null
     spellId: number | null
     componentId: number | null
   }
 
   export type SpellComponentMapSumAggregateOutputType = {
-    id: number | null
     spellId: number | null
     componentId: number | null
   }
 
   export type SpellComponentMapMinAggregateOutputType = {
-    id: number | null
     spellId: number | null
     componentId: number | null
   }
 
   export type SpellComponentMapMaxAggregateOutputType = {
-    id: number | null
     spellId: number | null
     componentId: number | null
   }
 
   export type SpellComponentMapCountAggregateOutputType = {
-    id: number
     spellId: number
     componentId: number
     _all: number
@@ -16292,31 +16148,26 @@ export namespace Prisma {
 
 
   export type SpellComponentMapAvgAggregateInputType = {
-    id?: true
     spellId?: true
     componentId?: true
   }
 
   export type SpellComponentMapSumAggregateInputType = {
-    id?: true
     spellId?: true
     componentId?: true
   }
 
   export type SpellComponentMapMinAggregateInputType = {
-    id?: true
     spellId?: true
     componentId?: true
   }
 
   export type SpellComponentMapMaxAggregateInputType = {
-    id?: true
     spellId?: true
     componentId?: true
   }
 
   export type SpellComponentMapCountAggregateInputType = {
-    id?: true
     spellId?: true
     componentId?: true
     _all?: true
@@ -16409,7 +16260,6 @@ export namespace Prisma {
   }
 
   export type SpellComponentMapGroupByOutputType = {
-    id: number
     spellId: number
     componentId: number
     _count: SpellComponentMapCountAggregateOutputType | null
@@ -16434,7 +16284,6 @@ export namespace Prisma {
 
 
   export type SpellComponentMapSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
     spellId?: boolean
     componentId?: boolean
     Spell?: boolean | SpellDefaultArgs<ExtArgs>
@@ -16443,12 +16292,11 @@ export namespace Prisma {
 
 
   export type SpellComponentMapSelectScalar = {
-    id?: boolean
     spellId?: boolean
     componentId?: boolean
   }
 
-  export type SpellComponentMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "spellId" | "componentId", ExtArgs["result"]["spellComponentMap"]>
+  export type SpellComponentMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"spellId" | "componentId", ExtArgs["result"]["spellComponentMap"]>
   export type SpellComponentMapInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     Spell?: boolean | SpellDefaultArgs<ExtArgs>
   }
@@ -16459,7 +16307,6 @@ export namespace Prisma {
       Spell: Prisma.$SpellPayload<ExtArgs>
     }
     scalars: $Extensions.GetPayloadResult<{
-      id: number
       spellId: number
       componentId: number
     }, ExtArgs["result"]["spellComponentMap"]>
@@ -16545,8 +16392,8 @@ export namespace Prisma {
      * // Get first 10 SpellComponentMaps
      * const spellComponentMaps = await prisma.spellComponentMap.findMany({ take: 10 })
      * 
-     * // Only select the `id`
-     * const spellComponentMapWithIdOnly = await prisma.spellComponentMap.findMany({ select: { id: true } })
+     * // Only select the `spellId`
+     * const spellComponentMapWithSpellIdOnly = await prisma.spellComponentMap.findMany({ select: { spellId: true } })
      * 
      */
     findMany<T extends SpellComponentMapFindManyArgs>(args?: SelectSubset<T, SpellComponentMapFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SpellComponentMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -16832,7 +16679,6 @@ export namespace Prisma {
    * Fields of the SpellComponentMap model
    */
   interface SpellComponentMapFieldRefs {
-    readonly id: FieldRef<"SpellComponentMap", 'Int'>
     readonly spellId: FieldRef<"SpellComponentMap", 'Int'>
     readonly componentId: FieldRef<"SpellComponentMap", 'Int'>
   }
@@ -23423,27 +23269,29 @@ export namespace Prisma {
 
   export type RaceTraitMapAvgAggregateOutputType = {
     raceId: number | null
+    value: number | null
   }
 
   export type RaceTraitMapSumAggregateOutputType = {
     raceId: number | null
+    value: number | null
   }
 
   export type RaceTraitMapMinAggregateOutputType = {
     raceId: number | null
-    traitId: string | null
-    value: string | null
+    traitSlug: string | null
+    value: number | null
   }
 
   export type RaceTraitMapMaxAggregateOutputType = {
     raceId: number | null
-    traitId: string | null
-    value: string | null
+    traitSlug: string | null
+    value: number | null
   }
 
   export type RaceTraitMapCountAggregateOutputType = {
     raceId: number
-    traitId: number
+    traitSlug: number
     value: number
     _all: number
   }
@@ -23451,27 +23299,29 @@ export namespace Prisma {
 
   export type RaceTraitMapAvgAggregateInputType = {
     raceId?: true
+    value?: true
   }
 
   export type RaceTraitMapSumAggregateInputType = {
     raceId?: true
+    value?: true
   }
 
   export type RaceTraitMapMinAggregateInputType = {
     raceId?: true
-    traitId?: true
+    traitSlug?: true
     value?: true
   }
 
   export type RaceTraitMapMaxAggregateInputType = {
     raceId?: true
-    traitId?: true
+    traitSlug?: true
     value?: true
   }
 
   export type RaceTraitMapCountAggregateInputType = {
     raceId?: true
-    traitId?: true
+    traitSlug?: true
     value?: true
     _all?: true
   }
@@ -23564,8 +23414,8 @@ export namespace Prisma {
 
   export type RaceTraitMapGroupByOutputType = {
     raceId: number
-    traitId: string
-    value: string | null
+    traitSlug: string
+    value: number | null
     _count: RaceTraitMapCountAggregateOutputType | null
     _avg: RaceTraitMapAvgAggregateOutputType | null
     _sum: RaceTraitMapSumAggregateOutputType | null
@@ -23589,7 +23439,7 @@ export namespace Prisma {
 
   export type RaceTraitMapSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     raceId?: boolean
-    traitId?: boolean
+    traitSlug?: boolean
     value?: boolean
     race?: boolean | RaceDefaultArgs<ExtArgs>
     trait?: boolean | RaceTraitDefaultArgs<ExtArgs>
@@ -23599,11 +23449,11 @@ export namespace Prisma {
 
   export type RaceTraitMapSelectScalar = {
     raceId?: boolean
-    traitId?: boolean
+    traitSlug?: boolean
     value?: boolean
   }
 
-  export type RaceTraitMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"raceId" | "traitId" | "value", ExtArgs["result"]["raceTraitMap"]>
+  export type RaceTraitMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"raceId" | "traitSlug" | "value", ExtArgs["result"]["raceTraitMap"]>
   export type RaceTraitMapInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     race?: boolean | RaceDefaultArgs<ExtArgs>
     trait?: boolean | RaceTraitDefaultArgs<ExtArgs>
@@ -23617,8 +23467,8 @@ export namespace Prisma {
     }
     scalars: $Extensions.GetPayloadResult<{
       raceId: number
-      traitId: string
-      value: string | null
+      traitSlug: string
+      value: number | null
     }, ExtArgs["result"]["raceTraitMap"]>
     composites: {}
   }
@@ -23991,8 +23841,8 @@ export namespace Prisma {
    */
   interface RaceTraitMapFieldRefs {
     readonly raceId: FieldRef<"RaceTraitMap", 'Int'>
-    readonly traitId: FieldRef<"RaceTraitMap", 'String'>
-    readonly value: FieldRef<"RaceTraitMap", 'String'>
+    readonly traitSlug: FieldRef<"RaceTraitMap", 'String'>
+    readonly value: FieldRef<"RaceTraitMap", 'Int'>
   }
     
 
@@ -26261,85 +26111,65 @@ export namespace Prisma {
   }
 
   export type RaceSourceMapAvgAggregateOutputType = {
-    id: number | null
     raceId: number | null
-    bookId: number | null
-    pageNumber: number | null
     sourceBookId: number | null
+    pageNumber: number | null
   }
 
   export type RaceSourceMapSumAggregateOutputType = {
-    id: number | null
     raceId: number | null
-    bookId: number | null
-    pageNumber: number | null
     sourceBookId: number | null
+    pageNumber: number | null
   }
 
   export type RaceSourceMapMinAggregateOutputType = {
-    id: number | null
     raceId: number | null
-    bookId: number | null
-    pageNumber: number | null
     sourceBookId: number | null
+    pageNumber: number | null
   }
 
   export type RaceSourceMapMaxAggregateOutputType = {
-    id: number | null
     raceId: number | null
-    bookId: number | null
-    pageNumber: number | null
     sourceBookId: number | null
+    pageNumber: number | null
   }
 
   export type RaceSourceMapCountAggregateOutputType = {
-    id: number
     raceId: number
-    bookId: number
-    pageNumber: number
     sourceBookId: number
+    pageNumber: number
     _all: number
   }
 
 
   export type RaceSourceMapAvgAggregateInputType = {
-    id?: true
     raceId?: true
-    bookId?: true
-    pageNumber?: true
     sourceBookId?: true
+    pageNumber?: true
   }
 
   export type RaceSourceMapSumAggregateInputType = {
-    id?: true
     raceId?: true
-    bookId?: true
-    pageNumber?: true
     sourceBookId?: true
+    pageNumber?: true
   }
 
   export type RaceSourceMapMinAggregateInputType = {
-    id?: true
     raceId?: true
-    bookId?: true
-    pageNumber?: true
     sourceBookId?: true
+    pageNumber?: true
   }
 
   export type RaceSourceMapMaxAggregateInputType = {
-    id?: true
     raceId?: true
-    bookId?: true
-    pageNumber?: true
     sourceBookId?: true
+    pageNumber?: true
   }
 
   export type RaceSourceMapCountAggregateInputType = {
-    id?: true
     raceId?: true
-    bookId?: true
-    pageNumber?: true
     sourceBookId?: true
+    pageNumber?: true
     _all?: true
   }
 
@@ -26430,11 +26260,9 @@ export namespace Prisma {
   }
 
   export type RaceSourceMapGroupByOutputType = {
-    id: number
     raceId: number
-    bookId: number
+    sourceBookId: number
     pageNumber: number | null
-    sourceBookId: number | null
     _count: RaceSourceMapCountAggregateOutputType | null
     _avg: RaceSourceMapAvgAggregateOutputType | null
     _sum: RaceSourceMapSumAggregateOutputType | null
@@ -26457,11 +26285,9 @@ export namespace Prisma {
 
 
   export type RaceSourceMapSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
     raceId?: boolean
-    bookId?: boolean
-    pageNumber?: boolean
     sourceBookId?: boolean
+    pageNumber?: boolean
     Race?: boolean | RaceDefaultArgs<ExtArgs>
     SourceBook?: boolean | RaceSourceMap$SourceBookArgs<ExtArgs>
   }, ExtArgs["result"]["raceSourceMap"]>
@@ -26469,14 +26295,12 @@ export namespace Prisma {
 
 
   export type RaceSourceMapSelectScalar = {
-    id?: boolean
     raceId?: boolean
-    bookId?: boolean
-    pageNumber?: boolean
     sourceBookId?: boolean
+    pageNumber?: boolean
   }
 
-  export type RaceSourceMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "raceId" | "bookId" | "pageNumber" | "sourceBookId", ExtArgs["result"]["raceSourceMap"]>
+  export type RaceSourceMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"raceId" | "sourceBookId" | "pageNumber", ExtArgs["result"]["raceSourceMap"]>
   export type RaceSourceMapInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     Race?: boolean | RaceDefaultArgs<ExtArgs>
     SourceBook?: boolean | RaceSourceMap$SourceBookArgs<ExtArgs>
@@ -26489,11 +26313,9 @@ export namespace Prisma {
       SourceBook: Prisma.$SourceBookPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
-      id: number
       raceId: number
-      bookId: number
+      sourceBookId: number
       pageNumber: number | null
-      sourceBookId: number | null
     }, ExtArgs["result"]["raceSourceMap"]>
     composites: {}
   }
@@ -26577,8 +26399,8 @@ export namespace Prisma {
      * // Get first 10 RaceSourceMaps
      * const raceSourceMaps = await prisma.raceSourceMap.findMany({ take: 10 })
      * 
-     * // Only select the `id`
-     * const raceSourceMapWithIdOnly = await prisma.raceSourceMap.findMany({ select: { id: true } })
+     * // Only select the `raceId`
+     * const raceSourceMapWithRaceIdOnly = await prisma.raceSourceMap.findMany({ select: { raceId: true } })
      * 
      */
     findMany<T extends RaceSourceMapFindManyArgs>(args?: SelectSubset<T, RaceSourceMapFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RaceSourceMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -26865,11 +26687,9 @@ export namespace Prisma {
    * Fields of the RaceSourceMap model
    */
   interface RaceSourceMapFieldRefs {
-    readonly id: FieldRef<"RaceSourceMap", 'Int'>
     readonly raceId: FieldRef<"RaceSourceMap", 'Int'>
-    readonly bookId: FieldRef<"RaceSourceMap", 'Int'>
-    readonly pageNumber: FieldRef<"RaceSourceMap", 'Int'>
     readonly sourceBookId: FieldRef<"RaceSourceMap", 'Int'>
+    readonly pageNumber: FieldRef<"RaceSourceMap", 'Int'>
   }
     
 
@@ -28294,6 +28114,7 @@ export namespace Prisma {
   export type WeaponAvgAggregateOutputType = {
     id: number | null
     category: number | null
+    type: number | null
     cost: Decimal | null
     weight: Decimal | null
     damageTypeId: number | null
@@ -28302,6 +28123,7 @@ export namespace Prisma {
   export type WeaponSumAggregateOutputType = {
     id: number | null
     category: number | null
+    type: number | null
     cost: Decimal | null
     weight: Decimal | null
     damageTypeId: number | null
@@ -28312,6 +28134,7 @@ export namespace Prisma {
     name: string | null
     description: string | null
     category: number | null
+    type: number | null
     cost: Decimal | null
     damageSmall: string | null
     damageMedium: string | null
@@ -28326,6 +28149,7 @@ export namespace Prisma {
     name: string | null
     description: string | null
     category: number | null
+    type: number | null
     cost: Decimal | null
     damageSmall: string | null
     damageMedium: string | null
@@ -28340,6 +28164,7 @@ export namespace Prisma {
     name: number
     description: number
     category: number
+    type: number
     cost: number
     damageSmall: number
     damageMedium: number
@@ -28354,6 +28179,7 @@ export namespace Prisma {
   export type WeaponAvgAggregateInputType = {
     id?: true
     category?: true
+    type?: true
     cost?: true
     weight?: true
     damageTypeId?: true
@@ -28362,6 +28188,7 @@ export namespace Prisma {
   export type WeaponSumAggregateInputType = {
     id?: true
     category?: true
+    type?: true
     cost?: true
     weight?: true
     damageTypeId?: true
@@ -28372,6 +28199,7 @@ export namespace Prisma {
     name?: true
     description?: true
     category?: true
+    type?: true
     cost?: true
     damageSmall?: true
     damageMedium?: true
@@ -28386,6 +28214,7 @@ export namespace Prisma {
     name?: true
     description?: true
     category?: true
+    type?: true
     cost?: true
     damageSmall?: true
     damageMedium?: true
@@ -28400,6 +28229,7 @@ export namespace Prisma {
     name?: true
     description?: true
     category?: true
+    type?: true
     cost?: true
     damageSmall?: true
     damageMedium?: true
@@ -28501,6 +28331,7 @@ export namespace Prisma {
     name: string
     description: string | null
     category: number
+    type: number
     cost: Decimal | null
     damageSmall: string | null
     damageMedium: string | null
@@ -28534,6 +28365,7 @@ export namespace Prisma {
     name?: boolean
     description?: boolean
     category?: boolean
+    type?: boolean
     cost?: boolean
     damageSmall?: boolean
     damageMedium?: boolean
@@ -28550,6 +28382,7 @@ export namespace Prisma {
     name?: boolean
     description?: boolean
     category?: boolean
+    type?: boolean
     cost?: boolean
     damageSmall?: boolean
     damageMedium?: boolean
@@ -28559,7 +28392,7 @@ export namespace Prisma {
     damageTypeId?: boolean
   }
 
-  export type WeaponOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "description" | "category" | "cost" | "damageSmall" | "damageMedium" | "critical" | "range" | "weight" | "damageTypeId", ExtArgs["result"]["weapon"]>
+  export type WeaponOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "description" | "category" | "type" | "cost" | "damageSmall" | "damageMedium" | "critical" | "range" | "weight" | "damageTypeId", ExtArgs["result"]["weapon"]>
 
   export type $WeaponPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Weapon"
@@ -28569,6 +28402,7 @@ export namespace Prisma {
       name: string
       description: string | null
       category: number
+      type: number
       cost: Prisma.Decimal | null
       damageSmall: string | null
       damageMedium: string | null
@@ -28949,6 +28783,7 @@ export namespace Prisma {
     readonly name: FieldRef<"Weapon", 'String'>
     readonly description: FieldRef<"Weapon", 'String'>
     readonly category: FieldRef<"Weapon", 'Int'>
+    readonly type: FieldRef<"Weapon", 'Int'>
     readonly cost: FieldRef<"Weapon", 'Decimal'>
     readonly damageSmall: FieldRef<"Weapon", 'String'>
     readonly damageMedium: FieldRef<"Weapon", 'String'>
@@ -31350,39 +31185,34 @@ export namespace Prisma {
   }
 
   export type ReferenceTableColumnAvgAggregateOutputType = {
-    id: number | null
-    columnIndex: number | null
+    index: number | null
     span: number | null
   }
 
   export type ReferenceTableColumnSumAggregateOutputType = {
-    id: number | null
-    columnIndex: number | null
+    index: number | null
     span: number | null
   }
 
   export type ReferenceTableColumnMinAggregateOutputType = {
-    id: number | null
     tableSlug: string | null
-    columnIndex: number | null
+    index: number | null
     header: string | null
     span: number | null
     alignment: $Enums.TextAlignment | null
   }
 
   export type ReferenceTableColumnMaxAggregateOutputType = {
-    id: number | null
     tableSlug: string | null
-    columnIndex: number | null
+    index: number | null
     header: string | null
     span: number | null
     alignment: $Enums.TextAlignment | null
   }
 
   export type ReferenceTableColumnCountAggregateOutputType = {
-    id: number
     tableSlug: number
-    columnIndex: number
+    index: number
     header: number
     span: number
     alignment: number
@@ -31391,39 +31221,34 @@ export namespace Prisma {
 
 
   export type ReferenceTableColumnAvgAggregateInputType = {
-    id?: true
-    columnIndex?: true
+    index?: true
     span?: true
   }
 
   export type ReferenceTableColumnSumAggregateInputType = {
-    id?: true
-    columnIndex?: true
+    index?: true
     span?: true
   }
 
   export type ReferenceTableColumnMinAggregateInputType = {
-    id?: true
     tableSlug?: true
-    columnIndex?: true
+    index?: true
     header?: true
     span?: true
     alignment?: true
   }
 
   export type ReferenceTableColumnMaxAggregateInputType = {
-    id?: true
     tableSlug?: true
-    columnIndex?: true
+    index?: true
     header?: true
     span?: true
     alignment?: true
   }
 
   export type ReferenceTableColumnCountAggregateInputType = {
-    id?: true
     tableSlug?: true
-    columnIndex?: true
+    index?: true
     header?: true
     span?: true
     alignment?: true
@@ -31517,9 +31342,8 @@ export namespace Prisma {
   }
 
   export type ReferenceTableColumnGroupByOutputType = {
-    id: number
     tableSlug: string
-    columnIndex: number
+    index: number
     header: string
     span: number | null
     alignment: $Enums.TextAlignment | null
@@ -31545,9 +31369,8 @@ export namespace Prisma {
 
 
   export type ReferenceTableColumnSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
     tableSlug?: boolean
-    columnIndex?: boolean
+    index?: boolean
     header?: boolean
     span?: boolean
     alignment?: boolean
@@ -31559,15 +31382,14 @@ export namespace Prisma {
 
 
   export type ReferenceTableColumnSelectScalar = {
-    id?: boolean
     tableSlug?: boolean
-    columnIndex?: boolean
+    index?: boolean
     header?: boolean
     span?: boolean
     alignment?: boolean
   }
 
-  export type ReferenceTableColumnOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tableSlug" | "columnIndex" | "header" | "span" | "alignment", ExtArgs["result"]["referenceTableColumn"]>
+  export type ReferenceTableColumnOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"tableSlug" | "index" | "header" | "span" | "alignment", ExtArgs["result"]["referenceTableColumn"]>
   export type ReferenceTableColumnInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     cells?: boolean | ReferenceTableColumn$cellsArgs<ExtArgs>
     table?: boolean | ReferenceTableDefaultArgs<ExtArgs>
@@ -31581,9 +31403,8 @@ export namespace Prisma {
       table: Prisma.$ReferenceTablePayload<ExtArgs>
     }
     scalars: $Extensions.GetPayloadResult<{
-      id: number
       tableSlug: string
-      columnIndex: number
+      index: number
       header: string
       span: number | null
       alignment: $Enums.TextAlignment | null
@@ -31670,8 +31491,8 @@ export namespace Prisma {
      * // Get first 10 ReferenceTableColumns
      * const referenceTableColumns = await prisma.referenceTableColumn.findMany({ take: 10 })
      * 
-     * // Only select the `id`
-     * const referenceTableColumnWithIdOnly = await prisma.referenceTableColumn.findMany({ select: { id: true } })
+     * // Only select the `tableSlug`
+     * const referenceTableColumnWithTableSlugOnly = await prisma.referenceTableColumn.findMany({ select: { tableSlug: true } })
      * 
      */
     findMany<T extends ReferenceTableColumnFindManyArgs>(args?: SelectSubset<T, ReferenceTableColumnFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReferenceTableColumnPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -31958,9 +31779,8 @@ export namespace Prisma {
    * Fields of the ReferenceTableColumn model
    */
   interface ReferenceTableColumnFieldRefs {
-    readonly id: FieldRef<"ReferenceTableColumn", 'Int'>
     readonly tableSlug: FieldRef<"ReferenceTableColumn", 'String'>
-    readonly columnIndex: FieldRef<"ReferenceTableColumn", 'Int'>
+    readonly index: FieldRef<"ReferenceTableColumn", 'Int'>
     readonly header: FieldRef<"ReferenceTableColumn", 'String'>
     readonly span: FieldRef<"ReferenceTableColumn", 'Int'>
     readonly alignment: FieldRef<"ReferenceTableColumn", 'TextAlignment'>
@@ -32362,67 +32182,51 @@ export namespace Prisma {
   }
 
   export type ReferenceTableRowAvgAggregateOutputType = {
-    id: number | null
-    rowIndex: number | null
+    index: number | null
   }
 
   export type ReferenceTableRowSumAggregateOutputType = {
-    id: number | null
-    rowIndex: number | null
+    index: number | null
   }
 
   export type ReferenceTableRowMinAggregateOutputType = {
-    id: number | null
     tableSlug: string | null
-    rowIndex: number | null
-    label: string | null
+    index: number | null
   }
 
   export type ReferenceTableRowMaxAggregateOutputType = {
-    id: number | null
     tableSlug: string | null
-    rowIndex: number | null
-    label: string | null
+    index: number | null
   }
 
   export type ReferenceTableRowCountAggregateOutputType = {
-    id: number
     tableSlug: number
-    rowIndex: number
-    label: number
+    index: number
     _all: number
   }
 
 
   export type ReferenceTableRowAvgAggregateInputType = {
-    id?: true
-    rowIndex?: true
+    index?: true
   }
 
   export type ReferenceTableRowSumAggregateInputType = {
-    id?: true
-    rowIndex?: true
+    index?: true
   }
 
   export type ReferenceTableRowMinAggregateInputType = {
-    id?: true
     tableSlug?: true
-    rowIndex?: true
-    label?: true
+    index?: true
   }
 
   export type ReferenceTableRowMaxAggregateInputType = {
-    id?: true
     tableSlug?: true
-    rowIndex?: true
-    label?: true
+    index?: true
   }
 
   export type ReferenceTableRowCountAggregateInputType = {
-    id?: true
     tableSlug?: true
-    rowIndex?: true
-    label?: true
+    index?: true
     _all?: true
   }
 
@@ -32513,10 +32317,8 @@ export namespace Prisma {
   }
 
   export type ReferenceTableRowGroupByOutputType = {
-    id: number
     tableSlug: string
-    rowIndex: number
-    label: string | null
+    index: number
     _count: ReferenceTableRowCountAggregateOutputType | null
     _avg: ReferenceTableRowAvgAggregateOutputType | null
     _sum: ReferenceTableRowSumAggregateOutputType | null
@@ -32539,10 +32341,8 @@ export namespace Prisma {
 
 
   export type ReferenceTableRowSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
     tableSlug?: boolean
-    rowIndex?: boolean
-    label?: boolean
+    index?: boolean
     cells?: boolean | ReferenceTableRow$cellsArgs<ExtArgs>
     table?: boolean | ReferenceTableDefaultArgs<ExtArgs>
     _count?: boolean | ReferenceTableRowCountOutputTypeDefaultArgs<ExtArgs>
@@ -32551,13 +32351,11 @@ export namespace Prisma {
 
 
   export type ReferenceTableRowSelectScalar = {
-    id?: boolean
     tableSlug?: boolean
-    rowIndex?: boolean
-    label?: boolean
+    index?: boolean
   }
 
-  export type ReferenceTableRowOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tableSlug" | "rowIndex" | "label", ExtArgs["result"]["referenceTableRow"]>
+  export type ReferenceTableRowOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"tableSlug" | "index", ExtArgs["result"]["referenceTableRow"]>
   export type ReferenceTableRowInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     cells?: boolean | ReferenceTableRow$cellsArgs<ExtArgs>
     table?: boolean | ReferenceTableDefaultArgs<ExtArgs>
@@ -32571,10 +32369,8 @@ export namespace Prisma {
       table: Prisma.$ReferenceTablePayload<ExtArgs>
     }
     scalars: $Extensions.GetPayloadResult<{
-      id: number
       tableSlug: string
-      rowIndex: number
-      label: string | null
+      index: number
     }, ExtArgs["result"]["referenceTableRow"]>
     composites: {}
   }
@@ -32658,8 +32454,8 @@ export namespace Prisma {
      * // Get first 10 ReferenceTableRows
      * const referenceTableRows = await prisma.referenceTableRow.findMany({ take: 10 })
      * 
-     * // Only select the `id`
-     * const referenceTableRowWithIdOnly = await prisma.referenceTableRow.findMany({ select: { id: true } })
+     * // Only select the `tableSlug`
+     * const referenceTableRowWithTableSlugOnly = await prisma.referenceTableRow.findMany({ select: { tableSlug: true } })
      * 
      */
     findMany<T extends ReferenceTableRowFindManyArgs>(args?: SelectSubset<T, ReferenceTableRowFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReferenceTableRowPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -32946,10 +32742,8 @@ export namespace Prisma {
    * Fields of the ReferenceTableRow model
    */
   interface ReferenceTableRowFieldRefs {
-    readonly id: FieldRef<"ReferenceTableRow", 'Int'>
     readonly tableSlug: FieldRef<"ReferenceTableRow", 'String'>
-    readonly rowIndex: FieldRef<"ReferenceTableRow", 'Int'>
-    readonly label: FieldRef<"ReferenceTableRow", 'String'>
+    readonly index: FieldRef<"ReferenceTableRow", 'Int'>
   }
     
 
@@ -33348,46 +33142,41 @@ export namespace Prisma {
   }
 
   export type ReferenceTableCellAvgAggregateOutputType = {
-    id: number | null
-    rowId: number | null
-    columnId: number | null
+    columnIndex: number | null
+    rowIndex: number | null
     colSpan: number | null
     rowSpan: number | null
   }
 
   export type ReferenceTableCellSumAggregateOutputType = {
-    id: number | null
-    rowId: number | null
-    columnId: number | null
+    columnIndex: number | null
+    rowIndex: number | null
     colSpan: number | null
     rowSpan: number | null
   }
 
   export type ReferenceTableCellMinAggregateOutputType = {
-    id: number | null
     tableSlug: string | null
-    rowId: number | null
-    columnId: number | null
+    columnIndex: number | null
+    rowIndex: number | null
     value: string | null
     colSpan: number | null
     rowSpan: number | null
   }
 
   export type ReferenceTableCellMaxAggregateOutputType = {
-    id: number | null
     tableSlug: string | null
-    rowId: number | null
-    columnId: number | null
+    columnIndex: number | null
+    rowIndex: number | null
     value: string | null
     colSpan: number | null
     rowSpan: number | null
   }
 
   export type ReferenceTableCellCountAggregateOutputType = {
-    id: number
     tableSlug: number
-    rowId: number
-    columnId: number
+    columnIndex: number
+    rowIndex: number
     value: number
     colSpan: number
     rowSpan: number
@@ -33396,46 +33185,41 @@ export namespace Prisma {
 
 
   export type ReferenceTableCellAvgAggregateInputType = {
-    id?: true
-    rowId?: true
-    columnId?: true
+    columnIndex?: true
+    rowIndex?: true
     colSpan?: true
     rowSpan?: true
   }
 
   export type ReferenceTableCellSumAggregateInputType = {
-    id?: true
-    rowId?: true
-    columnId?: true
+    columnIndex?: true
+    rowIndex?: true
     colSpan?: true
     rowSpan?: true
   }
 
   export type ReferenceTableCellMinAggregateInputType = {
-    id?: true
     tableSlug?: true
-    rowId?: true
-    columnId?: true
+    columnIndex?: true
+    rowIndex?: true
     value?: true
     colSpan?: true
     rowSpan?: true
   }
 
   export type ReferenceTableCellMaxAggregateInputType = {
-    id?: true
     tableSlug?: true
-    rowId?: true
-    columnId?: true
+    columnIndex?: true
+    rowIndex?: true
     value?: true
     colSpan?: true
     rowSpan?: true
   }
 
   export type ReferenceTableCellCountAggregateInputType = {
-    id?: true
     tableSlug?: true
-    rowId?: true
-    columnId?: true
+    columnIndex?: true
+    rowIndex?: true
     value?: true
     colSpan?: true
     rowSpan?: true
@@ -33529,10 +33313,9 @@ export namespace Prisma {
   }
 
   export type ReferenceTableCellGroupByOutputType = {
-    id: number
     tableSlug: string
-    rowId: number
-    columnId: number
+    columnIndex: number
+    rowIndex: number
     value: string | null
     colSpan: number | null
     rowSpan: number | null
@@ -33558,10 +33341,9 @@ export namespace Prisma {
 
 
   export type ReferenceTableCellSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
     tableSlug?: boolean
-    rowId?: boolean
-    columnId?: boolean
+    columnIndex?: boolean
+    rowIndex?: boolean
     value?: boolean
     colSpan?: boolean
     rowSpan?: boolean
@@ -33573,16 +33355,15 @@ export namespace Prisma {
 
 
   export type ReferenceTableCellSelectScalar = {
-    id?: boolean
     tableSlug?: boolean
-    rowId?: boolean
-    columnId?: boolean
+    columnIndex?: boolean
+    rowIndex?: boolean
     value?: boolean
     colSpan?: boolean
     rowSpan?: boolean
   }
 
-  export type ReferenceTableCellOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tableSlug" | "rowId" | "columnId" | "value" | "colSpan" | "rowSpan", ExtArgs["result"]["referenceTableCell"]>
+  export type ReferenceTableCellOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"tableSlug" | "columnIndex" | "rowIndex" | "value" | "colSpan" | "rowSpan", ExtArgs["result"]["referenceTableCell"]>
   export type ReferenceTableCellInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     column?: boolean | ReferenceTableColumnDefaultArgs<ExtArgs>
     row?: boolean | ReferenceTableRowDefaultArgs<ExtArgs>
@@ -33597,10 +33378,9 @@ export namespace Prisma {
       table: Prisma.$ReferenceTablePayload<ExtArgs>
     }
     scalars: $Extensions.GetPayloadResult<{
-      id: number
       tableSlug: string
-      rowId: number
-      columnId: number
+      columnIndex: number
+      rowIndex: number
       value: string | null
       colSpan: number | null
       rowSpan: number | null
@@ -33687,8 +33467,8 @@ export namespace Prisma {
      * // Get first 10 ReferenceTableCells
      * const referenceTableCells = await prisma.referenceTableCell.findMany({ take: 10 })
      * 
-     * // Only select the `id`
-     * const referenceTableCellWithIdOnly = await prisma.referenceTableCell.findMany({ select: { id: true } })
+     * // Only select the `tableSlug`
+     * const referenceTableCellWithTableSlugOnly = await prisma.referenceTableCell.findMany({ select: { tableSlug: true } })
      * 
      */
     findMany<T extends ReferenceTableCellFindManyArgs>(args?: SelectSubset<T, ReferenceTableCellFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReferenceTableCellPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -33976,10 +33756,9 @@ export namespace Prisma {
    * Fields of the ReferenceTableCell model
    */
   interface ReferenceTableCellFieldRefs {
-    readonly id: FieldRef<"ReferenceTableCell", 'Int'>
     readonly tableSlug: FieldRef<"ReferenceTableCell", 'String'>
-    readonly rowId: FieldRef<"ReferenceTableCell", 'Int'>
-    readonly columnId: FieldRef<"ReferenceTableCell", 'Int'>
+    readonly columnIndex: FieldRef<"ReferenceTableCell", 'Int'>
+    readonly rowIndex: FieldRef<"ReferenceTableCell", 'Int'>
     readonly value: FieldRef<"ReferenceTableCell", 'String'>
     readonly colSpan: FieldRef<"ReferenceTableCell", 'Int'>
     readonly rowSpan: FieldRef<"ReferenceTableCell", 'Int'>
@@ -37475,17 +37254,18 @@ export namespace Prisma {
 
 
   export const ClassSpellLevelScalarFieldEnum: {
-    id: 'id',
     classId: 'classId',
-    spellLevel: 'spellLevel'
+    level: 'level',
+    spellLevel: 'spellLevel',
+    numSpells: 'numSpells'
   };
 
   export type ClassSpellLevelScalarFieldEnum = (typeof ClassSpellLevelScalarFieldEnum)[keyof typeof ClassSpellLevelScalarFieldEnum]
 
 
   export const ClassLevelAttributeScalarFieldEnum: {
-    id: 'id',
     classId: 'classId',
+    level: 'level',
     baseAttackBonus: 'baseAttackBonus',
     fortSave: 'fortSave',
     refSave: 'refSave',
@@ -37496,7 +37276,6 @@ export namespace Prisma {
 
 
   export const ClassSkillMapScalarFieldEnum: {
-    id: 'id',
     classId: 'classId',
     skillId: 'skillId'
   };
@@ -37505,9 +37284,7 @@ export namespace Prisma {
 
 
   export const ClassSourceMapScalarFieldEnum: {
-    id: 'id',
     classId: 'classId',
-    bookId: 'bookId',
     pageNumber: 'pageNumber',
     sourceBookId: 'sourceBookId'
   };
@@ -37516,7 +37293,6 @@ export namespace Prisma {
 
 
   export const SpellLevelMapScalarFieldEnum: {
-    id: 'id',
     classId: 'classId',
     spellId: 'spellId',
     level: 'level',
@@ -37549,7 +37325,6 @@ export namespace Prisma {
 
 
   export const SpellDescriptorMapScalarFieldEnum: {
-    id: 'id',
     spellId: 'spellId',
     descriptorId: 'descriptorId'
   };
@@ -37558,7 +37333,6 @@ export namespace Prisma {
 
 
   export const SpellSchoolMapScalarFieldEnum: {
-    id: 'id',
     spellId: 'spellId',
     schoolId: 'schoolId'
   };
@@ -37567,27 +37341,23 @@ export namespace Prisma {
 
 
   export const SpellSourceMapScalarFieldEnum: {
-    id: 'id',
     spellId: 'spellId',
-    bookId: 'bookId',
-    pageNumber: 'pageNumber',
-    sourceBookId: 'sourceBookId'
+    sourceBookId: 'sourceBookId',
+    pageNumber: 'pageNumber'
   };
 
   export type SpellSourceMapScalarFieldEnum = (typeof SpellSourceMapScalarFieldEnum)[keyof typeof SpellSourceMapScalarFieldEnum]
 
 
   export const SpellSubschoolMapScalarFieldEnum: {
-    id: 'id',
     spellId: 'spellId',
-    schoolId: 'schoolId'
+    subSchoolId: 'subSchoolId'
   };
 
   export type SpellSubschoolMapScalarFieldEnum = (typeof SpellSubschoolMapScalarFieldEnum)[keyof typeof SpellSubschoolMapScalarFieldEnum]
 
 
   export const SpellComponentMapScalarFieldEnum: {
-    id: 'id',
     spellId: 'spellId',
     componentId: 'componentId'
   };
@@ -37678,7 +37448,7 @@ export namespace Prisma {
 
   export const RaceTraitMapScalarFieldEnum: {
     raceId: 'raceId',
-    traitId: 'traitId',
+    traitSlug: 'traitSlug',
     value: 'value'
   };
 
@@ -37704,11 +37474,9 @@ export namespace Prisma {
 
 
   export const RaceSourceMapScalarFieldEnum: {
-    id: 'id',
     raceId: 'raceId',
-    bookId: 'bookId',
-    pageNumber: 'pageNumber',
-    sourceBookId: 'sourceBookId'
+    sourceBookId: 'sourceBookId',
+    pageNumber: 'pageNumber'
   };
 
   export type RaceSourceMapScalarFieldEnum = (typeof RaceSourceMapScalarFieldEnum)[keyof typeof RaceSourceMapScalarFieldEnum]
@@ -37737,6 +37505,7 @@ export namespace Prisma {
     name: 'name',
     description: 'description',
     category: 'category',
+    type: 'type',
     cost: 'cost',
     damageSmall: 'damageSmall',
     damageMedium: 'damageMedium',
@@ -37772,9 +37541,8 @@ export namespace Prisma {
 
 
   export const ReferenceTableColumnScalarFieldEnum: {
-    id: 'id',
     tableSlug: 'tableSlug',
-    columnIndex: 'columnIndex',
+    index: 'index',
     header: 'header',
     span: 'span',
     alignment: 'alignment'
@@ -37784,20 +37552,17 @@ export namespace Prisma {
 
 
   export const ReferenceTableRowScalarFieldEnum: {
-    id: 'id',
     tableSlug: 'tableSlug',
-    rowIndex: 'rowIndex',
-    label: 'label'
+    index: 'index'
   };
 
   export type ReferenceTableRowScalarFieldEnum = (typeof ReferenceTableRowScalarFieldEnum)[keyof typeof ReferenceTableRowScalarFieldEnum]
 
 
   export const ReferenceTableCellScalarFieldEnum: {
-    id: 'id',
     tableSlug: 'tableSlug',
-    rowId: 'rowId',
-    columnId: 'columnId',
+    columnIndex: 'columnIndex',
+    rowIndex: 'rowIndex',
     value: 'value',
     colSpan: 'colSpan',
     rowSpan: 'rowSpan'
@@ -37943,8 +37708,7 @@ export namespace Prisma {
 
 
   export const RaceTraitMapOrderByRelevanceFieldEnum: {
-    traitId: 'traitId',
-    value: 'value'
+    traitSlug: 'traitSlug'
   };
 
   export type RaceTraitMapOrderByRelevanceFieldEnum = (typeof RaceTraitMapOrderByRelevanceFieldEnum)[keyof typeof RaceTraitMapOrderByRelevanceFieldEnum]
@@ -37997,8 +37761,7 @@ export namespace Prisma {
 
 
   export const ReferenceTableRowOrderByRelevanceFieldEnum: {
-    tableSlug: 'tableSlug',
-    label: 'label'
+    tableSlug: 'tableSlug'
   };
 
   export type ReferenceTableRowOrderByRelevanceFieldEnum = (typeof ReferenceTableRowOrderByRelevanceFieldEnum)[keyof typeof ReferenceTableRowOrderByRelevanceFieldEnum]
@@ -38254,33 +38017,38 @@ export namespace Prisma {
     AND?: ClassSpellLevelWhereInput | ClassSpellLevelWhereInput[]
     OR?: ClassSpellLevelWhereInput[]
     NOT?: ClassSpellLevelWhereInput | ClassSpellLevelWhereInput[]
-    id?: IntFilter<"ClassSpellLevel"> | number
     classId?: IntFilter<"ClassSpellLevel"> | number
+    level?: IntFilter<"ClassSpellLevel"> | number
     spellLevel?: IntFilter<"ClassSpellLevel"> | number
+    numSpells?: IntFilter<"ClassSpellLevel"> | number
     class?: XOR<ClassScalarRelationFilter, ClassWhereInput>
   }
 
   export type ClassSpellLevelOrderByWithRelationInput = {
-    id?: SortOrder
     classId?: SortOrder
+    level?: SortOrder
     spellLevel?: SortOrder
+    numSpells?: SortOrder
     class?: ClassOrderByWithRelationInput
   }
 
   export type ClassSpellLevelWhereUniqueInput = Prisma.AtLeast<{
-    id?: number
+    classId_level_spellLevel?: ClassSpellLevelClassIdLevelSpellLevelCompoundUniqueInput
     AND?: ClassSpellLevelWhereInput | ClassSpellLevelWhereInput[]
     OR?: ClassSpellLevelWhereInput[]
     NOT?: ClassSpellLevelWhereInput | ClassSpellLevelWhereInput[]
     classId?: IntFilter<"ClassSpellLevel"> | number
+    level?: IntFilter<"ClassSpellLevel"> | number
     spellLevel?: IntFilter<"ClassSpellLevel"> | number
+    numSpells?: IntFilter<"ClassSpellLevel"> | number
     class?: XOR<ClassScalarRelationFilter, ClassWhereInput>
-  }, "id">
+  }, "classId_level_spellLevel">
 
   export type ClassSpellLevelOrderByWithAggregationInput = {
-    id?: SortOrder
     classId?: SortOrder
+    level?: SortOrder
     spellLevel?: SortOrder
+    numSpells?: SortOrder
     _count?: ClassSpellLevelCountOrderByAggregateInput
     _avg?: ClassSpellLevelAvgOrderByAggregateInput
     _max?: ClassSpellLevelMaxOrderByAggregateInput
@@ -38292,17 +38060,18 @@ export namespace Prisma {
     AND?: ClassSpellLevelScalarWhereWithAggregatesInput | ClassSpellLevelScalarWhereWithAggregatesInput[]
     OR?: ClassSpellLevelScalarWhereWithAggregatesInput[]
     NOT?: ClassSpellLevelScalarWhereWithAggregatesInput | ClassSpellLevelScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"ClassSpellLevel"> | number
     classId?: IntWithAggregatesFilter<"ClassSpellLevel"> | number
+    level?: IntWithAggregatesFilter<"ClassSpellLevel"> | number
     spellLevel?: IntWithAggregatesFilter<"ClassSpellLevel"> | number
+    numSpells?: IntWithAggregatesFilter<"ClassSpellLevel"> | number
   }
 
   export type ClassLevelAttributeWhereInput = {
     AND?: ClassLevelAttributeWhereInput | ClassLevelAttributeWhereInput[]
     OR?: ClassLevelAttributeWhereInput[]
     NOT?: ClassLevelAttributeWhereInput | ClassLevelAttributeWhereInput[]
-    id?: IntFilter<"ClassLevelAttribute"> | number
     classId?: IntFilter<"ClassLevelAttribute"> | number
+    level?: IntFilter<"ClassLevelAttribute"> | number
     baseAttackBonus?: IntFilter<"ClassLevelAttribute"> | number
     fortSave?: IntFilter<"ClassLevelAttribute"> | number
     refSave?: IntFilter<"ClassLevelAttribute"> | number
@@ -38311,8 +38080,8 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeOrderByWithRelationInput = {
-    id?: SortOrder
     classId?: SortOrder
+    level?: SortOrder
     baseAttackBonus?: SortOrder
     fortSave?: SortOrder
     refSave?: SortOrder
@@ -38321,21 +38090,22 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeWhereUniqueInput = Prisma.AtLeast<{
-    id?: number
+    classId_level?: ClassLevelAttributeClassIdLevelCompoundUniqueInput
     AND?: ClassLevelAttributeWhereInput | ClassLevelAttributeWhereInput[]
     OR?: ClassLevelAttributeWhereInput[]
     NOT?: ClassLevelAttributeWhereInput | ClassLevelAttributeWhereInput[]
     classId?: IntFilter<"ClassLevelAttribute"> | number
+    level?: IntFilter<"ClassLevelAttribute"> | number
     baseAttackBonus?: IntFilter<"ClassLevelAttribute"> | number
     fortSave?: IntFilter<"ClassLevelAttribute"> | number
     refSave?: IntFilter<"ClassLevelAttribute"> | number
     willSave?: IntFilter<"ClassLevelAttribute"> | number
     class?: XOR<ClassScalarRelationFilter, ClassWhereInput>
-  }, "id">
+  }, "classId_level">
 
   export type ClassLevelAttributeOrderByWithAggregationInput = {
-    id?: SortOrder
     classId?: SortOrder
+    level?: SortOrder
     baseAttackBonus?: SortOrder
     fortSave?: SortOrder
     refSave?: SortOrder
@@ -38351,8 +38121,8 @@ export namespace Prisma {
     AND?: ClassLevelAttributeScalarWhereWithAggregatesInput | ClassLevelAttributeScalarWhereWithAggregatesInput[]
     OR?: ClassLevelAttributeScalarWhereWithAggregatesInput[]
     NOT?: ClassLevelAttributeScalarWhereWithAggregatesInput | ClassLevelAttributeScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"ClassLevelAttribute"> | number
     classId?: IntWithAggregatesFilter<"ClassLevelAttribute"> | number
+    level?: IntWithAggregatesFilter<"ClassLevelAttribute"> | number
     baseAttackBonus?: IntWithAggregatesFilter<"ClassLevelAttribute"> | number
     fortSave?: IntWithAggregatesFilter<"ClassLevelAttribute"> | number
     refSave?: IntWithAggregatesFilter<"ClassLevelAttribute"> | number
@@ -38363,7 +38133,6 @@ export namespace Prisma {
     AND?: ClassSkillMapWhereInput | ClassSkillMapWhereInput[]
     OR?: ClassSkillMapWhereInput[]
     NOT?: ClassSkillMapWhereInput | ClassSkillMapWhereInput[]
-    id?: IntFilter<"ClassSkillMap"> | number
     classId?: IntFilter<"ClassSkillMap"> | number
     skillId?: IntFilter<"ClassSkillMap"> | number
     Class?: XOR<ClassScalarRelationFilter, ClassWhereInput>
@@ -38371,7 +38140,6 @@ export namespace Prisma {
   }
 
   export type ClassSkillMapOrderByWithRelationInput = {
-    id?: SortOrder
     classId?: SortOrder
     skillId?: SortOrder
     Class?: ClassOrderByWithRelationInput
@@ -38379,7 +38147,7 @@ export namespace Prisma {
   }
 
   export type ClassSkillMapWhereUniqueInput = Prisma.AtLeast<{
-    id?: number
+    classId_skillId?: ClassSkillMapClassIdSkillIdCompoundUniqueInput
     AND?: ClassSkillMapWhereInput | ClassSkillMapWhereInput[]
     OR?: ClassSkillMapWhereInput[]
     NOT?: ClassSkillMapWhereInput | ClassSkillMapWhereInput[]
@@ -38387,10 +38155,9 @@ export namespace Prisma {
     skillId?: IntFilter<"ClassSkillMap"> | number
     Class?: XOR<ClassScalarRelationFilter, ClassWhereInput>
     Skill?: XOR<SkillScalarRelationFilter, SkillWhereInput>
-  }, "id">
+  }, "classId_skillId">
 
   export type ClassSkillMapOrderByWithAggregationInput = {
-    id?: SortOrder
     classId?: SortOrder
     skillId?: SortOrder
     _count?: ClassSkillMapCountOrderByAggregateInput
@@ -38404,7 +38171,6 @@ export namespace Prisma {
     AND?: ClassSkillMapScalarWhereWithAggregatesInput | ClassSkillMapScalarWhereWithAggregatesInput[]
     OR?: ClassSkillMapScalarWhereWithAggregatesInput[]
     NOT?: ClassSkillMapScalarWhereWithAggregatesInput | ClassSkillMapScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"ClassSkillMap"> | number
     classId?: IntWithAggregatesFilter<"ClassSkillMap"> | number
     skillId?: IntWithAggregatesFilter<"ClassSkillMap"> | number
   }
@@ -38413,44 +38179,37 @@ export namespace Prisma {
     AND?: ClassSourceMapWhereInput | ClassSourceMapWhereInput[]
     OR?: ClassSourceMapWhereInput[]
     NOT?: ClassSourceMapWhereInput | ClassSourceMapWhereInput[]
-    id?: IntFilter<"ClassSourceMap"> | number
     classId?: IntFilter<"ClassSourceMap"> | number
-    bookId?: IntFilter<"ClassSourceMap"> | number
     pageNumber?: IntNullableFilter<"ClassSourceMap"> | number | null
-    sourceBookId?: IntNullableFilter<"ClassSourceMap"> | number | null
+    sourceBookId?: IntFilter<"ClassSourceMap"> | number
     class?: XOR<ClassScalarRelationFilter, ClassWhereInput>
     SourceBook?: XOR<SourceBookNullableScalarRelationFilter, SourceBookWhereInput> | null
   }
 
   export type ClassSourceMapOrderByWithRelationInput = {
-    id?: SortOrder
     classId?: SortOrder
-    bookId?: SortOrder
     pageNumber?: SortOrderInput | SortOrder
-    sourceBookId?: SortOrderInput | SortOrder
+    sourceBookId?: SortOrder
     class?: ClassOrderByWithRelationInput
     SourceBook?: SourceBookOrderByWithRelationInput
   }
 
   export type ClassSourceMapWhereUniqueInput = Prisma.AtLeast<{
-    id?: number
+    classId_sourceBookId?: ClassSourceMapClassIdSourceBookIdCompoundUniqueInput
     AND?: ClassSourceMapWhereInput | ClassSourceMapWhereInput[]
     OR?: ClassSourceMapWhereInput[]
     NOT?: ClassSourceMapWhereInput | ClassSourceMapWhereInput[]
     classId?: IntFilter<"ClassSourceMap"> | number
-    bookId?: IntFilter<"ClassSourceMap"> | number
     pageNumber?: IntNullableFilter<"ClassSourceMap"> | number | null
-    sourceBookId?: IntNullableFilter<"ClassSourceMap"> | number | null
+    sourceBookId?: IntFilter<"ClassSourceMap"> | number
     class?: XOR<ClassScalarRelationFilter, ClassWhereInput>
     SourceBook?: XOR<SourceBookNullableScalarRelationFilter, SourceBookWhereInput> | null
-  }, "id">
+  }, "classId_sourceBookId">
 
   export type ClassSourceMapOrderByWithAggregationInput = {
-    id?: SortOrder
     classId?: SortOrder
-    bookId?: SortOrder
     pageNumber?: SortOrderInput | SortOrder
-    sourceBookId?: SortOrderInput | SortOrder
+    sourceBookId?: SortOrder
     _count?: ClassSourceMapCountOrderByAggregateInput
     _avg?: ClassSourceMapAvgOrderByAggregateInput
     _max?: ClassSourceMapMaxOrderByAggregateInput
@@ -38462,18 +38221,15 @@ export namespace Prisma {
     AND?: ClassSourceMapScalarWhereWithAggregatesInput | ClassSourceMapScalarWhereWithAggregatesInput[]
     OR?: ClassSourceMapScalarWhereWithAggregatesInput[]
     NOT?: ClassSourceMapScalarWhereWithAggregatesInput | ClassSourceMapScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"ClassSourceMap"> | number
     classId?: IntWithAggregatesFilter<"ClassSourceMap"> | number
-    bookId?: IntWithAggregatesFilter<"ClassSourceMap"> | number
     pageNumber?: IntNullableWithAggregatesFilter<"ClassSourceMap"> | number | null
-    sourceBookId?: IntNullableWithAggregatesFilter<"ClassSourceMap"> | number | null
+    sourceBookId?: IntWithAggregatesFilter<"ClassSourceMap"> | number
   }
 
   export type SpellLevelMapWhereInput = {
     AND?: SpellLevelMapWhereInput | SpellLevelMapWhereInput[]
     OR?: SpellLevelMapWhereInput[]
     NOT?: SpellLevelMapWhereInput | SpellLevelMapWhereInput[]
-    id?: IntFilter<"SpellLevelMap"> | number
     classId?: IntFilter<"SpellLevelMap"> | number
     spellId?: IntFilter<"SpellLevelMap"> | number
     level?: IntFilter<"SpellLevelMap"> | number
@@ -38483,7 +38239,6 @@ export namespace Prisma {
   }
 
   export type SpellLevelMapOrderByWithRelationInput = {
-    id?: SortOrder
     classId?: SortOrder
     spellId?: SortOrder
     level?: SortOrder
@@ -38493,7 +38248,7 @@ export namespace Prisma {
   }
 
   export type SpellLevelMapWhereUniqueInput = Prisma.AtLeast<{
-    id?: number
+    spellId_classId?: SpellLevelMapSpellIdClassIdCompoundUniqueInput
     AND?: SpellLevelMapWhereInput | SpellLevelMapWhereInput[]
     OR?: SpellLevelMapWhereInput[]
     NOT?: SpellLevelMapWhereInput | SpellLevelMapWhereInput[]
@@ -38503,10 +38258,9 @@ export namespace Prisma {
     isVisible?: BoolFilter<"SpellLevelMap"> | boolean
     spell?: XOR<SpellScalarRelationFilter, SpellWhereInput>
     class?: XOR<ClassScalarRelationFilter, ClassWhereInput>
-  }, "id">
+  }, "spellId_classId">
 
   export type SpellLevelMapOrderByWithAggregationInput = {
-    id?: SortOrder
     classId?: SortOrder
     spellId?: SortOrder
     level?: SortOrder
@@ -38522,7 +38276,6 @@ export namespace Prisma {
     AND?: SpellLevelMapScalarWhereWithAggregatesInput | SpellLevelMapScalarWhereWithAggregatesInput[]
     OR?: SpellLevelMapScalarWhereWithAggregatesInput[]
     NOT?: SpellLevelMapScalarWhereWithAggregatesInput | SpellLevelMapScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"SpellLevelMap"> | number
     classId?: IntWithAggregatesFilter<"SpellLevelMap"> | number
     spellId?: IntWithAggregatesFilter<"SpellLevelMap"> | number
     level?: IntWithAggregatesFilter<"SpellLevelMap"> | number
@@ -38549,12 +38302,12 @@ export namespace Prisma {
     baseLevel?: IntFilter<"Spell"> | number
     effect?: StringNullableFilter<"Spell"> | string | null
     target?: StringNullableFilter<"Spell"> | string | null
-    descriptors?: SpellDescriptorMapListRelationFilter
+    descriptorIds?: SpellDescriptorMapListRelationFilter
     levelMapping?: SpellLevelMapListRelationFilter
-    schools?: SpellSchoolMapListRelationFilter
-    sources?: SpellSourceMapListRelationFilter
-    subschools?: SpellSubschoolMapListRelationFilter
-    components?: SpellComponentMapListRelationFilter
+    schoolIds?: SpellSchoolMapListRelationFilter
+    sourceBookInfo?: SpellSourceMapListRelationFilter
+    subSchoolIds?: SpellSubschoolMapListRelationFilter
+    componentIds?: SpellComponentMapListRelationFilter
   }
 
   export type SpellOrderByWithRelationInput = {
@@ -38574,12 +38327,12 @@ export namespace Prisma {
     baseLevel?: SortOrder
     effect?: SortOrderInput | SortOrder
     target?: SortOrderInput | SortOrder
-    descriptors?: SpellDescriptorMapOrderByRelationAggregateInput
+    descriptorIds?: SpellDescriptorMapOrderByRelationAggregateInput
     levelMapping?: SpellLevelMapOrderByRelationAggregateInput
-    schools?: SpellSchoolMapOrderByRelationAggregateInput
-    sources?: SpellSourceMapOrderByRelationAggregateInput
-    subschools?: SpellSubschoolMapOrderByRelationAggregateInput
-    components?: SpellComponentMapOrderByRelationAggregateInput
+    schoolIds?: SpellSchoolMapOrderByRelationAggregateInput
+    sourceBookInfo?: SpellSourceMapOrderByRelationAggregateInput
+    subSchoolIds?: SpellSubschoolMapOrderByRelationAggregateInput
+    componentIds?: SpellComponentMapOrderByRelationAggregateInput
     _relevance?: SpellOrderByRelevanceInput
   }
 
@@ -38603,12 +38356,12 @@ export namespace Prisma {
     baseLevel?: IntFilter<"Spell"> | number
     effect?: StringNullableFilter<"Spell"> | string | null
     target?: StringNullableFilter<"Spell"> | string | null
-    descriptors?: SpellDescriptorMapListRelationFilter
+    descriptorIds?: SpellDescriptorMapListRelationFilter
     levelMapping?: SpellLevelMapListRelationFilter
-    schools?: SpellSchoolMapListRelationFilter
-    sources?: SpellSourceMapListRelationFilter
-    subschools?: SpellSubschoolMapListRelationFilter
-    components?: SpellComponentMapListRelationFilter
+    schoolIds?: SpellSchoolMapListRelationFilter
+    sourceBookInfo?: SpellSourceMapListRelationFilter
+    subSchoolIds?: SpellSubschoolMapListRelationFilter
+    componentIds?: SpellComponentMapListRelationFilter
   }, "id">
 
   export type SpellOrderByWithAggregationInput = {
@@ -38661,31 +38414,28 @@ export namespace Prisma {
     AND?: SpellDescriptorMapWhereInput | SpellDescriptorMapWhereInput[]
     OR?: SpellDescriptorMapWhereInput[]
     NOT?: SpellDescriptorMapWhereInput | SpellDescriptorMapWhereInput[]
-    id?: IntFilter<"SpellDescriptorMap"> | number
     spellId?: IntFilter<"SpellDescriptorMap"> | number
     descriptorId?: IntFilter<"SpellDescriptorMap"> | number
     Spell?: XOR<SpellScalarRelationFilter, SpellWhereInput>
   }
 
   export type SpellDescriptorMapOrderByWithRelationInput = {
-    id?: SortOrder
     spellId?: SortOrder
     descriptorId?: SortOrder
     Spell?: SpellOrderByWithRelationInput
   }
 
   export type SpellDescriptorMapWhereUniqueInput = Prisma.AtLeast<{
-    id?: number
+    spellId_descriptorId?: SpellDescriptorMapSpellIdDescriptorIdCompoundUniqueInput
     AND?: SpellDescriptorMapWhereInput | SpellDescriptorMapWhereInput[]
     OR?: SpellDescriptorMapWhereInput[]
     NOT?: SpellDescriptorMapWhereInput | SpellDescriptorMapWhereInput[]
     spellId?: IntFilter<"SpellDescriptorMap"> | number
     descriptorId?: IntFilter<"SpellDescriptorMap"> | number
     Spell?: XOR<SpellScalarRelationFilter, SpellWhereInput>
-  }, "id">
+  }, "spellId_descriptorId">
 
   export type SpellDescriptorMapOrderByWithAggregationInput = {
-    id?: SortOrder
     spellId?: SortOrder
     descriptorId?: SortOrder
     _count?: SpellDescriptorMapCountOrderByAggregateInput
@@ -38699,7 +38449,6 @@ export namespace Prisma {
     AND?: SpellDescriptorMapScalarWhereWithAggregatesInput | SpellDescriptorMapScalarWhereWithAggregatesInput[]
     OR?: SpellDescriptorMapScalarWhereWithAggregatesInput[]
     NOT?: SpellDescriptorMapScalarWhereWithAggregatesInput | SpellDescriptorMapScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"SpellDescriptorMap"> | number
     spellId?: IntWithAggregatesFilter<"SpellDescriptorMap"> | number
     descriptorId?: IntWithAggregatesFilter<"SpellDescriptorMap"> | number
   }
@@ -38708,31 +38457,28 @@ export namespace Prisma {
     AND?: SpellSchoolMapWhereInput | SpellSchoolMapWhereInput[]
     OR?: SpellSchoolMapWhereInput[]
     NOT?: SpellSchoolMapWhereInput | SpellSchoolMapWhereInput[]
-    id?: IntFilter<"SpellSchoolMap"> | number
     spellId?: IntFilter<"SpellSchoolMap"> | number
     schoolId?: IntFilter<"SpellSchoolMap"> | number
     Spell?: XOR<SpellScalarRelationFilter, SpellWhereInput>
   }
 
   export type SpellSchoolMapOrderByWithRelationInput = {
-    id?: SortOrder
     spellId?: SortOrder
     schoolId?: SortOrder
     Spell?: SpellOrderByWithRelationInput
   }
 
   export type SpellSchoolMapWhereUniqueInput = Prisma.AtLeast<{
-    id?: number
+    spellId_schoolId?: SpellSchoolMapSpellIdSchoolIdCompoundUniqueInput
     AND?: SpellSchoolMapWhereInput | SpellSchoolMapWhereInput[]
     OR?: SpellSchoolMapWhereInput[]
     NOT?: SpellSchoolMapWhereInput | SpellSchoolMapWhereInput[]
     spellId?: IntFilter<"SpellSchoolMap"> | number
     schoolId?: IntFilter<"SpellSchoolMap"> | number
     Spell?: XOR<SpellScalarRelationFilter, SpellWhereInput>
-  }, "id">
+  }, "spellId_schoolId">
 
   export type SpellSchoolMapOrderByWithAggregationInput = {
-    id?: SortOrder
     spellId?: SortOrder
     schoolId?: SortOrder
     _count?: SpellSchoolMapCountOrderByAggregateInput
@@ -38746,7 +38492,6 @@ export namespace Prisma {
     AND?: SpellSchoolMapScalarWhereWithAggregatesInput | SpellSchoolMapScalarWhereWithAggregatesInput[]
     OR?: SpellSchoolMapScalarWhereWithAggregatesInput[]
     NOT?: SpellSchoolMapScalarWhereWithAggregatesInput | SpellSchoolMapScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"SpellSchoolMap"> | number
     spellId?: IntWithAggregatesFilter<"SpellSchoolMap"> | number
     schoolId?: IntWithAggregatesFilter<"SpellSchoolMap"> | number
   }
@@ -38755,44 +38500,37 @@ export namespace Prisma {
     AND?: SpellSourceMapWhereInput | SpellSourceMapWhereInput[]
     OR?: SpellSourceMapWhereInput[]
     NOT?: SpellSourceMapWhereInput | SpellSourceMapWhereInput[]
-    id?: IntFilter<"SpellSourceMap"> | number
     spellId?: IntFilter<"SpellSourceMap"> | number
-    bookId?: IntFilter<"SpellSourceMap"> | number
+    sourceBookId?: IntFilter<"SpellSourceMap"> | number
     pageNumber?: IntNullableFilter<"SpellSourceMap"> | number | null
-    sourceBookId?: IntNullableFilter<"SpellSourceMap"> | number | null
     Spell?: XOR<SpellScalarRelationFilter, SpellWhereInput>
-    SourceBook?: XOR<SourceBookNullableScalarRelationFilter, SourceBookWhereInput> | null
+    SourceBook?: XOR<SourceBookScalarRelationFilter, SourceBookWhereInput>
   }
 
   export type SpellSourceMapOrderByWithRelationInput = {
-    id?: SortOrder
     spellId?: SortOrder
-    bookId?: SortOrder
+    sourceBookId?: SortOrder
     pageNumber?: SortOrderInput | SortOrder
-    sourceBookId?: SortOrderInput | SortOrder
     Spell?: SpellOrderByWithRelationInput
     SourceBook?: SourceBookOrderByWithRelationInput
   }
 
   export type SpellSourceMapWhereUniqueInput = Prisma.AtLeast<{
-    id?: number
+    spellId_sourceBookId?: SpellSourceMapSpellIdSourceBookIdCompoundUniqueInput
     AND?: SpellSourceMapWhereInput | SpellSourceMapWhereInput[]
     OR?: SpellSourceMapWhereInput[]
     NOT?: SpellSourceMapWhereInput | SpellSourceMapWhereInput[]
     spellId?: IntFilter<"SpellSourceMap"> | number
-    bookId?: IntFilter<"SpellSourceMap"> | number
+    sourceBookId?: IntFilter<"SpellSourceMap"> | number
     pageNumber?: IntNullableFilter<"SpellSourceMap"> | number | null
-    sourceBookId?: IntNullableFilter<"SpellSourceMap"> | number | null
     Spell?: XOR<SpellScalarRelationFilter, SpellWhereInput>
-    SourceBook?: XOR<SourceBookNullableScalarRelationFilter, SourceBookWhereInput> | null
-  }, "id">
+    SourceBook?: XOR<SourceBookScalarRelationFilter, SourceBookWhereInput>
+  }, "spellId_sourceBookId">
 
   export type SpellSourceMapOrderByWithAggregationInput = {
-    id?: SortOrder
     spellId?: SortOrder
-    bookId?: SortOrder
+    sourceBookId?: SortOrder
     pageNumber?: SortOrderInput | SortOrder
-    sourceBookId?: SortOrderInput | SortOrder
     _count?: SpellSourceMapCountOrderByAggregateInput
     _avg?: SpellSourceMapAvgOrderByAggregateInput
     _max?: SpellSourceMapMaxOrderByAggregateInput
@@ -38804,44 +38542,39 @@ export namespace Prisma {
     AND?: SpellSourceMapScalarWhereWithAggregatesInput | SpellSourceMapScalarWhereWithAggregatesInput[]
     OR?: SpellSourceMapScalarWhereWithAggregatesInput[]
     NOT?: SpellSourceMapScalarWhereWithAggregatesInput | SpellSourceMapScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"SpellSourceMap"> | number
     spellId?: IntWithAggregatesFilter<"SpellSourceMap"> | number
-    bookId?: IntWithAggregatesFilter<"SpellSourceMap"> | number
+    sourceBookId?: IntWithAggregatesFilter<"SpellSourceMap"> | number
     pageNumber?: IntNullableWithAggregatesFilter<"SpellSourceMap"> | number | null
-    sourceBookId?: IntNullableWithAggregatesFilter<"SpellSourceMap"> | number | null
   }
 
   export type SpellSubschoolMapWhereInput = {
     AND?: SpellSubschoolMapWhereInput | SpellSubschoolMapWhereInput[]
     OR?: SpellSubschoolMapWhereInput[]
     NOT?: SpellSubschoolMapWhereInput | SpellSubschoolMapWhereInput[]
-    id?: IntFilter<"SpellSubschoolMap"> | number
     spellId?: IntFilter<"SpellSubschoolMap"> | number
-    schoolId?: IntFilter<"SpellSubschoolMap"> | number
+    subSchoolId?: IntFilter<"SpellSubschoolMap"> | number
     Spell?: XOR<SpellScalarRelationFilter, SpellWhereInput>
   }
 
   export type SpellSubschoolMapOrderByWithRelationInput = {
-    id?: SortOrder
     spellId?: SortOrder
-    schoolId?: SortOrder
+    subSchoolId?: SortOrder
     Spell?: SpellOrderByWithRelationInput
   }
 
   export type SpellSubschoolMapWhereUniqueInput = Prisma.AtLeast<{
-    id?: number
+    spellId_subSchoolId?: SpellSubschoolMapSpellIdSubSchoolIdCompoundUniqueInput
     AND?: SpellSubschoolMapWhereInput | SpellSubschoolMapWhereInput[]
     OR?: SpellSubschoolMapWhereInput[]
     NOT?: SpellSubschoolMapWhereInput | SpellSubschoolMapWhereInput[]
     spellId?: IntFilter<"SpellSubschoolMap"> | number
-    schoolId?: IntFilter<"SpellSubschoolMap"> | number
+    subSchoolId?: IntFilter<"SpellSubschoolMap"> | number
     Spell?: XOR<SpellScalarRelationFilter, SpellWhereInput>
-  }, "id">
+  }, "spellId_subSchoolId">
 
   export type SpellSubschoolMapOrderByWithAggregationInput = {
-    id?: SortOrder
     spellId?: SortOrder
-    schoolId?: SortOrder
+    subSchoolId?: SortOrder
     _count?: SpellSubschoolMapCountOrderByAggregateInput
     _avg?: SpellSubschoolMapAvgOrderByAggregateInput
     _max?: SpellSubschoolMapMaxOrderByAggregateInput
@@ -38853,40 +38586,36 @@ export namespace Prisma {
     AND?: SpellSubschoolMapScalarWhereWithAggregatesInput | SpellSubschoolMapScalarWhereWithAggregatesInput[]
     OR?: SpellSubschoolMapScalarWhereWithAggregatesInput[]
     NOT?: SpellSubschoolMapScalarWhereWithAggregatesInput | SpellSubschoolMapScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"SpellSubschoolMap"> | number
     spellId?: IntWithAggregatesFilter<"SpellSubschoolMap"> | number
-    schoolId?: IntWithAggregatesFilter<"SpellSubschoolMap"> | number
+    subSchoolId?: IntWithAggregatesFilter<"SpellSubschoolMap"> | number
   }
 
   export type SpellComponentMapWhereInput = {
     AND?: SpellComponentMapWhereInput | SpellComponentMapWhereInput[]
     OR?: SpellComponentMapWhereInput[]
     NOT?: SpellComponentMapWhereInput | SpellComponentMapWhereInput[]
-    id?: IntFilter<"SpellComponentMap"> | number
     spellId?: IntFilter<"SpellComponentMap"> | number
     componentId?: IntFilter<"SpellComponentMap"> | number
     Spell?: XOR<SpellScalarRelationFilter, SpellWhereInput>
   }
 
   export type SpellComponentMapOrderByWithRelationInput = {
-    id?: SortOrder
     spellId?: SortOrder
     componentId?: SortOrder
     Spell?: SpellOrderByWithRelationInput
   }
 
   export type SpellComponentMapWhereUniqueInput = Prisma.AtLeast<{
-    id?: number
+    spellId_componentId?: SpellComponentMapSpellIdComponentIdCompoundUniqueInput
     AND?: SpellComponentMapWhereInput | SpellComponentMapWhereInput[]
     OR?: SpellComponentMapWhereInput[]
     NOT?: SpellComponentMapWhereInput | SpellComponentMapWhereInput[]
     spellId?: IntFilter<"SpellComponentMap"> | number
     componentId?: IntFilter<"SpellComponentMap"> | number
     Spell?: XOR<SpellScalarRelationFilter, SpellWhereInput>
-  }, "id">
+  }, "spellId_componentId">
 
   export type SpellComponentMapOrderByWithAggregationInput = {
-    id?: SortOrder
     spellId?: SortOrder
     componentId?: SortOrder
     _count?: SpellComponentMapCountOrderByAggregateInput
@@ -38900,7 +38629,6 @@ export namespace Prisma {
     AND?: SpellComponentMapScalarWhereWithAggregatesInput | SpellComponentMapScalarWhereWithAggregatesInput[]
     OR?: SpellComponentMapScalarWhereWithAggregatesInput[]
     NOT?: SpellComponentMapScalarWhereWithAggregatesInput | SpellComponentMapScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"SpellComponentMap"> | number
     spellId?: IntWithAggregatesFilter<"SpellComponentMap"> | number
     componentId?: IntWithAggregatesFilter<"SpellComponentMap"> | number
   }
@@ -39346,15 +39074,15 @@ export namespace Prisma {
     OR?: RaceTraitMapWhereInput[]
     NOT?: RaceTraitMapWhereInput | RaceTraitMapWhereInput[]
     raceId?: IntFilter<"RaceTraitMap"> | number
-    traitId?: StringFilter<"RaceTraitMap"> | string
-    value?: StringNullableFilter<"RaceTraitMap"> | string | null
+    traitSlug?: StringFilter<"RaceTraitMap"> | string
+    value?: IntNullableFilter<"RaceTraitMap"> | number | null
     race?: XOR<RaceScalarRelationFilter, RaceWhereInput>
     trait?: XOR<RaceTraitScalarRelationFilter, RaceTraitWhereInput>
   }
 
   export type RaceTraitMapOrderByWithRelationInput = {
     raceId?: SortOrder
-    traitId?: SortOrder
+    traitSlug?: SortOrder
     value?: SortOrderInput | SortOrder
     race?: RaceOrderByWithRelationInput
     trait?: RaceTraitOrderByWithRelationInput
@@ -39362,20 +39090,20 @@ export namespace Prisma {
   }
 
   export type RaceTraitMapWhereUniqueInput = Prisma.AtLeast<{
-    raceId_traitId?: RaceTraitMapRaceIdTraitIdCompoundUniqueInput
+    raceId_traitSlug?: RaceTraitMapRaceIdTraitSlugCompoundUniqueInput
     AND?: RaceTraitMapWhereInput | RaceTraitMapWhereInput[]
     OR?: RaceTraitMapWhereInput[]
     NOT?: RaceTraitMapWhereInput | RaceTraitMapWhereInput[]
     raceId?: IntFilter<"RaceTraitMap"> | number
-    traitId?: StringFilter<"RaceTraitMap"> | string
-    value?: StringNullableFilter<"RaceTraitMap"> | string | null
+    traitSlug?: StringFilter<"RaceTraitMap"> | string
+    value?: IntNullableFilter<"RaceTraitMap"> | number | null
     race?: XOR<RaceScalarRelationFilter, RaceWhereInput>
     trait?: XOR<RaceTraitScalarRelationFilter, RaceTraitWhereInput>
-  }, "raceId_traitId">
+  }, "raceId_traitSlug">
 
   export type RaceTraitMapOrderByWithAggregationInput = {
     raceId?: SortOrder
-    traitId?: SortOrder
+    traitSlug?: SortOrder
     value?: SortOrderInput | SortOrder
     _count?: RaceTraitMapCountOrderByAggregateInput
     _avg?: RaceTraitMapAvgOrderByAggregateInput
@@ -39389,8 +39117,8 @@ export namespace Prisma {
     OR?: RaceTraitMapScalarWhereWithAggregatesInput[]
     NOT?: RaceTraitMapScalarWhereWithAggregatesInput | RaceTraitMapScalarWhereWithAggregatesInput[]
     raceId?: IntWithAggregatesFilter<"RaceTraitMap"> | number
-    traitId?: StringWithAggregatesFilter<"RaceTraitMap"> | string
-    value?: StringNullableWithAggregatesFilter<"RaceTraitMap"> | string | null
+    traitSlug?: StringWithAggregatesFilter<"RaceTraitMap"> | string
+    value?: IntNullableWithAggregatesFilter<"RaceTraitMap"> | number | null
   }
 
   export type RaceAbilityAdjustmentWhereInput = {
@@ -39493,44 +39221,37 @@ export namespace Prisma {
     AND?: RaceSourceMapWhereInput | RaceSourceMapWhereInput[]
     OR?: RaceSourceMapWhereInput[]
     NOT?: RaceSourceMapWhereInput | RaceSourceMapWhereInput[]
-    id?: IntFilter<"RaceSourceMap"> | number
     raceId?: IntFilter<"RaceSourceMap"> | number
-    bookId?: IntFilter<"RaceSourceMap"> | number
+    sourceBookId?: IntFilter<"RaceSourceMap"> | number
     pageNumber?: IntNullableFilter<"RaceSourceMap"> | number | null
-    sourceBookId?: IntNullableFilter<"RaceSourceMap"> | number | null
     Race?: XOR<RaceScalarRelationFilter, RaceWhereInput>
     SourceBook?: XOR<SourceBookNullableScalarRelationFilter, SourceBookWhereInput> | null
   }
 
   export type RaceSourceMapOrderByWithRelationInput = {
-    id?: SortOrder
     raceId?: SortOrder
-    bookId?: SortOrder
+    sourceBookId?: SortOrder
     pageNumber?: SortOrderInput | SortOrder
-    sourceBookId?: SortOrderInput | SortOrder
     Race?: RaceOrderByWithRelationInput
     SourceBook?: SourceBookOrderByWithRelationInput
   }
 
   export type RaceSourceMapWhereUniqueInput = Prisma.AtLeast<{
-    id?: number
+    raceId_sourceBookId?: RaceSourceMapRaceIdSourceBookIdCompoundUniqueInput
     AND?: RaceSourceMapWhereInput | RaceSourceMapWhereInput[]
     OR?: RaceSourceMapWhereInput[]
     NOT?: RaceSourceMapWhereInput | RaceSourceMapWhereInput[]
     raceId?: IntFilter<"RaceSourceMap"> | number
-    bookId?: IntFilter<"RaceSourceMap"> | number
+    sourceBookId?: IntFilter<"RaceSourceMap"> | number
     pageNumber?: IntNullableFilter<"RaceSourceMap"> | number | null
-    sourceBookId?: IntNullableFilter<"RaceSourceMap"> | number | null
     Race?: XOR<RaceScalarRelationFilter, RaceWhereInput>
     SourceBook?: XOR<SourceBookNullableScalarRelationFilter, SourceBookWhereInput> | null
-  }, "id">
+  }, "raceId_sourceBookId">
 
   export type RaceSourceMapOrderByWithAggregationInput = {
-    id?: SortOrder
     raceId?: SortOrder
-    bookId?: SortOrder
+    sourceBookId?: SortOrder
     pageNumber?: SortOrderInput | SortOrder
-    sourceBookId?: SortOrderInput | SortOrder
     _count?: RaceSourceMapCountOrderByAggregateInput
     _avg?: RaceSourceMapAvgOrderByAggregateInput
     _max?: RaceSourceMapMaxOrderByAggregateInput
@@ -39542,11 +39263,9 @@ export namespace Prisma {
     AND?: RaceSourceMapScalarWhereWithAggregatesInput | RaceSourceMapScalarWhereWithAggregatesInput[]
     OR?: RaceSourceMapScalarWhereWithAggregatesInput[]
     NOT?: RaceSourceMapScalarWhereWithAggregatesInput | RaceSourceMapScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"RaceSourceMap"> | number
     raceId?: IntWithAggregatesFilter<"RaceSourceMap"> | number
-    bookId?: IntWithAggregatesFilter<"RaceSourceMap"> | number
+    sourceBookId?: IntWithAggregatesFilter<"RaceSourceMap"> | number
     pageNumber?: IntNullableWithAggregatesFilter<"RaceSourceMap"> | number | null
-    sourceBookId?: IntNullableWithAggregatesFilter<"RaceSourceMap"> | number | null
   }
 
   export type ArmorWhereInput = {
@@ -39647,6 +39366,7 @@ export namespace Prisma {
     name?: StringFilter<"Weapon"> | string
     description?: StringNullableFilter<"Weapon"> | string | null
     category?: IntFilter<"Weapon"> | number
+    type?: IntFilter<"Weapon"> | number
     cost?: DecimalNullableFilter<"Weapon"> | Decimal | DecimalJsLike | number | string | null
     damageSmall?: StringNullableFilter<"Weapon"> | string | null
     damageMedium?: StringNullableFilter<"Weapon"> | string | null
@@ -39661,6 +39381,7 @@ export namespace Prisma {
     name?: SortOrder
     description?: SortOrderInput | SortOrder
     category?: SortOrder
+    type?: SortOrder
     cost?: SortOrderInput | SortOrder
     damageSmall?: SortOrderInput | SortOrder
     damageMedium?: SortOrderInput | SortOrder
@@ -39679,6 +39400,7 @@ export namespace Prisma {
     name?: StringFilter<"Weapon"> | string
     description?: StringNullableFilter<"Weapon"> | string | null
     category?: IntFilter<"Weapon"> | number
+    type?: IntFilter<"Weapon"> | number
     cost?: DecimalNullableFilter<"Weapon"> | Decimal | DecimalJsLike | number | string | null
     damageSmall?: StringNullableFilter<"Weapon"> | string | null
     damageMedium?: StringNullableFilter<"Weapon"> | string | null
@@ -39693,6 +39415,7 @@ export namespace Prisma {
     name?: SortOrder
     description?: SortOrderInput | SortOrder
     category?: SortOrder
+    type?: SortOrder
     cost?: SortOrderInput | SortOrder
     damageSmall?: SortOrderInput | SortOrder
     damageMedium?: SortOrderInput | SortOrder
@@ -39715,6 +39438,7 @@ export namespace Prisma {
     name?: StringWithAggregatesFilter<"Weapon"> | string
     description?: StringNullableWithAggregatesFilter<"Weapon"> | string | null
     category?: IntWithAggregatesFilter<"Weapon"> | number
+    type?: IntWithAggregatesFilter<"Weapon"> | number
     cost?: DecimalNullableWithAggregatesFilter<"Weapon"> | Decimal | DecimalJsLike | number | string | null
     damageSmall?: StringNullableWithAggregatesFilter<"Weapon"> | string | null
     damageMedium?: StringNullableWithAggregatesFilter<"Weapon"> | string | null
@@ -39854,9 +39578,8 @@ export namespace Prisma {
     AND?: ReferenceTableColumnWhereInput | ReferenceTableColumnWhereInput[]
     OR?: ReferenceTableColumnWhereInput[]
     NOT?: ReferenceTableColumnWhereInput | ReferenceTableColumnWhereInput[]
-    id?: IntFilter<"ReferenceTableColumn"> | number
     tableSlug?: StringFilter<"ReferenceTableColumn"> | string
-    columnIndex?: IntFilter<"ReferenceTableColumn"> | number
+    index?: IntFilter<"ReferenceTableColumn"> | number
     header?: StringFilter<"ReferenceTableColumn"> | string
     span?: IntNullableFilter<"ReferenceTableColumn"> | number | null
     alignment?: EnumTextAlignmentNullableFilter<"ReferenceTableColumn"> | $Enums.TextAlignment | null
@@ -39865,9 +39588,8 @@ export namespace Prisma {
   }
 
   export type ReferenceTableColumnOrderByWithRelationInput = {
-    id?: SortOrder
     tableSlug?: SortOrder
-    columnIndex?: SortOrder
+    index?: SortOrder
     header?: SortOrder
     span?: SortOrderInput | SortOrder
     alignment?: SortOrderInput | SortOrder
@@ -39877,23 +39599,22 @@ export namespace Prisma {
   }
 
   export type ReferenceTableColumnWhereUniqueInput = Prisma.AtLeast<{
-    id?: number
+    tableSlug_index?: ReferenceTableColumnTableSlugIndexCompoundUniqueInput
     AND?: ReferenceTableColumnWhereInput | ReferenceTableColumnWhereInput[]
     OR?: ReferenceTableColumnWhereInput[]
     NOT?: ReferenceTableColumnWhereInput | ReferenceTableColumnWhereInput[]
     tableSlug?: StringFilter<"ReferenceTableColumn"> | string
-    columnIndex?: IntFilter<"ReferenceTableColumn"> | number
+    index?: IntFilter<"ReferenceTableColumn"> | number
     header?: StringFilter<"ReferenceTableColumn"> | string
     span?: IntNullableFilter<"ReferenceTableColumn"> | number | null
     alignment?: EnumTextAlignmentNullableFilter<"ReferenceTableColumn"> | $Enums.TextAlignment | null
     cells?: ReferenceTableCellListRelationFilter
     table?: XOR<ReferenceTableScalarRelationFilter, ReferenceTableWhereInput>
-  }, "id">
+  }, "tableSlug_index">
 
   export type ReferenceTableColumnOrderByWithAggregationInput = {
-    id?: SortOrder
     tableSlug?: SortOrder
-    columnIndex?: SortOrder
+    index?: SortOrder
     header?: SortOrder
     span?: SortOrderInput | SortOrder
     alignment?: SortOrderInput | SortOrder
@@ -39908,9 +39629,8 @@ export namespace Prisma {
     AND?: ReferenceTableColumnScalarWhereWithAggregatesInput | ReferenceTableColumnScalarWhereWithAggregatesInput[]
     OR?: ReferenceTableColumnScalarWhereWithAggregatesInput[]
     NOT?: ReferenceTableColumnScalarWhereWithAggregatesInput | ReferenceTableColumnScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"ReferenceTableColumn"> | number
     tableSlug?: StringWithAggregatesFilter<"ReferenceTableColumn"> | string
-    columnIndex?: IntWithAggregatesFilter<"ReferenceTableColumn"> | number
+    index?: IntWithAggregatesFilter<"ReferenceTableColumn"> | number
     header?: StringWithAggregatesFilter<"ReferenceTableColumn"> | string
     span?: IntNullableWithAggregatesFilter<"ReferenceTableColumn"> | number | null
     alignment?: EnumTextAlignmentNullableWithAggregatesFilter<"ReferenceTableColumn"> | $Enums.TextAlignment | null
@@ -39920,41 +39640,34 @@ export namespace Prisma {
     AND?: ReferenceTableRowWhereInput | ReferenceTableRowWhereInput[]
     OR?: ReferenceTableRowWhereInput[]
     NOT?: ReferenceTableRowWhereInput | ReferenceTableRowWhereInput[]
-    id?: IntFilter<"ReferenceTableRow"> | number
     tableSlug?: StringFilter<"ReferenceTableRow"> | string
-    rowIndex?: IntFilter<"ReferenceTableRow"> | number
-    label?: StringNullableFilter<"ReferenceTableRow"> | string | null
+    index?: IntFilter<"ReferenceTableRow"> | number
     cells?: ReferenceTableCellListRelationFilter
     table?: XOR<ReferenceTableScalarRelationFilter, ReferenceTableWhereInput>
   }
 
   export type ReferenceTableRowOrderByWithRelationInput = {
-    id?: SortOrder
     tableSlug?: SortOrder
-    rowIndex?: SortOrder
-    label?: SortOrderInput | SortOrder
+    index?: SortOrder
     cells?: ReferenceTableCellOrderByRelationAggregateInput
     table?: ReferenceTableOrderByWithRelationInput
     _relevance?: ReferenceTableRowOrderByRelevanceInput
   }
 
   export type ReferenceTableRowWhereUniqueInput = Prisma.AtLeast<{
-    id?: number
+    tableSlug_index?: ReferenceTableRowTableSlugIndexCompoundUniqueInput
     AND?: ReferenceTableRowWhereInput | ReferenceTableRowWhereInput[]
     OR?: ReferenceTableRowWhereInput[]
     NOT?: ReferenceTableRowWhereInput | ReferenceTableRowWhereInput[]
     tableSlug?: StringFilter<"ReferenceTableRow"> | string
-    rowIndex?: IntFilter<"ReferenceTableRow"> | number
-    label?: StringNullableFilter<"ReferenceTableRow"> | string | null
+    index?: IntFilter<"ReferenceTableRow"> | number
     cells?: ReferenceTableCellListRelationFilter
     table?: XOR<ReferenceTableScalarRelationFilter, ReferenceTableWhereInput>
-  }, "id">
+  }, "tableSlug_index">
 
   export type ReferenceTableRowOrderByWithAggregationInput = {
-    id?: SortOrder
     tableSlug?: SortOrder
-    rowIndex?: SortOrder
-    label?: SortOrderInput | SortOrder
+    index?: SortOrder
     _count?: ReferenceTableRowCountOrderByAggregateInput
     _avg?: ReferenceTableRowAvgOrderByAggregateInput
     _max?: ReferenceTableRowMaxOrderByAggregateInput
@@ -39966,20 +39679,17 @@ export namespace Prisma {
     AND?: ReferenceTableRowScalarWhereWithAggregatesInput | ReferenceTableRowScalarWhereWithAggregatesInput[]
     OR?: ReferenceTableRowScalarWhereWithAggregatesInput[]
     NOT?: ReferenceTableRowScalarWhereWithAggregatesInput | ReferenceTableRowScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"ReferenceTableRow"> | number
     tableSlug?: StringWithAggregatesFilter<"ReferenceTableRow"> | string
-    rowIndex?: IntWithAggregatesFilter<"ReferenceTableRow"> | number
-    label?: StringNullableWithAggregatesFilter<"ReferenceTableRow"> | string | null
+    index?: IntWithAggregatesFilter<"ReferenceTableRow"> | number
   }
 
   export type ReferenceTableCellWhereInput = {
     AND?: ReferenceTableCellWhereInput | ReferenceTableCellWhereInput[]
     OR?: ReferenceTableCellWhereInput[]
     NOT?: ReferenceTableCellWhereInput | ReferenceTableCellWhereInput[]
-    id?: IntFilter<"ReferenceTableCell"> | number
     tableSlug?: StringFilter<"ReferenceTableCell"> | string
-    rowId?: IntFilter<"ReferenceTableCell"> | number
-    columnId?: IntFilter<"ReferenceTableCell"> | number
+    columnIndex?: IntFilter<"ReferenceTableCell"> | number
+    rowIndex?: IntFilter<"ReferenceTableCell"> | number
     value?: StringNullableFilter<"ReferenceTableCell"> | string | null
     colSpan?: IntNullableFilter<"ReferenceTableCell"> | number | null
     rowSpan?: IntNullableFilter<"ReferenceTableCell"> | number | null
@@ -39989,10 +39699,9 @@ export namespace Prisma {
   }
 
   export type ReferenceTableCellOrderByWithRelationInput = {
-    id?: SortOrder
     tableSlug?: SortOrder
-    rowId?: SortOrder
-    columnId?: SortOrder
+    columnIndex?: SortOrder
+    rowIndex?: SortOrder
     value?: SortOrderInput | SortOrder
     colSpan?: SortOrderInput | SortOrder
     rowSpan?: SortOrderInput | SortOrder
@@ -40003,26 +39712,25 @@ export namespace Prisma {
   }
 
   export type ReferenceTableCellWhereUniqueInput = Prisma.AtLeast<{
-    id?: number
+    tableSlug_columnIndex_rowIndex?: ReferenceTableCellTableSlugColumnIndexRowIndexCompoundUniqueInput
     AND?: ReferenceTableCellWhereInput | ReferenceTableCellWhereInput[]
     OR?: ReferenceTableCellWhereInput[]
     NOT?: ReferenceTableCellWhereInput | ReferenceTableCellWhereInput[]
     tableSlug?: StringFilter<"ReferenceTableCell"> | string
-    rowId?: IntFilter<"ReferenceTableCell"> | number
-    columnId?: IntFilter<"ReferenceTableCell"> | number
+    columnIndex?: IntFilter<"ReferenceTableCell"> | number
+    rowIndex?: IntFilter<"ReferenceTableCell"> | number
     value?: StringNullableFilter<"ReferenceTableCell"> | string | null
     colSpan?: IntNullableFilter<"ReferenceTableCell"> | number | null
     rowSpan?: IntNullableFilter<"ReferenceTableCell"> | number | null
     column?: XOR<ReferenceTableColumnScalarRelationFilter, ReferenceTableColumnWhereInput>
     row?: XOR<ReferenceTableRowScalarRelationFilter, ReferenceTableRowWhereInput>
     table?: XOR<ReferenceTableScalarRelationFilter, ReferenceTableWhereInput>
-  }, "id">
+  }, "tableSlug_columnIndex_rowIndex">
 
   export type ReferenceTableCellOrderByWithAggregationInput = {
-    id?: SortOrder
     tableSlug?: SortOrder
-    rowId?: SortOrder
-    columnId?: SortOrder
+    columnIndex?: SortOrder
+    rowIndex?: SortOrder
     value?: SortOrderInput | SortOrder
     colSpan?: SortOrderInput | SortOrder
     rowSpan?: SortOrderInput | SortOrder
@@ -40037,10 +39745,9 @@ export namespace Prisma {
     AND?: ReferenceTableCellScalarWhereWithAggregatesInput | ReferenceTableCellScalarWhereWithAggregatesInput[]
     OR?: ReferenceTableCellScalarWhereWithAggregatesInput[]
     NOT?: ReferenceTableCellScalarWhereWithAggregatesInput | ReferenceTableCellScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"ReferenceTableCell"> | number
     tableSlug?: StringWithAggregatesFilter<"ReferenceTableCell"> | string
-    rowId?: IntWithAggregatesFilter<"ReferenceTableCell"> | number
-    columnId?: IntWithAggregatesFilter<"ReferenceTableCell"> | number
+    columnIndex?: IntWithAggregatesFilter<"ReferenceTableCell"> | number
+    rowIndex?: IntWithAggregatesFilter<"ReferenceTableCell"> | number
     value?: StringNullableWithAggregatesFilter<"ReferenceTableCell"> | string | null
     colSpan?: IntNullableWithAggregatesFilter<"ReferenceTableCell"> | number | null
     rowSpan?: IntNullableWithAggregatesFilter<"ReferenceTableCell"> | number | null
@@ -40442,44 +40149,55 @@ export namespace Prisma {
   }
 
   export type ClassSpellLevelCreateInput = {
+    level: number
     spellLevel: number
+    numSpells: number
     class: ClassCreateNestedOneWithoutSpellProgressionInput
   }
 
   export type ClassSpellLevelUncheckedCreateInput = {
-    id?: number
     classId: number
+    level: number
     spellLevel: number
+    numSpells: number
   }
 
   export type ClassSpellLevelUpdateInput = {
+    level?: IntFieldUpdateOperationsInput | number
     spellLevel?: IntFieldUpdateOperationsInput | number
+    numSpells?: IntFieldUpdateOperationsInput | number
     class?: ClassUpdateOneRequiredWithoutSpellProgressionNestedInput
   }
 
   export type ClassSpellLevelUncheckedUpdateInput = {
-    id?: IntFieldUpdateOperationsInput | number
     classId?: IntFieldUpdateOperationsInput | number
+    level?: IntFieldUpdateOperationsInput | number
     spellLevel?: IntFieldUpdateOperationsInput | number
+    numSpells?: IntFieldUpdateOperationsInput | number
   }
 
   export type ClassSpellLevelCreateManyInput = {
-    id?: number
     classId: number
+    level: number
     spellLevel: number
+    numSpells: number
   }
 
   export type ClassSpellLevelUpdateManyMutationInput = {
+    level?: IntFieldUpdateOperationsInput | number
     spellLevel?: IntFieldUpdateOperationsInput | number
+    numSpells?: IntFieldUpdateOperationsInput | number
   }
 
   export type ClassSpellLevelUncheckedUpdateManyInput = {
-    id?: IntFieldUpdateOperationsInput | number
     classId?: IntFieldUpdateOperationsInput | number
+    level?: IntFieldUpdateOperationsInput | number
     spellLevel?: IntFieldUpdateOperationsInput | number
+    numSpells?: IntFieldUpdateOperationsInput | number
   }
 
   export type ClassLevelAttributeCreateInput = {
+    level: number
     baseAttackBonus: number
     fortSave: number
     refSave: number
@@ -40488,8 +40206,8 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeUncheckedCreateInput = {
-    id?: number
     classId: number
+    level: number
     baseAttackBonus: number
     fortSave: number
     refSave: number
@@ -40497,6 +40215,7 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeUpdateInput = {
+    level?: IntFieldUpdateOperationsInput | number
     baseAttackBonus?: IntFieldUpdateOperationsInput | number
     fortSave?: IntFieldUpdateOperationsInput | number
     refSave?: IntFieldUpdateOperationsInput | number
@@ -40505,8 +40224,8 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeUncheckedUpdateInput = {
-    id?: IntFieldUpdateOperationsInput | number
     classId?: IntFieldUpdateOperationsInput | number
+    level?: IntFieldUpdateOperationsInput | number
     baseAttackBonus?: IntFieldUpdateOperationsInput | number
     fortSave?: IntFieldUpdateOperationsInput | number
     refSave?: IntFieldUpdateOperationsInput | number
@@ -40514,8 +40233,8 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeCreateManyInput = {
-    id?: number
     classId: number
+    level: number
     baseAttackBonus: number
     fortSave: number
     refSave: number
@@ -40523,6 +40242,7 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeUpdateManyMutationInput = {
+    level?: IntFieldUpdateOperationsInput | number
     baseAttackBonus?: IntFieldUpdateOperationsInput | number
     fortSave?: IntFieldUpdateOperationsInput | number
     refSave?: IntFieldUpdateOperationsInput | number
@@ -40530,8 +40250,8 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeUncheckedUpdateManyInput = {
-    id?: IntFieldUpdateOperationsInput | number
     classId?: IntFieldUpdateOperationsInput | number
+    level?: IntFieldUpdateOperationsInput | number
     baseAttackBonus?: IntFieldUpdateOperationsInput | number
     fortSave?: IntFieldUpdateOperationsInput | number
     refSave?: IntFieldUpdateOperationsInput | number
@@ -40544,7 +40264,6 @@ export namespace Prisma {
   }
 
   export type ClassSkillMapUncheckedCreateInput = {
-    id?: number
     classId: number
     skillId: number
   }
@@ -40555,13 +40274,11 @@ export namespace Prisma {
   }
 
   export type ClassSkillMapUncheckedUpdateInput = {
-    id?: IntFieldUpdateOperationsInput | number
     classId?: IntFieldUpdateOperationsInput | number
     skillId?: IntFieldUpdateOperationsInput | number
   }
 
   export type ClassSkillMapCreateManyInput = {
-    id?: number
     classId: number
     skillId: number
   }
@@ -40571,60 +40288,48 @@ export namespace Prisma {
   }
 
   export type ClassSkillMapUncheckedUpdateManyInput = {
-    id?: IntFieldUpdateOperationsInput | number
     classId?: IntFieldUpdateOperationsInput | number
     skillId?: IntFieldUpdateOperationsInput | number
   }
 
   export type ClassSourceMapCreateInput = {
-    bookId: number
     pageNumber?: number | null
     class: ClassCreateNestedOneWithoutSourcesInput
     SourceBook?: SourceBookCreateNestedOneWithoutClassesInput
   }
 
   export type ClassSourceMapUncheckedCreateInput = {
-    id?: number
     classId: number
-    bookId: number
     pageNumber?: number | null
-    sourceBookId?: number | null
+    sourceBookId: number
   }
 
   export type ClassSourceMapUpdateInput = {
-    bookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
     class?: ClassUpdateOneRequiredWithoutSourcesNestedInput
     SourceBook?: SourceBookUpdateOneWithoutClassesNestedInput
   }
 
   export type ClassSourceMapUncheckedUpdateInput = {
-    id?: IntFieldUpdateOperationsInput | number
     classId?: IntFieldUpdateOperationsInput | number
-    bookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
-    sourceBookId?: NullableIntFieldUpdateOperationsInput | number | null
+    sourceBookId?: IntFieldUpdateOperationsInput | number
   }
 
   export type ClassSourceMapCreateManyInput = {
-    id?: number
     classId: number
-    bookId: number
     pageNumber?: number | null
-    sourceBookId?: number | null
+    sourceBookId: number
   }
 
   export type ClassSourceMapUpdateManyMutationInput = {
-    bookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type ClassSourceMapUncheckedUpdateManyInput = {
-    id?: IntFieldUpdateOperationsInput | number
     classId?: IntFieldUpdateOperationsInput | number
-    bookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
-    sourceBookId?: NullableIntFieldUpdateOperationsInput | number | null
+    sourceBookId?: IntFieldUpdateOperationsInput | number
   }
 
   export type SpellLevelMapCreateInput = {
@@ -40635,7 +40340,6 @@ export namespace Prisma {
   }
 
   export type SpellLevelMapUncheckedCreateInput = {
-    id?: number
     classId: number
     spellId: number
     level: number
@@ -40650,7 +40354,6 @@ export namespace Prisma {
   }
 
   export type SpellLevelMapUncheckedUpdateInput = {
-    id?: IntFieldUpdateOperationsInput | number
     classId?: IntFieldUpdateOperationsInput | number
     spellId?: IntFieldUpdateOperationsInput | number
     level?: IntFieldUpdateOperationsInput | number
@@ -40658,7 +40361,6 @@ export namespace Prisma {
   }
 
   export type SpellLevelMapCreateManyInput = {
-    id?: number
     classId: number
     spellId: number
     level: number
@@ -40671,7 +40373,6 @@ export namespace Prisma {
   }
 
   export type SpellLevelMapUncheckedUpdateManyInput = {
-    id?: IntFieldUpdateOperationsInput | number
     classId?: IntFieldUpdateOperationsInput | number
     spellId?: IntFieldUpdateOperationsInput | number
     level?: IntFieldUpdateOperationsInput | number
@@ -40694,12 +40395,12 @@ export namespace Prisma {
     baseLevel: number
     effect?: string | null
     target?: string | null
-    descriptors?: SpellDescriptorMapCreateNestedManyWithoutSpellInput
+    descriptorIds?: SpellDescriptorMapCreateNestedManyWithoutSpellInput
     levelMapping?: SpellLevelMapCreateNestedManyWithoutSpellInput
-    schools?: SpellSchoolMapCreateNestedManyWithoutSpellInput
-    sources?: SpellSourceMapCreateNestedManyWithoutSpellInput
-    subschools?: SpellSubschoolMapCreateNestedManyWithoutSpellInput
-    components?: SpellComponentMapCreateNestedManyWithoutSpellInput
+    schoolIds?: SpellSchoolMapCreateNestedManyWithoutSpellInput
+    sourceBookInfo?: SpellSourceMapCreateNestedManyWithoutSpellInput
+    subSchoolIds?: SpellSubschoolMapCreateNestedManyWithoutSpellInput
+    componentIds?: SpellComponentMapCreateNestedManyWithoutSpellInput
   }
 
   export type SpellUncheckedCreateInput = {
@@ -40719,12 +40420,12 @@ export namespace Prisma {
     baseLevel: number
     effect?: string | null
     target?: string | null
-    descriptors?: SpellDescriptorMapUncheckedCreateNestedManyWithoutSpellInput
+    descriptorIds?: SpellDescriptorMapUncheckedCreateNestedManyWithoutSpellInput
     levelMapping?: SpellLevelMapUncheckedCreateNestedManyWithoutSpellInput
-    schools?: SpellSchoolMapUncheckedCreateNestedManyWithoutSpellInput
-    sources?: SpellSourceMapUncheckedCreateNestedManyWithoutSpellInput
-    subschools?: SpellSubschoolMapUncheckedCreateNestedManyWithoutSpellInput
-    components?: SpellComponentMapUncheckedCreateNestedManyWithoutSpellInput
+    schoolIds?: SpellSchoolMapUncheckedCreateNestedManyWithoutSpellInput
+    sourceBookInfo?: SpellSourceMapUncheckedCreateNestedManyWithoutSpellInput
+    subSchoolIds?: SpellSubschoolMapUncheckedCreateNestedManyWithoutSpellInput
+    componentIds?: SpellComponentMapUncheckedCreateNestedManyWithoutSpellInput
   }
 
   export type SpellUpdateInput = {
@@ -40743,12 +40444,12 @@ export namespace Prisma {
     baseLevel?: IntFieldUpdateOperationsInput | number
     effect?: NullableStringFieldUpdateOperationsInput | string | null
     target?: NullableStringFieldUpdateOperationsInput | string | null
-    descriptors?: SpellDescriptorMapUpdateManyWithoutSpellNestedInput
+    descriptorIds?: SpellDescriptorMapUpdateManyWithoutSpellNestedInput
     levelMapping?: SpellLevelMapUpdateManyWithoutSpellNestedInput
-    schools?: SpellSchoolMapUpdateManyWithoutSpellNestedInput
-    sources?: SpellSourceMapUpdateManyWithoutSpellNestedInput
-    subschools?: SpellSubschoolMapUpdateManyWithoutSpellNestedInput
-    components?: SpellComponentMapUpdateManyWithoutSpellNestedInput
+    schoolIds?: SpellSchoolMapUpdateManyWithoutSpellNestedInput
+    sourceBookInfo?: SpellSourceMapUpdateManyWithoutSpellNestedInput
+    subSchoolIds?: SpellSubschoolMapUpdateManyWithoutSpellNestedInput
+    componentIds?: SpellComponentMapUpdateManyWithoutSpellNestedInput
   }
 
   export type SpellUncheckedUpdateInput = {
@@ -40768,12 +40469,12 @@ export namespace Prisma {
     baseLevel?: IntFieldUpdateOperationsInput | number
     effect?: NullableStringFieldUpdateOperationsInput | string | null
     target?: NullableStringFieldUpdateOperationsInput | string | null
-    descriptors?: SpellDescriptorMapUncheckedUpdateManyWithoutSpellNestedInput
+    descriptorIds?: SpellDescriptorMapUncheckedUpdateManyWithoutSpellNestedInput
     levelMapping?: SpellLevelMapUncheckedUpdateManyWithoutSpellNestedInput
-    schools?: SpellSchoolMapUncheckedUpdateManyWithoutSpellNestedInput
-    sources?: SpellSourceMapUncheckedUpdateManyWithoutSpellNestedInput
-    subschools?: SpellSubschoolMapUncheckedUpdateManyWithoutSpellNestedInput
-    components?: SpellComponentMapUncheckedUpdateManyWithoutSpellNestedInput
+    schoolIds?: SpellSchoolMapUncheckedUpdateManyWithoutSpellNestedInput
+    sourceBookInfo?: SpellSourceMapUncheckedUpdateManyWithoutSpellNestedInput
+    subSchoolIds?: SpellSubschoolMapUncheckedUpdateManyWithoutSpellNestedInput
+    componentIds?: SpellComponentMapUncheckedUpdateManyWithoutSpellNestedInput
   }
 
   export type SpellCreateManyInput = {
@@ -40834,28 +40535,25 @@ export namespace Prisma {
 
   export type SpellDescriptorMapCreateInput = {
     descriptorId: number
-    Spell: SpellCreateNestedOneWithoutDescriptorsInput
+    Spell: SpellCreateNestedOneWithoutDescriptorIdsInput
   }
 
   export type SpellDescriptorMapUncheckedCreateInput = {
-    id?: number
     spellId: number
     descriptorId: number
   }
 
   export type SpellDescriptorMapUpdateInput = {
     descriptorId?: IntFieldUpdateOperationsInput | number
-    Spell?: SpellUpdateOneRequiredWithoutDescriptorsNestedInput
+    Spell?: SpellUpdateOneRequiredWithoutDescriptorIdsNestedInput
   }
 
   export type SpellDescriptorMapUncheckedUpdateInput = {
-    id?: IntFieldUpdateOperationsInput | number
     spellId?: IntFieldUpdateOperationsInput | number
     descriptorId?: IntFieldUpdateOperationsInput | number
   }
 
   export type SpellDescriptorMapCreateManyInput = {
-    id?: number
     spellId: number
     descriptorId: number
   }
@@ -40865,35 +40563,31 @@ export namespace Prisma {
   }
 
   export type SpellDescriptorMapUncheckedUpdateManyInput = {
-    id?: IntFieldUpdateOperationsInput | number
     spellId?: IntFieldUpdateOperationsInput | number
     descriptorId?: IntFieldUpdateOperationsInput | number
   }
 
   export type SpellSchoolMapCreateInput = {
     schoolId: number
-    Spell: SpellCreateNestedOneWithoutSchoolsInput
+    Spell: SpellCreateNestedOneWithoutSchoolIdsInput
   }
 
   export type SpellSchoolMapUncheckedCreateInput = {
-    id?: number
     spellId: number
     schoolId: number
   }
 
   export type SpellSchoolMapUpdateInput = {
     schoolId?: IntFieldUpdateOperationsInput | number
-    Spell?: SpellUpdateOneRequiredWithoutSchoolsNestedInput
+    Spell?: SpellUpdateOneRequiredWithoutSchoolIdsNestedInput
   }
 
   export type SpellSchoolMapUncheckedUpdateInput = {
-    id?: IntFieldUpdateOperationsInput | number
     spellId?: IntFieldUpdateOperationsInput | number
     schoolId?: IntFieldUpdateOperationsInput | number
   }
 
   export type SpellSchoolMapCreateManyInput = {
-    id?: number
     spellId: number
     schoolId: number
   }
@@ -40903,124 +40597,105 @@ export namespace Prisma {
   }
 
   export type SpellSchoolMapUncheckedUpdateManyInput = {
-    id?: IntFieldUpdateOperationsInput | number
     spellId?: IntFieldUpdateOperationsInput | number
     schoolId?: IntFieldUpdateOperationsInput | number
   }
 
   export type SpellSourceMapCreateInput = {
-    bookId: number
     pageNumber?: number | null
-    Spell: SpellCreateNestedOneWithoutSourcesInput
-    SourceBook?: SourceBookCreateNestedOneWithoutSpellsInput
+    Spell: SpellCreateNestedOneWithoutSourceBookInfoInput
+    SourceBook: SourceBookCreateNestedOneWithoutSpellsInput
   }
 
   export type SpellSourceMapUncheckedCreateInput = {
-    id?: number
     spellId: number
-    bookId: number
+    sourceBookId: number
     pageNumber?: number | null
-    sourceBookId?: number | null
   }
 
   export type SpellSourceMapUpdateInput = {
-    bookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
-    Spell?: SpellUpdateOneRequiredWithoutSourcesNestedInput
-    SourceBook?: SourceBookUpdateOneWithoutSpellsNestedInput
+    Spell?: SpellUpdateOneRequiredWithoutSourceBookInfoNestedInput
+    SourceBook?: SourceBookUpdateOneRequiredWithoutSpellsNestedInput
   }
 
   export type SpellSourceMapUncheckedUpdateInput = {
-    id?: IntFieldUpdateOperationsInput | number
     spellId?: IntFieldUpdateOperationsInput | number
-    bookId?: IntFieldUpdateOperationsInput | number
+    sourceBookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
-    sourceBookId?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type SpellSourceMapCreateManyInput = {
-    id?: number
     spellId: number
-    bookId: number
+    sourceBookId: number
     pageNumber?: number | null
-    sourceBookId?: number | null
   }
 
   export type SpellSourceMapUpdateManyMutationInput = {
-    bookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type SpellSourceMapUncheckedUpdateManyInput = {
-    id?: IntFieldUpdateOperationsInput | number
     spellId?: IntFieldUpdateOperationsInput | number
-    bookId?: IntFieldUpdateOperationsInput | number
+    sourceBookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
-    sourceBookId?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type SpellSubschoolMapCreateInput = {
-    schoolId: number
-    Spell: SpellCreateNestedOneWithoutSubschoolsInput
+    subSchoolId: number
+    Spell: SpellCreateNestedOneWithoutSubSchoolIdsInput
   }
 
   export type SpellSubschoolMapUncheckedCreateInput = {
-    id?: number
     spellId: number
-    schoolId: number
+    subSchoolId: number
   }
 
   export type SpellSubschoolMapUpdateInput = {
-    schoolId?: IntFieldUpdateOperationsInput | number
-    Spell?: SpellUpdateOneRequiredWithoutSubschoolsNestedInput
+    subSchoolId?: IntFieldUpdateOperationsInput | number
+    Spell?: SpellUpdateOneRequiredWithoutSubSchoolIdsNestedInput
   }
 
   export type SpellSubschoolMapUncheckedUpdateInput = {
-    id?: IntFieldUpdateOperationsInput | number
     spellId?: IntFieldUpdateOperationsInput | number
-    schoolId?: IntFieldUpdateOperationsInput | number
+    subSchoolId?: IntFieldUpdateOperationsInput | number
   }
 
   export type SpellSubschoolMapCreateManyInput = {
-    id?: number
     spellId: number
-    schoolId: number
+    subSchoolId: number
   }
 
   export type SpellSubschoolMapUpdateManyMutationInput = {
-    schoolId?: IntFieldUpdateOperationsInput | number
+    subSchoolId?: IntFieldUpdateOperationsInput | number
   }
 
   export type SpellSubschoolMapUncheckedUpdateManyInput = {
-    id?: IntFieldUpdateOperationsInput | number
     spellId?: IntFieldUpdateOperationsInput | number
-    schoolId?: IntFieldUpdateOperationsInput | number
+    subSchoolId?: IntFieldUpdateOperationsInput | number
   }
 
   export type SpellComponentMapCreateInput = {
     componentId: number
-    Spell: SpellCreateNestedOneWithoutComponentsInput
+    Spell: SpellCreateNestedOneWithoutComponentIdsInput
   }
 
   export type SpellComponentMapUncheckedCreateInput = {
-    id?: number
     spellId: number
     componentId: number
   }
 
   export type SpellComponentMapUpdateInput = {
     componentId?: IntFieldUpdateOperationsInput | number
-    Spell?: SpellUpdateOneRequiredWithoutComponentsNestedInput
+    Spell?: SpellUpdateOneRequiredWithoutComponentIdsNestedInput
   }
 
   export type SpellComponentMapUncheckedUpdateInput = {
-    id?: IntFieldUpdateOperationsInput | number
     spellId?: IntFieldUpdateOperationsInput | number
     componentId?: IntFieldUpdateOperationsInput | number
   }
 
   export type SpellComponentMapCreateManyInput = {
-    id?: number
     spellId: number
     componentId: number
   }
@@ -41030,7 +40705,6 @@ export namespace Prisma {
   }
 
   export type SpellComponentMapUncheckedUpdateManyInput = {
-    id?: IntFieldUpdateOperationsInput | number
     spellId?: IntFieldUpdateOperationsInput | number
     componentId?: IntFieldUpdateOperationsInput | number
   }
@@ -41502,43 +41176,43 @@ export namespace Prisma {
   }
 
   export type RaceTraitMapCreateInput = {
-    value?: string | null
+    value?: number | null
     race: RaceCreateNestedOneWithoutTraitsInput
     trait: RaceTraitCreateNestedOneWithoutRaceLinksInput
   }
 
   export type RaceTraitMapUncheckedCreateInput = {
     raceId: number
-    traitId: string
-    value?: string | null
+    traitSlug: string
+    value?: number | null
   }
 
   export type RaceTraitMapUpdateInput = {
-    value?: NullableStringFieldUpdateOperationsInput | string | null
+    value?: NullableIntFieldUpdateOperationsInput | number | null
     race?: RaceUpdateOneRequiredWithoutTraitsNestedInput
     trait?: RaceTraitUpdateOneRequiredWithoutRaceLinksNestedInput
   }
 
   export type RaceTraitMapUncheckedUpdateInput = {
     raceId?: IntFieldUpdateOperationsInput | number
-    traitId?: StringFieldUpdateOperationsInput | string
-    value?: NullableStringFieldUpdateOperationsInput | string | null
+    traitSlug?: StringFieldUpdateOperationsInput | string
+    value?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type RaceTraitMapCreateManyInput = {
     raceId: number
-    traitId: string
-    value?: string | null
+    traitSlug: string
+    value?: number | null
   }
 
   export type RaceTraitMapUpdateManyMutationInput = {
-    value?: NullableStringFieldUpdateOperationsInput | string | null
+    value?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type RaceTraitMapUncheckedUpdateManyInput = {
     raceId?: IntFieldUpdateOperationsInput | number
-    traitId?: StringFieldUpdateOperationsInput | string
-    value?: NullableStringFieldUpdateOperationsInput | string | null
+    traitSlug?: StringFieldUpdateOperationsInput | string
+    value?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type RaceAbilityAdjustmentCreateInput = {
@@ -41624,54 +41298,43 @@ export namespace Prisma {
   }
 
   export type RaceSourceMapCreateInput = {
-    bookId: number
     pageNumber?: number | null
     Race: RaceCreateNestedOneWithoutSourcesInput
     SourceBook?: SourceBookCreateNestedOneWithoutRacesInput
   }
 
   export type RaceSourceMapUncheckedCreateInput = {
-    id?: number
     raceId: number
-    bookId: number
+    sourceBookId: number
     pageNumber?: number | null
-    sourceBookId?: number | null
   }
 
   export type RaceSourceMapUpdateInput = {
-    bookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
     Race?: RaceUpdateOneRequiredWithoutSourcesNestedInput
     SourceBook?: SourceBookUpdateOneWithoutRacesNestedInput
   }
 
   export type RaceSourceMapUncheckedUpdateInput = {
-    id?: IntFieldUpdateOperationsInput | number
     raceId?: IntFieldUpdateOperationsInput | number
-    bookId?: IntFieldUpdateOperationsInput | number
+    sourceBookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
-    sourceBookId?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type RaceSourceMapCreateManyInput = {
-    id?: number
     raceId: number
-    bookId: number
+    sourceBookId: number
     pageNumber?: number | null
-    sourceBookId?: number | null
   }
 
   export type RaceSourceMapUpdateManyMutationInput = {
-    bookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type RaceSourceMapUncheckedUpdateManyInput = {
-    id?: IntFieldUpdateOperationsInput | number
     raceId?: IntFieldUpdateOperationsInput | number
-    bookId?: IntFieldUpdateOperationsInput | number
+    sourceBookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
-    sourceBookId?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type ArmorCreateInput = {
@@ -41780,6 +41443,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     category: number
+    type: number
     cost?: Decimal | DecimalJsLike | number | string | null
     damageSmall?: string | null
     damageMedium?: string | null
@@ -41794,6 +41458,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     category: number
+    type: number
     cost?: Decimal | DecimalJsLike | number | string | null
     damageSmall?: string | null
     damageMedium?: string | null
@@ -41807,6 +41472,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     category?: IntFieldUpdateOperationsInput | number
+    type?: IntFieldUpdateOperationsInput | number
     cost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     damageSmall?: NullableStringFieldUpdateOperationsInput | string | null
     damageMedium?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41821,6 +41487,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     category?: IntFieldUpdateOperationsInput | number
+    type?: IntFieldUpdateOperationsInput | number
     cost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     damageSmall?: NullableStringFieldUpdateOperationsInput | string | null
     damageMedium?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41835,6 +41502,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     category: number
+    type: number
     cost?: Decimal | DecimalJsLike | number | string | null
     damageSmall?: string | null
     damageMedium?: string | null
@@ -41848,6 +41516,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     category?: IntFieldUpdateOperationsInput | number
+    type?: IntFieldUpdateOperationsInput | number
     cost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     damageSmall?: NullableStringFieldUpdateOperationsInput | string | null
     damageMedium?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41862,6 +41531,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     category?: IntFieldUpdateOperationsInput | number
+    type?: IntFieldUpdateOperationsInput | number
     cost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     damageSmall?: NullableStringFieldUpdateOperationsInput | string | null
     damageMedium?: NullableStringFieldUpdateOperationsInput | string | null
@@ -42005,7 +41675,7 @@ export namespace Prisma {
   }
 
   export type ReferenceTableColumnCreateInput = {
-    columnIndex: number
+    index: number
     header: string
     span?: number | null
     alignment?: $Enums.TextAlignment | null
@@ -42014,9 +41684,8 @@ export namespace Prisma {
   }
 
   export type ReferenceTableColumnUncheckedCreateInput = {
-    id?: number
     tableSlug: string
-    columnIndex: number
+    index: number
     header: string
     span?: number | null
     alignment?: $Enums.TextAlignment | null
@@ -42024,7 +41693,7 @@ export namespace Prisma {
   }
 
   export type ReferenceTableColumnUpdateInput = {
-    columnIndex?: IntFieldUpdateOperationsInput | number
+    index?: IntFieldUpdateOperationsInput | number
     header?: StringFieldUpdateOperationsInput | string
     span?: NullableIntFieldUpdateOperationsInput | number | null
     alignment?: NullableEnumTextAlignmentFieldUpdateOperationsInput | $Enums.TextAlignment | null
@@ -42033,9 +41702,8 @@ export namespace Prisma {
   }
 
   export type ReferenceTableColumnUncheckedUpdateInput = {
-    id?: IntFieldUpdateOperationsInput | number
     tableSlug?: StringFieldUpdateOperationsInput | string
-    columnIndex?: IntFieldUpdateOperationsInput | number
+    index?: IntFieldUpdateOperationsInput | number
     header?: StringFieldUpdateOperationsInput | string
     span?: NullableIntFieldUpdateOperationsInput | number | null
     alignment?: NullableEnumTextAlignmentFieldUpdateOperationsInput | $Enums.TextAlignment | null
@@ -42043,77 +41711,64 @@ export namespace Prisma {
   }
 
   export type ReferenceTableColumnCreateManyInput = {
-    id?: number
     tableSlug: string
-    columnIndex: number
+    index: number
     header: string
     span?: number | null
     alignment?: $Enums.TextAlignment | null
   }
 
   export type ReferenceTableColumnUpdateManyMutationInput = {
-    columnIndex?: IntFieldUpdateOperationsInput | number
+    index?: IntFieldUpdateOperationsInput | number
     header?: StringFieldUpdateOperationsInput | string
     span?: NullableIntFieldUpdateOperationsInput | number | null
     alignment?: NullableEnumTextAlignmentFieldUpdateOperationsInput | $Enums.TextAlignment | null
   }
 
   export type ReferenceTableColumnUncheckedUpdateManyInput = {
-    id?: IntFieldUpdateOperationsInput | number
     tableSlug?: StringFieldUpdateOperationsInput | string
-    columnIndex?: IntFieldUpdateOperationsInput | number
+    index?: IntFieldUpdateOperationsInput | number
     header?: StringFieldUpdateOperationsInput | string
     span?: NullableIntFieldUpdateOperationsInput | number | null
     alignment?: NullableEnumTextAlignmentFieldUpdateOperationsInput | $Enums.TextAlignment | null
   }
 
   export type ReferenceTableRowCreateInput = {
-    rowIndex: number
-    label?: string | null
+    index: number
     cells?: ReferenceTableCellCreateNestedManyWithoutRowInput
     table: ReferenceTableCreateNestedOneWithoutRowsInput
   }
 
   export type ReferenceTableRowUncheckedCreateInput = {
-    id?: number
     tableSlug: string
-    rowIndex: number
-    label?: string | null
+    index: number
     cells?: ReferenceTableCellUncheckedCreateNestedManyWithoutRowInput
   }
 
   export type ReferenceTableRowUpdateInput = {
-    rowIndex?: IntFieldUpdateOperationsInput | number
-    label?: NullableStringFieldUpdateOperationsInput | string | null
+    index?: IntFieldUpdateOperationsInput | number
     cells?: ReferenceTableCellUpdateManyWithoutRowNestedInput
     table?: ReferenceTableUpdateOneRequiredWithoutRowsNestedInput
   }
 
   export type ReferenceTableRowUncheckedUpdateInput = {
-    id?: IntFieldUpdateOperationsInput | number
     tableSlug?: StringFieldUpdateOperationsInput | string
-    rowIndex?: IntFieldUpdateOperationsInput | number
-    label?: NullableStringFieldUpdateOperationsInput | string | null
+    index?: IntFieldUpdateOperationsInput | number
     cells?: ReferenceTableCellUncheckedUpdateManyWithoutRowNestedInput
   }
 
   export type ReferenceTableRowCreateManyInput = {
-    id?: number
     tableSlug: string
-    rowIndex: number
-    label?: string | null
+    index: number
   }
 
   export type ReferenceTableRowUpdateManyMutationInput = {
-    rowIndex?: IntFieldUpdateOperationsInput | number
-    label?: NullableStringFieldUpdateOperationsInput | string | null
+    index?: IntFieldUpdateOperationsInput | number
   }
 
   export type ReferenceTableRowUncheckedUpdateManyInput = {
-    id?: IntFieldUpdateOperationsInput | number
     tableSlug?: StringFieldUpdateOperationsInput | string
-    rowIndex?: IntFieldUpdateOperationsInput | number
-    label?: NullableStringFieldUpdateOperationsInput | string | null
+    index?: IntFieldUpdateOperationsInput | number
   }
 
   export type ReferenceTableCellCreateInput = {
@@ -42126,10 +41781,9 @@ export namespace Prisma {
   }
 
   export type ReferenceTableCellUncheckedCreateInput = {
-    id?: number
     tableSlug: string
-    rowId: number
-    columnId: number
+    columnIndex: number
+    rowIndex: number
     value?: string | null
     colSpan?: number | null
     rowSpan?: number | null
@@ -42145,20 +41799,18 @@ export namespace Prisma {
   }
 
   export type ReferenceTableCellUncheckedUpdateInput = {
-    id?: IntFieldUpdateOperationsInput | number
     tableSlug?: StringFieldUpdateOperationsInput | string
-    rowId?: IntFieldUpdateOperationsInput | number
-    columnId?: IntFieldUpdateOperationsInput | number
+    columnIndex?: IntFieldUpdateOperationsInput | number
+    rowIndex?: IntFieldUpdateOperationsInput | number
     value?: NullableStringFieldUpdateOperationsInput | string | null
     colSpan?: NullableIntFieldUpdateOperationsInput | number | null
     rowSpan?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type ReferenceTableCellCreateManyInput = {
-    id?: number
     tableSlug: string
-    rowId: number
-    columnId: number
+    columnIndex: number
+    rowIndex: number
     value?: string | null
     colSpan?: number | null
     rowSpan?: number | null
@@ -42171,10 +41823,9 @@ export namespace Prisma {
   }
 
   export type ReferenceTableCellUncheckedUpdateManyInput = {
-    id?: IntFieldUpdateOperationsInput | number
     tableSlug?: StringFieldUpdateOperationsInput | string
-    rowId?: IntFieldUpdateOperationsInput | number
-    columnId?: IntFieldUpdateOperationsInput | number
+    columnIndex?: IntFieldUpdateOperationsInput | number
+    rowIndex?: IntFieldUpdateOperationsInput | number
     value?: NullableStringFieldUpdateOperationsInput | string | null
     colSpan?: NullableIntFieldUpdateOperationsInput | number | null
     rowSpan?: NullableIntFieldUpdateOperationsInput | number | null
@@ -42716,39 +42367,55 @@ export namespace Prisma {
     level?: SortOrder
   }
 
+  export type ClassSpellLevelClassIdLevelSpellLevelCompoundUniqueInput = {
+    classId: number
+    level: number
+    spellLevel: number
+  }
+
   export type ClassSpellLevelCountOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
+    level?: SortOrder
     spellLevel?: SortOrder
+    numSpells?: SortOrder
   }
 
   export type ClassSpellLevelAvgOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
+    level?: SortOrder
     spellLevel?: SortOrder
+    numSpells?: SortOrder
   }
 
   export type ClassSpellLevelMaxOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
+    level?: SortOrder
     spellLevel?: SortOrder
+    numSpells?: SortOrder
   }
 
   export type ClassSpellLevelMinOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
+    level?: SortOrder
     spellLevel?: SortOrder
+    numSpells?: SortOrder
   }
 
   export type ClassSpellLevelSumOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
+    level?: SortOrder
     spellLevel?: SortOrder
+    numSpells?: SortOrder
+  }
+
+  export type ClassLevelAttributeClassIdLevelCompoundUniqueInput = {
+    classId: number
+    level: number
   }
 
   export type ClassLevelAttributeCountOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
+    level?: SortOrder
     baseAttackBonus?: SortOrder
     fortSave?: SortOrder
     refSave?: SortOrder
@@ -42756,8 +42423,8 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeAvgOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
+    level?: SortOrder
     baseAttackBonus?: SortOrder
     fortSave?: SortOrder
     refSave?: SortOrder
@@ -42765,8 +42432,8 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeMaxOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
+    level?: SortOrder
     baseAttackBonus?: SortOrder
     fortSave?: SortOrder
     refSave?: SortOrder
@@ -42774,8 +42441,8 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeMinOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
+    level?: SortOrder
     baseAttackBonus?: SortOrder
     fortSave?: SortOrder
     refSave?: SortOrder
@@ -42783,8 +42450,8 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeSumOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
+    level?: SortOrder
     baseAttackBonus?: SortOrder
     fortSave?: SortOrder
     refSave?: SortOrder
@@ -42796,32 +42463,32 @@ export namespace Prisma {
     isNot?: SkillWhereInput
   }
 
+  export type ClassSkillMapClassIdSkillIdCompoundUniqueInput = {
+    classId: number
+    skillId: number
+  }
+
   export type ClassSkillMapCountOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
     skillId?: SortOrder
   }
 
   export type ClassSkillMapAvgOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
     skillId?: SortOrder
   }
 
   export type ClassSkillMapMaxOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
     skillId?: SortOrder
   }
 
   export type ClassSkillMapMinOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
     skillId?: SortOrder
   }
 
   export type ClassSkillMapSumOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
     skillId?: SortOrder
   }
@@ -42831,42 +42498,37 @@ export namespace Prisma {
     isNot?: SourceBookWhereInput | null
   }
 
+  export type ClassSourceMapClassIdSourceBookIdCompoundUniqueInput = {
+    classId: number
+    sourceBookId: number
+  }
+
   export type ClassSourceMapCountOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
-    bookId?: SortOrder
     pageNumber?: SortOrder
     sourceBookId?: SortOrder
   }
 
   export type ClassSourceMapAvgOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
-    bookId?: SortOrder
     pageNumber?: SortOrder
     sourceBookId?: SortOrder
   }
 
   export type ClassSourceMapMaxOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
-    bookId?: SortOrder
     pageNumber?: SortOrder
     sourceBookId?: SortOrder
   }
 
   export type ClassSourceMapMinOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
-    bookId?: SortOrder
     pageNumber?: SortOrder
     sourceBookId?: SortOrder
   }
 
   export type ClassSourceMapSumOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
-    bookId?: SortOrder
     pageNumber?: SortOrder
     sourceBookId?: SortOrder
   }
@@ -42876,8 +42538,12 @@ export namespace Prisma {
     isNot?: SpellWhereInput
   }
 
+  export type SpellLevelMapSpellIdClassIdCompoundUniqueInput = {
+    spellId: number
+    classId: number
+  }
+
   export type SpellLevelMapCountOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
     spellId?: SortOrder
     level?: SortOrder
@@ -42885,14 +42551,12 @@ export namespace Prisma {
   }
 
   export type SpellLevelMapAvgOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
     spellId?: SortOrder
     level?: SortOrder
   }
 
   export type SpellLevelMapMaxOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
     spellId?: SortOrder
     level?: SortOrder
@@ -42900,7 +42564,6 @@ export namespace Prisma {
   }
 
   export type SpellLevelMapMinOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
     spellId?: SortOrder
     level?: SortOrder
@@ -42908,7 +42571,6 @@ export namespace Prisma {
   }
 
   export type SpellLevelMapSumOrderByAggregateInput = {
-    id?: SortOrder
     classId?: SortOrder
     spellId?: SortOrder
     level?: SortOrder
@@ -43041,162 +42703,162 @@ export namespace Prisma {
     baseLevel?: SortOrder
   }
 
+  export type SpellDescriptorMapSpellIdDescriptorIdCompoundUniqueInput = {
+    spellId: number
+    descriptorId: number
+  }
+
   export type SpellDescriptorMapCountOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
     descriptorId?: SortOrder
   }
 
   export type SpellDescriptorMapAvgOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
     descriptorId?: SortOrder
   }
 
   export type SpellDescriptorMapMaxOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
     descriptorId?: SortOrder
   }
 
   export type SpellDescriptorMapMinOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
     descriptorId?: SortOrder
   }
 
   export type SpellDescriptorMapSumOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
     descriptorId?: SortOrder
   }
 
+  export type SpellSchoolMapSpellIdSchoolIdCompoundUniqueInput = {
+    spellId: number
+    schoolId: number
+  }
+
   export type SpellSchoolMapCountOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
     schoolId?: SortOrder
   }
 
   export type SpellSchoolMapAvgOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
     schoolId?: SortOrder
   }
 
   export type SpellSchoolMapMaxOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
     schoolId?: SortOrder
   }
 
   export type SpellSchoolMapMinOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
     schoolId?: SortOrder
   }
 
   export type SpellSchoolMapSumOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
     schoolId?: SortOrder
+  }
+
+  export type SourceBookScalarRelationFilter = {
+    is?: SourceBookWhereInput
+    isNot?: SourceBookWhereInput
+  }
+
+  export type SpellSourceMapSpellIdSourceBookIdCompoundUniqueInput = {
+    spellId: number
+    sourceBookId: number
   }
 
   export type SpellSourceMapCountOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
-    bookId?: SortOrder
-    pageNumber?: SortOrder
     sourceBookId?: SortOrder
+    pageNumber?: SortOrder
   }
 
   export type SpellSourceMapAvgOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
-    bookId?: SortOrder
-    pageNumber?: SortOrder
     sourceBookId?: SortOrder
+    pageNumber?: SortOrder
   }
 
   export type SpellSourceMapMaxOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
-    bookId?: SortOrder
-    pageNumber?: SortOrder
     sourceBookId?: SortOrder
+    pageNumber?: SortOrder
   }
 
   export type SpellSourceMapMinOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
-    bookId?: SortOrder
-    pageNumber?: SortOrder
     sourceBookId?: SortOrder
+    pageNumber?: SortOrder
   }
 
   export type SpellSourceMapSumOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
-    bookId?: SortOrder
-    pageNumber?: SortOrder
     sourceBookId?: SortOrder
+    pageNumber?: SortOrder
+  }
+
+  export type SpellSubschoolMapSpellIdSubSchoolIdCompoundUniqueInput = {
+    spellId: number
+    subSchoolId: number
   }
 
   export type SpellSubschoolMapCountOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
-    schoolId?: SortOrder
+    subSchoolId?: SortOrder
   }
 
   export type SpellSubschoolMapAvgOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
-    schoolId?: SortOrder
+    subSchoolId?: SortOrder
   }
 
   export type SpellSubschoolMapMaxOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
-    schoolId?: SortOrder
+    subSchoolId?: SortOrder
   }
 
   export type SpellSubschoolMapMinOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
-    schoolId?: SortOrder
+    subSchoolId?: SortOrder
   }
 
   export type SpellSubschoolMapSumOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
-    schoolId?: SortOrder
+    subSchoolId?: SortOrder
+  }
+
+  export type SpellComponentMapSpellIdComponentIdCompoundUniqueInput = {
+    spellId: number
+    componentId: number
   }
 
   export type SpellComponentMapCountOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
     componentId?: SortOrder
   }
 
   export type SpellComponentMapAvgOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
     componentId?: SortOrder
   }
 
   export type SpellComponentMapMaxOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
     componentId?: SortOrder
   }
 
   export type SpellComponentMapMinOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
     componentId?: SortOrder
   }
 
   export type SpellComponentMapSumOrderByAggregateInput = {
-    id?: SortOrder
     spellId?: SortOrder
     componentId?: SortOrder
   }
@@ -43598,35 +43260,37 @@ export namespace Prisma {
     search: string
   }
 
-  export type RaceTraitMapRaceIdTraitIdCompoundUniqueInput = {
+  export type RaceTraitMapRaceIdTraitSlugCompoundUniqueInput = {
     raceId: number
-    traitId: string
+    traitSlug: string
   }
 
   export type RaceTraitMapCountOrderByAggregateInput = {
     raceId?: SortOrder
-    traitId?: SortOrder
+    traitSlug?: SortOrder
     value?: SortOrder
   }
 
   export type RaceTraitMapAvgOrderByAggregateInput = {
     raceId?: SortOrder
+    value?: SortOrder
   }
 
   export type RaceTraitMapMaxOrderByAggregateInput = {
     raceId?: SortOrder
-    traitId?: SortOrder
+    traitSlug?: SortOrder
     value?: SortOrder
   }
 
   export type RaceTraitMapMinOrderByAggregateInput = {
     raceId?: SortOrder
-    traitId?: SortOrder
+    traitSlug?: SortOrder
     value?: SortOrder
   }
 
   export type RaceTraitMapSumOrderByAggregateInput = {
     raceId?: SortOrder
+    value?: SortOrder
   }
 
   export type RaceAbilityAdjustmentRaceIdAbilityIdCompoundUniqueInput = {
@@ -43697,44 +43361,39 @@ export namespace Prisma {
     languageId?: SortOrder
   }
 
+  export type RaceSourceMapRaceIdSourceBookIdCompoundUniqueInput = {
+    raceId: number
+    sourceBookId: number
+  }
+
   export type RaceSourceMapCountOrderByAggregateInput = {
-    id?: SortOrder
     raceId?: SortOrder
-    bookId?: SortOrder
-    pageNumber?: SortOrder
     sourceBookId?: SortOrder
+    pageNumber?: SortOrder
   }
 
   export type RaceSourceMapAvgOrderByAggregateInput = {
-    id?: SortOrder
     raceId?: SortOrder
-    bookId?: SortOrder
-    pageNumber?: SortOrder
     sourceBookId?: SortOrder
+    pageNumber?: SortOrder
   }
 
   export type RaceSourceMapMaxOrderByAggregateInput = {
-    id?: SortOrder
     raceId?: SortOrder
-    bookId?: SortOrder
-    pageNumber?: SortOrder
     sourceBookId?: SortOrder
+    pageNumber?: SortOrder
   }
 
   export type RaceSourceMapMinOrderByAggregateInput = {
-    id?: SortOrder
     raceId?: SortOrder
-    bookId?: SortOrder
-    pageNumber?: SortOrder
     sourceBookId?: SortOrder
+    pageNumber?: SortOrder
   }
 
   export type RaceSourceMapSumOrderByAggregateInput = {
-    id?: SortOrder
     raceId?: SortOrder
-    bookId?: SortOrder
-    pageNumber?: SortOrder
     sourceBookId?: SortOrder
+    pageNumber?: SortOrder
   }
 
   export type DecimalNullableFilter<$PrismaModel = never> = {
@@ -43852,6 +43511,7 @@ export namespace Prisma {
     name?: SortOrder
     description?: SortOrder
     category?: SortOrder
+    type?: SortOrder
     cost?: SortOrder
     damageSmall?: SortOrder
     damageMedium?: SortOrder
@@ -43864,6 +43524,7 @@ export namespace Prisma {
   export type WeaponAvgOrderByAggregateInput = {
     id?: SortOrder
     category?: SortOrder
+    type?: SortOrder
     cost?: SortOrder
     weight?: SortOrder
     damageTypeId?: SortOrder
@@ -43874,6 +43535,7 @@ export namespace Prisma {
     name?: SortOrder
     description?: SortOrder
     category?: SortOrder
+    type?: SortOrder
     cost?: SortOrder
     damageSmall?: SortOrder
     damageMedium?: SortOrder
@@ -43888,6 +43550,7 @@ export namespace Prisma {
     name?: SortOrder
     description?: SortOrder
     category?: SortOrder
+    type?: SortOrder
     cost?: SortOrder
     damageSmall?: SortOrder
     damageMedium?: SortOrder
@@ -43900,6 +43563,7 @@ export namespace Prisma {
   export type WeaponSumOrderByAggregateInput = {
     id?: SortOrder
     category?: SortOrder
+    type?: SortOrder
     cost?: SortOrder
     weight?: SortOrder
     damageTypeId?: SortOrder
@@ -44048,42 +43712,42 @@ export namespace Prisma {
     search: string
   }
 
+  export type ReferenceTableColumnTableSlugIndexCompoundUniqueInput = {
+    tableSlug: string
+    index: number
+  }
+
   export type ReferenceTableColumnCountOrderByAggregateInput = {
-    id?: SortOrder
     tableSlug?: SortOrder
-    columnIndex?: SortOrder
+    index?: SortOrder
     header?: SortOrder
     span?: SortOrder
     alignment?: SortOrder
   }
 
   export type ReferenceTableColumnAvgOrderByAggregateInput = {
-    id?: SortOrder
-    columnIndex?: SortOrder
+    index?: SortOrder
     span?: SortOrder
   }
 
   export type ReferenceTableColumnMaxOrderByAggregateInput = {
-    id?: SortOrder
     tableSlug?: SortOrder
-    columnIndex?: SortOrder
+    index?: SortOrder
     header?: SortOrder
     span?: SortOrder
     alignment?: SortOrder
   }
 
   export type ReferenceTableColumnMinOrderByAggregateInput = {
-    id?: SortOrder
     tableSlug?: SortOrder
-    columnIndex?: SortOrder
+    index?: SortOrder
     header?: SortOrder
     span?: SortOrder
     alignment?: SortOrder
   }
 
   export type ReferenceTableColumnSumOrderByAggregateInput = {
-    id?: SortOrder
-    columnIndex?: SortOrder
+    index?: SortOrder
     span?: SortOrder
   }
 
@@ -44103,35 +43767,32 @@ export namespace Prisma {
     search: string
   }
 
+  export type ReferenceTableRowTableSlugIndexCompoundUniqueInput = {
+    tableSlug: string
+    index: number
+  }
+
   export type ReferenceTableRowCountOrderByAggregateInput = {
-    id?: SortOrder
     tableSlug?: SortOrder
-    rowIndex?: SortOrder
-    label?: SortOrder
+    index?: SortOrder
   }
 
   export type ReferenceTableRowAvgOrderByAggregateInput = {
-    id?: SortOrder
-    rowIndex?: SortOrder
+    index?: SortOrder
   }
 
   export type ReferenceTableRowMaxOrderByAggregateInput = {
-    id?: SortOrder
     tableSlug?: SortOrder
-    rowIndex?: SortOrder
-    label?: SortOrder
+    index?: SortOrder
   }
 
   export type ReferenceTableRowMinOrderByAggregateInput = {
-    id?: SortOrder
     tableSlug?: SortOrder
-    rowIndex?: SortOrder
-    label?: SortOrder
+    index?: SortOrder
   }
 
   export type ReferenceTableRowSumOrderByAggregateInput = {
-    id?: SortOrder
-    rowIndex?: SortOrder
+    index?: SortOrder
   }
 
   export type ReferenceTableColumnScalarRelationFilter = {
@@ -44150,48 +43811,49 @@ export namespace Prisma {
     search: string
   }
 
+  export type ReferenceTableCellTableSlugColumnIndexRowIndexCompoundUniqueInput = {
+    tableSlug: string
+    columnIndex: number
+    rowIndex: number
+  }
+
   export type ReferenceTableCellCountOrderByAggregateInput = {
-    id?: SortOrder
     tableSlug?: SortOrder
-    rowId?: SortOrder
-    columnId?: SortOrder
+    columnIndex?: SortOrder
+    rowIndex?: SortOrder
     value?: SortOrder
     colSpan?: SortOrder
     rowSpan?: SortOrder
   }
 
   export type ReferenceTableCellAvgOrderByAggregateInput = {
-    id?: SortOrder
-    rowId?: SortOrder
-    columnId?: SortOrder
+    columnIndex?: SortOrder
+    rowIndex?: SortOrder
     colSpan?: SortOrder
     rowSpan?: SortOrder
   }
 
   export type ReferenceTableCellMaxOrderByAggregateInput = {
-    id?: SortOrder
     tableSlug?: SortOrder
-    rowId?: SortOrder
-    columnId?: SortOrder
+    columnIndex?: SortOrder
+    rowIndex?: SortOrder
     value?: SortOrder
     colSpan?: SortOrder
     rowSpan?: SortOrder
   }
 
   export type ReferenceTableCellMinOrderByAggregateInput = {
-    id?: SortOrder
     tableSlug?: SortOrder
-    rowId?: SortOrder
-    columnId?: SortOrder
+    columnIndex?: SortOrder
+    rowIndex?: SortOrder
     value?: SortOrder
     colSpan?: SortOrder
     rowSpan?: SortOrder
   }
 
   export type ReferenceTableCellSumOrderByAggregateInput = {
-    id?: SortOrder
-    rowId?: SortOrder
-    columnId?: SortOrder
+    columnIndex?: SortOrder
+    rowIndex?: SortOrder
     colSpan?: SortOrder
     rowSpan?: SortOrder
   }
@@ -45056,37 +44718,37 @@ export namespace Prisma {
     deleteMany?: SpellComponentMapScalarWhereInput | SpellComponentMapScalarWhereInput[]
   }
 
-  export type SpellCreateNestedOneWithoutDescriptorsInput = {
-    create?: XOR<SpellCreateWithoutDescriptorsInput, SpellUncheckedCreateWithoutDescriptorsInput>
-    connectOrCreate?: SpellCreateOrConnectWithoutDescriptorsInput
+  export type SpellCreateNestedOneWithoutDescriptorIdsInput = {
+    create?: XOR<SpellCreateWithoutDescriptorIdsInput, SpellUncheckedCreateWithoutDescriptorIdsInput>
+    connectOrCreate?: SpellCreateOrConnectWithoutDescriptorIdsInput
     connect?: SpellWhereUniqueInput
   }
 
-  export type SpellUpdateOneRequiredWithoutDescriptorsNestedInput = {
-    create?: XOR<SpellCreateWithoutDescriptorsInput, SpellUncheckedCreateWithoutDescriptorsInput>
-    connectOrCreate?: SpellCreateOrConnectWithoutDescriptorsInput
-    upsert?: SpellUpsertWithoutDescriptorsInput
+  export type SpellUpdateOneRequiredWithoutDescriptorIdsNestedInput = {
+    create?: XOR<SpellCreateWithoutDescriptorIdsInput, SpellUncheckedCreateWithoutDescriptorIdsInput>
+    connectOrCreate?: SpellCreateOrConnectWithoutDescriptorIdsInput
+    upsert?: SpellUpsertWithoutDescriptorIdsInput
     connect?: SpellWhereUniqueInput
-    update?: XOR<XOR<SpellUpdateToOneWithWhereWithoutDescriptorsInput, SpellUpdateWithoutDescriptorsInput>, SpellUncheckedUpdateWithoutDescriptorsInput>
+    update?: XOR<XOR<SpellUpdateToOneWithWhereWithoutDescriptorIdsInput, SpellUpdateWithoutDescriptorIdsInput>, SpellUncheckedUpdateWithoutDescriptorIdsInput>
   }
 
-  export type SpellCreateNestedOneWithoutSchoolsInput = {
-    create?: XOR<SpellCreateWithoutSchoolsInput, SpellUncheckedCreateWithoutSchoolsInput>
-    connectOrCreate?: SpellCreateOrConnectWithoutSchoolsInput
+  export type SpellCreateNestedOneWithoutSchoolIdsInput = {
+    create?: XOR<SpellCreateWithoutSchoolIdsInput, SpellUncheckedCreateWithoutSchoolIdsInput>
+    connectOrCreate?: SpellCreateOrConnectWithoutSchoolIdsInput
     connect?: SpellWhereUniqueInput
   }
 
-  export type SpellUpdateOneRequiredWithoutSchoolsNestedInput = {
-    create?: XOR<SpellCreateWithoutSchoolsInput, SpellUncheckedCreateWithoutSchoolsInput>
-    connectOrCreate?: SpellCreateOrConnectWithoutSchoolsInput
-    upsert?: SpellUpsertWithoutSchoolsInput
+  export type SpellUpdateOneRequiredWithoutSchoolIdsNestedInput = {
+    create?: XOR<SpellCreateWithoutSchoolIdsInput, SpellUncheckedCreateWithoutSchoolIdsInput>
+    connectOrCreate?: SpellCreateOrConnectWithoutSchoolIdsInput
+    upsert?: SpellUpsertWithoutSchoolIdsInput
     connect?: SpellWhereUniqueInput
-    update?: XOR<XOR<SpellUpdateToOneWithWhereWithoutSchoolsInput, SpellUpdateWithoutSchoolsInput>, SpellUncheckedUpdateWithoutSchoolsInput>
+    update?: XOR<XOR<SpellUpdateToOneWithWhereWithoutSchoolIdsInput, SpellUpdateWithoutSchoolIdsInput>, SpellUncheckedUpdateWithoutSchoolIdsInput>
   }
 
-  export type SpellCreateNestedOneWithoutSourcesInput = {
-    create?: XOR<SpellCreateWithoutSourcesInput, SpellUncheckedCreateWithoutSourcesInput>
-    connectOrCreate?: SpellCreateOrConnectWithoutSourcesInput
+  export type SpellCreateNestedOneWithoutSourceBookInfoInput = {
+    create?: XOR<SpellCreateWithoutSourceBookInfoInput, SpellUncheckedCreateWithoutSourceBookInfoInput>
+    connectOrCreate?: SpellCreateOrConnectWithoutSourceBookInfoInput
     connect?: SpellWhereUniqueInput
   }
 
@@ -45096,50 +44758,48 @@ export namespace Prisma {
     connect?: SourceBookWhereUniqueInput
   }
 
-  export type SpellUpdateOneRequiredWithoutSourcesNestedInput = {
-    create?: XOR<SpellCreateWithoutSourcesInput, SpellUncheckedCreateWithoutSourcesInput>
-    connectOrCreate?: SpellCreateOrConnectWithoutSourcesInput
-    upsert?: SpellUpsertWithoutSourcesInput
+  export type SpellUpdateOneRequiredWithoutSourceBookInfoNestedInput = {
+    create?: XOR<SpellCreateWithoutSourceBookInfoInput, SpellUncheckedCreateWithoutSourceBookInfoInput>
+    connectOrCreate?: SpellCreateOrConnectWithoutSourceBookInfoInput
+    upsert?: SpellUpsertWithoutSourceBookInfoInput
     connect?: SpellWhereUniqueInput
-    update?: XOR<XOR<SpellUpdateToOneWithWhereWithoutSourcesInput, SpellUpdateWithoutSourcesInput>, SpellUncheckedUpdateWithoutSourcesInput>
+    update?: XOR<XOR<SpellUpdateToOneWithWhereWithoutSourceBookInfoInput, SpellUpdateWithoutSourceBookInfoInput>, SpellUncheckedUpdateWithoutSourceBookInfoInput>
   }
 
-  export type SourceBookUpdateOneWithoutSpellsNestedInput = {
+  export type SourceBookUpdateOneRequiredWithoutSpellsNestedInput = {
     create?: XOR<SourceBookCreateWithoutSpellsInput, SourceBookUncheckedCreateWithoutSpellsInput>
     connectOrCreate?: SourceBookCreateOrConnectWithoutSpellsInput
     upsert?: SourceBookUpsertWithoutSpellsInput
-    disconnect?: SourceBookWhereInput | boolean
-    delete?: SourceBookWhereInput | boolean
     connect?: SourceBookWhereUniqueInput
     update?: XOR<XOR<SourceBookUpdateToOneWithWhereWithoutSpellsInput, SourceBookUpdateWithoutSpellsInput>, SourceBookUncheckedUpdateWithoutSpellsInput>
   }
 
-  export type SpellCreateNestedOneWithoutSubschoolsInput = {
-    create?: XOR<SpellCreateWithoutSubschoolsInput, SpellUncheckedCreateWithoutSubschoolsInput>
-    connectOrCreate?: SpellCreateOrConnectWithoutSubschoolsInput
+  export type SpellCreateNestedOneWithoutSubSchoolIdsInput = {
+    create?: XOR<SpellCreateWithoutSubSchoolIdsInput, SpellUncheckedCreateWithoutSubSchoolIdsInput>
+    connectOrCreate?: SpellCreateOrConnectWithoutSubSchoolIdsInput
     connect?: SpellWhereUniqueInput
   }
 
-  export type SpellUpdateOneRequiredWithoutSubschoolsNestedInput = {
-    create?: XOR<SpellCreateWithoutSubschoolsInput, SpellUncheckedCreateWithoutSubschoolsInput>
-    connectOrCreate?: SpellCreateOrConnectWithoutSubschoolsInput
-    upsert?: SpellUpsertWithoutSubschoolsInput
+  export type SpellUpdateOneRequiredWithoutSubSchoolIdsNestedInput = {
+    create?: XOR<SpellCreateWithoutSubSchoolIdsInput, SpellUncheckedCreateWithoutSubSchoolIdsInput>
+    connectOrCreate?: SpellCreateOrConnectWithoutSubSchoolIdsInput
+    upsert?: SpellUpsertWithoutSubSchoolIdsInput
     connect?: SpellWhereUniqueInput
-    update?: XOR<XOR<SpellUpdateToOneWithWhereWithoutSubschoolsInput, SpellUpdateWithoutSubschoolsInput>, SpellUncheckedUpdateWithoutSubschoolsInput>
+    update?: XOR<XOR<SpellUpdateToOneWithWhereWithoutSubSchoolIdsInput, SpellUpdateWithoutSubSchoolIdsInput>, SpellUncheckedUpdateWithoutSubSchoolIdsInput>
   }
 
-  export type SpellCreateNestedOneWithoutComponentsInput = {
-    create?: XOR<SpellCreateWithoutComponentsInput, SpellUncheckedCreateWithoutComponentsInput>
-    connectOrCreate?: SpellCreateOrConnectWithoutComponentsInput
+  export type SpellCreateNestedOneWithoutComponentIdsInput = {
+    create?: XOR<SpellCreateWithoutComponentIdsInput, SpellUncheckedCreateWithoutComponentIdsInput>
+    connectOrCreate?: SpellCreateOrConnectWithoutComponentIdsInput
     connect?: SpellWhereUniqueInput
   }
 
-  export type SpellUpdateOneRequiredWithoutComponentsNestedInput = {
-    create?: XOR<SpellCreateWithoutComponentsInput, SpellUncheckedCreateWithoutComponentsInput>
-    connectOrCreate?: SpellCreateOrConnectWithoutComponentsInput
-    upsert?: SpellUpsertWithoutComponentsInput
+  export type SpellUpdateOneRequiredWithoutComponentIdsNestedInput = {
+    create?: XOR<SpellCreateWithoutComponentIdsInput, SpellUncheckedCreateWithoutComponentIdsInput>
+    connectOrCreate?: SpellCreateOrConnectWithoutComponentIdsInput
+    upsert?: SpellUpsertWithoutComponentIdsInput
     connect?: SpellWhereUniqueInput
-    update?: XOR<XOR<SpellUpdateToOneWithWhereWithoutComponentsInput, SpellUpdateWithoutComponentsInput>, SpellUncheckedUpdateWithoutComponentsInput>
+    update?: XOR<XOR<SpellUpdateToOneWithWhereWithoutComponentIdsInput, SpellUpdateWithoutComponentIdsInput>, SpellUncheckedUpdateWithoutComponentIdsInput>
   }
 
   export type ClassSkillMapCreateNestedManyWithoutSkillInput = {
@@ -46476,6 +46136,7 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeCreateWithoutClassInput = {
+    level: number
     baseAttackBonus: number
     fortSave: number
     refSave: number
@@ -46483,7 +46144,7 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeUncheckedCreateWithoutClassInput = {
-    id?: number
+    level: number
     baseAttackBonus: number
     fortSave: number
     refSave: number
@@ -46501,12 +46162,15 @@ export namespace Prisma {
   }
 
   export type ClassSpellLevelCreateWithoutClassInput = {
+    level: number
     spellLevel: number
+    numSpells: number
   }
 
   export type ClassSpellLevelUncheckedCreateWithoutClassInput = {
-    id?: number
+    level: number
     spellLevel: number
+    numSpells: number
   }
 
   export type ClassSpellLevelCreateOrConnectWithoutClassInput = {
@@ -46524,7 +46188,6 @@ export namespace Prisma {
   }
 
   export type ClassSkillMapUncheckedCreateWithoutClassInput = {
-    id?: number
     skillId: number
   }
 
@@ -46539,16 +46202,13 @@ export namespace Prisma {
   }
 
   export type ClassSourceMapCreateWithoutClassInput = {
-    bookId: number
     pageNumber?: number | null
     SourceBook?: SourceBookCreateNestedOneWithoutClassesInput
   }
 
   export type ClassSourceMapUncheckedCreateWithoutClassInput = {
-    id?: number
-    bookId: number
     pageNumber?: number | null
-    sourceBookId?: number | null
+    sourceBookId: number
   }
 
   export type ClassSourceMapCreateOrConnectWithoutClassInput = {
@@ -46568,7 +46228,6 @@ export namespace Prisma {
   }
 
   export type SpellLevelMapUncheckedCreateWithoutClassInput = {
-    id?: number
     spellId: number
     level: number
     isVisible?: boolean
@@ -46631,8 +46290,8 @@ export namespace Prisma {
     AND?: ClassLevelAttributeScalarWhereInput | ClassLevelAttributeScalarWhereInput[]
     OR?: ClassLevelAttributeScalarWhereInput[]
     NOT?: ClassLevelAttributeScalarWhereInput | ClassLevelAttributeScalarWhereInput[]
-    id?: IntFilter<"ClassLevelAttribute"> | number
     classId?: IntFilter<"ClassLevelAttribute"> | number
+    level?: IntFilter<"ClassLevelAttribute"> | number
     baseAttackBonus?: IntFilter<"ClassLevelAttribute"> | number
     fortSave?: IntFilter<"ClassLevelAttribute"> | number
     refSave?: IntFilter<"ClassLevelAttribute"> | number
@@ -46659,9 +46318,10 @@ export namespace Prisma {
     AND?: ClassSpellLevelScalarWhereInput | ClassSpellLevelScalarWhereInput[]
     OR?: ClassSpellLevelScalarWhereInput[]
     NOT?: ClassSpellLevelScalarWhereInput | ClassSpellLevelScalarWhereInput[]
-    id?: IntFilter<"ClassSpellLevel"> | number
     classId?: IntFilter<"ClassSpellLevel"> | number
+    level?: IntFilter<"ClassSpellLevel"> | number
     spellLevel?: IntFilter<"ClassSpellLevel"> | number
+    numSpells?: IntFilter<"ClassSpellLevel"> | number
   }
 
   export type ClassSkillMapUpsertWithWhereUniqueWithoutClassInput = {
@@ -46684,7 +46344,6 @@ export namespace Prisma {
     AND?: ClassSkillMapScalarWhereInput | ClassSkillMapScalarWhereInput[]
     OR?: ClassSkillMapScalarWhereInput[]
     NOT?: ClassSkillMapScalarWhereInput | ClassSkillMapScalarWhereInput[]
-    id?: IntFilter<"ClassSkillMap"> | number
     classId?: IntFilter<"ClassSkillMap"> | number
     skillId?: IntFilter<"ClassSkillMap"> | number
   }
@@ -46709,11 +46368,9 @@ export namespace Prisma {
     AND?: ClassSourceMapScalarWhereInput | ClassSourceMapScalarWhereInput[]
     OR?: ClassSourceMapScalarWhereInput[]
     NOT?: ClassSourceMapScalarWhereInput | ClassSourceMapScalarWhereInput[]
-    id?: IntFilter<"ClassSourceMap"> | number
     classId?: IntFilter<"ClassSourceMap"> | number
-    bookId?: IntFilter<"ClassSourceMap"> | number
     pageNumber?: IntNullableFilter<"ClassSourceMap"> | number | null
-    sourceBookId?: IntNullableFilter<"ClassSourceMap"> | number | null
+    sourceBookId?: IntFilter<"ClassSourceMap"> | number
   }
 
   export type SpellLevelMapUpsertWithWhereUniqueWithoutClassInput = {
@@ -46736,7 +46393,6 @@ export namespace Prisma {
     AND?: SpellLevelMapScalarWhereInput | SpellLevelMapScalarWhereInput[]
     OR?: SpellLevelMapScalarWhereInput[]
     NOT?: SpellLevelMapScalarWhereInput | SpellLevelMapScalarWhereInput[]
-    id?: IntFilter<"SpellLevelMap"> | number
     classId?: IntFilter<"SpellLevelMap"> | number
     spellId?: IntFilter<"SpellLevelMap"> | number
     level?: IntFilter<"SpellLevelMap"> | number
@@ -47349,11 +47005,11 @@ export namespace Prisma {
     baseLevel: number
     effect?: string | null
     target?: string | null
-    descriptors?: SpellDescriptorMapCreateNestedManyWithoutSpellInput
-    schools?: SpellSchoolMapCreateNestedManyWithoutSpellInput
-    sources?: SpellSourceMapCreateNestedManyWithoutSpellInput
-    subschools?: SpellSubschoolMapCreateNestedManyWithoutSpellInput
-    components?: SpellComponentMapCreateNestedManyWithoutSpellInput
+    descriptorIds?: SpellDescriptorMapCreateNestedManyWithoutSpellInput
+    schoolIds?: SpellSchoolMapCreateNestedManyWithoutSpellInput
+    sourceBookInfo?: SpellSourceMapCreateNestedManyWithoutSpellInput
+    subSchoolIds?: SpellSubschoolMapCreateNestedManyWithoutSpellInput
+    componentIds?: SpellComponentMapCreateNestedManyWithoutSpellInput
   }
 
   export type SpellUncheckedCreateWithoutLevelMappingInput = {
@@ -47373,11 +47029,11 @@ export namespace Prisma {
     baseLevel: number
     effect?: string | null
     target?: string | null
-    descriptors?: SpellDescriptorMapUncheckedCreateNestedManyWithoutSpellInput
-    schools?: SpellSchoolMapUncheckedCreateNestedManyWithoutSpellInput
-    sources?: SpellSourceMapUncheckedCreateNestedManyWithoutSpellInput
-    subschools?: SpellSubschoolMapUncheckedCreateNestedManyWithoutSpellInput
-    components?: SpellComponentMapUncheckedCreateNestedManyWithoutSpellInput
+    descriptorIds?: SpellDescriptorMapUncheckedCreateNestedManyWithoutSpellInput
+    schoolIds?: SpellSchoolMapUncheckedCreateNestedManyWithoutSpellInput
+    sourceBookInfo?: SpellSourceMapUncheckedCreateNestedManyWithoutSpellInput
+    subSchoolIds?: SpellSubschoolMapUncheckedCreateNestedManyWithoutSpellInput
+    componentIds?: SpellComponentMapUncheckedCreateNestedManyWithoutSpellInput
   }
 
   export type SpellCreateOrConnectWithoutLevelMappingInput = {
@@ -47454,11 +47110,11 @@ export namespace Prisma {
     baseLevel?: IntFieldUpdateOperationsInput | number
     effect?: NullableStringFieldUpdateOperationsInput | string | null
     target?: NullableStringFieldUpdateOperationsInput | string | null
-    descriptors?: SpellDescriptorMapUpdateManyWithoutSpellNestedInput
-    schools?: SpellSchoolMapUpdateManyWithoutSpellNestedInput
-    sources?: SpellSourceMapUpdateManyWithoutSpellNestedInput
-    subschools?: SpellSubschoolMapUpdateManyWithoutSpellNestedInput
-    components?: SpellComponentMapUpdateManyWithoutSpellNestedInput
+    descriptorIds?: SpellDescriptorMapUpdateManyWithoutSpellNestedInput
+    schoolIds?: SpellSchoolMapUpdateManyWithoutSpellNestedInput
+    sourceBookInfo?: SpellSourceMapUpdateManyWithoutSpellNestedInput
+    subSchoolIds?: SpellSubschoolMapUpdateManyWithoutSpellNestedInput
+    componentIds?: SpellComponentMapUpdateManyWithoutSpellNestedInput
   }
 
   export type SpellUncheckedUpdateWithoutLevelMappingInput = {
@@ -47478,11 +47134,11 @@ export namespace Prisma {
     baseLevel?: IntFieldUpdateOperationsInput | number
     effect?: NullableStringFieldUpdateOperationsInput | string | null
     target?: NullableStringFieldUpdateOperationsInput | string | null
-    descriptors?: SpellDescriptorMapUncheckedUpdateManyWithoutSpellNestedInput
-    schools?: SpellSchoolMapUncheckedUpdateManyWithoutSpellNestedInput
-    sources?: SpellSourceMapUncheckedUpdateManyWithoutSpellNestedInput
-    subschools?: SpellSubschoolMapUncheckedUpdateManyWithoutSpellNestedInput
-    components?: SpellComponentMapUncheckedUpdateManyWithoutSpellNestedInput
+    descriptorIds?: SpellDescriptorMapUncheckedUpdateManyWithoutSpellNestedInput
+    schoolIds?: SpellSchoolMapUncheckedUpdateManyWithoutSpellNestedInput
+    sourceBookInfo?: SpellSourceMapUncheckedUpdateManyWithoutSpellNestedInput
+    subSchoolIds?: SpellSubschoolMapUncheckedUpdateManyWithoutSpellNestedInput
+    componentIds?: SpellComponentMapUncheckedUpdateManyWithoutSpellNestedInput
   }
 
   export type ClassUpsertWithoutSpellLevelsInput = {
@@ -47538,7 +47194,6 @@ export namespace Prisma {
   }
 
   export type SpellDescriptorMapUncheckedCreateWithoutSpellInput = {
-    id?: number
     descriptorId: number
   }
 
@@ -47559,7 +47214,6 @@ export namespace Prisma {
   }
 
   export type SpellLevelMapUncheckedCreateWithoutSpellInput = {
-    id?: number
     classId: number
     level: number
     isVisible?: boolean
@@ -47580,7 +47234,6 @@ export namespace Prisma {
   }
 
   export type SpellSchoolMapUncheckedCreateWithoutSpellInput = {
-    id?: number
     schoolId: number
   }
 
@@ -47595,16 +47248,13 @@ export namespace Prisma {
   }
 
   export type SpellSourceMapCreateWithoutSpellInput = {
-    bookId: number
     pageNumber?: number | null
-    SourceBook?: SourceBookCreateNestedOneWithoutSpellsInput
+    SourceBook: SourceBookCreateNestedOneWithoutSpellsInput
   }
 
   export type SpellSourceMapUncheckedCreateWithoutSpellInput = {
-    id?: number
-    bookId: number
+    sourceBookId: number
     pageNumber?: number | null
-    sourceBookId?: number | null
   }
 
   export type SpellSourceMapCreateOrConnectWithoutSpellInput = {
@@ -47618,12 +47268,11 @@ export namespace Prisma {
   }
 
   export type SpellSubschoolMapCreateWithoutSpellInput = {
-    schoolId: number
+    subSchoolId: number
   }
 
   export type SpellSubschoolMapUncheckedCreateWithoutSpellInput = {
-    id?: number
-    schoolId: number
+    subSchoolId: number
   }
 
   export type SpellSubschoolMapCreateOrConnectWithoutSpellInput = {
@@ -47641,7 +47290,6 @@ export namespace Prisma {
   }
 
   export type SpellComponentMapUncheckedCreateWithoutSpellInput = {
-    id?: number
     componentId: number
   }
 
@@ -47675,7 +47323,6 @@ export namespace Prisma {
     AND?: SpellDescriptorMapScalarWhereInput | SpellDescriptorMapScalarWhereInput[]
     OR?: SpellDescriptorMapScalarWhereInput[]
     NOT?: SpellDescriptorMapScalarWhereInput | SpellDescriptorMapScalarWhereInput[]
-    id?: IntFilter<"SpellDescriptorMap"> | number
     spellId?: IntFilter<"SpellDescriptorMap"> | number
     descriptorId?: IntFilter<"SpellDescriptorMap"> | number
   }
@@ -47716,7 +47363,6 @@ export namespace Prisma {
     AND?: SpellSchoolMapScalarWhereInput | SpellSchoolMapScalarWhereInput[]
     OR?: SpellSchoolMapScalarWhereInput[]
     NOT?: SpellSchoolMapScalarWhereInput | SpellSchoolMapScalarWhereInput[]
-    id?: IntFilter<"SpellSchoolMap"> | number
     spellId?: IntFilter<"SpellSchoolMap"> | number
     schoolId?: IntFilter<"SpellSchoolMap"> | number
   }
@@ -47741,11 +47387,9 @@ export namespace Prisma {
     AND?: SpellSourceMapScalarWhereInput | SpellSourceMapScalarWhereInput[]
     OR?: SpellSourceMapScalarWhereInput[]
     NOT?: SpellSourceMapScalarWhereInput | SpellSourceMapScalarWhereInput[]
-    id?: IntFilter<"SpellSourceMap"> | number
     spellId?: IntFilter<"SpellSourceMap"> | number
-    bookId?: IntFilter<"SpellSourceMap"> | number
+    sourceBookId?: IntFilter<"SpellSourceMap"> | number
     pageNumber?: IntNullableFilter<"SpellSourceMap"> | number | null
-    sourceBookId?: IntNullableFilter<"SpellSourceMap"> | number | null
   }
 
   export type SpellSubschoolMapUpsertWithWhereUniqueWithoutSpellInput = {
@@ -47768,9 +47412,8 @@ export namespace Prisma {
     AND?: SpellSubschoolMapScalarWhereInput | SpellSubschoolMapScalarWhereInput[]
     OR?: SpellSubschoolMapScalarWhereInput[]
     NOT?: SpellSubschoolMapScalarWhereInput | SpellSubschoolMapScalarWhereInput[]
-    id?: IntFilter<"SpellSubschoolMap"> | number
     spellId?: IntFilter<"SpellSubschoolMap"> | number
-    schoolId?: IntFilter<"SpellSubschoolMap"> | number
+    subSchoolId?: IntFilter<"SpellSubschoolMap"> | number
   }
 
   export type SpellComponentMapUpsertWithWhereUniqueWithoutSpellInput = {
@@ -47793,12 +47436,11 @@ export namespace Prisma {
     AND?: SpellComponentMapScalarWhereInput | SpellComponentMapScalarWhereInput[]
     OR?: SpellComponentMapScalarWhereInput[]
     NOT?: SpellComponentMapScalarWhereInput | SpellComponentMapScalarWhereInput[]
-    id?: IntFilter<"SpellComponentMap"> | number
     spellId?: IntFilter<"SpellComponentMap"> | number
     componentId?: IntFilter<"SpellComponentMap"> | number
   }
 
-  export type SpellCreateWithoutDescriptorsInput = {
+  export type SpellCreateWithoutDescriptorIdsInput = {
     name: string
     summary?: string | null
     description?: string | null
@@ -47815,13 +47457,13 @@ export namespace Prisma {
     effect?: string | null
     target?: string | null
     levelMapping?: SpellLevelMapCreateNestedManyWithoutSpellInput
-    schools?: SpellSchoolMapCreateNestedManyWithoutSpellInput
-    sources?: SpellSourceMapCreateNestedManyWithoutSpellInput
-    subschools?: SpellSubschoolMapCreateNestedManyWithoutSpellInput
-    components?: SpellComponentMapCreateNestedManyWithoutSpellInput
+    schoolIds?: SpellSchoolMapCreateNestedManyWithoutSpellInput
+    sourceBookInfo?: SpellSourceMapCreateNestedManyWithoutSpellInput
+    subSchoolIds?: SpellSubschoolMapCreateNestedManyWithoutSpellInput
+    componentIds?: SpellComponentMapCreateNestedManyWithoutSpellInput
   }
 
-  export type SpellUncheckedCreateWithoutDescriptorsInput = {
+  export type SpellUncheckedCreateWithoutDescriptorIdsInput = {
     id?: number
     name: string
     summary?: string | null
@@ -47839,29 +47481,29 @@ export namespace Prisma {
     effect?: string | null
     target?: string | null
     levelMapping?: SpellLevelMapUncheckedCreateNestedManyWithoutSpellInput
-    schools?: SpellSchoolMapUncheckedCreateNestedManyWithoutSpellInput
-    sources?: SpellSourceMapUncheckedCreateNestedManyWithoutSpellInput
-    subschools?: SpellSubschoolMapUncheckedCreateNestedManyWithoutSpellInput
-    components?: SpellComponentMapUncheckedCreateNestedManyWithoutSpellInput
+    schoolIds?: SpellSchoolMapUncheckedCreateNestedManyWithoutSpellInput
+    sourceBookInfo?: SpellSourceMapUncheckedCreateNestedManyWithoutSpellInput
+    subSchoolIds?: SpellSubschoolMapUncheckedCreateNestedManyWithoutSpellInput
+    componentIds?: SpellComponentMapUncheckedCreateNestedManyWithoutSpellInput
   }
 
-  export type SpellCreateOrConnectWithoutDescriptorsInput = {
+  export type SpellCreateOrConnectWithoutDescriptorIdsInput = {
     where: SpellWhereUniqueInput
-    create: XOR<SpellCreateWithoutDescriptorsInput, SpellUncheckedCreateWithoutDescriptorsInput>
+    create: XOR<SpellCreateWithoutDescriptorIdsInput, SpellUncheckedCreateWithoutDescriptorIdsInput>
   }
 
-  export type SpellUpsertWithoutDescriptorsInput = {
-    update: XOR<SpellUpdateWithoutDescriptorsInput, SpellUncheckedUpdateWithoutDescriptorsInput>
-    create: XOR<SpellCreateWithoutDescriptorsInput, SpellUncheckedCreateWithoutDescriptorsInput>
+  export type SpellUpsertWithoutDescriptorIdsInput = {
+    update: XOR<SpellUpdateWithoutDescriptorIdsInput, SpellUncheckedUpdateWithoutDescriptorIdsInput>
+    create: XOR<SpellCreateWithoutDescriptorIdsInput, SpellUncheckedCreateWithoutDescriptorIdsInput>
     where?: SpellWhereInput
   }
 
-  export type SpellUpdateToOneWithWhereWithoutDescriptorsInput = {
+  export type SpellUpdateToOneWithWhereWithoutDescriptorIdsInput = {
     where?: SpellWhereInput
-    data: XOR<SpellUpdateWithoutDescriptorsInput, SpellUncheckedUpdateWithoutDescriptorsInput>
+    data: XOR<SpellUpdateWithoutDescriptorIdsInput, SpellUncheckedUpdateWithoutDescriptorIdsInput>
   }
 
-  export type SpellUpdateWithoutDescriptorsInput = {
+  export type SpellUpdateWithoutDescriptorIdsInput = {
     name?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
@@ -47878,13 +47520,13 @@ export namespace Prisma {
     effect?: NullableStringFieldUpdateOperationsInput | string | null
     target?: NullableStringFieldUpdateOperationsInput | string | null
     levelMapping?: SpellLevelMapUpdateManyWithoutSpellNestedInput
-    schools?: SpellSchoolMapUpdateManyWithoutSpellNestedInput
-    sources?: SpellSourceMapUpdateManyWithoutSpellNestedInput
-    subschools?: SpellSubschoolMapUpdateManyWithoutSpellNestedInput
-    components?: SpellComponentMapUpdateManyWithoutSpellNestedInput
+    schoolIds?: SpellSchoolMapUpdateManyWithoutSpellNestedInput
+    sourceBookInfo?: SpellSourceMapUpdateManyWithoutSpellNestedInput
+    subSchoolIds?: SpellSubschoolMapUpdateManyWithoutSpellNestedInput
+    componentIds?: SpellComponentMapUpdateManyWithoutSpellNestedInput
   }
 
-  export type SpellUncheckedUpdateWithoutDescriptorsInput = {
+  export type SpellUncheckedUpdateWithoutDescriptorIdsInput = {
     id?: IntFieldUpdateOperationsInput | number
     name?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
@@ -47902,13 +47544,13 @@ export namespace Prisma {
     effect?: NullableStringFieldUpdateOperationsInput | string | null
     target?: NullableStringFieldUpdateOperationsInput | string | null
     levelMapping?: SpellLevelMapUncheckedUpdateManyWithoutSpellNestedInput
-    schools?: SpellSchoolMapUncheckedUpdateManyWithoutSpellNestedInput
-    sources?: SpellSourceMapUncheckedUpdateManyWithoutSpellNestedInput
-    subschools?: SpellSubschoolMapUncheckedUpdateManyWithoutSpellNestedInput
-    components?: SpellComponentMapUncheckedUpdateManyWithoutSpellNestedInput
+    schoolIds?: SpellSchoolMapUncheckedUpdateManyWithoutSpellNestedInput
+    sourceBookInfo?: SpellSourceMapUncheckedUpdateManyWithoutSpellNestedInput
+    subSchoolIds?: SpellSubschoolMapUncheckedUpdateManyWithoutSpellNestedInput
+    componentIds?: SpellComponentMapUncheckedUpdateManyWithoutSpellNestedInput
   }
 
-  export type SpellCreateWithoutSchoolsInput = {
+  export type SpellCreateWithoutSchoolIdsInput = {
     name: string
     summary?: string | null
     description?: string | null
@@ -47924,14 +47566,14 @@ export namespace Prisma {
     baseLevel: number
     effect?: string | null
     target?: string | null
-    descriptors?: SpellDescriptorMapCreateNestedManyWithoutSpellInput
+    descriptorIds?: SpellDescriptorMapCreateNestedManyWithoutSpellInput
     levelMapping?: SpellLevelMapCreateNestedManyWithoutSpellInput
-    sources?: SpellSourceMapCreateNestedManyWithoutSpellInput
-    subschools?: SpellSubschoolMapCreateNestedManyWithoutSpellInput
-    components?: SpellComponentMapCreateNestedManyWithoutSpellInput
+    sourceBookInfo?: SpellSourceMapCreateNestedManyWithoutSpellInput
+    subSchoolIds?: SpellSubschoolMapCreateNestedManyWithoutSpellInput
+    componentIds?: SpellComponentMapCreateNestedManyWithoutSpellInput
   }
 
-  export type SpellUncheckedCreateWithoutSchoolsInput = {
+  export type SpellUncheckedCreateWithoutSchoolIdsInput = {
     id?: number
     name: string
     summary?: string | null
@@ -47948,30 +47590,30 @@ export namespace Prisma {
     baseLevel: number
     effect?: string | null
     target?: string | null
-    descriptors?: SpellDescriptorMapUncheckedCreateNestedManyWithoutSpellInput
+    descriptorIds?: SpellDescriptorMapUncheckedCreateNestedManyWithoutSpellInput
     levelMapping?: SpellLevelMapUncheckedCreateNestedManyWithoutSpellInput
-    sources?: SpellSourceMapUncheckedCreateNestedManyWithoutSpellInput
-    subschools?: SpellSubschoolMapUncheckedCreateNestedManyWithoutSpellInput
-    components?: SpellComponentMapUncheckedCreateNestedManyWithoutSpellInput
+    sourceBookInfo?: SpellSourceMapUncheckedCreateNestedManyWithoutSpellInput
+    subSchoolIds?: SpellSubschoolMapUncheckedCreateNestedManyWithoutSpellInput
+    componentIds?: SpellComponentMapUncheckedCreateNestedManyWithoutSpellInput
   }
 
-  export type SpellCreateOrConnectWithoutSchoolsInput = {
+  export type SpellCreateOrConnectWithoutSchoolIdsInput = {
     where: SpellWhereUniqueInput
-    create: XOR<SpellCreateWithoutSchoolsInput, SpellUncheckedCreateWithoutSchoolsInput>
+    create: XOR<SpellCreateWithoutSchoolIdsInput, SpellUncheckedCreateWithoutSchoolIdsInput>
   }
 
-  export type SpellUpsertWithoutSchoolsInput = {
-    update: XOR<SpellUpdateWithoutSchoolsInput, SpellUncheckedUpdateWithoutSchoolsInput>
-    create: XOR<SpellCreateWithoutSchoolsInput, SpellUncheckedCreateWithoutSchoolsInput>
+  export type SpellUpsertWithoutSchoolIdsInput = {
+    update: XOR<SpellUpdateWithoutSchoolIdsInput, SpellUncheckedUpdateWithoutSchoolIdsInput>
+    create: XOR<SpellCreateWithoutSchoolIdsInput, SpellUncheckedCreateWithoutSchoolIdsInput>
     where?: SpellWhereInput
   }
 
-  export type SpellUpdateToOneWithWhereWithoutSchoolsInput = {
+  export type SpellUpdateToOneWithWhereWithoutSchoolIdsInput = {
     where?: SpellWhereInput
-    data: XOR<SpellUpdateWithoutSchoolsInput, SpellUncheckedUpdateWithoutSchoolsInput>
+    data: XOR<SpellUpdateWithoutSchoolIdsInput, SpellUncheckedUpdateWithoutSchoolIdsInput>
   }
 
-  export type SpellUpdateWithoutSchoolsInput = {
+  export type SpellUpdateWithoutSchoolIdsInput = {
     name?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
@@ -47987,14 +47629,14 @@ export namespace Prisma {
     baseLevel?: IntFieldUpdateOperationsInput | number
     effect?: NullableStringFieldUpdateOperationsInput | string | null
     target?: NullableStringFieldUpdateOperationsInput | string | null
-    descriptors?: SpellDescriptorMapUpdateManyWithoutSpellNestedInput
+    descriptorIds?: SpellDescriptorMapUpdateManyWithoutSpellNestedInput
     levelMapping?: SpellLevelMapUpdateManyWithoutSpellNestedInput
-    sources?: SpellSourceMapUpdateManyWithoutSpellNestedInput
-    subschools?: SpellSubschoolMapUpdateManyWithoutSpellNestedInput
-    components?: SpellComponentMapUpdateManyWithoutSpellNestedInput
+    sourceBookInfo?: SpellSourceMapUpdateManyWithoutSpellNestedInput
+    subSchoolIds?: SpellSubschoolMapUpdateManyWithoutSpellNestedInput
+    componentIds?: SpellComponentMapUpdateManyWithoutSpellNestedInput
   }
 
-  export type SpellUncheckedUpdateWithoutSchoolsInput = {
+  export type SpellUncheckedUpdateWithoutSchoolIdsInput = {
     id?: IntFieldUpdateOperationsInput | number
     name?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
@@ -48011,14 +47653,14 @@ export namespace Prisma {
     baseLevel?: IntFieldUpdateOperationsInput | number
     effect?: NullableStringFieldUpdateOperationsInput | string | null
     target?: NullableStringFieldUpdateOperationsInput | string | null
-    descriptors?: SpellDescriptorMapUncheckedUpdateManyWithoutSpellNestedInput
+    descriptorIds?: SpellDescriptorMapUncheckedUpdateManyWithoutSpellNestedInput
     levelMapping?: SpellLevelMapUncheckedUpdateManyWithoutSpellNestedInput
-    sources?: SpellSourceMapUncheckedUpdateManyWithoutSpellNestedInput
-    subschools?: SpellSubschoolMapUncheckedUpdateManyWithoutSpellNestedInput
-    components?: SpellComponentMapUncheckedUpdateManyWithoutSpellNestedInput
+    sourceBookInfo?: SpellSourceMapUncheckedUpdateManyWithoutSpellNestedInput
+    subSchoolIds?: SpellSubschoolMapUncheckedUpdateManyWithoutSpellNestedInput
+    componentIds?: SpellComponentMapUncheckedUpdateManyWithoutSpellNestedInput
   }
 
-  export type SpellCreateWithoutSourcesInput = {
+  export type SpellCreateWithoutSourceBookInfoInput = {
     name: string
     summary?: string | null
     description?: string | null
@@ -48034,14 +47676,14 @@ export namespace Prisma {
     baseLevel: number
     effect?: string | null
     target?: string | null
-    descriptors?: SpellDescriptorMapCreateNestedManyWithoutSpellInput
+    descriptorIds?: SpellDescriptorMapCreateNestedManyWithoutSpellInput
     levelMapping?: SpellLevelMapCreateNestedManyWithoutSpellInput
-    schools?: SpellSchoolMapCreateNestedManyWithoutSpellInput
-    subschools?: SpellSubschoolMapCreateNestedManyWithoutSpellInput
-    components?: SpellComponentMapCreateNestedManyWithoutSpellInput
+    schoolIds?: SpellSchoolMapCreateNestedManyWithoutSpellInput
+    subSchoolIds?: SpellSubschoolMapCreateNestedManyWithoutSpellInput
+    componentIds?: SpellComponentMapCreateNestedManyWithoutSpellInput
   }
 
-  export type SpellUncheckedCreateWithoutSourcesInput = {
+  export type SpellUncheckedCreateWithoutSourceBookInfoInput = {
     id?: number
     name: string
     summary?: string | null
@@ -48058,16 +47700,16 @@ export namespace Prisma {
     baseLevel: number
     effect?: string | null
     target?: string | null
-    descriptors?: SpellDescriptorMapUncheckedCreateNestedManyWithoutSpellInput
+    descriptorIds?: SpellDescriptorMapUncheckedCreateNestedManyWithoutSpellInput
     levelMapping?: SpellLevelMapUncheckedCreateNestedManyWithoutSpellInput
-    schools?: SpellSchoolMapUncheckedCreateNestedManyWithoutSpellInput
-    subschools?: SpellSubschoolMapUncheckedCreateNestedManyWithoutSpellInput
-    components?: SpellComponentMapUncheckedCreateNestedManyWithoutSpellInput
+    schoolIds?: SpellSchoolMapUncheckedCreateNestedManyWithoutSpellInput
+    subSchoolIds?: SpellSubschoolMapUncheckedCreateNestedManyWithoutSpellInput
+    componentIds?: SpellComponentMapUncheckedCreateNestedManyWithoutSpellInput
   }
 
-  export type SpellCreateOrConnectWithoutSourcesInput = {
+  export type SpellCreateOrConnectWithoutSourceBookInfoInput = {
     where: SpellWhereUniqueInput
-    create: XOR<SpellCreateWithoutSourcesInput, SpellUncheckedCreateWithoutSourcesInput>
+    create: XOR<SpellCreateWithoutSourceBookInfoInput, SpellUncheckedCreateWithoutSourceBookInfoInput>
   }
 
   export type SourceBookCreateWithoutSpellsInput = {
@@ -48098,18 +47740,18 @@ export namespace Prisma {
     create: XOR<SourceBookCreateWithoutSpellsInput, SourceBookUncheckedCreateWithoutSpellsInput>
   }
 
-  export type SpellUpsertWithoutSourcesInput = {
-    update: XOR<SpellUpdateWithoutSourcesInput, SpellUncheckedUpdateWithoutSourcesInput>
-    create: XOR<SpellCreateWithoutSourcesInput, SpellUncheckedCreateWithoutSourcesInput>
+  export type SpellUpsertWithoutSourceBookInfoInput = {
+    update: XOR<SpellUpdateWithoutSourceBookInfoInput, SpellUncheckedUpdateWithoutSourceBookInfoInput>
+    create: XOR<SpellCreateWithoutSourceBookInfoInput, SpellUncheckedCreateWithoutSourceBookInfoInput>
     where?: SpellWhereInput
   }
 
-  export type SpellUpdateToOneWithWhereWithoutSourcesInput = {
+  export type SpellUpdateToOneWithWhereWithoutSourceBookInfoInput = {
     where?: SpellWhereInput
-    data: XOR<SpellUpdateWithoutSourcesInput, SpellUncheckedUpdateWithoutSourcesInput>
+    data: XOR<SpellUpdateWithoutSourceBookInfoInput, SpellUncheckedUpdateWithoutSourceBookInfoInput>
   }
 
-  export type SpellUpdateWithoutSourcesInput = {
+  export type SpellUpdateWithoutSourceBookInfoInput = {
     name?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
@@ -48125,14 +47767,14 @@ export namespace Prisma {
     baseLevel?: IntFieldUpdateOperationsInput | number
     effect?: NullableStringFieldUpdateOperationsInput | string | null
     target?: NullableStringFieldUpdateOperationsInput | string | null
-    descriptors?: SpellDescriptorMapUpdateManyWithoutSpellNestedInput
+    descriptorIds?: SpellDescriptorMapUpdateManyWithoutSpellNestedInput
     levelMapping?: SpellLevelMapUpdateManyWithoutSpellNestedInput
-    schools?: SpellSchoolMapUpdateManyWithoutSpellNestedInput
-    subschools?: SpellSubschoolMapUpdateManyWithoutSpellNestedInput
-    components?: SpellComponentMapUpdateManyWithoutSpellNestedInput
+    schoolIds?: SpellSchoolMapUpdateManyWithoutSpellNestedInput
+    subSchoolIds?: SpellSubschoolMapUpdateManyWithoutSpellNestedInput
+    componentIds?: SpellComponentMapUpdateManyWithoutSpellNestedInput
   }
 
-  export type SpellUncheckedUpdateWithoutSourcesInput = {
+  export type SpellUncheckedUpdateWithoutSourceBookInfoInput = {
     id?: IntFieldUpdateOperationsInput | number
     name?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
@@ -48149,11 +47791,11 @@ export namespace Prisma {
     baseLevel?: IntFieldUpdateOperationsInput | number
     effect?: NullableStringFieldUpdateOperationsInput | string | null
     target?: NullableStringFieldUpdateOperationsInput | string | null
-    descriptors?: SpellDescriptorMapUncheckedUpdateManyWithoutSpellNestedInput
+    descriptorIds?: SpellDescriptorMapUncheckedUpdateManyWithoutSpellNestedInput
     levelMapping?: SpellLevelMapUncheckedUpdateManyWithoutSpellNestedInput
-    schools?: SpellSchoolMapUncheckedUpdateManyWithoutSpellNestedInput
-    subschools?: SpellSubschoolMapUncheckedUpdateManyWithoutSpellNestedInput
-    components?: SpellComponentMapUncheckedUpdateManyWithoutSpellNestedInput
+    schoolIds?: SpellSchoolMapUncheckedUpdateManyWithoutSpellNestedInput
+    subSchoolIds?: SpellSubschoolMapUncheckedUpdateManyWithoutSpellNestedInput
+    componentIds?: SpellComponentMapUncheckedUpdateManyWithoutSpellNestedInput
   }
 
   export type SourceBookUpsertWithoutSpellsInput = {
@@ -48190,7 +47832,7 @@ export namespace Prisma {
     races?: RaceSourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
   }
 
-  export type SpellCreateWithoutSubschoolsInput = {
+  export type SpellCreateWithoutSubSchoolIdsInput = {
     name: string
     summary?: string | null
     description?: string | null
@@ -48206,14 +47848,14 @@ export namespace Prisma {
     baseLevel: number
     effect?: string | null
     target?: string | null
-    descriptors?: SpellDescriptorMapCreateNestedManyWithoutSpellInput
+    descriptorIds?: SpellDescriptorMapCreateNestedManyWithoutSpellInput
     levelMapping?: SpellLevelMapCreateNestedManyWithoutSpellInput
-    schools?: SpellSchoolMapCreateNestedManyWithoutSpellInput
-    sources?: SpellSourceMapCreateNestedManyWithoutSpellInput
-    components?: SpellComponentMapCreateNestedManyWithoutSpellInput
+    schoolIds?: SpellSchoolMapCreateNestedManyWithoutSpellInput
+    sourceBookInfo?: SpellSourceMapCreateNestedManyWithoutSpellInput
+    componentIds?: SpellComponentMapCreateNestedManyWithoutSpellInput
   }
 
-  export type SpellUncheckedCreateWithoutSubschoolsInput = {
+  export type SpellUncheckedCreateWithoutSubSchoolIdsInput = {
     id?: number
     name: string
     summary?: string | null
@@ -48230,30 +47872,30 @@ export namespace Prisma {
     baseLevel: number
     effect?: string | null
     target?: string | null
-    descriptors?: SpellDescriptorMapUncheckedCreateNestedManyWithoutSpellInput
+    descriptorIds?: SpellDescriptorMapUncheckedCreateNestedManyWithoutSpellInput
     levelMapping?: SpellLevelMapUncheckedCreateNestedManyWithoutSpellInput
-    schools?: SpellSchoolMapUncheckedCreateNestedManyWithoutSpellInput
-    sources?: SpellSourceMapUncheckedCreateNestedManyWithoutSpellInput
-    components?: SpellComponentMapUncheckedCreateNestedManyWithoutSpellInput
+    schoolIds?: SpellSchoolMapUncheckedCreateNestedManyWithoutSpellInput
+    sourceBookInfo?: SpellSourceMapUncheckedCreateNestedManyWithoutSpellInput
+    componentIds?: SpellComponentMapUncheckedCreateNestedManyWithoutSpellInput
   }
 
-  export type SpellCreateOrConnectWithoutSubschoolsInput = {
+  export type SpellCreateOrConnectWithoutSubSchoolIdsInput = {
     where: SpellWhereUniqueInput
-    create: XOR<SpellCreateWithoutSubschoolsInput, SpellUncheckedCreateWithoutSubschoolsInput>
+    create: XOR<SpellCreateWithoutSubSchoolIdsInput, SpellUncheckedCreateWithoutSubSchoolIdsInput>
   }
 
-  export type SpellUpsertWithoutSubschoolsInput = {
-    update: XOR<SpellUpdateWithoutSubschoolsInput, SpellUncheckedUpdateWithoutSubschoolsInput>
-    create: XOR<SpellCreateWithoutSubschoolsInput, SpellUncheckedCreateWithoutSubschoolsInput>
+  export type SpellUpsertWithoutSubSchoolIdsInput = {
+    update: XOR<SpellUpdateWithoutSubSchoolIdsInput, SpellUncheckedUpdateWithoutSubSchoolIdsInput>
+    create: XOR<SpellCreateWithoutSubSchoolIdsInput, SpellUncheckedCreateWithoutSubSchoolIdsInput>
     where?: SpellWhereInput
   }
 
-  export type SpellUpdateToOneWithWhereWithoutSubschoolsInput = {
+  export type SpellUpdateToOneWithWhereWithoutSubSchoolIdsInput = {
     where?: SpellWhereInput
-    data: XOR<SpellUpdateWithoutSubschoolsInput, SpellUncheckedUpdateWithoutSubschoolsInput>
+    data: XOR<SpellUpdateWithoutSubSchoolIdsInput, SpellUncheckedUpdateWithoutSubSchoolIdsInput>
   }
 
-  export type SpellUpdateWithoutSubschoolsInput = {
+  export type SpellUpdateWithoutSubSchoolIdsInput = {
     name?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
@@ -48269,14 +47911,14 @@ export namespace Prisma {
     baseLevel?: IntFieldUpdateOperationsInput | number
     effect?: NullableStringFieldUpdateOperationsInput | string | null
     target?: NullableStringFieldUpdateOperationsInput | string | null
-    descriptors?: SpellDescriptorMapUpdateManyWithoutSpellNestedInput
+    descriptorIds?: SpellDescriptorMapUpdateManyWithoutSpellNestedInput
     levelMapping?: SpellLevelMapUpdateManyWithoutSpellNestedInput
-    schools?: SpellSchoolMapUpdateManyWithoutSpellNestedInput
-    sources?: SpellSourceMapUpdateManyWithoutSpellNestedInput
-    components?: SpellComponentMapUpdateManyWithoutSpellNestedInput
+    schoolIds?: SpellSchoolMapUpdateManyWithoutSpellNestedInput
+    sourceBookInfo?: SpellSourceMapUpdateManyWithoutSpellNestedInput
+    componentIds?: SpellComponentMapUpdateManyWithoutSpellNestedInput
   }
 
-  export type SpellUncheckedUpdateWithoutSubschoolsInput = {
+  export type SpellUncheckedUpdateWithoutSubSchoolIdsInput = {
     id?: IntFieldUpdateOperationsInput | number
     name?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
@@ -48293,14 +47935,14 @@ export namespace Prisma {
     baseLevel?: IntFieldUpdateOperationsInput | number
     effect?: NullableStringFieldUpdateOperationsInput | string | null
     target?: NullableStringFieldUpdateOperationsInput | string | null
-    descriptors?: SpellDescriptorMapUncheckedUpdateManyWithoutSpellNestedInput
+    descriptorIds?: SpellDescriptorMapUncheckedUpdateManyWithoutSpellNestedInput
     levelMapping?: SpellLevelMapUncheckedUpdateManyWithoutSpellNestedInput
-    schools?: SpellSchoolMapUncheckedUpdateManyWithoutSpellNestedInput
-    sources?: SpellSourceMapUncheckedUpdateManyWithoutSpellNestedInput
-    components?: SpellComponentMapUncheckedUpdateManyWithoutSpellNestedInput
+    schoolIds?: SpellSchoolMapUncheckedUpdateManyWithoutSpellNestedInput
+    sourceBookInfo?: SpellSourceMapUncheckedUpdateManyWithoutSpellNestedInput
+    componentIds?: SpellComponentMapUncheckedUpdateManyWithoutSpellNestedInput
   }
 
-  export type SpellCreateWithoutComponentsInput = {
+  export type SpellCreateWithoutComponentIdsInput = {
     name: string
     summary?: string | null
     description?: string | null
@@ -48316,14 +47958,14 @@ export namespace Prisma {
     baseLevel: number
     effect?: string | null
     target?: string | null
-    descriptors?: SpellDescriptorMapCreateNestedManyWithoutSpellInput
+    descriptorIds?: SpellDescriptorMapCreateNestedManyWithoutSpellInput
     levelMapping?: SpellLevelMapCreateNestedManyWithoutSpellInput
-    schools?: SpellSchoolMapCreateNestedManyWithoutSpellInput
-    sources?: SpellSourceMapCreateNestedManyWithoutSpellInput
-    subschools?: SpellSubschoolMapCreateNestedManyWithoutSpellInput
+    schoolIds?: SpellSchoolMapCreateNestedManyWithoutSpellInput
+    sourceBookInfo?: SpellSourceMapCreateNestedManyWithoutSpellInput
+    subSchoolIds?: SpellSubschoolMapCreateNestedManyWithoutSpellInput
   }
 
-  export type SpellUncheckedCreateWithoutComponentsInput = {
+  export type SpellUncheckedCreateWithoutComponentIdsInput = {
     id?: number
     name: string
     summary?: string | null
@@ -48340,30 +47982,30 @@ export namespace Prisma {
     baseLevel: number
     effect?: string | null
     target?: string | null
-    descriptors?: SpellDescriptorMapUncheckedCreateNestedManyWithoutSpellInput
+    descriptorIds?: SpellDescriptorMapUncheckedCreateNestedManyWithoutSpellInput
     levelMapping?: SpellLevelMapUncheckedCreateNestedManyWithoutSpellInput
-    schools?: SpellSchoolMapUncheckedCreateNestedManyWithoutSpellInput
-    sources?: SpellSourceMapUncheckedCreateNestedManyWithoutSpellInput
-    subschools?: SpellSubschoolMapUncheckedCreateNestedManyWithoutSpellInput
+    schoolIds?: SpellSchoolMapUncheckedCreateNestedManyWithoutSpellInput
+    sourceBookInfo?: SpellSourceMapUncheckedCreateNestedManyWithoutSpellInput
+    subSchoolIds?: SpellSubschoolMapUncheckedCreateNestedManyWithoutSpellInput
   }
 
-  export type SpellCreateOrConnectWithoutComponentsInput = {
+  export type SpellCreateOrConnectWithoutComponentIdsInput = {
     where: SpellWhereUniqueInput
-    create: XOR<SpellCreateWithoutComponentsInput, SpellUncheckedCreateWithoutComponentsInput>
+    create: XOR<SpellCreateWithoutComponentIdsInput, SpellUncheckedCreateWithoutComponentIdsInput>
   }
 
-  export type SpellUpsertWithoutComponentsInput = {
-    update: XOR<SpellUpdateWithoutComponentsInput, SpellUncheckedUpdateWithoutComponentsInput>
-    create: XOR<SpellCreateWithoutComponentsInput, SpellUncheckedCreateWithoutComponentsInput>
+  export type SpellUpsertWithoutComponentIdsInput = {
+    update: XOR<SpellUpdateWithoutComponentIdsInput, SpellUncheckedUpdateWithoutComponentIdsInput>
+    create: XOR<SpellCreateWithoutComponentIdsInput, SpellUncheckedCreateWithoutComponentIdsInput>
     where?: SpellWhereInput
   }
 
-  export type SpellUpdateToOneWithWhereWithoutComponentsInput = {
+  export type SpellUpdateToOneWithWhereWithoutComponentIdsInput = {
     where?: SpellWhereInput
-    data: XOR<SpellUpdateWithoutComponentsInput, SpellUncheckedUpdateWithoutComponentsInput>
+    data: XOR<SpellUpdateWithoutComponentIdsInput, SpellUncheckedUpdateWithoutComponentIdsInput>
   }
 
-  export type SpellUpdateWithoutComponentsInput = {
+  export type SpellUpdateWithoutComponentIdsInput = {
     name?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
@@ -48379,14 +48021,14 @@ export namespace Prisma {
     baseLevel?: IntFieldUpdateOperationsInput | number
     effect?: NullableStringFieldUpdateOperationsInput | string | null
     target?: NullableStringFieldUpdateOperationsInput | string | null
-    descriptors?: SpellDescriptorMapUpdateManyWithoutSpellNestedInput
+    descriptorIds?: SpellDescriptorMapUpdateManyWithoutSpellNestedInput
     levelMapping?: SpellLevelMapUpdateManyWithoutSpellNestedInput
-    schools?: SpellSchoolMapUpdateManyWithoutSpellNestedInput
-    sources?: SpellSourceMapUpdateManyWithoutSpellNestedInput
-    subschools?: SpellSubschoolMapUpdateManyWithoutSpellNestedInput
+    schoolIds?: SpellSchoolMapUpdateManyWithoutSpellNestedInput
+    sourceBookInfo?: SpellSourceMapUpdateManyWithoutSpellNestedInput
+    subSchoolIds?: SpellSubschoolMapUpdateManyWithoutSpellNestedInput
   }
 
-  export type SpellUncheckedUpdateWithoutComponentsInput = {
+  export type SpellUncheckedUpdateWithoutComponentIdsInput = {
     id?: IntFieldUpdateOperationsInput | number
     name?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
@@ -48403,11 +48045,11 @@ export namespace Prisma {
     baseLevel?: IntFieldUpdateOperationsInput | number
     effect?: NullableStringFieldUpdateOperationsInput | string | null
     target?: NullableStringFieldUpdateOperationsInput | string | null
-    descriptors?: SpellDescriptorMapUncheckedUpdateManyWithoutSpellNestedInput
+    descriptorIds?: SpellDescriptorMapUncheckedUpdateManyWithoutSpellNestedInput
     levelMapping?: SpellLevelMapUncheckedUpdateManyWithoutSpellNestedInput
-    schools?: SpellSchoolMapUncheckedUpdateManyWithoutSpellNestedInput
-    sources?: SpellSourceMapUncheckedUpdateManyWithoutSpellNestedInput
-    subschools?: SpellSubschoolMapUncheckedUpdateManyWithoutSpellNestedInput
+    schoolIds?: SpellSchoolMapUncheckedUpdateManyWithoutSpellNestedInput
+    sourceBookInfo?: SpellSourceMapUncheckedUpdateManyWithoutSpellNestedInput
+    subSchoolIds?: SpellSubschoolMapUncheckedUpdateManyWithoutSpellNestedInput
   }
 
   export type ClassSkillMapCreateWithoutSkillInput = {
@@ -48415,7 +48057,6 @@ export namespace Prisma {
   }
 
   export type ClassSkillMapUncheckedCreateWithoutSkillInput = {
-    id?: number
     classId: number
   }
 
@@ -48728,16 +48369,13 @@ export namespace Prisma {
   }
 
   export type RaceSourceMapCreateWithoutRaceInput = {
-    bookId: number
     pageNumber?: number | null
     SourceBook?: SourceBookCreateNestedOneWithoutRacesInput
   }
 
   export type RaceSourceMapUncheckedCreateWithoutRaceInput = {
-    id?: number
-    bookId: number
+    sourceBookId: number
     pageNumber?: number | null
-    sourceBookId?: number | null
   }
 
   export type RaceSourceMapCreateOrConnectWithoutRaceInput = {
@@ -48751,13 +48389,13 @@ export namespace Prisma {
   }
 
   export type RaceTraitMapCreateWithoutRaceInput = {
-    value?: string | null
+    value?: number | null
     trait: RaceTraitCreateNestedOneWithoutRaceLinksInput
   }
 
   export type RaceTraitMapUncheckedCreateWithoutRaceInput = {
-    traitId: string
-    value?: string | null
+    traitSlug: string
+    value?: number | null
   }
 
   export type RaceTraitMapCreateOrConnectWithoutRaceInput = {
@@ -48879,11 +48517,9 @@ export namespace Prisma {
     AND?: RaceSourceMapScalarWhereInput | RaceSourceMapScalarWhereInput[]
     OR?: RaceSourceMapScalarWhereInput[]
     NOT?: RaceSourceMapScalarWhereInput | RaceSourceMapScalarWhereInput[]
-    id?: IntFilter<"RaceSourceMap"> | number
     raceId?: IntFilter<"RaceSourceMap"> | number
-    bookId?: IntFilter<"RaceSourceMap"> | number
+    sourceBookId?: IntFilter<"RaceSourceMap"> | number
     pageNumber?: IntNullableFilter<"RaceSourceMap"> | number | null
-    sourceBookId?: IntNullableFilter<"RaceSourceMap"> | number | null
   }
 
   export type RaceTraitMapUpsertWithWhereUniqueWithoutRaceInput = {
@@ -48907,8 +48543,8 @@ export namespace Prisma {
     OR?: RaceTraitMapScalarWhereInput[]
     NOT?: RaceTraitMapScalarWhereInput | RaceTraitMapScalarWhereInput[]
     raceId?: IntFilter<"RaceTraitMap"> | number
-    traitId?: StringFilter<"RaceTraitMap"> | string
-    value?: StringNullableFilter<"RaceTraitMap"> | string | null
+    traitSlug?: StringFilter<"RaceTraitMap"> | string
+    value?: IntNullableFilter<"RaceTraitMap"> | number | null
   }
 
   export type UserCharacterUpsertWithWhereUniqueWithoutRaceInput = {
@@ -48946,13 +48582,13 @@ export namespace Prisma {
   }
 
   export type RaceTraitMapCreateWithoutTraitInput = {
-    value?: string | null
+    value?: number | null
     race: RaceCreateNestedOneWithoutTraitsInput
   }
 
   export type RaceTraitMapUncheckedCreateWithoutTraitInput = {
     raceId: number
-    value?: string | null
+    value?: number | null
   }
 
   export type RaceTraitMapCreateOrConnectWithoutTraitInput = {
@@ -49384,15 +49020,12 @@ export namespace Prisma {
   }
 
   export type ClassSourceMapCreateWithoutSourceBookInput = {
-    bookId: number
     pageNumber?: number | null
     class: ClassCreateNestedOneWithoutSourcesInput
   }
 
   export type ClassSourceMapUncheckedCreateWithoutSourceBookInput = {
-    id?: number
     classId: number
-    bookId: number
     pageNumber?: number | null
   }
 
@@ -49407,15 +49040,12 @@ export namespace Prisma {
   }
 
   export type RaceSourceMapCreateWithoutSourceBookInput = {
-    bookId: number
     pageNumber?: number | null
     Race: RaceCreateNestedOneWithoutSourcesInput
   }
 
   export type RaceSourceMapUncheckedCreateWithoutSourceBookInput = {
-    id?: number
     raceId: number
-    bookId: number
     pageNumber?: number | null
   }
 
@@ -49430,15 +49060,12 @@ export namespace Prisma {
   }
 
   export type SpellSourceMapCreateWithoutSourceBookInput = {
-    bookId: number
     pageNumber?: number | null
-    Spell: SpellCreateNestedOneWithoutSourcesInput
+    Spell: SpellCreateNestedOneWithoutSourceBookInfoInput
   }
 
   export type SpellSourceMapUncheckedCreateWithoutSourceBookInput = {
-    id?: number
     spellId: number
-    bookId: number
     pageNumber?: number | null
   }
 
@@ -49501,7 +49128,7 @@ export namespace Prisma {
   }
 
   export type ReferenceTableColumnCreateWithoutTableInput = {
-    columnIndex: number
+    index: number
     header: string
     span?: number | null
     alignment?: $Enums.TextAlignment | null
@@ -49509,8 +49136,7 @@ export namespace Prisma {
   }
 
   export type ReferenceTableColumnUncheckedCreateWithoutTableInput = {
-    id?: number
-    columnIndex: number
+    index: number
     header: string
     span?: number | null
     alignment?: $Enums.TextAlignment | null
@@ -49528,15 +49154,12 @@ export namespace Prisma {
   }
 
   export type ReferenceTableRowCreateWithoutTableInput = {
-    rowIndex: number
-    label?: string | null
+    index: number
     cells?: ReferenceTableCellCreateNestedManyWithoutRowInput
   }
 
   export type ReferenceTableRowUncheckedCreateWithoutTableInput = {
-    id?: number
-    rowIndex: number
-    label?: string | null
+    index: number
     cells?: ReferenceTableCellUncheckedCreateNestedManyWithoutRowInput
   }
 
@@ -49559,9 +49182,8 @@ export namespace Prisma {
   }
 
   export type ReferenceTableCellUncheckedCreateWithoutTableInput = {
-    id?: number
-    rowId: number
-    columnId: number
+    columnIndex: number
+    rowIndex: number
     value?: string | null
     colSpan?: number | null
     rowSpan?: number | null
@@ -49597,9 +49219,8 @@ export namespace Prisma {
     AND?: ReferenceTableColumnScalarWhereInput | ReferenceTableColumnScalarWhereInput[]
     OR?: ReferenceTableColumnScalarWhereInput[]
     NOT?: ReferenceTableColumnScalarWhereInput | ReferenceTableColumnScalarWhereInput[]
-    id?: IntFilter<"ReferenceTableColumn"> | number
     tableSlug?: StringFilter<"ReferenceTableColumn"> | string
-    columnIndex?: IntFilter<"ReferenceTableColumn"> | number
+    index?: IntFilter<"ReferenceTableColumn"> | number
     header?: StringFilter<"ReferenceTableColumn"> | string
     span?: IntNullableFilter<"ReferenceTableColumn"> | number | null
     alignment?: EnumTextAlignmentNullableFilter<"ReferenceTableColumn"> | $Enums.TextAlignment | null
@@ -49625,10 +49246,8 @@ export namespace Prisma {
     AND?: ReferenceTableRowScalarWhereInput | ReferenceTableRowScalarWhereInput[]
     OR?: ReferenceTableRowScalarWhereInput[]
     NOT?: ReferenceTableRowScalarWhereInput | ReferenceTableRowScalarWhereInput[]
-    id?: IntFilter<"ReferenceTableRow"> | number
     tableSlug?: StringFilter<"ReferenceTableRow"> | string
-    rowIndex?: IntFilter<"ReferenceTableRow"> | number
-    label?: StringNullableFilter<"ReferenceTableRow"> | string | null
+    index?: IntFilter<"ReferenceTableRow"> | number
   }
 
   export type ReferenceTableCellUpsertWithWhereUniqueWithoutTableInput = {
@@ -49651,10 +49270,9 @@ export namespace Prisma {
     AND?: ReferenceTableCellScalarWhereInput | ReferenceTableCellScalarWhereInput[]
     OR?: ReferenceTableCellScalarWhereInput[]
     NOT?: ReferenceTableCellScalarWhereInput | ReferenceTableCellScalarWhereInput[]
-    id?: IntFilter<"ReferenceTableCell"> | number
     tableSlug?: StringFilter<"ReferenceTableCell"> | string
-    rowId?: IntFilter<"ReferenceTableCell"> | number
-    columnId?: IntFilter<"ReferenceTableCell"> | number
+    columnIndex?: IntFilter<"ReferenceTableCell"> | number
+    rowIndex?: IntFilter<"ReferenceTableCell"> | number
     value?: StringNullableFilter<"ReferenceTableCell"> | string | null
     colSpan?: IntNullableFilter<"ReferenceTableCell"> | number | null
     rowSpan?: IntNullableFilter<"ReferenceTableCell"> | number | null
@@ -49669,9 +49287,7 @@ export namespace Prisma {
   }
 
   export type ReferenceTableCellUncheckedCreateWithoutColumnInput = {
-    id?: number
-    tableSlug: string
-    rowId: number
+    rowIndex: number
     value?: string | null
     colSpan?: number | null
     rowSpan?: number | null
@@ -49760,9 +49376,7 @@ export namespace Prisma {
   }
 
   export type ReferenceTableCellUncheckedCreateWithoutRowInput = {
-    id?: number
-    tableSlug: string
-    columnId: number
+    columnIndex: number
     value?: string | null
     colSpan?: number | null
     rowSpan?: number | null
@@ -49843,7 +49457,7 @@ export namespace Prisma {
   }
 
   export type ReferenceTableColumnCreateWithoutCellsInput = {
-    columnIndex: number
+    index: number
     header: string
     span?: number | null
     alignment?: $Enums.TextAlignment | null
@@ -49851,9 +49465,8 @@ export namespace Prisma {
   }
 
   export type ReferenceTableColumnUncheckedCreateWithoutCellsInput = {
-    id?: number
     tableSlug: string
-    columnIndex: number
+    index: number
     header: string
     span?: number | null
     alignment?: $Enums.TextAlignment | null
@@ -49865,16 +49478,13 @@ export namespace Prisma {
   }
 
   export type ReferenceTableRowCreateWithoutCellsInput = {
-    rowIndex: number
-    label?: string | null
+    index: number
     table: ReferenceTableCreateNestedOneWithoutRowsInput
   }
 
   export type ReferenceTableRowUncheckedCreateWithoutCellsInput = {
-    id?: number
     tableSlug: string
-    rowIndex: number
-    label?: string | null
+    index: number
   }
 
   export type ReferenceTableRowCreateOrConnectWithoutCellsInput = {
@@ -49915,7 +49525,7 @@ export namespace Prisma {
   }
 
   export type ReferenceTableColumnUpdateWithoutCellsInput = {
-    columnIndex?: IntFieldUpdateOperationsInput | number
+    index?: IntFieldUpdateOperationsInput | number
     header?: StringFieldUpdateOperationsInput | string
     span?: NullableIntFieldUpdateOperationsInput | number | null
     alignment?: NullableEnumTextAlignmentFieldUpdateOperationsInput | $Enums.TextAlignment | null
@@ -49923,9 +49533,8 @@ export namespace Prisma {
   }
 
   export type ReferenceTableColumnUncheckedUpdateWithoutCellsInput = {
-    id?: IntFieldUpdateOperationsInput | number
     tableSlug?: StringFieldUpdateOperationsInput | string
-    columnIndex?: IntFieldUpdateOperationsInput | number
+    index?: IntFieldUpdateOperationsInput | number
     header?: StringFieldUpdateOperationsInput | string
     span?: NullableIntFieldUpdateOperationsInput | number | null
     alignment?: NullableEnumTextAlignmentFieldUpdateOperationsInput | $Enums.TextAlignment | null
@@ -49943,16 +49552,13 @@ export namespace Prisma {
   }
 
   export type ReferenceTableRowUpdateWithoutCellsInput = {
-    rowIndex?: IntFieldUpdateOperationsInput | number
-    label?: NullableStringFieldUpdateOperationsInput | string | null
+    index?: IntFieldUpdateOperationsInput | number
     table?: ReferenceTableUpdateOneRequiredWithoutRowsNestedInput
   }
 
   export type ReferenceTableRowUncheckedUpdateWithoutCellsInput = {
-    id?: IntFieldUpdateOperationsInput | number
     tableSlug?: StringFieldUpdateOperationsInput | string
-    rowIndex?: IntFieldUpdateOperationsInput | number
-    label?: NullableStringFieldUpdateOperationsInput | string | null
+    index?: IntFieldUpdateOperationsInput | number
   }
 
   export type ReferenceTableUpsertWithoutCellsInput = {
@@ -50298,7 +49904,7 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeCreateManyClassInput = {
-    id?: number
+    level: number
     baseAttackBonus: number
     fortSave: number
     refSave: number
@@ -50306,24 +49912,21 @@ export namespace Prisma {
   }
 
   export type ClassSpellLevelCreateManyClassInput = {
-    id?: number
+    level: number
     spellLevel: number
+    numSpells: number
   }
 
   export type ClassSkillMapCreateManyClassInput = {
-    id?: number
     skillId: number
   }
 
   export type ClassSourceMapCreateManyClassInput = {
-    id?: number
-    bookId: number
     pageNumber?: number | null
-    sourceBookId?: number | null
+    sourceBookId: number
   }
 
   export type SpellLevelMapCreateManyClassInput = {
-    id?: number
     spellId: number
     level: number
     isVisible?: boolean
@@ -50350,6 +49953,7 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeUpdateWithoutClassInput = {
+    level?: IntFieldUpdateOperationsInput | number
     baseAttackBonus?: IntFieldUpdateOperationsInput | number
     fortSave?: IntFieldUpdateOperationsInput | number
     refSave?: IntFieldUpdateOperationsInput | number
@@ -50357,7 +49961,7 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeUncheckedUpdateWithoutClassInput = {
-    id?: IntFieldUpdateOperationsInput | number
+    level?: IntFieldUpdateOperationsInput | number
     baseAttackBonus?: IntFieldUpdateOperationsInput | number
     fortSave?: IntFieldUpdateOperationsInput | number
     refSave?: IntFieldUpdateOperationsInput | number
@@ -50365,7 +49969,7 @@ export namespace Prisma {
   }
 
   export type ClassLevelAttributeUncheckedUpdateManyWithoutClassInput = {
-    id?: IntFieldUpdateOperationsInput | number
+    level?: IntFieldUpdateOperationsInput | number
     baseAttackBonus?: IntFieldUpdateOperationsInput | number
     fortSave?: IntFieldUpdateOperationsInput | number
     refSave?: IntFieldUpdateOperationsInput | number
@@ -50373,17 +49977,21 @@ export namespace Prisma {
   }
 
   export type ClassSpellLevelUpdateWithoutClassInput = {
+    level?: IntFieldUpdateOperationsInput | number
     spellLevel?: IntFieldUpdateOperationsInput | number
+    numSpells?: IntFieldUpdateOperationsInput | number
   }
 
   export type ClassSpellLevelUncheckedUpdateWithoutClassInput = {
-    id?: IntFieldUpdateOperationsInput | number
+    level?: IntFieldUpdateOperationsInput | number
     spellLevel?: IntFieldUpdateOperationsInput | number
+    numSpells?: IntFieldUpdateOperationsInput | number
   }
 
   export type ClassSpellLevelUncheckedUpdateManyWithoutClassInput = {
-    id?: IntFieldUpdateOperationsInput | number
+    level?: IntFieldUpdateOperationsInput | number
     spellLevel?: IntFieldUpdateOperationsInput | number
+    numSpells?: IntFieldUpdateOperationsInput | number
   }
 
   export type ClassSkillMapUpdateWithoutClassInput = {
@@ -50391,33 +49999,26 @@ export namespace Prisma {
   }
 
   export type ClassSkillMapUncheckedUpdateWithoutClassInput = {
-    id?: IntFieldUpdateOperationsInput | number
     skillId?: IntFieldUpdateOperationsInput | number
   }
 
   export type ClassSkillMapUncheckedUpdateManyWithoutClassInput = {
-    id?: IntFieldUpdateOperationsInput | number
     skillId?: IntFieldUpdateOperationsInput | number
   }
 
   export type ClassSourceMapUpdateWithoutClassInput = {
-    bookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
     SourceBook?: SourceBookUpdateOneWithoutClassesNestedInput
   }
 
   export type ClassSourceMapUncheckedUpdateWithoutClassInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    bookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
-    sourceBookId?: NullableIntFieldUpdateOperationsInput | number | null
+    sourceBookId?: IntFieldUpdateOperationsInput | number
   }
 
   export type ClassSourceMapUncheckedUpdateManyWithoutClassInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    bookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
-    sourceBookId?: NullableIntFieldUpdateOperationsInput | number | null
+    sourceBookId?: IntFieldUpdateOperationsInput | number
   }
 
   export type SpellLevelMapUpdateWithoutClassInput = {
@@ -50427,50 +50028,41 @@ export namespace Prisma {
   }
 
   export type SpellLevelMapUncheckedUpdateWithoutClassInput = {
-    id?: IntFieldUpdateOperationsInput | number
     spellId?: IntFieldUpdateOperationsInput | number
     level?: IntFieldUpdateOperationsInput | number
     isVisible?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type SpellLevelMapUncheckedUpdateManyWithoutClassInput = {
-    id?: IntFieldUpdateOperationsInput | number
     spellId?: IntFieldUpdateOperationsInput | number
     level?: IntFieldUpdateOperationsInput | number
     isVisible?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type SpellDescriptorMapCreateManySpellInput = {
-    id?: number
     descriptorId: number
   }
 
   export type SpellLevelMapCreateManySpellInput = {
-    id?: number
     classId: number
     level: number
     isVisible?: boolean
   }
 
   export type SpellSchoolMapCreateManySpellInput = {
-    id?: number
     schoolId: number
   }
 
   export type SpellSourceMapCreateManySpellInput = {
-    id?: number
-    bookId: number
+    sourceBookId: number
     pageNumber?: number | null
-    sourceBookId?: number | null
   }
 
   export type SpellSubschoolMapCreateManySpellInput = {
-    id?: number
-    schoolId: number
+    subSchoolId: number
   }
 
   export type SpellComponentMapCreateManySpellInput = {
-    id?: number
     componentId: number
   }
 
@@ -50479,12 +50071,10 @@ export namespace Prisma {
   }
 
   export type SpellDescriptorMapUncheckedUpdateWithoutSpellInput = {
-    id?: IntFieldUpdateOperationsInput | number
     descriptorId?: IntFieldUpdateOperationsInput | number
   }
 
   export type SpellDescriptorMapUncheckedUpdateManyWithoutSpellInput = {
-    id?: IntFieldUpdateOperationsInput | number
     descriptorId?: IntFieldUpdateOperationsInput | number
   }
 
@@ -50495,14 +50085,12 @@ export namespace Prisma {
   }
 
   export type SpellLevelMapUncheckedUpdateWithoutSpellInput = {
-    id?: IntFieldUpdateOperationsInput | number
     classId?: IntFieldUpdateOperationsInput | number
     level?: IntFieldUpdateOperationsInput | number
     isVisible?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type SpellLevelMapUncheckedUpdateManyWithoutSpellInput = {
-    id?: IntFieldUpdateOperationsInput | number
     classId?: IntFieldUpdateOperationsInput | number
     level?: IntFieldUpdateOperationsInput | number
     isVisible?: BoolFieldUpdateOperationsInput | boolean
@@ -50513,47 +50101,38 @@ export namespace Prisma {
   }
 
   export type SpellSchoolMapUncheckedUpdateWithoutSpellInput = {
-    id?: IntFieldUpdateOperationsInput | number
     schoolId?: IntFieldUpdateOperationsInput | number
   }
 
   export type SpellSchoolMapUncheckedUpdateManyWithoutSpellInput = {
-    id?: IntFieldUpdateOperationsInput | number
     schoolId?: IntFieldUpdateOperationsInput | number
   }
 
   export type SpellSourceMapUpdateWithoutSpellInput = {
-    bookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
-    SourceBook?: SourceBookUpdateOneWithoutSpellsNestedInput
+    SourceBook?: SourceBookUpdateOneRequiredWithoutSpellsNestedInput
   }
 
   export type SpellSourceMapUncheckedUpdateWithoutSpellInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    bookId?: IntFieldUpdateOperationsInput | number
+    sourceBookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
-    sourceBookId?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type SpellSourceMapUncheckedUpdateManyWithoutSpellInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    bookId?: IntFieldUpdateOperationsInput | number
+    sourceBookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
-    sourceBookId?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type SpellSubschoolMapUpdateWithoutSpellInput = {
-    schoolId?: IntFieldUpdateOperationsInput | number
+    subSchoolId?: IntFieldUpdateOperationsInput | number
   }
 
   export type SpellSubschoolMapUncheckedUpdateWithoutSpellInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    schoolId?: IntFieldUpdateOperationsInput | number
+    subSchoolId?: IntFieldUpdateOperationsInput | number
   }
 
   export type SpellSubschoolMapUncheckedUpdateManyWithoutSpellInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    schoolId?: IntFieldUpdateOperationsInput | number
+    subSchoolId?: IntFieldUpdateOperationsInput | number
   }
 
   export type SpellComponentMapUpdateWithoutSpellInput = {
@@ -50561,17 +50140,14 @@ export namespace Prisma {
   }
 
   export type SpellComponentMapUncheckedUpdateWithoutSpellInput = {
-    id?: IntFieldUpdateOperationsInput | number
     componentId?: IntFieldUpdateOperationsInput | number
   }
 
   export type SpellComponentMapUncheckedUpdateManyWithoutSpellInput = {
-    id?: IntFieldUpdateOperationsInput | number
     componentId?: IntFieldUpdateOperationsInput | number
   }
 
   export type ClassSkillMapCreateManySkillInput = {
-    id?: number
     classId: number
   }
 
@@ -50580,12 +50156,10 @@ export namespace Prisma {
   }
 
   export type ClassSkillMapUncheckedUpdateWithoutSkillInput = {
-    id?: IntFieldUpdateOperationsInput | number
     classId?: IntFieldUpdateOperationsInput | number
   }
 
   export type ClassSkillMapUncheckedUpdateManyWithoutSkillInput = {
-    id?: IntFieldUpdateOperationsInput | number
     classId?: IntFieldUpdateOperationsInput | number
   }
 
@@ -50656,15 +50230,13 @@ export namespace Prisma {
   }
 
   export type RaceSourceMapCreateManyRaceInput = {
-    id?: number
-    bookId: number
+    sourceBookId: number
     pageNumber?: number | null
-    sourceBookId?: number | null
   }
 
   export type RaceTraitMapCreateManyRaceInput = {
-    traitId: string
-    value?: string | null
+    traitSlug: string
+    value?: number | null
   }
 
   export type UserCharacterCreateManyRaceInput = {
@@ -50712,38 +50284,33 @@ export namespace Prisma {
   }
 
   export type RaceSourceMapUpdateWithoutRaceInput = {
-    bookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
     SourceBook?: SourceBookUpdateOneWithoutRacesNestedInput
   }
 
   export type RaceSourceMapUncheckedUpdateWithoutRaceInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    bookId?: IntFieldUpdateOperationsInput | number
+    sourceBookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
-    sourceBookId?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type RaceSourceMapUncheckedUpdateManyWithoutRaceInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    bookId?: IntFieldUpdateOperationsInput | number
+    sourceBookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
-    sourceBookId?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type RaceTraitMapUpdateWithoutRaceInput = {
-    value?: NullableStringFieldUpdateOperationsInput | string | null
+    value?: NullableIntFieldUpdateOperationsInput | number | null
     trait?: RaceTraitUpdateOneRequiredWithoutRaceLinksNestedInput
   }
 
   export type RaceTraitMapUncheckedUpdateWithoutRaceInput = {
-    traitId?: StringFieldUpdateOperationsInput | string
-    value?: NullableStringFieldUpdateOperationsInput | string | null
+    traitSlug?: StringFieldUpdateOperationsInput | string
+    value?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type RaceTraitMapUncheckedUpdateManyWithoutRaceInput = {
-    traitId?: StringFieldUpdateOperationsInput | string
-    value?: NullableStringFieldUpdateOperationsInput | string | null
+    traitSlug?: StringFieldUpdateOperationsInput | string
+    value?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type UserCharacterUpdateWithoutRaceInput = {
@@ -50791,130 +50358,105 @@ export namespace Prisma {
 
   export type RaceTraitMapCreateManyTraitInput = {
     raceId: number
-    value?: string | null
+    value?: number | null
   }
 
   export type RaceTraitMapUpdateWithoutTraitInput = {
-    value?: NullableStringFieldUpdateOperationsInput | string | null
+    value?: NullableIntFieldUpdateOperationsInput | number | null
     race?: RaceUpdateOneRequiredWithoutTraitsNestedInput
   }
 
   export type RaceTraitMapUncheckedUpdateWithoutTraitInput = {
     raceId?: IntFieldUpdateOperationsInput | number
-    value?: NullableStringFieldUpdateOperationsInput | string | null
+    value?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type RaceTraitMapUncheckedUpdateManyWithoutTraitInput = {
     raceId?: IntFieldUpdateOperationsInput | number
-    value?: NullableStringFieldUpdateOperationsInput | string | null
+    value?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type ClassSourceMapCreateManySourceBookInput = {
-    id?: number
     classId: number
-    bookId: number
     pageNumber?: number | null
   }
 
   export type RaceSourceMapCreateManySourceBookInput = {
-    id?: number
     raceId: number
-    bookId: number
     pageNumber?: number | null
   }
 
   export type SpellSourceMapCreateManySourceBookInput = {
-    id?: number
     spellId: number
-    bookId: number
     pageNumber?: number | null
   }
 
   export type ClassSourceMapUpdateWithoutSourceBookInput = {
-    bookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
     class?: ClassUpdateOneRequiredWithoutSourcesNestedInput
   }
 
   export type ClassSourceMapUncheckedUpdateWithoutSourceBookInput = {
-    id?: IntFieldUpdateOperationsInput | number
     classId?: IntFieldUpdateOperationsInput | number
-    bookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type ClassSourceMapUncheckedUpdateManyWithoutSourceBookInput = {
-    id?: IntFieldUpdateOperationsInput | number
     classId?: IntFieldUpdateOperationsInput | number
-    bookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type RaceSourceMapUpdateWithoutSourceBookInput = {
-    bookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
     Race?: RaceUpdateOneRequiredWithoutSourcesNestedInput
   }
 
   export type RaceSourceMapUncheckedUpdateWithoutSourceBookInput = {
-    id?: IntFieldUpdateOperationsInput | number
     raceId?: IntFieldUpdateOperationsInput | number
-    bookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type RaceSourceMapUncheckedUpdateManyWithoutSourceBookInput = {
-    id?: IntFieldUpdateOperationsInput | number
     raceId?: IntFieldUpdateOperationsInput | number
-    bookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type SpellSourceMapUpdateWithoutSourceBookInput = {
-    bookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
-    Spell?: SpellUpdateOneRequiredWithoutSourcesNestedInput
+    Spell?: SpellUpdateOneRequiredWithoutSourceBookInfoNestedInput
   }
 
   export type SpellSourceMapUncheckedUpdateWithoutSourceBookInput = {
-    id?: IntFieldUpdateOperationsInput | number
     spellId?: IntFieldUpdateOperationsInput | number
-    bookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type SpellSourceMapUncheckedUpdateManyWithoutSourceBookInput = {
-    id?: IntFieldUpdateOperationsInput | number
     spellId?: IntFieldUpdateOperationsInput | number
-    bookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type ReferenceTableColumnCreateManyTableInput = {
-    id?: number
-    columnIndex: number
+    index: number
     header: string
     span?: number | null
     alignment?: $Enums.TextAlignment | null
   }
 
   export type ReferenceTableRowCreateManyTableInput = {
-    id?: number
-    rowIndex: number
-    label?: string | null
+    index: number
   }
 
   export type ReferenceTableCellCreateManyTableInput = {
-    id?: number
-    rowId: number
-    columnId: number
+    columnIndex: number
+    rowIndex: number
     value?: string | null
     colSpan?: number | null
     rowSpan?: number | null
   }
 
   export type ReferenceTableColumnUpdateWithoutTableInput = {
-    columnIndex?: IntFieldUpdateOperationsInput | number
+    index?: IntFieldUpdateOperationsInput | number
     header?: StringFieldUpdateOperationsInput | string
     span?: NullableIntFieldUpdateOperationsInput | number | null
     alignment?: NullableEnumTextAlignmentFieldUpdateOperationsInput | $Enums.TextAlignment | null
@@ -50922,8 +50464,7 @@ export namespace Prisma {
   }
 
   export type ReferenceTableColumnUncheckedUpdateWithoutTableInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    columnIndex?: IntFieldUpdateOperationsInput | number
+    index?: IntFieldUpdateOperationsInput | number
     header?: StringFieldUpdateOperationsInput | string
     span?: NullableIntFieldUpdateOperationsInput | number | null
     alignment?: NullableEnumTextAlignmentFieldUpdateOperationsInput | $Enums.TextAlignment | null
@@ -50931,30 +50472,24 @@ export namespace Prisma {
   }
 
   export type ReferenceTableColumnUncheckedUpdateManyWithoutTableInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    columnIndex?: IntFieldUpdateOperationsInput | number
+    index?: IntFieldUpdateOperationsInput | number
     header?: StringFieldUpdateOperationsInput | string
     span?: NullableIntFieldUpdateOperationsInput | number | null
     alignment?: NullableEnumTextAlignmentFieldUpdateOperationsInput | $Enums.TextAlignment | null
   }
 
   export type ReferenceTableRowUpdateWithoutTableInput = {
-    rowIndex?: IntFieldUpdateOperationsInput | number
-    label?: NullableStringFieldUpdateOperationsInput | string | null
+    index?: IntFieldUpdateOperationsInput | number
     cells?: ReferenceTableCellUpdateManyWithoutRowNestedInput
   }
 
   export type ReferenceTableRowUncheckedUpdateWithoutTableInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    rowIndex?: IntFieldUpdateOperationsInput | number
-    label?: NullableStringFieldUpdateOperationsInput | string | null
+    index?: IntFieldUpdateOperationsInput | number
     cells?: ReferenceTableCellUncheckedUpdateManyWithoutRowNestedInput
   }
 
   export type ReferenceTableRowUncheckedUpdateManyWithoutTableInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    rowIndex?: IntFieldUpdateOperationsInput | number
-    label?: NullableStringFieldUpdateOperationsInput | string | null
+    index?: IntFieldUpdateOperationsInput | number
   }
 
   export type ReferenceTableCellUpdateWithoutTableInput = {
@@ -50966,27 +50501,23 @@ export namespace Prisma {
   }
 
   export type ReferenceTableCellUncheckedUpdateWithoutTableInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    rowId?: IntFieldUpdateOperationsInput | number
-    columnId?: IntFieldUpdateOperationsInput | number
+    columnIndex?: IntFieldUpdateOperationsInput | number
+    rowIndex?: IntFieldUpdateOperationsInput | number
     value?: NullableStringFieldUpdateOperationsInput | string | null
     colSpan?: NullableIntFieldUpdateOperationsInput | number | null
     rowSpan?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type ReferenceTableCellUncheckedUpdateManyWithoutTableInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    rowId?: IntFieldUpdateOperationsInput | number
-    columnId?: IntFieldUpdateOperationsInput | number
+    columnIndex?: IntFieldUpdateOperationsInput | number
+    rowIndex?: IntFieldUpdateOperationsInput | number
     value?: NullableStringFieldUpdateOperationsInput | string | null
     colSpan?: NullableIntFieldUpdateOperationsInput | number | null
     rowSpan?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type ReferenceTableCellCreateManyColumnInput = {
-    id?: number
-    tableSlug: string
-    rowId: number
+    rowIndex: number
     value?: string | null
     colSpan?: number | null
     rowSpan?: number | null
@@ -51001,27 +50532,21 @@ export namespace Prisma {
   }
 
   export type ReferenceTableCellUncheckedUpdateWithoutColumnInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    tableSlug?: StringFieldUpdateOperationsInput | string
-    rowId?: IntFieldUpdateOperationsInput | number
+    rowIndex?: IntFieldUpdateOperationsInput | number
     value?: NullableStringFieldUpdateOperationsInput | string | null
     colSpan?: NullableIntFieldUpdateOperationsInput | number | null
     rowSpan?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type ReferenceTableCellUncheckedUpdateManyWithoutColumnInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    tableSlug?: StringFieldUpdateOperationsInput | string
-    rowId?: IntFieldUpdateOperationsInput | number
+    rowIndex?: IntFieldUpdateOperationsInput | number
     value?: NullableStringFieldUpdateOperationsInput | string | null
     colSpan?: NullableIntFieldUpdateOperationsInput | number | null
     rowSpan?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type ReferenceTableCellCreateManyRowInput = {
-    id?: number
-    tableSlug: string
-    columnId: number
+    columnIndex: number
     value?: string | null
     colSpan?: number | null
     rowSpan?: number | null
@@ -51036,18 +50561,14 @@ export namespace Prisma {
   }
 
   export type ReferenceTableCellUncheckedUpdateWithoutRowInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    tableSlug?: StringFieldUpdateOperationsInput | string
-    columnId?: IntFieldUpdateOperationsInput | number
+    columnIndex?: IntFieldUpdateOperationsInput | number
     value?: NullableStringFieldUpdateOperationsInput | string | null
     colSpan?: NullableIntFieldUpdateOperationsInput | number | null
     rowSpan?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type ReferenceTableCellUncheckedUpdateManyWithoutRowInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    tableSlug?: StringFieldUpdateOperationsInput | string
-    columnId?: IntFieldUpdateOperationsInput | number
+    columnIndex?: IntFieldUpdateOperationsInput | number
     value?: NullableStringFieldUpdateOperationsInput | string | null
     colSpan?: NullableIntFieldUpdateOperationsInput | number | null
     rowSpan?: NullableIntFieldUpdateOperationsInput | number | null

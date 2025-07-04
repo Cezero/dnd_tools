@@ -1,200 +1,194 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { CreateFeatPrereq, UpdateFeatPrereq, FetchFeatPrereqById } from '@/features/admin/features/feat-management/FeatPrereqService';
-import { Listbox, ListboxButton, ListboxOptions, ListboxOption, Transition } from '@headlessui/react';
-import { ChevronUpDownIcon } from '@heroicons/react/24/solid';
-import { FEAT_PREREQUISITE_TYPES, FEAT_PREREQUISITE_TYPE_LIST } from '@shared/static-data';
+import { Dialog } from '@base-ui-components/react/dialog';
+import React, { useState, useEffect, useCallback, Fragment } from 'react';
+import { z } from 'zod';
 
-export function FeatPrereqEdit() {
-    const { id } = useParams();
-    const navigate = useNavigate();
-    const location = useLocation();
-    const [prereq, setPrereq] = useState({
-        prereq_id: '',
-        feat_id: '',
-        prereq_type: null,
-        prereq_type_id: '',
-        prereq_amount: '',
-    });
+import {
+    ValidatedForm,
+    ValidatedInput,
+    ValidatedListbox,
+    useValidatedForm
+} from '@/components/forms';
+import { FeatPrerequisiteSchema } from '@shared/schema';
+import { FEAT_PREREQUISITE_TYPE_LIST, FEAT_PREREQUISITE_TYPES } from '@shared/static-data';
+
+// Type definitions for the form state
+type FeatPrerequisiteFormData = z.infer<typeof FeatPrerequisiteSchema>;
+
+interface FeatPrereqEditProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (prereq: FeatPrerequisiteFormData) => void;
+    initialPrereqData: FeatPrerequisiteFormData;
+}
+
+export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: FeatPrereqEditProps) {
+    const [prereq, setPrereq] = useState<FeatPrerequisiteFormData | null>(null);
     const [message, setMessage] = useState('');
-    const [error, setError] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-    useEffect(() => {
-        const FetchPrereq = async () => {
-            try {
-                if (id === 'new') {
-                    setPrereq({
-                        prereq_id: '',
-                        feat_id: location.state?.featId || '',
-                        prereq_type: null,
-                        prereq_type_id: '',
-                        prereq_amount: '',
-                    });
-                } else {
-                    const data = await FetchFeatPrereqById(id);
-                    setPrereq({
-                        prereq_id: data.prereq_id || '',
-                        feat_id: data.feat_id,
-                        prereq_type: data.prereq_type,
-                        prereq_type_id: data.prereq_type_id || '',
-                        prereq_amount: data.prereq_amount || '',
-                    });
-                }
-            } catch (err) {
-                setError(err);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        FetchPrereq();
-    }, [id, location.state]);
-
-    const HandleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setPrereq(prevPrereq => ({
-            ...prevPrereq,
-            [name]: type === 'checkbox' ? checked : (name === 'prereq_type' ? parseInt(value) : value)
-        }));
+    // Initialize form data with default values
+    const initialFormData: FeatPrerequisiteFormData = {
+        ...initialPrereqData,
+        index: initialPrereqData.index || 0,
+        typeId: null,
+        referenceId: null,
+        amount: null,
     };
 
-    const HandleSubmit = async (e) => {
+    const [formData, setFormData] = useState<FeatPrerequisiteFormData>(initialFormData);
+
+    // Determine which schema to use based on whether we're creating or editing
+    const schema = FeatPrerequisiteSchema;
+
+    // Use the validated form hook
+    const { validation, createFieldProps } = useValidatedForm(
+        schema,
+        formData,
+        setFormData,
+        {
+            validateOnChange: true,
+            validateOnBlur: true,
+            debounceMs: 300
+        }
+    );
+
+    useEffect(() => {
+        if (initialPrereqData) {
+            setFormData({
+                ...initialPrereqData,
+                index: initialPrereqData.index || 0,
+                typeId: initialPrereqData.typeId || null,
+                referenceId: initialPrereqData.referenceId || null,
+                amount: initialPrereqData.amount || null,
+            });
+        }
+    }, [initialPrereqData]);
+
+    const HandleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setMessage('');
         setError(null);
 
+        // Validate the entire form
+        if (!validation.validateForm(formData)) {
+            return;
+        }
+
         try {
-            const payload = {
-                feat_id: parseInt(prereq.feat_id),
-                prereq_type: prereq.prereq_type ? parseInt(prereq.prereq_type) : null,
-                prereq_type_id: prereq.prereq_type_id,
-                prereq_amount: prereq.prereq_amount,
-            };
-
-            if (id === 'new') {
-                const newPrereq = await CreateFeatPrereq(payload);
-                setMessage('Feat prerequisite created successfully!');
-                if (location.state?.from === 'FeatPrereqAssoc' && location.state?.featId) {
-                    navigate(`/admin/feats/${location.state.featId}/edit`, { state: { newPrereq: newPrereq } });
-                } else {
-                    navigate('/admin/feats');
-                }
-            } else {
-                await UpdateFeatPrereq(id, payload);
-                setMessage('Feat prerequisite updated successfully!');
-                navigate('/admin/feats');
-            }
-
+            setIsLoading(true);
+            onSave(formData);
+            onClose();
         } catch (err) {
-            setError(err);
-            setMessage(`Error: ${err.message || err}`);
+            setError(err instanceof Error ? err.message : 'Failed to save prerequisite');
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    if (isLoading) return <div className="p-4 bg-white dark:bg-[#121212]">Loading feat prerequisite for editing...</div>;
-    if (error) return <div className="p-4 bg-white dark:bg-[#121212] dark:text-red-500">Error: {error.message}</div>;
-    if (!prereq && id !== 'new') return <div className="p-4 bg-white dark:bg-[#121212]">Feat prerequisite not found.</div>;
+    if (!isOpen) return null;
+
+    // Create field props for each form field
+    const amountProps = {
+        ...createFieldProps('amount'),
+        value: formData.amount as string | number || ''
+    };
+    const referenceIdProps = {
+        ...createFieldProps('referenceId'),
+        value: formData.referenceId as string | number || ''
+    };
+
+    // Create listbox props for type
+    const typeListboxProps = {
+        value: formData.typeId,
+        onChange: (value: string | number | null) => {
+            setFormData(prev => ({ ...prev, typeId: value as number | null }));
+            validation.validateField('typeId', value);
+        },
+        error: validation.getError('typeId'),
+        hasError: validation.hasError('typeId')
+    };
+
+    // Create listbox props for reference
+    const referenceListboxProps = {
+        value: formData.referenceId,
+        onChange: (value: string | number | null) => {
+            setFormData(prev => ({ ...prev, referenceId: value as number | null }));
+            validation.validateField('referenceId', value);
+        },
+        error: validation.getError('referenceId'),
+        hasError: validation.hasError('referenceId')
+    };
 
     return (
-        <div className="p-4 bg-white dark:bg-[#121212] scrollbar-track-gray-300 scrollbar-thumb-gray-400 dark:scrollbar-track-gray-700 dark:scrollbar-thumb-gray-500">
-            <h1 className="text-2xl font-bold mb-4">{id === 'new' ? 'Create New Feat Prerequisite' : `Edit Feat Prerequisite: ${prereq.prereq_id}`}</h1>
-            {message && <div className="mb-4 p-2 rounded text-green-700 bg-green-100 dark:bg-green-800 dark:text-green-200">{message}</div>}
-            {error && <div className="mb-4 p-2 rounded text-red-700 bg-red-100 dark:bg-red-800 dark:text-red-200">Error: {error.message || String(error)}</div>}
+        <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
+            <Dialog.Backdrop className="fixed inset-0 bg-black bg-opacity-25 z-40" />
+            <Dialog.Portal>
+                <Dialog.Popup className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="w-full max-w-md transform overflow-visible rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all dark:bg-gray-800">
+                        <Dialog.Title className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100">
+                            Edit Feat Prerequisite
+                        </Dialog.Title>
+                        {message && <div className="mb-4 p-2 rounded text-green-700 bg-green-100 dark:bg-green-800 dark:text-green-200">{message}</div>}
+                        {error && <div className="mb-4 p-2 rounded text-red-700 bg-red-100 dark:bg-red-800 dark:text-red-200">Error: {error}</div>}
 
-            <form onSubmit={HandleSubmit} className="mt-4">
-                <div className="mb-4">
-                    <label htmlFor="feat_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Feat ID:</label>
-                    <input
-                        type="number"
-                        id="feat_id"
-                        name="feat_id"
-                        value={prereq.feat_id || ''}
-                        onChange={HandleChange}
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
-                        required
-                    />
-                </div>
-                <div className="mb-4">
-                    <label htmlFor="prereq_type" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Prerequisite Type:</label>
-                    <Listbox
-                        value={prereq.prereq_type}
-                        onChange={(selectedId) => HandleChange({ target: { name: 'prereq_type', value: selectedId } })}
-                    >
-                        <div className="relative mt-1">
-                            <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-2 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-gray-100 dark:ring-gray-600">
-                                <span className="block truncate">{FEAT_PREREQUISITE_TYPES[prereq.prereq_type]?.name || 'Select a prerequisite type'}</span>
-                                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                    <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
-                                </span>
-                            </ListboxButton>
-                            <Transition
-                                leave="transition ease-in duration-100"
-                                leaveFrom="opacity-100"
-                                leaveTo="opacity-0"
-                            >
-                                <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto scrollbar-thin rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm dark:bg-gray-800 dark:text-gray-100">
-                                    <ListboxOption
-                                        className="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 dark:text-gray-100 hover:bg-blue-600 hover:text-white"
-                                        value={null}
-                                    >
-                                        <span className="block truncate">
-                                            Select a prerequisite type
-                                        </span>
-                                    </ListboxOption>
-                                    {FEAT_PREREQUISITE_TYPE_LIST.map(type => (
-                                        <ListboxOption
-                                            key={type.id}
-                                            className="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 dark:text-gray-100 hover:bg-blue-600 hover:text-white"
-                                            value={type.id}
-                                        >
-                                            <span className="block truncate">
-                                                {type.name}
-                                            </span>
-                                        </ListboxOption>
-                                    ))}
-                                </ListboxOptions>
-                            </Transition>
-                        </div>
-                    </Listbox>
-                </div>
-                <div className="mb-4">
-                    <label htmlFor="prereq_type_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Prerequisite Type ID:</label>
-                    <input
-                        type="text"
-                        id="prereq_type_id"
-                        name="prereq_type_id"
-                        value={prereq.prereq_type_id || ''}
-                        onChange={HandleChange}
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
-                    />
-                </div>
-                <div className="mb-4">
-                    <label htmlFor="prereq_amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Prerequisite Amount:</label>
-                    <input
-                        type="number"
-                        id="prereq_amount"
-                        name="prereq_amount"
-                        value={prereq.prereq_amount || ''}
-                        onChange={HandleChange}
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
-                    />
-                </div>
-                <div className="mt-4 flex justify-end">
-                    <button
-                        type="button"
-                        className="inline-flex justify-center rounded-md border border-transparent bg-gray-300 px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-200 mr-2"
-                        onClick={() => navigate(-1)}
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                    >
-                        {id === 'new' ? 'Create Prerequisite' : 'Update Prerequisite'}
-                    </button>
-                </div>
-            </form>
-        </div>
+                        <ValidatedForm
+                            onSubmit={HandleSubmit}
+                            validationState={validation.validationState}
+                            isLoading={isLoading}
+                        >
+                            <div className="space-y-4">
+                                <ValidatedListbox
+                                    name="typeId"
+                                    label="Prerequisite Type"
+                                    value={formData.typeId}
+                                    onChange={(value) => setFormData(prev => ({ ...prev, typeId: value as number | null }))}
+                                    options={FEAT_PREREQUISITE_TYPE_LIST.map(type => ({ value: type.id, label: type.name }))}
+                                    placeholder="Select a prerequisite type"
+                                    {...typeListboxProps}
+                                />
+
+                                <ValidatedInput
+                                    name="referenceId"
+                                    label="Reference ID"
+                                    type="number"
+                                    min={1}
+                                    placeholder="ID of the referenced item"
+                                    {...referenceIdProps}
+                                />
+
+                                <ValidatedInput
+                                    name="amount"
+                                    label="Prerequisite Amount"
+                                    type="number"
+                                    min={0}
+                                    step={1}
+                                    placeholder="Required amount (e.g., 13 for ability score)"
+                                    {...amountProps}
+                                />
+                            </div>
+
+                            <div className="mt-6 flex justify-end space-x-3">
+                                <button
+                                    type="button"
+                                    className="inline-flex justify-center rounded-md border border-transparent bg-gray-300 px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-200"
+                                    onClick={onClose}
+                                    disabled={isLoading}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={isLoading || validation.validationState.hasErrors}
+                                >
+                                    {isLoading ? 'Saving...' : 'Save Prerequisite'}
+                                </button>
+                            </div>
+                        </ValidatedForm>
+                    </div>
+                </Dialog.Popup>
+            </Dialog.Portal>
+        </Dialog.Root>
     );
 } 

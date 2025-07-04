@@ -1,657 +1,538 @@
+import { TrashIcon, UserPlusIcon } from '@heroicons/react/24/outline';
+import pluralize from 'pluralize';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Api } from '@/services/Api';
-import { SIZE_LIST, SIZE_MAP, LANGUAGE_LIST, LANGUAGE_MAP, EDITION_LIST, EDITION_MAP, GetBaseClassesByEdition, CLASS_MAP, ABILITY_LIST } from '@shared/static-data';
-import { FetchRaceById } from '@/features/admin/features/race-management/RaceService';
-import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { Listbox, ListboxButton, ListboxOptions, ListboxOption, Transition } from '@headlessui/react';
-import { TrashIcon, UserPlusIcon } from '@heroicons/react/24/outline';
-import { ChevronUpDownIcon } from '@heroicons/react/24/solid';
+import { z } from 'zod';
+
+import {
+    ValidatedForm,
+    ValidatedInput,
+    ValidatedCheckbox,
+    ValidatedListbox,
+    useValidatedForm
+} from '@/components/forms';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
-import { RaceTraitAssoc } from '@/features/admin/features/raceMgmt/components/RaceTraitAssoc';
-import pluralize from 'pluralize';
+import { RaceService } from '@/features/admin/features/race-management/RaceService';
+import { RaceTraitAssoc } from '@/features/admin/features/race-management/RaceTraitAssoc';
+import { CreateRaceSchema, UpdateRaceSchema, RaceWithTraitsSchema } from '@shared/schema';
+import { SIZE_LIST, LANGUAGE_LIST, LANGUAGE_MAP, EDITION_LIST, GetBaseClassesByEdition, ABILITY_LIST } from '@shared/static-data';
+
+type RaceWithTraitsResponse = z.infer<typeof RaceWithTraitsSchema>;
+
+// Type definitions for the form state
+type CreateRaceFormData = z.infer<typeof CreateRaceSchema>;
+type UpdateRaceFormData = z.infer<typeof UpdateRaceSchema>;
+type RaceFormData = CreateRaceFormData | UpdateRaceFormData;
 
 export function RaceEdit() {
-    const { id } = useParams();
+    const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation();
-    const [race, setRace] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [race, setRace] = useState<RaceWithTraitsResponse | null>(null);
     const [message, setMessage] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
     const [isAddTraitModalOpen, setIsAddTraitModalOpen] = useState(false);
-    const [focusedAbilityId, setFocusedabilityId] = useState(null);
-    const [editingAbilityValue, setEditingabilityValue] = useState('');
+    const [focusedAbilityId, setFocusedAbilityId] = useState<number | null>(null);
+    const [editingAbilityValue, setEditingAbilityValue] = useState('');
     const fromListParams = location.state?.fromListParams || '';
 
+    // Determine which schema to use based on whether we're creating or editing
+    const schema = id === 'new' ? CreateRaceSchema : UpdateRaceSchema;
+
+    // Initialize form data with default values
+    const initialFormData: RaceWithTraitsResponse = {
+        id: id === 'new' ? 0 : parseInt(id),
+        name: '',
+        editionId: 1,
+        isVisible: true,
+        description: '',
+        sizeId: 5, // Default to Medium
+        speed: 30, // Default to 30
+        favoredClassId: -1,
+        languages: [],
+        adjustments: ABILITY_LIST.map(attr => ({ abilityId: attr.id, value: 0 })),
+        traits: [],
+    };
+
+    const [formData, setFormData] = useState<RaceWithTraitsResponse>(initialFormData as RaceWithTraitsResponse);
+
+    // Use the validated form hook
+    const { validation, createFieldProps, createCheckboxProps } = useValidatedForm(
+        schema,
+        formData,
+        setFormData,
+        {
+            validateOnChange: true,
+            validateOnBlur: true,
+            debounceMs: 300
+        }
+    );
+
     useEffect(() => {
-        const FetchRace = async () => {
+        const fetchRace = async () => {
+            if (id === 'new') {
+                setRace(initialFormData);
+                return;
+            }
+
             try {
-                if (id === 'new') {
-                    setRace({
-                        name: '',
-                        edition_id: null,
-                        display: true,
-                        desc: '',
-                        size_id: 5, // Default to Medium
-                        speed: 30, // Default to 30
-                        favored_class_id: -1,
-                        languages: [],
-                        adjustments: ABILITY_LIST.map(attr => ({ ability_id: attr.id, adjustment: 0 })),
-                    });
-                } else {
-                    const data = await FetchRaceById(id);
-                    setRace({
-                        name: data.name,
-                        edition_id: data.edition_id,
-                        display: data.display === 1,
-                        desc: data.desc,
-                        size_id: data.size_id,
-                        speed: data.speed,
-                        favored_class_id: data.favored_class_id,
-                        languages: data.languages || [],
-                        adjustments: data.adjustments || ABILITY_LIST.map(attr => ({ ability_id: attr.id, adjustment: 0 })),
-                        traits: data.traits || [],
-                    });
-                }
+                setIsLoading(true);
+                const fetchedRace = await RaceService.getRaceById(undefined, { id: parseInt(id) });
+                setRace(fetchedRace);
+                setFormData(fetchedRace as RaceWithTraitsResponse);
             } catch (err) {
-                setError(err);
+                setError(err instanceof Error ? err.message : 'Failed to fetch race');
             } finally {
                 setIsLoading(false);
             }
         };
 
-        FetchRace();
+        fetchRace();
     }, [id]);
 
     /**
-     * Handles adding a language to the race, distinguishing between is_automatic and bonus languages.
-     * If the language already exists in the race's language list, it updates the existing entry;
-     * otherwise, it adds a new entry. The `is_automatic` flag determines if the language is acquired
-     * is_automatically by the race or as a bonus.
-     *
-     * @param {number} languageId - The ID of the language to add.
-     * @param {boolean} isAutomatic - True if the language is is_automatic, false for bonus language.
-     * @returns {void}
+     * Handles adding a language to the race, distinguishing between automatic and bonus languages.
      */
-    const handleAddLanguage = useCallback((languageId, isAutomatic) => {
-        setRace(prevRace => {
-            const newLanguageEntry = { language_id: languageId, is_automatic: isAutomatic ? 1 : 0 };
-            const existingIndex = prevRace.languages.findIndex(lang => lang.language_id === languageId);
+    const handleAddLanguage = useCallback((languageId: number, isAutomatic: boolean) => {
+        setFormData(prev => {
+            const newLanguageEntry = { languageId, isAutomatic };
+            const existingIndex = prev.languages?.findIndex(lang => lang.languageId === languageId) ?? -1;
 
             if (existingIndex !== -1) {
-                const updatedLanguages = [...prevRace.languages];
+                const updatedLanguages = [...(prev.languages || [])];
                 updatedLanguages[existingIndex] = newLanguageEntry;
-                return { ...prevRace, languages: updatedLanguages };
+                return { ...prev, languages: updatedLanguages };
             } else {
-                return { ...prevRace, languages: [...prevRace.languages, newLanguageEntry] };
+                return { ...prev, languages: [...(prev.languages || []), newLanguageEntry] };
             }
         });
     }, []);
 
     /**
      * Handles the removal of a language from the race's language list.
-     * It filters out the language with the specified `languageId` from the `languages` array
-     * in the race state, effectively removing it from both is_automatic and bonus language lists.
-     *
-     * @param {number} languageId - The ID of the language to remove.
-     * @returns {void}
      */
-    const handleRemoveLanguage = useCallback((languageId) => {
-        setRace(prevRace => ({
-            ...prevRace,
-            languages: prevRace.languages.filter(lang => lang.language_id !== languageId)
+    const handleRemoveLanguage = useCallback((languageId: number) => {
+        setFormData(prev => ({
+            ...prev,
+            languages: prev.languages?.filter(lang => lang.languageId !== languageId) || []
         }));
     }, []);
 
     /**
      * Handles changes to an ability adjustment for the race.
-     * It updates the `adjustments` array in the race state.
-     * If an adjustment for the given `abilityId` already exists, it updates its value;
-     * otherwise, it adds a new adjustment entry.
-     * The `value` is parsed as an integer, defaulting to 0 if invalid.
-     *
-     * @param {number} abilityId - The ID of the ability to adjust.
-     * @param {string} value - The new value for the ability adjustment, as a string.
-     * @returns {void}
      */
-    const handleabilityChange = useCallback((abilityId, parsedValue) => {
-        setRace(prevRace => {
-            const existingIndex = prevRace.adjustments.findIndex(adj => adj.ability_id === abilityId);
-            const newAdjustment = { ability_id: abilityId, adjustment: parsedValue };
+    const handleAbilityChange = useCallback((abilityId: number, parsedValue: number) => {
+        setFormData(prev => {
+            const existingIndex = prev.adjustments?.findIndex(adj => adj.abilityId === abilityId) ?? -1;
+            const newAdjustment = { abilityId, value: parsedValue };
 
             if (existingIndex !== -1) {
-                const updatedAdjustments = [...prevRace.adjustments];
+                const updatedAdjustments = [...(prev.adjustments || [])];
                 updatedAdjustments[existingIndex] = newAdjustment;
-                return { ...prevRace, adjustments: updatedAdjustments };
+                return { ...prev, adjustments: updatedAdjustments };
             } else {
-                return { ...prevRace, adjustments: [...prevRace.adjustments, newAdjustment] };
+                return { ...prev, adjustments: [...(prev.adjustments || []), newAdjustment] };
             }
         });
     }, []);
 
     /**
-     * Handles changes to form input fields and updates the race state accordingly.
-     * It supports text inputs, number inputs, and checkboxes, converting values to the appropriate type.
-     *
-     * @param {Object} e - The event object from the input change.
-     * @param {Object} e.target - The target element of the event.
-     * @param {string} e.target.name - The name ability of the input element, used as the key in the race state.
-     * @param {string|boolean} e.target.value - The new value of the input element.
-     * @param {string} e.target.type - The type of the input element (e.g., 'text', 'checkbox').
-     * @param {boolean} e.target.checked - The checked state of a checkbox, if applicable.
-     * @returns {void}
+     * Handles adding or updating race traits.
      */
-    const HandleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-
-        setRace(prevRace => ({
-            ...prevRace,
-            [name]: type === 'checkbox' ? checked : (name === 'edition_id' ? parseInt(value) : value)
-        }));
-    };
-
-    /**
-     * Handles adding or updating race traits. It processes an array of selected trait objects,
-     * ensuring that existing `value`s are preserved if `has_value` is true for that trait,
-     * and setting `value` to an empty string for new traits where `has_value` is true.
-     * After processing, it updates the race state with the modified traits and closes the modal.
-     *
-     * @param {Array<Object>} selectedTraitObjects - An array of trait objects selected from the trait association modal.
-     * @param {number} selectedTraitObjects[].slug - The ID of the trait.
-     * @param {string} selectedTraitObjects[].name - The name of the trait.
-     * @param {string} selectedTraitObjects[].desc - The description of the trait.
-     * @param {number} selectedTraitObjects[].has_value - A flag indicating if the trait has an associated value (1 for true, 0 for false).
-     * @returns {void}
-     */
-    const handleAddOrUpdateTrait = useCallback((selectedTraitObjects) => {
-        setRace(prevRace => {
+    const handleAddOrUpdateTrait = useCallback((selectedTraitObjects: Array<{ slug: string; name: string; description: string; hasValue: boolean; value: string }>) => {
+        setFormData(prev => {
             // Create a map of existing traits for quick lookup by slug
-            const existingTraitsMap = new Map(prevRace.traits.map(t => [t.trat_slug, t]));
+            const existingTraitsMap = new Map(prev.traits?.map(t => [t.traitId, t]) || []);
 
             const updatedTraits = selectedTraitObjects.map(selectedTrait => {
                 const existingTrait = existingTraitsMap.get(selectedTrait.slug);
                 return {
-                    ...selectedTrait,
-                    // Preserve value if it was previously set for this trait and has_value is 1
-                    value: existingTrait && existingTrait.has_value === 1 ? existingTrait.value : (selectedTrait.has_value === 1 ? '' : ''),
+                    traitId: selectedTrait.slug,
+                    trait: {
+                        slug: selectedTrait.slug,
+                        name: selectedTrait.name,
+                        description: selectedTrait.description,
+                        hasValue: selectedTrait.hasValue,
+                    },
+                    // Preserve value if it was previously set for this trait and hasValue is true
+                    value: existingTrait && existingTrait.trait?.hasValue ? existingTrait.value : (selectedTrait.hasValue ? '' : ''),
                 };
             });
-            return { ...prevRace, traits: updatedTraits };
+            return { ...prev, traits: updatedTraits };
         });
         setIsAddTraitModalOpen(false);
     }, []);
 
     useEffect(() => {
         if (location.state?.newTrait) {
-            handleAddOrUpdateTrait([location.state.newTrait]); // Wrap newTrait in an array
-            setIsAddTraitModalOpen(true); // Re-open the modal
-            // Clear the state to prevent re-adding the trait on subsequent renders
-            // navigate(location.pathname, { replace: true, state: {} }); // This line might be causing the issue
+            handleAddOrUpdateTrait([location.state.newTrait]);
+            setIsAddTraitModalOpen(true);
         }
-    }, [location.state, handleAddOrUpdateTrait, navigate, location.pathname]);
+    }, [location.state, handleAddOrUpdateTrait]);
 
     /**
      * Handles the deletion of a race trait from the current race.
-     * Displays a confirmation dialog to the user before proceeding with the deletion.
-     * If confirmed, it filters the `traits` array in the race state to remove the specified trait
-     * and sets a success message. This operation only removes the trait from the race object
-     * in the local state; it does not interact with the backend API for deletion.
-     *
-     * @param {number} traitSlug - The ID of the trait to be removed.
-     * @returns {Promise<void>} A promise that resolves once the trait is removed from the state.
      */
-    const handleDeleteTrait = useCallback(async (traitSlug) => {
+    const handleDeleteTrait = useCallback(async (traitId: string) => {
         if (window.confirm('Are you sure you want to remove this trait from the race?')) {
-            setRace(prevRace => ({
-                ...prevRace,
-                traits: prevRace.traits.filter(trait => trait.slug !== traitSlug)
+            setFormData(prev => ({
+                ...prev,
+                traits: prev.traits?.filter(trait => trait.traitId !== traitId) || []
             }));
             setMessage('Trait removed successfully from race!');
         }
     }, []);
 
-    /**
-     * Handles the form submission for creating or updating a race.
-     * Prevents the default form submission behavior, clears any existing messages or errors,
-     * and constructs the payload based on the current race state. It filters out ability
-     * adjustments with a value of 0 and maps trait objects to include only `slug` and
-     * `value`.
-     * It then calls the appropriate API endpoint (`POST` for new races, `PUT` for existing) and
-     * navigates to the admin races list on success, or sets an error message on failure.
-     *
-     * @param {Event} e - The form submission event.
-     * @returns {Promise<void>} A promise that resolves once the race is successfully created or updated.
-     */
-    const HandleSubmit = async (e) => {
+    const HandleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setMessage('');
         setError(null);
 
-        try {
-            const payload = {
-                name: race.name,
-                edition_id: race.edition_id ? parseInt(race.edition_id) : 0,
-                display: race.display ? 1 : 0,
-                desc: race.desc,
-                size_id: race.size_id ? parseInt(race.size_id) : 5,
-                speed: race.speed ? parseInt(race.speed) : 30,
-                favored_class_id: race.favored_class_id === -1 ? -1 : (race.favored_class_id ? parseInt(race.favored_class_id) : 0),
-                languages: race.languages
-            };
-            const filteredAbilityAdjustments = race.adjustments.filter(adj => adj.adjustment !== 0);
-            if (filteredAbilityAdjustments.length > 0) {
-                payload.adjustments = filteredAbilityAdjustments;
-            }
-            if (race.traits && race.traits.length > 0) {
-                payload.traits = race.traits;
-            }
+        // Validate the entire form
+        if (!validation.validateForm(formData)) {
+            return;
+        }
 
+        try {
+            setIsLoading(true);
             if (id === 'new') {
-                const response = await Api('/races', {
-                    method: 'POST',
-                    body: JSON.stringify(payload),
-                });
+                const newRace = await RaceService.createRace(formData as z.infer<typeof CreateRaceSchema>);
                 setMessage('Race created successfully!');
-                navigate(`/admin/races/${response.id}`, { state: { fromListParams: fromListParams, refresh: true } });
+                setTimeout(() => navigate(`/admin/races/${newRace.id}`, { state: { fromListParams: fromListParams, refresh: true } }), 1500);
             } else {
-                await Api(`/races/${id}`, {
-                    method: 'PUT',
-                    body: JSON.stringify(payload),
-                });
+                await RaceService.updateRace(formData as z.infer<typeof UpdateRaceSchema>, { id: parseInt(id) });
                 setMessage('Race updated successfully!');
-                navigate(`/admin/races/${id}`, { state: { fromListParams: fromListParams, refresh: true } });
             }
         } catch (err) {
-            setError(err);
-            setMessage(`Error updating race: ${err.message || err}`);
+            setError(err instanceof Error ? err.message : 'Failed to save race');
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    const is_automaticLanguages = race?.languages.filter(lang => lang.is_automatic === 1) || [];
-    const bonusLanguages = race?.languages.filter(lang => lang.is_automatic === 0) || [];
+    if (isLoading && !race) {
+        return <div className="flex justify-center items-center h-64">Loading...</div>;
+    }
 
-    if (isLoading) return <div className="p-4 bg-white dark:bg-[#121212]">Loading race for editing...</div>;
-    if (error) return <div className="p-4 bg-white dark:bg-[#121212] dark:text-red-500">Error: {error.message}</div>;
-    if (!race && id !== 'new') return <div className="p-4 bg-white dark:bg-[#121212]">Race not found.</div>;
+    if (error && !race) {
+        return (
+            <div className="flex flex-col items-center justify-center h-64">
+                <p className="text-red-500 mb-4">{error}</p>
+                <button
+                    onClick={() => navigate('/admin/races')}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                    Back to Races
+                </button>
+            </div>
+        );
+    }
+
+    if (!race) {
+        return <div>No race data available</div>;
+    }
+
+    // Create field props for each form field
+    const nameProps = createFieldProps('name');
+    const speedProps = createFieldProps('speed');
+    const descriptionProps = createFieldProps('description');
+
+    const isVisibleProps = createCheckboxProps('isVisible');
+
+    // Create listbox props for edition
+    const editionListboxProps = {
+        value: formData.editionId,
+        onChange: (value: string | number | null) => {
+            const numValue = value as number;
+            setFormData(prev => ({ ...prev, editionId: numValue }));
+            validation.validateField('editionId', numValue);
+        },
+        error: validation.getError('editionId'),
+        hasError: validation.hasError('editionId')
+    };
+
+    // Create listbox props for size
+    const sizeListboxProps = {
+        value: formData.sizeId,
+        onChange: (value: string | number | null) => {
+            const numValue = value as number;
+            setFormData(prev => ({ ...prev, sizeId: numValue }));
+            validation.validateField('sizeId', numValue);
+        },
+        error: validation.getError('sizeId'),
+        hasError: validation.hasError('sizeId')
+    };
+
+    // Create listbox props for favored class
+    const favoredClassListboxProps = {
+        value: formData.favoredClassId,
+        onChange: (value: string | number | null) => {
+            const numValue = value as number;
+            setFormData(prev => ({ ...prev, favoredClassId: numValue }));
+            validation.validateField('favoredClassId', numValue);
+        },
+        error: validation.getError('favoredClassId'),
+        hasError: validation.hasError('favoredClassId')
+    };
+
+    const automaticLanguages = formData.languages?.filter(lang => lang.isAutomatic) || [];
+    const bonusLanguages = formData.languages?.filter(lang => !lang.isAutomatic) || [];
 
     return (
-        <div className="p-4 bg-white dark:bg-[#121212] scrollbar-track-gray-300 scrollbar-thumb-gray-400 dark:scrollbar-track-gray-700 dark:scrollbar-thumb-gray-500">
-            <h1 className="text-2xl font-bold mb-4">{id === 'new' ? 'Create New Race' : `Edit Race: ${race.name}`}</h1>
-            {message && <div className="mb-4 p-2 rounded text-green-700 bg-green-100 dark:bg-green-800 dark:text-green-200">{message}</div>}
-            {error && <div className="mb-4 p-2 rounded text-red-700 bg-red-100 dark:bg-red-800 dark:text-red-200">Error: {error.message || String(error)}</div>}
-            <form onSubmit={HandleSubmit}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <div className="flex items-center gap-2">
-                        <label htmlFor="name" className="block text-lg font-medium w-30">Race Name:</label>
-                        <input type="text" id="name" name="name" value={race.name || ''} onChange={HandleChange} className="mt-1 block w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" />
+        <div className="max-w-6xl mx-auto p-6">
+            <div className="mb-6">
+                <h1 className="text-3xl font-bold">
+                    {id === 'new' ? 'Create New Race' : 'Edit Race'}
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400">
+                    {id === 'new' ? 'Create a new race' : 'Modify race details'}
+                </p>
+            </div>
+
+            {message && (
+                <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-md dark:bg-green-900/20 dark:border-green-800">
+                    <p className="text-green-700 dark:text-green-300">{message}</p>
+                </div>
+            )}
+
+            {error && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md dark:bg-red-900/20 dark:border-red-800">
+                    <p className="text-red-700 dark:text-red-300">{error}</p>
+                </div>
+            )}
+
+            <ValidatedForm
+                onSubmit={HandleSubmit}
+                validationState={validation.validationState}
+                isLoading={isLoading}
+            >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Basic Information */}
+                    <div className="space-y-4">
+                        <h2 className="text-xl font-semibold">Basic Information</h2>
+
+                        <ValidatedInput
+                            name="name"
+                            label="Race Name"
+                            type="text"
+                            required
+                            placeholder="e.g., Human, Elf, Dwarf"
+                            {...nameProps}
+                        />
+
+                        <ValidatedListbox
+                            name="editionId"
+                            label="Edition"
+                            value={formData.editionId}
+                            onChange={(value) => setFormData(prev => ({ ...prev, editionId: value as number }))}
+                            options={EDITION_LIST.map(edition => ({ value: edition.id, label: edition.abbreviation }))}
+                            required
+                            {...editionListboxProps}
+                        />
+
+                        <ValidatedCheckbox
+                            name="isVisible"
+                            label="Visible to Players"
+                            {...isVisibleProps}
+                        />
                     </div>
-                    <div className="flex items-center gap-2 justify-end">
-                        <div className="flex items-center gap-2 pr-2">
-                            <label htmlFor="edition_id" className="block text-lg font-medium">Edition:</label>
-                            <Listbox
-                                value={race.edition_id || ''}
-                                onChange={(selectedId) => HandleChange({ target: { name: 'edition_id', value: selectedId } })}
-                            >
-                                {({ open }) => (
-                                    <div className="relative mt-1">
-                                        <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-2 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-gray-100 dark:ring-gray-600">
-                                            <span className="block truncate">{EDITION_MAP[race.edition_id]?.abbr || 'Select an edition'}</span>
-                                            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                                <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
-                                            </span>
-                                        </ListboxButton>
-                                        <Transition
-                                            show={open}
-                                            leave="transition ease-in duration-100"
-                                            leaveFrom="opacity-100"
-                                            leaveTo="opacity-0"
-                                        >
-                                            <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto scrollbar-thin rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm dark:bg-gray-800 dark:text-gray-100">
-                                                <ListboxOption
-                                                    className={({ focus }) =>
-                                                        `relative cursor-default select-none py-2 pl-3 pr-9 ${focus ? 'bg-blue-600 text-white' : 'text-gray-900 dark:text-gray-100'}`
-                                                    }
-                                                    value={null}
-                                                >
-                                                    {({ selected }) => (
-                                                        <span className={`block truncate ${selected ? 'font-semibold' : 'font-normal'}`}>
-                                                            Select an edition
-                                                        </span>
-                                                    )}
-                                                </ListboxOption>
-                                                {EDITION_LIST.map(edition => (
-                                                    <ListboxOption
-                                                        key={edition.id}
-                                                        className={({ focus }) =>
-                                                            `relative cursor-default select-none py-2 pl-3 pr-9 ${focus ? 'bg-blue-600 text-white' : 'text-gray-900 dark:text-gray-100'}`
-                                                        }
-                                                        value={edition.id}
-                                                    >
-                                                        {({ selected }) => (
-                                                            <span className={`block truncate ${selected ? 'font-semibold' : 'font-normal'}`}>
-                                                                {edition.abbr}
-                                                            </span>
-                                                        )}
-                                                    </ListboxOption>
-                                                ))}
-                                            </ListboxOptions>
-                                        </Transition>
-                                    </div>
-                                )}
-                            </Listbox>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <label htmlFor="display" className="ml-2 text-lg font-medium">Display</label>
-                            <input type="checkbox" id="display" name="display" checked={race.display} onChange={HandleChange} className="form-checkbox h-5 w-5 text-blue-600 rounded dark:bg-gray-700 dark:border-gray-600 accent-blue-600 checked:bg-blue-600 dark:checked:bg-blue-600" />
-                        </div>
-                    </div>
-                    <div className="md:col-span-2 mb-0">
-                        <MarkdownEditor
-                            id="desc"
-                            name="desc"
-                            label="Race Description"
-                            value={race.desc || ''}
-                            onChange={(newValue) => HandleChange({ target: { name: 'desc', value: newValue } })}
+
+                    {/* Physical Properties */}
+                    <div className="space-y-4">
+                        <h2 className="text-xl font-semibold">Physical Properties</h2>
+
+                        <ValidatedListbox
+                            name="sizeId"
+                            label="Size"
+                            value={formData.sizeId}
+                            onChange={(value) => setFormData(prev => ({ ...prev, sizeId: value as number }))}
+                            options={SIZE_LIST.map(size => ({ value: size.id, label: size.name }))}
+                            required
+                            {...sizeListboxProps}
+                        />
+
+                        <ValidatedInput
+                            name="speed"
+                            label="Speed"
+                            type="number"
+                            min={0}
+                            max={1000}
+                            step={5}
+                            {...speedProps}
+                        />
+
+                        <ValidatedListbox
+                            name="favoredClassId"
+                            label="Favored Class"
+                            value={formData.favoredClassId}
+                            onChange={(value) => setFormData(prev => ({ ...prev, favoredClassId: value as number }))}
+                            options={[
+                                { value: -1, label: 'Any' },
+                                ...GetBaseClassesByEdition(formData.editionId).map(cls => ({ value: cls.id, label: cls.name }))
+                            ]}
+                            {...favoredClassListboxProps}
                         />
                     </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-0">
-                    <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                                <label htmlFor="size_id" className="block text-lg font-medium">Size:</label>
-                                <Listbox
-                                    value={race.size_id || ''}
-                                    onChange={(selectedId) => HandleChange({ target: { name: 'size_id', value: selectedId } })}
-                                >
-                                    {({ open }) => (
-                                        <div className="relative mt-1">
-                                            <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-2 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-gray-100 dark:ring-gray-600">
-                                                <span className="block truncate">{SIZE_MAP[race.size_id]?.name || 'Select a size'}</span>
-                                                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                                    <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
-                                                </span>
-                                            </ListboxButton>
-                                            <Transition
-                                                show={open}
-                                                leave="transition ease-in duration-100"
-                                                leaveFrom="opacity-100"
-                                                leaveTo="opacity-0"
-                                            >
-                                                <ListboxOptions className="absolute scrollbar-thin z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm dark:bg-gray-800 dark:text-gray-100">
-                                                    <ListboxOption
-                                                        className={({ focus }) =>
-                                                            `relative cursor-default select-none py-2 pl-3 pr-9 ${focus ? 'bg-blue-600 text-white' : 'text-gray-900 dark:text-gray-100'}`
-                                                        }
-                                                        value={null}
-                                                    >
-                                                        {({ selected }) => (
-                                                            <span className={`block truncate ${selected ? 'font-semibold' : 'font-normal'}`}>
-                                                                Select a size
-                                                            </span>
-                                                        )}
-                                                    </ListboxOption>
-                                                    {SIZE_LIST.map(size => (
-                                                        <ListboxOption
-                                                            key={size.id}
-                                                            className={({ focus }) =>
-                                                                `relative cursor-default select-none py-2 pl-3 pr-9 ${focus ? 'bg-blue-600 text-white' : 'text-gray-900 dark:text-gray-100'}`
-                                                            }
-                                                            value={size.id}
-                                                        >
-                                                            {({ selected }) => (
-                                                                <span className={`block truncate ${selected ? 'font-semibold' : 'font-normal'}`}>
-                                                                    {size.name}
-                                                                </span>
-                                                            )}
-                                                        </ListboxOption>
-                                                    ))}
-                                                </ListboxOptions>
-                                            </Transition>
-                                        </div>
-                                    )}
-                                </Listbox>
+
+                {/* Description */}
+                <div className="mt-6">
+                    <h2 className="text-xl font-semibold mb-4">Description</h2>
+                    <div className="space-y-2">
+                        <label htmlFor="description" className="block font-medium">
+                            Race Description
+                        </label>
+                        <MarkdownEditor
+                            value={formData.description || ''}
+                            onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
+                        />
+                        {validation.getError('description') && (
+                            <span className="text-red-500 text-sm">{validation.getError('description')}</span>
+                        )}
+                    </div>
+                </div>
+
+                {/* Ability Adjustments */}
+                <div className="mt-6">
+                    <h2 className="text-xl font-semibold mb-4">Ability Adjustments</h2>
+                    <div className="grid grid-cols-3 gap-4">
+                        {ABILITY_LIST.map(ability => (
+                            <div key={ability.id} className="flex items-center gap-2">
+                                <label htmlFor={`ability-${ability.id}`} className="text-sm font-medium w-20">
+                                    {ability.name}:
+                                </label>
+                                <input
+                                    type="text"
+                                    id={`ability-${ability.id}`}
+                                    value={focusedAbilityId === ability.id ? editingAbilityValue : (() => {
+                                        const adjustment = formData.adjustments?.find(adj => adj.abilityId === ability.id)?.value || 0;
+                                        return adjustment > 0 ? `+${adjustment}` : adjustment;
+                                    })()}
+                                    onChange={(e) => setEditingAbilityValue(e.target.value)}
+                                    onFocus={() => {
+                                        setFocusedAbilityId(ability.id);
+                                        const currentAdjustment = formData.adjustments?.find(adj => adj.abilityId === ability.id)?.value || 0;
+                                        setEditingAbilityValue(String(currentAdjustment));
+                                    }}
+                                    onBlur={() => {
+                                        const parsedValue = editingAbilityValue === '' || editingAbilityValue === '-' ? 0 : parseInt(editingAbilityValue) || 0;
+                                        handleAbilityChange(ability.id, parsedValue);
+                                        setFocusedAbilityId(null);
+                                        setEditingAbilityValue('');
+                                    }}
+                                    className="w-16 p-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                                />
                             </div>
-                            <div className="flex items-center gap-2">
-                                <label htmlFor="speed" className="block text-lg font-medium">Speed:</label>
-                                <input type="number" id="speed" name="speed" value={race.speed || ''} onChange={HandleChange} className="mt-1 block w-20 p-2 border rounded dark:bg-gray-700 dark:border-gray-600" />
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <label htmlFor="favored_class_id" className="block text-lg font-medium">Favored Class:</label>
-                                <Listbox
-                                    value={race.favored_class_id || null}
-                                    onChange={(selectedId) => HandleChange({ target: { name: 'favored_class_id', value: selectedId } })}
-                                >
-                                    {({ open }) => (
-                                        <div className="relative mt-1">
-                                            <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-2 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-gray-100 dark:ring-gray-600">
-                                                <span className="block truncate">{CLASS_MAP[race.favored_class_id]?.name || (race.favored_class_id === -1 ? 'Any' : 'Select a favored class')}</span>
-                                                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                                    <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
-                                                </span>
-                                            </ListboxButton>
-                                            <Transition
-                                                show={open}
-                                                leave="transition ease-in duration-100"
-                                                leaveFrom="opacity-100"
-                                                leaveTo="opacity-0"
-                                            >
-                                                <ListboxOptions className="absolute scrollbar-thin z-10 mt-1 max-h-60 w-30 overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm dark:bg-gray-800 dark:text-gray-100">
-                                                    <ListboxOption
-                                                        className={({ focus }) =>
-                                                            `relative cursor-default select-none py-2 pl-3 pr-9 ${focus ? 'bg-blue-600 text-white' : 'text-gray-900 dark:text-gray-100'}`
-                                                        }
-                                                        value={-1}
-                                                    >
-                                                        {({ selected }) => (
-                                                            <span className={`block truncate ${selected ? 'font-semibold' : 'font-normal'}`}>
-                                                                Any
-                                                            </span>
-                                                        )}
-                                                    </ListboxOption>
-                                                    {GetBaseClassesByEdition(race.edition_id).map(cls => (
-                                                        <ListboxOption
-                                                            key={cls.class_id}
-                                                            className={({ focus }) =>
-                                                                `relative cursor-default select-none py-2 pl-3 pr-9 ${focus ? 'bg-blue-600 text-white' : 'text-gray-900 dark:text-gray-100'}`
-                                                            }
-                                                            value={cls.id}
-                                                        >
-                                                            {({ selected }) => (
-                                                                <span className={`block truncate ${selected ? 'font-semibold' : 'font-normal'}`}>
-                                                                    {cls.name}
-                                                                </span>
-                                                            )}
-                                                        </ListboxOption>
-                                                    ))}
-                                                </ListboxOptions>
-                                            </Transition>
-                                        </div>
-                                    )}
-                                </Listbox>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <h3 className="text-lg font-medium">Ability Adjustments:</h3>
-                            <div className="p-2 border rounded dark:border-gray-600">
-                                <div className="grid grid-cols-3 gap-2">
-                                    {ABILITY_LIST.map(ability => (
-                                        <div key={ability.id} className="flex items-center gap-2">
-                                            <label htmlFor={`attr-${ability.id}`} className="text-sm font-medium w-20">{ability.name}:</label>
-                                            <input
-                                                type="text"
-                                                id={`attr-${ability.id}`}
-                                                name={`ability_${ability.id}`}
-                                                value={focusedAbilityId === ability.id ? editingAbilityValue : (() => {
-                                                    const adjustment = race.adjustments.find(adj => adj.ability_id === ability.id)?.adjustment || 0;
-                                                    return adjustment > 0 ? `+${adjustment}` : adjustment;
-                                                })()}
-                                                onChange={(e) => setEditingabilityValue(e.target.value)}
-                                                onFocus={() => {
-                                                    setFocusedabilityId(ability.id);
-                                                    const currentAdjustment = race.adjustments.find(adj => adj.ability_id === ability.id)?.adjustment || 0;
-                                                    setEditingabilityValue(String(currentAdjustment));
-                                                }}
-                                                onBlur={() => {
-                                                    const parsedValue = editingAbilityValue === '' || editingAbilityValue === '-' ? 0 : parseInt(editingAbilityValue) || 0;
-                                                    handleabilityChange(ability.id, parsedValue);
-                                                    setFocusedabilityId(null);
-                                                    setEditingabilityValue('');
-                                                }}
-                                                className="mt-1 block w-10 p-1 border rounded dark:bg-gray-700 dark:border-gray-600"
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Languages */}
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Automatic Languages */}
+                    <div>
+                        <h3 className="text-lg font-medium mb-2">Automatic Languages</h3>
+                        <div className="flex flex-wrap gap-2 mb-2 p-2 border rounded dark:border-gray-600 min-h-[40px]">
+                            {automaticLanguages.length === 0 && <span className="text-gray-500 dark:text-gray-400">No automatic languages added.</span>}
+                            {automaticLanguages.map((lang, index) => (
+                                <span key={lang.languageId} className="group relative text-sm pt-1 pb-1 pl-0 pr-0 cursor-pointer">
+                                    {LANGUAGE_MAP[lang.languageId]?.name || 'Unknown Language'}
+                                    {index < automaticLanguages.length - 1 && ','}
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveLanguage(lang.languageId)}
+                                        className="absolute inset-0 flex items-center justify-center text-red-600 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="Remove Language"
+                                    >
+                                        <TrashIcon className="h-5 w-5" />
+                                    </button>
+                                </span>
+                            ))}
+                            <ValidatedListbox
+                                name="automaticLanguage"
+                                label=""
+                                value={null}
+                                onChange={(value) => {
+                                    if (value) {
+                                        handleAddLanguage(value as number, true);
+                                    }
+                                }}
+                                options={LANGUAGE_LIST
+                                    .filter(lang => !formData.languages?.some(rl => rl.languageId === lang.id))
+                                    .map(lang => ({ value: lang.id, label: lang.name }))}
+                                placeholder="Add automatic language"
+                            />
                         </div>
                     </div>
+
+                    {/* Bonus Languages */}
                     <div>
-                        <div className="mt-0">
-                            <h3 className="text-lg font-medium mb-2">Automatic Languages:</h3>
-                            <div className="flex flex-wrap gap-2 mb-2 p-2 pl-3 border rounded dark:border-gray-600 min-h-[40px]">
-                                {is_automaticLanguages.length === 0 && <span className="text-gray-500 dark:text-gray-400">No is_automatic languages added.</span>}
-                                {is_automaticLanguages.map((lang, index) => (
-                                    <span key={lang.language_id} className="group relative text-sm pt-1 pb-1 pl-0 pr-0 cursor-pointer">
-                                        {LANGUAGE_MAP[lang.language_id]?.name || 'Unknown Language'}
-                                        {index < is_automaticLanguages.length - 1 && ','}
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveLanguage(lang.language_id)}
-                                            className="absolute inset-0 flex items-center justify-center text-red-600 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                                            title="Remove Language"
-                                        >
-                                            <TrashIcon className="h-5 w-5" />
-                                        </button>
-                                    </span>
-                                ))}
-                                <Listbox
-                                    value={null}
-                                    onChange={(selectedId) => {
-                                        if (selectedId) {
-                                            handleAddLanguage(selectedId, true);
-                                        }
-                                    }}
-                                >
-                                    {({ open }) => (
-                                        <div className="relative w-48 pl-1">
-                                            <ListboxButton className="relative cursor-default rounded-md bg-white p-1 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-gray-100 dark:ring-gray-600">
-                                                <span className="block truncate"><UserPlusIcon className="h-5 w-5" /></span>
-                                            </ListboxButton>
-                                            <Transition
-                                                show={open}
-                                                leave="transition ease-in duration-100"
-                                                leaveFrom="opacity-100"
-                                                leaveTo="opacity-0"
-                                            >
-                                                <ListboxOptions className="absolute scrollbar-thin z-10 mt-1 max-h-60 overflow-auto rounded-md bg-white text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm dark:bg-gray-800 dark:text-gray-100">
-                                                    {LANGUAGE_LIST
-                                                        .filter(lang => !race.languages.some(rl => rl.language_id === lang.id))
-                                                        .map(lang => (
-                                                            <ListboxOption
-                                                                key={lang.id}
-                                                                className={({ focus }) =>
-                                                                    `relative cursor-default select-none pl-2 pr-2 py-0.5 ${focus ? 'bg-blue-600 text-white' : 'text-gray-900 dark:text-gray-100'}`
-                                                                }
-                                                                value={lang.id}
-                                                            >
-                                                                {({ selected }) => (
-                                                                    <span className={`block truncate ${selected ? 'font-semibold' : 'font-normal'}`}>
-                                                                        {lang.name}
-                                                                    </span>
-                                                                )}
-                                                            </ListboxOption>
-                                                        ))}
-                                                </ListboxOptions>
-                                            </Transition>
-                                        </div>
-                                    )}
-                                </Listbox>
-                            </div>
-                        </div>
-                        <div className="mt-4">
-                            <h3 className="text-lg font-medium mb-2">Bonus Languages:</h3>
-                            <div className="flex flex-wrap gap-2 mb-2 p-2 pl-3 border rounded dark:border-gray-600 min-h-[40px]">
-                                {bonusLanguages.length === 0 && <span className="text-gray-500 dark:text-gray-400">No bonus languages added.</span>}
-                                {bonusLanguages.map((lang, index) => (
-                                    <span key={lang.language_id} className="group relative text-sm pt-1 pb-1 pl-0 pr-0 cursor-pointer">
-                                        {LANGUAGE_MAP[lang.language_id]?.name || 'Unknown Language'}
-                                        {index < bonusLanguages.length - 1 && ','}
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveLanguage(lang.language_id)}
-                                            className="absolute inset-0 flex items-center justify-center text-red-600 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                                            title="Remove Language"
-                                        >
-                                            <TrashIcon className="h-5 w-5" />
-                                        </button>
-                                    </span>
-                                ))}
-                                <Listbox
-                                    value={null}
-                                    onChange={(selectedId) => {
-                                        if (selectedId) {
-                                            handleAddLanguage(selectedId, false);
-                                        }
-                                    }}
-                                >
-                                    {({ open }) => (
-                                        <div className="relative w-48 pl-1">
-                                            <ListboxButton className="relative cursor-default rounded-md bg-white p-1 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-gray-100 dark:ring-gray-600">
-                                                <span className="block truncate"><UserPlusIcon className="h-5 w-5" /></span>
-                                            </ListboxButton>
-                                            <Transition
-                                                show={open}
-                                                leave="transition ease-in duration-100"
-                                                leaveFrom="opacity-100"
-                                                leaveTo="opacity-0"
-                                            >
-                                                <ListboxOptions className="absolute scrollbar-thin z-50 mt-1 max-h-60 overflow-auto rounded-md bg-white text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm dark:bg-gray-800 dark:text-gray-100">
-                                                    {LANGUAGE_LIST
-                                                        .filter(lang => !race.languages.some(rl => rl.language_id === lang.id))
-                                                        .map(lang => (
-                                                            <ListboxOption
-                                                                key={lang.id}
-                                                                className={({ focus }) =>
-                                                                    `relative cursor-default select-none pl-2 pr-2 py-0.5 ${focus ? 'bg-blue-600 text-white' : 'text-gray-900 dark:text-gray-100'}`
-                                                                }
-                                                                value={lang.id}
-                                                            >
-                                                                {({ selected }) => (
-                                                                    <span className={`block truncate ${selected ? 'font-semibold' : 'font-normal'}`}>
-                                                                        {lang.name}
-                                                                    </span>
-                                                                )}
-                                                            </ListboxOption>
-                                                        ))}
-                                                </ListboxOptions>
-                                            </Transition>
-                                        </div>
-                                    )}
-                                </Listbox>
-                            </div>
+                        <h3 className="text-lg font-medium mb-2">Bonus Languages</h3>
+                        <div className="flex flex-wrap gap-2 mb-2 p-2 border rounded dark:border-gray-600 min-h-[40px]">
+                            {bonusLanguages.length === 0 && <span className="text-gray-500 dark:text-gray-400">No bonus languages added.</span>}
+                            {bonusLanguages.map((lang, index) => (
+                                <span key={lang.languageId} className="group relative text-sm pt-1 pb-1 pl-0 pr-0 cursor-pointer">
+                                    {LANGUAGE_MAP[lang.languageId]?.name || 'Unknown Language'}
+                                    {index < bonusLanguages.length - 1 && ','}
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveLanguage(lang.languageId)}
+                                        className="absolute inset-0 flex items-center justify-center text-red-600 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="Remove Language"
+                                    >
+                                        <TrashIcon className="h-5 w-5" />
+                                    </button>
+                                </span>
+                            ))}
+                            <ValidatedListbox
+                                name="bonusLanguage"
+                                label=""
+                                value={null}
+                                onChange={(value) => {
+                                    if (value) {
+                                        handleAddLanguage(value as number, false);
+                                    }
+                                }}
+                                options={LANGUAGE_LIST
+                                    .filter(lang => !formData.languages?.some(rl => rl.languageId === lang.id))
+                                    .map(lang => ({ value: lang.id, label: lang.name }))}
+                                placeholder="Add bonus language"
+                            />
                         </div>
                     </div>
                 </div>
-                <div className="md:col-span-2">
-                    <h3 className="text-lg font-medium mb-2">Race Traits</h3>
-                    {race.traits && race.traits.length > 0 ? (
-                        <div className="space-y-2 border p-3 rounded dark:border-gray-600 mb-2">
-                            {race.traits.map(trait => (
-                                <div key={trait.slug} className="rounded border p-2 dark:border-gray-700 grid grid-cols-[2fr_0.1fr] gap-2 items-center">
+
+                {/* Race Traits */}
+                <div className="mt-6">
+                    <h2 className="text-xl font-semibold mb-4">Race Traits</h2>
+                    {formData.traits && formData.traits.length > 0 ? (
+                        <div className="space-y-2 border p-3 rounded dark:border-gray-600 mb-4">
+                            {formData.traits.map((trait, index) => (
+                                <div key={index} className="rounded border p-2 dark:border-gray-700 grid grid-cols-[2fr_0.1fr] gap-2 items-center">
                                     <div className="w-full">
-                                        <ProcessMarkdown markdown={trait.desc} userVars={{
-                                            traitname: trait.name,
-                                            racename: race.name,
-                                            racenamelower: race.name.toLowerCase(),
-                                            raceplural: pluralize(race.name),
-                                            raceplurallower: pluralize(race.name).toLowerCase(),
-                                            value: trait.value
-                                        }} />
+                                        <MarkdownEditor
+                                            value={trait.trait?.description || ''}
+                                            onChange={(value) => {
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    traits: prev.traits?.map(t =>
+                                                        t.traitId === trait.traitId ? { ...t, trait: { ...t.trait, description: value } } : t
+                                                    ) || []
+                                                }));
+                                            }}
+                                            userVars={{
+                                                traitname: trait.trait?.name || '',
+                                                racename: formData.name,
+                                                racenamelower: formData.name.toLowerCase(),
+                                                raceplural: pluralize(formData.name),
+                                                raceplurallower: pluralize(formData.name).toLowerCase(),
+                                                value: trait.value
+                                            }}
+                                        />
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        {trait.has_value === 1 && (
+                                        {trait.trait?.hasValue && (
                                             <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 text-sm">
                                                 <span>Value:</span>
                                                 <input
@@ -659,18 +540,22 @@ export function RaceEdit() {
                                                     value={trait.value || ''}
                                                     onChange={(e) => {
                                                         const newValue = e.target.value;
-                                                        setRace(prevRace => ({
-                                                            ...prevRace,
-                                                            traits: prevRace.traits.map(t =>
-                                                                t.slug === trait.slug ? { ...t, value: newValue } : t
-                                                            )
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            traits: prev.traits?.map(t =>
+                                                                t.traitId === trait.traitId ? { ...t, value: newValue } : t
+                                                            ) || []
                                                         }));
                                                     }}
                                                     className="w-20 p-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                                                 />
                                             </div>
                                         )}
-                                        <button type="button" onClick={() => handleDeleteTrait(trait.slug)} className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDeleteTrait(trait.traitId)}
+                                            className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600"
+                                        >
                                             <TrashIcon className="h-5 w-5" />
                                         </button>
                                     </div>
@@ -678,7 +563,7 @@ export function RaceEdit() {
                             ))}
                         </div>
                     ) : (
-                        <div className="text-gray-500 dark:text-gray-400 mb-2">No traits added yet.</div>
+                        <div className="text-gray-500 dark:text-gray-400 mb-4">No traits added yet.</div>
                     )}
 
                     <button
@@ -689,20 +574,34 @@ export function RaceEdit() {
                         Add Trait
                     </button>
                 </div>
-                <div className="flex mt-4 gap-2 justify-end">
-                    <button type="submit" className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 text-white">Save</button>
-                    <button type="button" onClick={() => {
-                        navigate(-1);
-                    }} className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-200">Cancel</button>
+
+                {/* Action Buttons */}
+                <div className="flex justify-end space-x-4 mt-8">
+                    <button
+                        type="button"
+                        onClick={() => navigate('/admin/races')}
+                        className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                        disabled={isLoading}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isLoading || validation.validationState.hasErrors}
+                    >
+                        {isLoading ? 'Saving...' : id === 'new' ? 'Create Race' : 'Update Race'}
+                    </button>
                 </div>
-            </form>
+            </ValidatedForm>
+
             <RaceTraitAssoc
                 isOpen={isAddTraitModalOpen}
                 onClose={() => {
                     setIsAddTraitModalOpen(false);
                 }}
                 onSave={handleAddOrUpdateTrait}
-                initialSelectedTraitIds={race.traits?.map(t => t.slug) || []}
+                initialSelectedTraitIds={formData.traits?.map(t => t.traitId) || []}
                 raceId={parseInt(id)}
             />
         </div>

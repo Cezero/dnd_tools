@@ -1,17 +1,16 @@
 import { Response } from 'express';
 
 import { ValidatedQueryT, ValidatedParamsT, ValidatedParamsBodyT } from '@/util/validated-types'
-import { SpellIdParamRequest, SpellQueryRequest, SpellQueryResponse, UpdateSpellRequest } from '@shared/schema';
+import { SpellIdParamRequest, SpellQueryRequest, SpellQueryResponse, UpdateSpellRequest, GetSpellResponse } from '@shared/schema';
 
 import { spellService } from './spellService';
-import { SpellWithLevelMapping } from './types';
 
 export async function GetSpells(req: ValidatedQueryT<SpellQueryRequest, SpellQueryResponse>, res: Response) {
     const result = await spellService.getSpells(req.query);
     res.json(result);
 }
 
-export async function GetSpellById(req: ValidatedParamsT<SpellIdParamRequest, SpellWithLevelMapping>, res: Response) {
+export async function GetSpellById(req: ValidatedParamsT<SpellIdParamRequest, GetSpellResponse>, res: Response) {
     const spell = await spellService.getSpellById({ id: req.params.id });
 
     if (!spell) {
@@ -22,7 +21,7 @@ export async function GetSpellById(req: ValidatedParamsT<SpellIdParamRequest, Sp
     res.json(spell);
 }
 
-export async function UpdateSpell(req: ValidatedParamsBodyT<SpellIdParamRequest, UpdateSpellRequest, SpellWithLevelMapping>, res: Response) {
+export async function UpdateSpell(req: ValidatedParamsBodyT<SpellIdParamRequest, UpdateSpellRequest>, res: Response) {
     const result = await spellService.updateSpell({ id: req.params.id }, req.body);
     res.json(result);
 }

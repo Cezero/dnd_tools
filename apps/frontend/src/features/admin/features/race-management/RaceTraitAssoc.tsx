@@ -1,18 +1,17 @@
-import React, { useCallback, Fragment, useMemo, useState, useEffect } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { Api } from '@/services/Api';
+import { Dialog } from '@base-ui-components/react/dialog';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { z } from 'zod';
+
 import { GenericList } from '@/components/generic-list/GenericList';
 import { TextInput } from '@/components/generic-list/TextInput';
-import { useNavigate } from 'react-router-dom';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
+import { RaceTraitService } from '@/features/admin/features/race-management/RaceTraitService';
+import { RaceTraitSchema } from '@shared/schema';
+
 
 // Type for race trait items
-type RaceTraitItem = {
-    trait_slug: string;
-    trait_name: string;
-    trait_description: string | null;
-    has_value: boolean;
-};
+type RaceTraitItem = z.infer<typeof RaceTraitSchema>;
 
 /**
  * Component for associating a race trait with a race. This dialog allows selecting an existing trait
@@ -23,41 +22,44 @@ type RaceTraitItem = {
  * @param {boolean} props.isOpen - Whether the dialog is open.
  * @param {function} props.onClose - Function to call when the dialog is closed.
  * @param {function} props.onSave - Function to call with the selected trait data when a trait is chosen.
- * @param {Array<number>} props.initialSelectedTraitIds - Array of trait_slugs already associated with the race.
- * @param {string|number} [props.raceId] - The ID of the race currently being edited, used for returning to the correct RaceEdit page.
+ * @param {Array<string>} props.initialSelectedTraitIds - Array of trait slugs already associated with the race.
+ * @param {number} [props.raceId] - The ID of the race currently being edited, used for returning to the correct RaceEdit page.
  * @returns {JSX.Element|null} The RaceTraitAssoc component or null if not open.
  */
-export function RaceTraitAssoc({ isOpen, onClose, onSave, initialSelectedTraitIds = [], raceId }) {
+export function RaceTraitAssoc({ isOpen, onClose, onSave, initialSelectedTraitIds = [], raceId }: {
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (traits: Array<{ slug: string; name: string; description: string; hasValue: boolean; value: string }>) => void;
+    initialSelectedTraitIds: string[];
+    raceId?: number;
+}) {
     const navigate = useNavigate();
-    const [currentSelectedTraitIds, setCurrentSelectedTraitIds] = useState(initialSelectedTraitIds);
-    const [availableTraits, setAvailableTraits] = useState<RaceTraitItem[]>([]); // To store all traits fetched by GenericList
+    const [currentSelectedTraitIds, setCurrentSelectedTraitIds] = useState<string[]>(initialSelectedTraitIds);
+    const [availableTraits, setAvailableTraits] = useState<RaceTraitItem[]>([]);
 
     const memoizedNavigate = useCallback(() => { /* no-op for internal list */ }, []);
-    const memoizedDefaultColumns = useMemo(() => ['trait_slug', 'trait_name', 'trait_description'], []);
+    const memoizedDefaultColumns = useMemo(() => ['slug', 'name', 'description'], []);
 
     useEffect(() => {
         setCurrentSelectedTraitIds(initialSelectedTraitIds);
     }, [initialSelectedTraitIds]);
 
     const columnDefinitions = useMemo(() => ({
-        trait_slug: {
-            id: 'trait_slug',
+        slug: {
             label: 'Trait Slug',
             sortable: true,
             filterable: true,
             filterType: 'input',
             filterLabel: 'Search Traits',
-            multiColumn: ['trait_slug', 'trait_name', 'trait_description'],
+            multiColumn: ['slug', 'name', 'description'],
             alwaysVisible: true,
         },
-        trait_name: {
-            id: 'trait_name',
+        name: {
             label: 'Trait Name',
             sortable: true,
             filterable: false
         },
-        trait_description: {
-            id: 'trait_description',
+        description: {
             label: 'Description',
             sortable: false,
             filterable: false
@@ -65,15 +67,21 @@ export function RaceTraitAssoc({ isOpen, onClose, onSave, initialSelectedTraitId
     }), []);
 
     const filterOptions = useMemo(() => ({
-        trait_slug: { component: TextInput, props: { placeholder: 'Filter ...' } },
+        slug: { component: TextInput, props: { placeholder: 'Filter ...' } },
     }), []);
 
-    const fetchTraitsForList = useCallback(async (searchParams) => {
+    const fetchTraitsForList = useCallback(async (searchParams: URLSearchParams) => {
         try {
-            const response = await Api(`/races/traits?${searchParams.toString()}`);
-            const data = Array.isArray(response.results) ? response.results : [];
-            setAvailableTraits(data); // Store fetched traits
-            return { data: data, total: response.total };
+            const response = await RaceTraitService.getRaceTraits({
+                page: parseInt(searchParams.get('page') || '1'),
+                limit: parseInt(searchParams.get('limit') || '10'),
+                slug: searchParams.get('slug') || undefined,
+                name: searchParams.get('name') || undefined,
+                description: searchParams.get('description') || undefined,
+                hasValue: searchParams.get('hasValue') === 'true',
+            });
+            setAvailableTraits(response.results);
+            return { data: response.results, total: response.total };
         } catch (error) {
             console.error('Error fetching traits for GenericList:', error);
             throw error;
@@ -81,127 +89,98 @@ export function RaceTraitAssoc({ isOpen, onClose, onSave, initialSelectedTraitId
     }, []);
 
     const renderTraitCell = useCallback((item: RaceTraitItem, columnId: string) => {
-        if (columnId === 'trait_name') {
-            return item.trait_name;
-        } else if (columnId === 'trait_description') {
-            return <ProcessMarkdown markdown={item[columnId] || ''} userVars={{ traitname: item.trait_name }} />;
-        } else if (columnId === 'trait_slug') {
-            return item.trait_slug;
+        if (columnId === 'name') {
+            return item.name;
+        } else if (columnId === 'description') {
+            return <ProcessMarkdown markdown={item.description || ''} userVars={{ traitname: item.name || '' }} />;
+        } else if (columnId === 'slug') {
+            return item.slug;
         }
         return null;
     }, []);
 
     const handleSelectedIdsChange = useCallback((selectedIdsFromGenericList: (string | number)[]) => {
-        setCurrentSelectedTraitIds(selectedIdsFromGenericList);
+        setCurrentSelectedTraitIds(selectedIdsFromGenericList as string[]);
     }, []);
 
     const handleAddSelectedTraits = useCallback(async () => {
-        const response = await Api('/races/traits/all');
-        const allTraits = Array.isArray(response) ? response : [];
         const selectedTraitObjects = currentSelectedTraitIds
-            .map(id => allTraits.find(trait => trait.trait_slug === id))
+            .map(id => availableTraits.find(trait => trait.slug === id))
             .filter(Boolean)
             .map(trait => ({
-                trait_slug: trait.trait_slug,
-                trait_name: trait.trait_name,
-                trait_description: trait.trait_description,
-                has_value: trait.has_value,
-                trait_value: trait.has_value ? '' : '',
+                slug: trait!.slug,
+                name: trait!.name,
+                description: trait!.description,
+                hasValue: trait!.hasValue,
+                value: trait!.hasValue ? '' : '',
             }));
         console.log('[RaceTraitAssoc] selectedTraitObjects', selectedTraitObjects);
         onSave(selectedTraitObjects);
         onClose();
     }, [currentSelectedTraitIds, availableTraits, onSave, onClose]);
 
-
     if (!isOpen) return null;
 
     return (
-        <Transition appear show={isOpen} as={Fragment}>
-            <Dialog as="div" className="relative z-10" onClose={onClose}>
-                <Transition.Child
-                    as={Fragment}
-                    enter="ease-out duration-300"
-                    enterFrom="opacity-0"
-                    enterTo="opacity-100"
-                    leave="ease-in duration-200"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-                >
-                    <div className="fixed inset-0 bg-black bg-opacity-25" />
-                </Transition.Child>
-
-                <div className="fixed inset-0 overflow-y-auto">
-                    <div className="flex min-h-full items-center justify-center p-4 text-center">
-                        <Transition.Child
-                            as={Fragment}
-                            enter="ease-out duration-300"
-                            enterFrom="opacity-0 scale-95"
-                            enterTo="opacity-100 scale-100"
-                            leave="ease-in duration-200"
-                            leaveFrom="opacity-100 scale-100"
-                            leaveTo="opacity-0 scale-95"
-                        >
-                            <Dialog.Panel className="w-full max-w-6xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all dark:bg-gray-800">
-                                <Dialog.Title
-                                    as="h3"
-                                    className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100"
+        <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
+            <Dialog.Backdrop className="fixed inset-0 bg-black bg-opacity-25 z-40" />
+            <Dialog.Portal>
+                <Dialog.Popup className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="w-full max-w-6xl transform overflow-visible rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all dark:bg-gray-800">
+                        <Dialog.Title className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100">
+                            Select Race Trait(s)
+                        </Dialog.Title>
+                        <form className="mt-4" onSubmit={(e) => e.preventDefault()}>
+                            <div className="mb-4">
+                                <GenericList<RaceTraitItem>
+                                    storageKey="raceTraitSelectionList"
+                                    isColumnConfigurable={false}
+                                    isOptionSelector={true}
+                                    selectedIds={currentSelectedTraitIds}
+                                    onSelectedIdsChange={handleSelectedIdsChange}
+                                    defaultColumns={memoizedDefaultColumns}
+                                    columnDefinitions={columnDefinitions}
+                                    requiredColumnId="slug"
+                                    fetchData={fetchTraitsForList}
+                                    renderCell={renderTraitCell}
+                                    filterOptions={filterOptions}
+                                    navigate={memoizedNavigate}
+                                    detailPagePath={null}
+                                    idKey="slug"
+                                    itemDesc="trait"
+                                    initialLimit={10}
+                                />
+                            </div>
+                            <div className="mt-4 flex justify-end">
+                                <button
+                                    type="button"
+                                    className="inline-flex justify-center rounded-md border border-transparent bg-gray-300 px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-200 mr-2"
+                                    onClick={onClose}
                                 >
-                                    Select Race Trait(s)
-                                </Dialog.Title>
-                                <form className="mt-4" onSubmit={(e) => e.preventDefault()}>
-                                    <div className="mb-4">
-                                        <GenericList<RaceTraitItem>
-                                            storageKey="raceTraitSelectionList"
-                                            isColumnConfigurable={false}
-                                            isOptionSelector={true}
-                                            selectedIds={currentSelectedTraitIds}
-                                            onSelectedIdsChange={handleSelectedIdsChange}
-                                            defaultColumns={memoizedDefaultColumns}
-                                            columnDefinitions={columnDefinitions}
-                                            requiredColumnId="trait_slug"
-                                            fetchData={fetchTraitsForList}
-                                            renderCell={renderTraitCell}
-                                            filterOptions={filterOptions}
-                                            navigate={memoizedNavigate}
-                                            detailPagePath={null}
-                                            idKey="trait_slug"
-                                            itemDesc="trait"
-                                            initialLimit={10}
-                                        />
-                                    </div>
-                                    <div className="mt-4 flex justify-end">
-                                        <button
-                                            type="button"
-                                            className="inline-flex justify-center rounded-md border border-transparent bg-gray-300 px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-200 mr-2"
-                                            onClick={onClose}
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:bg-blue-700 dark:hover:bg-blue-600 mr-2"
-                                            onClick={handleAddSelectedTraits}
-                                        >
-                                            Apply Changes
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:bg-blue-700 dark:hover:bg-blue-600"
-                                            onClick={() => {
-                                                onClose();
-                                                navigate('/admin/races/traits/new/edit', { state: { from: 'RaceTraitAssoc', raceId: raceId } });
-                                            }}
-                                        >
-                                            Create New Trait
-                                        </button>
-                                    </div>
-                                </form>
-                            </Dialog.Panel>
-                        </Transition.Child>
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:bg-blue-700 dark:hover:bg-blue-600 mr-2"
+                                    onClick={handleAddSelectedTraits}
+                                >
+                                    Apply Changes
+                                </button>
+                                <button
+                                    type="button"
+                                    className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:bg-blue-700 dark:hover:bg-blue-600"
+                                    onClick={() => {
+                                        onClose();
+                                        navigate('/admin/races/traits/new/edit', { state: { from: 'RaceTraitAssoc', raceId: raceId } });
+                                    }}
+                                >
+                                    Create New Trait
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                </div>
-            </Dialog>
-        </Transition>
+                </Dialog.Popup>
+            </Dialog.Portal>
+        </Dialog.Root>
     );
 }

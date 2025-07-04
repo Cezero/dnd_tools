@@ -1,12 +1,13 @@
-import { visit } from 'unist-util-visit';
-import { QueueEntityResolution } from '@/services/EntityResolver';
-import type { Node, Parent } from 'unist';
 import type { Root, Text, Link } from 'mdast';
+import type { Node, Parent } from 'unist';
+import { visit } from 'unist-util-visit';
+
+import { queueTableResolution } from '@/lib/TableResolution';
 
 const ENTITY_TYPES: Record<string, string> = {
-    Spell: '/spells/',
-    Item: '/items/',
-    Monster: '/monsters/',
+    spell: '/spells/',
+    item: '/items/',
+    monster: '/monsters/',
 };
 
 interface TextNode extends Text {
@@ -17,7 +18,7 @@ interface LinkNode extends Link {
     url: string;
     data?: {
         hName: string;
-        hProperties: Record<string, any>;
+        hProperties: Record<string, string | number | boolean | (string | number)[]>;
     };
 }
 
@@ -26,7 +27,7 @@ interface ElementNode extends Node {
     tagName: string;
     data?: {
         hName: string;
-        hProperties: Record<string, any>;
+        hProperties: Record<string, string | number | boolean | (string | number)[]>;
     };
     children: Node[];
 }
@@ -39,8 +40,6 @@ interface VariableNode extends Node {
     };
     children: Text[];
 }
-
-
 
 type ProcessedNode = TextNode | LinkNode | ElementNode | VariableNode;
 
@@ -55,17 +54,14 @@ export function RemarkEntitiesAndEmbeds() {
 
             while ((match = regex.exec(node.value)) !== null) {
                 const [fullMatch, tag1, val1, tag2, val2] = match;
-                const r_type = (tag1 || tag2 || '').trim();
-                const r_value = (val1 || val2 || '').trim();
+                const r_type = (tag1 || tag2 || '').trim().toLowerCase();
+                const r_value = (val1 || val2 || '').trim().toLowerCase();
 
                 if (match.index > lastIndex) {
                     parts.push({ type: 'text', value: node.value.slice(lastIndex, match.index) });
                 }
 
                 if (ENTITY_TYPES[r_type]) {
-                    // Queue entity resolution
-                    QueueEntityResolution(r_type.toLowerCase(), r_value.toLowerCase());
-
                     parts.push({
                         type: 'link',
                         url: '', // filled in later
@@ -79,9 +75,9 @@ export function RemarkEntitiesAndEmbeds() {
                         },
                         children: [{ type: 'text', value: r_value.toLowerCase() }],
                     });
-                } else if (r_type === 'Table') {
+                } else if (r_type === 'table') {
                     // Queue table resolution
-                    QueueEntityResolution('referencetable', r_value.toLowerCase());
+                    queueTableResolution(r_value.toLowerCase());
 
                     parts.push({
                         type: 'element',

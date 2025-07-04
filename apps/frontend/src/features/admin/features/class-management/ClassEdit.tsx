@@ -1,299 +1,340 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Api } from '@/services/Api';
-import { FetchClassById } from '@/features/admin/features/class-management/ClassService';
-import { Listbox, ListboxButton, ListboxOptions, ListboxOption, Transition } from '@headlessui/react';
-import { ChevronUpDownIcon } from '@heroicons/react/24/solid';
-import { RPG_DICE, EDITION_LIST, EDITION_MAP, ABILITY_MAP } from '@shared/static-data';
-import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
+import { z } from 'zod';
 
-export function ClassEdit() {
-    const { id } = useParams();
+import {
+    ValidatedForm,
+    ValidatedInput,
+    ValidatedCheckbox,
+    ValidatedListbox,
+    useValidatedForm
+} from '@/components/forms';
+import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
+import { ClassService } from '@/features/admin/features/class-management/ClassService';
+import { CreateClassSchema, UpdateClassSchema, ClassIdParamSchema } from '@shared/schema';
+import { RPG_DICE_SELECT_LIST, EDITION_SELECT_LIST, ABILITY_SELECT_LIST } from '@shared/static-data';
+
+
+
+// Type definitions for the form state
+type CreateClassFormData = z.infer<typeof CreateClassSchema>;
+type UpdateClassFormData = z.infer<typeof UpdateClassSchema>;
+type ClassFormData = CreateClassFormData | UpdateClassFormData;
+
+export default function ClassEdit() {
+    const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation();
-    const [cls, setCls] = useState(null); // Using 'cls' to avoid conflict with 'class' keyword
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [cls, setCls] = useState<ClassFormData | null>(null);
     const [message, setMessage] = useState('');
-    const fromListParams = location.state?.fromListParams || '';
+    const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Determine which schema to use based on whether we're creating or editing
+    const schema = id === 'new' ? CreateClassSchema : UpdateClassSchema;
+
+    // Initialize form data with default values
+    const initialFormData: ClassFormData = {
+        name: '',
+        abbreviation: '',
+        editionId: 1,
+        isPrestige: false,
+        isVisible: true,
+        canCastSpells: false,
+        hitDie: 1,
+        skillPoints: 0,
+        description: '',
+        castingAbilityId: null,
+        ...(id !== 'new' && { id: parseInt(id) })
+    };
+
+    const [formData, setFormData] = useState<ClassFormData>(initialFormData);
+
+    // Use the validated form hook
+    const { validation, createFieldProps, createCheckboxProps } = useValidatedForm(
+        schema,
+        formData,
+        setFormData,
+        {
+            validateOnChange: true,
+            validateOnBlur: true,
+            debounceMs: 300
+        }
+    );
 
     useEffect(() => {
-        const FetchClassAndLookups = async () => {
+        const fetchClass = async () => {
+            if (id === 'new') {
+                setCls(initialFormData);
+                return;
+            }
+
             try {
-                if (id === 'new') {
-                    setCls({
-                        name: '',
-                        abbr: '',
-                        edition_id: null,
-                        is_prestige: false,
-                        display: true,
-                        can_cast: false,
-                        hit_die: 1,
-                        skill_points: 0,
-                        cast_ability: null,
-                        desc: ''
-                    });
-                } else {
-                    const data = await FetchClassById(id);
-                    setCls({
-                        name: data.name,
-                        abbr: data.abbr,
-                        edition_id: data.edition_id,
-                        is_prestige: data.is_prestige === 1,
-                        display: data.display === 1,
-                        can_cast: data.can_cast === 1,
-                        hit_die: data.hit_die,
-                        skill_points: data.skill_points || 0,
-                        cast_ability: data.cast_ability || null,
-                        desc: data.desc || ''
-                    });
-                }
+                setIsLoading(true);
+                const fetchedClass = await ClassService.getClassById(undefined, { id: parseInt(id) });
+                setCls(fetchedClass);
+                setFormData(fetchedClass);
             } catch (err) {
-                setError(err);
+                setError(err instanceof Error ? err.message : 'Failed to fetch class');
             } finally {
                 setIsLoading(false);
             }
         };
 
-        FetchClassAndLookups();
+        fetchClass();
     }, [id]);
 
-    const HandleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-
-        setCls(prevCls => ({
-            ...prevCls,
-            [name]: type === 'checkbox' ? checked : (name === 'edition_id' || name === 'hit_die' || name === 'skill_points' || name === 'cast_ability' ? parseInt(value) : value)
-        }));
-    };
-
-    const HandleSubmit = async (e) => {
+    const HandleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setMessage('');
         setError(null);
 
-        try {
-            const payload = {
-                name: cls.name,
-                abbr: cls.abbr,
-                edition_id: cls.edition_id ? parseInt(cls.edition_id) : null,
-                is_prestige: cls.is_prestige ? 1 : 0,
-                display: cls.display ? 1 : 0,
-                can_cast: cls.can_cast ? 1 : 0,
-                hit_die: cls.hit_die ? parseInt(cls.hit_die) : 1,
-                skill_points: cls.skill_points,
-                cast_ability: cls.cast_ability,
-                desc: cls.desc
-            };
+        // Validate the entire form
+        if (!validation.validateForm(formData)) {
+            return;
+        }
 
+        try {
+            setIsLoading(true);
             if (id === 'new') {
-                const response = await Api('/classes', {
-                    method: 'POST',
-                    body: JSON.stringify(payload),
-                });
+                const newClass = await ClassService.createClass(formData as z.infer<typeof CreateClassSchema>);
                 setMessage('Class created successfully!');
-                navigate(`/admin/classes/${response.id}`, { state: { fromListParams: fromListParams, refresh: true } });
+                setTimeout(() => navigate(`/admin/classes/${newClass.id}`), 1500);
             } else {
-                await Api(`/classes/${id}`, {
-                    method: 'PUT',
-                    body: JSON.stringify(payload),
-                });
+                await ClassService.updateClass(formData as z.infer<typeof UpdateClassSchema>, { id: parseInt(id) });
                 setMessage('Class updated successfully!');
-                navigate(`/admin/classes/${id}`, { state: { fromListParams: fromListParams, refresh: true } });
             }
         } catch (err) {
-            setError(err);
-            setMessage(`Error updating class: ${err.message || err}`);
+            setError(err instanceof Error ? err.message : 'Failed to save class');
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    if (isLoading) return <div className="p-4 bg-white dark:bg-[#121212]">Loading class for editing...</div>;
-    if (error) return <div className="p-4 bg-white dark:bg-[#121212] dark:text-red-500">Error: {error.message}</div>;
-    if (!cls && id !== 'new') return <div className="p-4 bg-white dark:bg-[#121212]">Class not found.</div>;
+    if (isLoading && !cls) {
+        return <div className="flex justify-center items-center h-64">Loading...</div>;
+    }
+
+    if (error && !cls) {
+        return (
+            <div className="flex flex-col items-center justify-center h-64">
+                <p className="text-red-500 mb-4">{error}</p>
+                <button
+                    onClick={() => navigate('/admin/classes')}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                    Back to Classes
+                </button>
+            </div>
+        );
+    }
+
+    if (!cls) {
+        return <div>No class data available</div>;
+    }
+
+    // Create field props for each form field
+    const nameProps = createFieldProps('name');
+    const abbreviationProps = createFieldProps('abbreviation');
+    const hitDieProps = createFieldProps('hitDie');
+    const skillPointsProps = createFieldProps('skillPoints');
+    const descriptionProps = createFieldProps('description');
+
+    const isPrestigeProps = createCheckboxProps('isPrestige');
+    const isVisibleProps = createCheckboxProps('isVisible');
+    const canCastSpellsProps = createCheckboxProps('canCastSpells');
+
+    // Create listbox props for hit die
+    const hitDieListboxProps = {
+        value: formData.hitDie,
+        onChange: (value: string | number | null) => {
+            const numValue = value as number;
+            setFormData(prev => ({ ...prev, hitDie: numValue }));
+            validation.validateField('hitDie', numValue);
+        },
+        error: validation.getError('hitDie'),
+        hasError: validation.hasError('hitDie')
+    };
+
+    // Create listbox props for edition
+    const editionListboxProps = {
+        value: formData.editionId,
+        onChange: (value: string | number | null) => {
+            const numValue = value as number;
+            setFormData(prev => ({ ...prev, editionId: numValue }));
+            validation.validateField('editionId', numValue);
+        },
+        error: validation.getError('editionId'),
+        hasError: validation.hasError('editionId')
+    };
+
+    // Create listbox props for casting ability
+    const castingAbilityListboxProps = {
+        value: formData.castingAbilityId,
+        onChange: (value: string | number | null) => {
+            setFormData(prev => ({ ...prev, castingAbilityId: value as number | null }));
+            validation.validateField('castingAbilityId', value);
+        },
+        error: validation.getError('castingAbilityId'),
+        hasError: validation.hasError('castingAbilityId')
+    };
 
     return (
-        <div className="p-4 bg-white dark:bg-[#121212] scrollbar-track-gray-300 scrollbar-thumb-gray-400 dark:scrollbar-track-gray-700 dark:scrollbar-thumb-gray-500">
-            <h1 className="text-2xl font-bold mb-4">{id === 'new' ? 'Create New Class' : `Edit Class: ${cls.name}`}</h1>
-            {message && <div className="mb-4 p-2 rounded text-green-700 bg-green-100 dark:bg-green-800 dark:text-green-200">{message}</div>}
-            {error && <div className="mb-4 p-2 rounded text-red-700 bg-red-100 dark:bg-red-800 dark:text-red-200">Error: {error.message || String(error)}</div>}
-            <form onSubmit={HandleSubmit}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <div className="grid grid-cols-2 gap-2">
-                        <div className="flex items-center gap-2">
-                            <label htmlFor="name" className="block font-medium">Class Name:</label>
-                            <input type="text" id="name" name="name" value={cls.name || ''} onChange={HandleChange} className="mt-1 block p-2 border rounded dark:bg-gray-700 dark:border-gray-600" />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <label htmlFor="abbr" className="block font-medium">Abbreviation:</label>
-                            <input type="text" id="abbr" name="abbr" value={cls.abbr || ''} onChange={HandleChange} className="mt-1 block p-2 border rounded dark:bg-gray-700 dark:border-gray-600" />
-                        </div>
-                        <div className="col-span-2 flex items-center gap-2">
-                            <div className="flex items-center gap-2">
-                                <label htmlFor="hit_die" className="block font-medium">Hit Die:</label>
-                                <Listbox
-                                    value={cls.hit_die || ''}
-                                    onChange={(selectedId) => HandleChange({ target: { name: 'hit_die', value: selectedId } })}
-                                >
-                                    <div className="relative mt-1">
-                                        <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-2 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-gray-100 dark:ring-gray-600">
-                                            <span className="block truncate">{RPG_DICE[cls.hit_die]?.name || 'Select a hit die'}</span>
-                                            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                                <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
-                                            </span>
-                                        </ListboxButton>
-                                        <Transition
-                                            leave="transition ease-in duration-100"
-                                            leaveFrom="opacity-100"
-                                            leaveTo="opacity-0"
-                                        >
-                                            <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto scrollbar-thin rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm dark:bg-gray-800 dark:text-gray-100">
-                                                <ListboxOption
-                                                    className="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 dark:text-gray-100 hover:bg-blue-600 hover:text-white"
-                                                    value={null}
-                                                >
-                                                    <span className="block truncate">
-                                                        Select a hit die
-                                                    </span>
-                                                </ListboxOption>
-                                                {Object.keys(RPG_DICE).map(dieKey => (
-                                                    <ListboxOption
-                                                        key={dieKey}
-                                                        className="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 dark:text-gray-100 hover:bg-blue-600 hover:text-white"
-                                                        value={parseInt(dieKey)}
-                                                    >
-                                                        <span className="block truncate">
-                                                            {RPG_DICE[dieKey].name}
-                                                        </span>
-                                                    </ListboxOption>
-                                                ))}
-                                            </ListboxOptions>
-                                        </Transition>
-                                    </div>
-                                </Listbox>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <label htmlFor="skill_points" className="block font-medium">Skill Points:</label>
-                                <input type="number" id="skill_points" name="skill_points" value={cls.skill_points || ''} onChange={HandleChange} className="mt-1 block p-2 border rounded dark:bg-gray-700 dark:border-gray-600 w-20" />
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <label htmlFor="cast_ability" className="block font-medium">Cast Ability:</label>
-                                <Listbox
-                                    value={cls.cast_ability || null}
-                                    onChange={(selectedId) => HandleChange({ target: { name: 'cast_ability', value: selectedId } })}
-                                >
-                                    <div className="relative mt-1">
-                                        <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-2 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-gray-100 dark:ring-gray-600">
-                                            <span className="block truncate">{ABILITY_MAP[cls.cast_ability]?.name || 'Select an ability'}</span>
-                                            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                                <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
-                                            </span>
-                                        </ListboxButton>
-                                        <Transition
-                                            leave="transition ease-in duration-100"
-                                            leaveFrom="opacity-100"
-                                            leaveTo="opacity-0"
-                                        >
-                                            <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto scrollbar-thin rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm dark:bg-gray-800 dark:text-gray-100">
-                                                <ListboxOption
-                                                    className="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 dark:text-gray-100 hover:bg-blue-600 hover:text-white"
-                                                    value={null}
-                                                >
-                                                    <span className="block truncate">
-                                                        Select an ability
-                                                    </span>
-                                                </ListboxOption>
-                                                {Object.keys(ABILITY_MAP).map(abilityKey => (
-                                                    <ListboxOption
-                                                        key={abilityKey}
-                                                        className="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 dark:text-gray-100 hover:bg-blue-600 hover:text-white"
-                                                        value={parseInt(abilityKey)}
-                                                    >
-                                                        <span className="block truncate">
-                                                            {ABILITY_MAP[abilityKey].name}
-                                                        </span>
-                                                    </ListboxOption>
-                                                ))}
-                                            </ListboxOptions>
-                                        </Transition>
-                                    </div>
-                                </Listbox>
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <div className="flex items-center gap-2 justify-end pb-1">
-                            <label htmlFor="edition_id" className="block font-medium">Edition:</label>
-                            <Listbox
-                                value={cls.edition_id || ''}
-                                onChange={(selectedId) => HandleChange({ target: { name: 'edition_id', value: selectedId } })}
-                            >
-                                <div className="relative mt-1">
-                                    <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-2 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-gray-100 dark:ring-gray-600">
-                                        <span className="block truncate">{EDITION_MAP[cls.edition_id]?.abbr || 'Select an edition'}</span>
-                                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                            <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
-                                        </span>
-                                    </ListboxButton>
-                                    <Transition
-                                        leave="transition ease-in duration-100"
-                                        leaveFrom="opacity-100"
-                                        leaveTo="opacity-0"
-                                    >
-                                        <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto scrollbar-thin rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm dark:bg-gray-800 dark:text-gray-100">
-                                            <ListboxOption
-                                                className="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 dark:text-gray-100 hover:bg-blue-600 hover:text-white"
-                                                value={null}
-                                            >
-                                                <span className="block truncate">
-                                                    Select an edition
-                                                </span>
-                                            </ListboxOption>
-                                            {EDITION_LIST.map(edition => (
-                                                <ListboxOption
-                                                    key={edition.id}
-                                                    className="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 dark:text-gray-100 hover:bg-blue-600 hover:text-white"
-                                                    value={edition.id}
-                                                >
-                                                    <span className="block truncate">
-                                                        {edition.abbr}
-                                                    </span>
-                                                </ListboxOption>
-                                            ))}
-                                        </ListboxOptions>
-                                    </Transition>
-                                </div>
-                            </Listbox>
-                        </div>
-                        <div className="flex items-center gap-2 justify-end pb-1">
-                            <label htmlFor="display" className="ml-2 font-medium">Display</label>
-                            <input type="checkbox" id="display" name="display" checked={cls.display} onChange={HandleChange} className="form-checkbox h-5 w-5 text-blue-600 rounded dark:bg-gray-700 dark:border-gray-600 accent-blue-600 checked:bg-blue-600 dark:checked:bg-blue-600" />
-                        </div>
-                        <div className="flex items-center gap-2 justify-end pb-1">
-                            <label htmlFor="is_prestige" className="ml-2 font-medium">Prestige Class</label>
-                            <input type="checkbox" id="is_prestige" name="is_prestige" checked={cls.is_prestige} onChange={HandleChange} className="form-checkbox h-5 w-5 text-blue-600 rounded dark:bg-gray-700 dark:border-gray-600 accent-blue-600 checked:bg-blue-600 dark:checked:bg-blue-600" />
-                        </div>
-                        <div className="flex items-center gap-2 justify-end pb-1">
-                            <label htmlFor="can_cast" className="ml-2 font-medium">Caster</label>
-                            <input type="checkbox" id="can_cast" name="can_cast" checked={cls.can_cast} onChange={HandleChange} className="form-checkbox h-5 w-5 text-blue-600 rounded dark:bg-gray-700 dark:border-gray-600 accent-blue-600 checked:bg-blue-600 dark:checked:bg-blue-600" />
-                        </div>
-                    </div>
-                    <div className="flex flex-col gap-2 md:col-span-2 mb-0">
-                        <MarkdownEditor
-                            value={cls.desc || ''}
-                            onChange={(newDescription) => setCls(prevCls => ({ ...prevCls, desc: newDescription }))}
-                            label="Class Description"
-                            id="desc"
-                            name="desc"
+        <div className="max-w-4xl mx-auto p-6">
+            <div className="mb-6">
+                <h1 className="text-3xl font-bold">
+                    {id === 'new' ? 'Create New Class' : 'Edit Class'}
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400">
+                    {id === 'new' ? 'Create a new character class' : 'Modify class details'}
+                </p>
+            </div>
+
+            {message && (
+                <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-md dark:bg-green-900/20 dark:border-green-800">
+                    <p className="text-green-700 dark:text-green-300">{message}</p>
+                </div>
+            )}
+
+            {error && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md dark:bg-red-900/20 dark:border-red-800">
+                    <p className="text-red-700 dark:text-red-300">{error}</p>
+                </div>
+            )}
+
+            <ValidatedForm
+                onSubmit={HandleSubmit}
+                validationState={validation.validationState}
+                isLoading={isLoading}
+            >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Basic Information */}
+                    <div className="space-y-4">
+                        <h2 className="text-xl font-semibold">Basic Information</h2>
+
+                        <ValidatedInput
+                            name="name"
+                            label="Class Name"
+                            type="text"
+                            required
+                            placeholder="e.g., Wizard, Fighter, Cleric"
+                            {...nameProps}
+                        />
+
+                        <ValidatedInput
+                            name="abbreviation"
+                            label="Abbreviation"
+                            type="text"
+                            required
+                            placeholder="e.g., Wiz, Ftr, Clr"
+                            {...abbreviationProps}
+                        />
+
+                        <ValidatedListbox
+                            name="editionId"
+                            label="Edition"
+                            value={formData.editionId}
+                            onChange={(value) => setFormData(prev => ({ ...prev, editionId: value as number }))}
+                            options={EDITION_SELECT_LIST}
+                            required
+                            {...editionListboxProps}
+                        />
+
+                        <ValidatedListbox
+                            name="hitDie"
+                            label="Hit Die"
+                            value={formData.hitDie}
+                            onChange={(value) => setFormData(prev => ({ ...prev, hitDie: value as number }))}
+                            options={RPG_DICE_SELECT_LIST}
+                            required
+                            {...hitDieListboxProps}
+                        />
+
+                        <ValidatedInput
+                            name="skillPoints"
+                            label="Skill Points per Level"
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={1}
+                            {...skillPointsProps}
                         />
                     </div>
+
+                    {/* Class Properties */}
+                    <div className="space-y-4">
+                        <h2 className="text-xl font-semibold">Class Properties</h2>
+
+                        <ValidatedCheckbox
+                            name="isPrestige"
+                            label="Prestige Class"
+                            {...isPrestigeProps}
+                        />
+
+                        <ValidatedCheckbox
+                            name="isVisible"
+                            label="Visible to Players"
+                            {...isVisibleProps}
+                        />
+
+                        <ValidatedCheckbox
+                            name="canCastSpells"
+                            label="Can Cast Spells"
+                            {...canCastSpellsProps}
+                        />
+
+                        {formData.canCastSpells && (
+                            <>
+                                <ValidatedListbox
+                                    name="castingAbilityId"
+                                    label="Casting Ability"
+                                    value={formData.castingAbilityId}
+                                    onChange={(value) => setFormData(prev => ({ ...prev, castingAbilityId: value as number | null }))}
+                                    options={ABILITY_SELECT_LIST}
+                                    placeholder="Select casting ability"
+                                    {...castingAbilityListboxProps}
+                                />
+                            </>
+                        )}
+                    </div>
                 </div>
-                <div className="flex mt-4 gap-2 justify-end">
-                    <button type="submit" className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 text-white">Save</button>
-                    <button type="button" onClick={() => {
-                        navigate(-1);
-                    }} className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-200">Cancel</button>
+
+                {/* Description */}
+                <div className="mt-6">
+                    <h2 className="text-xl font-semibold mb-4">Description</h2>
+                    <div className="space-y-2">
+                        <label htmlFor="description" className="block font-medium">
+                            Class Description
+                        </label>
+                        <MarkdownEditor
+                            value={formData.description || ''}
+                            onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
+                        />
+                        {validation.getError('description') && (
+                            <span className="text-red-500 text-sm">{validation.getError('description')}</span>
+                        )}
+                    </div>
                 </div>
-            </form>
+
+                {/* Action Buttons */}
+                <div className="flex justify-end space-x-4 mt-8">
+                    <button
+                        type="button"
+                        onClick={() => navigate('/admin/classes')}
+                        className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                        disabled={isLoading}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isLoading || validation.validationState.hasErrors}
+                    >
+                        {isLoading ? 'Saving...' : id === 'new' ? 'Create Class' : 'Update Class'}
+                    </button>
+                </div>
+            </ValidatedForm>
         </div>
     );
 }

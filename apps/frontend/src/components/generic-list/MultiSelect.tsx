@@ -1,12 +1,13 @@
-import React, { useRef, useEffect } from 'react';
 import { CheckIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
 import { PlusCircleIcon as PlusCircleIconSolid } from '@heroicons/react/24/solid';
-import type { MultiSelectProps } from './types';
+import React, { useRef, useEffect } from 'react';
+
+import type { MultiSelectFilterComponentProps } from './types';
 
 export const MultiSelect = ({
     options,
-    displayKey,
-    valueKey,
+    displayKey = 'label',
+    valueKey = 'value',
     selected,
     onChange,
     className = '',
@@ -15,7 +16,7 @@ export const MultiSelect = ({
     logicType = 'or',
     onLogicChange,
     appendClassName = ''
-}: MultiSelectProps): React.JSX.Element => {
+}: MultiSelectFilterComponentProps): React.JSX.Element => {
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {

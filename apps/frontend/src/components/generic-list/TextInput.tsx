@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
 import { XCircleIcon } from '@heroicons/react/24/outline';
-import type { TextInputProps } from './types';
+import React, { useState, useEffect, useRef } from 'react';
+
+import type { InputFilterComponentProps } from './types';
 
 export const TextInput = ({
     onChange,
@@ -13,7 +14,7 @@ export const TextInput = ({
     placeholder = 'Filter ...',
     type = 'text',
     appendClassName = ''
-}: TextInputProps): React.JSX.Element => {
+}: InputFilterComponentProps): React.JSX.Element => {
     const [inputValue, setInputValue] = useState<string>(selected || '');
     const inputRef = useRef<HTMLInputElement>(null);
     const debounceTimeoutRef = useRef<number | null>(null);

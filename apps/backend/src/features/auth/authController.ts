@@ -16,11 +16,11 @@ export async function RegisterUser(req: ValidatedBodyT<RegisterUserRequest>, res
     const result = await authService.registerUser({ username, email, password });
 
     if (!result.success) {
-        res.status(409).json({ error: result.error });
+        res.status(409).json(result);
         return;
     }
 
-    res.status(201).json({ message: 'User created' });
+    res.status(201).json(result);
 }
 
 // Login
@@ -34,14 +34,11 @@ export async function LoginUser(req: ValidatedBodyT<LoginUserRequest>, res: Resp
     const result = await authService.loginUser({ username, password });
 
     if (!result.success) {
-        res.status(401).json({ error: result.error });
+        res.status(401).json(result);
         return;
     }
 
-    res.json({
-        token: result.token,
-        user: result.user
-    });
+    res.json(result);
 }
 
 // Get User from Token
@@ -56,11 +53,11 @@ export async function GetUserFromToken(req: ValidatedNoInput<AuthServiceResult>,
     const result = await authService.getUserFromToken(token);
 
     if (!result.success) {
-        res.status(403).json({ error: result.error });
+        res.status(403).json(result);
         return;
     }
 
-    res.json({ user: result.user });
+    res.json(result);
 }
 
 // Refresh Token
@@ -75,9 +72,9 @@ export async function RefreshToken(req: ValidatedNoInput<AuthServiceResult>, res
     const result = await authService.refreshToken(token);
 
     if (!result.success) {
-        res.status(403).json({ error: result.error });
+        res.status(403).json(result);
         return;
     }
 
-    res.json({ token: result.token });
+    res.json(result);
 }

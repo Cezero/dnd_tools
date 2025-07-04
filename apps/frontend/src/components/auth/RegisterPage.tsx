@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UseAuth } from './AuthProvider';
+import { z } from 'zod';
+
 import { AuthService } from '@/services/AuthService';
 import { RegisterUserSchema } from '@shared/schema';
-import { z } from 'zod';
+
+import { UseAuth } from './AuthProvider';
 import type { RegisterPageProps } from './types';
 
 export function RegisterPage({ redirectTo = '/' }: RegisterPageProps = {}): React.JSX.Element {

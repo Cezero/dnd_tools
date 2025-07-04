@@ -1,5 +1,4 @@
-import type { SpellResponse } from '@shared/schema';
-import type { SpellComponentMap, SpellDescriptorMap, SpellRangeMap, SpellSchoolMap, SpellSubschoolMap, SpellMap, StaticSpellData } from './types';
+import type { SpellComponentMap, SpellDescriptorMap, SpellRangeMap, SpellSchoolMap, SpellSubschoolMap, Spell, SpellNameMap } from './types';
 
 export const SPELL_COMPONENT_MAP: SpellComponentMap = {
     0: { id: 0, abbreviation: 'V', name: 'Verbal' },
@@ -11,6 +10,11 @@ export const SPELL_COMPONENT_MAP: SpellComponentMap = {
 }
 
 export const SPELL_COMPONENT_LIST = Object.values(SPELL_COMPONENT_MAP);
+
+export const SPELL_COMPONENT_SELECT_LIST = SPELL_COMPONENT_LIST.map(component => ({
+    value: component.id,
+    label: component.name
+}));
 
 export const SpellComponentAbbrList = (components: number[]): string => {
     return components.map(component => SPELL_COMPONENT_MAP[component].abbreviation).join(', ');
@@ -42,6 +46,11 @@ export const SPELL_DESCRIPTOR_MAP: SpellDescriptorMap = {
 }
 
 export const SPELL_DESCRIPTOR_LIST = Object.values(SPELL_DESCRIPTOR_MAP);
+
+export const SPELL_DESCRIPTOR_SELECT_LIST = SPELL_DESCRIPTOR_LIST.map(descriptor => ({
+    value: descriptor.id,
+    label: descriptor.name
+}));
 
 export const SpellDescriptorNameList = (descriptors: number[]): string => {
     return descriptors.map(descriptor => SPELL_DESCRIPTOR_MAP[descriptor].name).join(', ');
@@ -76,6 +85,11 @@ export const SPELL_SCHOOL_MAP: SpellSchoolMap = {
 
 export const SPELL_SCHOOL_LIST = Object.values(SPELL_SCHOOL_MAP);
 
+export const SPELL_SCHOOL_SELECT_LIST = SPELL_SCHOOL_LIST.map(school => ({
+    value: school.id,
+    label: school.name
+}));
+
 export const SpellSchoolNameList = (schools: number[]): string => {
     return schools.map(school => SPELL_SCHOOL_MAP[school].name).join(', ');
 }
@@ -102,6 +116,11 @@ export const SPELL_SUBSCHOOL_MAP: SpellSubschoolMap = {
 
 export const SPELL_SUBSCHOOL_LIST = Object.values(SPELL_SUBSCHOOL_MAP);
 
+export const SPELL_SUBSCHOOL_SELECT_LIST = SPELL_SUBSCHOOL_LIST.map(subschool => ({
+    value: subschool.id,
+    label: subschool.name
+}));
+
 export const SPELL_SUBSCHOOL_LIST_BY_SCHOOL_ID: SpellSubschoolMap[] = Object.values(SPELL_SUBSCHOOL_MAP).reduce((acc, school) => {
     acc[school.id] = Object.values(SPELL_SUBSCHOOL_MAP).filter(subschool => subschool.schoolId === school.id);
     return acc;
@@ -111,27 +130,7 @@ export const SpellSubschoolNameList = (subschools: number[]): string => {
     return subschools.map(subschool => SPELL_SUBSCHOOL_MAP[subschool].name).join(', ');
 }
 
-// Function to convert StaticClassData to full Class type with defaults
-export function toSpellData(staticData: StaticSpellData): SpellResponse {
-    return {
-        ...staticData,
-        summary: staticData.summary ?? null,
-        description: staticData.description ?? null,
-        castingTime: staticData.castingTime ?? null,
-        range: staticData.range ?? null,
-        rangeTypeId: staticData.rangeTypeId ?? null,
-        rangeValue: staticData.rangeValue ?? null,
-        area: staticData.area ?? null,
-        duration: staticData.duration ?? null,
-        savingThrow: staticData.savingThrow ?? null,
-        spellResistance: staticData.spellResistance ?? null,
-        effect: staticData.effect ?? null,
-        target: staticData.target ?? null,
-        baseLevel: staticData.baseLevel ?? 0,
-    };
-}
-
-export const _SPELL_ID_MAP: SpellMap = {
+export const _SPELL_ID_MAP: { [key: number]: Spell } = {
     1: { id: 1, name: "Aberate", editionId: 4 },
     2: { id: 2, name: "Aboleth Curse", editionId: 5 },
     3: { id: 3, name: "Absorb Mind", editionId: 4 },
@@ -2905,9 +2904,8 @@ export const _SPELL_ID_MAP: SpellMap = {
     2799: { id: 2799, name: "Word of Changing", editionId: 5 },
 }
 
-// Wrapper that provides Class objects with defaults applied
-export const SPELL_ID_MAP: { [key: number]: SpellResponse } = Object.fromEntries(
-    Object.entries(_SPELL_ID_MAP).map(([key, value]) => [key, toSpellData(value)])
-);
+export const SPELL_ID_LIST = Object.values(_SPELL_ID_MAP);
 
-export const SPELL_ID_LIST = Object.values(SPELL_ID_MAP);
+export const SPELL_NAME_MAP: SpellNameMap = Object.fromEntries(
+    Object.entries(_SPELL_ID_MAP).map(([key, value]) => [value.name.toLowerCase(), parseInt(key)])
+);

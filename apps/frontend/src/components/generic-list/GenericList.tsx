@@ -1,26 +1,30 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { FunnelIcon as FunnelIconOutline, Cog6ToothIcon as Cog6ToothIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import { FunnelIcon as FunnelIconSolid, TrashIcon, ChevronDoubleUpIcon, ChevronDoubleDownIcon } from '@heroicons/react/24/solid';
-import { ColumnConfigModal, UseColumnConfig } from './ColumnConfig';
 import pluralize from 'pluralize';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+import { BooleanInput } from './BooleanInput';
+import { ColumnConfigModal, UseColumnConfig } from './ColumnConfig';
+import { MultiSelect } from './MultiSelect';
+import { SingleSelect } from './SingleSelect';
+import { TextInput } from './TextInput';
 import type {
-    ColumnDefinition,
     FilterValue,
     FilterState,
     DataItem,
-    FilterComponentProps,
-    FilterOption,
-    GenericListProps
+    GenericListProps,
+    ColumnDefinition,
+    FilterConfig,
+    InputFilterComponentProps,
+    BooleanFilterComponentProps,
+    SingleSelectFilterComponentProps,
+    MultiSelectFilterComponentProps
 } from './types';
 
 // Type guards for filter values
 function isInputFilter(value: unknown): value is { type: 'input'; value: string } {
     return typeof value === 'object' && value !== null && 'type' in value && value.type === 'input';
-}
-
-function isSelectFilter(value: unknown): value is { type: 'select'; value: string | number | null } {
-    return typeof value === 'object' && value !== null && 'type' in value && value.type === 'select';
 }
 
 function isMultiSelectFilter(value: unknown): value is { type: 'multi-select'; value: { values: string[]; logic: 'or' | 'and' } } {
@@ -31,24 +35,13 @@ function isBooleanFilter(value: unknown): value is { type: 'boolean'; value: boo
     return typeof value === 'object' && value !== null && 'type' in value && value.type === 'boolean';
 }
 
-// Legacy type guard for backward compatibility with existing stored data
-function isLegacyMultiSelectFilter(value: unknown): value is { values: string[]; logic: string } {
-    return typeof value === 'object' && value !== null && 'values' in value && 'logic' in value && !('type' in value);
-}
-
-function isStringArray(value: unknown): value is string[] {
-    return Array.isArray(value) && value.every(item => typeof item === 'string');
-}
-
 export function GenericList<T = DataItem>({
     // Configuration props
     storageKey,
-    defaultColumns,
     columnDefinitions,
-    requiredColumnId,
-    fetchData,
+    querySchema,
+    serviceFunction,
     renderCell,
-    filterOptions = {},
 
     // Routing props
     detailPagePath,
@@ -104,29 +97,37 @@ export function GenericList<T = DataItem>({
     const [sortKey, setSortKey] = useState<string>(() => getStoredValue('sortKey', '') as string);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-    // Initialize filters with proper type conversion from legacy format
-    const GetInitialFilters = (): FilterState => {
-        const storedFilters = getStoredValue('filters', {}) as Record<string, unknown>;
+    // Helper function to check if a column has filter configuration
+    const hasFilterConfig = (column: ColumnDefinition): column is ColumnDefinition & { filterConfig: FilterConfig } => {
+        return column.filterConfig !== undefined;
+    };
+
+    const [filters, setFilters] = useState<FilterState>(() => {
+        const storedFilterValues = getStoredValue('filterValues', {}) as Record<string, unknown>;
         const currentFilters: FilterState = {};
 
         for (const key in columnDefinitions) {
             const column = columnDefinitions[key];
-            const filterType = column?.filterType;
-            const storedValue = storedFilters[key];
+            const storedValue = storedFilterValues[key];
+
+            // Only create filters for columns that have filterConfig
+            if (!hasFilterConfig(column)) {
+                continue;
+            }
+
+            const filterType = column.filterConfig!.type;
 
             if (filterType === 'multi-select') {
-                if (storedValue && isLegacyMultiSelectFilter(storedValue)) {
-                    // Convert legacy format to new format
+                // Handle multi-select with values array and logic
+                if (storedValue && typeof storedValue === 'object' && 'values' in storedValue) {
+                    const multiSelectValue = storedValue as { values: string[]; logic?: string };
                     currentFilters[key] = {
                         type: 'multi-select',
                         value: {
-                            values: storedValue.values || [],
-                            logic: (storedValue.logic === 'and' ? 'and' : 'or') as 'or' | 'and'
+                            values: multiSelectValue.values || [],
+                            logic: (multiSelectValue.logic === 'and' ? 'and' : 'or') as 'or' | 'and'
                         }
                     };
-                } else if (storedValue && isMultiSelectFilter(storedValue)) {
-                    // Already in new format
-                    currentFilters[key] = storedValue;
                 } else {
                     // Default value
                     currentFilters[key] = {
@@ -135,30 +136,19 @@ export function GenericList<T = DataItem>({
                     };
                 }
             } else if (filterType === 'boolean') {
-                if (storedValue !== undefined) {
-                    currentFilters[key] = {
-                        type: 'boolean',
-                        value: storedValue as boolean
-                    };
-                } else {
-                    currentFilters[key] = {
-                        type: 'boolean',
-                        value: null
-                    };
-                }
-            } else if (filterType === 'select') {
-                if (storedValue !== undefined) {
-                    currentFilters[key] = {
-                        type: 'select',
-                        value: storedValue as string | number | null
-                    };
-                } else {
-                    currentFilters[key] = {
-                        type: 'select',
-                        value: null
-                    };
-                }
-            } else if (filterType === 'input') {
+                // Handle boolean values
+                currentFilters[key] = {
+                    type: 'boolean',
+                    value: storedValue !== undefined ? storedValue as boolean : null
+                };
+            } else if (filterType === 'text-input') {
+                // Handle input string values
+                currentFilters[key] = {
+                    type: 'input',
+                    value: storedValue !== undefined ? storedValue as string : ''
+                };
+            } else if (filterType === 'single-select') {
+                // Handle single-select values
                 currentFilters[key] = {
                     type: 'input',
                     value: storedValue !== undefined ? storedValue as string : ''
@@ -166,28 +156,98 @@ export function GenericList<T = DataItem>({
             }
         }
 
-        // Clean up any filters that don't correspond to column definitions
-        for (const key in currentFilters) {
-            if (!columnDefinitions[key] && !['_mclist', '_mcfilter'].includes(key)) {
-                delete currentFilters[key];
-            }
-        }
-
         return currentFilters;
-    };
-
-    const [filters, setFilters] = useState<FilterState>(() => {
-        const initial = GetInitialFilters();
-        return initial;
     });
 
     const [displayFilter, setDisplayFilter] = useState<string>('');
 
-    const { visibleColumns, setVisibleColumns } = UseColumnConfig(storageKey, defaultColumns, columnDefinitions, requiredColumnId);
+    // Derive default columns from column definitions
+    const defaultColumns = useMemo(() => {
+        return Object.entries(columnDefinitions)
+            .filter(([_, column]) => column.isDefault === true) // Only include columns where isDefault is explicitly true
+            .map(([columnId, _]) => columnId);
+    }, [columnDefinitions]);
+
+    // Derive required column ID from column definitions
+    const requiredColumnId = useMemo(() => {
+        const requiredColumn = Object.entries(columnDefinitions).find(([_, column]) => column.isRequired === true);
+        return requiredColumn ? requiredColumn[0] : '';
+    }, [columnDefinitions]);
+
+    const { visibleColumns, setVisibleColumns } = UseColumnConfig(storageKey, defaultColumns, columnDefinitions);
     const [isConfigOpen, setIsConfigOpen] = useState<boolean>(false);
 
     const thRefs = useRef<Record<string, HTMLTableCellElement | null>>({});
     const lastClickedElement = useRef<EventTarget | null>(null);
+
+    // Helper function to render filter components from column definition
+    const renderFilterComponent = (columnId: string, column: ColumnDefinition): React.ReactNode => {
+        if (!hasFilterConfig(column)) {
+            return null;
+        }
+
+        const baseProps = {
+            open: displayFilter === columnId,
+            onOpenChange: (newOpenState: boolean) => {
+                if (newOpenState) {
+                    setDisplayFilter(columnId);
+                } else {
+                    setDisplayFilter('');
+                }
+            },
+            dynamic: column.dynamicFilter,
+            dynamicFilterDelay: dynamicFilterDelay,
+            multiColumn: column.multiColumn,
+            appendClassName: 'absolute top-0 left-0 z-50',
+        };
+
+        switch (column.filterConfig.type) {
+            case 'text-input': {
+                const props: InputFilterComponentProps = {
+                    ...baseProps,
+                    ...column.filterConfig.props,
+                    selected: getFilterValueForComponent(columnId, 'input') as string,
+                    onChange: (value: string) => handleFilterChange(columnId, value),
+                };
+                return React.createElement(TextInput, { key: columnId, ...props });
+            }
+            case 'boolean': {
+                const props: BooleanFilterComponentProps = {
+                    ...baseProps,
+                    ...column.filterConfig.props,
+                    value: getFilterValueForComponent(columnId, 'boolean') as boolean | null,
+                    onToggle: (value: boolean | null) => handleFilterChange(columnId, value),
+                };
+                return React.createElement(BooleanInput, { key: columnId, ...props });
+            }
+            case 'single-select': {
+                const props: SingleSelectFilterComponentProps = {
+                    ...baseProps,
+                    ...column.filterConfig.props,
+                    displayKey: column.filterConfig.props.displayKey || 'label',
+                    valueKey: column.filterConfig.props.valueKey || 'value',
+                    selected: getFilterValueForComponent(columnId, 'single-select') as string | number | null,
+                    onChange: (value: string | number | null) => handleFilterChange(columnId, value),
+                };
+                return React.createElement(SingleSelect, { key: columnId, ...props });
+            }
+            case 'multi-select': {
+                const props: MultiSelectFilterComponentProps = {
+                    ...baseProps,
+                    ...column.filterConfig.props,
+                    displayKey: column.filterConfig.props.displayKey || 'label',
+                    valueKey: column.filterConfig.props.valueKey || 'value',
+                    selected: getFilterValueForComponent(columnId, 'multi-select') as (string | number)[],
+                    onChange: (values: (string | number)[]) => handleFilterChange(columnId, values),
+                    logicType: (filters[columnId] as FilterValue) && isMultiSelectFilter(filters[columnId]) ? filters[columnId].value.logic : 'or',
+                    onLogicChange: (newLogic: 'or' | 'and') => handleLogicChange(columnId, newLogic),
+                };
+                return React.createElement(MultiSelect, { key: columnId, ...props });
+            }
+            default:
+                return null;
+        }
+    };
 
     // Modify visibleColumns if in option selector mode
     const adjustedVisibleColumns = useMemo(() => {
@@ -198,7 +258,7 @@ export function GenericList<T = DataItem>({
     }, [isOptionSelector, visibleColumns]);
 
     // Helper function to get filter value for component props
-    const getFilterValueForComponent = (filterKey: string, filterType?: string): string | boolean | string[] => {
+    const getFilterValueForComponent = (filterKey: string, filterType?: string): string | boolean | string[] | string | number | null => {
         const filterValue = filters[filterKey];
         if (!filterValue) return '';
 
@@ -208,11 +268,12 @@ export function GenericList<T = DataItem>({
         if (filterType === 'boolean' && isBooleanFilter(filterValue)) {
             return filterValue.value;
         }
-        if (filterType === 'select' && isSelectFilter(filterValue)) {
-            return filterValue.value as string;
-        }
-        if (filterType === 'input' && isInputFilter(filterValue)) {
+        if (filterType === 'text-input' && isInputFilter(filterValue)) {
             return filterValue.value;
+        }
+        if (filterType === 'single-select' && isInputFilter(filterValue)) {
+            // For single-select, we store as string but need to return as string | number | null
+            return filterValue.value || null;
         }
         return '';
     };
@@ -226,9 +287,6 @@ export function GenericList<T = DataItem>({
             return filterValue.value.values.length > 0;
         }
         if (isBooleanFilter(filterValue)) {
-            return filterValue.value !== null;
-        }
-        if (isSelectFilter(filterValue)) {
             return filterValue.value !== null;
         }
         if (isInputFilter(filterValue)) {
@@ -247,12 +305,17 @@ export function GenericList<T = DataItem>({
 
         for (const key in filters) {
             const column = columnDefinitions[key];
-            const filterType = column?.filterType;
             const paramName = column?.paramName || key;
             const multiColumns = column?.multiColumn;
             const filterValue = filters[key];
 
-            if (filterType === 'input' && isInputFilter(filterValue)) {
+            if (!hasFilterConfig(column)) {
+                continue;
+            }
+
+            const filterType = column.filterConfig!.type;
+
+            if (filterType === 'text-input' && isInputFilter(filterValue)) {
                 if (multiColumns && filterValue.value !== '') {
                     currentParams.set('mclist', multiColumns.join(','));
                     currentParams.set('mcfilter', filterValue.value);
@@ -268,17 +331,17 @@ export function GenericList<T = DataItem>({
                 if (filterValue.value !== null) {
                     currentParams.set(paramName, String(filterValue.value));
                 }
-            } else if (filterType === 'select' && isSelectFilter(filterValue)) {
-                if (filterValue.value !== null) {
-                    currentParams.set(paramName, String(filterValue.value));
-                }
             }
         }
-
         setIsLoading(true);
-        fetchData(currentParams)
+
+        // Parse the URLSearchParams using the provided query schema
+        const queryObject = Object.fromEntries(currentParams.entries());
+        const queryParams = querySchema.parse(queryObject);
+
+        serviceFunction(queryParams)
             .then(result => {
-                setData(result.data);
+                setData(result.results);
                 setTotal(result.total);
             })
             .catch(error => {
@@ -287,7 +350,7 @@ export function GenericList<T = DataItem>({
             .finally(() => {
                 setIsLoading(false);
             });
-    }, [page, limit, sortKey, sortOrder, filters, fetchData, columnDefinitions]);
+    }, [page, limit, sortKey, sortOrder, filters, querySchema, serviceFunction, columnDefinitions]);
 
     // New useEffect to sync state to localStorage
     useEffect(() => {
@@ -295,15 +358,31 @@ export function GenericList<T = DataItem>({
         setStoredValue('limit', limit);
         setStoredValue('sortKey', sortKey);
         setStoredValue('sortOrder', sortOrder);
-        setStoredValue('filters', filters);
+
+        // Extract and store only filter values, not the entire filter objects
+        const filterValues: Record<string, unknown> = {};
+        for (const key in filters) {
+            const filter = filters[key];
+            if (isInputFilter(filter)) {
+                filterValues[key] = filter.value;
+            } else if (isBooleanFilter(filter)) {
+                filterValues[key] = filter.value;
+            } else if (isMultiSelectFilter(filter)) {
+                filterValues[key] = {
+                    values: filter.value.values,
+                    logic: filter.value.logic
+                };
+            }
+        }
+        setStoredValue('filterValues', filterValues);
     }, [page, limit, sortKey, sortOrder, filters, setStoredValue]);
 
     useEffect(() => {
         const HandleClickOutside = (event: MouseEvent): void => {
             if (displayFilter && thRefs.current[displayFilter] && !thRefs.current[displayFilter]?.contains(event.target as Node)) {
                 // If the closed filter was a multi-select, clear its active state
-                const filterType = columnDefinitions[displayFilter]?.filterType;
-                if (filterType === 'multi-select') {
+                const column = columnDefinitions[displayFilter];
+                if (hasFilterConfig(column) && column.filterConfig!.type === 'multi-select') {
                     setDisplayFilter('');
                 }
                 lastClickedElement.current = event.target;
@@ -316,25 +395,35 @@ export function GenericList<T = DataItem>({
         };
     }, [displayFilter, columnDefinitions]);
 
-    const handleFilterChange = useCallback((filterKey: string, value: string | boolean | string[]): void => {
+    const handleFilterChange = useCallback((filterKey: string, value: string | boolean | string[] | (string | number)[] | string | number | null): void => {
         setFilters(prev => {
             const newFilters = { ...prev };
-            const filterType = columnDefinitions[filterKey]?.filterType;
+            const column = columnDefinitions[filterKey];
+
+            if (!hasFilterConfig(column)) {
+                return newFilters;
+            }
+
+            const filterType = column.filterConfig!.type;
 
             if (filterType === 'multi-select') {
+                // Convert to string array for storage
+                const stringValues = Array.isArray(value) ? value.map(v => String(v)) : [];
                 newFilters[filterKey] = {
                     type: 'multi-select',
-                    value: { values: value as string[], logic: 'or' }
+                    value: { values: stringValues, logic: 'or' }
                 };
             } else if (filterType === 'boolean') {
                 newFilters[filterKey] = {
                     type: 'boolean',
-                    value: value as boolean
+                    value: value as boolean | null
                 };
-            } else if (filterType === 'select') {
+            } else if (filterType === 'single-select') {
+                // Convert to string for storage
+                const stringValue = value !== null ? String(value) : '';
                 newFilters[filterKey] = {
-                    type: 'select',
-                    value: value as string | number | null
+                    type: 'input',
+                    value: stringValue
                 };
             } else {
                 newFilters[filterKey] = {
@@ -349,8 +438,8 @@ export function GenericList<T = DataItem>({
         setPage(1);
 
         // Optionally, close single-select dropdowns immediately
-        const filterType = columnDefinitions[filterKey]?.filterType;
-        if (filterType === 'select' || filterType === 'boolean') {
+        const column = columnDefinitions[filterKey];
+        if (hasFilterConfig(column) && column.filterConfig!.type === 'boolean') {
             setDisplayFilter('');
         }
     }, [columnDefinitions]);
@@ -409,23 +498,22 @@ export function GenericList<T = DataItem>({
 
         // Check if a filter is applied to this column
         const isFiltered = isFilterApplied(columnId);
-        const filterType = column.filterType;
 
         return (
             <th
                 key={columnId}
                 ref={(el: HTMLTableCellElement | null) => { thRefs.current[columnId] = el; }}
                 onClick={() => {
-                    if (displayFilter !== columnId && column.sortable) {
+                    if (displayFilter !== columnId && column.sortable === true) {
                         HandleSort(columnId);
                     }
                 }}
-                className={`relative border-b p-1 text-left text-md border-gray-600 dark:border-gray-700 dark:bg-gray-900 ${column.sortable ? 'cursor-pointer' : ''}`}
+                className={`relative border-b p-1 text-left text-md border-gray-600 dark:border-gray-700 dark:bg-gray-900 ${column.sortable === true ? 'cursor-pointer' : ''}`}
             >
                 <div className="flex items-center justify-between">
                     <div className="flex items-center">
                         <div
-                            title={column.sortable ? (
+                            title={column.sortable === true ? (
                                 sortKey === columnId ? (
                                     sortOrder === 'asc' ? `Sort descending by ${column.label}` : `Clear sort for ${column.label}`
                                 ) : `Sort ascending by ${column.label}`
@@ -433,12 +521,12 @@ export function GenericList<T = DataItem>({
                         >
                             {column.label}
                         </div>
-                        {column.filterable && !column.alwaysVisible && (
+                        {hasFilterConfig(column) && !column.alwaysVisible && (
                             <button onClick={(e) => { e.stopPropagation(); setDisplayFilter(columnId); }} className="ml-2" title={`Filter by ${column.label}`}>
                                 {isFiltered ? <FunnelIconSolid className="w-4 h-4 text-blue-600" /> : <FunnelIconOutline className="w-4 h-4 text-gray-500" />}
                             </button>
                         )}
-                        {column.sortable && sortKey === columnId && (
+                        {column.sortable === true && sortKey === columnId && (
                             <span className="ml-1"
                                 title={sortKey === columnId ? (
                                     sortOrder === 'asc' ? `Sort descending by ${column.label}` : `Clear sort for ${column.label}`
@@ -462,38 +550,7 @@ export function GenericList<T = DataItem>({
                         </button>
                     )}
                 </div>
-                {displayFilter === columnId && column.filterable && !column.alwaysVisible && filterOptions[columnId] && (() => {
-                    const filterType = column.filterType;
-                    const componentProps: FilterComponentProps = {
-                        selected: getFilterValueForComponent(columnId, filterType),
-                        onChange: (value: string | boolean | string[]) => handleFilterChange(columnId, value),
-                        open: displayFilter === columnId,
-                        onOpenChange: (newOpenState: boolean) => {
-                            if (newOpenState) {
-                                setDisplayFilter(columnId);
-                            } else {
-                                setDisplayFilter('');
-                            }
-                        },
-                        dynamic: column.dynamicFilter,
-                        dynamicFilterDelay: dynamicFilterDelay,
-                        multiColumn: column.multiColumn,
-                        appendClassName: 'absolute top-0 left-0 z-50',
-                        ...filterOptions[columnId].props,
-                    };
-
-                    if (filterType === 'multi-select') {
-                        componentProps.logicType = (filters[columnId] as FilterValue) && isMultiSelectFilter(filters[columnId]) ? filters[columnId].value.logic : 'or';
-                        componentProps.onLogicChange = (newLogic: string) => handleLogicChange(columnId, newLogic);
-                    }
-
-                    if (filterType === 'boolean') {
-                        componentProps.value = (filters[columnId] as FilterValue) && isBooleanFilter(filters[columnId]) ? filters[columnId].value : null;
-                        componentProps.onToggle = (value: boolean) => handleFilterChange(columnId, value);
-                    }
-
-                    return React.createElement(filterOptions[columnId].component, { key: columnId, ...componentProps });
-                })()}
+                {displayFilter === columnId && hasFilterConfig(column) && !column.alwaysVisible && renderFilterComponent(columnId, column)}
             </th>
         );
     };
@@ -507,23 +564,22 @@ export function GenericList<T = DataItem>({
             <div className="relative">
                 {/* Always visible filters */}
                 {Object.entries(columnDefinitions).map(([columnId, column]) => {
-                    if (column.filterType === 'input' && column.alwaysVisible) {
-                        const FilterComponent = filterOptions[columnId]?.component;
-                        if (FilterComponent) {
-                            return (
-                                <div key={columnId} className="mb-2 flex items-center">
-                                    <label htmlFor={`always-visible-filter-${columnId}`} className="mr-2 font-semibold dark:text-white">{column.filterLabel || column.label}:</label>
-                                    {React.createElement(FilterComponent, {
-                                        id: `always-visible-filter-${columnId}`,
-                                        selected: getFilterValueForComponent(columnId, column.filterType),
-                                        onChange: (value: string | boolean | string[]) => handleFilterChange(columnId, value),
-                                        dynamic: column.dynamicFilter,
-                                        dynamicFilterDelay: dynamicFilterDelay,
-                                        ...filterOptions[columnId].props,
-                                    })}
-                                </div>
-                            );
-                        }
+                    if (hasFilterConfig(column) && column.filterConfig.type === 'text-input' && column.alwaysVisible) {
+                        const props: InputFilterComponentProps = {
+                            id: `always-visible-filter-${columnId}`,
+                            selected: getFilterValueForComponent(columnId, 'input') as string,
+                            onChange: (value: string) => handleFilterChange(columnId, value),
+                            dynamic: column.dynamicFilter,
+                            dynamicFilterDelay: dynamicFilterDelay,
+                            ...column.filterConfig.props,
+                        };
+
+                        return (
+                            <div key={columnId} className="mb-2 flex items-center">
+                                <label htmlFor={`always-visible-filter-${columnId}`} className="mr-2 font-semibold dark:text-white">{column.filterLabel || column.label}:</label>
+                                {React.createElement(TextInput, props)}
+                            </div>
+                        );
                     }
                     return null;
                 })}
@@ -683,7 +739,6 @@ export function GenericList<T = DataItem>({
                     visibleColumns={visibleColumns}
                     setVisibleColumns={setVisibleColumns}
                     columnDefinitions={columnDefinitions}
-                    requiredColumnId={requiredColumnId}
                 />
             )}
         </div>

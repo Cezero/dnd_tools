@@ -34,7 +34,7 @@ export async function GetFeatById(req: ValidatedParamsT<FeatIdParamRequest, Feat
     const feat = await featService.getFeatById(req.params);
 
     if (!feat) {
-        res.status(404).send('Feat not found');
+        res.status(404).json({error: 'Feat not found'});
         return;
     }
 
@@ -45,16 +45,16 @@ export async function GetFeatById(req: ValidatedParamsT<FeatIdParamRequest, Feat
  * Creates a new feat.
  */
 export async function CreateFeat(req: ValidatedBodyT<CreateFeatRequest>, res: Response) {
-    const result = await featService.createFeat(req.body);
-    res.status(201).json(result);
+    await featService.createFeat(req.body);
+    res.status(201).json({message: 'Feat created successfully'});
 }
 
 /**
  * Updates an existing feat.
  */
 export async function UpdateFeat(req: ValidatedParamsBodyT<FeatIdParamRequest, UpdateFeatRequest>, res: Response) {
-    const result = await featService.updateFeat(req.params, req.body);
-    res.status(200).json(result);
+    await featService.updateFeat(req.params, req.body);
+    res.status(200).json({message: 'Feat updated successfully'});
 }
 
 /**
@@ -62,5 +62,5 @@ export async function UpdateFeat(req: ValidatedParamsBodyT<FeatIdParamRequest, U
  */
 export async function DeleteFeat(req: ValidatedParamsT<FeatIdParamRequest>, res: Response) {
     await featService.deleteFeat(req.params);
-    res.status(204).send();
+    res.status(200).json({message: 'Feat deleted successfully'});
 } 

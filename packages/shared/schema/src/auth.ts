@@ -43,12 +43,6 @@ export const JwtPayloadSchema = AuthUserSchema.extend({
     exp: z.number(),
 });
 
-// Schema for login response
-export const LoginResponseSchema = z.object({
-    token: z.string(),
-    user: AuthUserSchema,
-});
-
 export const AuthServiceResultSchema = z.object({
     success: z.boolean(),
     error: z.string().nullable(),
@@ -89,6 +83,5 @@ export type RegisterUserRequest = z.infer<typeof RegisterUserSchema>;
 export type LoginUserRequest = z.infer<typeof LoginUserSchema>;
 export type AuthHeaderRequest = z.infer<typeof AuthHeaderSchema>;
 export type JwtPayload = z.infer<typeof JwtPayloadSchema>;
-export type LoginResponse = z.infer<typeof LoginResponseSchema>; 
 export type AuthServiceResult = z.infer<typeof AuthServiceResultSchema>;
 export type AuthUser = z.infer<typeof AuthUserSchema>;

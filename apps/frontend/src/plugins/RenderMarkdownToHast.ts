@@ -1,16 +1,18 @@
-import { unified } from 'unified';
-import remarkParse from 'remark-parse';
-import supersub from 'remark-supersub';
-import remarkRehype from 'remark-rehype';
-import rehypeRaw from 'rehype-raw'; // optional if you want raw HTML parsing
-import { RemarkEntitiesAndEmbeds } from '@/plugins/RemarkEntitiesAndEmbeds'; // your plugin
-import { RehypeResolveEntitiesAndEmbeds } from '@/plugins/RehypeResolveEntitiesAndEmbeds';
-import rehypeFormat from 'rehype-format';
 import { Root } from 'hast';
+import rehypeFormat from 'rehype-format';
+import rehypeRaw from 'rehype-raw'; // optional if you want raw HTML parsing
+import remarkParse from 'remark-parse';
+import remarkRehype from 'remark-rehype';
+import supersub from 'remark-supersub';
+import { unified } from 'unified';
+
+import { RehypeResolveEntitiesAndEmbeds } from '@/plugins/RehypeResolveEntitiesAndEmbeds';
+import { RemarkEntitiesAndEmbeds } from '@/plugins/RemarkEntitiesAndEmbeds'; // your plugin
+
 
 interface RenderMarkdownToHastOptions {
     allowRawHtml?: boolean;
-    extraRehypePlugins?: any[];
+    extraRehypePlugins?: unknown[];
     tableClass?: string;
 }
 

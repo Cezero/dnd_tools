@@ -1,18 +1,19 @@
-import { unified } from 'unified';
-import remarkParse from 'remark-parse';
-import remarkGfm from 'remark-gfm';
-import supersub from 'remark-supersub';
-import { RemarkEntitiesAndEmbeds } from '@/plugins/RemarkEntitiesAndEmbeds';
-import rehypeRemark from 'remark-rehype';
 import rehypeRaw from 'rehype-raw';
 import rehypeStringify from 'rehype-stringify';
-import { RehypeResolveEntitiesAndEmbeds } from '@/plugins/RehypeResolveEntitiesAndEmbeds';
+import remarkGfm from 'remark-gfm';
+import remarkParse from 'remark-parse';
+import rehypeRemark from 'remark-rehype';
+import supersub from 'remark-supersub';
+import { unified } from 'unified';
+
 import { RehypeReplaceVariables } from '@/plugins/RehypeReplaceVariables';
+import { RehypeResolveEntitiesAndEmbeds } from '@/plugins/RehypeResolveEntitiesAndEmbeds';
+import { RemarkEntitiesAndEmbeds } from '@/plugins/RemarkEntitiesAndEmbeds';
 
 interface RenderMarkdownOptions {
     markdown: string;
     tableClass?: string;
-    userVars?: Record<string, any>;
+    userVars?: Record<string, unknown>;
 }
 
 /**

@@ -1,27 +1,17 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { GenericList } from '@/components/generic-list';
-import { COLUMN_DEFINITIONS, DEFAULT_COLUMNS, ClassFilterOptions } from '@/features/admin/features/class-management/ClassConfig';
-import { FetchClasses, DeleteClass } from '@/features/admin/features/class-management/ClassService';
+
 import { useAuthAuto } from '@/components/auth';
-import { RPG_DICE, EDITION_MAP } from '@shared/static-data';
-import { ClassResponse } from '@shared/schema';
+import { GenericList } from '@/components/generic-list';
+import { COLUMN_DEFINITIONS } from '@/features/admin/features/class-management/ClassConfig';
+import { ClassService } from '@/features/admin/features/class-management/ClassService';
+import { ClassQuerySchema, ClassResponse } from '@shared/schema';
+import { RPG_DICE, EDITION_MAP, ABILITY_MAP } from '@shared/static-data';
 
-
-export function ClassList(): React.JSX.Element {
+export default function ClassList(): React.JSX.Element {
     const navigate = useNavigate();
     const location = useLocation();
-    const { isLoading: isAuthLoading } = UseAuth();
-    const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
-
-    const memoizedClassFilterOptions = useMemo(() => (
-        ClassFilterOptions
-    ), []);
-
-
-    const classFetchData = useCallback(async (params: URLSearchParams) => {
-        return await FetchClasses(params);
-    }, []);
+    const { isLoading: isAuthLoading } = useAuthAuto();
 
     const HandleNewClassClick = (): void => {
         navigate('/admin/classes/new/edit', { state: { fromListParams: location.search } });
@@ -30,8 +20,7 @@ export function ClassList(): React.JSX.Element {
     const HandleDeleteClass = async (id: number): Promise<void> => {
         if (window.confirm('Are you sure you want to delete this class?')) {
             try {
-                await DeleteClass(id);
-                setRefreshTrigger(prev => prev + 1);
+                await ClassService.deleteClass(undefined, { id });
             } catch (error) {
                 console.error('Failed to delete class:', error);
                 alert('Failed to delete class.');
@@ -54,15 +43,17 @@ export function ClassList(): React.JSX.Element {
                     {item.name}
                 </a>
             );
-        } else if (columnId === 'edition_id') {
-            cellContent = EDITION_MAP[item.editionId]?.abbr;
-        } else if (columnId === 'is_prestige' || columnId === 'display' || columnId === 'caster') {
-            const value = columnId === 'is_prestige' ? item.isPrestige :
-                columnId === 'display' ? item.isVisible :
+        } else if (columnId === 'editionId') {
+            cellContent = EDITION_MAP[item.editionId]?.abbreviation;
+        } else if (columnId === 'isPrestige' || columnId === 'isVisible' || columnId === 'canCastSpells') {
+            const value = columnId === 'isPrestige' ? item.isPrestige :
+                columnId === 'isVisible' ? item.isVisible :
                     item.canCastSpells;
             cellContent = value ? 'Yes' : 'No';
-        } else if (columnId === 'hit_die') {
-            cellContent = `${RPG_DICE[item.hitDie].name}`;
+        } else if (columnId === 'hitDie') {
+            cellContent = `${RPG_DICE[item.hitDie]?.name || 'Unknown'}`;
+        } else if (columnId === 'castingAbilityId') {
+            cellContent = item.castingAbilityId ? ABILITY_MAP[item.castingAbilityId]?.name || 'Unknown' : 'None';
         }
 
         return cellContent;
@@ -85,18 +76,15 @@ export function ClassList(): React.JSX.Element {
             </div>
             <GenericList<ClassResponse>
                 storageKey="classes-list"
-                defaultColumns={DEFAULT_COLUMNS}
-                requiredColumnId="name"
                 columnDefinitions={COLUMN_DEFINITIONS}
-                fetchData={classFetchData}
+                querySchema={ClassQuerySchema}
+                serviceFunction={ClassService.getClasses}
                 renderCell={RenderCell}
                 detailPagePath="/admin/classes/:id"
                 idKey="id"
-                refreshTrigger={refreshTrigger}
                 itemDesc="class"
                 editHandler={(item) => navigate(`/admin/classes/${item.id}/edit`)}
                 deleteHandler={(item) => HandleDeleteClass(item.id)}
-                filterOptions={memoizedClassFilterOptions}
             />
         </div>
     );

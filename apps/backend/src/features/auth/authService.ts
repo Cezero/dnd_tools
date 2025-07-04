@@ -56,7 +56,6 @@ export const authService: AuthService = {
                     preferredEditionId: true
                 }
             });
-
             if (!user) {
                 return { success: false, error: 'Invalid credentials', token: null, user: null };
             }
@@ -68,10 +67,7 @@ export const authService: AuthService = {
 
             const token = jwt.sign(
                 {
-                    id: user.id,
-                    username: user.username,
-                    is_admin: user.isAdmin,
-                    preferred_edition_id: user.preferredEditionId
+                    ...user
                 },
                 config.jwt.secret,
                 { expiresIn: config.jwt.expiresIn }
@@ -81,12 +77,7 @@ export const authService: AuthService = {
                 success: true,
                 error: null,
                 token,
-                user: {
-                    id: user.id,
-                    username: user.username,
-                    is_admin: user.isAdmin,
-                    preferred_edition_id: user.preferredEditionId
-                }
+                user: user
             };
         } catch (err) {
             console.error('Login error:', err);
@@ -117,12 +108,7 @@ export const authService: AuthService = {
                 success: true,
                 error: null,
                 token: null,
-                user: {
-                    id: user.id,
-                    username: user.username,
-                    is_admin: user.isAdmin,
-                    preferred_edition_id: user.preferredEditionId
-                }
+                user: user
             };
         } catch (err) {
             console.error('Token verification error:', err);
@@ -152,21 +138,13 @@ export const authService: AuthService = {
             // Generate a new token with a refreshed expiration and updated preferred_edition_id
             const newToken = jwt.sign(
                 {
-                    id: user.id,
-                    username: user.username,
-                    is_admin: user.isAdmin,
-                    preferred_edition_id: user.preferredEditionId
+                    ...user
                 },
                 config.jwt.secret,
                 { expiresIn: config.jwt.expiresIn }
             );
 
-            return { success: true, error: null, token: newToken, user: {
-                id: user.id,
-                username: user.username,
-                is_admin: user.isAdmin,
-                preferred_edition_id: user.preferredEditionId
-            } };
+            return { success: true, error: null, token: newToken, user: user };
         } catch (err) {
             console.error('Token refresh error:', err);
             return { success: false, error: 'Invalid or expired token', token: null, user: null };

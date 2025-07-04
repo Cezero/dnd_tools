@@ -1,5 +1,6 @@
-import { UseAuth } from './AuthProvider';
 import { useCallback } from 'react';
+
+import { UseAuth } from './AuthProvider';
 import type { UseAuthAutoReturn } from './types';
 
 // Enhanced auth hook with additional utilities

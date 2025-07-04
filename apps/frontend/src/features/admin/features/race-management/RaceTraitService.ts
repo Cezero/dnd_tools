@@ -1,52 +1,77 @@
-import { Api } from '@/services/Api';
+import { z } from 'zod';
 
-export const FetchRaceTraits = async (searchParams: URLSearchParams): Promise<{ data: any[]; total: number }> => {
-    try {
-        const response = await Api(`/races/traits?${searchParams.toString()}`);
-        const traits = Array.isArray(response.results) ? response.results : [];
-        const total = response.total !== undefined ? response.total : traits.length;
-        return { data: traits, total: total };
-    } catch (error) {
-        console.error('Error fetching race traits:', error);
-        throw error;
-    }
-};
+import { typedApi } from '@/services/Api';
+import {
+    RaceTraitQuerySchema,
+    RaceTraitSlugParamSchema,
+    CreateRaceTraitSchema,
+    UpdateRaceTraitSchema,
+    RaceTraitSchema,
+    RaceTraitQueryResponseSchema,
+} from '@shared/schema';
 
-export const FetchRaceTraitBySlug = async (slug: string): Promise<any> => {
-    try {
-        const response = await Api(`/races/traits/${slug}`, { method: 'GET' });
-        return response;
-    } catch (error) {
-        console.error(`Error fetching race trait with SLUG ${slug}:`, error);
-        throw error;
-    }
-};
+/**
+ * RaceTraitService with path parameter support
+ * 
+ * Usage examples:
+ * 
+ * // Get race traits with query parameters
+ * const traits = await RaceTraitService.getRaceTraits({ page: 1, limit: 10 });
+ * 
+ * // Get race trait by slug (path parameter)
+ * const trait = await RaceTraitService.getRaceTraitBySlug(undefined, { slug: "darkvision" });
+ * 
+ * // Create race trait
+ * const newTrait = await RaceTraitService.createRaceTrait({ slug: "darkvision", name: "Darkvision" });
+ * 
+ * // Update race trait (path parameter + body)
+ * const updatedTrait = await RaceTraitService.updateRaceTrait(
+ *   { name: "Updated Darkvision" }, 
+ *   { slug: "darkvision" }
+ * );
+ * 
+ * // Delete race trait (path parameter)
+ * await RaceTraitService.deleteRaceTrait(undefined, { slug: "darkvision" });
+ */
+export const RaceTraitService = {
+    // Get race traits with query parameters
+    getRaceTraits: typedApi<typeof RaceTraitQuerySchema, typeof RaceTraitQueryResponseSchema>({
+        path: '/races/traits',
+        method: 'GET',
+        requestSchema: RaceTraitQuerySchema,
+        responseSchema: RaceTraitQueryResponseSchema
+    }),
 
-export const CreateRaceTrait = async (traitData: any): Promise<any> => {
-    try {
-        const response = await Api('/races/traits', { method: 'POST', body: JSON.stringify(traitData) });
-        return response.data;
-    } catch (error) {
-        console.error('Error creating race trait:', error);
-        throw error;
-    }
-};
+    // Get race trait by slug with path parameter
+    getRaceTraitBySlug: typedApi<undefined, typeof RaceTraitSchema, typeof RaceTraitSlugParamSchema>({
+        path: '/races/traits/:slug',
+        method: 'GET',
+        paramsSchema: RaceTraitSlugParamSchema,
+        responseSchema: RaceTraitSchema,
+    }),
 
-export const UpdateRaceTrait = async (slug: string, traitData: any): Promise<any> => {
-    try {
-        const response = await Api(`/races/traits/${slug}`, { method: 'PUT', body: JSON.stringify(traitData) });
-        return response.data;
-    } catch (error) {
-        console.error(`Error updating race trait with ID ${slug}:`, error);
-        throw error;
-    }
-};
+    // Create race trait
+    createRaceTrait: typedApi<typeof CreateRaceTraitSchema, typeof RaceTraitSchema>({
+        path: '/races/traits',
+        method: 'POST',
+        requestSchema: CreateRaceTraitSchema,
+        responseSchema: RaceTraitSchema,
+    }),
 
-export const DeleteRaceTrait = async (slug: string): Promise<void> => {
-    try {
-        await Api(`/races/traits/${slug}`, { method: 'DELETE' });
-    } catch (error) {
-        console.error(`Error deleting race trait with ID ${slug}:`, error);
-        throw error;
-    }
+    // Update race trait with path parameter
+    updateRaceTrait: typedApi<typeof UpdateRaceTraitSchema, typeof RaceTraitSchema, typeof RaceTraitSlugParamSchema>({
+        path: '/races/traits/:slug',
+        method: 'PUT',
+        requestSchema: UpdateRaceTraitSchema,
+        paramsSchema: RaceTraitSlugParamSchema,
+        responseSchema: RaceTraitSchema,
+    }),
+
+    // Delete race trait with path parameter
+    deleteRaceTrait: typedApi<undefined, z.ZodObject<Record<string, never>>, typeof RaceTraitSlugParamSchema>({
+        path: '/races/traits/:slug',
+        method: 'DELETE',
+        paramsSchema: RaceTraitSlugParamSchema,
+        responseSchema: z.object({}),
+    }),
 };

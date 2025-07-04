@@ -1,8 +1,8 @@
-import { ClassList } from '@/features/admin/features/class-management/ClassList';
-import { ClassDetail } from '@/features/admin/features/class-management/ClassDetail';
-import { ClassEdit } from '@/features/admin/features/class-management/ClassEdit';
-import { TextInput, MultiSelect, BooleanInput, SingleSelect } from '@/components/generic-list';
-import { RPG_DICE, EDITION_LIST, SOURCE_BOOK_LIST } from '@shared/static-data';
+import { ColumnDefinition } from '@/components/generic-list';
+import ClassDetail from '@/features/admin/features/class-management/ClassDetail';
+import ClassEdit from '@/features/admin/features/class-management/ClassEdit';
+import ClassList from '@/features/admin/features/class-management/ClassList';
+import { RPG_DICE_SELECT_LIST, ABILITY_SELECT_LIST, EDITION_SELECT_LIST } from '@shared/static-data';
 
 export const routes = [
     { path: 'classes', component: ClassList, exact: true, requireAuth: true, requireAdmin: true },
@@ -10,106 +10,85 @@ export const routes = [
     { path: 'classes/:id/edit', component: ClassEdit, exact: true, requireAuth: true, requireAdmin: true },
 ];
 
-export const COLUMN_DEFINITIONS = {
+export const COLUMN_DEFINITIONS: Record<string, ColumnDefinition> = {
     name: {
         label: 'Name',
-        type: 'text',
         sortable: true,
-        filterable: true,
-        filterType: 'input'
+        isDefault: true,
+        isRequired: true,
+        filterConfig: {
+            type: 'text-input',
+            props: { placeholder: 'Filter by name...' }
+        }
     },
-    abbr: {
+    abbreviation: {
         label: 'Abbreviation',
-        type: 'text',
         sortable: true,
-        filterable: false
+        isDefault: true
     },
-    edition_id: {
+    editionId: {
         label: 'Edition',
-        type: 'text',
         sortable: true,
-        filterable: true,
-        filterType: 'multi-select'
+        isDefault: true,
+        filterConfig: {
+            type: 'multi-select',
+            props: {
+                options: EDITION_SELECT_LIST,
+                className: 'w-32'
+            }
+        }
     },
-    is_prestige: {
+    isPrestige: {
         label: 'Prestige Class',
-        type: 'boolean',
         sortable: true,
-        filterable: true,
-        filterType: 'boolean'
+        isDefault: true,
+        filterConfig: {
+            type: 'boolean'
+        }
     },
-    can_cast: {
+    canCastSpells: {
         label: 'Caster',
-        type: 'boolean',
         sortable: true,
-        filterable: true,
-        filterType: 'boolean'
+        isDefault: true,
+        filterConfig: {
+            type: 'boolean'
+        }
     },
-    hit_die: {
+    hitDie: {
         label: 'Hit Die',
-        type: 'number',
         sortable: true,
-        filterable: true,
-        filterType: 'single-select'
+        isDefault: true,
+        filterConfig: {
+            type: 'single-select',
+            props: {
+                options: RPG_DICE_SELECT_LIST,
+                className: 'w-32'
+            }
+        }
     },
-    display: {
+    isVisible: {
         label: 'Display',
-        type: 'boolean',
         sortable: true,
-        filterable: true,
-        filterType: 'boolean'
+        filterConfig: {
+            type: 'boolean'
+        }
     },
-    source: {
-        label: 'Sources',
-        sortable: false,
-        filterable: true,
-        filterType: 'multi-select'
+    skillPoints: {
+        label: 'Skill Points',
+        sortable: true,
+    },
+    castingAbilityId: {
+        label: 'Casting Ability',
+        sortable: true,
+        filterConfig: {
+            type: 'single-select',
+            props: {
+                options: ABILITY_SELECT_LIST,
+                className: 'w-32'
+            }
+        }
+    },
+    description: {
+        label: 'Description',
     }
 };
-
-export const ClassFilterOptions = {
-    name: { component: TextInput, props: { type: 'text', placeholder: 'Filter by name...' } },
-    edition_id: {
-        component: MultiSelect,
-        props: {
-            options: EDITION_LIST,
-            displayKey: 'abbr',
-            valueKey: 'id',
-            className: 'w-32'
-        }
-    },
-    is_prestige: { component: BooleanInput },
-    display: { component: BooleanInput },
-    can_cast: { component: BooleanInput },
-    hit_die: {
-        component: SingleSelect,
-        props: {
-            options: Object.values(RPG_DICE),
-            displayKey: 'name',
-            valueKey: 'id',
-            className: 'w-32'
-        }
-    },
-    source: {
-        component: MultiSelect,
-        props: {
-            options: SOURCE_BOOK_LIST.sort((a, b) => {
-                if (a.sort_order !== 999 && b.sort_order !== 999) {
-                    return a.sort_order - b.sort_order;
-                } else if (a.sort_order !== 999) {
-                    return -1;
-                } else if (b.sort_order !== 999) {
-                    return 1;
-                } else {
-                    return a.book_id - b.book_id;
-                }
-            }),
-            displayKey: 'title',
-            valueKey: 'book_id',
-            placeholder: 'Select Sources',
-            className: 'w-52'
-        }
-    },
-};
-
-export const DEFAULT_COLUMNS = ['name', 'abbr', 'edition_id', 'is_prestige', 'source', 'can_cast', 'hit_die'];

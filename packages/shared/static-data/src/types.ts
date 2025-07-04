@@ -1,4 +1,4 @@
-import { ClassResponse, SkillResponse, SpellResponse, SourceBookWithSpellsResponse } from '@shared/schema';
+import { ClassResponse, SkillResponse, SpellInQueryResponse, SourceBookWithSpellsResponse } from '@shared/schema';
 
 export interface Ability {
     id: number;
@@ -81,6 +81,12 @@ export interface Item {
     sourceId: number;
 }
 
+export interface Spell {
+    id: number;
+    name: string;
+    editionId: number;
+}
+
 export interface SpellComponent {
     id:  number;
     abbreviation: string;
@@ -150,52 +156,34 @@ export interface ProficiencyType {
     name: string;
 }
 
+export interface ClassNameMap {
+    [key: string]: string;
+}
 
-export type StaticClassData = Pick<ClassResponse, 'id' | 'name' | 'abbreviation' | 'editionId' | 'isPrestige' | 'isVisible' | 'canCastSpells'> & {
-    // Optional fields with defaults that will be applied when converting to full Class type
-    hitDie?: number;
-    description?: string | null;
-    skillPoints?: number;
-    castingAbilityId?: number | null;
-};
+export interface Skill {
+    id: number;
+    name: string;
+    abilityId: number;
+    trainedOnly: boolean;
+}
 
-export type StaticSkillData = Pick<SkillResponse, 'id' | 'name' | 'abilityId' | 'trainedOnly'> & {
-    // Optional fields with defaults that will be applied when converting to full Skill type
-    checkDescription?: string | null;
-    actionDescription?: string | null;
-    retryTypeId?: number | null;
-    retryDescription?: string | null;
-    specialNotes?: string | null;
-    synergyNotes?: string | null;
-    untrainedNotes?: string | null;
-    affectedByArmor?: boolean;
-    description?: string | null;
-};
+export interface SourceBook {
+    id: number;
+    name: string;
+    abbreviation: string;
+    editionId: number;
+    hasSpells: boolean;
+}
 
-// Type for our static data that includes only the fields we have
-export type StaticSourceBookData = Pick<SourceBookWithSpellsResponse, 'id' | 'name' | 'abbreviation' | 'editionId' | 'hasSpells'> & {
-    // Optional fields with defaults that will be applied when converting to full Class type
-    isVisible?: boolean;
-    description?: string | null;
-    releaseDate?: Date | null;
-};
-
-export type StaticSpellData = Pick<SpellResponse, 'id' | 'name' | 'editionId'> & {
-    // Optional fields with defaults that will be applied when converting to full Class type
-    description?: string | null;
-    summary?: string | null;
-    castingTime?: string | null;
-    range?: string | null;
-    rangeTypeId?: number | null;
-    rangeValue?: string | null;
-    area?: string | null;
-    duration?: string | null;
-    savingThrow?: string | null;
-    spellResistance?: string | null;
-    effect?: string | null;
-    target?: string | null;
-    baseLevel?: number;
-};
+export interface Class {
+    id: number;
+    name: string;
+    abbreviation: string;
+    editionId: number;
+    isPrestige: boolean;
+    isVisible: boolean;
+    canCastSpells: boolean;
+}
 
 // Map types
 export type AbilityMap = { [key: number]: Ability };
@@ -208,12 +196,13 @@ export type LanguageMap = { [key: number]: Language };
 export type EditionMap = { [key: number]: Edition };
 export type FeatMap = { [key: number]: Feat };
 export type ItemMap = { [key: number]: Item };
-export type SpellMap = { [key: number]: StaticSpellData };
+export type SpellMap = { [key: number]: Spell };
+export type SpellNameMap = { [key: string]: number };
 export type SpellComponentMap = { [key: number]: SpellComponent };
 export type SpellDescriptorMap = { [key: number]: SpellDescriptor };
 export type SpellRangeMap = { [key: number]: SpellRange };
 export type SpellSchoolMap = { [key: number]: SpellSchool };
 export type SpellSubschoolMap = { [key: number]: SpellSubschool };
-export type SkillMap = { [key: number]: StaticSkillData };
-export type SourceBookMap = { [key: number]: StaticSourceBookData };
-export type ClassMap = { [key: number]: StaticClassData };
+export type SkillMap = { [key: number]: Skill };
+export type SourceBookMap = { [key: number]: SourceBook };
+export type ClassMap = { [key: number]: Class };

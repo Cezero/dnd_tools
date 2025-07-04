@@ -20,12 +20,12 @@ exports.Prisma = Prisma
 exports.$Enums = {}
 
 /**
- * Prisma Client JS version: 6.10.1
- * Query Engine version: 9b628578b3b7cae625e8c927178f15a170e74a9c
+ * Prisma Client JS version: 6.11.0
+ * Query Engine version: 9c30299f5a0ea26a96790e13f796dc6094db3173
  */
 Prisma.prismaVersion = {
-  client: "6.10.1",
-  engine: "9b628578b3b7cae625e8c927178f15a170e74a9c"
+  client: "6.11.0",
+  engine: "9c30299f5a0ea26a96790e13f796dc6094db3173"
 }
 
 Prisma.PrismaClientKnownRequestError = () => {
@@ -143,14 +143,15 @@ exports.Prisma.ClassFeatureScalarFieldEnum = {
 };
 
 exports.Prisma.ClassSpellLevelScalarFieldEnum = {
-  id: 'id',
   classId: 'classId',
-  spellLevel: 'spellLevel'
+  level: 'level',
+  spellLevel: 'spellLevel',
+  numSpells: 'numSpells'
 };
 
 exports.Prisma.ClassLevelAttributeScalarFieldEnum = {
-  id: 'id',
   classId: 'classId',
+  level: 'level',
   baseAttackBonus: 'baseAttackBonus',
   fortSave: 'fortSave',
   refSave: 'refSave',
@@ -158,21 +159,17 @@ exports.Prisma.ClassLevelAttributeScalarFieldEnum = {
 };
 
 exports.Prisma.ClassSkillMapScalarFieldEnum = {
-  id: 'id',
   classId: 'classId',
   skillId: 'skillId'
 };
 
 exports.Prisma.ClassSourceMapScalarFieldEnum = {
-  id: 'id',
   classId: 'classId',
-  bookId: 'bookId',
   pageNumber: 'pageNumber',
   sourceBookId: 'sourceBookId'
 };
 
 exports.Prisma.SpellLevelMapScalarFieldEnum = {
-  id: 'id',
   classId: 'classId',
   spellId: 'spellId',
   level: 'level',
@@ -199,33 +196,27 @@ exports.Prisma.SpellScalarFieldEnum = {
 };
 
 exports.Prisma.SpellDescriptorMapScalarFieldEnum = {
-  id: 'id',
   spellId: 'spellId',
   descriptorId: 'descriptorId'
 };
 
 exports.Prisma.SpellSchoolMapScalarFieldEnum = {
-  id: 'id',
   spellId: 'spellId',
   schoolId: 'schoolId'
 };
 
 exports.Prisma.SpellSourceMapScalarFieldEnum = {
-  id: 'id',
   spellId: 'spellId',
-  bookId: 'bookId',
-  pageNumber: 'pageNumber',
-  sourceBookId: 'sourceBookId'
+  sourceBookId: 'sourceBookId',
+  pageNumber: 'pageNumber'
 };
 
 exports.Prisma.SpellSubschoolMapScalarFieldEnum = {
-  id: 'id',
   spellId: 'spellId',
-  schoolId: 'schoolId'
+  subSchoolId: 'subSchoolId'
 };
 
 exports.Prisma.SpellComponentMapScalarFieldEnum = {
-  id: 'id',
   spellId: 'spellId',
   componentId: 'componentId'
 };
@@ -295,7 +286,7 @@ exports.Prisma.RaceTraitScalarFieldEnum = {
 
 exports.Prisma.RaceTraitMapScalarFieldEnum = {
   raceId: 'raceId',
-  traitId: 'traitId',
+  traitSlug: 'traitSlug',
   value: 'value'
 };
 
@@ -312,11 +303,9 @@ exports.Prisma.RaceLanguageMapScalarFieldEnum = {
 };
 
 exports.Prisma.RaceSourceMapScalarFieldEnum = {
-  id: 'id',
   raceId: 'raceId',
-  bookId: 'bookId',
-  pageNumber: 'pageNumber',
-  sourceBookId: 'sourceBookId'
+  sourceBookId: 'sourceBookId',
+  pageNumber: 'pageNumber'
 };
 
 exports.Prisma.ArmorScalarFieldEnum = {
@@ -339,6 +328,7 @@ exports.Prisma.WeaponScalarFieldEnum = {
   name: 'name',
   description: 'description',
   category: 'category',
+  type: 'type',
   cost: 'cost',
   damageSmall: 'damageSmall',
   damageMedium: 'damageMedium',
@@ -365,26 +355,22 @@ exports.Prisma.ReferenceTableScalarFieldEnum = {
 };
 
 exports.Prisma.ReferenceTableColumnScalarFieldEnum = {
-  id: 'id',
   tableSlug: 'tableSlug',
-  columnIndex: 'columnIndex',
+  index: 'index',
   header: 'header',
   span: 'span',
   alignment: 'alignment'
 };
 
 exports.Prisma.ReferenceTableRowScalarFieldEnum = {
-  id: 'id',
   tableSlug: 'tableSlug',
-  rowIndex: 'rowIndex',
-  label: 'label'
+  index: 'index'
 };
 
 exports.Prisma.ReferenceTableCellScalarFieldEnum = {
-  id: 'id',
   tableSlug: 'tableSlug',
-  rowId: 'rowId',
-  columnId: 'columnId',
+  columnIndex: 'columnIndex',
+  rowIndex: 'rowIndex',
   value: 'value',
   colSpan: 'colSpan',
   rowSpan: 'rowSpan'
@@ -491,8 +477,7 @@ exports.Prisma.RaceTraitOrderByRelevanceFieldEnum = {
 };
 
 exports.Prisma.RaceTraitMapOrderByRelevanceFieldEnum = {
-  traitId: 'traitId',
-  value: 'value'
+  traitSlug: 'traitSlug'
 };
 
 exports.Prisma.ArmorOrderByRelevanceFieldEnum = {
@@ -527,8 +512,7 @@ exports.Prisma.ReferenceTableColumnOrderByRelevanceFieldEnum = {
 };
 
 exports.Prisma.ReferenceTableRowOrderByRelevanceFieldEnum = {
-  tableSlug: 'tableSlug',
-  label: 'label'
+  tableSlug: 'tableSlug'
 };
 
 exports.Prisma.ReferenceTableCellOrderByRelevanceFieldEnum = {

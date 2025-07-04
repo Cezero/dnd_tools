@@ -1,12 +1,13 @@
 import { z } from 'zod';
 import { PageQueryResponseSchema, PageQuerySchema } from './query.js';
+import { optionalBooleanParam, optionalIntegerParam, optionalStringParam } from './utils.js';
 
 // Schema for race query parameters
 export const RaceQuerySchema = PageQuerySchema.extend({
-    name: z.string().optional(),
-    description: z.string().optional(),
-    editionId: z.string().optional().transform((val: string | undefined) => val ? parseInt(val) : undefined),
-    isVisible: z.string().optional().transform((val: string | undefined) => val === 'true'),
+    name: optionalStringParam(),
+    description: optionalStringParam(),
+    editionId: optionalIntegerParam(),
+    isVisible: optionalBooleanParam(),
 });
 
 // Schema for race path parameters
@@ -37,13 +38,13 @@ export const RaceTraitMapSchema = z.object({
     value: z.string().nullable(),
 });
 
-export const RaceTraitQuerySchema = z.object({
-    page: z.string().optional().transform((val: string | undefined) => val ? parseInt(val) : 1),
-    limit: z.string().optional().transform((val: string | undefined) => val ? parseInt(val) : 10),
-    slug: z.string().optional(),
-    name: z.string().optional(),
-    description: z.string().optional(),
-    hasValue: z.string().optional().transform((val: string | undefined) => val === 'true'),
+
+
+export const RaceTraitQuerySchema = PageQuerySchema.extend({
+    slug: optionalStringParam(),
+    name: optionalStringParam(),
+    description: optionalStringParam(),
+    hasValue: optionalBooleanParam(),
 });
 
 export const RaceTraitSchema = z.object({
@@ -53,9 +54,16 @@ export const RaceTraitSchema = z.object({
     hasValue: z.boolean().default(false),
 });
 
+// Schema for race trait mappings with full trait information
+export const RaceTraitMapWithTraitSchema = z.object({
+    traitId: z.string().min(1, 'Trait slug is required'),
+    value: z.string().nullable(),
+    trait: RaceTraitSchema.nullable(),
+});
+
 export const BaseRaceSchema = z.object({
     name: z.string().min(1, 'Race name is required').max(100, 'Race name must be less than 100 characters').trim(),
-    description: z.string().max(2000, 'Description must be less than 2000 characters').nullable(),
+    description: z.string().max(10000, 'Description must be less than 10000 characters').nullable(),
     sizeId: z.number().int().positive('Size ID must be a positive integer'),
     speed: z.number().int().min(0, 'Speed must be non-negative').max(1000, 'Speed must be less than 1000'),
     favoredClassId: z.number().int().min(0, 'Favored class ID must be non-negative'),
@@ -68,6 +76,12 @@ export const BaseRaceSchema = z.object({
 
 export const RaceSchema = BaseRaceSchema.extend({
     id: z.number().int().positive('Race ID must be a positive integer'),
+});
+
+// Extended race schema with full trait information
+export const RaceWithTraitsSchema = BaseRaceSchema.extend({
+    id: z.number().int().positive('Race ID must be a positive integer'),
+    traits: z.array(RaceTraitMapWithTraitSchema).optional(),
 });
 
 export const RaceQueryResponseSchema = PageQueryResponseSchema.extend({
@@ -103,6 +117,7 @@ export type RaceQueryResponse = z.infer<typeof RaceQueryResponseSchema>;
 export type RaceResponse = z.infer<typeof RaceSchema>;
 
 export type RaceTraitMap = z.infer<typeof RaceTraitMapSchema>;
+export type RaceTraitMapWithTrait = z.infer<typeof RaceTraitMapWithTraitSchema>;
 export type RaceLanguageMap = z.infer<typeof RaceLanguageMapSchema>;
 export type RaceAbilityAdjustment = z.infer<typeof RaceAbilityAdjustmentSchema>;
 

@@ -7,6 +7,7 @@ const envSchema = z.object({
     PORT: z.string().transform(Number).pipe(z.number().min(1).max(65535)).default('3001'),
     JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
     DATABASE_URL: z.string().url('DATABASE_URL must be a valid URL'),
+    DEBUG: z.string().default(''),
 });
 
 // Validate environment variables
@@ -28,6 +29,7 @@ export const config = {
         secret: env.JWT_SECRET,
         expiresIn: '12h' as const,
     },
+    debug: env.DEBUG,
     database: {
         url: env.DATABASE_URL,
     },

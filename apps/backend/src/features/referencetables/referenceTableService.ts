@@ -2,10 +2,10 @@ import { PrismaClient, Prisma } from '@shared/prisma-client';
 import {
     CreateReferenceTableRequest,
     ReferenceTableDataResponse,
-    ReferenceTableIdentifierRequest,
     ReferenceTableQueryRequest,
     ReferenceTableQueryResponse,
-    UpdateReferenceTableRequest
+    UpdateReferenceTableRequest,
+    ReferenceTableSlugParamRequest
 } from '@shared/schema';
 
 import { ReferenceTableService } from './types';
@@ -49,17 +49,23 @@ export const referenceTableService: ReferenceTableService = {
             prisma.referenceTable.count({ where }),
         ]);
 
+        const results: ReferenceTableQueryResponse['results'] = tables.map(table => ({
+            ...table,
+            rows: table._count.rows,
+            columns: table._count.columns,
+        }));
+
         return {
             page: query.page,
             limit: query.limit,
             total,
-            results: tables
+            results: results
         };
     },
 
-    async getReferenceTableData(identifier: ReferenceTableIdentifierRequest): Promise<ReferenceTableDataResponse | null> {
+    async getReferenceTableData(slug: ReferenceTableSlugParamRequest): Promise<ReferenceTableDataResponse | null> {
         const table = await prisma.referenceTable.findUnique({
-            where: { slug: identifier.identifier },
+            where: { slug: slug.slug },
             include: {
                 columns: {
                     orderBy: {
@@ -120,12 +126,12 @@ export const referenceTableService: ReferenceTableService = {
             return { id: createdTable.slug, message: 'Reference table created successfully' };
         });
     },
-
-    async updateReferenceTable(identifier: ReferenceTableIdentifierRequest, data: UpdateReferenceTableRequest) {
+// 
+    async updateReferenceTable(slug: ReferenceTableSlugParamRequest, data: UpdateReferenceTableRequest) {
         return prisma.$transaction(async (tx) => {
             // 1. Update ReferenceTable main fields
             const _updatedTable = await tx.referenceTable.update({
-                where: { slug: identifier.identifier },
+                where: { slug: slug.slug },
                 data: {
                     name: data.name,
                     description: data.description,
@@ -136,7 +142,7 @@ export const referenceTableService: ReferenceTableService = {
             if (data.columns) {
                 await tx.referenceTableColumn.deleteMany({
                     where: {
-                        tableSlug: identifier.identifier,
+                        tableSlug: slug.slug,
                     }
                 });
             
@@ -144,7 +150,7 @@ export const referenceTableService: ReferenceTableService = {
                 for (const col of data.columns) {
                     await tx.referenceTableColumn.create({
                         data: {
-                            tableSlug: identifier.identifier,
+                            tableSlug: slug.slug,
                             columnIndex: col.columnIndex,
                             header: col.header,
                             span: col.span ?? null,
@@ -158,7 +164,7 @@ export const referenceTableService: ReferenceTableService = {
             if (data.rows) {
             await tx.referenceTableRow.deleteMany({
                 where: {
-                    tableSlug: identifier.identifier,
+                    tableSlug: slug.slug,
                     }
                 });
 
@@ -166,7 +172,7 @@ export const referenceTableService: ReferenceTableService = {
                 for (const row of data.rows) {
                     await tx.referenceTableRow.create({
                         data: {
-                            tableSlug: identifier.identifier,
+                            tableSlug: slug.slug,
                             rowIndex: row.rowIndex,
                             label: row.label ?? null,
                         },
@@ -178,7 +184,7 @@ export const referenceTableService: ReferenceTableService = {
             if (data.cells) {
             await tx.referenceTableCell.deleteMany({
                 where: {
-                    tableSlug: identifier.identifier,
+                    tableSlug: slug.slug,
                     }
                 });
 
@@ -186,7 +192,7 @@ export const referenceTableService: ReferenceTableService = {
                 for (const cell of data.cells) {
                     await tx.referenceTableCell.create({
                         data: {
-                            tableSlug: identifier.identifier,
+                            tableSlug: slug.slug,
                             rowId: cell.rowId,
                             columnId: cell.columnId,
                             value: cell.value ?? null,
@@ -201,9 +207,9 @@ export const referenceTableService: ReferenceTableService = {
         });
     },
 
-    async deleteReferenceTable(identifier: ReferenceTableIdentifierRequest) {
+    async deleteReferenceTable(slug: ReferenceTableSlugParamRequest) {
         await prisma.referenceTable.delete({
-            where: { slug: identifier.identifier },
+            where: { slug: slug.slug },
         });
         return { message: 'Reference table deleted successfully' };
     }

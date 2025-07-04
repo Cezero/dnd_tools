@@ -1,21 +1,4 @@
-import type { SkillResponse } from '@shared/schema';
-import type { SkillMap, StaticSkillData } from './types';
-
-// Function to convert StaticClassData to full Class type with defaults
-export function toSkillData(staticData: StaticSkillData): SkillResponse {
-    return {
-        ...staticData,
-        retryTypeId: staticData.retryTypeId ?? null,
-        checkDescription: staticData.checkDescription ?? null,
-        actionDescription: staticData.actionDescription ?? null,
-        retryDescription: staticData.retryDescription ?? null,
-        specialNotes: staticData.specialNotes ?? null,
-        synergyNotes: staticData.synergyNotes ?? null,
-        untrainedNotes: staticData.untrainedNotes ?? null,
-        affectedByArmor: staticData.affectedByArmor ?? false,
-        description: staticData.description ?? null,
-    };
-}
+import type { SkillMap } from './types';
 
 export const _SKILL_MAP: SkillMap = {
     1: { id: 1, name: 'Appraise', abilityId: 4, trainedOnly: false },
@@ -65,9 +48,9 @@ export const _SKILL_MAP: SkillMap = {
     45: { id: 45, name: 'Use Rope', abilityId: 2, trainedOnly: false },
 };
 
-// Wrapper that provides Class objects with defaults applied
-export const SKILL_MAP: SkillMap = Object.fromEntries(
-    Object.entries(_SKILL_MAP).map(([key, value]) => [key, toSkillData(value)])
-);
+export const SKILL_LIST = Object.values(_SKILL_MAP);
 
-export const SKILL_LIST = Object.values(SKILL_MAP);
+export const SKILL_SELECT_LIST = SKILL_LIST.map(skill => ({
+    value: skill.id,
+    label: skill.name
+}));

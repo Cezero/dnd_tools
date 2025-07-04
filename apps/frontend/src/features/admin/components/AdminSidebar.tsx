@@ -1,6 +1,6 @@
+import { TableCellsIcon, ChevronRightIcon, ChevronLeftIcon, HomeIcon } from '@heroicons/react/24/outline';
 import React, { useRef, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { TableCellsIcon, ChevronRightIcon, ChevronLeftIcon, HomeIcon } from '@heroicons/react/24/outline';
 
 interface AdminSidebarProps {
     isExpanded: boolean;
@@ -60,17 +60,9 @@ export function AdminSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden 
                         flex flex-col transition-all duration-300 ease-in-out py-4 rounded-tr-lg rounded-br-lg
                         ${isExpanded ? 'w-64 px-4' : 'w-16 items-center px-1'}`}
                 >
+
                     {/* Buttons for toggling expanded/minimal and hiding */}
                     <div className={`flex ${isExpanded ? 'justify-end' : 'justify-center'} w-full items-center mb-4`}>
-                        {/* Main Toggle Button (Expanded <-> Minimal) */}
-                        <button
-                            onClick={ToggleExpandedMinimal}
-                            className="p-1 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
-                            aria-label={isExpanded ? "Collapse sidebar to minimal" : "Expand sidebar to full"}
-                        >
-                            {isExpanded ? <ChevronLeftIcon className="mr-1" /> : <ChevronRightIcon className="mr-1" />}
-                        </button>
-
                         {/* Hide Button (visible only in Minimal state) */}
                         {!isExpanded && (
                             <button
@@ -79,96 +71,91 @@ export function AdminSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden 
                                 aria-label="Hide sidebar"
                                 title="Hide sidebar"
                             >
-                                <ChevronLeftIcon className="mr-1" />
+                                <ChevronLeftIcon className="w-5 h-5" />
                             </button>
                         )}
+                        {/* Main Toggle Button (Expanded <-> Minimal) */}
+                        <button
+                            onClick={ToggleExpandedMinimal}
+                            className="p-1 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+                            aria-label={isExpanded ? "Collapse sidebar to minimal" : "Expand sidebar to full"}
+                        >
+                            {isExpanded ? <ChevronLeftIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
+                        </button>
+
+
                     </div>
 
                     {/* Navigation Links */}
                     <nav className="grow">
-                        <ul>
-                            <li>
-                                <Link
-                                    to="/admin"
-                                    className={`flex items-center px-4 py-2 rounded 
+                        <Link
+                            to="/admin"
+                            className={`flex items-center px-4 py-2 rounded 
                                         text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 
                                         ${isExpanded ? 'justify-start' : 'justify-center'}
                                         ${location.pathname === '/admin' ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
-                                    title="Admin Dashboard"
-                                >
-                                    <HomeIcon className={`${location.pathname === '/admin' ? 'text-blue-600 dark:text-blue-400' : ''}`} />
-                                    {isExpanded && <span className={`ml-3 ${location.pathname === '/admin' ? 'text-blue-600 dark:text-blue-400' : ''}`}>Dashboard</span>}
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
-                                    to="/admin/referencetables"
-                                    className={`flex items-center px-4 py-2 rounded 
+                            title="Admin Dashboard"
+                        >
+                            <HomeIcon className={`${location.pathname === '/admin' ? 'text-blue-600 dark:text-blue-400' : ''} w-7 h-7`} />
+                            {isExpanded && <span className={`ml-3 ${location.pathname === '/admin' ? 'text-blue-600 dark:text-blue-400' : ''}`}>Dashboard</span>}
+                        </Link>
+                        <Link
+                            to="/admin/referencetables"
+                            className={`flex items-center px-4 py-2 rounded 
                                         text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 
                                         ${isExpanded ? 'justify-start' : 'justify-center'}
                                         ${location.pathname === '/admin/referencetables' ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
-                                    title="Reference Tables"
-                                >
-                                    <TableCellsIcon className={`${location.pathname === '/admin/referencetables' ? 'text-blue-600 dark:text-blue-400' : ''}`} />
-                                    {isExpanded && <span className={`ml-3 ${location.pathname.startsWith('/admin/referencetables') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Reference Tables</span>}
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
-                                    to="/admin/classes"
-                                    className={`flex items-center px-4 py-2 rounded 
+                            title="Reference Tables"
+                        >
+                            <TableCellsIcon className={`${location.pathname === '/admin/referencetables' ? 'text-blue-600 dark:text-blue-400' : ''} w-7 h-7`} />
+                            {isExpanded && <span className={`ml-3 ${location.pathname.startsWith('/admin/referencetables') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Reference Tables</span>}
+                        </Link>
+                        <Link
+                            to="/admin/classes"
+                            className={`flex items-center px-4 py-2 rounded 
                                         text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 
                                         ${isExpanded ? 'justify-start' : 'justify-center'}
                                         ${location.pathname === '/admin/classes' ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
-                                    title="Classes"
-                                >
-                                    <TableCellsIcon className={`${location.pathname === '/admin/classes' ? 'text-blue-600 dark:text-blue-400' : ''}`} />
-                                    {isExpanded && <span className={`ml-3 ${location.pathname.startsWith('/admin/classes') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Classes</span>}
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
-                                    to="/admin/races"
-                                    className={`flex items-center px-4 py-2 rounded 
+                            title="Classes"
+                        >
+                            <TableCellsIcon className={`${location.pathname === '/admin/classes' ? 'text-blue-600 dark:text-blue-400' : ''} w-7 h-7`} />
+                            {isExpanded && <span className={`ml-3 ${location.pathname.startsWith('/admin/classes') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Classes</span>}
+                        </Link>
+                        <Link
+                            to="/admin/races"
+                            className={`flex items-center px-4 py-2 rounded 
                                         text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 
                                         ${isExpanded ? 'justify-start' : 'justify-center'}
                                         ${location.pathname === '/admin/races' ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
-                                    title="Races"
-                                >
-                                    <TableCellsIcon className={`${location.pathname === '/admin/races' ? 'text-blue-600 dark:text-blue-400' : ''}`} />
-                                    {isExpanded && <span className={`ml-3 ${location.pathname.startsWith('/admin/races') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Races</span>}
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
-                                    to="/admin/skills"
-                                    className={`flex items-center px-4 py-2 rounded 
+                            title="Races"
+                        >
+                            <TableCellsIcon className={`${location.pathname === '/admin/races' ? 'text-blue-600 dark:text-blue-400' : ''} w-7 h-7`} />
+                            {isExpanded && <span className={`ml-3 ${location.pathname.startsWith('/admin/races') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Races</span>}
+                        </Link>
+                        <Link
+                            to="/admin/skills"
+                            className={`flex items-center px-4 py-2 rounded 
                                         text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 
                                         ${isExpanded ? 'justify-start' : 'justify-center'}
                                         ${location.pathname === '/admin/skills' ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
-                                    title="Skills"
-                                >
-                                    <TableCellsIcon className={`${location.pathname === '/admin/skills' ? 'text-blue-600 dark:text-blue-400' : ''}`} />
-                                    {isExpanded && <span className={`ml-3 ${location.pathname.startsWith('/admin/skills') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Skills</span>}
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
-                                    to="/admin/feats"
-                                    className={`flex items-center px-4 py-2 rounded 
+                            title="Skills"
+                        >
+                            <TableCellsIcon className={`${location.pathname === '/admin/skills' ? 'text-blue-600 dark:text-blue-400' : ''} w-7 h-7`} />
+                            {isExpanded && <span className={`ml-3 ${location.pathname.startsWith('/admin/skills') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Skills</span>}
+                        </Link>
+                        <Link
+                            to="/admin/feats"
+                            className={`flex items-center px-4 py-2 rounded 
                                         text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 
                                         ${isExpanded ? 'justify-start' : 'justify-center'}
                                         ${location.pathname === '/admin/feats' ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
-                                    title="Skills"
-                                >
-                                    <TableCellsIcon className={`${location.pathname === '/admin/feats' ? 'text-blue-600 dark:text-blue-400' : ''}`} />
-                                    {isExpanded && <span className={`ml-3 ${location.pathname.startsWith('/admin/feats') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Feats</span>}
-                                </Link>
-                            </li>
-                            {/* Add other admin functions here */}
-                        </ul>
+                            title="Skills"
+                        >
+                            <TableCellsIcon className={`${location.pathname === '/admin/feats' ? 'text-blue-600 dark:text-blue-400' : ''} w-7 h-7`} />
+                            {isExpanded && <span className={`ml-3 ${location.pathname.startsWith('/admin/feats') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Feats</span>}
+                        </Link>
+                        {/* Add other admin functions here */}
                     </nav>
-
                 </div>
             )}
 
@@ -181,7 +168,7 @@ export function AdminSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden 
                         hover:bg-gray-400 dark:hover:bg-gray-700 transition-colors duration-200"
                     aria-label="Expand sidebar"
                 >
-                    <ChevronRightIcon className="text-gray-800 dark:text-gray-100" />
+                    <ChevronRightIcon className="text-gray-800 dark:text-gray-100 w-5 h-5" />
                 </button>
             )}
         </>

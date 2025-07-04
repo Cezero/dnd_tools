@@ -1,17 +1,6 @@
-import type { SourceBookWithSpellsResponse } from '@shared/schema';
-import type { SourceBookMap, StaticSourceBookData } from './types';
+import type { SourceBookMap } from './types';
 
-// Function to convert StaticClassData to full Class type with defaults
-export function toSourceBookData(staticData: StaticSourceBookData): SourceBookWithSpellsResponse {
-    return {
-        ...staticData,
-        isVisible: staticData.isVisible ?? true,
-        description: staticData.description ?? null,
-        releaseDate: staticData.releaseDate ?? null,
-    };
-}
-
-export const _SOURCE_BOOK_MAP: SourceBookMap = {
+export const SOURCE_BOOK_MAP: SourceBookMap = {
     1: { id: 1, name: "Player's Handbook", abbreviation: 'PHB', editionId: 4, hasSpells: false },
     2: { id: 2, name: 'Sunless Citadel', abbreviation: 'SC', editionId: 4, hasSpells: false },
     3: { id: 3, name: "Dungeon Master's Guide", abbreviation: 'DMG', editionId: 4, hasSpells: false },
@@ -159,27 +148,32 @@ export const _SOURCE_BOOK_MAP: SourceBookMap = {
     145: { id: 145, name: "An Adventurer's Guide to Eberron", abbreviation: 'AGE', editionId: 5, hasSpells: false },
 }
 
-// Wrapper that provides Class objects with defaults applied
-export const SOURCE_BOOK_MAP: SourceBookMap = Object.fromEntries(
-    Object.entries(_SOURCE_BOOK_MAP).map(([key, value]) => [key, toSourceBookData(value)])
-);
-
 export const SOURCE_BOOK_LIST = Object.values(SOURCE_BOOK_MAP);
 
+export const SOURCE_BOOK_SELECT_LIST = SOURCE_BOOK_LIST.map(sourceBook => ({
+    value: sourceBook.id,
+    label: sourceBook.abbreviation
+}));
+
+export const SOURCE_BOOK_WITH_SPELLS_SELECT_LIST = SOURCE_BOOK_LIST.filter(sourceBook => sourceBook.hasSpells).map(sourceBook => ({
+    value: sourceBook.id,
+    label: sourceBook.abbreviation
+}));
+
 interface SourceReference {
-    book_id: number;
-    page_number?: number;
+    bookId: number;
+    pageNumber?: number;
 }
 
 export function GetSourceDisplay(sources: SourceReference[], useAbbrev: boolean = false): string {
     if (!sources || sources.length === 0) return '';
 
     return sources.map(source => {
-        const book = SOURCE_BOOK_MAP[source.book_id];
+        const book = SOURCE_BOOK_MAP[source.bookId];
         if (book) {
             const displayTitle = useAbbrev ? book.abbreviation : book.name;
-            return source.page_number ? `${displayTitle} (pg ${source.page_number})` : displayTitle;
+            return source.pageNumber ? `${displayTitle} (pg ${source.pageNumber})` : displayTitle;
         }
         return 'Unknown Source';
     }).join(', ');
-} 
+}

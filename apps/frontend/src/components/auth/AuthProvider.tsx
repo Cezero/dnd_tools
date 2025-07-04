@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
+
 import { AuthService } from '@/services/AuthService';
 import { UserProfileService } from '@/services/UserProfileService';
 import {
@@ -6,18 +7,25 @@ import {
     JwtPayloadSchema,
     type AuthUser,
 } from '@shared/schema';
+
 import type {
     AuthContextType,
     AuthProviderProps
 } from './types';
 
-const authContext = createContext<AuthContextType | undefined>(undefined);
+// Create a default context value
+const defaultAuthContext: AuthContextType = {
+    user: null,
+    Login: async () => false,
+    Logout: () => { },
+    isLoading: true,
+    UpdatePreferredEdition: async () => false,
+};
+
+const authContext = createContext<AuthContextType>(defaultAuthContext);
 
 export function UseAuth(): AuthContextType {
     const context = useContext(authContext);
-    if (context === undefined) {
-        throw new Error('UseAuth must be used within an AuthProvider');
-    }
     return context;
 }
 
@@ -41,6 +49,14 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         } catch (error) {
             console.error('Error decoding or validating JWT:', error);
             return null;
+        }
+    };
+
+    const Logout = (): void => {
+        localStorage.removeItem('token');
+        setUser(null);
+        if (refreshTokenTimeoutRef.current) {
+            clearTimeout(refreshTokenTimeoutRef.current);
         }
     };
 
@@ -96,7 +112,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         if (token) {
             AuthService.getMe(undefined)
                 .then((responseData) => {
-                    setUser(responseData);
+                    setUser(responseData.user);
                     ScheduleRefreshToken(token);
                 })
                 .catch(error => {
@@ -134,14 +150,6 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         }
     };
 
-    const Logout = (): void => {
-        localStorage.removeItem('token');
-        setUser(null);
-        if (refreshTokenTimeoutRef.current) {
-            clearTimeout(refreshTokenTimeoutRef.current);
-        }
-    };
-
     const UpdatePreferredEdition = async (editionId: number): Promise<boolean> => {
         try {
             const responseData = await UserProfileService.updateUserProfile({ preferredEditionId: editionId });
@@ -165,8 +173,16 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         }
     };
 
+    const contextValue: AuthContextType = {
+        user,
+        Login,
+        Logout,
+        isLoading,
+        UpdatePreferredEdition,
+    };
+
     return (
-        <authContext.Provider value={{ user, Login, Logout, isLoading, UpdatePreferredEdition }}>
+        <authContext.Provider value={contextValue}>
             {children}
         </authContext.Provider>
     );

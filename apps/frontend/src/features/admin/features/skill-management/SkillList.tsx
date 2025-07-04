@@ -1,26 +1,17 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+
+import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
-import { COLUMN_DEFINITIONS, DEFAULT_COLUMNS, SkillFilterOptions } from '@/features/admin/features/skill-management/SkillConfig';
-import { FetchSkills, DeleteSkill } from '@/features/admin/features/skill-management/SkillService';
-import { UseAuth } from '@/components/auth/AuthProvider';
+import { COLUMN_DEFINITIONS } from '@/features/admin/features/skill-management/SkillConfig';
+import { SkillService } from '@/features/admin/features/skill-management/SkillService';
+import { SkillQuerySchema, SkillResponse } from '@shared/schema';
 import { ABILITY_MAP } from '@shared/static-data';
-import type { Skill } from '@shared/prisma-client';
 
 export function SkillList(): React.JSX.Element {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, isLoading: isAuthLoading } = UseAuth();
-    const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
-
-    const memoizedSkillFilterOptions = useMemo(() => (
-        SkillFilterOptions
-    ), []);
-
-    const skillFetchData = useCallback(async (params: URLSearchParams) => {
-        const { data, total } = await FetchSkills(params);
-        return { data, total };
-    }, [user]);
+    const { isLoading: isAuthLoading } = useAuthAuto();
 
     const HandleNewSkillClick = (): void => {
         navigate('/admin/skills/new/edit', { state: { fromListParams: location.search } });
@@ -29,8 +20,9 @@ export function SkillList(): React.JSX.Element {
     const HandleDeleteSkill = async (id: number): Promise<void> => {
         if (window.confirm('Are you sure you want to delete this skill?')) {
             try {
-                await DeleteSkill(id);
-                setRefreshTrigger(prev => prev + 1);
+                await SkillService.deleteSkill(undefined, { id });
+                // Refresh the list by navigating to the same page
+                navigate('/admin/skills', { replace: true });
             } catch (error) {
                 console.error('Failed to delete skill:', error);
                 alert('Failed to delete skill.');
@@ -38,11 +30,11 @@ export function SkillList(): React.JSX.Element {
         }
     };
 
-    const RenderCell = (item: Skill, columnId: string): React.ReactNode => {
+    const RenderCell = (item: SkillResponse, columnId: string): React.ReactNode => {
         const column = COLUMN_DEFINITIONS[columnId];
         if (!column) return null;
 
-        let cellContent: React.ReactNode = String(item[columnId as keyof Skill] || '');
+        let cellContent: React.ReactNode = String(item[columnId as keyof SkillResponse] || '');
 
         if (columnId === 'name') {
             cellContent = (
@@ -54,7 +46,7 @@ export function SkillList(): React.JSX.Element {
                 </a>
             );
         } else if (columnId === 'abilityId') {
-            cellContent = `${ABILITY_MAP[item.abilityId]?.abbr || ''}`;
+            cellContent = `${ABILITY_MAP[item.abilityId]?.abbreviation || ''}`;
         } else if (columnId === 'trainedOnly') {
             cellContent = item.trainedOnly ? 'Yes' : 'No';
         } else if (columnId === 'affectedByArmor') {
@@ -95,20 +87,17 @@ export function SkillList(): React.JSX.Element {
                     New Skill
                 </button>
             </div>
-            <GenericList<Skill>
+            <GenericList<SkillResponse>
                 storageKey="skills-list"
-                defaultColumns={DEFAULT_COLUMNS}
-                requiredColumnId="name"
                 columnDefinitions={COLUMN_DEFINITIONS}
-                fetchData={skillFetchData}
+                querySchema={SkillQuerySchema}
+                serviceFunction={SkillService.getSkills}
                 renderCell={RenderCell}
                 detailPagePath="/admin/skills/:id"
                 idKey="id"
-                refreshTrigger={refreshTrigger}
                 itemDesc="skill"
-                editHandler={(item: Skill) => navigate(`/admin/skills/${item.id}/edit`)}
-                deleteHandler={(item: Skill) => HandleDeleteSkill(item.id)}
-                filterOptions={memoizedSkillFilterOptions}
+                editHandler={(item: SkillResponse) => navigate(`/admin/skills/${item.id}/edit`)}
+                deleteHandler={(item: SkillResponse) => HandleDeleteSkill(item.id)}
             />
         </div>
     );

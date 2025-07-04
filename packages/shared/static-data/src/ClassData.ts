@@ -1,18 +1,7 @@
-import type { ClassResponse } from '@shared/schema';
-import type { ClassMap, StaticClassData } from './types';
+import type { ClassMap, ClassNameMap } from './types';
 
-// Function to convert StaticClassData to full Class type with defaults
-export function toClassData(staticData: StaticClassData): ClassResponse {
-    return {
-        ...staticData,
-        hitDie: staticData.hitDie ?? 1,
-        description: staticData.description ?? null,
-        skillPoints: staticData.skillPoints ?? 0,
-        castingAbilityId: staticData.castingAbilityId ?? null,
-    };
-}
 
-const _CLASS_MAP: ClassMap = {
+export const CLASS_MAP: ClassMap = {
     1: { id: 1, name: 'Barbarian', abbreviation: 'Bbn', editionId: 4, isVisible: false, canCastSpells: false, isPrestige: false },
     2: { id: 2, name: 'Bard', abbreviation: 'Brd', editionId: 4, isVisible: false, canCastSpells: true, isPrestige: false },
     3: { id: 3, name: 'Cleric', abbreviation: 'Clr', editionId: 4, isVisible: false, canCastSpells: true, isPrestige: false },
@@ -146,13 +135,29 @@ const _CLASS_MAP: ClassMap = {
     131: { id: 131, name: 'Ur-Priest', abbreviation: 'UrPrst', editionId: 5, isVisible: true, canCastSpells: true, isPrestige: true },
 };
 
-// Wrapper that provides Class objects with defaults applied
-export const CLASS_MAP: ClassMap = Object.fromEntries(
-    Object.entries(_CLASS_MAP).map(([key, value]) => [key, toClassData(value)])
+export const CLASS_NAME_MAP: ClassNameMap = Object.fromEntries(
+    Object.entries(CLASS_MAP).map(([key, value]) => [value.name, key])
 );
 
 export const CLASS_LIST = Object.values(CLASS_MAP);
 
+export const CLASS_SELECT_LIST = CLASS_LIST.map(cls => ({
+    value: cls.id,
+    label: cls.name
+}));
+
+export const CLASS_VISIBLE_LIST = CLASS_LIST.filter(cls => cls.isVisible);
+
+export const CLASS_VISIBLE_SELECT_LIST = CLASS_VISIBLE_LIST.map(cls => ({
+    value: cls.id,
+    label: cls.name
+}));
+
+export const CLASS_WITH_SPELLS_SELECT_LIST = CLASS_VISIBLE_LIST.filter(cls => cls.canCastSpells).map(cls => ({
+    value: cls.id,
+    label: cls.name
+}));
+
 export function GetBaseClassesByEdition(editionId: number) {
     return CLASS_LIST.filter(cl => cl.editionId === editionId && !cl.isPrestige);
-} 
+}

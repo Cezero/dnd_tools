@@ -1,23 +1,25 @@
-import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import React, { useEffect, useState } from 'react';
-import { UseAuth } from '@/components/auth/AuthProvider';
-import { ABILITY_MAP } from '@shared/static-data/AbilityData';
-import { FetchSkillById } from '@/features/admin/features/skill-management/SkillService';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
+
+import { useAuthAuto } from '@/components/auth';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import type { Skill } from '@shared/prisma-client';
+import { SkillService } from '@/features/admin/features/skill-management/SkillService';
+import { SkillResponse } from '@shared/schema';
+import { ABILITY_MAP } from '@shared/static-data';
 
 export function SkillDetail(): React.JSX.Element {
     const { id } = useParams();
-    const [skill, setSkill] = useState<Skill | null>(null);
+    const [skill, setSkill] = useState<SkillResponse | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
-    const { user } = UseAuth();
+    const { isAdmin } = useAuthAuto();
+    const navigate = useNavigate();
     const location = useLocation();
     const fromListParams = location.state?.fromListParams || '';
 
     useEffect(() => {
         const Initialize = async (): Promise<void> => {
             try {
-                const data = await FetchSkillById(id);
+                const data = await SkillService.getSkillById(undefined, { id: parseInt(id!) });
                 setSkill(data);
                 setIsLoading(false);
             } catch (error) {
@@ -57,7 +59,7 @@ export function SkillDetail(): React.JSX.Element {
                     <div className="flex justify-between items-start mb-2">
                         <div className="flex items-center gap-2">
                             <h1 className="text-2xl font-bold">{skill.name}</h1>
-                            <h1 className="text-1xl font-bold">({ABILITY_MAP[skill.abilityId]?.abbr})</h1>
+                            <h1 className="text-1xl font-bold">({ABILITY_MAP[skill.abilityId]?.abbreviation})</h1>
                         </div>
                         <div className="text-right">
                             <p><strong>Trained Only:</strong> {skill.trainedOnly ? 'Yes' : 'No'}</p>
@@ -125,8 +127,8 @@ export function SkillDetail(): React.JSX.Element {
                     </div>
                     <div className="mt-4 text-right">
                         <button type="button" onClick={() => navigate(`/admin/skills${fromListParams ? `?${fromListParams}` : ''}`)} className="inline-block px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 border dark:border-gray-500">Back to List</button>
-                        {user && user.is_admin && (
-                            <Link to={`/admin/skills/${id}/edit`} state={{ fromListParams: fromListParams }} onClick={() => console.log('Navigating from SkillDetail to EditSkill with params:', fromListParams)} className="ml-4 inline-block px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 border dark:border-gray-500">Edit Skill</Link>
+                        {isAdmin && (
+                            <Link to={`/admin/skills/${id}/edit`} state={{ fromListParams: fromListParams }} className="ml-4 inline-block px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 border dark:border-gray-500">Edit Skill</Link>
                         )}
                     </div>
                 </div>

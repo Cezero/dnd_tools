@@ -1,85 +1,93 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { z } from 'zod';
+
+import {
+    ValidatedForm,
+    ValidatedInput,
+    ValidatedCheckbox,
+    useValidatedForm
+} from '@/components/forms';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
-import { CreateRaceTrait, UpdateRaceTrait, FetchRaceTraitBySlug } from '@/features/admin/features/race-management/RaceTraitService';
+import { RaceTraitService } from '@/features/admin/features/race-management/RaceTraitService';
+import { CreateRaceTraitSchema, UpdateRaceTraitSchema, RaceTraitSchema } from '@shared/schema';
+
+// Type definitions for the form state
+type CreateRaceTraitFormData = z.infer<typeof CreateRaceTraitSchema>;
+type UpdateRaceTraitFormData = z.infer<typeof UpdateRaceTraitSchema>;
+type RaceTraitFormData = CreateRaceTraitFormData | UpdateRaceTraitFormData;
 
 export function RaceTraitEdit() {
-    const { slug } = useParams();
+    const { slug } = useParams<{ slug: string }>();
     const navigate = useNavigate();
     const location = useLocation();
-    const [trait, setTrait] = useState({
-        slug: null,
-        name: '',
-        desc: '',
-        has_value: false
-    });
+    const [trait, setTrait] = useState<RaceTraitFormData | null>(null);
     const [message, setMessage] = useState('');
-    const [error, setError] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Determine which schema to use based on whether we're creating or editing
+    const schema = slug === 'new' ? CreateRaceTraitSchema : UpdateRaceTraitSchema;
+
+    // Initialize form data with default values
+    const initialFormData: RaceTraitFormData = {
+        slug: '',
+        name: '',
+        description: '',
+        hasValue: false,
+        ...(slug !== 'new' && { slug: slug })
+    };
+
+    const [formData, setFormData] = useState<RaceTraitFormData>(initialFormData);
+
+    // Use the validated form hook
+    const { validation, createFieldProps, createCheckboxProps } = useValidatedForm(
+        schema,
+        formData,
+        setFormData,
+        {
+            validateOnChange: true,
+            validateOnBlur: true,
+            debounceMs: 300
+        }
+    );
 
     useEffect(() => {
-        const FetchTrait = async () => {
+        const fetchTrait = async () => {
+            if (slug === 'new') {
+                setTrait(initialFormData);
+                return;
+            }
+
             try {
-                if (slug === 'new') {
-                    setTrait({
-                        name: '',
-                        desc: '',
-                        has_value: false,
-                        trait_value: '',
-                    });
-                } else {
-                    const data = await FetchRaceTraitBySlug(slug);
-                    setTrait({
-                        slug: data.slug,
-                        name: data.name,
-                        desc: data.desc,
-                        has_value: data.has_value === 1
-                    });
-                }
+                setIsLoading(true);
+                const fetchedTrait = await RaceTraitService.getRaceTraitBySlug(undefined, { slug });
+                setTrait(fetchedTrait);
+                setFormData(fetchedTrait);
             } catch (err) {
-                setError(err);
+                setError(err instanceof Error ? err.message : 'Failed to fetch race trait');
             } finally {
                 setIsLoading(false);
             }
         };
-        FetchTrait();
+
+        fetchTrait();
     }, [slug]);
 
-    const HandleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setTrait(prevTrait => ({
-            ...prevTrait,
-            [name]: type === 'checkbox' ? checked : value
-        }));
-    };
-
-    const HandleMarkdownChange = (content) => {
-        setTrait(prevTrait => ({
-            ...prevTrait,
-            desc: content
-        }));
-    };
-
-    const HandleSubmit = async (e) => {
+    const HandleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setMessage('');
         setError(null);
 
-        try {
-            const payload = {
-                name: trait.name,
-                desc: trait.desc,
-                has_value: trait.has_value ? 1 : 0,
-            };
-            if (slug === 'new') {
-                payload.slug = trait.slug;
-            }
-            if (trait.has_value) {
-                payload.trait_value = trait.trait_value;
-            }
+        // Validate the entire form
+        if (!validation.validateForm(formData)) {
+            return;
+        }
 
+        try {
+            setIsLoading(true);
             if (slug === 'new') {
-                const newTrait = await CreateRaceTrait(payload);
+                const newTrait = await RaceTraitService.createRaceTrait(formData as z.infer<typeof CreateRaceTraitSchema>);
                 setMessage('Race trait created successfully!');
                 if (location.state?.from === 'RaceTraitAssoc' && location.state?.raceId) {
                     navigate(`/admin/races/${location.state.raceId}/edit`, { state: { newTrait: newTrait } });
@@ -87,89 +95,133 @@ export function RaceTraitEdit() {
                     navigate('/admin/races');
                 }
             } else {
-                await UpdateRaceTrait(slug, payload);
+                await RaceTraitService.updateRaceTrait(formData as z.infer<typeof UpdateRaceTraitSchema>, { slug });
                 setMessage('Race trait updated successfully!');
                 navigate('/admin/races');
             }
-
         } catch (err) {
-            setError(err);
-            setMessage(`Error: ${err.message || err}`);
+            setError(err instanceof Error ? err.message : 'Failed to save race trait');
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    if (isLoading) return <div className="p-4 bg-white dark:bg-[#121212]">Loading race trait for editing...</div>;
-    if (error) return <div className="p-4 bg-white dark:bg-[#121212] dark:text-red-500">Error: {error.message}</div>;
-    if (!trait && slug !== 'new') return <div className="p-4 bg-white dark:bg-[#121212]">Race trait not found.</div>;
+    if (isLoading && !trait) {
+        return <div className="flex justify-center items-center h-64">Loading...</div>;
+    }
+
+    if (error && !trait) {
+        return (
+            <div className="flex flex-col items-center justify-center h-64">
+                <p className="text-red-500 mb-4">{error}</p>
+                <button
+                    onClick={() => navigate('/admin/races')}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                    Back to Races
+                </button>
+            </div>
+        );
+    }
+
+    if (!trait) {
+        return <div>No race trait data available</div>;
+    }
+
+    // Create field props for each form field
+    const slugProps = createFieldProps('slug');
+    const nameProps = createFieldProps('name');
+    const descriptionProps = createFieldProps('description');
+    const hasValueProps = createCheckboxProps('hasValue');
 
     return (
-        <div className="p-4 bg-white dark:bg-[#121212] scrollbar-track-gray-300 scrollbar-thumb-gray-400 dark:scrollbar-track-gray-700 dark:scrollbar-thumb-gray-500">
-            <h1 className="text-2xl font-bold mb-4">{slug === 'new' ? 'Create New Race Trait' : `Edit Race Trait: ${trait.name}`}</h1>
-            {message && <div className="mb-4 p-2 rounded text-green-700 bg-green-100 dark:bg-green-800 dark:text-green-200">{message}</div>}
-            {error && <div className="mb-4 p-2 rounded text-red-700 bg-red-100 dark:bg-red-800 dark:text-red-200">Error: {error.message || String(error)}</div>}
+        <div className="max-w-4xl mx-auto p-6">
+            <div className="mb-6">
+                <h1 className="text-3xl font-bold">
+                    {slug === 'new' ? 'Create New Race Trait' : 'Edit Race Trait'}
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400">
+                    {slug === 'new' ? 'Create a new race trait definition' : 'Modify race trait details'}
+                </p>
+            </div>
 
-            <form onSubmit={HandleSubmit} className="mt-4">
-                <div className="mb-4">
-                    <label htmlFor="slug" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Trait Slug:</label>
-                    <input
-                        type="text"
-                        id="slug"
+            {message && (
+                <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-md dark:bg-green-900/20 dark:border-green-800">
+                    <p className="text-green-700 dark:text-green-300">{message}</p>
+                </div>
+            )}
+
+            {error && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md dark:bg-red-900/20 dark:border-red-800">
+                    <p className="text-red-700 dark:text-red-300">{error}</p>
+                </div>
+            )}
+
+            <ValidatedForm
+                onSubmit={HandleSubmit}
+                validationState={validation.validationState}
+                isLoading={isLoading}
+            >
+                <div className="space-y-4">
+                    <ValidatedInput
                         name="slug"
-                        value={trait.slug || ''}
-                        onChange={HandleChange}
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
-                        required
-                        disabled={slug !== 'new'}
-                    />
-                </div>
-                <div className="mb-4">
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Trait Name:</label>
-                    <input
+                        label="Trait Slug"
                         type="text"
-                        id="name"
+                        required
+                        placeholder="e.g., darkvision, weapon-proficiency"
+                        disabled={slug !== 'new'}
+                        {...slugProps}
+                    />
+
+                    <ValidatedInput
                         name="name"
-                        value={trait.name || ''}
-                        onChange={HandleChange}
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
+                        label="Trait Name"
+                        type="text"
+                        required
+                        placeholder="e.g., Darkvision, Weapon Proficiency"
+                        {...nameProps}
+                    />
+
+                    <div className="space-y-2">
+                        <label htmlFor="description" className="block font-medium">
+                            Trait Description
+                        </label>
+                        <MarkdownEditor
+                            value={formData.description || ''}
+                            onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
+                            userVars={{ traitname: formData.name }}
+                        />
+                        {validation.getError('description') && (
+                            <span className="text-red-500 text-sm">{validation.getError('description')}</span>
+                        )}
+                    </div>
+
+                    <ValidatedCheckbox
+                        name="hasValue"
+                        label="Has Associated Value"
+                        {...hasValueProps}
                     />
                 </div>
-                <div className="mb-4">
-                    <MarkdownEditor
-                        id="desc"
-                        name="desc"
-                        label="Trait Description:"
-                        value={trait.desc || ''}
-                        onChange={HandleMarkdownChange}
-                        userVars={{ traitname: trait.name }}
-                    />
-                </div>
-                <div className="mb-4 flex items-center">
-                    <input
-                        type="checkbox"
-                        id="has_value"
-                        name="has_value"
-                        checked={trait.has_value}
-                        onChange={HandleChange}
-                        className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
-                    />
-                    <label htmlFor="has_value" className="text-sm font-medium text-gray-700 dark:text-gray-300">Has Associated Value</label>
-                </div>
-                <div className="mt-4 flex justify-end">
+
+                {/* Action Buttons */}
+                <div className="flex justify-end space-x-4 mt-8">
                     <button
                         type="button"
-                        className="inline-flex justify-center rounded-md border border-transparent bg-gray-300 px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-200 mr-2"
-                        onClick={() => navigate(-1)}
+                        onClick={() => navigate('/admin/races')}
+                        className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                        disabled={isLoading}
                     >
                         Cancel
                     </button>
                     <button
                         type="submit"
-                        className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                        className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isLoading || validation.validationState.hasErrors}
                     >
-                        {slug === 'new' ? 'Create Trait' : 'Update Trait'}
+                        {isLoading ? 'Saving...' : slug === 'new' ? 'Create Trait' : 'Update Trait'}
                     </button>
                 </div>
-            </form>
+            </ValidatedForm>
         </div>
     );
 }

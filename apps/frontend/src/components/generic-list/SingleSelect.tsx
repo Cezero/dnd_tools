@@ -1,11 +1,12 @@
-import React, { useRef, useEffect } from 'react';
 import { CheckIcon } from '@heroicons/react/24/outline';
-import type { SingleSelectProps } from './types';
+import React, { useRef, useEffect } from 'react';
+
+import type { SingleSelectFilterComponentProps } from './types';
 
 export const SingleSelect = ({
     options,
-    displayKey,
-    valueKey,
+    displayKey = 'label',
+    valueKey = 'value',
     selected,
     onChange,
     placeholder = 'Select...',
@@ -13,7 +14,7 @@ export const SingleSelect = ({
     open,
     onOpenChange,
     appendClassName = ''
-}: SingleSelectProps): React.JSX.Element => {
+}: SingleSelectFilterComponentProps): React.JSX.Element => {
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {

@@ -10,6 +10,10 @@ export const ABILITY_MAP: AbilityMap = {
 }
 
 export const ABILITY_LIST = Object.values(ABILITY_MAP);
+export const ABILITY_SELECT_LIST = ABILITY_LIST.map(ability => ({
+    value: ability.id,
+    label: ability.abbreviation
+}));
 
 export const GetAbilityModifier = (abilityScore: number): number => {
     return Math.floor((abilityScore - 10) / 2);
@@ -51,4 +55,8 @@ export const SAVING_THROW_MAP: SavingThrowMap = {
     3: { id: 3, name: "Reflex", abbreviation: "Ref" },
 }
 
-export const SAVING_THROW_LIST = Object.values(SAVING_THROW_MAP) 
+export const SAVING_THROW_LIST = Object.values(SAVING_THROW_MAP)
+export const SAVING_THROW_SELECT_LIST = SAVING_THROW_LIST.map(savingThrow => ({
+    value: savingThrow.id,
+    label: savingThrow.abbreviation
+}));

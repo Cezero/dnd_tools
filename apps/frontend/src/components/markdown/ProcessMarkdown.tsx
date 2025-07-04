@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
+
 import { RenderMarkdown } from '@/plugins/RenderMarkdown';
+
 import type { ProcessMarkdownProps } from './types';
 
 export function ProcessMarkdown({ markdown, userVars = {} }: ProcessMarkdownProps): React.JSX.Element {

@@ -1,17 +1,18 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+
 import { AuthProvider } from '@/components/auth/AuthProvider';
-import { ProtectedRoute, AdminRoute } from '@/components/auth/ProtectedRoute';
-import { Layout } from '@/components/Layout';
 import { LoginPage } from '@/components/auth/LoginPage';
+import { ProtectedRoute, AdminRoute } from '@/components/auth/ProtectedRoute';
 import { RegisterPage } from '@/components/auth/RegisterPage';
+import { Layout } from '@/components/Layout';
 import { FeatureRoutes } from '@/features/FeatureRoutes';
 import { RouteConfig } from '@/types';
 
 export function App(): React.JSX.Element {
   return (
     <AuthProvider>
-      <Router>
+      <Router future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />

@@ -1,12 +1,13 @@
 import { z } from 'zod';
 import { PageQueryResponseSchema, PageQuerySchema } from './query.js';
+import { optionalIntegerParam, optionalBooleanParam, optionalStringParam } from './utils.js';
 
 // Schema for skill query parameters
 export const SkillQuerySchema = PageQuerySchema.extend({
-    trainedOnly: z.coerce.boolean().default(false),
-    affectedByArmor: z.coerce.boolean().default(false),
-    name: z.string().optional(),
-    abilityId: z.coerce.number().int().optional(),
+    trainedOnly: optionalBooleanParam(),
+    affectedByArmor: optionalBooleanParam(),
+    name: optionalStringParam(),
+    abilityId: optionalIntegerParam(),
 });
 
 // Schema for skill path parameters
@@ -20,7 +21,7 @@ export const SkillSchema = z.object({
     abilityId: z.number().int().positive('Ability ID must be a positive integer'),
     trainedOnly: z.boolean().nullable(),
     affectedByArmor: z.boolean().default(false),
-    description: z.string().max(2000, 'Description must be less than 2000 characters').nullable(),
+    description: z.string().max(10000, 'Description must be less than 10000 characters').nullable(),
     checkDescription: z.string().max(1000, 'Check description must be less than 1000 characters').nullable(),
     actionDescription: z.string().max(1000, 'Action description must be less than 1000 characters').nullable(),
     retryTypeId: z.number().int().positive('Retry type ID must be a positive integer').nullable(),

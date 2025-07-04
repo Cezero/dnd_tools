@@ -1,54 +1,19 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+
+import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
-import { COLUMN_DEFINITIONS, DEFAULT_COLUMNS, FeatFilterOptions } from '@/features/admin/features/feat-management/FeatConfig';
-import { FetchFeats, DeleteFeat } from '@/features/admin/features/feat-management/FeatService';
-import { UseAuth } from '@/components/auth/AuthProvider';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
+import { COLUMN_DEFINITIONS } from '@/features/admin/features/feat-management/FeatConfig';
+import { FeatService } from '@/features/admin/features/feat-management/FeatService';
+import { FeatQuerySchema, FeatResponse } from '@shared/schema';
 import { FEAT_TYPES } from '@shared/static-data';
-import { Prisma } from '@shared/prisma-client';
-
-// Use Prisma type for feat items
-type FeatItem = Prisma.FeatGetPayload<Record<string, never>>;
-
-// Type for processed feat data that matches the column definitions
-type ProcessedFeatItem = {
-    feat_name: string;
-    feat_type: number;
-    feat_description: string | null;
-    feat_benefit: string | null;
-    feat_normal: string | null;
-    feat_special: string | null;
-    feat_prereq: string | null;
-    feat_multi_times: boolean | null;
-    id: number;
-};
 
 export function FeatList(): React.JSX.Element {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, isLoading: isAuthLoading } = UseAuth();
+    const { isLoading: isAuthLoading } = useAuthAuto();
     const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
-
-    const memoizedFeatFilterOptions = useMemo(() => (
-        FeatFilterOptions()
-    ), []);
-
-    const FeatFetchData = useCallback(async (params: URLSearchParams) => {
-        const { data, total } = await FetchFeats(params);
-        const processedResults: ProcessedFeatItem[] = data.map((feat: FeatItem) => ({
-            feat_name: feat.name,
-            feat_type: feat.typeId,
-            feat_description: feat.description,
-            feat_benefit: feat.benefit,
-            feat_normal: feat.normalEffect,
-            feat_special: feat.specialEffect,
-            feat_prereq: feat.prerequisites,
-            feat_multi_times: feat.repeatable,
-            id: feat.id
-        }));
-        return { data: processedResults, total: total };
-    }, [user]);
 
     const HandleNewFeatClick = (): void => {
         navigate('/admin/feats/new/edit', { state: { fromListParams: location.search } });
@@ -57,7 +22,7 @@ export function FeatList(): React.JSX.Element {
     const HandleDeleteFeat = async (id: number): Promise<void> => {
         if (window.confirm('Are you sure you want to delete this feat?')) {
             try {
-                await DeleteFeat(id);
+                await FeatService.deleteFeat(undefined, { id });
                 setRefreshTrigger(prev => prev + 1);
             } catch (error) {
                 console.error('Failed to delete feat:', error);
@@ -66,27 +31,34 @@ export function FeatList(): React.JSX.Element {
         }
     };
 
-    const RenderCell = (item: ProcessedFeatItem, columnId: string): React.ReactNode => {
+    const RenderCell = (item: FeatResponse, columnId: string): React.ReactNode => {
         const column = COLUMN_DEFINITIONS[columnId];
         if (!column) return null;
 
-        let cellContent: React.ReactNode = String(item[columnId as keyof ProcessedFeatItem] || '');
+        let cellContent: React.ReactNode = String(item[columnId as keyof FeatResponse] || '');
 
-        if (columnId === 'feat_name') {
+        if (columnId === 'name') {
             cellContent = (
                 <a
                     onClick={() => navigate(`/admin/feats/${item.id}`)}
                     className="text-blue-600 hover:underline cursor-pointer"
                 >
-                    {item.feat_name}
+                    {item.name}
                 </a>
             );
-        } else if (columnId === 'feat_type') {
-            cellContent = FEAT_TYPES[item.feat_type]?.name || item.feat_type;
-        } else if (columnId === 'feat_multi_times') {
-            cellContent = item.feat_multi_times ? 'Yes' : 'No';
-        } else if (['feat_description', 'feat_benefit', 'feat_normal', 'feat_special', 'feat_prereq'].includes(columnId)) {
-            cellContent = (<ProcessMarkdown markdown={String(item[columnId as keyof ProcessedFeatItem] || '')} />);
+        } else if (columnId === 'typeId') {
+            cellContent = FEAT_TYPES[item.typeId]?.name || item.typeId;
+        } else if (columnId === 'repeatable') {
+            cellContent = item.repeatable ? 'Yes' : 'No';
+        } else if (['description', 'benefit', 'normalEffect', 'specialEffect', 'prerequisites'].includes(columnId)) {
+            const fieldMap = {
+                'description': item.description,
+                'benefit': item.benefit,
+                'normalEffect': item.normalEffect,
+                'specialEffect': item.specialEffect,
+                'prerequisites': item.prerequisites,
+            };
+            cellContent = (<ProcessMarkdown markdown={String(fieldMap[columnId as keyof typeof fieldMap] || '')} />);
         }
 
         return cellContent;
@@ -107,19 +79,17 @@ export function FeatList(): React.JSX.Element {
                     New Feat
                 </button>
             </div>
-            <GenericList<ProcessedFeatItem>
+            <GenericList<FeatResponse>
                 storageKey="feats-list"
-                defaultColumns={DEFAULT_COLUMNS}
-                requiredColumnId="feat_name"
                 columnDefinitions={COLUMN_DEFINITIONS}
-                fetchData={FeatFetchData}
+                querySchema={FeatQuerySchema}
+                serviceFunction={FeatService.getFeats}
                 renderCell={RenderCell}
                 detailPagePath="/admin/feats/:id"
                 idKey="id"
                 itemDesc="feat"
-                editHandler={(item: ProcessedFeatItem) => navigate(`/admin/feats/${item.id}/edit`)}
-                deleteHandler={(item: ProcessedFeatItem) => HandleDeleteFeat(item.id)}
-                filterOptions={memoizedFeatFilterOptions}
+                editHandler={(item) => navigate(`/admin/feats/${item.id}/edit`)}
+                deleteHandler={(item) => HandleDeleteFeat(item.id)}
             />
         </div>
     );

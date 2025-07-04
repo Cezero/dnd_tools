@@ -1,43 +1,48 @@
-import { ReferenceTablesList } from '@/features/admin/features/ReferenceTableMgmt/ReferenceTablesList';
-import { ReferenceTableViewer } from '@/features/admin/features/ReferenceTableMgmt/ReferenceTableViewer';
-import { ReferenceTableEditor } from '@/features/admin/features/ReferenceTableMgmt/ReferenceTableEditor';
+import { ColumnDefinition } from '@/components/generic-list';
+import { ReferenceTableEditor } from '@/features/admin/features/reference-table-management/ReferenceTableEditor';
+import { ReferenceTablesList } from '@/features/admin/features/reference-table-management/ReferenceTablesList';
+import { ReferenceTableViewer } from '@/features/admin/features/reference-table-management/ReferenceTableViewer';
+import { RouteConfig } from '@/types';
 
-export const routes = [
+export const routes: RouteConfig[] = [
     { path: 'referencetables', component: ReferenceTablesList, exact: true, requireAuth: true, requireAdmin: true },
-    { path: 'referencetables/:id', component: ReferenceTableViewer, exact: true, requireAuth: true, requireAdmin: true },
-    { path: 'referencetables/:id/edit', component: ReferenceTableEditor, exact: true, requireAuth: true, requireAdmin: true },
+    { path: 'referencetables/:identifier', component: ReferenceTableViewer, exact: true, requireAuth: true, requireAdmin: true },
+    { path: 'referencetables/:identifier/edit', component: ReferenceTableEditor, exact: true, requireAuth: true, requireAdmin: true },
 ];
 
-export const navigation = null;
-
-export const DEFAULT_COLUMNS = ['name', 'slug', 'description', 'row_count', 'column_count'];
-
-export const COLUMN_DEFINITIONS = {
+export const COLUMN_DEFINITIONS: Record<string, ColumnDefinition> = {
     name: {
         label: 'Name',
         sortable: true,
-        filterable: true,
-        filterType: 'input'
+        isRequired: true,
+        isDefault: true,
+        filterConfig: {
+            type: 'text-input',
+            props: { placeholder: 'Filter by name...' }
+        }
     },
     slug: {
         label: 'Slug',
         sortable: true,
-        filterable: true,
-        filterType: 'input'
+        isRequired: true,
+        isDefault: true,
+        filterConfig: {
+            type: 'text-input',
+            props: { placeholder: 'Filter by slug...' }
+        }
     },
     description: {
         label: 'Description',
-        sortable: true,
-        filterable: false,
+        isDefault: true,
     },
-    row_count: {
+    rows: {
         label: 'Rows',
         sortable: true,
-        filterable: false,
+        isDefault: true,
     },
-    column_count: {
+    columns: {
         label: 'Columns',
         sortable: true,
-        filterable: false,
+        isDefault: true,
     }
 };

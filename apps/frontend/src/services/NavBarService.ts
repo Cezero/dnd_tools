@@ -1,5 +1,6 @@
-import { UserProfileService } from './UserProfileService';
 import type { UpdateUserProfileRequest } from '@shared/schema';
+
+import { UserProfileService } from './UserProfileService';
 
 export const NavBarService = {
     updatePreferredEdition: async (editionId: number) => {

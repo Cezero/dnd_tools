@@ -13,6 +13,10 @@ export const RPG_DICE: RpgDieMap = {
 }
 
 export const RPG_DICE_LIST = Object.values(RPG_DICE);
+export const RPG_DICE_SELECT_LIST = RPG_DICE_LIST.map(die => ({
+    value: die.id,
+    label: die.name
+}));
 
 export const CURRENCY: CurrencyMap = {
     1: { id: 1, name: 'Copper', abbreviation: 'cp', gpValue: .01 },
@@ -22,6 +26,10 @@ export const CURRENCY: CurrencyMap = {
 }
 
 export const CURRENCY_LIST = Object.values(CURRENCY);
+export const CURRENCY_SELECT_LIST = CURRENCY_LIST.map(currency => ({
+    value: currency.id,
+    label: currency.abbreviation.toUpperCase()
+}));
 
 export const ALIGNMENT_MAP: AlignmentMap = {
     0: { id: 0, name: 'Lawful Good', abbreviation: 'LG' },
@@ -36,6 +44,10 @@ export const ALIGNMENT_MAP: AlignmentMap = {
 }
 
 export const ALIGNMENT_LIST = Object.values(ALIGNMENT_MAP);
+export const ALIGNMENT_SELECT_LIST = ALIGNMENT_LIST.map(alignment => ({
+    value: alignment.id,
+    label: alignment.abbreviation
+}));
 
 export const SIZE_MAP: SizeMap = {
     1: {
@@ -158,6 +170,10 @@ export const SIZE_MAP: SizeMap = {
 }
 
 export const SIZE_LIST = Object.values(SIZE_MAP);
+export const SIZE_SELECT_LIST = SIZE_LIST.map(size => ({
+    value: size.id,
+    label: size.name
+}));
 
 export const LANGUAGE_MAP: LanguageMap = {
     1: { id: 1, name: 'Abyssal', typicalSpeakers: 'Demons, chaotic evil outsiders', alphabet: 'Infernal' },
@@ -183,6 +199,10 @@ export const LANGUAGE_MAP: LanguageMap = {
 }
 
 export const LANGUAGE_LIST = Object.values(LANGUAGE_MAP);
+export const LANGUAGE_SELECT_LIST = LANGUAGE_LIST.map(language => ({
+    value: language.id,
+    label: language.name
+}));
 
 export const EDITION_MAP: EditionMap = {
     1: { id: 1, name: 'Original Dungeons & Dragons', abbreviation: 'OD&D' },
@@ -194,4 +214,10 @@ export const EDITION_MAP: EditionMap = {
     7: { id: 7, name: 'Dungeons & Dragons 5th Edition', abbreviation: 'D&D 5E' },
 }
 
-export const EDITION_LIST = Object.values(EDITION_MAP); 
+export const EDITION_LIST = Object.values(EDITION_MAP);
+
+// Combine 3E and 3.5E into one option and filter out 3.5E
+export const EDITION_SELECT_LIST = EDITION_LIST.map(edition => ({
+    value: edition.id,
+    label: (edition.id === 4 ? '3E/3.5E Combined' : edition.abbreviation)
+})).filter(e => e.value !== 5);

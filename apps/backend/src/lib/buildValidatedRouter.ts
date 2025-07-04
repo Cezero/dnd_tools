@@ -18,6 +18,12 @@ type Schemas = {
     headers?: ZodSchema;
 };
 
+function stripUndefinedKeys<T extends object>(input: T): Partial<T> {
+    return Object.fromEntries(
+        Object.entries(input).filter(([_, v]) => v !== undefined)
+    ) as Partial<T>;
+}
+
 export function buildValidatedHandler<
     P extends ZodSchema | undefined = undefined,
     Q extends ZodSchema | undefined = undefined,
@@ -38,12 +44,17 @@ export function buildValidatedHandler<
 ): RequestHandler {
     const wrapped: RequestHandler = async (req, res, next) => {
         try {
-            if (schemas.params) req.params = schemas.params.parse(req.params);
-            if (schemas.query) req.query = schemas.query.parse(req.query);
-            if (schemas.body) req.body = schemas.body.parse(req.body);
-            if (schemas.headers) req.headers = schemas.headers.parse(req.headers);
+            const parsedReq = {
+                ...req,
+                params: schemas.params ? schemas.params.parse(stripUndefinedKeys(req.params)) : req.params,
+                query: schemas.query
+                    ? schemas.query.parse(stripUndefinedKeys(req.query))
+                    : req.query,
+                body: schemas.body ? schemas.body.parse(req.body) : req.body,
+                headers: schemas.headers ? schemas.headers.parse(req.headers) : req.headers,
+            };
 
-            await handler(req as unknown as Request<
+            await handler(parsedReq as unknown as Request<
                 InferOrDefault<P, Record<string, string>>,
                 ResBody,
                 InferOrDefault<B, unknown>,

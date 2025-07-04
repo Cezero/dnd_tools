@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { AdminSidebar } from '@/features/admin/components/AdminSidebar';
 import { Outlet } from 'react-router-dom';
+
+import { AdminSidebar } from '@/features/admin/components/AdminSidebar';
 
 export function AdminDashboardPage(): React.JSX.Element {
     const [isSidebarExpanded, setIsSidebarExpanded] = useState<boolean>(true); // Initial state for sidebar

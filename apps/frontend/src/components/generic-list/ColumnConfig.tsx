@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
+
 import type { ColumnDefinition, UseColumnConfigReturn, ColumnConfigModalProps } from './types';
 
 export function UseColumnConfig(
     storageKey: string,
     defaultColumns: string[],
-    columnDefinitions: Record<string, ColumnDefinition>,
-    requiredColumnId: string
+    columnDefinitions: Record<string, ColumnDefinition>
 ): UseColumnConfigReturn {
+    // Derive required column ID from column definitions
+    const requiredColumnId = Object.entries(columnDefinitions).find(([_, column]) => column.isRequired === true)?.[0] || '';
+
     const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
         const savedColumns = localStorage.getItem(storageKey);
         let parsedColumns: string[] = savedColumns ? JSON.parse(savedColumns) : defaultColumns;
@@ -41,10 +44,12 @@ export function ColumnConfigModal({
     onClose,
     visibleColumns,
     setVisibleColumns,
-    columnDefinitions,
-    requiredColumnId
+    columnDefinitions
 }: ColumnConfigModalProps): React.JSX.Element | null {
     if (!isOpen) return null;
+
+    // Derive required column ID from column definitions
+    const requiredColumnId = Object.entries(columnDefinitions).find(([_, column]) => column.isRequired === true)?.[0] || '';
 
     const HandleToggleColumn = (columnId: string): void => {
         setVisibleColumns(prev => {

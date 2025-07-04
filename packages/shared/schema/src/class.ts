@@ -1,17 +1,18 @@
 import { z } from 'zod';
 import { PageQueryResponseSchema, PageQuerySchema } from './query.js';
+import { optionalBooleanParam, optionalIntegerParam } from './utils.js';
 
 // Schema for class query parameters
 export const ClassQuerySchema = PageQuerySchema.extend({
     name: z.string().optional(),
     abbreviation: z.string().optional(),
-    editionId: z.string().optional().transform((val: string | undefined) => val ? parseInt(val) : undefined),
-    isPrestige: z.string().optional().transform((val: string | undefined) => val === 'true'),
-    isVisible: z.string().optional().transform((val: string | undefined) => val === 'true'),
-    canCastSpells: z.string().optional().transform((val: string | undefined) => val === 'true'),
-    hitDie: z.string().optional().transform((val: string | undefined) => val ? parseInt(val) : undefined),
-    skillPoints: z.string().optional().transform((val: string | undefined) => val ? parseInt(val) : undefined),
-    castingAbilityId: z.string().optional().transform((val: string | undefined) => val ? parseInt(val) : undefined),
+    editionId: optionalIntegerParam(),
+    isPrestige: optionalBooleanParam(),
+    isVisible: optionalBooleanParam(),
+    canCastSpells: optionalBooleanParam(),
+    hitDie: optionalIntegerParam(),
+    skillPoints: optionalIntegerParam(),
+    castingAbilityId: optionalIntegerParam(),
 });
 
 // Schema for class base
@@ -31,7 +32,7 @@ export const BaseClassSchema = z.object({
     hitDie: z.number().int().min(1, 'Hit die must be at least 1').max(20, 'Hit die must be at most 20'),
     skillPoints: z.number().int().min(0, 'Skill points must be non-negative').max(100, 'Skill points must be less than 100'),
     castingAbilityId: z.number().int().positive('Casting ability ID must be a positive integer').nullable(),
-    description: z.string().max(2000, 'Description must be less than 2000 characters').nullable(),
+    description: z.string().max(10000, 'Description must be less than 10000 characters').nullable(),
 });
 
 export const ClassSchema = BaseClassSchema.extend({

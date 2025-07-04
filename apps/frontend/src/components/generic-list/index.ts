@@ -16,15 +16,18 @@ export type {
     FilterValue,
     FilterState,
     DataItem,
-    FilterComponentProps,
-    FilterOption,
     GenericListProps,
     UseColumnConfigReturn,
     ColumnConfigModalProps,
-    MultiSelectOption,
     MultiSelectProps,
-    SingleSelectOption,
     SingleSelectProps,
     BooleanInputProps,
-    TextInputProps
+    TextInputProps,
+    InputFilterComponentProps,
+    BooleanFilterComponentProps,
+    SingleSelectFilterComponentProps,
+    MultiSelectFilterComponentProps,
+    FilterConfig,
+    FilterType,
+    SelectOption
 } from './types'; 

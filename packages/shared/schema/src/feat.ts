@@ -1,17 +1,18 @@
 import { z } from 'zod';
 import { PageQueryResponseSchema, PageQuerySchema } from './query.js';
+import { optionalBooleanParam, optionalIntegerParam, optionalStringParam } from './utils.js';
 
 // Schema for feat query parameters
 export const FeatQuerySchema = PageQuerySchema.extend({
-    name: z.string().optional(),
-    typeId: z.string().optional().transform((val: string | undefined) => val ? parseInt(val) : undefined),
-    description: z.string().optional(),
-    benefit: z.string().optional(),
-    normalEffect: z.string().optional(),
-    specialEffect: z.string().optional(),
-    prerequisites: z.string().optional(),
-    repeatable: z.string().optional().transform((val: string | undefined) => val === 'true'),
-    fighterBonus: z.string().optional().transform((val: string | undefined) => val === 'true'),
+    name: optionalStringParam(),
+    typeId: optionalIntegerParam(),
+    description: optionalStringParam(),
+    benefit: optionalStringParam(),
+    normalEffect: optionalStringParam(),
+    specialEffect: optionalStringParam(),
+    prerequisites: optionalStringParam(),
+    repeatable: optionalBooleanParam(),
+    fighterBonus: optionalBooleanParam(),
 });
 
 // Schema for feat path parameters
@@ -68,11 +69,33 @@ export const CreateFeatSchema = BaseFeatSchema;
 // Schema for updating a feat (same as create but all fields optional)
 export const UpdateFeatSchema = BaseFeatSchema.partial();
 
+// Schema for feat benefit base
+export const FeatBenefitSchema = z.object({
+    typeId: z.number().int().positive('Benefit type ID must be a positive integer'),
+    referenceId: z.number().int().positive('Reference ID must be a positive integer').nullable(),
+    amount: z.number().int().min(0, 'Benefit amount must be non-negative').nullable(),
+    index: z.number().int().min(0, 'Benefit index must be non-negative'),
+});
+
+// Schema for feat prerequisite base
+export const FeatPrerequisiteSchema = z.object({
+    typeId: z.number().int().positive('Prerequisite type must be a positive integer'),
+    amount: z.number().int().min(0, 'Prerequisite amount must be non-negative').nullable(),
+    referenceId: z.number().int().positive('Reference ID must be a positive integer').nullable(),
+    index: z.number().int().min(0, 'Prerequisite index must be non-negative'),
+});
+
 // Type inference from schemas
 export type FeatQueryRequest = z.infer<typeof FeatQuerySchema>;
 export type FeatIdParamRequest = z.infer<typeof FeatIdParamSchema>;
 export type CreateFeatRequest = z.infer<typeof CreateFeatSchema>;
-export type UpdateFeatRequest = z.infer<typeof UpdateFeatSchema>; 
+export type UpdateFeatRequest = z.infer<typeof UpdateFeatSchema>;
 export type FeatQueryResponse = z.infer<typeof FeatQueryResponseSchema>;
 export type GetAllFeatsResponse = z.infer<typeof GetAllFeatsResponseSchema>;
 export type FeatResponse = z.infer<typeof FeatSchema>;
+
+// Feat benefit types
+export type FeatBenefit = z.infer<typeof FeatBenefitSchema>;
+
+// Feat prerequisite types
+export type FeatPrerequisite = z.infer<typeof FeatPrerequisiteSchema>;

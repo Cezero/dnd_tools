@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const PageQuerySchema = z.object({
     page: z.string().optional().transform((val: string | undefined) => val ? parseInt(val) : 1),
-    limit: z.string().optional().transform((val: string | undefined) => val ? parseInt(val) : 10),
+    limit: z.string().optional().transform((val: string | undefined) => val ? parseInt(val) : 25),
 });
 
 export const PageQueryResponseSchema = z.object({

@@ -1,71 +1,77 @@
-import { Api } from '@/services/Api';
+import { z } from 'zod';
+
+import { typedApi } from '@/services/Api';
 import {
-    validateSkillListResponse,
-    validateSkillResponse,
-    validateCreateSkill,
-    validateUpdateSkill,
-    type SkillFormData,
-    type SkillUpdateData,
-    type SkillListResponse,
-    type SkillResponse
-} from './schema';
+    SkillQuerySchema,
+    SkillIdParamSchema,
+    CreateSkillSchema,
+    UpdateSkillSchema,
+    SkillQueryResponseSchema,
+    SkillSchema,
+} from '@shared/schema';
 
-interface ApiListResponse {
-    results: unknown[];
-    total: number;
-}
+/**
+ * SkillService with path parameter support
+ * 
+ * Usage examples:
+ * 
+ * // Get skills with query parameters
+ * const skills = await SkillService.getSkills({ page: 1, limit: 10 });
+ * 
+ * // Get skill by ID (path parameter)
+ * const skill = await SkillService.getSkillById(undefined, { id: 123 });
+ * 
+ * // Create skill
+ * const newSkill = await SkillService.createSkill({ name: "Acrobatics", abilityId: 1 });
+ * 
+ * // Update skill (path parameter + body)
+ * const updatedSkill = await SkillService.updateSkill(
+ *   { name: "Updated Acrobatics" }, 
+ *   { id: 123 }
+ * );
+ * 
+ * // Delete skill (path parameter)
+ * await SkillService.deleteSkill(undefined, { id: 123 });
+ */
+export const SkillService = {
+    // Get skills with query parameters
+    getSkills: typedApi<typeof SkillQuerySchema, typeof SkillQueryResponseSchema>({
+        path: '/skills',
+        method: 'GET',
+        requestSchema: SkillQuerySchema,
+        responseSchema: SkillQueryResponseSchema,
+    }),
 
-interface ApiDataResponse {
-    data: unknown;
-}
+    // Get skill by ID with path parameter
+    getSkillById: typedApi<undefined, typeof SkillSchema, typeof SkillIdParamSchema>({
+        path: '/skills/:id',
+        method: 'GET',
+        paramsSchema: SkillIdParamSchema,
+        responseSchema: SkillSchema,
+    }),
 
-export const FetchSkills = async (searchParams: URLSearchParams): Promise<SkillListResponse> => {
-    try {
-        const response = await Api(`/skills?${searchParams.toString()}`);
-        return validateSkillListResponse(response);
-    } catch (error) {
-        console.error('Error fetching skills:', error);
-        throw error;
-    }
-};
+    // Create skill
+    createSkill: typedApi<typeof CreateSkillSchema, typeof SkillSchema>({
+        path: '/skills',
+        method: 'POST',
+        requestSchema: CreateSkillSchema,
+        responseSchema: SkillSchema,
+    }),
 
-export const FetchSkillById = async (id: string): Promise<SkillResponse> => {
-    try {
-        const response = await Api(`/skills/${id}`, { method: 'GET' });
-        return validateSkillResponse(response);
-    } catch (error) {
-        console.error(`Error fetching skill with ID ${id}:`, error);
-        throw error;
-    }
-};
+    // Update skill with path parameter
+    updateSkill: typedApi<typeof UpdateSkillSchema, typeof SkillSchema, typeof SkillIdParamSchema>({
+        path: '/skills/:id',
+        method: 'PUT',
+        requestSchema: UpdateSkillSchema,
+        paramsSchema: SkillIdParamSchema,
+        responseSchema: SkillSchema,
+    }),
 
-export const CreateSkill = async (skillData: SkillFormData): Promise<SkillResponse> => {
-    try {
-        const validatedData = validateCreateSkill(skillData);
-        const response = await Api('/skills', { method: 'POST', body: JSON.stringify(validatedData) });
-        return validateSkillResponse(response.data);
-    } catch (error) {
-        console.error('Error creating skill:', error);
-        throw error;
-    }
-};
-
-export const UpdateSkill = async (id: string, skillData: SkillUpdateData): Promise<SkillResponse> => {
-    try {
-        const validatedData = validateUpdateSkill(skillData);
-        const response = await Api(`/skills/${id}`, { method: 'PUT', body: JSON.stringify(validatedData) });
-        return validateSkillResponse(response.data);
-    } catch (error) {
-        console.error(`Error updating skill with ID ${id}:`, error);
-        throw error;
-    }
-};
-
-export const DeleteSkill = async (id: number): Promise<void> => {
-    try {
-        await Api(`/skills/${id}`, { method: 'DELETE' });
-    } catch (error) {
-        console.error(`Error deleting skill with ID ${id}:`, error);
-        throw error;
-    }
+    // Delete skill with path parameter
+    deleteSkill: typedApi<undefined, z.ZodObject<Record<string, never>>, typeof SkillIdParamSchema>({
+        path: '/skills/:id',
+        method: 'DELETE',
+        paramsSchema: SkillIdParamSchema,
+        responseSchema: z.object({}),
+    }),
 }; 

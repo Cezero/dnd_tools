@@ -1,8 +1,3 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useReactTable, getCoreRowModel } from '@tanstack/react-table';
-import { GetReferenceTable, CreateReferenceTable, UpdateReferenceTable } from '@/features/admin/features/ReferenceTableMgmt/ReferenceTableService';
-import { Icon } from '@mdi/react';
 import {
     mdiTableColumnRemove,
     mdiTableRowRemove,
@@ -17,17 +12,24 @@ import {
     mdiBorderRight,
     mdiBorderBottom,
 } from '@mdi/js';
+import { Icon } from '@mdi/react';
+import { useReactTable, getCoreRowModel } from '@tanstack/react-table';
+import React, { useEffect, useState, useRef } from 'react';
 import ReactDOM from 'react-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+
+import { ReferenceTableService } from '@/features/admin/features/reference-table-management/ReferenceTableService';
+
 
 export function ReferenceTableEditor() {
-    const { id } = useParams();
+    const { identifier } = useParams();
     const navigate = useNavigate();
     const [data, setData] = useState([]);
     const [columns, setColumns] = useState([]);
     const [loading, setLoading] = useState(true);
     const [tableName, setTableName] = useState('');
     const [tableDescription, setTableDescription] = useState('');
-    const [tableId, setTableId] = useState(id);
+    const [tableId, setTableId] = useState(identifier);
     const [tableSlug, setTableSlug] = useState('');
 
     // Refs for focus management
@@ -195,7 +197,7 @@ export function ReferenceTableEditor() {
 
     useEffect(() => {
         async function FetchTable() {
-            if (id === 'new') {
+            if (identifier === 'new') {
                 const defaultData = Array.from({ length: 3 }, () => ({ col1: '', col2: '', col3: '' }));
                 setData(defaultData);
                 setColumns([
@@ -208,7 +210,8 @@ export function ReferenceTableEditor() {
                 setTableSlug('');
                 setLoading(false);
             } else {
-                const { table, headers, rows } = await GetReferenceTable(id);
+                const tableData = await ReferenceTableService.getReferenceTableByIdentifier(undefined, { identifier: identifier });
+                const { table, headers, rows } = tableData;
                 setTableName(table.name);
                 setTableDescription(table.description ?? '');
                 setTableSlug(table.slug ?? '');
@@ -242,7 +245,7 @@ export function ReferenceTableEditor() {
             }
         }
         FetchTable();
-    }, [id]);
+    }, [identifier]);
 
     const Table = useReactTable({
         data,
@@ -374,11 +377,11 @@ export function ReferenceTableEditor() {
 
         try {
             if (tableId === 'new') {
-                const response = await CreateReferenceTable(tableData);
-                setTableId(response.id); // Update tableId with the new ID
+                const response = await ReferenceTableService.createReferenceTable(tableData);
+                setTableId(response.slug); // Update tableId with the new slug
                 navigate('/admin/referencetables');
             } else {
-                await UpdateReferenceTable(tableId, tableData);
+                await ReferenceTableService.updateReferenceTable(tableData, { identifier: tableId });
                 navigate('/admin/referencetables');
             }
         } catch (error) {

@@ -1,5 +1,5 @@
-import { visit } from 'unist-util-visit';
 import type { Root, Element } from 'hast';
+import { visit } from 'unist-util-visit';
 
 export function RehypeLinkPreviews() {
     return (tree: Root) => {
@@ -13,7 +13,7 @@ export function RehypeLinkPreviews() {
                     href?: string;
                     className?: string[];
                     'data-preview'?: string;
-                    [key: string]: any;
+                    [key: string]: unknown;
                 };
 
                 props.className = ['entity-link', 'hover-preview'];
