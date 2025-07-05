@@ -3,7 +3,8 @@ import { Response } from 'express';
 import { ValidatedQueryT, ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types'
 import {
     ClassIdParamRequest,
-    ClassQueryRequest,ClassResponse,
+    ClassQueryRequest,
+    GetClassResponse,
     ClassQueryResponse,
     GetAllClassesResponse,
     CreateClassRequest,
@@ -27,7 +28,7 @@ export async function GetAllClasses(req: ValidatedNoInput<GetAllClassesResponse>
 /**
  * Fetches a single class by its ID.
  */
-export async function GetClassById(req: ValidatedParamsT<ClassIdParamRequest, ClassResponse>, res: Response) {
+export async function GetClassById(req: ValidatedParamsT<ClassIdParamRequest, GetClassResponse>, res: Response) {
     const cls = await classService.getClassById(req.params);
 
     if (!cls) {

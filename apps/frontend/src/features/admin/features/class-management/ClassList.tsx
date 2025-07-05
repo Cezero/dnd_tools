@@ -5,8 +5,8 @@ import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list';
 import { COLUMN_DEFINITIONS } from '@/features/admin/features/class-management/ClassConfig';
 import { ClassService } from '@/features/admin/features/class-management/ClassService';
-import { ClassQuerySchema, ClassResponse } from '@shared/schema';
-import { RPG_DICE, EDITION_MAP, ABILITY_MAP } from '@shared/static-data';
+import { ClassQuerySchema, ClassInQueryResponse } from '@shared/schema';
+import { RPG_DICE, EDITION_MAP, ABILITY_MAP, GetSourceDisplay } from '@shared/static-data';
 
 export default function ClassList(): React.JSX.Element {
     const navigate = useNavigate();
@@ -28,11 +28,11 @@ export default function ClassList(): React.JSX.Element {
         }
     };
 
-    const RenderCell = (item: ClassResponse, columnId: string): React.ReactNode => {
+    const RenderCell = (item: ClassInQueryResponse, columnId: string): React.ReactNode => {
         const column = COLUMN_DEFINITIONS[columnId];
         if (!column) return null;
 
-        let cellContent: React.ReactNode = String(item[columnId as keyof ClassResponse] || '');
+        let cellContent: React.ReactNode = String(item[columnId as keyof ClassInQueryResponse] || '');
 
         if (columnId === 'name') {
             cellContent = (
@@ -54,6 +54,12 @@ export default function ClassList(): React.JSX.Element {
             cellContent = `${RPG_DICE[item.hitDie]?.name || 'Unknown'}`;
         } else if (columnId === 'castingAbilityId') {
             cellContent = item.castingAbilityId ? ABILITY_MAP[item.castingAbilityId]?.name || 'Unknown' : 'None';
+        } else if (columnId === 'sourceId') {
+            if (item.sourceBookInfo && item.sourceBookInfo.length > 0) {
+                cellContent = GetSourceDisplay(item.sourceBookInfo.map(s => ({ bookId: s.sourceBookId, pageNumber: s.pageNumber })), true);
+            } else {
+                cellContent = '';
+            }
         }
 
         return cellContent;
@@ -74,14 +80,13 @@ export default function ClassList(): React.JSX.Element {
                     New Class
                 </button>
             </div>
-            <GenericList<ClassResponse>
+            <GenericList<ClassInQueryResponse>
                 storageKey="classes-list"
                 columnDefinitions={COLUMN_DEFINITIONS}
                 querySchema={ClassQuerySchema}
                 serviceFunction={ClassService.getClasses}
                 renderCell={RenderCell}
                 detailPagePath="/admin/classes/:id"
-                idKey="id"
                 itemDesc="class"
                 editHandler={(item) => navigate(`/admin/classes/${item.id}/edit`)}
                 deleteHandler={(item) => HandleDeleteClass(item.id)}

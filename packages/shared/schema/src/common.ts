@@ -100,4 +100,16 @@ export const commonSchemas = {
     pagination: commonValidations.paginationQuery,
     authHeader: commonValidations.authHeader,
     idParam: commonValidations.idParam(),
-}; 
+};
+
+export const UpdateResponseSchema = z.object({
+    message: z.string(),
+});
+
+export const CreateResponseSchema = z.object({
+    id: z.string(),
+    message: z.string(),
+});
+
+export type UpdateResponse = z.infer<typeof UpdateResponseSchema>;
+export type CreateResponse = z.infer<typeof CreateResponseSchema>;

@@ -127,7 +127,6 @@ export interface GenericListProps<T = DataItem> {
 
     // Routing props
     detailPagePath?: string;
-    idKey?: string;
     itemDesc?: string;
     dynamicFilterDelay?: number;
     initialLimit?: number;

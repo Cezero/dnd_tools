@@ -94,7 +94,6 @@ export function SkillList(): React.JSX.Element {
                 serviceFunction={SkillService.getSkills}
                 renderCell={RenderCell}
                 detailPagePath="/admin/skills/:id"
-                idKey="id"
                 itemDesc="skill"
                 editHandler={(item: SkillResponse) => navigate(`/admin/skills/${item.id}/edit`)}
                 deleteHandler={(item: SkillResponse) => HandleDeleteSkill(item.id)}

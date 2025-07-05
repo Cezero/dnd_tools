@@ -24,10 +24,15 @@ export type Class = $Result.DefaultSelection<Prisma.$ClassPayload>
  */
 export type ClassFeature = $Result.DefaultSelection<Prisma.$ClassFeaturePayload>
 /**
- * Model ClassSpellLevel
+ * Model ClassFeatureMap
  * 
  */
-export type ClassSpellLevel = $Result.DefaultSelection<Prisma.$ClassSpellLevelPayload>
+export type ClassFeatureMap = $Result.DefaultSelection<Prisma.$ClassFeatureMapPayload>
+/**
+ * Model ClassSpellProgression
+ * 
+ */
+export type ClassSpellProgression = $Result.DefaultSelection<Prisma.$ClassSpellProgressionPayload>
 /**
  * Model ClassLevelAttribute
  * 
@@ -343,14 +348,24 @@ export class PrismaClient<
   get classFeature(): Prisma.ClassFeatureDelegate<ExtArgs, ClientOptions>;
 
   /**
-   * `prisma.classSpellLevel`: Exposes CRUD operations for the **ClassSpellLevel** model.
+   * `prisma.classFeatureMap`: Exposes CRUD operations for the **ClassFeatureMap** model.
     * Example usage:
     * ```ts
-    * // Fetch zero or more ClassSpellLevels
-    * const classSpellLevels = await prisma.classSpellLevel.findMany()
+    * // Fetch zero or more ClassFeatureMaps
+    * const classFeatureMaps = await prisma.classFeatureMap.findMany()
     * ```
     */
-  get classSpellLevel(): Prisma.ClassSpellLevelDelegate<ExtArgs, ClientOptions>;
+  get classFeatureMap(): Prisma.ClassFeatureMapDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.classSpellProgression`: Exposes CRUD operations for the **ClassSpellProgression** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ClassSpellProgressions
+    * const classSpellProgressions = await prisma.classSpellProgression.findMany()
+    * ```
+    */
+  get classSpellProgression(): Prisma.ClassSpellProgressionDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.classLevelAttribute`: Exposes CRUD operations for the **ClassLevelAttribute** model.
@@ -1093,7 +1108,8 @@ export namespace Prisma {
   export const ModelName: {
     Class: 'Class',
     ClassFeature: 'ClassFeature',
-    ClassSpellLevel: 'ClassSpellLevel',
+    ClassFeatureMap: 'ClassFeatureMap',
+    ClassSpellProgression: 'ClassSpellProgression',
     ClassLevelAttribute: 'ClassLevelAttribute',
     ClassSkillMap: 'ClassSkillMap',
     ClassSourceMap: 'ClassSourceMap',
@@ -1142,7 +1158,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "class" | "classFeature" | "classSpellLevel" | "classLevelAttribute" | "classSkillMap" | "classSourceMap" | "spellLevelMap" | "spell" | "spellDescriptorMap" | "spellSchoolMap" | "spellSourceMap" | "spellSubschoolMap" | "spellComponentMap" | "skill" | "feat" | "featBenefitMap" | "featPrerequisiteMap" | "race" | "raceTrait" | "raceTraitMap" | "raceAbilityAdjustment" | "raceLanguageMap" | "raceSourceMap" | "armor" | "weapon" | "sourceBook" | "referenceTable" | "referenceTableColumn" | "referenceTableRow" | "referenceTableCell" | "userCharacter" | "userCharacterAttribute" | "user"
+      modelProps: "class" | "classFeature" | "classFeatureMap" | "classSpellProgression" | "classLevelAttribute" | "classSkillMap" | "classSourceMap" | "spellLevelMap" | "spell" | "spellDescriptorMap" | "spellSchoolMap" | "spellSourceMap" | "spellSubschoolMap" | "spellComponentMap" | "skill" | "feat" | "featBenefitMap" | "featPrerequisiteMap" | "race" | "raceTrait" | "raceTraitMap" | "raceAbilityAdjustment" | "raceLanguageMap" | "raceSourceMap" | "armor" | "weapon" | "sourceBook" | "referenceTable" | "referenceTableColumn" | "referenceTableRow" | "referenceTableCell" | "userCharacter" | "userCharacterAttribute" | "user"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1278,69 +1294,135 @@ export namespace Prisma {
           }
         }
       }
-      ClassSpellLevel: {
-        payload: Prisma.$ClassSpellLevelPayload<ExtArgs>
-        fields: Prisma.ClassSpellLevelFieldRefs
+      ClassFeatureMap: {
+        payload: Prisma.$ClassFeatureMapPayload<ExtArgs>
+        fields: Prisma.ClassFeatureMapFieldRefs
         operations: {
           findUnique: {
-            args: Prisma.ClassSpellLevelFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ClassSpellLevelPayload> | null
+            args: Prisma.ClassFeatureMapFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ClassFeatureMapPayload> | null
           }
           findUniqueOrThrow: {
-            args: Prisma.ClassSpellLevelFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ClassSpellLevelPayload>
+            args: Prisma.ClassFeatureMapFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ClassFeatureMapPayload>
           }
           findFirst: {
-            args: Prisma.ClassSpellLevelFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ClassSpellLevelPayload> | null
+            args: Prisma.ClassFeatureMapFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ClassFeatureMapPayload> | null
           }
           findFirstOrThrow: {
-            args: Prisma.ClassSpellLevelFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ClassSpellLevelPayload>
+            args: Prisma.ClassFeatureMapFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ClassFeatureMapPayload>
           }
           findMany: {
-            args: Prisma.ClassSpellLevelFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ClassSpellLevelPayload>[]
+            args: Prisma.ClassFeatureMapFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ClassFeatureMapPayload>[]
           }
           create: {
-            args: Prisma.ClassSpellLevelCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ClassSpellLevelPayload>
+            args: Prisma.ClassFeatureMapCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ClassFeatureMapPayload>
           }
           createMany: {
-            args: Prisma.ClassSpellLevelCreateManyArgs<ExtArgs>
+            args: Prisma.ClassFeatureMapCreateManyArgs<ExtArgs>
             result: BatchPayload
           }
           delete: {
-            args: Prisma.ClassSpellLevelDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ClassSpellLevelPayload>
+            args: Prisma.ClassFeatureMapDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ClassFeatureMapPayload>
           }
           update: {
-            args: Prisma.ClassSpellLevelUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ClassSpellLevelPayload>
+            args: Prisma.ClassFeatureMapUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ClassFeatureMapPayload>
           }
           deleteMany: {
-            args: Prisma.ClassSpellLevelDeleteManyArgs<ExtArgs>
+            args: Prisma.ClassFeatureMapDeleteManyArgs<ExtArgs>
             result: BatchPayload
           }
           updateMany: {
-            args: Prisma.ClassSpellLevelUpdateManyArgs<ExtArgs>
+            args: Prisma.ClassFeatureMapUpdateManyArgs<ExtArgs>
             result: BatchPayload
           }
           upsert: {
-            args: Prisma.ClassSpellLevelUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ClassSpellLevelPayload>
+            args: Prisma.ClassFeatureMapUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ClassFeatureMapPayload>
           }
           aggregate: {
-            args: Prisma.ClassSpellLevelAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateClassSpellLevel>
+            args: Prisma.ClassFeatureMapAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateClassFeatureMap>
           }
           groupBy: {
-            args: Prisma.ClassSpellLevelGroupByArgs<ExtArgs>
-            result: $Utils.Optional<ClassSpellLevelGroupByOutputType>[]
+            args: Prisma.ClassFeatureMapGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ClassFeatureMapGroupByOutputType>[]
           }
           count: {
-            args: Prisma.ClassSpellLevelCountArgs<ExtArgs>
-            result: $Utils.Optional<ClassSpellLevelCountAggregateOutputType> | number
+            args: Prisma.ClassFeatureMapCountArgs<ExtArgs>
+            result: $Utils.Optional<ClassFeatureMapCountAggregateOutputType> | number
+          }
+        }
+      }
+      ClassSpellProgression: {
+        payload: Prisma.$ClassSpellProgressionPayload<ExtArgs>
+        fields: Prisma.ClassSpellProgressionFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ClassSpellProgressionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ClassSpellProgressionPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ClassSpellProgressionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ClassSpellProgressionPayload>
+          }
+          findFirst: {
+            args: Prisma.ClassSpellProgressionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ClassSpellProgressionPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ClassSpellProgressionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ClassSpellProgressionPayload>
+          }
+          findMany: {
+            args: Prisma.ClassSpellProgressionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ClassSpellProgressionPayload>[]
+          }
+          create: {
+            args: Prisma.ClassSpellProgressionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ClassSpellProgressionPayload>
+          }
+          createMany: {
+            args: Prisma.ClassSpellProgressionCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.ClassSpellProgressionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ClassSpellProgressionPayload>
+          }
+          update: {
+            args: Prisma.ClassSpellProgressionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ClassSpellProgressionPayload>
+          }
+          deleteMany: {
+            args: Prisma.ClassSpellProgressionDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ClassSpellProgressionUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ClassSpellProgressionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ClassSpellProgressionPayload>
+          }
+          aggregate: {
+            args: Prisma.ClassSpellProgressionAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateClassSpellProgression>
+          }
+          groupBy: {
+            args: Prisma.ClassSpellProgressionGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ClassSpellProgressionGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ClassSpellProgressionCountArgs<ExtArgs>
+            result: $Utils.Optional<ClassSpellProgressionCountAggregateOutputType> | number
           }
         }
       }
@@ -3410,7 +3492,8 @@ export namespace Prisma {
   export type GlobalOmitConfig = {
     class?: ClassOmit
     classFeature?: ClassFeatureOmit
-    classSpellLevel?: ClassSpellLevelOmit
+    classFeatureMap?: ClassFeatureMapOmit
+    classSpellProgression?: ClassSpellProgressionOmit
     classLevelAttribute?: ClassLevelAttributeOmit
     classSkillMap?: ClassSkillMapOmit
     classSourceMap?: ClassSourceMapOmit
@@ -3539,7 +3622,7 @@ export namespace Prisma {
     attributes: number
     spellProgression: number
     skills: number
-    sources: number
+    sourceBookInfo: number
     spellLevels: number
   }
 
@@ -3548,7 +3631,7 @@ export namespace Prisma {
     attributes?: boolean | ClassCountOutputTypeCountAttributesArgs
     spellProgression?: boolean | ClassCountOutputTypeCountSpellProgressionArgs
     skills?: boolean | ClassCountOutputTypeCountSkillsArgs
-    sources?: boolean | ClassCountOutputTypeCountSourcesArgs
+    sourceBookInfo?: boolean | ClassCountOutputTypeCountSourceBookInfoArgs
     spellLevels?: boolean | ClassCountOutputTypeCountSpellLevelsArgs
   }
 
@@ -3567,7 +3650,7 @@ export namespace Prisma {
    * ClassCountOutputType without action
    */
   export type ClassCountOutputTypeCountFeaturesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: ClassFeatureWhereInput
+    where?: ClassFeatureMapWhereInput
   }
 
   /**
@@ -3581,7 +3664,7 @@ export namespace Prisma {
    * ClassCountOutputType without action
    */
   export type ClassCountOutputTypeCountSpellProgressionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: ClassSpellLevelWhereInput
+    where?: ClassSpellProgressionWhereInput
   }
 
   /**
@@ -3594,7 +3677,7 @@ export namespace Prisma {
   /**
    * ClassCountOutputType without action
    */
-  export type ClassCountOutputTypeCountSourcesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type ClassCountOutputTypeCountSourceBookInfoArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ClassSourceMapWhereInput
   }
 
@@ -3603,6 +3686,37 @@ export namespace Prisma {
    */
   export type ClassCountOutputTypeCountSpellLevelsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: SpellLevelMapWhereInput
+  }
+
+
+  /**
+   * Count Type ClassFeatureCountOutputType
+   */
+
+  export type ClassFeatureCountOutputType = {
+    classes: number
+  }
+
+  export type ClassFeatureCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    classes?: boolean | ClassFeatureCountOutputTypeCountClassesArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * ClassFeatureCountOutputType without action
+   */
+  export type ClassFeatureCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ClassFeatureCountOutputType
+     */
+    select?: ClassFeatureCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * ClassFeatureCountOutputType without action
+   */
+  export type ClassFeatureCountOutputTypeCountClassesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ClassFeatureMapWhereInput
   }
 
 
@@ -4343,7 +4457,7 @@ export namespace Prisma {
     attributes?: boolean | Class$attributesArgs<ExtArgs>
     spellProgression?: boolean | Class$spellProgressionArgs<ExtArgs>
     skills?: boolean | Class$skillsArgs<ExtArgs>
-    sources?: boolean | Class$sourcesArgs<ExtArgs>
+    sourceBookInfo?: boolean | Class$sourceBookInfoArgs<ExtArgs>
     spellLevels?: boolean | Class$spellLevelsArgs<ExtArgs>
     _count?: boolean | ClassCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["class"]>
@@ -4370,7 +4484,7 @@ export namespace Prisma {
     attributes?: boolean | Class$attributesArgs<ExtArgs>
     spellProgression?: boolean | Class$spellProgressionArgs<ExtArgs>
     skills?: boolean | Class$skillsArgs<ExtArgs>
-    sources?: boolean | Class$sourcesArgs<ExtArgs>
+    sourceBookInfo?: boolean | Class$sourceBookInfoArgs<ExtArgs>
     spellLevels?: boolean | Class$spellLevelsArgs<ExtArgs>
     _count?: boolean | ClassCountOutputTypeDefaultArgs<ExtArgs>
   }
@@ -4378,11 +4492,11 @@ export namespace Prisma {
   export type $ClassPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Class"
     objects: {
-      features: Prisma.$ClassFeaturePayload<ExtArgs>[]
+      features: Prisma.$ClassFeatureMapPayload<ExtArgs>[]
       attributes: Prisma.$ClassLevelAttributePayload<ExtArgs>[]
-      spellProgression: Prisma.$ClassSpellLevelPayload<ExtArgs>[]
+      spellProgression: Prisma.$ClassSpellProgressionPayload<ExtArgs>[]
       skills: Prisma.$ClassSkillMapPayload<ExtArgs>[]
-      sources: Prisma.$ClassSourceMapPayload<ExtArgs>[]
+      sourceBookInfo: Prisma.$ClassSourceMapPayload<ExtArgs>[]
       spellLevels: Prisma.$SpellLevelMapPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
@@ -4737,11 +4851,11 @@ export namespace Prisma {
    */
   export interface Prisma__ClassClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
-    features<T extends Class$featuresArgs<ExtArgs> = {}>(args?: Subset<T, Class$featuresArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ClassFeaturePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    features<T extends Class$featuresArgs<ExtArgs> = {}>(args?: Subset<T, Class$featuresArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ClassFeatureMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     attributes<T extends Class$attributesArgs<ExtArgs> = {}>(args?: Subset<T, Class$attributesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ClassLevelAttributePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    spellProgression<T extends Class$spellProgressionArgs<ExtArgs> = {}>(args?: Subset<T, Class$spellProgressionArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ClassSpellLevelPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    spellProgression<T extends Class$spellProgressionArgs<ExtArgs> = {}>(args?: Subset<T, Class$spellProgressionArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ClassSpellProgressionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     skills<T extends Class$skillsArgs<ExtArgs> = {}>(args?: Subset<T, Class$skillsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ClassSkillMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    sources<T extends Class$sourcesArgs<ExtArgs> = {}>(args?: Subset<T, Class$sourcesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ClassSourceMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    sourceBookInfo<T extends Class$sourceBookInfoArgs<ExtArgs> = {}>(args?: Subset<T, Class$sourceBookInfoArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ClassSourceMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     spellLevels<T extends Class$spellLevelsArgs<ExtArgs> = {}>(args?: Subset<T, Class$spellLevelsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SpellLevelMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -5130,23 +5244,23 @@ export namespace Prisma {
    */
   export type Class$featuresArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the ClassFeature
+     * Select specific fields to fetch from the ClassFeatureMap
      */
-    select?: ClassFeatureSelect<ExtArgs> | null
+    select?: ClassFeatureMapSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the ClassFeature
+     * Omit specific fields from the ClassFeatureMap
      */
-    omit?: ClassFeatureOmit<ExtArgs> | null
+    omit?: ClassFeatureMapOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: ClassFeatureInclude<ExtArgs> | null
-    where?: ClassFeatureWhereInput
-    orderBy?: ClassFeatureOrderByWithRelationInput | ClassFeatureOrderByWithRelationInput[]
-    cursor?: ClassFeatureWhereUniqueInput
+    include?: ClassFeatureMapInclude<ExtArgs> | null
+    where?: ClassFeatureMapWhereInput
+    orderBy?: ClassFeatureMapOrderByWithRelationInput | ClassFeatureMapOrderByWithRelationInput[]
+    cursor?: ClassFeatureMapWhereUniqueInput
     take?: number
     skip?: number
-    distinct?: ClassFeatureScalarFieldEnum | ClassFeatureScalarFieldEnum[]
+    distinct?: ClassFeatureMapScalarFieldEnum | ClassFeatureMapScalarFieldEnum[]
   }
 
   /**
@@ -5178,23 +5292,23 @@ export namespace Prisma {
    */
   export type Class$spellProgressionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the ClassSpellLevel
+     * Select specific fields to fetch from the ClassSpellProgression
      */
-    select?: ClassSpellLevelSelect<ExtArgs> | null
+    select?: ClassSpellProgressionSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the ClassSpellLevel
+     * Omit specific fields from the ClassSpellProgression
      */
-    omit?: ClassSpellLevelOmit<ExtArgs> | null
+    omit?: ClassSpellProgressionOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: ClassSpellLevelInclude<ExtArgs> | null
-    where?: ClassSpellLevelWhereInput
-    orderBy?: ClassSpellLevelOrderByWithRelationInput | ClassSpellLevelOrderByWithRelationInput[]
-    cursor?: ClassSpellLevelWhereUniqueInput
+    include?: ClassSpellProgressionInclude<ExtArgs> | null
+    where?: ClassSpellProgressionWhereInput
+    orderBy?: ClassSpellProgressionOrderByWithRelationInput | ClassSpellProgressionOrderByWithRelationInput[]
+    cursor?: ClassSpellProgressionWhereUniqueInput
     take?: number
     skip?: number
-    distinct?: ClassSpellLevelScalarFieldEnum | ClassSpellLevelScalarFieldEnum[]
+    distinct?: ClassSpellProgressionScalarFieldEnum | ClassSpellProgressionScalarFieldEnum[]
   }
 
   /**
@@ -5222,9 +5336,9 @@ export namespace Prisma {
   }
 
   /**
-   * Class.sources
+   * Class.sourceBookInfo
    */
-  export type Class$sourcesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type Class$sourceBookInfoArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
      * Select specific fields to fetch from the ClassSourceMap
      */
@@ -5294,84 +5408,40 @@ export namespace Prisma {
 
   export type AggregateClassFeature = {
     _count: ClassFeatureCountAggregateOutputType | null
-    _avg: ClassFeatureAvgAggregateOutputType | null
-    _sum: ClassFeatureSumAggregateOutputType | null
     _min: ClassFeatureMinAggregateOutputType | null
     _max: ClassFeatureMaxAggregateOutputType | null
   }
 
-  export type ClassFeatureAvgAggregateOutputType = {
-    id: number | null
-    classId: number | null
-    level: number | null
-  }
-
-  export type ClassFeatureSumAggregateOutputType = {
-    id: number | null
-    classId: number | null
-    level: number | null
-  }
-
   export type ClassFeatureMinAggregateOutputType = {
-    id: number | null
-    classId: number | null
-    name: string | null
+    slug: string | null
     description: string | null
-    level: number | null
   }
 
   export type ClassFeatureMaxAggregateOutputType = {
-    id: number | null
-    classId: number | null
-    name: string | null
+    slug: string | null
     description: string | null
-    level: number | null
   }
 
   export type ClassFeatureCountAggregateOutputType = {
-    id: number
-    classId: number
-    name: number
+    slug: number
     description: number
-    level: number
     _all: number
   }
 
 
-  export type ClassFeatureAvgAggregateInputType = {
-    id?: true
-    classId?: true
-    level?: true
-  }
-
-  export type ClassFeatureSumAggregateInputType = {
-    id?: true
-    classId?: true
-    level?: true
-  }
-
   export type ClassFeatureMinAggregateInputType = {
-    id?: true
-    classId?: true
-    name?: true
+    slug?: true
     description?: true
-    level?: true
   }
 
   export type ClassFeatureMaxAggregateInputType = {
-    id?: true
-    classId?: true
-    name?: true
+    slug?: true
     description?: true
-    level?: true
   }
 
   export type ClassFeatureCountAggregateInputType = {
-    id?: true
-    classId?: true
-    name?: true
+    slug?: true
     description?: true
-    level?: true
     _all?: true
   }
 
@@ -5413,18 +5483,6 @@ export namespace Prisma {
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
-     * Select which fields to average
-    **/
-    _avg?: ClassFeatureAvgAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to sum
-    **/
-    _sum?: ClassFeatureSumAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
      * Select which fields to find the minimum value
     **/
     _min?: ClassFeatureMinAggregateInputType
@@ -5455,21 +5513,14 @@ export namespace Prisma {
     take?: number
     skip?: number
     _count?: ClassFeatureCountAggregateInputType | true
-    _avg?: ClassFeatureAvgAggregateInputType
-    _sum?: ClassFeatureSumAggregateInputType
     _min?: ClassFeatureMinAggregateInputType
     _max?: ClassFeatureMaxAggregateInputType
   }
 
   export type ClassFeatureGroupByOutputType = {
-    id: number
-    classId: number
-    name: string
-    description: string | null
-    level: number | null
+    slug: string
+    description: string
     _count: ClassFeatureCountAggregateOutputType | null
-    _avg: ClassFeatureAvgAggregateOutputType | null
-    _sum: ClassFeatureSumAggregateOutputType | null
     _min: ClassFeatureMinAggregateOutputType | null
     _max: ClassFeatureMaxAggregateOutputType | null
   }
@@ -5489,40 +5540,33 @@ export namespace Prisma {
 
 
   export type ClassFeatureSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    classId?: boolean
-    name?: boolean
+    slug?: boolean
     description?: boolean
-    level?: boolean
-    class?: boolean | ClassDefaultArgs<ExtArgs>
+    classes?: boolean | ClassFeature$classesArgs<ExtArgs>
+    _count?: boolean | ClassFeatureCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["classFeature"]>
 
 
 
   export type ClassFeatureSelectScalar = {
-    id?: boolean
-    classId?: boolean
-    name?: boolean
+    slug?: boolean
     description?: boolean
-    level?: boolean
   }
 
-  export type ClassFeatureOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "classId" | "name" | "description" | "level", ExtArgs["result"]["classFeature"]>
+  export type ClassFeatureOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"slug" | "description", ExtArgs["result"]["classFeature"]>
   export type ClassFeatureInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    class?: boolean | ClassDefaultArgs<ExtArgs>
+    classes?: boolean | ClassFeature$classesArgs<ExtArgs>
+    _count?: boolean | ClassFeatureCountOutputTypeDefaultArgs<ExtArgs>
   }
 
   export type $ClassFeaturePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "ClassFeature"
     objects: {
-      class: Prisma.$ClassPayload<ExtArgs>
+      classes: Prisma.$ClassFeatureMapPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
-      id: number
-      classId: number
-      name: string
-      description: string | null
-      level: number | null
+      slug: string
+      description: string
     }, ExtArgs["result"]["classFeature"]>
     composites: {}
   }
@@ -5606,8 +5650,8 @@ export namespace Prisma {
      * // Get first 10 ClassFeatures
      * const classFeatures = await prisma.classFeature.findMany({ take: 10 })
      * 
-     * // Only select the `id`
-     * const classFeatureWithIdOnly = await prisma.classFeature.findMany({ select: { id: true } })
+     * // Only select the `slug`
+     * const classFeatureWithSlugOnly = await prisma.classFeature.findMany({ select: { slug: true } })
      * 
      */
     findMany<T extends ClassFeatureFindManyArgs>(args?: SelectSubset<T, ClassFeatureFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ClassFeaturePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -5863,7 +5907,7 @@ export namespace Prisma {
    */
   export interface Prisma__ClassFeatureClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
-    class<T extends ClassDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ClassDefaultArgs<ExtArgs>>): Prisma__ClassClient<$Result.GetResult<Prisma.$ClassPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    classes<T extends ClassFeature$classesArgs<ExtArgs> = {}>(args?: Subset<T, ClassFeature$classesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ClassFeatureMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -5893,11 +5937,8 @@ export namespace Prisma {
    * Fields of the ClassFeature model
    */
   interface ClassFeatureFieldRefs {
-    readonly id: FieldRef<"ClassFeature", 'Int'>
-    readonly classId: FieldRef<"ClassFeature", 'Int'>
-    readonly name: FieldRef<"ClassFeature", 'String'>
+    readonly slug: FieldRef<"ClassFeature", 'String'>
     readonly description: FieldRef<"ClassFeature", 'String'>
-    readonly level: FieldRef<"ClassFeature", 'Int'>
   }
     
 
@@ -6241,6 +6282,30 @@ export namespace Prisma {
   }
 
   /**
+   * ClassFeature.classes
+   */
+  export type ClassFeature$classesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ClassFeatureMap
+     */
+    select?: ClassFeatureMapSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ClassFeatureMap
+     */
+    omit?: ClassFeatureMapOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ClassFeatureMapInclude<ExtArgs> | null
+    where?: ClassFeatureMapWhereInput
+    orderBy?: ClassFeatureMapOrderByWithRelationInput | ClassFeatureMapOrderByWithRelationInput[]
+    cursor?: ClassFeatureMapWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ClassFeatureMapScalarFieldEnum | ClassFeatureMapScalarFieldEnum[]
+  }
+
+  /**
    * ClassFeature without action
    */
   export type ClassFeatureDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6260,371 +6325,356 @@ export namespace Prisma {
 
 
   /**
-   * Model ClassSpellLevel
+   * Model ClassFeatureMap
    */
 
-  export type AggregateClassSpellLevel = {
-    _count: ClassSpellLevelCountAggregateOutputType | null
-    _avg: ClassSpellLevelAvgAggregateOutputType | null
-    _sum: ClassSpellLevelSumAggregateOutputType | null
-    _min: ClassSpellLevelMinAggregateOutputType | null
-    _max: ClassSpellLevelMaxAggregateOutputType | null
+  export type AggregateClassFeatureMap = {
+    _count: ClassFeatureMapCountAggregateOutputType | null
+    _avg: ClassFeatureMapAvgAggregateOutputType | null
+    _sum: ClassFeatureMapSumAggregateOutputType | null
+    _min: ClassFeatureMapMinAggregateOutputType | null
+    _max: ClassFeatureMapMaxAggregateOutputType | null
   }
 
-  export type ClassSpellLevelAvgAggregateOutputType = {
+  export type ClassFeatureMapAvgAggregateOutputType = {
     classId: number | null
     level: number | null
-    spellLevel: number | null
-    numSpells: number | null
   }
 
-  export type ClassSpellLevelSumAggregateOutputType = {
+  export type ClassFeatureMapSumAggregateOutputType = {
     classId: number | null
     level: number | null
-    spellLevel: number | null
-    numSpells: number | null
   }
 
-  export type ClassSpellLevelMinAggregateOutputType = {
+  export type ClassFeatureMapMinAggregateOutputType = {
     classId: number | null
+    featureSlug: string | null
     level: number | null
-    spellLevel: number | null
-    numSpells: number | null
   }
 
-  export type ClassSpellLevelMaxAggregateOutputType = {
+  export type ClassFeatureMapMaxAggregateOutputType = {
     classId: number | null
+    featureSlug: string | null
     level: number | null
-    spellLevel: number | null
-    numSpells: number | null
   }
 
-  export type ClassSpellLevelCountAggregateOutputType = {
+  export type ClassFeatureMapCountAggregateOutputType = {
     classId: number
+    featureSlug: number
     level: number
-    spellLevel: number
-    numSpells: number
     _all: number
   }
 
 
-  export type ClassSpellLevelAvgAggregateInputType = {
+  export type ClassFeatureMapAvgAggregateInputType = {
     classId?: true
     level?: true
-    spellLevel?: true
-    numSpells?: true
   }
 
-  export type ClassSpellLevelSumAggregateInputType = {
+  export type ClassFeatureMapSumAggregateInputType = {
     classId?: true
     level?: true
-    spellLevel?: true
-    numSpells?: true
   }
 
-  export type ClassSpellLevelMinAggregateInputType = {
+  export type ClassFeatureMapMinAggregateInputType = {
     classId?: true
+    featureSlug?: true
     level?: true
-    spellLevel?: true
-    numSpells?: true
   }
 
-  export type ClassSpellLevelMaxAggregateInputType = {
+  export type ClassFeatureMapMaxAggregateInputType = {
     classId?: true
+    featureSlug?: true
     level?: true
-    spellLevel?: true
-    numSpells?: true
   }
 
-  export type ClassSpellLevelCountAggregateInputType = {
+  export type ClassFeatureMapCountAggregateInputType = {
     classId?: true
+    featureSlug?: true
     level?: true
-    spellLevel?: true
-    numSpells?: true
     _all?: true
   }
 
-  export type ClassSpellLevelAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type ClassFeatureMapAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Filter which ClassSpellLevel to aggregate.
+     * Filter which ClassFeatureMap to aggregate.
      */
-    where?: ClassSpellLevelWhereInput
+    where?: ClassFeatureMapWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of ClassSpellLevels to fetch.
+     * Determine the order of ClassFeatureMaps to fetch.
      */
-    orderBy?: ClassSpellLevelOrderByWithRelationInput | ClassSpellLevelOrderByWithRelationInput[]
+    orderBy?: ClassFeatureMapOrderByWithRelationInput | ClassFeatureMapOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
      * Sets the start position
      */
-    cursor?: ClassSpellLevelWhereUniqueInput
+    cursor?: ClassFeatureMapWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` ClassSpellLevels from the position of the cursor.
+     * Take `±n` ClassFeatureMaps from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` ClassSpellLevels.
+     * Skip the first `n` ClassFeatureMaps.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
-     * Count returned ClassSpellLevels
+     * Count returned ClassFeatureMaps
     **/
-    _count?: true | ClassSpellLevelCountAggregateInputType
+    _count?: true | ClassFeatureMapCountAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to average
     **/
-    _avg?: ClassSpellLevelAvgAggregateInputType
+    _avg?: ClassFeatureMapAvgAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to sum
     **/
-    _sum?: ClassSpellLevelSumAggregateInputType
+    _sum?: ClassFeatureMapSumAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to find the minimum value
     **/
-    _min?: ClassSpellLevelMinAggregateInputType
+    _min?: ClassFeatureMapMinAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to find the maximum value
     **/
-    _max?: ClassSpellLevelMaxAggregateInputType
+    _max?: ClassFeatureMapMaxAggregateInputType
   }
 
-  export type GetClassSpellLevelAggregateType<T extends ClassSpellLevelAggregateArgs> = {
-        [P in keyof T & keyof AggregateClassSpellLevel]: P extends '_count' | 'count'
+  export type GetClassFeatureMapAggregateType<T extends ClassFeatureMapAggregateArgs> = {
+        [P in keyof T & keyof AggregateClassFeatureMap]: P extends '_count' | 'count'
       ? T[P] extends true
         ? number
-        : GetScalarType<T[P], AggregateClassSpellLevel[P]>
-      : GetScalarType<T[P], AggregateClassSpellLevel[P]>
+        : GetScalarType<T[P], AggregateClassFeatureMap[P]>
+      : GetScalarType<T[P], AggregateClassFeatureMap[P]>
   }
 
 
 
 
-  export type ClassSpellLevelGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: ClassSpellLevelWhereInput
-    orderBy?: ClassSpellLevelOrderByWithAggregationInput | ClassSpellLevelOrderByWithAggregationInput[]
-    by: ClassSpellLevelScalarFieldEnum[] | ClassSpellLevelScalarFieldEnum
-    having?: ClassSpellLevelScalarWhereWithAggregatesInput
+  export type ClassFeatureMapGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ClassFeatureMapWhereInput
+    orderBy?: ClassFeatureMapOrderByWithAggregationInput | ClassFeatureMapOrderByWithAggregationInput[]
+    by: ClassFeatureMapScalarFieldEnum[] | ClassFeatureMapScalarFieldEnum
+    having?: ClassFeatureMapScalarWhereWithAggregatesInput
     take?: number
     skip?: number
-    _count?: ClassSpellLevelCountAggregateInputType | true
-    _avg?: ClassSpellLevelAvgAggregateInputType
-    _sum?: ClassSpellLevelSumAggregateInputType
-    _min?: ClassSpellLevelMinAggregateInputType
-    _max?: ClassSpellLevelMaxAggregateInputType
+    _count?: ClassFeatureMapCountAggregateInputType | true
+    _avg?: ClassFeatureMapAvgAggregateInputType
+    _sum?: ClassFeatureMapSumAggregateInputType
+    _min?: ClassFeatureMapMinAggregateInputType
+    _max?: ClassFeatureMapMaxAggregateInputType
   }
 
-  export type ClassSpellLevelGroupByOutputType = {
+  export type ClassFeatureMapGroupByOutputType = {
     classId: number
+    featureSlug: string
     level: number
-    spellLevel: number
-    numSpells: number
-    _count: ClassSpellLevelCountAggregateOutputType | null
-    _avg: ClassSpellLevelAvgAggregateOutputType | null
-    _sum: ClassSpellLevelSumAggregateOutputType | null
-    _min: ClassSpellLevelMinAggregateOutputType | null
-    _max: ClassSpellLevelMaxAggregateOutputType | null
+    _count: ClassFeatureMapCountAggregateOutputType | null
+    _avg: ClassFeatureMapAvgAggregateOutputType | null
+    _sum: ClassFeatureMapSumAggregateOutputType | null
+    _min: ClassFeatureMapMinAggregateOutputType | null
+    _max: ClassFeatureMapMaxAggregateOutputType | null
   }
 
-  type GetClassSpellLevelGroupByPayload<T extends ClassSpellLevelGroupByArgs> = Prisma.PrismaPromise<
+  type GetClassFeatureMapGroupByPayload<T extends ClassFeatureMapGroupByArgs> = Prisma.PrismaPromise<
     Array<
-      PickEnumerable<ClassSpellLevelGroupByOutputType, T['by']> &
+      PickEnumerable<ClassFeatureMapGroupByOutputType, T['by']> &
         {
-          [P in ((keyof T) & (keyof ClassSpellLevelGroupByOutputType))]: P extends '_count'
+          [P in ((keyof T) & (keyof ClassFeatureMapGroupByOutputType))]: P extends '_count'
             ? T[P] extends boolean
               ? number
-              : GetScalarType<T[P], ClassSpellLevelGroupByOutputType[P]>
-            : GetScalarType<T[P], ClassSpellLevelGroupByOutputType[P]>
+              : GetScalarType<T[P], ClassFeatureMapGroupByOutputType[P]>
+            : GetScalarType<T[P], ClassFeatureMapGroupByOutputType[P]>
         }
       >
     >
 
 
-  export type ClassSpellLevelSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+  export type ClassFeatureMapSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     classId?: boolean
+    featureSlug?: boolean
     level?: boolean
-    spellLevel?: boolean
-    numSpells?: boolean
     class?: boolean | ClassDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["classSpellLevel"]>
+    feature?: boolean | ClassFeatureDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["classFeatureMap"]>
 
 
 
-  export type ClassSpellLevelSelectScalar = {
+  export type ClassFeatureMapSelectScalar = {
     classId?: boolean
+    featureSlug?: boolean
     level?: boolean
-    spellLevel?: boolean
-    numSpells?: boolean
   }
 
-  export type ClassSpellLevelOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"classId" | "level" | "spellLevel" | "numSpells", ExtArgs["result"]["classSpellLevel"]>
-  export type ClassSpellLevelInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type ClassFeatureMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"classId" | "featureSlug" | "level", ExtArgs["result"]["classFeatureMap"]>
+  export type ClassFeatureMapInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     class?: boolean | ClassDefaultArgs<ExtArgs>
+    feature?: boolean | ClassFeatureDefaultArgs<ExtArgs>
   }
 
-  export type $ClassSpellLevelPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "ClassSpellLevel"
+  export type $ClassFeatureMapPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ClassFeatureMap"
     objects: {
       class: Prisma.$ClassPayload<ExtArgs>
+      feature: Prisma.$ClassFeaturePayload<ExtArgs>
     }
     scalars: $Extensions.GetPayloadResult<{
       classId: number
+      featureSlug: string
       level: number
-      spellLevel: number
-      numSpells: number
-    }, ExtArgs["result"]["classSpellLevel"]>
+    }, ExtArgs["result"]["classFeatureMap"]>
     composites: {}
   }
 
-  type ClassSpellLevelGetPayload<S extends boolean | null | undefined | ClassSpellLevelDefaultArgs> = $Result.GetResult<Prisma.$ClassSpellLevelPayload, S>
+  type ClassFeatureMapGetPayload<S extends boolean | null | undefined | ClassFeatureMapDefaultArgs> = $Result.GetResult<Prisma.$ClassFeatureMapPayload, S>
 
-  type ClassSpellLevelCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
-    Omit<ClassSpellLevelFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
-      select?: ClassSpellLevelCountAggregateInputType | true
+  type ClassFeatureMapCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<ClassFeatureMapFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: ClassFeatureMapCountAggregateInputType | true
     }
 
-  export interface ClassSpellLevelDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ClassSpellLevel'], meta: { name: 'ClassSpellLevel' } }
+  export interface ClassFeatureMapDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ClassFeatureMap'], meta: { name: 'ClassFeatureMap' } }
     /**
-     * Find zero or one ClassSpellLevel that matches the filter.
-     * @param {ClassSpellLevelFindUniqueArgs} args - Arguments to find a ClassSpellLevel
+     * Find zero or one ClassFeatureMap that matches the filter.
+     * @param {ClassFeatureMapFindUniqueArgs} args - Arguments to find a ClassFeatureMap
      * @example
-     * // Get one ClassSpellLevel
-     * const classSpellLevel = await prisma.classSpellLevel.findUnique({
+     * // Get one ClassFeatureMap
+     * const classFeatureMap = await prisma.classFeatureMap.findUnique({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findUnique<T extends ClassSpellLevelFindUniqueArgs>(args: SelectSubset<T, ClassSpellLevelFindUniqueArgs<ExtArgs>>): Prisma__ClassSpellLevelClient<$Result.GetResult<Prisma.$ClassSpellLevelPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    findUnique<T extends ClassFeatureMapFindUniqueArgs>(args: SelectSubset<T, ClassFeatureMapFindUniqueArgs<ExtArgs>>): Prisma__ClassFeatureMapClient<$Result.GetResult<Prisma.$ClassFeatureMapPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Find one ClassSpellLevel that matches the filter or throw an error with `error.code='P2025'`
+     * Find one ClassFeatureMap that matches the filter or throw an error with `error.code='P2025'`
      * if no matches were found.
-     * @param {ClassSpellLevelFindUniqueOrThrowArgs} args - Arguments to find a ClassSpellLevel
+     * @param {ClassFeatureMapFindUniqueOrThrowArgs} args - Arguments to find a ClassFeatureMap
      * @example
-     * // Get one ClassSpellLevel
-     * const classSpellLevel = await prisma.classSpellLevel.findUniqueOrThrow({
+     * // Get one ClassFeatureMap
+     * const classFeatureMap = await prisma.classFeatureMap.findUniqueOrThrow({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findUniqueOrThrow<T extends ClassSpellLevelFindUniqueOrThrowArgs>(args: SelectSubset<T, ClassSpellLevelFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ClassSpellLevelClient<$Result.GetResult<Prisma.$ClassSpellLevelPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    findUniqueOrThrow<T extends ClassFeatureMapFindUniqueOrThrowArgs>(args: SelectSubset<T, ClassFeatureMapFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ClassFeatureMapClient<$Result.GetResult<Prisma.$ClassFeatureMapPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Find the first ClassSpellLevel that matches the filter.
+     * Find the first ClassFeatureMap that matches the filter.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {ClassSpellLevelFindFirstArgs} args - Arguments to find a ClassSpellLevel
+     * @param {ClassFeatureMapFindFirstArgs} args - Arguments to find a ClassFeatureMap
      * @example
-     * // Get one ClassSpellLevel
-     * const classSpellLevel = await prisma.classSpellLevel.findFirst({
+     * // Get one ClassFeatureMap
+     * const classFeatureMap = await prisma.classFeatureMap.findFirst({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findFirst<T extends ClassSpellLevelFindFirstArgs>(args?: SelectSubset<T, ClassSpellLevelFindFirstArgs<ExtArgs>>): Prisma__ClassSpellLevelClient<$Result.GetResult<Prisma.$ClassSpellLevelPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    findFirst<T extends ClassFeatureMapFindFirstArgs>(args?: SelectSubset<T, ClassFeatureMapFindFirstArgs<ExtArgs>>): Prisma__ClassFeatureMapClient<$Result.GetResult<Prisma.$ClassFeatureMapPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Find the first ClassSpellLevel that matches the filter or
+     * Find the first ClassFeatureMap that matches the filter or
      * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {ClassSpellLevelFindFirstOrThrowArgs} args - Arguments to find a ClassSpellLevel
+     * @param {ClassFeatureMapFindFirstOrThrowArgs} args - Arguments to find a ClassFeatureMap
      * @example
-     * // Get one ClassSpellLevel
-     * const classSpellLevel = await prisma.classSpellLevel.findFirstOrThrow({
+     * // Get one ClassFeatureMap
+     * const classFeatureMap = await prisma.classFeatureMap.findFirstOrThrow({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findFirstOrThrow<T extends ClassSpellLevelFindFirstOrThrowArgs>(args?: SelectSubset<T, ClassSpellLevelFindFirstOrThrowArgs<ExtArgs>>): Prisma__ClassSpellLevelClient<$Result.GetResult<Prisma.$ClassSpellLevelPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    findFirstOrThrow<T extends ClassFeatureMapFindFirstOrThrowArgs>(args?: SelectSubset<T, ClassFeatureMapFindFirstOrThrowArgs<ExtArgs>>): Prisma__ClassFeatureMapClient<$Result.GetResult<Prisma.$ClassFeatureMapPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Find zero or more ClassSpellLevels that matches the filter.
+     * Find zero or more ClassFeatureMaps that matches the filter.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {ClassSpellLevelFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @param {ClassFeatureMapFindManyArgs} args - Arguments to filter and select certain fields only.
      * @example
-     * // Get all ClassSpellLevels
-     * const classSpellLevels = await prisma.classSpellLevel.findMany()
+     * // Get all ClassFeatureMaps
+     * const classFeatureMaps = await prisma.classFeatureMap.findMany()
      * 
-     * // Get first 10 ClassSpellLevels
-     * const classSpellLevels = await prisma.classSpellLevel.findMany({ take: 10 })
+     * // Get first 10 ClassFeatureMaps
+     * const classFeatureMaps = await prisma.classFeatureMap.findMany({ take: 10 })
      * 
      * // Only select the `classId`
-     * const classSpellLevelWithClassIdOnly = await prisma.classSpellLevel.findMany({ select: { classId: true } })
+     * const classFeatureMapWithClassIdOnly = await prisma.classFeatureMap.findMany({ select: { classId: true } })
      * 
      */
-    findMany<T extends ClassSpellLevelFindManyArgs>(args?: SelectSubset<T, ClassSpellLevelFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ClassSpellLevelPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+    findMany<T extends ClassFeatureMapFindManyArgs>(args?: SelectSubset<T, ClassFeatureMapFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ClassFeatureMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
 
     /**
-     * Create a ClassSpellLevel.
-     * @param {ClassSpellLevelCreateArgs} args - Arguments to create a ClassSpellLevel.
+     * Create a ClassFeatureMap.
+     * @param {ClassFeatureMapCreateArgs} args - Arguments to create a ClassFeatureMap.
      * @example
-     * // Create one ClassSpellLevel
-     * const ClassSpellLevel = await prisma.classSpellLevel.create({
+     * // Create one ClassFeatureMap
+     * const ClassFeatureMap = await prisma.classFeatureMap.create({
      *   data: {
-     *     // ... data to create a ClassSpellLevel
+     *     // ... data to create a ClassFeatureMap
      *   }
      * })
      * 
      */
-    create<T extends ClassSpellLevelCreateArgs>(args: SelectSubset<T, ClassSpellLevelCreateArgs<ExtArgs>>): Prisma__ClassSpellLevelClient<$Result.GetResult<Prisma.$ClassSpellLevelPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    create<T extends ClassFeatureMapCreateArgs>(args: SelectSubset<T, ClassFeatureMapCreateArgs<ExtArgs>>): Prisma__ClassFeatureMapClient<$Result.GetResult<Prisma.$ClassFeatureMapPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Create many ClassSpellLevels.
-     * @param {ClassSpellLevelCreateManyArgs} args - Arguments to create many ClassSpellLevels.
+     * Create many ClassFeatureMaps.
+     * @param {ClassFeatureMapCreateManyArgs} args - Arguments to create many ClassFeatureMaps.
      * @example
-     * // Create many ClassSpellLevels
-     * const classSpellLevel = await prisma.classSpellLevel.createMany({
+     * // Create many ClassFeatureMaps
+     * const classFeatureMap = await prisma.classFeatureMap.createMany({
      *   data: [
      *     // ... provide data here
      *   ]
      * })
      *     
      */
-    createMany<T extends ClassSpellLevelCreateManyArgs>(args?: SelectSubset<T, ClassSpellLevelCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    createMany<T extends ClassFeatureMapCreateManyArgs>(args?: SelectSubset<T, ClassFeatureMapCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Delete a ClassSpellLevel.
-     * @param {ClassSpellLevelDeleteArgs} args - Arguments to delete one ClassSpellLevel.
+     * Delete a ClassFeatureMap.
+     * @param {ClassFeatureMapDeleteArgs} args - Arguments to delete one ClassFeatureMap.
      * @example
-     * // Delete one ClassSpellLevel
-     * const ClassSpellLevel = await prisma.classSpellLevel.delete({
+     * // Delete one ClassFeatureMap
+     * const ClassFeatureMap = await prisma.classFeatureMap.delete({
      *   where: {
-     *     // ... filter to delete one ClassSpellLevel
+     *     // ... filter to delete one ClassFeatureMap
      *   }
      * })
      * 
      */
-    delete<T extends ClassSpellLevelDeleteArgs>(args: SelectSubset<T, ClassSpellLevelDeleteArgs<ExtArgs>>): Prisma__ClassSpellLevelClient<$Result.GetResult<Prisma.$ClassSpellLevelPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    delete<T extends ClassFeatureMapDeleteArgs>(args: SelectSubset<T, ClassFeatureMapDeleteArgs<ExtArgs>>): Prisma__ClassFeatureMapClient<$Result.GetResult<Prisma.$ClassFeatureMapPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Update one ClassSpellLevel.
-     * @param {ClassSpellLevelUpdateArgs} args - Arguments to update one ClassSpellLevel.
+     * Update one ClassFeatureMap.
+     * @param {ClassFeatureMapUpdateArgs} args - Arguments to update one ClassFeatureMap.
      * @example
-     * // Update one ClassSpellLevel
-     * const classSpellLevel = await prisma.classSpellLevel.update({
+     * // Update one ClassFeatureMap
+     * const classFeatureMap = await prisma.classFeatureMap.update({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -6634,30 +6684,30 @@ export namespace Prisma {
      * })
      * 
      */
-    update<T extends ClassSpellLevelUpdateArgs>(args: SelectSubset<T, ClassSpellLevelUpdateArgs<ExtArgs>>): Prisma__ClassSpellLevelClient<$Result.GetResult<Prisma.$ClassSpellLevelPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    update<T extends ClassFeatureMapUpdateArgs>(args: SelectSubset<T, ClassFeatureMapUpdateArgs<ExtArgs>>): Prisma__ClassFeatureMapClient<$Result.GetResult<Prisma.$ClassFeatureMapPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Delete zero or more ClassSpellLevels.
-     * @param {ClassSpellLevelDeleteManyArgs} args - Arguments to filter ClassSpellLevels to delete.
+     * Delete zero or more ClassFeatureMaps.
+     * @param {ClassFeatureMapDeleteManyArgs} args - Arguments to filter ClassFeatureMaps to delete.
      * @example
-     * // Delete a few ClassSpellLevels
-     * const { count } = await prisma.classSpellLevel.deleteMany({
+     * // Delete a few ClassFeatureMaps
+     * const { count } = await prisma.classFeatureMap.deleteMany({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      * 
      */
-    deleteMany<T extends ClassSpellLevelDeleteManyArgs>(args?: SelectSubset<T, ClassSpellLevelDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    deleteMany<T extends ClassFeatureMapDeleteManyArgs>(args?: SelectSubset<T, ClassFeatureMapDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Update zero or more ClassSpellLevels.
+     * Update zero or more ClassFeatureMaps.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {ClassSpellLevelUpdateManyArgs} args - Arguments to update one or more rows.
+     * @param {ClassFeatureMapUpdateManyArgs} args - Arguments to update one or more rows.
      * @example
-     * // Update many ClassSpellLevels
-     * const classSpellLevel = await prisma.classSpellLevel.updateMany({
+     * // Update many ClassFeatureMaps
+     * const classFeatureMap = await prisma.classFeatureMap.updateMany({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -6667,56 +6717,56 @@ export namespace Prisma {
      * })
      * 
      */
-    updateMany<T extends ClassSpellLevelUpdateManyArgs>(args: SelectSubset<T, ClassSpellLevelUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    updateMany<T extends ClassFeatureMapUpdateManyArgs>(args: SelectSubset<T, ClassFeatureMapUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Create or update one ClassSpellLevel.
-     * @param {ClassSpellLevelUpsertArgs} args - Arguments to update or create a ClassSpellLevel.
+     * Create or update one ClassFeatureMap.
+     * @param {ClassFeatureMapUpsertArgs} args - Arguments to update or create a ClassFeatureMap.
      * @example
-     * // Update or create a ClassSpellLevel
-     * const classSpellLevel = await prisma.classSpellLevel.upsert({
+     * // Update or create a ClassFeatureMap
+     * const classFeatureMap = await prisma.classFeatureMap.upsert({
      *   create: {
-     *     // ... data to create a ClassSpellLevel
+     *     // ... data to create a ClassFeatureMap
      *   },
      *   update: {
      *     // ... in case it already exists, update
      *   },
      *   where: {
-     *     // ... the filter for the ClassSpellLevel we want to update
+     *     // ... the filter for the ClassFeatureMap we want to update
      *   }
      * })
      */
-    upsert<T extends ClassSpellLevelUpsertArgs>(args: SelectSubset<T, ClassSpellLevelUpsertArgs<ExtArgs>>): Prisma__ClassSpellLevelClient<$Result.GetResult<Prisma.$ClassSpellLevelPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    upsert<T extends ClassFeatureMapUpsertArgs>(args: SelectSubset<T, ClassFeatureMapUpsertArgs<ExtArgs>>): Prisma__ClassFeatureMapClient<$Result.GetResult<Prisma.$ClassFeatureMapPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
 
     /**
-     * Count the number of ClassSpellLevels.
+     * Count the number of ClassFeatureMaps.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {ClassSpellLevelCountArgs} args - Arguments to filter ClassSpellLevels to count.
+     * @param {ClassFeatureMapCountArgs} args - Arguments to filter ClassFeatureMaps to count.
      * @example
-     * // Count the number of ClassSpellLevels
-     * const count = await prisma.classSpellLevel.count({
+     * // Count the number of ClassFeatureMaps
+     * const count = await prisma.classFeatureMap.count({
      *   where: {
-     *     // ... the filter for the ClassSpellLevels we want to count
+     *     // ... the filter for the ClassFeatureMaps we want to count
      *   }
      * })
     **/
-    count<T extends ClassSpellLevelCountArgs>(
-      args?: Subset<T, ClassSpellLevelCountArgs>,
+    count<T extends ClassFeatureMapCountArgs>(
+      args?: Subset<T, ClassFeatureMapCountArgs>,
     ): Prisma.PrismaPromise<
       T extends $Utils.Record<'select', any>
         ? T['select'] extends true
           ? number
-          : GetScalarType<T['select'], ClassSpellLevelCountAggregateOutputType>
+          : GetScalarType<T['select'], ClassFeatureMapCountAggregateOutputType>
         : number
     >
 
     /**
-     * Allows you to perform aggregations operations on a ClassSpellLevel.
+     * Allows you to perform aggregations operations on a ClassFeatureMap.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {ClassSpellLevelAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @param {ClassFeatureMapAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
@@ -6736,13 +6786,13 @@ export namespace Prisma {
      *   take: 10,
      * })
     **/
-    aggregate<T extends ClassSpellLevelAggregateArgs>(args: Subset<T, ClassSpellLevelAggregateArgs>): Prisma.PrismaPromise<GetClassSpellLevelAggregateType<T>>
+    aggregate<T extends ClassFeatureMapAggregateArgs>(args: Subset<T, ClassFeatureMapAggregateArgs>): Prisma.PrismaPromise<GetClassFeatureMapAggregateType<T>>
 
     /**
-     * Group by ClassSpellLevel.
+     * Group by ClassFeatureMap.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {ClassSpellLevelGroupByArgs} args - Group by arguments.
+     * @param {ClassFeatureMapGroupByArgs} args - Group by arguments.
      * @example
      * // Group by city, order by createdAt, get count
      * const result = await prisma.user.groupBy({
@@ -6757,14 +6807,14 @@ export namespace Prisma {
      * 
     **/
     groupBy<
-      T extends ClassSpellLevelGroupByArgs,
+      T extends ClassFeatureMapGroupByArgs,
       HasSelectOrTake extends Or<
         Extends<'skip', Keys<T>>,
         Extends<'take', Keys<T>>
       >,
       OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: ClassSpellLevelGroupByArgs['orderBy'] }
-        : { orderBy?: ClassSpellLevelGroupByArgs['orderBy'] },
+        ? { orderBy: ClassFeatureMapGroupByArgs['orderBy'] }
+        : { orderBy?: ClassFeatureMapGroupByArgs['orderBy'] },
       OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
       ByFields extends MaybeTupleToUnion<T['by']>,
       ByValid extends Has<ByFields, OrderFields>,
@@ -6813,20 +6863,984 @@ export namespace Prisma {
             ? never
             : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
         }[OrderFields]
-    >(args: SubsetIntersection<T, ClassSpellLevelGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetClassSpellLevelGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+    >(args: SubsetIntersection<T, ClassFeatureMapGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetClassFeatureMapGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
   /**
-   * Fields of the ClassSpellLevel model
+   * Fields of the ClassFeatureMap model
    */
-  readonly fields: ClassSpellLevelFieldRefs;
+  readonly fields: ClassFeatureMapFieldRefs;
   }
 
   /**
-   * The delegate class that acts as a "Promise-like" for ClassSpellLevel.
+   * The delegate class that acts as a "Promise-like" for ClassFeatureMap.
    * Why is this prefixed with `Prisma__`?
    * Because we want to prevent naming conflicts as mentioned in
    * https://github.com/prisma/prisma-client-js/issues/707
    */
-  export interface Prisma__ClassSpellLevelClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+  export interface Prisma__ClassFeatureMapClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    class<T extends ClassDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ClassDefaultArgs<ExtArgs>>): Prisma__ClassClient<$Result.GetResult<Prisma.$ClassPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    feature<T extends ClassFeatureDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ClassFeatureDefaultArgs<ExtArgs>>): Prisma__ClassFeatureClient<$Result.GetResult<Prisma.$ClassFeaturePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ClassFeatureMap model
+   */
+  interface ClassFeatureMapFieldRefs {
+    readonly classId: FieldRef<"ClassFeatureMap", 'Int'>
+    readonly featureSlug: FieldRef<"ClassFeatureMap", 'String'>
+    readonly level: FieldRef<"ClassFeatureMap", 'Int'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ClassFeatureMap findUnique
+   */
+  export type ClassFeatureMapFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ClassFeatureMap
+     */
+    select?: ClassFeatureMapSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ClassFeatureMap
+     */
+    omit?: ClassFeatureMapOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ClassFeatureMapInclude<ExtArgs> | null
+    /**
+     * Filter, which ClassFeatureMap to fetch.
+     */
+    where: ClassFeatureMapWhereUniqueInput
+  }
+
+  /**
+   * ClassFeatureMap findUniqueOrThrow
+   */
+  export type ClassFeatureMapFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ClassFeatureMap
+     */
+    select?: ClassFeatureMapSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ClassFeatureMap
+     */
+    omit?: ClassFeatureMapOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ClassFeatureMapInclude<ExtArgs> | null
+    /**
+     * Filter, which ClassFeatureMap to fetch.
+     */
+    where: ClassFeatureMapWhereUniqueInput
+  }
+
+  /**
+   * ClassFeatureMap findFirst
+   */
+  export type ClassFeatureMapFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ClassFeatureMap
+     */
+    select?: ClassFeatureMapSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ClassFeatureMap
+     */
+    omit?: ClassFeatureMapOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ClassFeatureMapInclude<ExtArgs> | null
+    /**
+     * Filter, which ClassFeatureMap to fetch.
+     */
+    where?: ClassFeatureMapWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ClassFeatureMaps to fetch.
+     */
+    orderBy?: ClassFeatureMapOrderByWithRelationInput | ClassFeatureMapOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ClassFeatureMaps.
+     */
+    cursor?: ClassFeatureMapWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ClassFeatureMaps from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ClassFeatureMaps.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ClassFeatureMaps.
+     */
+    distinct?: ClassFeatureMapScalarFieldEnum | ClassFeatureMapScalarFieldEnum[]
+  }
+
+  /**
+   * ClassFeatureMap findFirstOrThrow
+   */
+  export type ClassFeatureMapFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ClassFeatureMap
+     */
+    select?: ClassFeatureMapSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ClassFeatureMap
+     */
+    omit?: ClassFeatureMapOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ClassFeatureMapInclude<ExtArgs> | null
+    /**
+     * Filter, which ClassFeatureMap to fetch.
+     */
+    where?: ClassFeatureMapWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ClassFeatureMaps to fetch.
+     */
+    orderBy?: ClassFeatureMapOrderByWithRelationInput | ClassFeatureMapOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ClassFeatureMaps.
+     */
+    cursor?: ClassFeatureMapWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ClassFeatureMaps from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ClassFeatureMaps.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ClassFeatureMaps.
+     */
+    distinct?: ClassFeatureMapScalarFieldEnum | ClassFeatureMapScalarFieldEnum[]
+  }
+
+  /**
+   * ClassFeatureMap findMany
+   */
+  export type ClassFeatureMapFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ClassFeatureMap
+     */
+    select?: ClassFeatureMapSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ClassFeatureMap
+     */
+    omit?: ClassFeatureMapOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ClassFeatureMapInclude<ExtArgs> | null
+    /**
+     * Filter, which ClassFeatureMaps to fetch.
+     */
+    where?: ClassFeatureMapWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ClassFeatureMaps to fetch.
+     */
+    orderBy?: ClassFeatureMapOrderByWithRelationInput | ClassFeatureMapOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ClassFeatureMaps.
+     */
+    cursor?: ClassFeatureMapWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ClassFeatureMaps from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ClassFeatureMaps.
+     */
+    skip?: number
+    distinct?: ClassFeatureMapScalarFieldEnum | ClassFeatureMapScalarFieldEnum[]
+  }
+
+  /**
+   * ClassFeatureMap create
+   */
+  export type ClassFeatureMapCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ClassFeatureMap
+     */
+    select?: ClassFeatureMapSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ClassFeatureMap
+     */
+    omit?: ClassFeatureMapOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ClassFeatureMapInclude<ExtArgs> | null
+    /**
+     * The data needed to create a ClassFeatureMap.
+     */
+    data: XOR<ClassFeatureMapCreateInput, ClassFeatureMapUncheckedCreateInput>
+  }
+
+  /**
+   * ClassFeatureMap createMany
+   */
+  export type ClassFeatureMapCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ClassFeatureMaps.
+     */
+    data: ClassFeatureMapCreateManyInput | ClassFeatureMapCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ClassFeatureMap update
+   */
+  export type ClassFeatureMapUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ClassFeatureMap
+     */
+    select?: ClassFeatureMapSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ClassFeatureMap
+     */
+    omit?: ClassFeatureMapOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ClassFeatureMapInclude<ExtArgs> | null
+    /**
+     * The data needed to update a ClassFeatureMap.
+     */
+    data: XOR<ClassFeatureMapUpdateInput, ClassFeatureMapUncheckedUpdateInput>
+    /**
+     * Choose, which ClassFeatureMap to update.
+     */
+    where: ClassFeatureMapWhereUniqueInput
+  }
+
+  /**
+   * ClassFeatureMap updateMany
+   */
+  export type ClassFeatureMapUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ClassFeatureMaps.
+     */
+    data: XOR<ClassFeatureMapUpdateManyMutationInput, ClassFeatureMapUncheckedUpdateManyInput>
+    /**
+     * Filter which ClassFeatureMaps to update
+     */
+    where?: ClassFeatureMapWhereInput
+    /**
+     * Limit how many ClassFeatureMaps to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * ClassFeatureMap upsert
+   */
+  export type ClassFeatureMapUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ClassFeatureMap
+     */
+    select?: ClassFeatureMapSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ClassFeatureMap
+     */
+    omit?: ClassFeatureMapOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ClassFeatureMapInclude<ExtArgs> | null
+    /**
+     * The filter to search for the ClassFeatureMap to update in case it exists.
+     */
+    where: ClassFeatureMapWhereUniqueInput
+    /**
+     * In case the ClassFeatureMap found by the `where` argument doesn't exist, create a new ClassFeatureMap with this data.
+     */
+    create: XOR<ClassFeatureMapCreateInput, ClassFeatureMapUncheckedCreateInput>
+    /**
+     * In case the ClassFeatureMap was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ClassFeatureMapUpdateInput, ClassFeatureMapUncheckedUpdateInput>
+  }
+
+  /**
+   * ClassFeatureMap delete
+   */
+  export type ClassFeatureMapDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ClassFeatureMap
+     */
+    select?: ClassFeatureMapSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ClassFeatureMap
+     */
+    omit?: ClassFeatureMapOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ClassFeatureMapInclude<ExtArgs> | null
+    /**
+     * Filter which ClassFeatureMap to delete.
+     */
+    where: ClassFeatureMapWhereUniqueInput
+  }
+
+  /**
+   * ClassFeatureMap deleteMany
+   */
+  export type ClassFeatureMapDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ClassFeatureMaps to delete
+     */
+    where?: ClassFeatureMapWhereInput
+    /**
+     * Limit how many ClassFeatureMaps to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * ClassFeatureMap without action
+   */
+  export type ClassFeatureMapDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ClassFeatureMap
+     */
+    select?: ClassFeatureMapSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ClassFeatureMap
+     */
+    omit?: ClassFeatureMapOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ClassFeatureMapInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ClassSpellProgression
+   */
+
+  export type AggregateClassSpellProgression = {
+    _count: ClassSpellProgressionCountAggregateOutputType | null
+    _avg: ClassSpellProgressionAvgAggregateOutputType | null
+    _sum: ClassSpellProgressionSumAggregateOutputType | null
+    _min: ClassSpellProgressionMinAggregateOutputType | null
+    _max: ClassSpellProgressionMaxAggregateOutputType | null
+  }
+
+  export type ClassSpellProgressionAvgAggregateOutputType = {
+    classId: number | null
+    level: number | null
+    spellLevel: number | null
+    spellSlots: number | null
+  }
+
+  export type ClassSpellProgressionSumAggregateOutputType = {
+    classId: number | null
+    level: number | null
+    spellLevel: number | null
+    spellSlots: number | null
+  }
+
+  export type ClassSpellProgressionMinAggregateOutputType = {
+    classId: number | null
+    level: number | null
+    spellLevel: number | null
+    spellSlots: number | null
+  }
+
+  export type ClassSpellProgressionMaxAggregateOutputType = {
+    classId: number | null
+    level: number | null
+    spellLevel: number | null
+    spellSlots: number | null
+  }
+
+  export type ClassSpellProgressionCountAggregateOutputType = {
+    classId: number
+    level: number
+    spellLevel: number
+    spellSlots: number
+    _all: number
+  }
+
+
+  export type ClassSpellProgressionAvgAggregateInputType = {
+    classId?: true
+    level?: true
+    spellLevel?: true
+    spellSlots?: true
+  }
+
+  export type ClassSpellProgressionSumAggregateInputType = {
+    classId?: true
+    level?: true
+    spellLevel?: true
+    spellSlots?: true
+  }
+
+  export type ClassSpellProgressionMinAggregateInputType = {
+    classId?: true
+    level?: true
+    spellLevel?: true
+    spellSlots?: true
+  }
+
+  export type ClassSpellProgressionMaxAggregateInputType = {
+    classId?: true
+    level?: true
+    spellLevel?: true
+    spellSlots?: true
+  }
+
+  export type ClassSpellProgressionCountAggregateInputType = {
+    classId?: true
+    level?: true
+    spellLevel?: true
+    spellSlots?: true
+    _all?: true
+  }
+
+  export type ClassSpellProgressionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ClassSpellProgression to aggregate.
+     */
+    where?: ClassSpellProgressionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ClassSpellProgressions to fetch.
+     */
+    orderBy?: ClassSpellProgressionOrderByWithRelationInput | ClassSpellProgressionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ClassSpellProgressionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ClassSpellProgressions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ClassSpellProgressions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ClassSpellProgressions
+    **/
+    _count?: true | ClassSpellProgressionCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ClassSpellProgressionAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ClassSpellProgressionSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ClassSpellProgressionMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ClassSpellProgressionMaxAggregateInputType
+  }
+
+  export type GetClassSpellProgressionAggregateType<T extends ClassSpellProgressionAggregateArgs> = {
+        [P in keyof T & keyof AggregateClassSpellProgression]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateClassSpellProgression[P]>
+      : GetScalarType<T[P], AggregateClassSpellProgression[P]>
+  }
+
+
+
+
+  export type ClassSpellProgressionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ClassSpellProgressionWhereInput
+    orderBy?: ClassSpellProgressionOrderByWithAggregationInput | ClassSpellProgressionOrderByWithAggregationInput[]
+    by: ClassSpellProgressionScalarFieldEnum[] | ClassSpellProgressionScalarFieldEnum
+    having?: ClassSpellProgressionScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ClassSpellProgressionCountAggregateInputType | true
+    _avg?: ClassSpellProgressionAvgAggregateInputType
+    _sum?: ClassSpellProgressionSumAggregateInputType
+    _min?: ClassSpellProgressionMinAggregateInputType
+    _max?: ClassSpellProgressionMaxAggregateInputType
+  }
+
+  export type ClassSpellProgressionGroupByOutputType = {
+    classId: number
+    level: number
+    spellLevel: number
+    spellSlots: number
+    _count: ClassSpellProgressionCountAggregateOutputType | null
+    _avg: ClassSpellProgressionAvgAggregateOutputType | null
+    _sum: ClassSpellProgressionSumAggregateOutputType | null
+    _min: ClassSpellProgressionMinAggregateOutputType | null
+    _max: ClassSpellProgressionMaxAggregateOutputType | null
+  }
+
+  type GetClassSpellProgressionGroupByPayload<T extends ClassSpellProgressionGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ClassSpellProgressionGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ClassSpellProgressionGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ClassSpellProgressionGroupByOutputType[P]>
+            : GetScalarType<T[P], ClassSpellProgressionGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ClassSpellProgressionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    classId?: boolean
+    level?: boolean
+    spellLevel?: boolean
+    spellSlots?: boolean
+    class?: boolean | ClassDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["classSpellProgression"]>
+
+
+
+  export type ClassSpellProgressionSelectScalar = {
+    classId?: boolean
+    level?: boolean
+    spellLevel?: boolean
+    spellSlots?: boolean
+  }
+
+  export type ClassSpellProgressionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"classId" | "level" | "spellLevel" | "spellSlots", ExtArgs["result"]["classSpellProgression"]>
+  export type ClassSpellProgressionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    class?: boolean | ClassDefaultArgs<ExtArgs>
+  }
+
+  export type $ClassSpellProgressionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ClassSpellProgression"
+    objects: {
+      class: Prisma.$ClassPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      classId: number
+      level: number
+      spellLevel: number
+      spellSlots: number
+    }, ExtArgs["result"]["classSpellProgression"]>
+    composites: {}
+  }
+
+  type ClassSpellProgressionGetPayload<S extends boolean | null | undefined | ClassSpellProgressionDefaultArgs> = $Result.GetResult<Prisma.$ClassSpellProgressionPayload, S>
+
+  type ClassSpellProgressionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<ClassSpellProgressionFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: ClassSpellProgressionCountAggregateInputType | true
+    }
+
+  export interface ClassSpellProgressionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ClassSpellProgression'], meta: { name: 'ClassSpellProgression' } }
+    /**
+     * Find zero or one ClassSpellProgression that matches the filter.
+     * @param {ClassSpellProgressionFindUniqueArgs} args - Arguments to find a ClassSpellProgression
+     * @example
+     * // Get one ClassSpellProgression
+     * const classSpellProgression = await prisma.classSpellProgression.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ClassSpellProgressionFindUniqueArgs>(args: SelectSubset<T, ClassSpellProgressionFindUniqueArgs<ExtArgs>>): Prisma__ClassSpellProgressionClient<$Result.GetResult<Prisma.$ClassSpellProgressionPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one ClassSpellProgression that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {ClassSpellProgressionFindUniqueOrThrowArgs} args - Arguments to find a ClassSpellProgression
+     * @example
+     * // Get one ClassSpellProgression
+     * const classSpellProgression = await prisma.classSpellProgression.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ClassSpellProgressionFindUniqueOrThrowArgs>(args: SelectSubset<T, ClassSpellProgressionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ClassSpellProgressionClient<$Result.GetResult<Prisma.$ClassSpellProgressionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ClassSpellProgression that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ClassSpellProgressionFindFirstArgs} args - Arguments to find a ClassSpellProgression
+     * @example
+     * // Get one ClassSpellProgression
+     * const classSpellProgression = await prisma.classSpellProgression.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ClassSpellProgressionFindFirstArgs>(args?: SelectSubset<T, ClassSpellProgressionFindFirstArgs<ExtArgs>>): Prisma__ClassSpellProgressionClient<$Result.GetResult<Prisma.$ClassSpellProgressionPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ClassSpellProgression that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ClassSpellProgressionFindFirstOrThrowArgs} args - Arguments to find a ClassSpellProgression
+     * @example
+     * // Get one ClassSpellProgression
+     * const classSpellProgression = await prisma.classSpellProgression.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ClassSpellProgressionFindFirstOrThrowArgs>(args?: SelectSubset<T, ClassSpellProgressionFindFirstOrThrowArgs<ExtArgs>>): Prisma__ClassSpellProgressionClient<$Result.GetResult<Prisma.$ClassSpellProgressionPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more ClassSpellProgressions that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ClassSpellProgressionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ClassSpellProgressions
+     * const classSpellProgressions = await prisma.classSpellProgression.findMany()
+     * 
+     * // Get first 10 ClassSpellProgressions
+     * const classSpellProgressions = await prisma.classSpellProgression.findMany({ take: 10 })
+     * 
+     * // Only select the `classId`
+     * const classSpellProgressionWithClassIdOnly = await prisma.classSpellProgression.findMany({ select: { classId: true } })
+     * 
+     */
+    findMany<T extends ClassSpellProgressionFindManyArgs>(args?: SelectSubset<T, ClassSpellProgressionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ClassSpellProgressionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a ClassSpellProgression.
+     * @param {ClassSpellProgressionCreateArgs} args - Arguments to create a ClassSpellProgression.
+     * @example
+     * // Create one ClassSpellProgression
+     * const ClassSpellProgression = await prisma.classSpellProgression.create({
+     *   data: {
+     *     // ... data to create a ClassSpellProgression
+     *   }
+     * })
+     * 
+     */
+    create<T extends ClassSpellProgressionCreateArgs>(args: SelectSubset<T, ClassSpellProgressionCreateArgs<ExtArgs>>): Prisma__ClassSpellProgressionClient<$Result.GetResult<Prisma.$ClassSpellProgressionPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many ClassSpellProgressions.
+     * @param {ClassSpellProgressionCreateManyArgs} args - Arguments to create many ClassSpellProgressions.
+     * @example
+     * // Create many ClassSpellProgressions
+     * const classSpellProgression = await prisma.classSpellProgression.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ClassSpellProgressionCreateManyArgs>(args?: SelectSubset<T, ClassSpellProgressionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a ClassSpellProgression.
+     * @param {ClassSpellProgressionDeleteArgs} args - Arguments to delete one ClassSpellProgression.
+     * @example
+     * // Delete one ClassSpellProgression
+     * const ClassSpellProgression = await prisma.classSpellProgression.delete({
+     *   where: {
+     *     // ... filter to delete one ClassSpellProgression
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ClassSpellProgressionDeleteArgs>(args: SelectSubset<T, ClassSpellProgressionDeleteArgs<ExtArgs>>): Prisma__ClassSpellProgressionClient<$Result.GetResult<Prisma.$ClassSpellProgressionPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one ClassSpellProgression.
+     * @param {ClassSpellProgressionUpdateArgs} args - Arguments to update one ClassSpellProgression.
+     * @example
+     * // Update one ClassSpellProgression
+     * const classSpellProgression = await prisma.classSpellProgression.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ClassSpellProgressionUpdateArgs>(args: SelectSubset<T, ClassSpellProgressionUpdateArgs<ExtArgs>>): Prisma__ClassSpellProgressionClient<$Result.GetResult<Prisma.$ClassSpellProgressionPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more ClassSpellProgressions.
+     * @param {ClassSpellProgressionDeleteManyArgs} args - Arguments to filter ClassSpellProgressions to delete.
+     * @example
+     * // Delete a few ClassSpellProgressions
+     * const { count } = await prisma.classSpellProgression.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ClassSpellProgressionDeleteManyArgs>(args?: SelectSubset<T, ClassSpellProgressionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ClassSpellProgressions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ClassSpellProgressionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ClassSpellProgressions
+     * const classSpellProgression = await prisma.classSpellProgression.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ClassSpellProgressionUpdateManyArgs>(args: SelectSubset<T, ClassSpellProgressionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ClassSpellProgression.
+     * @param {ClassSpellProgressionUpsertArgs} args - Arguments to update or create a ClassSpellProgression.
+     * @example
+     * // Update or create a ClassSpellProgression
+     * const classSpellProgression = await prisma.classSpellProgression.upsert({
+     *   create: {
+     *     // ... data to create a ClassSpellProgression
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ClassSpellProgression we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ClassSpellProgressionUpsertArgs>(args: SelectSubset<T, ClassSpellProgressionUpsertArgs<ExtArgs>>): Prisma__ClassSpellProgressionClient<$Result.GetResult<Prisma.$ClassSpellProgressionPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of ClassSpellProgressions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ClassSpellProgressionCountArgs} args - Arguments to filter ClassSpellProgressions to count.
+     * @example
+     * // Count the number of ClassSpellProgressions
+     * const count = await prisma.classSpellProgression.count({
+     *   where: {
+     *     // ... the filter for the ClassSpellProgressions we want to count
+     *   }
+     * })
+    **/
+    count<T extends ClassSpellProgressionCountArgs>(
+      args?: Subset<T, ClassSpellProgressionCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ClassSpellProgressionCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ClassSpellProgression.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ClassSpellProgressionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ClassSpellProgressionAggregateArgs>(args: Subset<T, ClassSpellProgressionAggregateArgs>): Prisma.PrismaPromise<GetClassSpellProgressionAggregateType<T>>
+
+    /**
+     * Group by ClassSpellProgression.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ClassSpellProgressionGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ClassSpellProgressionGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ClassSpellProgressionGroupByArgs['orderBy'] }
+        : { orderBy?: ClassSpellProgressionGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ClassSpellProgressionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetClassSpellProgressionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ClassSpellProgression model
+   */
+  readonly fields: ClassSpellProgressionFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ClassSpellProgression.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ClassSpellProgressionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     class<T extends ClassDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ClassDefaultArgs<ExtArgs>>): Prisma__ClassClient<$Result.GetResult<Prisma.$ClassPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     /**
@@ -6855,371 +7869,371 @@ export namespace Prisma {
 
 
   /**
-   * Fields of the ClassSpellLevel model
+   * Fields of the ClassSpellProgression model
    */
-  interface ClassSpellLevelFieldRefs {
-    readonly classId: FieldRef<"ClassSpellLevel", 'Int'>
-    readonly level: FieldRef<"ClassSpellLevel", 'Int'>
-    readonly spellLevel: FieldRef<"ClassSpellLevel", 'Int'>
-    readonly numSpells: FieldRef<"ClassSpellLevel", 'Int'>
+  interface ClassSpellProgressionFieldRefs {
+    readonly classId: FieldRef<"ClassSpellProgression", 'Int'>
+    readonly level: FieldRef<"ClassSpellProgression", 'Int'>
+    readonly spellLevel: FieldRef<"ClassSpellProgression", 'Int'>
+    readonly spellSlots: FieldRef<"ClassSpellProgression", 'Int'>
   }
     
 
   // Custom InputTypes
   /**
-   * ClassSpellLevel findUnique
+   * ClassSpellProgression findUnique
    */
-  export type ClassSpellLevelFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type ClassSpellProgressionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the ClassSpellLevel
+     * Select specific fields to fetch from the ClassSpellProgression
      */
-    select?: ClassSpellLevelSelect<ExtArgs> | null
+    select?: ClassSpellProgressionSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the ClassSpellLevel
+     * Omit specific fields from the ClassSpellProgression
      */
-    omit?: ClassSpellLevelOmit<ExtArgs> | null
+    omit?: ClassSpellProgressionOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: ClassSpellLevelInclude<ExtArgs> | null
+    include?: ClassSpellProgressionInclude<ExtArgs> | null
     /**
-     * Filter, which ClassSpellLevel to fetch.
+     * Filter, which ClassSpellProgression to fetch.
      */
-    where: ClassSpellLevelWhereUniqueInput
+    where: ClassSpellProgressionWhereUniqueInput
   }
 
   /**
-   * ClassSpellLevel findUniqueOrThrow
+   * ClassSpellProgression findUniqueOrThrow
    */
-  export type ClassSpellLevelFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type ClassSpellProgressionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the ClassSpellLevel
+     * Select specific fields to fetch from the ClassSpellProgression
      */
-    select?: ClassSpellLevelSelect<ExtArgs> | null
+    select?: ClassSpellProgressionSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the ClassSpellLevel
+     * Omit specific fields from the ClassSpellProgression
      */
-    omit?: ClassSpellLevelOmit<ExtArgs> | null
+    omit?: ClassSpellProgressionOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: ClassSpellLevelInclude<ExtArgs> | null
+    include?: ClassSpellProgressionInclude<ExtArgs> | null
     /**
-     * Filter, which ClassSpellLevel to fetch.
+     * Filter, which ClassSpellProgression to fetch.
      */
-    where: ClassSpellLevelWhereUniqueInput
+    where: ClassSpellProgressionWhereUniqueInput
   }
 
   /**
-   * ClassSpellLevel findFirst
+   * ClassSpellProgression findFirst
    */
-  export type ClassSpellLevelFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type ClassSpellProgressionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the ClassSpellLevel
+     * Select specific fields to fetch from the ClassSpellProgression
      */
-    select?: ClassSpellLevelSelect<ExtArgs> | null
+    select?: ClassSpellProgressionSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the ClassSpellLevel
+     * Omit specific fields from the ClassSpellProgression
      */
-    omit?: ClassSpellLevelOmit<ExtArgs> | null
+    omit?: ClassSpellProgressionOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: ClassSpellLevelInclude<ExtArgs> | null
+    include?: ClassSpellProgressionInclude<ExtArgs> | null
     /**
-     * Filter, which ClassSpellLevel to fetch.
+     * Filter, which ClassSpellProgression to fetch.
      */
-    where?: ClassSpellLevelWhereInput
+    where?: ClassSpellProgressionWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of ClassSpellLevels to fetch.
+     * Determine the order of ClassSpellProgressions to fetch.
      */
-    orderBy?: ClassSpellLevelOrderByWithRelationInput | ClassSpellLevelOrderByWithRelationInput[]
+    orderBy?: ClassSpellProgressionOrderByWithRelationInput | ClassSpellProgressionOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for searching for ClassSpellLevels.
+     * Sets the position for searching for ClassSpellProgressions.
      */
-    cursor?: ClassSpellLevelWhereUniqueInput
+    cursor?: ClassSpellProgressionWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` ClassSpellLevels from the position of the cursor.
+     * Take `±n` ClassSpellProgressions from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` ClassSpellLevels.
+     * Skip the first `n` ClassSpellProgressions.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
      * 
-     * Filter by unique combinations of ClassSpellLevels.
+     * Filter by unique combinations of ClassSpellProgressions.
      */
-    distinct?: ClassSpellLevelScalarFieldEnum | ClassSpellLevelScalarFieldEnum[]
+    distinct?: ClassSpellProgressionScalarFieldEnum | ClassSpellProgressionScalarFieldEnum[]
   }
 
   /**
-   * ClassSpellLevel findFirstOrThrow
+   * ClassSpellProgression findFirstOrThrow
    */
-  export type ClassSpellLevelFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type ClassSpellProgressionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the ClassSpellLevel
+     * Select specific fields to fetch from the ClassSpellProgression
      */
-    select?: ClassSpellLevelSelect<ExtArgs> | null
+    select?: ClassSpellProgressionSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the ClassSpellLevel
+     * Omit specific fields from the ClassSpellProgression
      */
-    omit?: ClassSpellLevelOmit<ExtArgs> | null
+    omit?: ClassSpellProgressionOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: ClassSpellLevelInclude<ExtArgs> | null
+    include?: ClassSpellProgressionInclude<ExtArgs> | null
     /**
-     * Filter, which ClassSpellLevel to fetch.
+     * Filter, which ClassSpellProgression to fetch.
      */
-    where?: ClassSpellLevelWhereInput
+    where?: ClassSpellProgressionWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of ClassSpellLevels to fetch.
+     * Determine the order of ClassSpellProgressions to fetch.
      */
-    orderBy?: ClassSpellLevelOrderByWithRelationInput | ClassSpellLevelOrderByWithRelationInput[]
+    orderBy?: ClassSpellProgressionOrderByWithRelationInput | ClassSpellProgressionOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for searching for ClassSpellLevels.
+     * Sets the position for searching for ClassSpellProgressions.
      */
-    cursor?: ClassSpellLevelWhereUniqueInput
+    cursor?: ClassSpellProgressionWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` ClassSpellLevels from the position of the cursor.
+     * Take `±n` ClassSpellProgressions from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` ClassSpellLevels.
+     * Skip the first `n` ClassSpellProgressions.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
      * 
-     * Filter by unique combinations of ClassSpellLevels.
+     * Filter by unique combinations of ClassSpellProgressions.
      */
-    distinct?: ClassSpellLevelScalarFieldEnum | ClassSpellLevelScalarFieldEnum[]
+    distinct?: ClassSpellProgressionScalarFieldEnum | ClassSpellProgressionScalarFieldEnum[]
   }
 
   /**
-   * ClassSpellLevel findMany
+   * ClassSpellProgression findMany
    */
-  export type ClassSpellLevelFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type ClassSpellProgressionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the ClassSpellLevel
+     * Select specific fields to fetch from the ClassSpellProgression
      */
-    select?: ClassSpellLevelSelect<ExtArgs> | null
+    select?: ClassSpellProgressionSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the ClassSpellLevel
+     * Omit specific fields from the ClassSpellProgression
      */
-    omit?: ClassSpellLevelOmit<ExtArgs> | null
+    omit?: ClassSpellProgressionOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: ClassSpellLevelInclude<ExtArgs> | null
+    include?: ClassSpellProgressionInclude<ExtArgs> | null
     /**
-     * Filter, which ClassSpellLevels to fetch.
+     * Filter, which ClassSpellProgressions to fetch.
      */
-    where?: ClassSpellLevelWhereInput
+    where?: ClassSpellProgressionWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of ClassSpellLevels to fetch.
+     * Determine the order of ClassSpellProgressions to fetch.
      */
-    orderBy?: ClassSpellLevelOrderByWithRelationInput | ClassSpellLevelOrderByWithRelationInput[]
+    orderBy?: ClassSpellProgressionOrderByWithRelationInput | ClassSpellProgressionOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for listing ClassSpellLevels.
+     * Sets the position for listing ClassSpellProgressions.
      */
-    cursor?: ClassSpellLevelWhereUniqueInput
+    cursor?: ClassSpellProgressionWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` ClassSpellLevels from the position of the cursor.
+     * Take `±n` ClassSpellProgressions from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` ClassSpellLevels.
+     * Skip the first `n` ClassSpellProgressions.
      */
     skip?: number
-    distinct?: ClassSpellLevelScalarFieldEnum | ClassSpellLevelScalarFieldEnum[]
+    distinct?: ClassSpellProgressionScalarFieldEnum | ClassSpellProgressionScalarFieldEnum[]
   }
 
   /**
-   * ClassSpellLevel create
+   * ClassSpellProgression create
    */
-  export type ClassSpellLevelCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type ClassSpellProgressionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the ClassSpellLevel
+     * Select specific fields to fetch from the ClassSpellProgression
      */
-    select?: ClassSpellLevelSelect<ExtArgs> | null
+    select?: ClassSpellProgressionSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the ClassSpellLevel
+     * Omit specific fields from the ClassSpellProgression
      */
-    omit?: ClassSpellLevelOmit<ExtArgs> | null
+    omit?: ClassSpellProgressionOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: ClassSpellLevelInclude<ExtArgs> | null
+    include?: ClassSpellProgressionInclude<ExtArgs> | null
     /**
-     * The data needed to create a ClassSpellLevel.
+     * The data needed to create a ClassSpellProgression.
      */
-    data: XOR<ClassSpellLevelCreateInput, ClassSpellLevelUncheckedCreateInput>
+    data: XOR<ClassSpellProgressionCreateInput, ClassSpellProgressionUncheckedCreateInput>
   }
 
   /**
-   * ClassSpellLevel createMany
+   * ClassSpellProgression createMany
    */
-  export type ClassSpellLevelCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type ClassSpellProgressionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * The data used to create many ClassSpellLevels.
+     * The data used to create many ClassSpellProgressions.
      */
-    data: ClassSpellLevelCreateManyInput | ClassSpellLevelCreateManyInput[]
+    data: ClassSpellProgressionCreateManyInput | ClassSpellProgressionCreateManyInput[]
     skipDuplicates?: boolean
   }
 
   /**
-   * ClassSpellLevel update
+   * ClassSpellProgression update
    */
-  export type ClassSpellLevelUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type ClassSpellProgressionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the ClassSpellLevel
+     * Select specific fields to fetch from the ClassSpellProgression
      */
-    select?: ClassSpellLevelSelect<ExtArgs> | null
+    select?: ClassSpellProgressionSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the ClassSpellLevel
+     * Omit specific fields from the ClassSpellProgression
      */
-    omit?: ClassSpellLevelOmit<ExtArgs> | null
+    omit?: ClassSpellProgressionOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: ClassSpellLevelInclude<ExtArgs> | null
+    include?: ClassSpellProgressionInclude<ExtArgs> | null
     /**
-     * The data needed to update a ClassSpellLevel.
+     * The data needed to update a ClassSpellProgression.
      */
-    data: XOR<ClassSpellLevelUpdateInput, ClassSpellLevelUncheckedUpdateInput>
+    data: XOR<ClassSpellProgressionUpdateInput, ClassSpellProgressionUncheckedUpdateInput>
     /**
-     * Choose, which ClassSpellLevel to update.
+     * Choose, which ClassSpellProgression to update.
      */
-    where: ClassSpellLevelWhereUniqueInput
+    where: ClassSpellProgressionWhereUniqueInput
   }
 
   /**
-   * ClassSpellLevel updateMany
+   * ClassSpellProgression updateMany
    */
-  export type ClassSpellLevelUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type ClassSpellProgressionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * The data used to update ClassSpellLevels.
+     * The data used to update ClassSpellProgressions.
      */
-    data: XOR<ClassSpellLevelUpdateManyMutationInput, ClassSpellLevelUncheckedUpdateManyInput>
+    data: XOR<ClassSpellProgressionUpdateManyMutationInput, ClassSpellProgressionUncheckedUpdateManyInput>
     /**
-     * Filter which ClassSpellLevels to update
+     * Filter which ClassSpellProgressions to update
      */
-    where?: ClassSpellLevelWhereInput
+    where?: ClassSpellProgressionWhereInput
     /**
-     * Limit how many ClassSpellLevels to update.
+     * Limit how many ClassSpellProgressions to update.
      */
     limit?: number
   }
 
   /**
-   * ClassSpellLevel upsert
+   * ClassSpellProgression upsert
    */
-  export type ClassSpellLevelUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type ClassSpellProgressionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the ClassSpellLevel
+     * Select specific fields to fetch from the ClassSpellProgression
      */
-    select?: ClassSpellLevelSelect<ExtArgs> | null
+    select?: ClassSpellProgressionSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the ClassSpellLevel
+     * Omit specific fields from the ClassSpellProgression
      */
-    omit?: ClassSpellLevelOmit<ExtArgs> | null
+    omit?: ClassSpellProgressionOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: ClassSpellLevelInclude<ExtArgs> | null
+    include?: ClassSpellProgressionInclude<ExtArgs> | null
     /**
-     * The filter to search for the ClassSpellLevel to update in case it exists.
+     * The filter to search for the ClassSpellProgression to update in case it exists.
      */
-    where: ClassSpellLevelWhereUniqueInput
+    where: ClassSpellProgressionWhereUniqueInput
     /**
-     * In case the ClassSpellLevel found by the `where` argument doesn't exist, create a new ClassSpellLevel with this data.
+     * In case the ClassSpellProgression found by the `where` argument doesn't exist, create a new ClassSpellProgression with this data.
      */
-    create: XOR<ClassSpellLevelCreateInput, ClassSpellLevelUncheckedCreateInput>
+    create: XOR<ClassSpellProgressionCreateInput, ClassSpellProgressionUncheckedCreateInput>
     /**
-     * In case the ClassSpellLevel was found with the provided `where` argument, update it with this data.
+     * In case the ClassSpellProgression was found with the provided `where` argument, update it with this data.
      */
-    update: XOR<ClassSpellLevelUpdateInput, ClassSpellLevelUncheckedUpdateInput>
+    update: XOR<ClassSpellProgressionUpdateInput, ClassSpellProgressionUncheckedUpdateInput>
   }
 
   /**
-   * ClassSpellLevel delete
+   * ClassSpellProgression delete
    */
-  export type ClassSpellLevelDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type ClassSpellProgressionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the ClassSpellLevel
+     * Select specific fields to fetch from the ClassSpellProgression
      */
-    select?: ClassSpellLevelSelect<ExtArgs> | null
+    select?: ClassSpellProgressionSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the ClassSpellLevel
+     * Omit specific fields from the ClassSpellProgression
      */
-    omit?: ClassSpellLevelOmit<ExtArgs> | null
+    omit?: ClassSpellProgressionOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: ClassSpellLevelInclude<ExtArgs> | null
+    include?: ClassSpellProgressionInclude<ExtArgs> | null
     /**
-     * Filter which ClassSpellLevel to delete.
+     * Filter which ClassSpellProgression to delete.
      */
-    where: ClassSpellLevelWhereUniqueInput
+    where: ClassSpellProgressionWhereUniqueInput
   }
 
   /**
-   * ClassSpellLevel deleteMany
+   * ClassSpellProgression deleteMany
    */
-  export type ClassSpellLevelDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type ClassSpellProgressionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Filter which ClassSpellLevels to delete
+     * Filter which ClassSpellProgressions to delete
      */
-    where?: ClassSpellLevelWhereInput
+    where?: ClassSpellProgressionWhereInput
     /**
-     * Limit how many ClassSpellLevels to delete.
+     * Limit how many ClassSpellProgressions to delete.
      */
     limit?: number
   }
 
   /**
-   * ClassSpellLevel without action
+   * ClassSpellProgression without action
    */
-  export type ClassSpellLevelDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type ClassSpellProgressionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the ClassSpellLevel
+     * Select specific fields to fetch from the ClassSpellProgression
      */
-    select?: ClassSpellLevelSelect<ExtArgs> | null
+    select?: ClassSpellProgressionSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the ClassSpellLevel
+     * Omit specific fields from the ClassSpellProgression
      */
-    omit?: ClassSpellLevelOmit<ExtArgs> | null
+    omit?: ClassSpellProgressionOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: ClassSpellLevelInclude<ExtArgs> | null
+    include?: ClassSpellProgressionInclude<ExtArgs> | null
   }
 
 
@@ -37243,24 +38257,30 @@ export namespace Prisma {
 
 
   export const ClassFeatureScalarFieldEnum: {
-    id: 'id',
-    classId: 'classId',
-    name: 'name',
-    description: 'description',
-    level: 'level'
+    slug: 'slug',
+    description: 'description'
   };
 
   export type ClassFeatureScalarFieldEnum = (typeof ClassFeatureScalarFieldEnum)[keyof typeof ClassFeatureScalarFieldEnum]
 
 
-  export const ClassSpellLevelScalarFieldEnum: {
+  export const ClassFeatureMapScalarFieldEnum: {
+    classId: 'classId',
+    featureSlug: 'featureSlug',
+    level: 'level'
+  };
+
+  export type ClassFeatureMapScalarFieldEnum = (typeof ClassFeatureMapScalarFieldEnum)[keyof typeof ClassFeatureMapScalarFieldEnum]
+
+
+  export const ClassSpellProgressionScalarFieldEnum: {
     classId: 'classId',
     level: 'level',
     spellLevel: 'spellLevel',
-    numSpells: 'numSpells'
+    spellSlots: 'spellSlots'
   };
 
-  export type ClassSpellLevelScalarFieldEnum = (typeof ClassSpellLevelScalarFieldEnum)[keyof typeof ClassSpellLevelScalarFieldEnum]
+  export type ClassSpellProgressionScalarFieldEnum = (typeof ClassSpellProgressionScalarFieldEnum)[keyof typeof ClassSpellProgressionScalarFieldEnum]
 
 
   export const ClassLevelAttributeScalarFieldEnum: {
@@ -37639,11 +38659,18 @@ export namespace Prisma {
 
 
   export const ClassFeatureOrderByRelevanceFieldEnum: {
-    name: 'name',
+    slug: 'slug',
     description: 'description'
   };
 
   export type ClassFeatureOrderByRelevanceFieldEnum = (typeof ClassFeatureOrderByRelevanceFieldEnum)[keyof typeof ClassFeatureOrderByRelevanceFieldEnum]
+
+
+  export const ClassFeatureMapOrderByRelevanceFieldEnum: {
+    featureSlug: 'featureSlug'
+  };
+
+  export type ClassFeatureMapOrderByRelevanceFieldEnum = (typeof ClassFeatureMapOrderByRelevanceFieldEnum)[keyof typeof ClassFeatureMapOrderByRelevanceFieldEnum]
 
 
   export const SpellOrderByRelevanceFieldEnum: {
@@ -37867,11 +38894,11 @@ export namespace Prisma {
     description?: StringNullableFilter<"Class"> | string | null
     skillPoints?: IntFilter<"Class"> | number
     castingAbilityId?: IntNullableFilter<"Class"> | number | null
-    features?: ClassFeatureListRelationFilter
+    features?: ClassFeatureMapListRelationFilter
     attributes?: ClassLevelAttributeListRelationFilter
-    spellProgression?: ClassSpellLevelListRelationFilter
+    spellProgression?: ClassSpellProgressionListRelationFilter
     skills?: ClassSkillMapListRelationFilter
-    sources?: ClassSourceMapListRelationFilter
+    sourceBookInfo?: ClassSourceMapListRelationFilter
     spellLevels?: SpellLevelMapListRelationFilter
   }
 
@@ -37887,11 +38914,11 @@ export namespace Prisma {
     description?: SortOrderInput | SortOrder
     skillPoints?: SortOrder
     castingAbilityId?: SortOrderInput | SortOrder
-    features?: ClassFeatureOrderByRelationAggregateInput
+    features?: ClassFeatureMapOrderByRelationAggregateInput
     attributes?: ClassLevelAttributeOrderByRelationAggregateInput
-    spellProgression?: ClassSpellLevelOrderByRelationAggregateInput
+    spellProgression?: ClassSpellProgressionOrderByRelationAggregateInput
     skills?: ClassSkillMapOrderByRelationAggregateInput
-    sources?: ClassSourceMapOrderByRelationAggregateInput
+    sourceBookInfo?: ClassSourceMapOrderByRelationAggregateInput
     spellLevels?: SpellLevelMapOrderByRelationAggregateInput
     _relevance?: ClassOrderByRelevanceInput
   }
@@ -37911,11 +38938,11 @@ export namespace Prisma {
     description?: StringNullableFilter<"Class"> | string | null
     skillPoints?: IntFilter<"Class"> | number
     castingAbilityId?: IntNullableFilter<"Class"> | number | null
-    features?: ClassFeatureListRelationFilter
+    features?: ClassFeatureMapListRelationFilter
     attributes?: ClassLevelAttributeListRelationFilter
-    spellProgression?: ClassSpellLevelListRelationFilter
+    spellProgression?: ClassSpellProgressionListRelationFilter
     skills?: ClassSkillMapListRelationFilter
-    sources?: ClassSourceMapListRelationFilter
+    sourceBookInfo?: ClassSourceMapListRelationFilter
     spellLevels?: SpellLevelMapListRelationFilter
   }, "id">
 
@@ -37959,111 +38986,146 @@ export namespace Prisma {
     AND?: ClassFeatureWhereInput | ClassFeatureWhereInput[]
     OR?: ClassFeatureWhereInput[]
     NOT?: ClassFeatureWhereInput | ClassFeatureWhereInput[]
-    id?: IntFilter<"ClassFeature"> | number
-    classId?: IntFilter<"ClassFeature"> | number
-    name?: StringFilter<"ClassFeature"> | string
-    description?: StringNullableFilter<"ClassFeature"> | string | null
-    level?: IntNullableFilter<"ClassFeature"> | number | null
-    class?: XOR<ClassScalarRelationFilter, ClassWhereInput>
+    slug?: StringFilter<"ClassFeature"> | string
+    description?: StringFilter<"ClassFeature"> | string
+    classes?: ClassFeatureMapListRelationFilter
   }
 
   export type ClassFeatureOrderByWithRelationInput = {
-    id?: SortOrder
-    classId?: SortOrder
-    name?: SortOrder
-    description?: SortOrderInput | SortOrder
-    level?: SortOrderInput | SortOrder
-    class?: ClassOrderByWithRelationInput
+    slug?: SortOrder
+    description?: SortOrder
+    classes?: ClassFeatureMapOrderByRelationAggregateInput
     _relevance?: ClassFeatureOrderByRelevanceInput
   }
 
   export type ClassFeatureWhereUniqueInput = Prisma.AtLeast<{
-    id?: number
+    slug?: string
     AND?: ClassFeatureWhereInput | ClassFeatureWhereInput[]
     OR?: ClassFeatureWhereInput[]
     NOT?: ClassFeatureWhereInput | ClassFeatureWhereInput[]
-    classId?: IntFilter<"ClassFeature"> | number
-    name?: StringFilter<"ClassFeature"> | string
-    description?: StringNullableFilter<"ClassFeature"> | string | null
-    level?: IntNullableFilter<"ClassFeature"> | number | null
-    class?: XOR<ClassScalarRelationFilter, ClassWhereInput>
-  }, "id">
+    description?: StringFilter<"ClassFeature"> | string
+    classes?: ClassFeatureMapListRelationFilter
+  }, "slug">
 
   export type ClassFeatureOrderByWithAggregationInput = {
-    id?: SortOrder
-    classId?: SortOrder
-    name?: SortOrder
-    description?: SortOrderInput | SortOrder
-    level?: SortOrderInput | SortOrder
+    slug?: SortOrder
+    description?: SortOrder
     _count?: ClassFeatureCountOrderByAggregateInput
-    _avg?: ClassFeatureAvgOrderByAggregateInput
     _max?: ClassFeatureMaxOrderByAggregateInput
     _min?: ClassFeatureMinOrderByAggregateInput
-    _sum?: ClassFeatureSumOrderByAggregateInput
   }
 
   export type ClassFeatureScalarWhereWithAggregatesInput = {
     AND?: ClassFeatureScalarWhereWithAggregatesInput | ClassFeatureScalarWhereWithAggregatesInput[]
     OR?: ClassFeatureScalarWhereWithAggregatesInput[]
     NOT?: ClassFeatureScalarWhereWithAggregatesInput | ClassFeatureScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"ClassFeature"> | number
-    classId?: IntWithAggregatesFilter<"ClassFeature"> | number
-    name?: StringWithAggregatesFilter<"ClassFeature"> | string
-    description?: StringNullableWithAggregatesFilter<"ClassFeature"> | string | null
-    level?: IntNullableWithAggregatesFilter<"ClassFeature"> | number | null
+    slug?: StringWithAggregatesFilter<"ClassFeature"> | string
+    description?: StringWithAggregatesFilter<"ClassFeature"> | string
   }
 
-  export type ClassSpellLevelWhereInput = {
-    AND?: ClassSpellLevelWhereInput | ClassSpellLevelWhereInput[]
-    OR?: ClassSpellLevelWhereInput[]
-    NOT?: ClassSpellLevelWhereInput | ClassSpellLevelWhereInput[]
-    classId?: IntFilter<"ClassSpellLevel"> | number
-    level?: IntFilter<"ClassSpellLevel"> | number
-    spellLevel?: IntFilter<"ClassSpellLevel"> | number
-    numSpells?: IntFilter<"ClassSpellLevel"> | number
+  export type ClassFeatureMapWhereInput = {
+    AND?: ClassFeatureMapWhereInput | ClassFeatureMapWhereInput[]
+    OR?: ClassFeatureMapWhereInput[]
+    NOT?: ClassFeatureMapWhereInput | ClassFeatureMapWhereInput[]
+    classId?: IntFilter<"ClassFeatureMap"> | number
+    featureSlug?: StringFilter<"ClassFeatureMap"> | string
+    level?: IntFilter<"ClassFeatureMap"> | number
+    class?: XOR<ClassScalarRelationFilter, ClassWhereInput>
+    feature?: XOR<ClassFeatureScalarRelationFilter, ClassFeatureWhereInput>
+  }
+
+  export type ClassFeatureMapOrderByWithRelationInput = {
+    classId?: SortOrder
+    featureSlug?: SortOrder
+    level?: SortOrder
+    class?: ClassOrderByWithRelationInput
+    feature?: ClassFeatureOrderByWithRelationInput
+    _relevance?: ClassFeatureMapOrderByRelevanceInput
+  }
+
+  export type ClassFeatureMapWhereUniqueInput = Prisma.AtLeast<{
+    classId_featureSlug?: ClassFeatureMapClassIdFeatureSlugCompoundUniqueInput
+    AND?: ClassFeatureMapWhereInput | ClassFeatureMapWhereInput[]
+    OR?: ClassFeatureMapWhereInput[]
+    NOT?: ClassFeatureMapWhereInput | ClassFeatureMapWhereInput[]
+    classId?: IntFilter<"ClassFeatureMap"> | number
+    featureSlug?: StringFilter<"ClassFeatureMap"> | string
+    level?: IntFilter<"ClassFeatureMap"> | number
+    class?: XOR<ClassScalarRelationFilter, ClassWhereInput>
+    feature?: XOR<ClassFeatureScalarRelationFilter, ClassFeatureWhereInput>
+  }, "classId_featureSlug">
+
+  export type ClassFeatureMapOrderByWithAggregationInput = {
+    classId?: SortOrder
+    featureSlug?: SortOrder
+    level?: SortOrder
+    _count?: ClassFeatureMapCountOrderByAggregateInput
+    _avg?: ClassFeatureMapAvgOrderByAggregateInput
+    _max?: ClassFeatureMapMaxOrderByAggregateInput
+    _min?: ClassFeatureMapMinOrderByAggregateInput
+    _sum?: ClassFeatureMapSumOrderByAggregateInput
+  }
+
+  export type ClassFeatureMapScalarWhereWithAggregatesInput = {
+    AND?: ClassFeatureMapScalarWhereWithAggregatesInput | ClassFeatureMapScalarWhereWithAggregatesInput[]
+    OR?: ClassFeatureMapScalarWhereWithAggregatesInput[]
+    NOT?: ClassFeatureMapScalarWhereWithAggregatesInput | ClassFeatureMapScalarWhereWithAggregatesInput[]
+    classId?: IntWithAggregatesFilter<"ClassFeatureMap"> | number
+    featureSlug?: StringWithAggregatesFilter<"ClassFeatureMap"> | string
+    level?: IntWithAggregatesFilter<"ClassFeatureMap"> | number
+  }
+
+  export type ClassSpellProgressionWhereInput = {
+    AND?: ClassSpellProgressionWhereInput | ClassSpellProgressionWhereInput[]
+    OR?: ClassSpellProgressionWhereInput[]
+    NOT?: ClassSpellProgressionWhereInput | ClassSpellProgressionWhereInput[]
+    classId?: IntFilter<"ClassSpellProgression"> | number
+    level?: IntFilter<"ClassSpellProgression"> | number
+    spellLevel?: IntFilter<"ClassSpellProgression"> | number
+    spellSlots?: IntFilter<"ClassSpellProgression"> | number
     class?: XOR<ClassScalarRelationFilter, ClassWhereInput>
   }
 
-  export type ClassSpellLevelOrderByWithRelationInput = {
+  export type ClassSpellProgressionOrderByWithRelationInput = {
     classId?: SortOrder
     level?: SortOrder
     spellLevel?: SortOrder
-    numSpells?: SortOrder
+    spellSlots?: SortOrder
     class?: ClassOrderByWithRelationInput
   }
 
-  export type ClassSpellLevelWhereUniqueInput = Prisma.AtLeast<{
-    classId_level_spellLevel?: ClassSpellLevelClassIdLevelSpellLevelCompoundUniqueInput
-    AND?: ClassSpellLevelWhereInput | ClassSpellLevelWhereInput[]
-    OR?: ClassSpellLevelWhereInput[]
-    NOT?: ClassSpellLevelWhereInput | ClassSpellLevelWhereInput[]
-    classId?: IntFilter<"ClassSpellLevel"> | number
-    level?: IntFilter<"ClassSpellLevel"> | number
-    spellLevel?: IntFilter<"ClassSpellLevel"> | number
-    numSpells?: IntFilter<"ClassSpellLevel"> | number
+  export type ClassSpellProgressionWhereUniqueInput = Prisma.AtLeast<{
+    classId_level_spellLevel?: ClassSpellProgressionClassIdLevelSpellLevelCompoundUniqueInput
+    AND?: ClassSpellProgressionWhereInput | ClassSpellProgressionWhereInput[]
+    OR?: ClassSpellProgressionWhereInput[]
+    NOT?: ClassSpellProgressionWhereInput | ClassSpellProgressionWhereInput[]
+    classId?: IntFilter<"ClassSpellProgression"> | number
+    level?: IntFilter<"ClassSpellProgression"> | number
+    spellLevel?: IntFilter<"ClassSpellProgression"> | number
+    spellSlots?: IntFilter<"ClassSpellProgression"> | number
     class?: XOR<ClassScalarRelationFilter, ClassWhereInput>
   }, "classId_level_spellLevel">
 
-  export type ClassSpellLevelOrderByWithAggregationInput = {
+  export type ClassSpellProgressionOrderByWithAggregationInput = {
     classId?: SortOrder
     level?: SortOrder
     spellLevel?: SortOrder
-    numSpells?: SortOrder
-    _count?: ClassSpellLevelCountOrderByAggregateInput
-    _avg?: ClassSpellLevelAvgOrderByAggregateInput
-    _max?: ClassSpellLevelMaxOrderByAggregateInput
-    _min?: ClassSpellLevelMinOrderByAggregateInput
-    _sum?: ClassSpellLevelSumOrderByAggregateInput
+    spellSlots?: SortOrder
+    _count?: ClassSpellProgressionCountOrderByAggregateInput
+    _avg?: ClassSpellProgressionAvgOrderByAggregateInput
+    _max?: ClassSpellProgressionMaxOrderByAggregateInput
+    _min?: ClassSpellProgressionMinOrderByAggregateInput
+    _sum?: ClassSpellProgressionSumOrderByAggregateInput
   }
 
-  export type ClassSpellLevelScalarWhereWithAggregatesInput = {
-    AND?: ClassSpellLevelScalarWhereWithAggregatesInput | ClassSpellLevelScalarWhereWithAggregatesInput[]
-    OR?: ClassSpellLevelScalarWhereWithAggregatesInput[]
-    NOT?: ClassSpellLevelScalarWhereWithAggregatesInput | ClassSpellLevelScalarWhereWithAggregatesInput[]
-    classId?: IntWithAggregatesFilter<"ClassSpellLevel"> | number
-    level?: IntWithAggregatesFilter<"ClassSpellLevel"> | number
-    spellLevel?: IntWithAggregatesFilter<"ClassSpellLevel"> | number
-    numSpells?: IntWithAggregatesFilter<"ClassSpellLevel"> | number
+  export type ClassSpellProgressionScalarWhereWithAggregatesInput = {
+    AND?: ClassSpellProgressionScalarWhereWithAggregatesInput | ClassSpellProgressionScalarWhereWithAggregatesInput[]
+    OR?: ClassSpellProgressionScalarWhereWithAggregatesInput[]
+    NOT?: ClassSpellProgressionScalarWhereWithAggregatesInput | ClassSpellProgressionScalarWhereWithAggregatesInput[]
+    classId?: IntWithAggregatesFilter<"ClassSpellProgression"> | number
+    level?: IntWithAggregatesFilter<"ClassSpellProgression"> | number
+    spellLevel?: IntWithAggregatesFilter<"ClassSpellProgression"> | number
+    spellSlots?: IntWithAggregatesFilter<"ClassSpellProgression"> | number
   }
 
   export type ClassLevelAttributeWhereInput = {
@@ -39988,11 +41050,11 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    features?: ClassFeatureCreateNestedManyWithoutClassInput
+    features?: ClassFeatureMapCreateNestedManyWithoutClassInput
     attributes?: ClassLevelAttributeCreateNestedManyWithoutClassInput
-    spellProgression?: ClassSpellLevelCreateNestedManyWithoutClassInput
+    spellProgression?: ClassSpellProgressionCreateNestedManyWithoutClassInput
     skills?: ClassSkillMapCreateNestedManyWithoutClassInput
-    sources?: ClassSourceMapCreateNestedManyWithoutClassInput
+    sourceBookInfo?: ClassSourceMapCreateNestedManyWithoutClassInput
     spellLevels?: SpellLevelMapCreateNestedManyWithoutClassInput
   }
 
@@ -40008,11 +41070,11 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    features?: ClassFeatureUncheckedCreateNestedManyWithoutClassInput
+    features?: ClassFeatureMapUncheckedCreateNestedManyWithoutClassInput
     attributes?: ClassLevelAttributeUncheckedCreateNestedManyWithoutClassInput
-    spellProgression?: ClassSpellLevelUncheckedCreateNestedManyWithoutClassInput
+    spellProgression?: ClassSpellProgressionUncheckedCreateNestedManyWithoutClassInput
     skills?: ClassSkillMapUncheckedCreateNestedManyWithoutClassInput
-    sources?: ClassSourceMapUncheckedCreateNestedManyWithoutClassInput
+    sourceBookInfo?: ClassSourceMapUncheckedCreateNestedManyWithoutClassInput
     spellLevels?: SpellLevelMapUncheckedCreateNestedManyWithoutClassInput
   }
 
@@ -40027,11 +41089,11 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    features?: ClassFeatureUpdateManyWithoutClassNestedInput
+    features?: ClassFeatureMapUpdateManyWithoutClassNestedInput
     attributes?: ClassLevelAttributeUpdateManyWithoutClassNestedInput
-    spellProgression?: ClassSpellLevelUpdateManyWithoutClassNestedInput
+    spellProgression?: ClassSpellProgressionUpdateManyWithoutClassNestedInput
     skills?: ClassSkillMapUpdateManyWithoutClassNestedInput
-    sources?: ClassSourceMapUpdateManyWithoutClassNestedInput
+    sourceBookInfo?: ClassSourceMapUpdateManyWithoutClassNestedInput
     spellLevels?: SpellLevelMapUpdateManyWithoutClassNestedInput
   }
 
@@ -40047,11 +41109,11 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    features?: ClassFeatureUncheckedUpdateManyWithoutClassNestedInput
+    features?: ClassFeatureMapUncheckedUpdateManyWithoutClassNestedInput
     attributes?: ClassLevelAttributeUncheckedUpdateManyWithoutClassNestedInput
-    spellProgression?: ClassSpellLevelUncheckedUpdateManyWithoutClassNestedInput
+    spellProgression?: ClassSpellProgressionUncheckedUpdateManyWithoutClassNestedInput
     skills?: ClassSkillMapUncheckedUpdateManyWithoutClassNestedInput
-    sources?: ClassSourceMapUncheckedUpdateManyWithoutClassNestedInput
+    sourceBookInfo?: ClassSourceMapUncheckedUpdateManyWithoutClassNestedInput
     spellLevels?: SpellLevelMapUncheckedUpdateManyWithoutClassNestedInput
   }
 
@@ -40097,103 +41159,130 @@ export namespace Prisma {
   }
 
   export type ClassFeatureCreateInput = {
-    name: string
-    description?: string | null
-    level?: number | null
-    class: ClassCreateNestedOneWithoutFeaturesInput
+    slug: string
+    description: string
+    classes?: ClassFeatureMapCreateNestedManyWithoutFeatureInput
   }
 
   export type ClassFeatureUncheckedCreateInput = {
-    id?: number
-    classId: number
-    name: string
-    description?: string | null
-    level?: number | null
+    slug: string
+    description: string
+    classes?: ClassFeatureMapUncheckedCreateNestedManyWithoutFeatureInput
   }
 
   export type ClassFeatureUpdateInput = {
-    name?: StringFieldUpdateOperationsInput | string
-    description?: NullableStringFieldUpdateOperationsInput | string | null
-    level?: NullableIntFieldUpdateOperationsInput | number | null
-    class?: ClassUpdateOneRequiredWithoutFeaturesNestedInput
+    slug?: StringFieldUpdateOperationsInput | string
+    description?: StringFieldUpdateOperationsInput | string
+    classes?: ClassFeatureMapUpdateManyWithoutFeatureNestedInput
   }
 
   export type ClassFeatureUncheckedUpdateInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    classId?: IntFieldUpdateOperationsInput | number
-    name?: StringFieldUpdateOperationsInput | string
-    description?: NullableStringFieldUpdateOperationsInput | string | null
-    level?: NullableIntFieldUpdateOperationsInput | number | null
+    slug?: StringFieldUpdateOperationsInput | string
+    description?: StringFieldUpdateOperationsInput | string
+    classes?: ClassFeatureMapUncheckedUpdateManyWithoutFeatureNestedInput
   }
 
   export type ClassFeatureCreateManyInput = {
-    id?: number
-    classId: number
-    name: string
-    description?: string | null
-    level?: number | null
+    slug: string
+    description: string
   }
 
   export type ClassFeatureUpdateManyMutationInput = {
-    name?: StringFieldUpdateOperationsInput | string
-    description?: NullableStringFieldUpdateOperationsInput | string | null
-    level?: NullableIntFieldUpdateOperationsInput | number | null
+    slug?: StringFieldUpdateOperationsInput | string
+    description?: StringFieldUpdateOperationsInput | string
   }
 
   export type ClassFeatureUncheckedUpdateManyInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    classId?: IntFieldUpdateOperationsInput | number
-    name?: StringFieldUpdateOperationsInput | string
-    description?: NullableStringFieldUpdateOperationsInput | string | null
-    level?: NullableIntFieldUpdateOperationsInput | number | null
+    slug?: StringFieldUpdateOperationsInput | string
+    description?: StringFieldUpdateOperationsInput | string
   }
 
-  export type ClassSpellLevelCreateInput = {
+  export type ClassFeatureMapCreateInput = {
+    level: number
+    class: ClassCreateNestedOneWithoutFeaturesInput
+    feature: ClassFeatureCreateNestedOneWithoutClassesInput
+  }
+
+  export type ClassFeatureMapUncheckedCreateInput = {
+    classId: number
+    featureSlug: string
+    level: number
+  }
+
+  export type ClassFeatureMapUpdateInput = {
+    level?: IntFieldUpdateOperationsInput | number
+    class?: ClassUpdateOneRequiredWithoutFeaturesNestedInput
+    feature?: ClassFeatureUpdateOneRequiredWithoutClassesNestedInput
+  }
+
+  export type ClassFeatureMapUncheckedUpdateInput = {
+    classId?: IntFieldUpdateOperationsInput | number
+    featureSlug?: StringFieldUpdateOperationsInput | string
+    level?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type ClassFeatureMapCreateManyInput = {
+    classId: number
+    featureSlug: string
+    level: number
+  }
+
+  export type ClassFeatureMapUpdateManyMutationInput = {
+    level?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type ClassFeatureMapUncheckedUpdateManyInput = {
+    classId?: IntFieldUpdateOperationsInput | number
+    featureSlug?: StringFieldUpdateOperationsInput | string
+    level?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type ClassSpellProgressionCreateInput = {
     level: number
     spellLevel: number
-    numSpells: number
+    spellSlots: number
     class: ClassCreateNestedOneWithoutSpellProgressionInput
   }
 
-  export type ClassSpellLevelUncheckedCreateInput = {
+  export type ClassSpellProgressionUncheckedCreateInput = {
     classId: number
     level: number
     spellLevel: number
-    numSpells: number
+    spellSlots: number
   }
 
-  export type ClassSpellLevelUpdateInput = {
+  export type ClassSpellProgressionUpdateInput = {
     level?: IntFieldUpdateOperationsInput | number
     spellLevel?: IntFieldUpdateOperationsInput | number
-    numSpells?: IntFieldUpdateOperationsInput | number
+    spellSlots?: IntFieldUpdateOperationsInput | number
     class?: ClassUpdateOneRequiredWithoutSpellProgressionNestedInput
   }
 
-  export type ClassSpellLevelUncheckedUpdateInput = {
+  export type ClassSpellProgressionUncheckedUpdateInput = {
     classId?: IntFieldUpdateOperationsInput | number
     level?: IntFieldUpdateOperationsInput | number
     spellLevel?: IntFieldUpdateOperationsInput | number
-    numSpells?: IntFieldUpdateOperationsInput | number
+    spellSlots?: IntFieldUpdateOperationsInput | number
   }
 
-  export type ClassSpellLevelCreateManyInput = {
+  export type ClassSpellProgressionCreateManyInput = {
     classId: number
     level: number
     spellLevel: number
-    numSpells: number
+    spellSlots: number
   }
 
-  export type ClassSpellLevelUpdateManyMutationInput = {
+  export type ClassSpellProgressionUpdateManyMutationInput = {
     level?: IntFieldUpdateOperationsInput | number
     spellLevel?: IntFieldUpdateOperationsInput | number
-    numSpells?: IntFieldUpdateOperationsInput | number
+    spellSlots?: IntFieldUpdateOperationsInput | number
   }
 
-  export type ClassSpellLevelUncheckedUpdateManyInput = {
+  export type ClassSpellProgressionUncheckedUpdateManyInput = {
     classId?: IntFieldUpdateOperationsInput | number
     level?: IntFieldUpdateOperationsInput | number
     spellLevel?: IntFieldUpdateOperationsInput | number
-    numSpells?: IntFieldUpdateOperationsInput | number
+    spellSlots?: IntFieldUpdateOperationsInput | number
   }
 
   export type ClassLevelAttributeCreateInput = {
@@ -40294,7 +41383,7 @@ export namespace Prisma {
 
   export type ClassSourceMapCreateInput = {
     pageNumber?: number | null
-    class: ClassCreateNestedOneWithoutSourcesInput
+    class: ClassCreateNestedOneWithoutSourceBookInfoInput
     SourceBook?: SourceBookCreateNestedOneWithoutClassesInput
   }
 
@@ -40306,7 +41395,7 @@ export namespace Prisma {
 
   export type ClassSourceMapUpdateInput = {
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
-    class?: ClassUpdateOneRequiredWithoutSourcesNestedInput
+    class?: ClassUpdateOneRequiredWithoutSourceBookInfoNestedInput
     SourceBook?: SourceBookUpdateOneWithoutClassesNestedInput
   }
 
@@ -42115,10 +43204,10 @@ export namespace Prisma {
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
   }
 
-  export type ClassFeatureListRelationFilter = {
-    every?: ClassFeatureWhereInput
-    some?: ClassFeatureWhereInput
-    none?: ClassFeatureWhereInput
+  export type ClassFeatureMapListRelationFilter = {
+    every?: ClassFeatureMapWhereInput
+    some?: ClassFeatureMapWhereInput
+    none?: ClassFeatureMapWhereInput
   }
 
   export type ClassLevelAttributeListRelationFilter = {
@@ -42127,10 +43216,10 @@ export namespace Prisma {
     none?: ClassLevelAttributeWhereInput
   }
 
-  export type ClassSpellLevelListRelationFilter = {
-    every?: ClassSpellLevelWhereInput
-    some?: ClassSpellLevelWhereInput
-    none?: ClassSpellLevelWhereInput
+  export type ClassSpellProgressionListRelationFilter = {
+    every?: ClassSpellProgressionWhereInput
+    some?: ClassSpellProgressionWhereInput
+    none?: ClassSpellProgressionWhereInput
   }
 
   export type ClassSkillMapListRelationFilter = {
@@ -42156,7 +43245,7 @@ export namespace Prisma {
     nulls?: NullsOrder
   }
 
-  export type ClassFeatureOrderByRelationAggregateInput = {
+  export type ClassFeatureMapOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -42164,7 +43253,7 @@ export namespace Prisma {
     _count?: SortOrder
   }
 
-  export type ClassSpellLevelOrderByRelationAggregateInput = {
+  export type ClassSpellProgressionOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -42320,11 +43409,6 @@ export namespace Prisma {
     _max?: NestedStringNullableFilter<$PrismaModel>
   }
 
-  export type ClassScalarRelationFilter = {
-    is?: ClassWhereInput
-    isNot?: ClassWhereInput
-  }
-
   export type ClassFeatureOrderByRelevanceInput = {
     fields: ClassFeatureOrderByRelevanceFieldEnum | ClassFeatureOrderByRelevanceFieldEnum[]
     sort: SortOrder
@@ -42332,80 +43416,108 @@ export namespace Prisma {
   }
 
   export type ClassFeatureCountOrderByAggregateInput = {
-    id?: SortOrder
-    classId?: SortOrder
-    name?: SortOrder
+    slug?: SortOrder
     description?: SortOrder
-    level?: SortOrder
-  }
-
-  export type ClassFeatureAvgOrderByAggregateInput = {
-    id?: SortOrder
-    classId?: SortOrder
-    level?: SortOrder
   }
 
   export type ClassFeatureMaxOrderByAggregateInput = {
-    id?: SortOrder
-    classId?: SortOrder
-    name?: SortOrder
+    slug?: SortOrder
     description?: SortOrder
-    level?: SortOrder
   }
 
   export type ClassFeatureMinOrderByAggregateInput = {
-    id?: SortOrder
-    classId?: SortOrder
-    name?: SortOrder
+    slug?: SortOrder
     description?: SortOrder
+  }
+
+  export type ClassScalarRelationFilter = {
+    is?: ClassWhereInput
+    isNot?: ClassWhereInput
+  }
+
+  export type ClassFeatureScalarRelationFilter = {
+    is?: ClassFeatureWhereInput
+    isNot?: ClassFeatureWhereInput
+  }
+
+  export type ClassFeatureMapOrderByRelevanceInput = {
+    fields: ClassFeatureMapOrderByRelevanceFieldEnum | ClassFeatureMapOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type ClassFeatureMapClassIdFeatureSlugCompoundUniqueInput = {
+    classId: number
+    featureSlug: string
+  }
+
+  export type ClassFeatureMapCountOrderByAggregateInput = {
+    classId?: SortOrder
+    featureSlug?: SortOrder
     level?: SortOrder
   }
 
-  export type ClassFeatureSumOrderByAggregateInput = {
-    id?: SortOrder
+  export type ClassFeatureMapAvgOrderByAggregateInput = {
     classId?: SortOrder
     level?: SortOrder
   }
 
-  export type ClassSpellLevelClassIdLevelSpellLevelCompoundUniqueInput = {
+  export type ClassFeatureMapMaxOrderByAggregateInput = {
+    classId?: SortOrder
+    featureSlug?: SortOrder
+    level?: SortOrder
+  }
+
+  export type ClassFeatureMapMinOrderByAggregateInput = {
+    classId?: SortOrder
+    featureSlug?: SortOrder
+    level?: SortOrder
+  }
+
+  export type ClassFeatureMapSumOrderByAggregateInput = {
+    classId?: SortOrder
+    level?: SortOrder
+  }
+
+  export type ClassSpellProgressionClassIdLevelSpellLevelCompoundUniqueInput = {
     classId: number
     level: number
     spellLevel: number
   }
 
-  export type ClassSpellLevelCountOrderByAggregateInput = {
+  export type ClassSpellProgressionCountOrderByAggregateInput = {
     classId?: SortOrder
     level?: SortOrder
     spellLevel?: SortOrder
-    numSpells?: SortOrder
+    spellSlots?: SortOrder
   }
 
-  export type ClassSpellLevelAvgOrderByAggregateInput = {
+  export type ClassSpellProgressionAvgOrderByAggregateInput = {
     classId?: SortOrder
     level?: SortOrder
     spellLevel?: SortOrder
-    numSpells?: SortOrder
+    spellSlots?: SortOrder
   }
 
-  export type ClassSpellLevelMaxOrderByAggregateInput = {
+  export type ClassSpellProgressionMaxOrderByAggregateInput = {
     classId?: SortOrder
     level?: SortOrder
     spellLevel?: SortOrder
-    numSpells?: SortOrder
+    spellSlots?: SortOrder
   }
 
-  export type ClassSpellLevelMinOrderByAggregateInput = {
+  export type ClassSpellProgressionMinOrderByAggregateInput = {
     classId?: SortOrder
     level?: SortOrder
     spellLevel?: SortOrder
-    numSpells?: SortOrder
+    spellSlots?: SortOrder
   }
 
-  export type ClassSpellLevelSumOrderByAggregateInput = {
+  export type ClassSpellProgressionSumOrderByAggregateInput = {
     classId?: SortOrder
     level?: SortOrder
     spellLevel?: SortOrder
-    numSpells?: SortOrder
+    spellSlots?: SortOrder
   }
 
   export type ClassLevelAttributeClassIdLevelCompoundUniqueInput = {
@@ -44058,11 +45170,11 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
-  export type ClassFeatureCreateNestedManyWithoutClassInput = {
-    create?: XOR<ClassFeatureCreateWithoutClassInput, ClassFeatureUncheckedCreateWithoutClassInput> | ClassFeatureCreateWithoutClassInput[] | ClassFeatureUncheckedCreateWithoutClassInput[]
-    connectOrCreate?: ClassFeatureCreateOrConnectWithoutClassInput | ClassFeatureCreateOrConnectWithoutClassInput[]
-    createMany?: ClassFeatureCreateManyClassInputEnvelope
-    connect?: ClassFeatureWhereUniqueInput | ClassFeatureWhereUniqueInput[]
+  export type ClassFeatureMapCreateNestedManyWithoutClassInput = {
+    create?: XOR<ClassFeatureMapCreateWithoutClassInput, ClassFeatureMapUncheckedCreateWithoutClassInput> | ClassFeatureMapCreateWithoutClassInput[] | ClassFeatureMapUncheckedCreateWithoutClassInput[]
+    connectOrCreate?: ClassFeatureMapCreateOrConnectWithoutClassInput | ClassFeatureMapCreateOrConnectWithoutClassInput[]
+    createMany?: ClassFeatureMapCreateManyClassInputEnvelope
+    connect?: ClassFeatureMapWhereUniqueInput | ClassFeatureMapWhereUniqueInput[]
   }
 
   export type ClassLevelAttributeCreateNestedManyWithoutClassInput = {
@@ -44072,11 +45184,11 @@ export namespace Prisma {
     connect?: ClassLevelAttributeWhereUniqueInput | ClassLevelAttributeWhereUniqueInput[]
   }
 
-  export type ClassSpellLevelCreateNestedManyWithoutClassInput = {
-    create?: XOR<ClassSpellLevelCreateWithoutClassInput, ClassSpellLevelUncheckedCreateWithoutClassInput> | ClassSpellLevelCreateWithoutClassInput[] | ClassSpellLevelUncheckedCreateWithoutClassInput[]
-    connectOrCreate?: ClassSpellLevelCreateOrConnectWithoutClassInput | ClassSpellLevelCreateOrConnectWithoutClassInput[]
-    createMany?: ClassSpellLevelCreateManyClassInputEnvelope
-    connect?: ClassSpellLevelWhereUniqueInput | ClassSpellLevelWhereUniqueInput[]
+  export type ClassSpellProgressionCreateNestedManyWithoutClassInput = {
+    create?: XOR<ClassSpellProgressionCreateWithoutClassInput, ClassSpellProgressionUncheckedCreateWithoutClassInput> | ClassSpellProgressionCreateWithoutClassInput[] | ClassSpellProgressionUncheckedCreateWithoutClassInput[]
+    connectOrCreate?: ClassSpellProgressionCreateOrConnectWithoutClassInput | ClassSpellProgressionCreateOrConnectWithoutClassInput[]
+    createMany?: ClassSpellProgressionCreateManyClassInputEnvelope
+    connect?: ClassSpellProgressionWhereUniqueInput | ClassSpellProgressionWhereUniqueInput[]
   }
 
   export type ClassSkillMapCreateNestedManyWithoutClassInput = {
@@ -44100,11 +45212,11 @@ export namespace Prisma {
     connect?: SpellLevelMapWhereUniqueInput | SpellLevelMapWhereUniqueInput[]
   }
 
-  export type ClassFeatureUncheckedCreateNestedManyWithoutClassInput = {
-    create?: XOR<ClassFeatureCreateWithoutClassInput, ClassFeatureUncheckedCreateWithoutClassInput> | ClassFeatureCreateWithoutClassInput[] | ClassFeatureUncheckedCreateWithoutClassInput[]
-    connectOrCreate?: ClassFeatureCreateOrConnectWithoutClassInput | ClassFeatureCreateOrConnectWithoutClassInput[]
-    createMany?: ClassFeatureCreateManyClassInputEnvelope
-    connect?: ClassFeatureWhereUniqueInput | ClassFeatureWhereUniqueInput[]
+  export type ClassFeatureMapUncheckedCreateNestedManyWithoutClassInput = {
+    create?: XOR<ClassFeatureMapCreateWithoutClassInput, ClassFeatureMapUncheckedCreateWithoutClassInput> | ClassFeatureMapCreateWithoutClassInput[] | ClassFeatureMapUncheckedCreateWithoutClassInput[]
+    connectOrCreate?: ClassFeatureMapCreateOrConnectWithoutClassInput | ClassFeatureMapCreateOrConnectWithoutClassInput[]
+    createMany?: ClassFeatureMapCreateManyClassInputEnvelope
+    connect?: ClassFeatureMapWhereUniqueInput | ClassFeatureMapWhereUniqueInput[]
   }
 
   export type ClassLevelAttributeUncheckedCreateNestedManyWithoutClassInput = {
@@ -44114,11 +45226,11 @@ export namespace Prisma {
     connect?: ClassLevelAttributeWhereUniqueInput | ClassLevelAttributeWhereUniqueInput[]
   }
 
-  export type ClassSpellLevelUncheckedCreateNestedManyWithoutClassInput = {
-    create?: XOR<ClassSpellLevelCreateWithoutClassInput, ClassSpellLevelUncheckedCreateWithoutClassInput> | ClassSpellLevelCreateWithoutClassInput[] | ClassSpellLevelUncheckedCreateWithoutClassInput[]
-    connectOrCreate?: ClassSpellLevelCreateOrConnectWithoutClassInput | ClassSpellLevelCreateOrConnectWithoutClassInput[]
-    createMany?: ClassSpellLevelCreateManyClassInputEnvelope
-    connect?: ClassSpellLevelWhereUniqueInput | ClassSpellLevelWhereUniqueInput[]
+  export type ClassSpellProgressionUncheckedCreateNestedManyWithoutClassInput = {
+    create?: XOR<ClassSpellProgressionCreateWithoutClassInput, ClassSpellProgressionUncheckedCreateWithoutClassInput> | ClassSpellProgressionCreateWithoutClassInput[] | ClassSpellProgressionUncheckedCreateWithoutClassInput[]
+    connectOrCreate?: ClassSpellProgressionCreateOrConnectWithoutClassInput | ClassSpellProgressionCreateOrConnectWithoutClassInput[]
+    createMany?: ClassSpellProgressionCreateManyClassInputEnvelope
+    connect?: ClassSpellProgressionWhereUniqueInput | ClassSpellProgressionWhereUniqueInput[]
   }
 
   export type ClassSkillMapUncheckedCreateNestedManyWithoutClassInput = {
@@ -44170,18 +45282,18 @@ export namespace Prisma {
     set?: string | null
   }
 
-  export type ClassFeatureUpdateManyWithoutClassNestedInput = {
-    create?: XOR<ClassFeatureCreateWithoutClassInput, ClassFeatureUncheckedCreateWithoutClassInput> | ClassFeatureCreateWithoutClassInput[] | ClassFeatureUncheckedCreateWithoutClassInput[]
-    connectOrCreate?: ClassFeatureCreateOrConnectWithoutClassInput | ClassFeatureCreateOrConnectWithoutClassInput[]
-    upsert?: ClassFeatureUpsertWithWhereUniqueWithoutClassInput | ClassFeatureUpsertWithWhereUniqueWithoutClassInput[]
-    createMany?: ClassFeatureCreateManyClassInputEnvelope
-    set?: ClassFeatureWhereUniqueInput | ClassFeatureWhereUniqueInput[]
-    disconnect?: ClassFeatureWhereUniqueInput | ClassFeatureWhereUniqueInput[]
-    delete?: ClassFeatureWhereUniqueInput | ClassFeatureWhereUniqueInput[]
-    connect?: ClassFeatureWhereUniqueInput | ClassFeatureWhereUniqueInput[]
-    update?: ClassFeatureUpdateWithWhereUniqueWithoutClassInput | ClassFeatureUpdateWithWhereUniqueWithoutClassInput[]
-    updateMany?: ClassFeatureUpdateManyWithWhereWithoutClassInput | ClassFeatureUpdateManyWithWhereWithoutClassInput[]
-    deleteMany?: ClassFeatureScalarWhereInput | ClassFeatureScalarWhereInput[]
+  export type ClassFeatureMapUpdateManyWithoutClassNestedInput = {
+    create?: XOR<ClassFeatureMapCreateWithoutClassInput, ClassFeatureMapUncheckedCreateWithoutClassInput> | ClassFeatureMapCreateWithoutClassInput[] | ClassFeatureMapUncheckedCreateWithoutClassInput[]
+    connectOrCreate?: ClassFeatureMapCreateOrConnectWithoutClassInput | ClassFeatureMapCreateOrConnectWithoutClassInput[]
+    upsert?: ClassFeatureMapUpsertWithWhereUniqueWithoutClassInput | ClassFeatureMapUpsertWithWhereUniqueWithoutClassInput[]
+    createMany?: ClassFeatureMapCreateManyClassInputEnvelope
+    set?: ClassFeatureMapWhereUniqueInput | ClassFeatureMapWhereUniqueInput[]
+    disconnect?: ClassFeatureMapWhereUniqueInput | ClassFeatureMapWhereUniqueInput[]
+    delete?: ClassFeatureMapWhereUniqueInput | ClassFeatureMapWhereUniqueInput[]
+    connect?: ClassFeatureMapWhereUniqueInput | ClassFeatureMapWhereUniqueInput[]
+    update?: ClassFeatureMapUpdateWithWhereUniqueWithoutClassInput | ClassFeatureMapUpdateWithWhereUniqueWithoutClassInput[]
+    updateMany?: ClassFeatureMapUpdateManyWithWhereWithoutClassInput | ClassFeatureMapUpdateManyWithWhereWithoutClassInput[]
+    deleteMany?: ClassFeatureMapScalarWhereInput | ClassFeatureMapScalarWhereInput[]
   }
 
   export type ClassLevelAttributeUpdateManyWithoutClassNestedInput = {
@@ -44198,18 +45310,18 @@ export namespace Prisma {
     deleteMany?: ClassLevelAttributeScalarWhereInput | ClassLevelAttributeScalarWhereInput[]
   }
 
-  export type ClassSpellLevelUpdateManyWithoutClassNestedInput = {
-    create?: XOR<ClassSpellLevelCreateWithoutClassInput, ClassSpellLevelUncheckedCreateWithoutClassInput> | ClassSpellLevelCreateWithoutClassInput[] | ClassSpellLevelUncheckedCreateWithoutClassInput[]
-    connectOrCreate?: ClassSpellLevelCreateOrConnectWithoutClassInput | ClassSpellLevelCreateOrConnectWithoutClassInput[]
-    upsert?: ClassSpellLevelUpsertWithWhereUniqueWithoutClassInput | ClassSpellLevelUpsertWithWhereUniqueWithoutClassInput[]
-    createMany?: ClassSpellLevelCreateManyClassInputEnvelope
-    set?: ClassSpellLevelWhereUniqueInput | ClassSpellLevelWhereUniqueInput[]
-    disconnect?: ClassSpellLevelWhereUniqueInput | ClassSpellLevelWhereUniqueInput[]
-    delete?: ClassSpellLevelWhereUniqueInput | ClassSpellLevelWhereUniqueInput[]
-    connect?: ClassSpellLevelWhereUniqueInput | ClassSpellLevelWhereUniqueInput[]
-    update?: ClassSpellLevelUpdateWithWhereUniqueWithoutClassInput | ClassSpellLevelUpdateWithWhereUniqueWithoutClassInput[]
-    updateMany?: ClassSpellLevelUpdateManyWithWhereWithoutClassInput | ClassSpellLevelUpdateManyWithWhereWithoutClassInput[]
-    deleteMany?: ClassSpellLevelScalarWhereInput | ClassSpellLevelScalarWhereInput[]
+  export type ClassSpellProgressionUpdateManyWithoutClassNestedInput = {
+    create?: XOR<ClassSpellProgressionCreateWithoutClassInput, ClassSpellProgressionUncheckedCreateWithoutClassInput> | ClassSpellProgressionCreateWithoutClassInput[] | ClassSpellProgressionUncheckedCreateWithoutClassInput[]
+    connectOrCreate?: ClassSpellProgressionCreateOrConnectWithoutClassInput | ClassSpellProgressionCreateOrConnectWithoutClassInput[]
+    upsert?: ClassSpellProgressionUpsertWithWhereUniqueWithoutClassInput | ClassSpellProgressionUpsertWithWhereUniqueWithoutClassInput[]
+    createMany?: ClassSpellProgressionCreateManyClassInputEnvelope
+    set?: ClassSpellProgressionWhereUniqueInput | ClassSpellProgressionWhereUniqueInput[]
+    disconnect?: ClassSpellProgressionWhereUniqueInput | ClassSpellProgressionWhereUniqueInput[]
+    delete?: ClassSpellProgressionWhereUniqueInput | ClassSpellProgressionWhereUniqueInput[]
+    connect?: ClassSpellProgressionWhereUniqueInput | ClassSpellProgressionWhereUniqueInput[]
+    update?: ClassSpellProgressionUpdateWithWhereUniqueWithoutClassInput | ClassSpellProgressionUpdateWithWhereUniqueWithoutClassInput[]
+    updateMany?: ClassSpellProgressionUpdateManyWithWhereWithoutClassInput | ClassSpellProgressionUpdateManyWithWhereWithoutClassInput[]
+    deleteMany?: ClassSpellProgressionScalarWhereInput | ClassSpellProgressionScalarWhereInput[]
   }
 
   export type ClassSkillMapUpdateManyWithoutClassNestedInput = {
@@ -44254,18 +45366,18 @@ export namespace Prisma {
     deleteMany?: SpellLevelMapScalarWhereInput | SpellLevelMapScalarWhereInput[]
   }
 
-  export type ClassFeatureUncheckedUpdateManyWithoutClassNestedInput = {
-    create?: XOR<ClassFeatureCreateWithoutClassInput, ClassFeatureUncheckedCreateWithoutClassInput> | ClassFeatureCreateWithoutClassInput[] | ClassFeatureUncheckedCreateWithoutClassInput[]
-    connectOrCreate?: ClassFeatureCreateOrConnectWithoutClassInput | ClassFeatureCreateOrConnectWithoutClassInput[]
-    upsert?: ClassFeatureUpsertWithWhereUniqueWithoutClassInput | ClassFeatureUpsertWithWhereUniqueWithoutClassInput[]
-    createMany?: ClassFeatureCreateManyClassInputEnvelope
-    set?: ClassFeatureWhereUniqueInput | ClassFeatureWhereUniqueInput[]
-    disconnect?: ClassFeatureWhereUniqueInput | ClassFeatureWhereUniqueInput[]
-    delete?: ClassFeatureWhereUniqueInput | ClassFeatureWhereUniqueInput[]
-    connect?: ClassFeatureWhereUniqueInput | ClassFeatureWhereUniqueInput[]
-    update?: ClassFeatureUpdateWithWhereUniqueWithoutClassInput | ClassFeatureUpdateWithWhereUniqueWithoutClassInput[]
-    updateMany?: ClassFeatureUpdateManyWithWhereWithoutClassInput | ClassFeatureUpdateManyWithWhereWithoutClassInput[]
-    deleteMany?: ClassFeatureScalarWhereInput | ClassFeatureScalarWhereInput[]
+  export type ClassFeatureMapUncheckedUpdateManyWithoutClassNestedInput = {
+    create?: XOR<ClassFeatureMapCreateWithoutClassInput, ClassFeatureMapUncheckedCreateWithoutClassInput> | ClassFeatureMapCreateWithoutClassInput[] | ClassFeatureMapUncheckedCreateWithoutClassInput[]
+    connectOrCreate?: ClassFeatureMapCreateOrConnectWithoutClassInput | ClassFeatureMapCreateOrConnectWithoutClassInput[]
+    upsert?: ClassFeatureMapUpsertWithWhereUniqueWithoutClassInput | ClassFeatureMapUpsertWithWhereUniqueWithoutClassInput[]
+    createMany?: ClassFeatureMapCreateManyClassInputEnvelope
+    set?: ClassFeatureMapWhereUniqueInput | ClassFeatureMapWhereUniqueInput[]
+    disconnect?: ClassFeatureMapWhereUniqueInput | ClassFeatureMapWhereUniqueInput[]
+    delete?: ClassFeatureMapWhereUniqueInput | ClassFeatureMapWhereUniqueInput[]
+    connect?: ClassFeatureMapWhereUniqueInput | ClassFeatureMapWhereUniqueInput[]
+    update?: ClassFeatureMapUpdateWithWhereUniqueWithoutClassInput | ClassFeatureMapUpdateWithWhereUniqueWithoutClassInput[]
+    updateMany?: ClassFeatureMapUpdateManyWithWhereWithoutClassInput | ClassFeatureMapUpdateManyWithWhereWithoutClassInput[]
+    deleteMany?: ClassFeatureMapScalarWhereInput | ClassFeatureMapScalarWhereInput[]
   }
 
   export type ClassLevelAttributeUncheckedUpdateManyWithoutClassNestedInput = {
@@ -44282,18 +45394,18 @@ export namespace Prisma {
     deleteMany?: ClassLevelAttributeScalarWhereInput | ClassLevelAttributeScalarWhereInput[]
   }
 
-  export type ClassSpellLevelUncheckedUpdateManyWithoutClassNestedInput = {
-    create?: XOR<ClassSpellLevelCreateWithoutClassInput, ClassSpellLevelUncheckedCreateWithoutClassInput> | ClassSpellLevelCreateWithoutClassInput[] | ClassSpellLevelUncheckedCreateWithoutClassInput[]
-    connectOrCreate?: ClassSpellLevelCreateOrConnectWithoutClassInput | ClassSpellLevelCreateOrConnectWithoutClassInput[]
-    upsert?: ClassSpellLevelUpsertWithWhereUniqueWithoutClassInput | ClassSpellLevelUpsertWithWhereUniqueWithoutClassInput[]
-    createMany?: ClassSpellLevelCreateManyClassInputEnvelope
-    set?: ClassSpellLevelWhereUniqueInput | ClassSpellLevelWhereUniqueInput[]
-    disconnect?: ClassSpellLevelWhereUniqueInput | ClassSpellLevelWhereUniqueInput[]
-    delete?: ClassSpellLevelWhereUniqueInput | ClassSpellLevelWhereUniqueInput[]
-    connect?: ClassSpellLevelWhereUniqueInput | ClassSpellLevelWhereUniqueInput[]
-    update?: ClassSpellLevelUpdateWithWhereUniqueWithoutClassInput | ClassSpellLevelUpdateWithWhereUniqueWithoutClassInput[]
-    updateMany?: ClassSpellLevelUpdateManyWithWhereWithoutClassInput | ClassSpellLevelUpdateManyWithWhereWithoutClassInput[]
-    deleteMany?: ClassSpellLevelScalarWhereInput | ClassSpellLevelScalarWhereInput[]
+  export type ClassSpellProgressionUncheckedUpdateManyWithoutClassNestedInput = {
+    create?: XOR<ClassSpellProgressionCreateWithoutClassInput, ClassSpellProgressionUncheckedCreateWithoutClassInput> | ClassSpellProgressionCreateWithoutClassInput[] | ClassSpellProgressionUncheckedCreateWithoutClassInput[]
+    connectOrCreate?: ClassSpellProgressionCreateOrConnectWithoutClassInput | ClassSpellProgressionCreateOrConnectWithoutClassInput[]
+    upsert?: ClassSpellProgressionUpsertWithWhereUniqueWithoutClassInput | ClassSpellProgressionUpsertWithWhereUniqueWithoutClassInput[]
+    createMany?: ClassSpellProgressionCreateManyClassInputEnvelope
+    set?: ClassSpellProgressionWhereUniqueInput | ClassSpellProgressionWhereUniqueInput[]
+    disconnect?: ClassSpellProgressionWhereUniqueInput | ClassSpellProgressionWhereUniqueInput[]
+    delete?: ClassSpellProgressionWhereUniqueInput | ClassSpellProgressionWhereUniqueInput[]
+    connect?: ClassSpellProgressionWhereUniqueInput | ClassSpellProgressionWhereUniqueInput[]
+    update?: ClassSpellProgressionUpdateWithWhereUniqueWithoutClassInput | ClassSpellProgressionUpdateWithWhereUniqueWithoutClassInput[]
+    updateMany?: ClassSpellProgressionUpdateManyWithWhereWithoutClassInput | ClassSpellProgressionUpdateManyWithWhereWithoutClassInput[]
+    deleteMany?: ClassSpellProgressionScalarWhereInput | ClassSpellProgressionScalarWhereInput[]
   }
 
   export type ClassSkillMapUncheckedUpdateManyWithoutClassNestedInput = {
@@ -44338,10 +45450,58 @@ export namespace Prisma {
     deleteMany?: SpellLevelMapScalarWhereInput | SpellLevelMapScalarWhereInput[]
   }
 
+  export type ClassFeatureMapCreateNestedManyWithoutFeatureInput = {
+    create?: XOR<ClassFeatureMapCreateWithoutFeatureInput, ClassFeatureMapUncheckedCreateWithoutFeatureInput> | ClassFeatureMapCreateWithoutFeatureInput[] | ClassFeatureMapUncheckedCreateWithoutFeatureInput[]
+    connectOrCreate?: ClassFeatureMapCreateOrConnectWithoutFeatureInput | ClassFeatureMapCreateOrConnectWithoutFeatureInput[]
+    createMany?: ClassFeatureMapCreateManyFeatureInputEnvelope
+    connect?: ClassFeatureMapWhereUniqueInput | ClassFeatureMapWhereUniqueInput[]
+  }
+
+  export type ClassFeatureMapUncheckedCreateNestedManyWithoutFeatureInput = {
+    create?: XOR<ClassFeatureMapCreateWithoutFeatureInput, ClassFeatureMapUncheckedCreateWithoutFeatureInput> | ClassFeatureMapCreateWithoutFeatureInput[] | ClassFeatureMapUncheckedCreateWithoutFeatureInput[]
+    connectOrCreate?: ClassFeatureMapCreateOrConnectWithoutFeatureInput | ClassFeatureMapCreateOrConnectWithoutFeatureInput[]
+    createMany?: ClassFeatureMapCreateManyFeatureInputEnvelope
+    connect?: ClassFeatureMapWhereUniqueInput | ClassFeatureMapWhereUniqueInput[]
+  }
+
+  export type ClassFeatureMapUpdateManyWithoutFeatureNestedInput = {
+    create?: XOR<ClassFeatureMapCreateWithoutFeatureInput, ClassFeatureMapUncheckedCreateWithoutFeatureInput> | ClassFeatureMapCreateWithoutFeatureInput[] | ClassFeatureMapUncheckedCreateWithoutFeatureInput[]
+    connectOrCreate?: ClassFeatureMapCreateOrConnectWithoutFeatureInput | ClassFeatureMapCreateOrConnectWithoutFeatureInput[]
+    upsert?: ClassFeatureMapUpsertWithWhereUniqueWithoutFeatureInput | ClassFeatureMapUpsertWithWhereUniqueWithoutFeatureInput[]
+    createMany?: ClassFeatureMapCreateManyFeatureInputEnvelope
+    set?: ClassFeatureMapWhereUniqueInput | ClassFeatureMapWhereUniqueInput[]
+    disconnect?: ClassFeatureMapWhereUniqueInput | ClassFeatureMapWhereUniqueInput[]
+    delete?: ClassFeatureMapWhereUniqueInput | ClassFeatureMapWhereUniqueInput[]
+    connect?: ClassFeatureMapWhereUniqueInput | ClassFeatureMapWhereUniqueInput[]
+    update?: ClassFeatureMapUpdateWithWhereUniqueWithoutFeatureInput | ClassFeatureMapUpdateWithWhereUniqueWithoutFeatureInput[]
+    updateMany?: ClassFeatureMapUpdateManyWithWhereWithoutFeatureInput | ClassFeatureMapUpdateManyWithWhereWithoutFeatureInput[]
+    deleteMany?: ClassFeatureMapScalarWhereInput | ClassFeatureMapScalarWhereInput[]
+  }
+
+  export type ClassFeatureMapUncheckedUpdateManyWithoutFeatureNestedInput = {
+    create?: XOR<ClassFeatureMapCreateWithoutFeatureInput, ClassFeatureMapUncheckedCreateWithoutFeatureInput> | ClassFeatureMapCreateWithoutFeatureInput[] | ClassFeatureMapUncheckedCreateWithoutFeatureInput[]
+    connectOrCreate?: ClassFeatureMapCreateOrConnectWithoutFeatureInput | ClassFeatureMapCreateOrConnectWithoutFeatureInput[]
+    upsert?: ClassFeatureMapUpsertWithWhereUniqueWithoutFeatureInput | ClassFeatureMapUpsertWithWhereUniqueWithoutFeatureInput[]
+    createMany?: ClassFeatureMapCreateManyFeatureInputEnvelope
+    set?: ClassFeatureMapWhereUniqueInput | ClassFeatureMapWhereUniqueInput[]
+    disconnect?: ClassFeatureMapWhereUniqueInput | ClassFeatureMapWhereUniqueInput[]
+    delete?: ClassFeatureMapWhereUniqueInput | ClassFeatureMapWhereUniqueInput[]
+    connect?: ClassFeatureMapWhereUniqueInput | ClassFeatureMapWhereUniqueInput[]
+    update?: ClassFeatureMapUpdateWithWhereUniqueWithoutFeatureInput | ClassFeatureMapUpdateWithWhereUniqueWithoutFeatureInput[]
+    updateMany?: ClassFeatureMapUpdateManyWithWhereWithoutFeatureInput | ClassFeatureMapUpdateManyWithWhereWithoutFeatureInput[]
+    deleteMany?: ClassFeatureMapScalarWhereInput | ClassFeatureMapScalarWhereInput[]
+  }
+
   export type ClassCreateNestedOneWithoutFeaturesInput = {
     create?: XOR<ClassCreateWithoutFeaturesInput, ClassUncheckedCreateWithoutFeaturesInput>
     connectOrCreate?: ClassCreateOrConnectWithoutFeaturesInput
     connect?: ClassWhereUniqueInput
+  }
+
+  export type ClassFeatureCreateNestedOneWithoutClassesInput = {
+    create?: XOR<ClassFeatureCreateWithoutClassesInput, ClassFeatureUncheckedCreateWithoutClassesInput>
+    connectOrCreate?: ClassFeatureCreateOrConnectWithoutClassesInput
+    connect?: ClassFeatureWhereUniqueInput
   }
 
   export type ClassUpdateOneRequiredWithoutFeaturesNestedInput = {
@@ -44350,6 +45510,14 @@ export namespace Prisma {
     upsert?: ClassUpsertWithoutFeaturesInput
     connect?: ClassWhereUniqueInput
     update?: XOR<XOR<ClassUpdateToOneWithWhereWithoutFeaturesInput, ClassUpdateWithoutFeaturesInput>, ClassUncheckedUpdateWithoutFeaturesInput>
+  }
+
+  export type ClassFeatureUpdateOneRequiredWithoutClassesNestedInput = {
+    create?: XOR<ClassFeatureCreateWithoutClassesInput, ClassFeatureUncheckedCreateWithoutClassesInput>
+    connectOrCreate?: ClassFeatureCreateOrConnectWithoutClassesInput
+    upsert?: ClassFeatureUpsertWithoutClassesInput
+    connect?: ClassFeatureWhereUniqueInput
+    update?: XOR<XOR<ClassFeatureUpdateToOneWithWhereWithoutClassesInput, ClassFeatureUpdateWithoutClassesInput>, ClassFeatureUncheckedUpdateWithoutClassesInput>
   }
 
   export type ClassCreateNestedOneWithoutSpellProgressionInput = {
@@ -44408,9 +45576,9 @@ export namespace Prisma {
     update?: XOR<XOR<SkillUpdateToOneWithWhereWithoutClassesInput, SkillUpdateWithoutClassesInput>, SkillUncheckedUpdateWithoutClassesInput>
   }
 
-  export type ClassCreateNestedOneWithoutSourcesInput = {
-    create?: XOR<ClassCreateWithoutSourcesInput, ClassUncheckedCreateWithoutSourcesInput>
-    connectOrCreate?: ClassCreateOrConnectWithoutSourcesInput
+  export type ClassCreateNestedOneWithoutSourceBookInfoInput = {
+    create?: XOR<ClassCreateWithoutSourceBookInfoInput, ClassUncheckedCreateWithoutSourceBookInfoInput>
+    connectOrCreate?: ClassCreateOrConnectWithoutSourceBookInfoInput
     connect?: ClassWhereUniqueInput
   }
 
@@ -44420,12 +45588,12 @@ export namespace Prisma {
     connect?: SourceBookWhereUniqueInput
   }
 
-  export type ClassUpdateOneRequiredWithoutSourcesNestedInput = {
-    create?: XOR<ClassCreateWithoutSourcesInput, ClassUncheckedCreateWithoutSourcesInput>
-    connectOrCreate?: ClassCreateOrConnectWithoutSourcesInput
-    upsert?: ClassUpsertWithoutSourcesInput
+  export type ClassUpdateOneRequiredWithoutSourceBookInfoNestedInput = {
+    create?: XOR<ClassCreateWithoutSourceBookInfoInput, ClassUncheckedCreateWithoutSourceBookInfoInput>
+    connectOrCreate?: ClassCreateOrConnectWithoutSourceBookInfoInput
+    upsert?: ClassUpsertWithoutSourceBookInfoInput
     connect?: ClassWhereUniqueInput
-    update?: XOR<XOR<ClassUpdateToOneWithWhereWithoutSourcesInput, ClassUpdateWithoutSourcesInput>, ClassUncheckedUpdateWithoutSourcesInput>
+    update?: XOR<XOR<ClassUpdateToOneWithWhereWithoutSourceBookInfoInput, ClassUpdateWithoutSourceBookInfoInput>, ClassUncheckedUpdateWithoutSourceBookInfoInput>
   }
 
   export type SourceBookUpdateOneWithoutClassesNestedInput = {
@@ -46112,26 +47280,23 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
-  export type ClassFeatureCreateWithoutClassInput = {
-    name: string
-    description?: string | null
-    level?: number | null
+  export type ClassFeatureMapCreateWithoutClassInput = {
+    level: number
+    feature: ClassFeatureCreateNestedOneWithoutClassesInput
   }
 
-  export type ClassFeatureUncheckedCreateWithoutClassInput = {
-    id?: number
-    name: string
-    description?: string | null
-    level?: number | null
+  export type ClassFeatureMapUncheckedCreateWithoutClassInput = {
+    featureSlug: string
+    level: number
   }
 
-  export type ClassFeatureCreateOrConnectWithoutClassInput = {
-    where: ClassFeatureWhereUniqueInput
-    create: XOR<ClassFeatureCreateWithoutClassInput, ClassFeatureUncheckedCreateWithoutClassInput>
+  export type ClassFeatureMapCreateOrConnectWithoutClassInput = {
+    where: ClassFeatureMapWhereUniqueInput
+    create: XOR<ClassFeatureMapCreateWithoutClassInput, ClassFeatureMapUncheckedCreateWithoutClassInput>
   }
 
-  export type ClassFeatureCreateManyClassInputEnvelope = {
-    data: ClassFeatureCreateManyClassInput | ClassFeatureCreateManyClassInput[]
+  export type ClassFeatureMapCreateManyClassInputEnvelope = {
+    data: ClassFeatureMapCreateManyClassInput | ClassFeatureMapCreateManyClassInput[]
     skipDuplicates?: boolean
   }
 
@@ -46161,25 +47326,25 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
-  export type ClassSpellLevelCreateWithoutClassInput = {
+  export type ClassSpellProgressionCreateWithoutClassInput = {
     level: number
     spellLevel: number
-    numSpells: number
+    spellSlots: number
   }
 
-  export type ClassSpellLevelUncheckedCreateWithoutClassInput = {
+  export type ClassSpellProgressionUncheckedCreateWithoutClassInput = {
     level: number
     spellLevel: number
-    numSpells: number
+    spellSlots: number
   }
 
-  export type ClassSpellLevelCreateOrConnectWithoutClassInput = {
-    where: ClassSpellLevelWhereUniqueInput
-    create: XOR<ClassSpellLevelCreateWithoutClassInput, ClassSpellLevelUncheckedCreateWithoutClassInput>
+  export type ClassSpellProgressionCreateOrConnectWithoutClassInput = {
+    where: ClassSpellProgressionWhereUniqueInput
+    create: XOR<ClassSpellProgressionCreateWithoutClassInput, ClassSpellProgressionUncheckedCreateWithoutClassInput>
   }
 
-  export type ClassSpellLevelCreateManyClassInputEnvelope = {
-    data: ClassSpellLevelCreateManyClassInput | ClassSpellLevelCreateManyClassInput[]
+  export type ClassSpellProgressionCreateManyClassInputEnvelope = {
+    data: ClassSpellProgressionCreateManyClassInput | ClassSpellProgressionCreateManyClassInput[]
     skipDuplicates?: boolean
   }
 
@@ -46243,31 +47408,29 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
-  export type ClassFeatureUpsertWithWhereUniqueWithoutClassInput = {
-    where: ClassFeatureWhereUniqueInput
-    update: XOR<ClassFeatureUpdateWithoutClassInput, ClassFeatureUncheckedUpdateWithoutClassInput>
-    create: XOR<ClassFeatureCreateWithoutClassInput, ClassFeatureUncheckedCreateWithoutClassInput>
+  export type ClassFeatureMapUpsertWithWhereUniqueWithoutClassInput = {
+    where: ClassFeatureMapWhereUniqueInput
+    update: XOR<ClassFeatureMapUpdateWithoutClassInput, ClassFeatureMapUncheckedUpdateWithoutClassInput>
+    create: XOR<ClassFeatureMapCreateWithoutClassInput, ClassFeatureMapUncheckedCreateWithoutClassInput>
   }
 
-  export type ClassFeatureUpdateWithWhereUniqueWithoutClassInput = {
-    where: ClassFeatureWhereUniqueInput
-    data: XOR<ClassFeatureUpdateWithoutClassInput, ClassFeatureUncheckedUpdateWithoutClassInput>
+  export type ClassFeatureMapUpdateWithWhereUniqueWithoutClassInput = {
+    where: ClassFeatureMapWhereUniqueInput
+    data: XOR<ClassFeatureMapUpdateWithoutClassInput, ClassFeatureMapUncheckedUpdateWithoutClassInput>
   }
 
-  export type ClassFeatureUpdateManyWithWhereWithoutClassInput = {
-    where: ClassFeatureScalarWhereInput
-    data: XOR<ClassFeatureUpdateManyMutationInput, ClassFeatureUncheckedUpdateManyWithoutClassInput>
+  export type ClassFeatureMapUpdateManyWithWhereWithoutClassInput = {
+    where: ClassFeatureMapScalarWhereInput
+    data: XOR<ClassFeatureMapUpdateManyMutationInput, ClassFeatureMapUncheckedUpdateManyWithoutClassInput>
   }
 
-  export type ClassFeatureScalarWhereInput = {
-    AND?: ClassFeatureScalarWhereInput | ClassFeatureScalarWhereInput[]
-    OR?: ClassFeatureScalarWhereInput[]
-    NOT?: ClassFeatureScalarWhereInput | ClassFeatureScalarWhereInput[]
-    id?: IntFilter<"ClassFeature"> | number
-    classId?: IntFilter<"ClassFeature"> | number
-    name?: StringFilter<"ClassFeature"> | string
-    description?: StringNullableFilter<"ClassFeature"> | string | null
-    level?: IntNullableFilter<"ClassFeature"> | number | null
+  export type ClassFeatureMapScalarWhereInput = {
+    AND?: ClassFeatureMapScalarWhereInput | ClassFeatureMapScalarWhereInput[]
+    OR?: ClassFeatureMapScalarWhereInput[]
+    NOT?: ClassFeatureMapScalarWhereInput | ClassFeatureMapScalarWhereInput[]
+    classId?: IntFilter<"ClassFeatureMap"> | number
+    featureSlug?: StringFilter<"ClassFeatureMap"> | string
+    level?: IntFilter<"ClassFeatureMap"> | number
   }
 
   export type ClassLevelAttributeUpsertWithWhereUniqueWithoutClassInput = {
@@ -46298,30 +47461,30 @@ export namespace Prisma {
     willSave?: IntFilter<"ClassLevelAttribute"> | number
   }
 
-  export type ClassSpellLevelUpsertWithWhereUniqueWithoutClassInput = {
-    where: ClassSpellLevelWhereUniqueInput
-    update: XOR<ClassSpellLevelUpdateWithoutClassInput, ClassSpellLevelUncheckedUpdateWithoutClassInput>
-    create: XOR<ClassSpellLevelCreateWithoutClassInput, ClassSpellLevelUncheckedCreateWithoutClassInput>
+  export type ClassSpellProgressionUpsertWithWhereUniqueWithoutClassInput = {
+    where: ClassSpellProgressionWhereUniqueInput
+    update: XOR<ClassSpellProgressionUpdateWithoutClassInput, ClassSpellProgressionUncheckedUpdateWithoutClassInput>
+    create: XOR<ClassSpellProgressionCreateWithoutClassInput, ClassSpellProgressionUncheckedCreateWithoutClassInput>
   }
 
-  export type ClassSpellLevelUpdateWithWhereUniqueWithoutClassInput = {
-    where: ClassSpellLevelWhereUniqueInput
-    data: XOR<ClassSpellLevelUpdateWithoutClassInput, ClassSpellLevelUncheckedUpdateWithoutClassInput>
+  export type ClassSpellProgressionUpdateWithWhereUniqueWithoutClassInput = {
+    where: ClassSpellProgressionWhereUniqueInput
+    data: XOR<ClassSpellProgressionUpdateWithoutClassInput, ClassSpellProgressionUncheckedUpdateWithoutClassInput>
   }
 
-  export type ClassSpellLevelUpdateManyWithWhereWithoutClassInput = {
-    where: ClassSpellLevelScalarWhereInput
-    data: XOR<ClassSpellLevelUpdateManyMutationInput, ClassSpellLevelUncheckedUpdateManyWithoutClassInput>
+  export type ClassSpellProgressionUpdateManyWithWhereWithoutClassInput = {
+    where: ClassSpellProgressionScalarWhereInput
+    data: XOR<ClassSpellProgressionUpdateManyMutationInput, ClassSpellProgressionUncheckedUpdateManyWithoutClassInput>
   }
 
-  export type ClassSpellLevelScalarWhereInput = {
-    AND?: ClassSpellLevelScalarWhereInput | ClassSpellLevelScalarWhereInput[]
-    OR?: ClassSpellLevelScalarWhereInput[]
-    NOT?: ClassSpellLevelScalarWhereInput | ClassSpellLevelScalarWhereInput[]
-    classId?: IntFilter<"ClassSpellLevel"> | number
-    level?: IntFilter<"ClassSpellLevel"> | number
-    spellLevel?: IntFilter<"ClassSpellLevel"> | number
-    numSpells?: IntFilter<"ClassSpellLevel"> | number
+  export type ClassSpellProgressionScalarWhereInput = {
+    AND?: ClassSpellProgressionScalarWhereInput | ClassSpellProgressionScalarWhereInput[]
+    OR?: ClassSpellProgressionScalarWhereInput[]
+    NOT?: ClassSpellProgressionScalarWhereInput | ClassSpellProgressionScalarWhereInput[]
+    classId?: IntFilter<"ClassSpellProgression"> | number
+    level?: IntFilter<"ClassSpellProgression"> | number
+    spellLevel?: IntFilter<"ClassSpellProgression"> | number
+    spellSlots?: IntFilter<"ClassSpellProgression"> | number
   }
 
   export type ClassSkillMapUpsertWithWhereUniqueWithoutClassInput = {
@@ -46399,6 +47562,42 @@ export namespace Prisma {
     isVisible?: BoolFilter<"SpellLevelMap"> | boolean
   }
 
+  export type ClassFeatureMapCreateWithoutFeatureInput = {
+    level: number
+    class: ClassCreateNestedOneWithoutFeaturesInput
+  }
+
+  export type ClassFeatureMapUncheckedCreateWithoutFeatureInput = {
+    classId: number
+    level: number
+  }
+
+  export type ClassFeatureMapCreateOrConnectWithoutFeatureInput = {
+    where: ClassFeatureMapWhereUniqueInput
+    create: XOR<ClassFeatureMapCreateWithoutFeatureInput, ClassFeatureMapUncheckedCreateWithoutFeatureInput>
+  }
+
+  export type ClassFeatureMapCreateManyFeatureInputEnvelope = {
+    data: ClassFeatureMapCreateManyFeatureInput | ClassFeatureMapCreateManyFeatureInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type ClassFeatureMapUpsertWithWhereUniqueWithoutFeatureInput = {
+    where: ClassFeatureMapWhereUniqueInput
+    update: XOR<ClassFeatureMapUpdateWithoutFeatureInput, ClassFeatureMapUncheckedUpdateWithoutFeatureInput>
+    create: XOR<ClassFeatureMapCreateWithoutFeatureInput, ClassFeatureMapUncheckedCreateWithoutFeatureInput>
+  }
+
+  export type ClassFeatureMapUpdateWithWhereUniqueWithoutFeatureInput = {
+    where: ClassFeatureMapWhereUniqueInput
+    data: XOR<ClassFeatureMapUpdateWithoutFeatureInput, ClassFeatureMapUncheckedUpdateWithoutFeatureInput>
+  }
+
+  export type ClassFeatureMapUpdateManyWithWhereWithoutFeatureInput = {
+    where: ClassFeatureMapScalarWhereInput
+    data: XOR<ClassFeatureMapUpdateManyMutationInput, ClassFeatureMapUncheckedUpdateManyWithoutFeatureInput>
+  }
+
   export type ClassCreateWithoutFeaturesInput = {
     name: string
     abbreviation: string
@@ -46411,9 +47610,9 @@ export namespace Prisma {
     skillPoints: number
     castingAbilityId?: number | null
     attributes?: ClassLevelAttributeCreateNestedManyWithoutClassInput
-    spellProgression?: ClassSpellLevelCreateNestedManyWithoutClassInput
+    spellProgression?: ClassSpellProgressionCreateNestedManyWithoutClassInput
     skills?: ClassSkillMapCreateNestedManyWithoutClassInput
-    sources?: ClassSourceMapCreateNestedManyWithoutClassInput
+    sourceBookInfo?: ClassSourceMapCreateNestedManyWithoutClassInput
     spellLevels?: SpellLevelMapCreateNestedManyWithoutClassInput
   }
 
@@ -46430,15 +47629,30 @@ export namespace Prisma {
     skillPoints: number
     castingAbilityId?: number | null
     attributes?: ClassLevelAttributeUncheckedCreateNestedManyWithoutClassInput
-    spellProgression?: ClassSpellLevelUncheckedCreateNestedManyWithoutClassInput
+    spellProgression?: ClassSpellProgressionUncheckedCreateNestedManyWithoutClassInput
     skills?: ClassSkillMapUncheckedCreateNestedManyWithoutClassInput
-    sources?: ClassSourceMapUncheckedCreateNestedManyWithoutClassInput
+    sourceBookInfo?: ClassSourceMapUncheckedCreateNestedManyWithoutClassInput
     spellLevels?: SpellLevelMapUncheckedCreateNestedManyWithoutClassInput
   }
 
   export type ClassCreateOrConnectWithoutFeaturesInput = {
     where: ClassWhereUniqueInput
     create: XOR<ClassCreateWithoutFeaturesInput, ClassUncheckedCreateWithoutFeaturesInput>
+  }
+
+  export type ClassFeatureCreateWithoutClassesInput = {
+    slug: string
+    description: string
+  }
+
+  export type ClassFeatureUncheckedCreateWithoutClassesInput = {
+    slug: string
+    description: string
+  }
+
+  export type ClassFeatureCreateOrConnectWithoutClassesInput = {
+    where: ClassFeatureWhereUniqueInput
+    create: XOR<ClassFeatureCreateWithoutClassesInput, ClassFeatureUncheckedCreateWithoutClassesInput>
   }
 
   export type ClassUpsertWithoutFeaturesInput = {
@@ -46464,9 +47678,9 @@ export namespace Prisma {
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
     attributes?: ClassLevelAttributeUpdateManyWithoutClassNestedInput
-    spellProgression?: ClassSpellLevelUpdateManyWithoutClassNestedInput
+    spellProgression?: ClassSpellProgressionUpdateManyWithoutClassNestedInput
     skills?: ClassSkillMapUpdateManyWithoutClassNestedInput
-    sources?: ClassSourceMapUpdateManyWithoutClassNestedInput
+    sourceBookInfo?: ClassSourceMapUpdateManyWithoutClassNestedInput
     spellLevels?: SpellLevelMapUpdateManyWithoutClassNestedInput
   }
 
@@ -46483,10 +47697,31 @@ export namespace Prisma {
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
     attributes?: ClassLevelAttributeUncheckedUpdateManyWithoutClassNestedInput
-    spellProgression?: ClassSpellLevelUncheckedUpdateManyWithoutClassNestedInput
+    spellProgression?: ClassSpellProgressionUncheckedUpdateManyWithoutClassNestedInput
     skills?: ClassSkillMapUncheckedUpdateManyWithoutClassNestedInput
-    sources?: ClassSourceMapUncheckedUpdateManyWithoutClassNestedInput
+    sourceBookInfo?: ClassSourceMapUncheckedUpdateManyWithoutClassNestedInput
     spellLevels?: SpellLevelMapUncheckedUpdateManyWithoutClassNestedInput
+  }
+
+  export type ClassFeatureUpsertWithoutClassesInput = {
+    update: XOR<ClassFeatureUpdateWithoutClassesInput, ClassFeatureUncheckedUpdateWithoutClassesInput>
+    create: XOR<ClassFeatureCreateWithoutClassesInput, ClassFeatureUncheckedCreateWithoutClassesInput>
+    where?: ClassFeatureWhereInput
+  }
+
+  export type ClassFeatureUpdateToOneWithWhereWithoutClassesInput = {
+    where?: ClassFeatureWhereInput
+    data: XOR<ClassFeatureUpdateWithoutClassesInput, ClassFeatureUncheckedUpdateWithoutClassesInput>
+  }
+
+  export type ClassFeatureUpdateWithoutClassesInput = {
+    slug?: StringFieldUpdateOperationsInput | string
+    description?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type ClassFeatureUncheckedUpdateWithoutClassesInput = {
+    slug?: StringFieldUpdateOperationsInput | string
+    description?: StringFieldUpdateOperationsInput | string
   }
 
   export type ClassCreateWithoutSpellProgressionInput = {
@@ -46500,10 +47735,10 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    features?: ClassFeatureCreateNestedManyWithoutClassInput
+    features?: ClassFeatureMapCreateNestedManyWithoutClassInput
     attributes?: ClassLevelAttributeCreateNestedManyWithoutClassInput
     skills?: ClassSkillMapCreateNestedManyWithoutClassInput
-    sources?: ClassSourceMapCreateNestedManyWithoutClassInput
+    sourceBookInfo?: ClassSourceMapCreateNestedManyWithoutClassInput
     spellLevels?: SpellLevelMapCreateNestedManyWithoutClassInput
   }
 
@@ -46519,10 +47754,10 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    features?: ClassFeatureUncheckedCreateNestedManyWithoutClassInput
+    features?: ClassFeatureMapUncheckedCreateNestedManyWithoutClassInput
     attributes?: ClassLevelAttributeUncheckedCreateNestedManyWithoutClassInput
     skills?: ClassSkillMapUncheckedCreateNestedManyWithoutClassInput
-    sources?: ClassSourceMapUncheckedCreateNestedManyWithoutClassInput
+    sourceBookInfo?: ClassSourceMapUncheckedCreateNestedManyWithoutClassInput
     spellLevels?: SpellLevelMapUncheckedCreateNestedManyWithoutClassInput
   }
 
@@ -46553,10 +47788,10 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    features?: ClassFeatureUpdateManyWithoutClassNestedInput
+    features?: ClassFeatureMapUpdateManyWithoutClassNestedInput
     attributes?: ClassLevelAttributeUpdateManyWithoutClassNestedInput
     skills?: ClassSkillMapUpdateManyWithoutClassNestedInput
-    sources?: ClassSourceMapUpdateManyWithoutClassNestedInput
+    sourceBookInfo?: ClassSourceMapUpdateManyWithoutClassNestedInput
     spellLevels?: SpellLevelMapUpdateManyWithoutClassNestedInput
   }
 
@@ -46572,10 +47807,10 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    features?: ClassFeatureUncheckedUpdateManyWithoutClassNestedInput
+    features?: ClassFeatureMapUncheckedUpdateManyWithoutClassNestedInput
     attributes?: ClassLevelAttributeUncheckedUpdateManyWithoutClassNestedInput
     skills?: ClassSkillMapUncheckedUpdateManyWithoutClassNestedInput
-    sources?: ClassSourceMapUncheckedUpdateManyWithoutClassNestedInput
+    sourceBookInfo?: ClassSourceMapUncheckedUpdateManyWithoutClassNestedInput
     spellLevels?: SpellLevelMapUncheckedUpdateManyWithoutClassNestedInput
   }
 
@@ -46590,10 +47825,10 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    features?: ClassFeatureCreateNestedManyWithoutClassInput
-    spellProgression?: ClassSpellLevelCreateNestedManyWithoutClassInput
+    features?: ClassFeatureMapCreateNestedManyWithoutClassInput
+    spellProgression?: ClassSpellProgressionCreateNestedManyWithoutClassInput
     skills?: ClassSkillMapCreateNestedManyWithoutClassInput
-    sources?: ClassSourceMapCreateNestedManyWithoutClassInput
+    sourceBookInfo?: ClassSourceMapCreateNestedManyWithoutClassInput
     spellLevels?: SpellLevelMapCreateNestedManyWithoutClassInput
   }
 
@@ -46609,10 +47844,10 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    features?: ClassFeatureUncheckedCreateNestedManyWithoutClassInput
-    spellProgression?: ClassSpellLevelUncheckedCreateNestedManyWithoutClassInput
+    features?: ClassFeatureMapUncheckedCreateNestedManyWithoutClassInput
+    spellProgression?: ClassSpellProgressionUncheckedCreateNestedManyWithoutClassInput
     skills?: ClassSkillMapUncheckedCreateNestedManyWithoutClassInput
-    sources?: ClassSourceMapUncheckedCreateNestedManyWithoutClassInput
+    sourceBookInfo?: ClassSourceMapUncheckedCreateNestedManyWithoutClassInput
     spellLevels?: SpellLevelMapUncheckedCreateNestedManyWithoutClassInput
   }
 
@@ -46643,10 +47878,10 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    features?: ClassFeatureUpdateManyWithoutClassNestedInput
-    spellProgression?: ClassSpellLevelUpdateManyWithoutClassNestedInput
+    features?: ClassFeatureMapUpdateManyWithoutClassNestedInput
+    spellProgression?: ClassSpellProgressionUpdateManyWithoutClassNestedInput
     skills?: ClassSkillMapUpdateManyWithoutClassNestedInput
-    sources?: ClassSourceMapUpdateManyWithoutClassNestedInput
+    sourceBookInfo?: ClassSourceMapUpdateManyWithoutClassNestedInput
     spellLevels?: SpellLevelMapUpdateManyWithoutClassNestedInput
   }
 
@@ -46662,10 +47897,10 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    features?: ClassFeatureUncheckedUpdateManyWithoutClassNestedInput
-    spellProgression?: ClassSpellLevelUncheckedUpdateManyWithoutClassNestedInput
+    features?: ClassFeatureMapUncheckedUpdateManyWithoutClassNestedInput
+    spellProgression?: ClassSpellProgressionUncheckedUpdateManyWithoutClassNestedInput
     skills?: ClassSkillMapUncheckedUpdateManyWithoutClassNestedInput
-    sources?: ClassSourceMapUncheckedUpdateManyWithoutClassNestedInput
+    sourceBookInfo?: ClassSourceMapUncheckedUpdateManyWithoutClassNestedInput
     spellLevels?: SpellLevelMapUncheckedUpdateManyWithoutClassNestedInput
   }
 
@@ -46680,10 +47915,10 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    features?: ClassFeatureCreateNestedManyWithoutClassInput
+    features?: ClassFeatureMapCreateNestedManyWithoutClassInput
     attributes?: ClassLevelAttributeCreateNestedManyWithoutClassInput
-    spellProgression?: ClassSpellLevelCreateNestedManyWithoutClassInput
-    sources?: ClassSourceMapCreateNestedManyWithoutClassInput
+    spellProgression?: ClassSpellProgressionCreateNestedManyWithoutClassInput
+    sourceBookInfo?: ClassSourceMapCreateNestedManyWithoutClassInput
     spellLevels?: SpellLevelMapCreateNestedManyWithoutClassInput
   }
 
@@ -46699,10 +47934,10 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    features?: ClassFeatureUncheckedCreateNestedManyWithoutClassInput
+    features?: ClassFeatureMapUncheckedCreateNestedManyWithoutClassInput
     attributes?: ClassLevelAttributeUncheckedCreateNestedManyWithoutClassInput
-    spellProgression?: ClassSpellLevelUncheckedCreateNestedManyWithoutClassInput
-    sources?: ClassSourceMapUncheckedCreateNestedManyWithoutClassInput
+    spellProgression?: ClassSpellProgressionUncheckedCreateNestedManyWithoutClassInput
+    sourceBookInfo?: ClassSourceMapUncheckedCreateNestedManyWithoutClassInput
     spellLevels?: SpellLevelMapUncheckedCreateNestedManyWithoutClassInput
   }
 
@@ -46769,10 +48004,10 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    features?: ClassFeatureUpdateManyWithoutClassNestedInput
+    features?: ClassFeatureMapUpdateManyWithoutClassNestedInput
     attributes?: ClassLevelAttributeUpdateManyWithoutClassNestedInput
-    spellProgression?: ClassSpellLevelUpdateManyWithoutClassNestedInput
-    sources?: ClassSourceMapUpdateManyWithoutClassNestedInput
+    spellProgression?: ClassSpellProgressionUpdateManyWithoutClassNestedInput
+    sourceBookInfo?: ClassSourceMapUpdateManyWithoutClassNestedInput
     spellLevels?: SpellLevelMapUpdateManyWithoutClassNestedInput
   }
 
@@ -46788,10 +48023,10 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    features?: ClassFeatureUncheckedUpdateManyWithoutClassNestedInput
+    features?: ClassFeatureMapUncheckedUpdateManyWithoutClassNestedInput
     attributes?: ClassLevelAttributeUncheckedUpdateManyWithoutClassNestedInput
-    spellProgression?: ClassSpellLevelUncheckedUpdateManyWithoutClassNestedInput
-    sources?: ClassSourceMapUncheckedUpdateManyWithoutClassNestedInput
+    spellProgression?: ClassSpellProgressionUncheckedUpdateManyWithoutClassNestedInput
+    sourceBookInfo?: ClassSourceMapUncheckedUpdateManyWithoutClassNestedInput
     spellLevels?: SpellLevelMapUncheckedUpdateManyWithoutClassNestedInput
   }
 
@@ -46837,7 +48072,7 @@ export namespace Prisma {
     trainedOnly?: NullableBoolFieldUpdateOperationsInput | boolean | null
   }
 
-  export type ClassCreateWithoutSourcesInput = {
+  export type ClassCreateWithoutSourceBookInfoInput = {
     name: string
     abbreviation: string
     editionId?: number | null
@@ -46848,14 +48083,14 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    features?: ClassFeatureCreateNestedManyWithoutClassInput
+    features?: ClassFeatureMapCreateNestedManyWithoutClassInput
     attributes?: ClassLevelAttributeCreateNestedManyWithoutClassInput
-    spellProgression?: ClassSpellLevelCreateNestedManyWithoutClassInput
+    spellProgression?: ClassSpellProgressionCreateNestedManyWithoutClassInput
     skills?: ClassSkillMapCreateNestedManyWithoutClassInput
     spellLevels?: SpellLevelMapCreateNestedManyWithoutClassInput
   }
 
-  export type ClassUncheckedCreateWithoutSourcesInput = {
+  export type ClassUncheckedCreateWithoutSourceBookInfoInput = {
     id?: number
     name: string
     abbreviation: string
@@ -46867,16 +48102,16 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    features?: ClassFeatureUncheckedCreateNestedManyWithoutClassInput
+    features?: ClassFeatureMapUncheckedCreateNestedManyWithoutClassInput
     attributes?: ClassLevelAttributeUncheckedCreateNestedManyWithoutClassInput
-    spellProgression?: ClassSpellLevelUncheckedCreateNestedManyWithoutClassInput
+    spellProgression?: ClassSpellProgressionUncheckedCreateNestedManyWithoutClassInput
     skills?: ClassSkillMapUncheckedCreateNestedManyWithoutClassInput
     spellLevels?: SpellLevelMapUncheckedCreateNestedManyWithoutClassInput
   }
 
-  export type ClassCreateOrConnectWithoutSourcesInput = {
+  export type ClassCreateOrConnectWithoutSourceBookInfoInput = {
     where: ClassWhereUniqueInput
-    create: XOR<ClassCreateWithoutSourcesInput, ClassUncheckedCreateWithoutSourcesInput>
+    create: XOR<ClassCreateWithoutSourceBookInfoInput, ClassUncheckedCreateWithoutSourceBookInfoInput>
   }
 
   export type SourceBookCreateWithoutClassesInput = {
@@ -46907,18 +48142,18 @@ export namespace Prisma {
     create: XOR<SourceBookCreateWithoutClassesInput, SourceBookUncheckedCreateWithoutClassesInput>
   }
 
-  export type ClassUpsertWithoutSourcesInput = {
-    update: XOR<ClassUpdateWithoutSourcesInput, ClassUncheckedUpdateWithoutSourcesInput>
-    create: XOR<ClassCreateWithoutSourcesInput, ClassUncheckedCreateWithoutSourcesInput>
+  export type ClassUpsertWithoutSourceBookInfoInput = {
+    update: XOR<ClassUpdateWithoutSourceBookInfoInput, ClassUncheckedUpdateWithoutSourceBookInfoInput>
+    create: XOR<ClassCreateWithoutSourceBookInfoInput, ClassUncheckedCreateWithoutSourceBookInfoInput>
     where?: ClassWhereInput
   }
 
-  export type ClassUpdateToOneWithWhereWithoutSourcesInput = {
+  export type ClassUpdateToOneWithWhereWithoutSourceBookInfoInput = {
     where?: ClassWhereInput
-    data: XOR<ClassUpdateWithoutSourcesInput, ClassUncheckedUpdateWithoutSourcesInput>
+    data: XOR<ClassUpdateWithoutSourceBookInfoInput, ClassUncheckedUpdateWithoutSourceBookInfoInput>
   }
 
-  export type ClassUpdateWithoutSourcesInput = {
+  export type ClassUpdateWithoutSourceBookInfoInput = {
     name?: StringFieldUpdateOperationsInput | string
     abbreviation?: StringFieldUpdateOperationsInput | string
     editionId?: NullableIntFieldUpdateOperationsInput | number | null
@@ -46929,14 +48164,14 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    features?: ClassFeatureUpdateManyWithoutClassNestedInput
+    features?: ClassFeatureMapUpdateManyWithoutClassNestedInput
     attributes?: ClassLevelAttributeUpdateManyWithoutClassNestedInput
-    spellProgression?: ClassSpellLevelUpdateManyWithoutClassNestedInput
+    spellProgression?: ClassSpellProgressionUpdateManyWithoutClassNestedInput
     skills?: ClassSkillMapUpdateManyWithoutClassNestedInput
     spellLevels?: SpellLevelMapUpdateManyWithoutClassNestedInput
   }
 
-  export type ClassUncheckedUpdateWithoutSourcesInput = {
+  export type ClassUncheckedUpdateWithoutSourceBookInfoInput = {
     id?: IntFieldUpdateOperationsInput | number
     name?: StringFieldUpdateOperationsInput | string
     abbreviation?: StringFieldUpdateOperationsInput | string
@@ -46948,9 +48183,9 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    features?: ClassFeatureUncheckedUpdateManyWithoutClassNestedInput
+    features?: ClassFeatureMapUncheckedUpdateManyWithoutClassNestedInput
     attributes?: ClassLevelAttributeUncheckedUpdateManyWithoutClassNestedInput
-    spellProgression?: ClassSpellLevelUncheckedUpdateManyWithoutClassNestedInput
+    spellProgression?: ClassSpellProgressionUncheckedUpdateManyWithoutClassNestedInput
     skills?: ClassSkillMapUncheckedUpdateManyWithoutClassNestedInput
     spellLevels?: SpellLevelMapUncheckedUpdateManyWithoutClassNestedInput
   }
@@ -47052,11 +48287,11 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    features?: ClassFeatureCreateNestedManyWithoutClassInput
+    features?: ClassFeatureMapCreateNestedManyWithoutClassInput
     attributes?: ClassLevelAttributeCreateNestedManyWithoutClassInput
-    spellProgression?: ClassSpellLevelCreateNestedManyWithoutClassInput
+    spellProgression?: ClassSpellProgressionCreateNestedManyWithoutClassInput
     skills?: ClassSkillMapCreateNestedManyWithoutClassInput
-    sources?: ClassSourceMapCreateNestedManyWithoutClassInput
+    sourceBookInfo?: ClassSourceMapCreateNestedManyWithoutClassInput
   }
 
   export type ClassUncheckedCreateWithoutSpellLevelsInput = {
@@ -47071,11 +48306,11 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    features?: ClassFeatureUncheckedCreateNestedManyWithoutClassInput
+    features?: ClassFeatureMapUncheckedCreateNestedManyWithoutClassInput
     attributes?: ClassLevelAttributeUncheckedCreateNestedManyWithoutClassInput
-    spellProgression?: ClassSpellLevelUncheckedCreateNestedManyWithoutClassInput
+    spellProgression?: ClassSpellProgressionUncheckedCreateNestedManyWithoutClassInput
     skills?: ClassSkillMapUncheckedCreateNestedManyWithoutClassInput
-    sources?: ClassSourceMapUncheckedCreateNestedManyWithoutClassInput
+    sourceBookInfo?: ClassSourceMapUncheckedCreateNestedManyWithoutClassInput
   }
 
   export type ClassCreateOrConnectWithoutSpellLevelsInput = {
@@ -47163,11 +48398,11 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    features?: ClassFeatureUpdateManyWithoutClassNestedInput
+    features?: ClassFeatureMapUpdateManyWithoutClassNestedInput
     attributes?: ClassLevelAttributeUpdateManyWithoutClassNestedInput
-    spellProgression?: ClassSpellLevelUpdateManyWithoutClassNestedInput
+    spellProgression?: ClassSpellProgressionUpdateManyWithoutClassNestedInput
     skills?: ClassSkillMapUpdateManyWithoutClassNestedInput
-    sources?: ClassSourceMapUpdateManyWithoutClassNestedInput
+    sourceBookInfo?: ClassSourceMapUpdateManyWithoutClassNestedInput
   }
 
   export type ClassUncheckedUpdateWithoutSpellLevelsInput = {
@@ -47182,11 +48417,11 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    features?: ClassFeatureUncheckedUpdateManyWithoutClassNestedInput
+    features?: ClassFeatureMapUncheckedUpdateManyWithoutClassNestedInput
     attributes?: ClassLevelAttributeUncheckedUpdateManyWithoutClassNestedInput
-    spellProgression?: ClassSpellLevelUncheckedUpdateManyWithoutClassNestedInput
+    spellProgression?: ClassSpellProgressionUncheckedUpdateManyWithoutClassNestedInput
     skills?: ClassSkillMapUncheckedUpdateManyWithoutClassNestedInput
-    sources?: ClassSourceMapUncheckedUpdateManyWithoutClassNestedInput
+    sourceBookInfo?: ClassSourceMapUncheckedUpdateManyWithoutClassNestedInput
   }
 
   export type SpellDescriptorMapCreateWithoutSpellInput = {
@@ -49021,7 +50256,7 @@ export namespace Prisma {
 
   export type ClassSourceMapCreateWithoutSourceBookInput = {
     pageNumber?: number | null
-    class: ClassCreateNestedOneWithoutSourcesInput
+    class: ClassCreateNestedOneWithoutSourceBookInfoInput
   }
 
   export type ClassSourceMapUncheckedCreateWithoutSourceBookInput = {
@@ -49896,11 +51131,9 @@ export namespace Prisma {
     data: XOR<UserCharacterUpdateManyMutationInput, UserCharacterUncheckedUpdateManyWithoutUserInput>
   }
 
-  export type ClassFeatureCreateManyClassInput = {
-    id?: number
-    name: string
-    description?: string | null
-    level?: number | null
+  export type ClassFeatureMapCreateManyClassInput = {
+    featureSlug: string
+    level: number
   }
 
   export type ClassLevelAttributeCreateManyClassInput = {
@@ -49911,10 +51144,10 @@ export namespace Prisma {
     willSave: number
   }
 
-  export type ClassSpellLevelCreateManyClassInput = {
+  export type ClassSpellProgressionCreateManyClassInput = {
     level: number
     spellLevel: number
-    numSpells: number
+    spellSlots: number
   }
 
   export type ClassSkillMapCreateManyClassInput = {
@@ -49932,24 +51165,19 @@ export namespace Prisma {
     isVisible?: boolean
   }
 
-  export type ClassFeatureUpdateWithoutClassInput = {
-    name?: StringFieldUpdateOperationsInput | string
-    description?: NullableStringFieldUpdateOperationsInput | string | null
-    level?: NullableIntFieldUpdateOperationsInput | number | null
+  export type ClassFeatureMapUpdateWithoutClassInput = {
+    level?: IntFieldUpdateOperationsInput | number
+    feature?: ClassFeatureUpdateOneRequiredWithoutClassesNestedInput
   }
 
-  export type ClassFeatureUncheckedUpdateWithoutClassInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    name?: StringFieldUpdateOperationsInput | string
-    description?: NullableStringFieldUpdateOperationsInput | string | null
-    level?: NullableIntFieldUpdateOperationsInput | number | null
+  export type ClassFeatureMapUncheckedUpdateWithoutClassInput = {
+    featureSlug?: StringFieldUpdateOperationsInput | string
+    level?: IntFieldUpdateOperationsInput | number
   }
 
-  export type ClassFeatureUncheckedUpdateManyWithoutClassInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    name?: StringFieldUpdateOperationsInput | string
-    description?: NullableStringFieldUpdateOperationsInput | string | null
-    level?: NullableIntFieldUpdateOperationsInput | number | null
+  export type ClassFeatureMapUncheckedUpdateManyWithoutClassInput = {
+    featureSlug?: StringFieldUpdateOperationsInput | string
+    level?: IntFieldUpdateOperationsInput | number
   }
 
   export type ClassLevelAttributeUpdateWithoutClassInput = {
@@ -49976,22 +51204,22 @@ export namespace Prisma {
     willSave?: IntFieldUpdateOperationsInput | number
   }
 
-  export type ClassSpellLevelUpdateWithoutClassInput = {
+  export type ClassSpellProgressionUpdateWithoutClassInput = {
     level?: IntFieldUpdateOperationsInput | number
     spellLevel?: IntFieldUpdateOperationsInput | number
-    numSpells?: IntFieldUpdateOperationsInput | number
+    spellSlots?: IntFieldUpdateOperationsInput | number
   }
 
-  export type ClassSpellLevelUncheckedUpdateWithoutClassInput = {
+  export type ClassSpellProgressionUncheckedUpdateWithoutClassInput = {
     level?: IntFieldUpdateOperationsInput | number
     spellLevel?: IntFieldUpdateOperationsInput | number
-    numSpells?: IntFieldUpdateOperationsInput | number
+    spellSlots?: IntFieldUpdateOperationsInput | number
   }
 
-  export type ClassSpellLevelUncheckedUpdateManyWithoutClassInput = {
+  export type ClassSpellProgressionUncheckedUpdateManyWithoutClassInput = {
     level?: IntFieldUpdateOperationsInput | number
     spellLevel?: IntFieldUpdateOperationsInput | number
-    numSpells?: IntFieldUpdateOperationsInput | number
+    spellSlots?: IntFieldUpdateOperationsInput | number
   }
 
   export type ClassSkillMapUpdateWithoutClassInput = {
@@ -50037,6 +51265,26 @@ export namespace Prisma {
     spellId?: IntFieldUpdateOperationsInput | number
     level?: IntFieldUpdateOperationsInput | number
     isVisible?: BoolFieldUpdateOperationsInput | boolean
+  }
+
+  export type ClassFeatureMapCreateManyFeatureInput = {
+    classId: number
+    level: number
+  }
+
+  export type ClassFeatureMapUpdateWithoutFeatureInput = {
+    level?: IntFieldUpdateOperationsInput | number
+    class?: ClassUpdateOneRequiredWithoutFeaturesNestedInput
+  }
+
+  export type ClassFeatureMapUncheckedUpdateWithoutFeatureInput = {
+    classId?: IntFieldUpdateOperationsInput | number
+    level?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type ClassFeatureMapUncheckedUpdateManyWithoutFeatureInput = {
+    classId?: IntFieldUpdateOperationsInput | number
+    level?: IntFieldUpdateOperationsInput | number
   }
 
   export type SpellDescriptorMapCreateManySpellInput = {
@@ -50393,7 +51641,7 @@ export namespace Prisma {
 
   export type ClassSourceMapUpdateWithoutSourceBookInput = {
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
-    class?: ClassUpdateOneRequiredWithoutSourcesNestedInput
+    class?: ClassUpdateOneRequiredWithoutSourceBookInfoNestedInput
   }
 
   export type ClassSourceMapUncheckedUpdateWithoutSourceBookInput = {

@@ -2,7 +2,7 @@ import { ColumnDefinition } from '@/components/generic-list';
 import ClassDetail from '@/features/admin/features/class-management/ClassDetail';
 import ClassEdit from '@/features/admin/features/class-management/ClassEdit';
 import ClassList from '@/features/admin/features/class-management/ClassList';
-import { RPG_DICE_SELECT_LIST, ABILITY_SELECT_LIST, EDITION_SELECT_LIST } from '@shared/static-data';
+import { RPG_DICE_SELECT_LIST, ABILITY_SELECT_LIST, EDITION_SELECT_LIST_FULL, SOURCE_BOOK_WITH_CLASSES_SELECT_LIST } from '@shared/static-data';
 
 export const routes = [
     { path: 'classes', component: ClassList, exact: true, requireAuth: true, requireAdmin: true },
@@ -33,7 +33,7 @@ export const COLUMN_DEFINITIONS: Record<string, ColumnDefinition> = {
         filterConfig: {
             type: 'multi-select',
             props: {
-                options: EDITION_SELECT_LIST,
+                options: EDITION_SELECT_LIST_FULL,
                 className: 'w-32'
             }
         }
@@ -90,5 +90,17 @@ export const COLUMN_DEFINITIONS: Record<string, ColumnDefinition> = {
     },
     description: {
         label: 'Description',
+    },
+    sourceId: {
+        label: 'Source',
+        sortable: true,
+        isDefault: true,
+        filterConfig: {
+            type: 'multi-select',
+            props: {
+                options: SOURCE_BOOK_WITH_CLASSES_SELECT_LIST,
+                className: 'w-40'
+            }
+        }
     }
 };

@@ -82,7 +82,6 @@ export function SpellList(): React.JSX.Element {
                 serviceFunction={SpellService.getSpells}
                 renderCell={RenderCell}
                 detailPagePath="/spells/:id"
-                idKey="id"
                 itemDesc="spell"
                 editHandler={(item: SpellInQueryResponse) => navigate(`/spells/${item.id}/edit`)}
                 deleteHandler={(item: SpellInQueryResponse) => HandleDeleteSpell(item.id)}

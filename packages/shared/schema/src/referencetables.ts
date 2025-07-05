@@ -35,13 +35,12 @@ export const TableColumnSchema = z.object({
         .max(100, 'Table slug must be less than 100 characters')
         .regex(/^[a-z0-9-]+$/, 'Table slug can only contain lowercase letters, numbers, and hyphens')
         .trim(),
-    id: z.number().int().min(0, 'Column id must be non-negative').optional(),
-    columnIndex: z.number().int().min(0, 'Column index must be non-negative'),
+    index: z.number().int().min(0, 'Column index must be non-negative'),
     header: z.string()
         .min(1, 'Header is required')
         .max(100, 'Header must be less than 100 characters')
         .trim(),
-    span: z.number().int().min(1, 'Span must be at least 1').max(10, 'Span must be at most 10').nullable(),
+    span: z.number().int().min(1, 'Span must be at least 1').max(10, 'Span must be at most 10').optional().nullable(),
     alignment: z.enum(['left', 'center', 'right']).nullable().default('left'),
 });
 
@@ -51,12 +50,11 @@ export const TableCellSchema = z.object({
         .max(100, 'Table slug must be less than 100 characters')
         .regex(/^[a-z0-9-]+$/, 'Table slug can only contain lowercase letters, numbers, and hyphens')
         .trim(),
-    rowId: z.number().int().min(0, 'Row id must be non-negative'),
-    columnId: z.number().int().min(0, 'Column id must be non-negative'),
-    id: z.number().int().min(0, 'Cell id must be non-negative').optional(),
+    rowIndex: z.number().int().min(0, 'Row index must be non-negative'),
+    columnIndex: z.number().int().min(0, 'Column index must be non-negative'),
     value: z.string().max(10000, 'Cell value must be less than 10000 characters').nullable(),
-    colSpan: z.number().int().min(1, 'Column span must be at least 1').max(10, 'Column span must be at most 10').nullable(),
-    rowSpan: z.number().int().min(1, 'Row span must be at least 1').max(10, 'Row span must be at most 10').nullable()
+    colSpan: z.number().int().min(1, 'Column span must be at least 1').max(10, 'Column span must be at most 10').optional().nullable(),
+    rowSpan: z.number().int().min(1, 'Row span must be at least 1').max(10, 'Row span must be at most 10').optional().nullable()
 });
 
 // Schema for table row (matches Prisma ReferenceTableRow)
@@ -65,33 +63,13 @@ export const TableRowSchema = z.object({
         .max(100, 'Table slug must be less than 100 characters')
         .regex(/^[a-z0-9-]+$/, 'Table slug can only contain lowercase letters, numbers, and hyphens')
         .trim(),
-    id: z.number().int().min(0, 'Row id must be non-negative').optional(),
-    rowIndex: z.number().int().min(0, 'Row index must be non-negative'),
-    label: z.string().max(200, 'Label must be less than 200 characters').nullable(),
-});
-
-// Schema for creating a reference table (matches Prisma ReferenceTableCreateInput)
-export const CreateReferenceTableSchema = ReferenceTableSchema.extend({
-    columns: z.array(TableColumnSchema)
-        .min(1, 'At least one column is required')
-        .max(20, 'Maximum 20 columns allowed'),
-    rows: z.array(TableRowSchema)
-        .min(0, 'Rows cannot be negative')
-        .max(1000, 'Maximum 1000 rows allowed'),
-    cells: z.array(TableCellSchema)
-        .min(0, 'Cells cannot be negative')
-        .max(1000, 'Maximum 1000 cells allowed'),
-});
-
-export const ReferenceTableRowsWithCellsSchema = TableRowSchema.extend({
+    index: z.number().int().min(0, 'Row index must be non-negative'),
     cells: z.array(TableCellSchema).nullable(),
 });
 
-export const UpdateReferenceTableSchema = CreateReferenceTableSchema.partial();
-
 export const ReferenceTableDataResponseSchema = ReferenceTableSchema.extend({
     columns: z.array(TableColumnSchema).nullable(),
-    rows: z.array(ReferenceTableRowsWithCellsSchema).nullable(),
+    rows: z.array(TableRowSchema).nullable(),
 });
 
 export const ReferenceTableSummarySchema = ReferenceTableSchema.extend({
@@ -103,17 +81,25 @@ export const ReferenceTableQueryResponseSchema = PageQueryResponseSchema.extend(
     results: z.array(ReferenceTableSummarySchema),
 });
 
+// this is also used for creating a new table
+export const ReferenceTableUpdateSchema = ReferenceTableSchema.extend({
+    columns: z.array(TableColumnSchema.omit({ tableSlug: true })).nullable(),
+    rows: z.array(
+        TableRowSchema.omit({ tableSlug: true }).extend({
+            cells: z.array(TableCellSchema.omit({ tableSlug: true })).nullable(),
+        })
+    ).nullable(),
+});
+
 // Type inference from schemas
 export type ReferenceTableQueryRequest = z.infer<typeof ReferenceTableQuerySchema>;
 export type ReferenceTableSlugParamRequest = z.infer<typeof ReferenceTableSlugParamSchema>;
-export type CreateReferenceTableRequest = z.infer<typeof CreateReferenceTableSchema>;
-export type UpdateReferenceTableRequest = z.infer<typeof UpdateReferenceTableSchema>;
 export type ReferenceTableDataResponse = z.infer<typeof ReferenceTableDataResponseSchema>;
 export type ReferenceTableQueryResponse = z.infer<typeof ReferenceTableQueryResponseSchema>;
 export type ReferenceTableSummary = z.infer<typeof ReferenceTableSummarySchema>;
 export type ReferenceTable = z.infer<typeof ReferenceTableSchema>;
+export type ReferenceTableUpdate = z.infer<typeof ReferenceTableUpdateSchema>;
 
 export type ReferenceTableColumn = z.infer<typeof TableColumnSchema>;
 export type ReferenceTableRow = z.infer<typeof TableRowSchema>;
 export type ReferenceTableCell = z.infer<typeof TableCellSchema>;
-export type ReferenceTableRowsWithCells = z.infer<typeof ReferenceTableRowsWithCellsSchema>;

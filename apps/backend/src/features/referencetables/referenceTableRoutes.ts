@@ -2,8 +2,8 @@ import { buildValidatedRouter } from '@/lib/buildValidatedRouter';
 import { requireAdmin } from '@/middleware/authMiddleware';
 import {
     ReferenceTableQuerySchema,
-    UpdateReferenceTableSchema,
-    ReferenceTableSlugParamSchema
+    ReferenceTableSlugParamSchema,
+    ReferenceTableUpdateSchema
 } from '@shared/schema';
 
 import {
@@ -12,6 +12,7 @@ import {
     CreateReferenceTable,
     UpdateReferenceTable,
     DeleteReferenceTable,
+    GetReferenceTableSummary,
 } from './referenceTableController.js';
 
 const { router: ReferenceTableRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
@@ -20,9 +21,11 @@ get('/', { query: ReferenceTableQuerySchema }, GetReferenceTables);
 
 get('/:slug', { params: ReferenceTableSlugParamSchema }, GetReferenceTable);
 
-post('/', requireAdmin, { body: UpdateReferenceTableSchema }, CreateReferenceTable);
+get('/:slug/summary', { params: ReferenceTableSlugParamSchema }, GetReferenceTableSummary);
 
-put('/:slug', requireAdmin, { params: ReferenceTableSlugParamSchema, body: UpdateReferenceTableSchema }, UpdateReferenceTable);
+post('/', requireAdmin, { body: ReferenceTableUpdateSchema }, CreateReferenceTable);
+
+put('/:slug', requireAdmin, { params: ReferenceTableSlugParamSchema, body: ReferenceTableUpdateSchema }, UpdateReferenceTable);
 
 deleteRoute('/:slug', requireAdmin, { params: ReferenceTableSlugParamSchema }, DeleteReferenceTable);
 

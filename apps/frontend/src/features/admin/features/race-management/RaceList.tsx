@@ -128,7 +128,6 @@ export function RaceList(): React.JSX.Element {
                 serviceFunction={RaceService.getRaces}
                 renderCell={RenderCell}
                 detailPagePath="/admin/races/:id"
-                idKey="id"
                 itemDesc="race"
                 editHandler={(item: RaceResponse) => navigate(`/admin/races/${item.id}/edit`)}
                 deleteHandler={(item: RaceResponse) => HandleDeleteRace(item.id)}
@@ -150,7 +149,6 @@ export function RaceList(): React.JSX.Element {
                 serviceFunction={RaceTraitService.getRaceTraits}
                 renderCell={RenderTraitCell}
                 detailPagePath="/admin/races/traits/:id"
-                idKey="slug"
                 itemDesc="race trait"
                 editHandler={(item: z.infer<typeof RaceTraitSchema>) => navigate(`/admin/races/traits/${item.slug}/edit`)}
                 deleteHandler={(item: z.infer<typeof RaceTraitSchema>) => HandleDeleteRaceTrait(item.slug)}

@@ -1,11 +1,13 @@
 import { PrismaClient, Prisma } from '@shared/prisma-client';
 import {
-    CreateReferenceTableRequest,
     ReferenceTableDataResponse,
     ReferenceTableQueryRequest,
     ReferenceTableQueryResponse,
-    UpdateReferenceTableRequest,
-    ReferenceTableSlugParamRequest
+    ReferenceTableSlugParamRequest,
+    ReferenceTableUpdate,
+    UpdateResponse,
+    CreateResponse,
+    ReferenceTableSummary
 } from '@shared/schema';
 
 import { ReferenceTableService } from './types';
@@ -69,18 +71,18 @@ export const referenceTableService: ReferenceTableService = {
             include: {
                 columns: {
                     orderBy: {
-                        columnIndex: 'asc',
+                        index: 'asc',
                     }
                 },
                 rows: {
                     orderBy: {
-                        rowIndex: 'asc',
+                        index: 'asc',
                     },
                     include: {
                         cells: {
                             orderBy: {
                                 column: {
-                                    columnIndex: 'asc',
+                                    index: 'asc',
                                 }
                             }
                         }
@@ -96,7 +98,7 @@ export const referenceTableService: ReferenceTableService = {
         return table;
     },
 
-    async createReferenceTable(data: CreateReferenceTableRequest): Promise<{ id: string; message: string }> {
+    async createReferenceTable(data: ReferenceTableUpdate): Promise<CreateResponse> {
         return prisma.$transaction(async (tx) => {
             // 1. Create ReferenceTable main fields
             const createdTable = await tx.referenceTable.create({
@@ -105,101 +107,69 @@ export const referenceTableService: ReferenceTableService = {
                     columns: {
                         create: data.columns?.map(col => ({
                             ...col,
-                            tableSlug: data.slug,
                         }))
                     },
                     rows: {
                         create: data.rows?.map(row => ({
                             ...row,
-                            tableSlug: data.slug,
+                            cells: row.cells ? {
+                                create: row.cells.map(cell => ({
+                                    ...cell,
+                                })) ?? null,
+                            } : undefined,
                         }))
                     },
-                    cells: {
-                        create: data.cells?.map(cell => ({
-                            ...cell,
-                            tableSlug: data.slug,
-                        }))
-                    }
                 }
             });
 
             return { id: createdTable.slug, message: 'Reference table created successfully' };
         });
     },
-// 
-    async updateReferenceTable(slug: ReferenceTableSlugParamRequest, data: UpdateReferenceTableRequest) {
+    // 
+    async updateReferenceTable(slug: ReferenceTableSlugParamRequest, data: ReferenceTableUpdate): Promise<UpdateResponse> {
         return prisma.$transaction(async (tx) => {
+            const tableSlug = slug.slug;
+
             // 1. Update ReferenceTable main fields
-            const _updatedTable = await tx.referenceTable.update({
-                where: { slug: slug.slug },
+            await tx.referenceTable.update({
+                where: { slug: tableSlug },
                 data: {
                     name: data.name,
                     description: data.description,
                 },
             });
 
-            // 2. Delete existing columns
-            if (data.columns) {
-                await tx.referenceTableColumn.deleteMany({
-                    where: {
-                        tableSlug: slug.slug,
-                    }
+            // 2. Delete old rows/cells/columns
+            await tx.referenceTableCell.deleteMany({ where: { tableSlug } });
+            await tx.referenceTableRow.deleteMany({ where: { tableSlug } });
+            await tx.referenceTableColumn.deleteMany({ where: { tableSlug } });
+
+            // 3. Recreate columns
+            if (data.columns?.length) {
+                await tx.referenceTableColumn.createMany({
+                    data: data.columns.map(col => ({ ...col, tableSlug })),
                 });
-            
-                // 3. Create new columns
-                for (const col of data.columns) {
-                    await tx.referenceTableColumn.create({
-                        data: {
-                            tableSlug: slug.slug,
-                            columnIndex: col.columnIndex,
-                            header: col.header,
-                            span: col.span ?? null,
-                            alignment: col.alignment ?? null,
-                        },
-                    });
-                }
             }
 
-            // 4. Delete existing rows
-            if (data.rows) {
-            await tx.referenceTableRow.deleteMany({
-                where: {
-                    tableSlug: slug.slug,
-                    }
-                });
-
-                // 5. Create new rows
+            // 4. Recreate rows and cells
+            if (data.rows?.length) {
                 for (const row of data.rows) {
                     await tx.referenceTableRow.create({
                         data: {
-                            tableSlug: slug.slug,
-                            rowIndex: row.rowIndex,
-                            label: row.label ?? null,
+                            tableSlug,
+                            index: row.index,
                         },
                     });
-                }
-            }
 
-            // 6. Delete existing cells
-            if (data.cells) {
-            await tx.referenceTableCell.deleteMany({
-                where: {
-                    tableSlug: slug.slug,
+                    if (row.cells?.length) {
+                        await tx.referenceTableCell.createMany({
+                            data: row.cells.map(cell => ({
+                                ...cell,
+                                tableSlug,
+                                rowIndex: row.index,
+                            })),
+                        });
                     }
-                });
-
-                // 7. Create new cells
-                for (const cell of data.cells) {
-                    await tx.referenceTableCell.create({
-                        data: {
-                            tableSlug: slug.slug,
-                            rowId: cell.rowId,
-                            columnId: cell.columnId,
-                            value: cell.value ?? null,
-                            colSpan: cell.colSpan ?? null,
-                            rowSpan: cell.rowSpan ?? null,
-                        },
-                    });
                 }
             }
 
@@ -207,10 +177,33 @@ export const referenceTableService: ReferenceTableService = {
         });
     },
 
+
     async deleteReferenceTable(slug: ReferenceTableSlugParamRequest) {
         await prisma.referenceTable.delete({
             where: { slug: slug.slug },
         });
         return { message: 'Reference table deleted successfully' };
+    },
+
+    async getReferenceTableSummary(slug: ReferenceTableSlugParamRequest): Promise<ReferenceTableSummary | null> {
+        const table = await prisma.referenceTable.findUnique({
+            where: { slug: slug.slug },
+            include: {
+                _count: {
+                    select: {
+                        rows: true,
+                        columns: true,
+                    },
+                },
+            },
+        });
+        if (!table) {
+            return null;
+        }
+        return {
+            ...table,
+            rows: table._count.rows,
+            columns: table._count.columns,
+        };
     }
 };

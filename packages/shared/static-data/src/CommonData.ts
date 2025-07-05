@@ -216,6 +216,11 @@ export const EDITION_MAP: EditionMap = {
 
 export const EDITION_LIST = Object.values(EDITION_MAP);
 
+export const EDITION_SELECT_LIST_FULL = EDITION_LIST.map(edition => ({
+    value: edition.id,
+    label: edition.abbreviation
+}));
+
 // Combine 3E and 3.5E into one option and filter out 3.5E
 export const EDITION_SELECT_LIST = EDITION_LIST.map(edition => ({
     value: edition.id,

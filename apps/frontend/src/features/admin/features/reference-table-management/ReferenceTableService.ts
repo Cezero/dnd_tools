@@ -1,14 +1,13 @@
-import { z } from 'zod';
-
 import { typedApi } from '@/services/Api';
 import {
     ReferenceTableQuerySchema,
     ReferenceTableSlugParamSchema,
-    CreateReferenceTableSchema,
-    UpdateReferenceTableSchema,
     ReferenceTableQueryResponseSchema,
-    ReferenceTableSchema,
     ReferenceTableDataResponseSchema,
+    ReferenceTableUpdateSchema,
+    CreateResponseSchema,
+    UpdateResponseSchema,
+    ReferenceTableSummarySchema,
 } from '@shared/schema';
 
 /**
@@ -51,28 +50,36 @@ export const ReferenceTableService = {
         responseSchema: ReferenceTableDataResponseSchema,
     }),
 
+    // get reference table summary by slug
+    getReferenceTableSummaryBySlug: typedApi<undefined, typeof ReferenceTableSummarySchema, typeof ReferenceTableSlugParamSchema>({
+        path: '/referencetables/:slug/summary',
+        method: 'GET',
+        paramsSchema: ReferenceTableSlugParamSchema,
+        responseSchema: ReferenceTableSummarySchema,
+    }),
+
     // Create reference table
-    createReferenceTable: typedApi<typeof CreateReferenceTableSchema, typeof ReferenceTableSchema>({
+    createReferenceTable: typedApi<typeof ReferenceTableUpdateSchema, typeof CreateResponseSchema>({
         path: '/referencetables',
         method: 'POST',
-        requestSchema: CreateReferenceTableSchema,
-        responseSchema: ReferenceTableSchema,
+        requestSchema: ReferenceTableUpdateSchema,
+        responseSchema: CreateResponseSchema,
     }),
 
     // Update reference table with path parameter
-    updateReferenceTable: typedApi<typeof UpdateReferenceTableSchema, typeof ReferenceTableSchema, typeof ReferenceTableSlugParamSchema>({
+    updateReferenceTable: typedApi<typeof ReferenceTableUpdateSchema, typeof UpdateResponseSchema, typeof ReferenceTableSlugParamSchema>({
         path: '/referencetables/:slug',
         method: 'PUT',
-        requestSchema: UpdateReferenceTableSchema,
+        requestSchema: ReferenceTableUpdateSchema,
         paramsSchema: ReferenceTableSlugParamSchema,
-        responseSchema: ReferenceTableSchema,
+        responseSchema: UpdateResponseSchema,
     }),
 
     // Delete reference table with path parameter
-    deleteReferenceTable: typedApi<undefined, z.ZodObject<Record<string, never>>, typeof ReferenceTableSlugParamSchema>({
+    deleteReferenceTable: typedApi<undefined, typeof UpdateResponseSchema, typeof ReferenceTableSlugParamSchema>({
         path: '/referencetables/:slug',
         method: 'DELETE',
         paramsSchema: ReferenceTableSlugParamSchema,
-        responseSchema: z.object({}),
+        responseSchema: UpdateResponseSchema,
     }),
 };

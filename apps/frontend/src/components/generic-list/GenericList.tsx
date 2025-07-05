@@ -45,7 +45,6 @@ export function GenericList<T = DataItem>({
 
     // Routing props
     detailPagePath,
-    idKey = 'id',
     itemDesc = 'items',
     dynamicFilterDelay = 500,
     initialLimit = 25,
@@ -294,6 +293,18 @@ export function GenericList<T = DataItem>({
         }
         return false;
     };
+
+    // Helper function to parse detailPagePath and extract parameter name
+    const getPathParameter = useCallback((path: string): string => {
+        const match = path.match(/:([^/]+)/);
+        return match ? match[1] : 'id'; // Default to 'id' if no parameter found
+    }, []);
+
+    // Get the actual key to use for the item
+    const getItemKey = useCallback((item: T): string | number => {
+        const key = detailPagePath ? getPathParameter(detailPagePath) : 'id';
+        return item[key] as string | number;
+    }, [detailPagePath, getPathParameter]);
 
     // useEffect for data fetching, now depends on local state variables
     useEffect(() => {
@@ -555,6 +566,13 @@ export function GenericList<T = DataItem>({
         );
     };
 
+    // Helper function to replace path parameter with actual value
+    const replacePathParameter = useCallback((path: string, item: T): string => {
+        const paramName = getPathParameter(path);
+        const value = getItemKey(item);
+        return path.replace(`:${paramName}`, String(value));
+    }, [getPathParameter, getItemKey]);
+
     if (isLoading) {
         return <div className="p-4 bg-white dark:bg-[#121212]">Loading...</div>;
     }
@@ -600,13 +618,13 @@ export function GenericList<T = DataItem>({
                             </tr>
                         ) : (
                             data.map(item => (
-                                <tr key={String(item[idKey])} className="hover:bg-gray-100 dark:hover:bg-gray-800 odd:bg-gray-500 even:bg-white dark:odd:bg-[#141e2d] dark:even:bg-[#121212]">
+                                <tr key={String(getItemKey(item))} className="hover:bg-gray-100 dark:hover:bg-gray-800 odd:bg-gray-500 even:bg-white dark:odd:bg-[#141e2d] dark:even:bg-[#121212]">
                                     {adjustedVisibleColumns.map((columnId, colIndex) => {
                                         const isLastVisibleColumn = colIndex === adjustedVisibleColumns.length - 1;
 
                                         // Handle selector column
                                         if (columnId === '__selector_column__') {
-                                            const itemId = item[idKey] as string | number;
+                                            const itemId = getItemKey(item) as string | number;
                                             const isChecked = internalSelectedIds.includes(itemId);
                                             const HandleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                                                 e.stopPropagation();
@@ -641,7 +659,7 @@ export function GenericList<T = DataItem>({
                                                         lastClickedElement.current = null;
                                                         return;
                                                     }
-                                                    navigate(detailPagePath.replace(':id', String(item[idKey])));
+                                                    navigate(replacePathParameter(detailPagePath, item));
                                                 } : undefined}
                                                 title={columnId === requiredColumnId && detailPagePath ? `View ${itemDesc} details` : undefined}
                                             >

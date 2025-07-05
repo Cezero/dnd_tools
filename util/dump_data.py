@@ -5,16 +5,17 @@ from dotenv import load_dotenv
 
 queries = {
     "source_query": """
-    SELECT sb.id, sb.name, sb.abbr, sb.edition_id,
-        (SELECT COUNT(*) > 0 FROM spell_source_map ssm WHERE ssm.book_id = sb.id) AS has_spells
-    FROM source_books sb
+        SELECT sb.id, sb.name, sb.abbreviation, sb.editionId,
+            IF((SELECT COUNT(*) FROM SpellSourceMap ssm WHERE ssm.sourceBookId = sb.id) > 0, 'true', 'false') AS hasSpells,
+            IF((SELECT COUNT(*) FROM ClassSourceMap csm WHERE csm.sourceBookId = sb.id) > 0, 'true', 'false') AS hasClasses
+        FROM SourceBook sb
     """,
     "class_query": """
-    SELECT cl.id, cl.name, cl.abbr, cl.edition_id, cl.display, cl.can_cast, cl.is_prestige
-    FROM classes cl
+        SELECT cl.id, cl.name, cl.abbreviation, cl.editionId, cl.display, cl.canCast, cl.isPrestige
+        FROM Class cl
     """,
     "spell_query": """
-    SELECT sp.id, sp.name, sp.edition_id FROM spells sp
+        SELECT sp.id, sp.name, sp.editionId FROM Spell sp
     """
 }
 

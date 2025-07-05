@@ -25,29 +25,37 @@ model Class {
   skillPoints      Int
   castingAbilityId Int?
 
-  features         ClassFeature[]
+  features         ClassFeatureMap[]
   attributes       ClassLevelAttribute[]
-  spellProgression ClassSpellLevel[]
+  spellProgression ClassSpellProgression[]
   skills           ClassSkillMap[]
-  sources          ClassSourceMap[]
+  sourceBookInfo   ClassSourceMap[]
   spellLevels      SpellLevelMap[]
 }
 
 model ClassFeature {
-  id          Int     @id @default(autoincrement())
-  classId     Int
-  name        String
-  description String? @db.Text
-  level       Int?
+  slug        String @id
+  description String @db.Text
 
-  class Class @relation(fields: [classId], references: [id])
+  classes ClassFeatureMap[]
 }
 
-model ClassSpellLevel {
+model ClassFeatureMap {
+  classId     Int
+  featureSlug String
+  level       Int
+
+  class   Class        @relation(fields: [classId], references: [id])
+  feature ClassFeature @relation(fields: [featureSlug], references: [slug])
+
+  @@id([classId, featureSlug])
+}
+
+model ClassSpellProgression {
   classId    Int
   level      Int
   spellLevel Int
-  numSpells  Int
+  spellSlots Int
 
   class Class @relation(fields: [classId], references: [id])
 

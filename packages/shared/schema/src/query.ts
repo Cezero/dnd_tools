@@ -10,3 +10,4 @@ export const PageQueryResponseSchema = z.object({
     limit: z.number().int().min(1, 'Limit must be at least 1'),
     total: z.number().int().min(0, 'Total must be non-negative'),
 });
+

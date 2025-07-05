@@ -5,7 +5,7 @@ type Timeout = ReturnType<typeof setTimeout>;
 
 // Get class by ID with path parameter
 const getReferenceTableBySlug = typedApi<undefined, typeof ReferenceTableDataResponseSchema, typeof ReferenceTableSlugParamSchema>({
-    path: '/reference-tables/:slug',
+    path: '/referencetables/:slug',
     method: 'GET',
     paramsSchema: ReferenceTableSlugParamSchema,
     responseSchema: ReferenceTableDataResponseSchema,
@@ -67,6 +67,7 @@ export async function flushTableResolutionQueue(): Promise<Record<ReferenceTable
     for (const slug of slugsToReturn) {
         result[slug] = resolvedTables.get(slug);
     }
-
+    // flush the resolved tables so they get re-fetched on next request
+    resolvedTables.clear();
     return result;
 }

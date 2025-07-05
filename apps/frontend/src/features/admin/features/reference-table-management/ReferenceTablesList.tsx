@@ -78,8 +78,7 @@ export function ReferenceTablesList(): React.JSX.Element {
                 querySchema={ReferenceTableQuerySchema}
                 serviceFunction={ReferenceTableService.getReferenceTables}
                 renderCell={RenderCell}
-                detailPagePath="/admin/referencetables/:identifier"
-                idKey="slug"
+                detailPagePath="/admin/referencetables/:slug"
                 itemDesc="reference table"
                 editHandler={(item) => navigate(`/admin/referencetables/${item.slug}/edit`)}
                 deleteHandler={(item) => HandleDeleteTable(item.slug)}

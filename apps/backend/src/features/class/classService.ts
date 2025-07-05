@@ -1,5 +1,5 @@
 import { PrismaClient, Prisma } from '@shared/prisma-client';
-import { ClassIdParamRequest, ClassQueryRequest, ClassResponse, CreateClassRequest, GetAllClassesResponse, UpdateClassRequest } from '@shared/schema';
+import { ClassIdParamRequest, ClassQueryRequest, CreateClassRequest, GetAllClassesResponse, GetClassResponse, UpdateClassRequest } from '@shared/schema';
 
 import type { ClassService } from './types';
 
@@ -8,7 +8,6 @@ const prisma = new PrismaClient();
 
 export const classService: ClassService = {
     async getClasses(query: ClassQueryRequest) {
-        console.log('[classService] getClasses query:', query);
         const page = query.page;
         const limit = query.limit;
         const offset = (page - 1) * limit;
@@ -36,11 +35,25 @@ export const classService: ClassService = {
         if (query.castingAbilityId) {
             where.castingAbilityId = query.castingAbilityId;
         }
+        if (query.sourceId) {
+            where.sourceBookInfo = {
+                some: {
+                    sourceBookId: { in: query.sourceId }
+                }
+            };
+        }
 
-        console.log(where);
         const [classes, total] = await Promise.all([
             prisma.class.findMany({
                 where,
+                include: {
+                    sourceBookInfo: {
+                        select: {
+                            sourceBookId: true,
+                            pageNumber: true
+                        }
+                    }
+                },
                 skip: offset,
                 take: limit,
                 orderBy: { name: 'asc' },
@@ -64,23 +77,112 @@ export const classService: ClassService = {
     async getClassById(query: ClassIdParamRequest) {
         const classData = await prisma.class.findUnique({
             where: { id: query.id },
+            include: {
+                sourceBookInfo: {
+                    select: {
+                        sourceBookId: true,
+                        pageNumber: true
+                    }
+                },
+                features: true,
+                attributes: true,
+                spellProgression: true,
+                skills: true,
+            },
         });
 
-        return classData as ClassResponse;
+        return classData as GetClassResponse;
     },
 
     async createClass(data: CreateClassRequest) {
-        const result = await prisma.class.create({
-            data,
-        });
+            const result = await prisma.class.create({
+                data: {
+                    ...data,
+                    sourceBookInfo: {
+                        create: data.sourceBookInfo?.map(sourceBookInfo => ({
+                            sourceBookId: sourceBookInfo.sourceBookId,
+                            pageNumber: sourceBookInfo.pageNumber
+                        })) || [],
+                    },
+                    features: {
+                        create: data.features?.map(feature => ({
+                            featureSlug: feature.featureSlug,
+                            level: feature.level
+                        })) || [],
+                    },
+                    attributes: {
+                        create: data.attributes?.map(attribute => ({
+                            level: attribute.level,
+                            baseAttackBonus: attribute.baseAttackBonus,
+                            fortSave: attribute.fortSave,
+                            refSave: attribute.refSave,
+                            willSave: attribute.willSave
+                        })) || [],
+                    },
+                    spellProgression: {
+                        create: data.spellProgression?.map(spellProgression => ({
+                            level: spellProgression.level,
+                            spellLevel: spellProgression.spellLevel,
+                            spellSlots: spellProgression.spellSlots
+                        })) || [],
+                    },
+                    skills: {
+                        create: data.skills?.map(skill => ({
+                            skillId: skill.skillId
+                        })) || [],
+                    },
+                },
+            });
 
         return { id: result.id, message: 'Class created successfully' };
     },
 
     async updateClass(query: ClassIdParamRequest, data: UpdateClassRequest) {
-        await prisma.class.update({
-            where: { id: query.id },
-            data,
+        await prisma.$transaction(async (tx) => {
+            await tx.classSourceMap.deleteMany({ where: { classId: query.id } });
+            await tx.classFeatureMap.deleteMany({ where: { classId: query.id } });
+            await tx.classLevelAttribute.deleteMany({ where: { classId: query.id } });
+            await tx.classSpellProgression.deleteMany({ where: { classId: query.id } });
+            await tx.classSkillMap.deleteMany({ where: { classId: query.id } });
+            await tx.class.update({
+                where: { id: query.id },
+                data: {
+                    ...data,
+                    sourceBookInfo: {
+                        create: data.sourceBookInfo?.map(sourceBookInfo => ({
+                            sourceBookId: sourceBookInfo.sourceBookId,
+                            pageNumber: sourceBookInfo.pageNumber
+                        })) || []
+                    },
+                    features: {
+                        create: data.features?.map(feature => ({
+                            featureSlug: feature.featureSlug,
+                            level: feature.level
+                        })) || [],
+                    },
+                    attributes: {
+                        create: data.attributes?.map(attribute => ({
+                            level: attribute.level,
+                            baseAttackBonus: attribute.baseAttackBonus,
+                            fortSave: attribute.fortSave,
+                            refSave: attribute.refSave,
+                            willSave: attribute.willSave
+                        })) || [],
+                    },
+                    spellProgression: {
+                        create: data.spellProgression?.map(spellProgression => ({
+                            level: spellProgression.level,
+                            spellLevel: spellProgression.spellLevel,
+                            spellSlots: spellProgression.spellSlots
+                        })) || [],
+                    },
+                    skills: {
+                        create: data.skills?.map(skill => ({
+                            skillId: skill.skillId
+                        })) || [],
+                    },
+                },
+            });
         });
 
         return { message: 'Class updated successfully' };

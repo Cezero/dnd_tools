@@ -4,10 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 
 import { GenericList } from '@/components/generic-list/GenericList';
-import { TextInput } from '@/components/generic-list/TextInput';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { RaceTraitService } from '@/features/admin/features/race-management/RaceTraitService';
-import { RaceTraitSchema } from '@shared/schema';
+import { RaceTraitQuerySchema, RaceTraitSchema } from '@shared/schema';
 
 
 // Type for race trait items
@@ -37,9 +36,6 @@ export function RaceTraitAssoc({ isOpen, onClose, onSave, initialSelectedTraitId
     const [currentSelectedTraitIds, setCurrentSelectedTraitIds] = useState<string[]>(initialSelectedTraitIds);
     const [availableTraits, setAvailableTraits] = useState<RaceTraitItem[]>([]);
 
-    const memoizedNavigate = useCallback(() => { /* no-op for internal list */ }, []);
-    const memoizedDefaultColumns = useMemo(() => ['slug', 'name', 'description'], []);
-
     useEffect(() => {
         setCurrentSelectedTraitIds(initialSelectedTraitIds);
     }, [initialSelectedTraitIds]);
@@ -65,28 +61,6 @@ export function RaceTraitAssoc({ isOpen, onClose, onSave, initialSelectedTraitId
             filterable: false
         },
     }), []);
-
-    const filterOptions = useMemo(() => ({
-        slug: { component: TextInput, props: { placeholder: 'Filter ...' } },
-    }), []);
-
-    const fetchTraitsForList = useCallback(async (searchParams: URLSearchParams) => {
-        try {
-            const response = await RaceTraitService.getRaceTraits({
-                page: parseInt(searchParams.get('page') || '1'),
-                limit: parseInt(searchParams.get('limit') || '10'),
-                slug: searchParams.get('slug') || undefined,
-                name: searchParams.get('name') || undefined,
-                description: searchParams.get('description') || undefined,
-                hasValue: searchParams.get('hasValue') === 'true',
-            });
-            setAvailableTraits(response.results);
-            return { data: response.results, total: response.total };
-        } catch (error) {
-            console.error('Error fetching traits for GenericList:', error);
-            throw error;
-        }
-    }, []);
 
     const renderTraitCell = useCallback((item: RaceTraitItem, columnId: string) => {
         if (columnId === 'name') {
@@ -138,15 +112,11 @@ export function RaceTraitAssoc({ isOpen, onClose, onSave, initialSelectedTraitId
                                     isOptionSelector={true}
                                     selectedIds={currentSelectedTraitIds}
                                     onSelectedIdsChange={handleSelectedIdsChange}
-                                    defaultColumns={memoizedDefaultColumns}
                                     columnDefinitions={columnDefinitions}
-                                    requiredColumnId="slug"
-                                    fetchData={fetchTraitsForList}
+                                    querySchema={RaceTraitQuerySchema}
+                                    serviceFunction={RaceTraitService.getRaceTraits}
                                     renderCell={renderTraitCell}
-                                    filterOptions={filterOptions}
-                                    navigate={memoizedNavigate}
-                                    detailPagePath={null}
-                                    idKey="slug"
+                                    detailPagePath="/admin/races/traits/:slug"
                                     itemDesc="trait"
                                     initialLimit={10}
                                 />

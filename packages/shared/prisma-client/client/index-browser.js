@@ -135,18 +135,21 @@ exports.Prisma.ClassScalarFieldEnum = {
 };
 
 exports.Prisma.ClassFeatureScalarFieldEnum = {
-  id: 'id',
+  slug: 'slug',
+  description: 'description'
+};
+
+exports.Prisma.ClassFeatureMapScalarFieldEnum = {
   classId: 'classId',
-  name: 'name',
-  description: 'description',
+  featureSlug: 'featureSlug',
   level: 'level'
 };
 
-exports.Prisma.ClassSpellLevelScalarFieldEnum = {
+exports.Prisma.ClassSpellProgressionScalarFieldEnum = {
   classId: 'classId',
   level: 'level',
   spellLevel: 'spellLevel',
-  numSpells: 'numSpells'
+  spellSlots: 'spellSlots'
 };
 
 exports.Prisma.ClassLevelAttributeScalarFieldEnum = {
@@ -426,8 +429,12 @@ exports.Prisma.ClassOrderByRelevanceFieldEnum = {
 };
 
 exports.Prisma.ClassFeatureOrderByRelevanceFieldEnum = {
-  name: 'name',
+  slug: 'slug',
   description: 'description'
+};
+
+exports.Prisma.ClassFeatureMapOrderByRelevanceFieldEnum = {
+  featureSlug: 'featureSlug'
 };
 
 exports.Prisma.SpellOrderByRelevanceFieldEnum = {
@@ -542,7 +549,8 @@ exports.TextAlignment = exports.$Enums.TextAlignment = {
 exports.Prisma.ModelName = {
   Class: 'Class',
   ClassFeature: 'ClassFeature',
-  ClassSpellLevel: 'ClassSpellLevel',
+  ClassFeatureMap: 'ClassFeatureMap',
+  ClassSpellProgression: 'ClassSpellProgression',
   ClassLevelAttribute: 'ClassLevelAttribute',
   ClassSkillMap: 'ClassSkillMap',
   ClassSourceMap: 'ClassSourceMap',

@@ -10,10 +10,10 @@ import {
 import {
     ReferenceTableDataResponse,
     ReferenceTableQueryRequest,
-    UpdateReferenceTableRequest,
-    CreateReferenceTableRequest,
+    ReferenceTableUpdate,
     ReferenceTableQueryResponse,
     ReferenceTableSlugParamRequest,
+    ReferenceTableSummary,
 } from '@shared/schema';
 
 import { referenceTableService } from './referenceTableService';
@@ -23,19 +23,19 @@ export async function GetReferenceTables(req: ValidatedQueryT<ReferenceTableQuer
     res.json(result);
 }
 
-export async function CreateReferenceTable(req: ValidatedBodyT<CreateReferenceTableRequest>, res: Response) {
+export async function CreateReferenceTable(req: ValidatedBodyT<ReferenceTableUpdate>, res: Response) {
     await referenceTableService.createReferenceTable(req.body);
     res.status(201).json({ message: 'Reference table created successfully' });
 }
 
-export async function UpdateReferenceTable(req: ValidatedParamsBodyT<ReferenceTableSlugParamRequest, UpdateReferenceTableRequest>, res: Response) {
-    await referenceTableService.updateReferenceTable(req.params, req.body);
-    res.json({ message: 'Reference table updated successfully' });
+export async function UpdateReferenceTable(req: ValidatedParamsBodyT<ReferenceTableSlugParamRequest, ReferenceTableUpdate>, res: Response) {
+    const result = await referenceTableService.updateReferenceTable(req.params, req.body);
+    res.json(result);
 }
 
 export async function DeleteReferenceTable(req: ValidatedParamsT<ReferenceTableSlugParamRequest>, res: Response) {
-    await referenceTableService.deleteReferenceTable(req.params);
-    res.json({ message: 'Reference table deleted successfully' });
+    const result = await referenceTableService.deleteReferenceTable(req.params);
+    res.json(result);
 }
 
 export async function GetReferenceTable(req: ValidatedParamsQueryT<ReferenceTableSlugParamRequest, ReferenceTableDataResponse>, res: Response) {
@@ -47,3 +47,7 @@ export async function GetReferenceTable(req: ValidatedParamsQueryT<ReferenceTabl
     res.json(tableData);
 }
 
+export async function GetReferenceTableSummary(req: ValidatedParamsQueryT<ReferenceTableSlugParamRequest, ReferenceTableSummary>, res: Response) {
+    const summary = await referenceTableService.getReferenceTableSummary(req.params);
+    res.json(summary);
+}

@@ -1,5 +1,3 @@
-import { z } from 'zod';
-
 import { typedApi } from '@/services/Api';
 import {
     ClassQuerySchema,
@@ -7,7 +5,9 @@ import {
     CreateClassSchema,
     UpdateClassSchema,
     ClassQueryResponseSchema,
-    ClassSchema,
+    GetClassResponseSchema,
+    CreateResponseSchema,
+    UpdateResponseSchema,
 } from '@shared/schema';
 
 /**
@@ -43,35 +43,35 @@ export const ClassService = {
     }),
 
     // Get class by ID with path parameter
-    getClassById: typedApi<undefined, typeof ClassSchema, typeof ClassIdParamSchema>({
+    getClassById: typedApi<undefined, typeof GetClassResponseSchema, typeof ClassIdParamSchema>({
         path: '/classes/:id',
         method: 'GET',
         paramsSchema: ClassIdParamSchema,
-        responseSchema: ClassSchema,
+        responseSchema: GetClassResponseSchema,
     }),
 
     // Create class
-    createClass: typedApi<typeof CreateClassSchema, typeof ClassSchema>({
+    createClass: typedApi<typeof CreateClassSchema, typeof CreateResponseSchema>({
         path: '/classes',
         method: 'POST',
         requestSchema: CreateClassSchema,
-        responseSchema: ClassSchema,
+        responseSchema: CreateResponseSchema,
     }),
 
     // Update class with path parameter
-    updateClass: typedApi<typeof UpdateClassSchema, typeof ClassSchema, typeof ClassIdParamSchema>({
+    updateClass: typedApi<typeof UpdateClassSchema, typeof UpdateResponseSchema, typeof ClassIdParamSchema>({
         path: '/classes/:id',
         method: 'PUT',
         requestSchema: UpdateClassSchema,
         paramsSchema: ClassIdParamSchema,
-        responseSchema: ClassSchema,
+        responseSchema: UpdateResponseSchema,
     }),
 
     // Delete class with path parameter
-    deleteClass: typedApi<undefined, z.ZodObject<Record<string, never>>, typeof ClassIdParamSchema>({
+    deleteClass: typedApi<undefined, typeof UpdateResponseSchema, typeof ClassIdParamSchema>({
         path: '/classes/:id',
         method: 'DELETE',
         paramsSchema: ClassIdParamSchema,
-        responseSchema: z.object({}),
+        responseSchema: UpdateResponseSchema,
     }),
 };

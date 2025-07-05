@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { PageQueryResponseSchema, PageQuerySchema } from './query.js';
 import { optionalIntegerParam, optionalStringParam } from './utils.js';
+import { SourceMapSchema } from './sourcebook.js';
 
 // Nested relationship schemas for Prisma compatibility
 export const SpellSchoolMapSchema = z.object({
@@ -22,11 +23,6 @@ export const SpellComponentMapSchema = z.object({
 export const SpellLevelMappingSchema = z.object({
     classId: z.number().int().positive('Class ID must be a positive integer'),
     level: z.number().int().min(0, 'Level must be non-negative').max(9, 'Level must be at most 9'),
-});
-
-export const SpellSourceMapSchema = z.object({
-    sourceBookId: z.number().int().nonnegative('Source Book ID must be a positive integer'),
-    pageNumber: z.number().int().nonnegative('Page number must be a positive integer').nullable(),
 });
 
 export const SpellSchema = z.object({
@@ -51,7 +47,7 @@ export const SpellSchema = z.object({
     descriptorIds: z.array(SpellDescriptorMapSchema).nullable(),
     componentIds: z.array(SpellComponentMapSchema).nullable(),
     levelMapping: z.array(SpellLevelMappingSchema).nullable(),
-    sourceBookInfo: z.array(SpellSourceMapSchema).nullable(),
+    sourceBookInfo: z.array(SourceMapSchema).nullable(),
 });
 
 export const SpellQueryResponseSchema = PageQueryResponseSchema.extend({

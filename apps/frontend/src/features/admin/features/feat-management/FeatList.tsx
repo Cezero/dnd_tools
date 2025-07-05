@@ -86,7 +86,6 @@ export function FeatList(): React.JSX.Element {
                 serviceFunction={FeatService.getFeats}
                 renderCell={RenderCell}
                 detailPagePath="/admin/feats/:id"
-                idKey="id"
                 itemDesc="feat"
                 editHandler={(item) => navigate(`/admin/feats/${item.id}/edit`)}
                 deleteHandler={(item) => HandleDeleteFeat(item.id)}

@@ -1,4 +1,14 @@
-import {
+import * as mdiIcons from '@mdi/js';
+import Icon from '@mdi/react';
+import { useReactTable, getCoreRowModel } from '@tanstack/react-table';
+import React, { useEffect, useState, useRef } from 'react';
+import ReactDOM from 'react-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+
+import { ReferenceTableService } from '@/features/admin/features/reference-table-management/ReferenceTableService';
+import { ReferenceTableUpdate } from '@shared/schema/referencetables';
+
+const {
     mdiTableColumnRemove,
     mdiTableRowRemove,
     mdiTableColumnPlusAfter,
@@ -11,25 +21,36 @@ import {
     mdiCallSplit,
     mdiBorderRight,
     mdiBorderBottom,
-} from '@mdi/js';
-import { Icon } from '@mdi/react';
-import { useReactTable, getCoreRowModel } from '@tanstack/react-table';
-import React, { useEffect, useState, useRef } from 'react';
-import ReactDOM from 'react-dom';
-import { useParams, useNavigate } from 'react-router-dom';
+} = mdiIcons as Record<string, string>;
 
-import { ReferenceTableService } from '@/features/admin/features/reference-table-management/ReferenceTableService';
+export type TableCell = {
+    value: string;
+    colSpan?: number;
+    rowSpan?: number;
+    merged?: boolean;
+};
 
+export type RowData = {
+    [columnKey: string]: TableCell;
+};
+
+export type EditableColumn = {
+    accessorKey: string;
+    header: string;
+    span?: number;
+    isAuto?: boolean;
+    alignment?: 'left' | 'center' | 'right' | null;
+};
 
 export function ReferenceTableEditor() {
-    const { identifier } = useParams();
+    const { slug } = useParams();
     const navigate = useNavigate();
-    const [data, setData] = useState([]);
-    const [columns, setColumns] = useState([]);
+    const [data, setData] = useState<RowData[]>([]);
+    const [columns, setColumns] = useState<EditableColumn[]>([]);
     const [loading, setLoading] = useState(true);
     const [tableName, setTableName] = useState('');
     const [tableDescription, setTableDescription] = useState('');
-    const [tableId, setTableId] = useState(identifier);
+    const [tableId, setTableId] = useState(slug);
     const [tableSlug, setTableSlug] = useState('');
 
     // Refs for focus management
@@ -97,7 +118,7 @@ export function ReferenceTableEditor() {
                     // Try to find the next available cell in the current row
                     while (nextFocusCol < numColumns) {
                         const targetCellData = data[nextFocusRow]?.[columns[nextFocusCol]?.accessorKey] || { value: '', colSpan: 1, rowSpan: 1 };
-                        if (!targetCellData.merged) {
+                        if (targetCellData && !targetCellData.merged) {
                             GetCellRef(nextFocusRow, nextFocusCol).current.focus();
                             return; // Found and focused, exit
                         }
@@ -111,7 +132,7 @@ export function ReferenceTableEditor() {
                     while (nextFocusRow < numRows) {
                         while (nextFocusCol < numColumns) {
                             const targetCellData = data[nextFocusRow]?.[columns[nextFocusCol]?.accessorKey] || { value: '', colSpan: 1, rowSpan: 1 };
-                            if (!targetCellData.merged) {
+                            if (targetCellData && !targetCellData.merged) {
                                 GetCellRef(nextFocusRow, nextFocusCol).current.focus();
                                 return; // Found and focused, exit
                             }
@@ -197,8 +218,8 @@ export function ReferenceTableEditor() {
 
     useEffect(() => {
         async function FetchTable() {
-            if (identifier === 'new') {
-                const defaultData = Array.from({ length: 3 }, () => ({ col1: '', col2: '', col3: '' }));
+            if (slug === 'new') {
+                const defaultData = Array.from({ length: 3 }, () => ({ col1: { value: '' }, col2: { value: '' }, col3: { value: '' } }));
                 setData(defaultData);
                 setColumns([
                     { accessorKey: 'col1', header: 'Column 1', alignment: null },
@@ -210,30 +231,27 @@ export function ReferenceTableEditor() {
                 setTableSlug('');
                 setLoading(false);
             } else {
-                const tableData = await ReferenceTableService.getReferenceTableByIdentifier(undefined, { identifier: identifier });
-                const { table, headers, rows } = tableData;
-                setTableName(table.name);
-                setTableDescription(table.description ?? '');
-                setTableSlug(table.slug ?? '');
+                const tableData = await ReferenceTableService.getReferenceTableByIdentifier(undefined, { slug: slug });
+                const { columns, rows } = tableData;
+                setTableName(tableData.name);
+                setTableDescription(tableData.description ?? '');
+                setTableSlug(tableData.slug ?? '');
 
-                const colDefs = headers.map(({ column_index, header, alignment }) => ({
-                    accessorKey: `col${column_index}`,
+                const colDefs = columns.map(({ index, header, alignment }) => ({
+                    accessorKey: `col${index}`,
                     header: header,
                     alignment: alignment,
                 }));
 
-                // Create a mapping from column_id to column_index
-                const columnIdToIndexMap = new Map(headers.map(h => [h.id, h.column_index]));
-
                 const rowData = rows.map(row => {
                     const newRow = {};
                     row.cells.forEach(cell => {
-                        const columnIndex = columnIdToIndexMap.get(cell.column_id);
+                        const columnIndex = cell.columnIndex;
                         if (columnIndex !== undefined) {
                             newRow[`col${columnIndex}`] = {
                                 value: cell.value,
-                                colSpan: cell.col_span || 1,
-                                rowSpan: cell.row_span || 1
+                                colSpan: cell.colSpan || 1,
+                                rowSpan: cell.rowSpan || 1
                             };
                         }
                     });
@@ -245,59 +263,73 @@ export function ReferenceTableEditor() {
             }
         }
         FetchTable();
-    }, [identifier]);
+    }, [tableSlug]);
 
-    const Table = useReactTable({
-        data,
-        columns,
-        getCoreRowModel: getCoreRowModel(),
-    });
 
-    const HandleChange = (rowIndex, columnId, value) => {
-        setData(old => old.map((row, i) => (i === rowIndex ? { ...row, [columnId]: { ...row[columnId], value: value } } : row)));
-    };
-
-    const HandleHeaderChange = (columnId, property, value) => {
-        setColumns(old =>
-            old.map(col => (col.accessorKey === columnId ? { ...col, [property]: value, isAuto: false } : col))
+    const HandleChange = (rowIndex: number, columnId: string, value: string) => {
+        setData(old =>
+            old.map((row, i) =>
+                i === rowIndex
+                    ? { ...row, [columnId]: { ...row[columnId], value } }
+                    : row
+            )
         );
     };
 
-    const AddRowAfter = (index) => {
-        const newRow = Object.fromEntries(columns.map(col => [col.accessorKey, '']));
+    const HandleHeaderChange = (columnId: string, property: keyof EditableColumn, value: string | boolean | null) => {
+        setColumns(old =>
+            old.map(col =>
+                col.accessorKey === columnId
+                    ? { ...col, [property]: value, isAuto: false }
+                    : col
+            )
+        );
+    };
+
+    const AddRowAfter = (index: number) => {
+        const newRow: RowData = Object.fromEntries(
+            columns.map(col => [col.accessorKey, { value: '' }])
+        );
         setData([...data.slice(0, index + 1), newRow, ...data.slice(index + 1)]);
     };
 
-    const AddRowBefore = (index) => {
-        const newRow = Object.fromEntries(columns.map(col => [col.accessorKey, '']));
+    const AddRowBefore = (index: number) => {
+        const newRow: RowData = Object.fromEntries(
+            columns.map(col => [col.accessorKey, { value: '' }])
+        );
         setData([...data.slice(0, index), newRow, ...data.slice(index)]);
     };
 
-    const DeleteRow = index => {
-        setData(data.toSpliced(index, 1))
+
+    const DeleteRow = (index: number) => {
+        setData(prev => prev.toSpliced(index, 1));
     };
 
-    const AddColumnAt = (insertIndex) => {
-        const newColumns = [...columns];
-        newColumns.splice(insertIndex, 0, { accessorKey: 'TEMP_KEY', header: '', isAuto: true, alignment: null });
 
-        // Reindex columns to col0, col1, ...
+    const AddColumnAt = (insertIndex: number) => {
+        const newColumns: EditableColumn[] = [...columns];
+        newColumns.splice(insertIndex, 0, {
+            accessorKey: 'TEMP_KEY',
+            header: '',
+            isAuto: true,
+            alignment: null,
+        });
+
         const rekeyedColumns = newColumns.map((col, i) => ({
             ...col,
             accessorKey: `col${i}`,
             header: col.isAuto ? `Column ${i + 1}` : col.header,
         }));
 
-        // Update each row with the new column and remap keys
         const updatedData = data.map(row => {
-            const newRow = {};
+            const newRow: RowData = {};
             let colIdx = 0;
             for (let i = 0; i < rekeyedColumns.length; i++) {
                 if (i === insertIndex) {
-                    newRow[`col${i}`] = ''; // Insert empty cell
+                    newRow[`col${i}`] = { value: '' };
                 } else {
                     const oldKey = `col${colIdx}`;
-                    newRow[`col${i}`] = row[oldKey] ?? '';
+                    newRow[`col${i}`] = row[oldKey] ?? { value: '' };
                     colIdx++;
                 }
             }
@@ -308,15 +340,15 @@ export function ReferenceTableEditor() {
         setData(updatedData);
     };
 
-    const AddColumnAfter = (index) => {
+    const AddColumnAfter = (index: number) => {
         AddColumnAt(index + 1);
     };
 
-    const AddColumnBefore = (index) => {
+    const AddColumnBefore = (index: number) => {
         AddColumnAt(index);
     };
 
-    const DeleteColumn = (columnId) => {
+    const DeleteColumn = (columnId: string) => {
         const colIndex = columns.findIndex(c => c.accessorKey === columnId);
         if (colIndex === -1) return;
 
@@ -343,21 +375,23 @@ export function ReferenceTableEditor() {
     };
 
     const HandleSave = async () => {
-        const tableData = {
+        const tableData: ReferenceTableUpdate = {
+            slug: tableSlug,
             name: tableName,
             description: tableDescription,
-            headers: columns.map(col => ({
+            columns: columns.map(col => ({
+                index: parseInt(col.accessorKey.replace('col', '')),
                 header: col.header,
-                alignment: col.alignment === 'left' ? null : col.alignment
+                alignment: col.alignment === 'left' ? null : col.alignment,
+                span: col.span,
             })),
-            slug: tableSlug,
-            rows: data.map((row) => {
+            rows: data.map((row, rowIndex) => {
                 const currentRowCells = [];
                 columns.forEach((col, colIndex) => {
                     const cellData = row[col.accessorKey];
 
-                    // If the cell is marked as merged, it's consumed by another span, so do not save it as a standalone cell.
-                    if (cellData && cellData.merged) {
+                    // If the cell doesn't exist or is marked as merged, skip it.
+                    if (!cellData || cellData.merged) {
                         return;
                     }
 
@@ -365,23 +399,27 @@ export function ReferenceTableEditor() {
                     const rowSpan = cellData?.rowSpan || 1;
 
                     currentRowCells.push({
-                        column_index: colIndex,
+                        rowIndex: rowIndex,
+                        columnIndex: colIndex,
                         value: cellData?.value ?? '',
-                        col_span: colSpan,
-                        row_span: rowSpan
+                        colSpan: colSpan,
+                        rowSpan: rowSpan
                     });
                 });
-                return currentRowCells;
-            }).filter(rowCells => rowCells.length > 0) // Filter out any rows that became empty due to all cells being merged
+                return {
+                    index: rowIndex,
+                    cells: currentRowCells
+                };
+            }).filter(rowCells => rowCells.cells.length > 0) // Filter out any rows that became empty due to all cells being merged
         };
-
+        console.log('[ReferenceTableEditor:HandleSave] tableData', tableData);
         try {
-            if (tableId === 'new') {
+            if (tableSlug === 'new') {
                 const response = await ReferenceTableService.createReferenceTable(tableData);
-                setTableId(response.slug); // Update tableId with the new slug
+                setTableId(response.id); // Update tableId with the new slug
                 navigate('/admin/referencetables');
             } else {
-                await ReferenceTableService.updateReferenceTable(tableData, { identifier: tableId });
+                await ReferenceTableService.updateReferenceTable(tableData, { slug: tableSlug });
                 navigate('/admin/referencetables');
             }
         } catch (error) {
@@ -607,12 +645,12 @@ export function ReferenceTableEditor() {
                     ref={tableDescriptionRef}
                     value={tableDescription}
                     onChange={(e) => setTableDescription(e.target.value)}
-                    rows="3"
+                    rows={3}
                     onKeyDown={(e) => HandleKeyDown(e, 'tableDescription')}
                     className="mt-1 block p-1.5 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border dark:border-gray-700"
                 ></textarea>
             </div>
-            <Table className="table-auto border border-gray-300 dark:border-gray-700 w-98/100">
+            <table className="table-auto border border-gray-300 dark:border-gray-700 w-98/100">
                 <thead>
                     <tr>
                         {columns.map((col, colIndex) => (
@@ -671,7 +709,7 @@ export function ReferenceTableEditor() {
                                     {columns.map((col, colIndex) => {
                                         const cellData = row[col.accessorKey] || { value: '', colSpan: 1, rowSpan: 1 };
 
-                                        if (cellData.merged) {
+                                        if (!cellData || cellData.merged) {
                                             return null; // Skip rendering this cell if it's consumed by a span
                                         }
 
@@ -718,8 +756,8 @@ export function ReferenceTableEditor() {
                                                     (colIndex + currentCellColSpan < columns.length) &&
                                                     (() => {
                                                         const targetColIdx = colIndex + currentCellColSpan;
-                                                        const targetCellData = data[rowIndex]?.[columns[targetColIdx]?.accessorKey] || { value: '', colSpan: 1, rowSpan: 1 };
-                                                        return !targetCellData.merged;
+                                                        const targetCellData = data[rowIndex]?.[columns[targetColIdx]?.accessorKey];
+                                                        return targetCellData && !targetCellData.merged;
                                                     })() && (
                                                         <div className="absolute inset-y-0 right-0 w-4 flex items-center justify-center group">
                                                             <button
@@ -737,8 +775,8 @@ export function ReferenceTableEditor() {
                                                     (rowIndex + currentCellRowSpan < data.length) &&
                                                     (() => {
                                                         const targetRowIdx = rowIndex + currentCellRowSpan;
-                                                        const targetCellData = data[targetRowIdx]?.[columns[colIndex]?.accessorKey] || { value: '', colSpan: 1, rowSpan: 1 };
-                                                        return !targetCellData.merged;
+                                                        const targetCellData = data[targetRowIdx]?.[columns[colIndex]?.accessorKey];
+                                                        return targetCellData && !targetCellData.merged;
                                                     })() && (
                                                         <div className="absolute inset-x-0 bottom-0 h-4 flex items-center justify-center group">
                                                             <button
@@ -791,7 +829,7 @@ export function ReferenceTableEditor() {
                         });
                     })()}
                 </tbody>
-            </Table>
+            </table>
             <div className="mt-4 flex justify-end space-x-2">
                 <button
                     onClick={() => navigate('/admin/referencetables')}

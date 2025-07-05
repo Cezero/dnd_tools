@@ -6,8 +6,8 @@ import { RouteConfig } from '@/types';
 
 export const routes: RouteConfig[] = [
     { path: 'referencetables', component: ReferenceTablesList, exact: true, requireAuth: true, requireAdmin: true },
-    { path: 'referencetables/:identifier', component: ReferenceTableViewer, exact: true, requireAuth: true, requireAdmin: true },
-    { path: 'referencetables/:identifier/edit', component: ReferenceTableEditor, exact: true, requireAuth: true, requireAdmin: true },
+    { path: 'referencetables/:slug', component: ReferenceTableViewer, exact: true, requireAuth: true, requireAdmin: true },
+    { path: 'referencetables/:slug/edit', component: ReferenceTableEditor, exact: true, requireAuth: true, requireAdmin: true },
 ];
 
 export const COLUMN_DEFINITIONS: Record<string, ColumnDefinition> = {

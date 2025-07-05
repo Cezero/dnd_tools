@@ -173,6 +173,7 @@ export interface SourceBook {
     abbreviation: string;
     editionId: number;
     hasSpells: boolean;
+    hasClasses: boolean;
 }
 
 export interface Class {
