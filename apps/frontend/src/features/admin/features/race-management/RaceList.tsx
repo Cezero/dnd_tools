@@ -9,7 +9,7 @@ import { COLUMN_DEFINITIONS } from '@/features/admin/features/race-management/Ra
 import { RaceService } from '@/features/admin/features/race-management/RaceService';
 import { COLUMN_DEFINITIONS as TRAIT_COLUMN_DEFINITIONS } from '@/features/admin/features/race-management/RaceTraitConfig';
 import { RaceTraitService } from '@/features/admin/features/race-management/RaceTraitService';
-import { RaceQuerySchema, RaceResponse, RaceTraitQuerySchema, RaceTraitSchema } from '@shared/schema';
+import { RaceInQueryResponse, RaceQuerySchema, RaceTraitQuerySchema, RaceTraitSchema } from '@shared/schema';
 import { SIZE_MAP, EDITION_MAP, CLASS_MAP } from '@shared/static-data';
 
 
@@ -48,11 +48,11 @@ export function RaceList(): React.JSX.Element {
         }
     };
 
-    const RenderCell = (item: RaceResponse, columnId: string): React.ReactNode => {
+    const RenderCell = (item: RaceInQueryResponse, columnId: string): React.ReactNode => {
         const column = COLUMN_DEFINITIONS[columnId];
         if (!column) return null;
 
-        let cellContent: React.ReactNode = String(item[columnId as keyof RaceResponse] || '');
+        let cellContent: React.ReactNode = String(item[columnId as keyof RaceInQueryResponse] || '');
 
         if (columnId === 'name') {
             cellContent = (
@@ -98,7 +98,7 @@ export function RaceList(): React.JSX.Element {
                 </a>
             );
         } else if (columnId === 'description') {
-            cellContent = (<ProcessMarkdown markdown={item.description || ''} userVars={{ traitname: item.name || '' }} />);
+            cellContent = (<ProcessMarkdown markdown={item.description || ''} />);
         } else if (columnId === 'hasValue') {
             cellContent = item.hasValue ? 'Yes' : 'No';
         }
@@ -121,7 +121,7 @@ export function RaceList(): React.JSX.Element {
                     New Race
                 </button>
             </div>
-            <GenericList<RaceResponse>
+            <GenericList<RaceInQueryResponse>
                 storageKey="races-list"
                 columnDefinitions={COLUMN_DEFINITIONS}
                 querySchema={RaceQuerySchema}
@@ -129,8 +129,8 @@ export function RaceList(): React.JSX.Element {
                 renderCell={RenderCell}
                 detailPagePath="/admin/races/:id"
                 itemDesc="race"
-                editHandler={(item: RaceResponse) => navigate(`/admin/races/${item.id}/edit`)}
-                deleteHandler={(item: RaceResponse) => HandleDeleteRace(item.id)}
+                editHandler={(item: RaceInQueryResponse) => navigate(`/admin/races/${item.id}/edit`)}
+                deleteHandler={(item: RaceInQueryResponse) => HandleDeleteRace(item.id)}
             />
 
             <h2 className="text-xl font-bold mb-4 mt-8">Race Trait Definitions</h2>
@@ -148,7 +148,7 @@ export function RaceList(): React.JSX.Element {
                 querySchema={RaceTraitQuerySchema}
                 serviceFunction={RaceTraitService.getRaceTraits}
                 renderCell={RenderTraitCell}
-                detailPagePath="/admin/races/traits/:id"
+                detailPagePath="/admin/races/traits/:slug"
                 itemDesc="race trait"
                 editHandler={(item: z.infer<typeof RaceTraitSchema>) => navigate(`/admin/races/traits/${item.slug}/edit`)}
                 deleteHandler={(item: z.infer<typeof RaceTraitSchema>) => HandleDeleteRaceTrait(item.slug)}

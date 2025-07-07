@@ -3,17 +3,18 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 
+import { Checkbox } from '@base-ui-components/react/checkbox';
 import {
     ValidatedForm,
     ValidatedInput,
-    ValidatedCheckbox,
-    ValidatedListbox,
-    useValidatedForm
+    useValidatedForm,
+    CustomSelect,
+    CustomCheckbox
 } from '@/components/forms';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { SpellService } from '@/features/spell/SpellService';
 import { SpellLevelMapping, GetSpellResponse, UpdateSpellSchema, UpdateSpellRequest, SpellIdParamSchema } from '@shared/schema';
-import { SPELL_DESCRIPTOR_LIST, SPELL_SCHOOL_LIST, SPELL_COMPONENT_LIST, SPELL_RANGE_LIST, SPELL_RANGE_MAP, SPELL_SUBSCHOOL_LIST_BY_SCHOOL_ID, CLASS_LIST, CLASS_MAP } from '@shared/static-data';
+import { SPELL_DESCRIPTOR_LIST, SPELL_SCHOOL_LIST, SPELL_COMPONENT_LIST, SPELL_RANGE_LIST, SPELL_RANGE_MAP, SPELL_SUBSCHOOL_LIST_BY_SCHOOL_ID, CLASS_LIST, CLASS_MAP, SPELL_SCHOOL_SELECT_LIST, SpellSubschool, SpellSubschoolSelectMap, SelectOption } from '@shared/static-data';
 
 export function SpellEdit() {
     const { id } = useParams();
@@ -28,11 +29,10 @@ export function SpellEdit() {
     const [classLevelMappings, setClassLevelMappings] = useState<SpellLevelMapping[]>([]);
     const fromListParams = location.state?.fromListParams || '';
 
-
     const [formData, setFormData] = useState<UpdateSpellRequest | null>(null);
 
     // Use the validated form hook
-    const { validation, createFieldProps, createCheckboxProps } = useValidatedForm(
+    const form = useValidatedForm(
         UpdateSpellSchema,
         formData,
         setFormData,
@@ -85,38 +85,6 @@ export function SpellEdit() {
                 rangeTypeId: parseInt(value as string),
                 range: selectedRange ? selectedRange.name : ''
             }));
-        } else if (name === 'schools') {
-            const schoolId = parseInt((e as React.ChangeEvent<HTMLInputElement>).target.value);
-            setFormData(prev => {
-                const newSchools = (e as React.ChangeEvent<HTMLInputElement>).target.checked
-                    ? [...prev.schoolIds, { schoolId }]
-                    : prev.schoolIds.filter(s => s.schoolId !== schoolId);
-                return { ...prev, schoolIds: newSchools };
-            });
-        } else if (name === 'subschools') {
-            const subschoolId = parseInt((e as React.ChangeEvent<HTMLInputElement>).target.value);
-            setFormData(prev => {
-                const newSubschools = (e as React.ChangeEvent<HTMLInputElement>).target.checked
-                    ? [...(prev.subSchoolIds || []), { subSchoolId: subschoolId }]
-                    : (prev.subSchoolIds || []).filter(s => s.subSchoolId !== subschoolId);
-                return { ...prev, subSchoolIds: newSubschools };
-            });
-        } else if (name === 'descriptors') {
-            const descriptorId = parseInt((e as React.ChangeEvent<HTMLInputElement>).target.value);
-            setFormData(prev => {
-                const newDescriptors = (e as React.ChangeEvent<HTMLInputElement>).target.checked
-                    ? [...(prev.descriptorIds || []), { descriptorId }]
-                    : (prev.descriptorIds || []).filter(d => d.descriptorId !== descriptorId);
-                return { ...prev, descriptorIds: newDescriptors };
-            });
-        } else if (name === 'components') {
-            const componentId = parseInt((e as React.ChangeEvent<HTMLInputElement>).target.value);
-            setFormData(prev => {
-                const newComponents = (e as React.ChangeEvent<HTMLInputElement>).target.checked
-                    ? [...(prev.componentIds || []), { componentId }]
-                    : (prev.componentIds || []).filter(c => c.componentId !== componentId);
-                return { ...prev, componentIds: newComponents };
-            });
         } else {
             setFormData(prev => ({
                 ...prev,
@@ -152,13 +120,73 @@ export function SpellEdit() {
         setClassLevelMappings(classLevelMappings.filter(mapping => mapping.classId !== classId));
     };
 
+    // Handler for school selection
+    const handleSchoolChange = (schoolId: number, checked: boolean) => {
+        if (checked) {
+            setFormData(prev => ({
+                ...prev,
+                schoolIds: [...(prev?.schoolIds || []), { schoolId }]
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                schoolIds: (prev?.schoolIds || []).filter(school => school.schoolId !== schoolId)
+            }));
+        }
+    };
+
+    // Handler for subschool selection
+    const handleSubschoolChange = (subSchoolId: number, checked: boolean) => {
+        if (checked) {
+            setFormData(prev => ({
+                ...prev,
+                subSchoolIds: [...(prev?.subSchoolIds || []), { subSchoolId }]
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                subSchoolIds: (prev?.subSchoolIds || []).filter(subschool => subschool.subSchoolId !== subSchoolId)
+            }));
+        }
+    };
+
+    // Handler for descriptor selection
+    const handleDescriptorChange = (descriptorId: number, checked: boolean) => {
+        if (checked) {
+            setFormData(prev => ({
+                ...prev,
+                descriptorIds: [...(prev?.descriptorIds || []), { descriptorId }]
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                descriptorIds: (prev?.descriptorIds || []).filter(descriptor => descriptor.descriptorId !== descriptorId)
+            }));
+        }
+    };
+
+    // Handler for component selection
+    const handleComponentChange = (componentId: number, checked: boolean) => {
+        if (checked) {
+            setFormData(prev => ({
+                ...prev,
+                componentIds: [...(prev?.componentIds || []), { componentId }]
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                componentIds: (prev?.componentIds || []).filter(component => component.componentId !== componentId)
+            }));
+        }
+    };
+
     const HandleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setMessage('');
         setError(null);
 
         // Validate the entire form
-        if (!validation.validateForm(formData)) {
+        if (!form.validation.validateForm(formData)) {
             return;
         }
 
@@ -204,72 +232,6 @@ export function SpellEdit() {
         return <div>No spell data available</div>;
     }
 
-    // Create field props for each form field
-    const nameProps = {
-        ...createFieldProps('name'),
-        value: formData.name as string || ''
-    };
-    const summaryProps = {
-        ...createFieldProps('summary'),
-        value: formData.summary as string || ''
-    };
-    const castingTimeProps = {
-        ...createFieldProps('castingTime'),
-        value: formData.castingTime as string || ''
-    };
-    const rangeValueProps = {
-        ...createFieldProps('rangeValue'),
-        value: formData.rangeValue as string || ''
-    };
-    const effectProps = {
-        ...createFieldProps('effect'),
-        value: formData.effect as string || ''
-    };
-    const areaProps = {
-        ...createFieldProps('area'),
-        value: formData.area as string || ''
-    };
-    const targetProps = {
-        ...createFieldProps('target'),
-        value: formData.target as string || ''
-    };
-    const durationProps = {
-        ...createFieldProps('duration'),
-        value: formData.duration as string || ''
-    };
-    const savingThrowProps = {
-        ...createFieldProps('savingThrow'),
-        value: formData.savingThrow as string || ''
-    };
-    const spellResistanceProps = {
-        ...createFieldProps('spellResistance'),
-        value: formData.spellResistance as string || ''
-    };
-
-    // Create listbox props for base level
-    const baseLevelListboxProps = {
-        value: formData.baseLevel,
-        onChange: (value: string | number | null) => {
-            const numValue = value as number;
-            setFormData(prev => ({ ...prev, baseLevel: numValue }));
-            validation.validateField('baseLevel', numValue);
-        },
-        error: validation.getError('baseLevel'),
-        hasError: validation.hasError('baseLevel')
-    };
-
-    // Create listbox props for range type
-    const rangeTypeListboxProps = {
-        value: formData.rangeTypeId,
-        onChange: (value: string | number | null) => {
-            const numValue = value as number;
-            setFormData(prev => ({ ...prev, rangeTypeId: numValue }));
-            validation.validateField('rangeTypeId', numValue);
-        },
-        error: validation.getError('rangeTypeId'),
-        hasError: validation.hasError('rangeTypeId')
-    };
-
     // Get available classes for selection (filter out already selected ones)
     const availableClasses = CLASS_LIST.filter(dndClass =>
         dndClass.canCastSpells &&
@@ -279,13 +241,10 @@ export function SpellEdit() {
 
     return (
         <div className="max-w-6xl mx-auto p-6">
-            <div className="mb-6">
+            <div className="mb-4">
                 <h1 className="text-3xl font-bold">
                     {id === 'new' ? 'Create New Spell' : 'Edit Spell'}
                 </h1>
-                <p className="text-gray-600 dark:text-gray-400">
-                    {id === 'new' ? 'Create a new spell' : 'Modify spell details'}
-                </p>
             </div>
 
             {message && (
@@ -302,184 +261,192 @@ export function SpellEdit() {
 
             <ValidatedForm
                 onSubmit={HandleSubmit}
-                validationState={validation.validationState}
+                validationState={form.validation.validationState}
                 isLoading={isLoading}
+                formData={formData}
+                setFormData={setFormData}
+                validation={form.validation}
             >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                         <ValidatedInput
-                            name="name"
-                            label="Spell Name"
+                            field="name"
+                            label="Name"
                             type="text"
+                            componentExtraClassName="flex items-center gap-2"
+                            labelExtraClassName="w-1/5"
+                            inputExtraClassName="w-4/5"
                             required
                             placeholder="e.g., Magic Missile, Fireball, Cure Wounds"
-                            {...nameProps}
                         />
-
-                        <ValidatedInput
-                            name="summary"
-                            label="Spell Summary"
-                            type="text"
-                            placeholder="Brief description of the spell"
-                            {...summaryProps}
-                        />
-                        <ValidatedListbox
-                            name="baseLevel"
-                            label="Base Level"
-                            value={formData.baseLevel}
-                            onChange={(value) => setFormData(prev => ({ ...prev, baseLevel: value as number }))}
-                            options={[...Array(10).keys()].map(level => ({ value: level, label: level.toString() }))}
-                            required
-                            {...baseLevelListboxProps}
-                        />
-                    </div>
-
-                    {/* Spell Properties */}
-                    <div className="space-y-4">
-                        <h2 className="text-xl font-semibold">Spell Properties</h2>
-
-                        <ValidatedInput
-                            name="castingTime"
-                            label="Casting Time"
-                            type="text"
-                            placeholder="e.g., 1 standard action"
-                            {...castingTimeProps}
-                        />
-
-                        <ValidatedListbox
-                            name="rangeTypeId"
+                        <div className="flex items-center gap-2">
+                        <label className="w-1/5">Range (raw)</label>
+                        <input type="text" disabled value={formData?.range} className="w-4/5 disabled:opacity-50 disabled:cursor-not-allowed block p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                        </div>
+                        <CustomSelect
                             label="Range Type"
-                            value={formData.rangeTypeId}
-                            onChange={(value) => setFormData(prev => ({ ...prev, rangeTypeId: value as number }))}
+                            value={formData?.rangeTypeId}
+                            componentExtraClassName="flex items-center gap-2"
+                            labelExtraClassName="w-1/5"
+                            itemExtraClassName="w-24"
+                            itemTextExtraClassName="w-16"
+                            onValueChange={(value) => setFormData(prev => ({ ...prev, rangeTypeId: value }))}
                             options={SPELL_RANGE_LIST.map(range => ({ value: range.id, label: range.name }))}
                             placeholder="Select range type"
-                            {...rangeTypeListboxProps}
                         />
-
                         <ValidatedInput
-                            name="rangeValue"
+                            field="rangeValue"
                             label="Range Value"
+                            componentExtraClassName="flex items-center gap-2"
+                            labelExtraClassName="w-1/5"
+                            inputExtraClassName="w-4/5"
                             type="text"
                             placeholder="e.g., 25 ft., touch, personal"
-                            {...rangeValueProps}
                         />
-
                         <ValidatedInput
-                            name="effect"
-                            label="Effect"
-                            type="text"
-                            placeholder="e.g., Ray, Burst, Wall"
-                            {...effectProps}
-                        />
-
-                        <ValidatedInput
-                            name="area"
-                            label="Area"
-                            type="text"
-                            placeholder="e.g., 20-ft. radius"
-                            {...areaProps}
-                        />
-
-                        <ValidatedInput
-                            name="target"
-                            label="Target"
-                            type="text"
-                            placeholder="e.g., One creature, All creatures in area"
-                            {...targetProps}
-                        />
-
-                        <ValidatedInput
-                            name="duration"
+                            field="duration"
                             label="Duration"
+                            labelExtraClassName="w-1/5"
+                            inputExtraClassName="w-4/5"
+                            componentExtraClassName="flex items-center gap-2"
                             type="text"
                             placeholder="e.g., 1 minute/level, Instantaneous"
-                            {...durationProps}
+                        />
+                        <ValidatedInput
+                            field="castingTime"
+                            label="Casting Time"
+                            labelExtraClassName="w-1/5"
+                            inputExtraClassName="w-4/5"
+                            componentExtraClassName="flex items-center gap-2"
+                            type="text"
+                            placeholder="e.g., 1 standard action"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <CustomSelect
+                            label="Base Level"
+                            required
+                            value={formData?.baseLevel}
+                            componentExtraClassName="flex items-center gap-2"
+                            labelExtraClassName="w-1/4"
+                            onValueChange={(value) => setFormData(prev => ({ ...prev, baseLevel: value }))}
+                            options={[...Array(10).keys()].map(level => ({ value: level, label: level.toString() }))}
                         />
 
                         <ValidatedInput
-                            name="savingThrow"
+                            field="effect"
+                            label="Effect"
+                            labelExtraClassName="w-1/4"
+                            inputExtraClassName="w-3/4"
+                            componentExtraClassName="flex items-center gap-2"
+                            type="text"
+                            placeholder="e.g., Ray, Burst, Wall"
+                        />
+                        <ValidatedInput
+                            field="area"
+                            label="Area"
+                            labelExtraClassName="w-1/4"
+                            inputExtraClassName="w-3/4"
+                            componentExtraClassName="flex items-center gap-2"
+                            type="text"
+                            placeholder="e.g., 20-ft. radius"
+                        />
+                        <ValidatedInput
+                            field="target"
+                            label="Target"
+                            labelExtraClassName="w-1/4"
+                            inputExtraClassName="w-3/4"
+                            componentExtraClassName="flex items-center gap-2"
+                            type="text"
+                            placeholder="e.g., One creature, All creatures in area"
+                        />
+                        <ValidatedInput
+                            field="savingThrow"
                             label="Saving Throw"
+                            labelExtraClassName="w-1/4"
+                            inputExtraClassName="w-3/4"
+                            componentExtraClassName="flex items-center gap-2"
                             type="text"
                             placeholder="e.g., Reflex half, Will negates"
-                            {...savingThrowProps}
                         />
-
                         <ValidatedInput
-                            name="spellResistance"
+                            field="spellResistance"
                             label="Spell Resistance"
+                            labelExtraClassName="w-1/4"
+                            inputExtraClassName="w-3/4"
+                            componentExtraClassName="flex items-center gap-2"
                             type="text"
                             placeholder="e.g., Yes, No"
-                            {...spellResistanceProps}
                         />
                     </div>
                 </div>
-
+                <div>
+                    <ValidatedInput
+                        field="summary"
+                        label="Summary"
+                        componentExtraClassName="flex items-center gap-2"
+                        inputExtraClassName="w-full"
+                        type="text"
+                        placeholder="Brief description of the spell"
+                    /></div>
                 {/* Class Level Mappings */}
-                <div className="mt-6">
+                <div className="mt-4">
                     <h2 className="text-xl font-semibold mb-4">Class Level Mappings</h2>
-
-                    {/* Current Class Level Mappings */}
-                    {classLevelMappings.length > 0 && (
-                        <div className="mb-4">
-                            <h3 className="text-lg font-medium mb-2">Current Class Levels</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                                {classLevelMappings.map((mapping) => {
-                                    const dndClass = CLASS_MAP[mapping.classId];
-                                    return (
-                                        <div key={mapping.classId} className="flex items-center justify-between p-2 border rounded dark:border-gray-600">
-                                            <span className="text-sm">
-                                                {dndClass?.name || 'Unknown Class'} - Level {mapping.level}
-                                            </span>
-                                            <button
-                                                type="button"
-                                                onClick={() => HandleRemoveClassLevel(mapping.classId)}
-                                                className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600"
-                                            >
-                                                <TrashIcon className="h-4 w-4" />
-                                            </button>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                    <div className="flex items-top gap-2 border rounded p-2 dark:border-gray-600">
+                        <div className="w-5/7">
+                            {/* Current Class Level Mappings */}
+                            {classLevelMappings.length > 0 && (
+                                <div className="mb-2">
+                                    <div className="flex flex-wrap items-center gap-4">
+                                        {classLevelMappings.map((mapping) => {
+                                            const dndClass = CLASS_MAP[mapping.classId];
+                                            return (
+                                                <div key={mapping.classId} className="border rounded p-1 flex items-center justify-between gap-2 dark:border-gray-600">
+                                                    <span className="text-sm whitespace-nowrap">
+                                                        {dndClass?.name || 'Unknown Class'} - Lvl {mapping.level}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => HandleRemoveClassLevel(mapping.classId)}
+                                                        className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600"
+                                                    >
+                                                        <TrashIcon className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                    )}
+                        {/* Add New Class Level Mapping */}
 
-                    {/* Add New Class Level Mapping */}
-                    <div className="border rounded p-4 dark:border-gray-600">
-                        <h3 className="text-lg font-medium mb-3">Add Class Level</h3>
-                        <div className="flex flex-col sm:flex-row gap-3">
-                            <div className="flex-1">
-                                <label className="block text-sm font-medium mb-1">Class</label>
-                                <select
+                        <div className="flex items-top justify-end gap-3 w-2/7">
+                            <div>
+                                <CustomSelect
+                                    label=""
+                                    placeholder="Select a class"
                                     value={selectedClassToAdd}
-                                    onChange={(e) => setSelectedClassToAdd(e.target.value)}
-                                    className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                                >
-                                    <option value="">Select a class</option>
-                                    {availableClasses.map(dndClass => (
-                                        <option key={dndClass.id} value={dndClass.id}>
-                                            {dndClass.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="w-24">
-                                <label className="block text-sm font-medium mb-1">Level</label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    max="20"
-                                    value={selectedLevelToAdd}
-                                    onChange={(e) => setSelectedLevelToAdd(parseInt(e.target.value) || 0)}
-                                    className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                                    componentExtraClassName="flex items-center gap-2"
+                                    onValueChange={(value) => setSelectedClassToAdd(value)}
+                                    options={availableClasses.map(dndClass => ({ value: dndClass.id.toString(), label: dndClass.name }))}
                                 />
                             </div>
-                            <div className="flex items-end">
+                            <div>
+                                <CustomSelect
+                                    label="Level"
+                                    value={selectedLevelToAdd}
+                                    componentExtraClassName="flex items-center gap-2"
+                                    onValueChange={(value) => setSelectedLevelToAdd(value)}
+                                    options={[...Array(10).keys()].map(level => ({ value: level, label: level.toString() }))}
+                                />
+                            </div>
+                            <div>
                                 <button
                                     type="button"
                                     onClick={HandleAddClassLevel}
-                                    disabled={!selectedClassToAdd || selectedLevelToAdd < 0 || selectedLevelToAdd > 20}
-                                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={!selectedClassToAdd || selectedLevelToAdd < 0 || selectedLevelToAdd > 9}
+                                    className="px-2 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Add
                                 </button>
@@ -492,38 +459,28 @@ export function SpellEdit() {
                         )}
                     </div>
                 </div>
-
                 {/* Schools & Subschools */}
-                <div className="mt-6">
+                <div className="mt-4">
                     <h2 className="text-xl font-semibold mb-4">Schools & Subschools</h2>
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-y-2 gap-x-2">
-                        {SPELL_SCHOOL_LIST.map(school => (
-                            <div key={school.id} className="p-2 border rounded dark:border-gray-600">
-                                <label className="inline-flex items-center font-bold text-base">
-                                    <input
-                                        type="checkbox"
-                                        value={school.id}
-                                        checked={formData.schoolIds?.some(s => s.schoolId === school.id) || false}
-                                        onChange={HandleChange}
-                                        name="schools"
-                                        className="mr-2"
-                                    />
-                                    <span>{school.name}</span>
-                                </label>
-                                {(SPELL_SUBSCHOOL_LIST_BY_SCHOOL_ID[school.id] as any[])?.length > 0 && (
-                                    <div className="ml-6 mt-1 grid grid-cols-1 gap-y-0.5">
-                                        {(SPELL_SUBSCHOOL_LIST_BY_SCHOOL_ID[school.id] as any[]).map(subschool => (
-                                            <label key={subschool.id} className="inline-flex items-center text-sm">
-                                                <input
-                                                    type="checkbox"
-                                                    value={subschool.id}
-                                                    checked={formData.subSchoolIds?.some(s => s.subSchoolId === subschool.id) || false}
-                                                    onChange={HandleChange}
-                                                    name="subschools"
-                                                    className="mr-2"
-                                                />
-                                                <span>{subschool.name}</span>
-                                            </label>
+                        {SPELL_SCHOOL_SELECT_LIST.map(school => (
+                            <div key={school.value} className="p-2 border rounded dark:border-gray-600">
+                                <CustomCheckbox
+                                    label={school.label}
+                                    checked={(formData?.schoolIds || []).some(s => s.schoolId === school.value)}
+                                    onCheckedChange={(checked) => handleSchoolChange(school.value, checked)}
+                                    labelClassName="font-bold text-base"
+                                />
+                                {(SPELL_SUBSCHOOL_LIST_BY_SCHOOL_ID[school.value] as any[])?.length > 0 && (
+                                    <div className="ml-6 mt-1 grid grid-cols-1 gap-y-1">
+                                        {(SPELL_SUBSCHOOL_LIST_BY_SCHOOL_ID[school.value] as SelectOption[]).map(subschool => (
+                                            <CustomCheckbox
+                                                key={subschool.value}
+                                                label={subschool.label}
+                                                checked={(formData?.subSchoolIds || []).some(s => s.subSchoolId === subschool.value)}
+                                                onCheckedChange={(checked) => handleSubschoolChange(subschool.value, checked)}
+                                                labelClassName="text-sm"
+                                            />
                                         ))}
                                     </div>
                                 )}
@@ -533,62 +490,46 @@ export function SpellEdit() {
                 </div>
 
                 {/* Descriptors */}
-                <div className="mt-6">
+                <div className="mt-4">
                     <h2 className="text-xl font-semibold mb-4">Descriptors</h2>
-                    <div className="grid grid-cols-4 gap-y-0.25 p-2 border rounded dark:border-gray-600">
+                    <div className="grid grid-cols-4 gap-y-1 gap-x-2 p-2 border rounded dark:border-gray-600">
                         {SPELL_DESCRIPTOR_LIST.map(descriptor => (
-                            <div key={descriptor.id}>
-                                <label className="inline-flex items-center text-base">
-                                    <input
-                                        type="checkbox"
-                                        name="descriptors"
-                                        value={descriptor.id}
-                                        checked={formData.descriptorIds?.some(d => d.descriptorId === descriptor.id) || false}
-                                        onChange={HandleChange}
-                                        className="mr-2"
-                                    />
-                                    <span className="text-gray-700 dark:text-gray-300">{descriptor.name}</span>
-                                </label>
-                            </div>
+                            <CustomCheckbox
+                                key={descriptor.id}
+                                label={descriptor.name}
+                                checked={(formData?.descriptorIds || []).some(d => d.descriptorId === descriptor.id)}
+                                onCheckedChange={(checked) => handleDescriptorChange(descriptor.id, checked)}
+                                labelClassName="text-base text-gray-700 dark:text-gray-300"
+                            />
                         ))}
                     </div>
                 </div>
 
                 {/* Components */}
-                <div className="mt-6">
+                <div className="mt-4">
                     <h2 className="text-xl font-semibold mb-4">Components</h2>
                     <div className="flex items-center gap-3 p-2 border rounded dark:border-gray-600">
                         {SPELL_COMPONENT_LIST.map(component => (
-                            <div key={component.id}>
-                                <label className="inline-flex items-center text-base">
-                                    <input
-                                        type="checkbox"
-                                        name="components"
-                                        value={component.id}
-                                        checked={formData.componentIds?.some(c => c.componentId === component.id) || false}
-                                        onChange={HandleChange}
-                                        className="mr-1"
-                                    />
-                                    <span className="text-gray-700 dark:text-gray-300">{component.name}</span>
-                                </label>
-                            </div>
+                            <CustomCheckbox
+                                key={component.id}
+                                label={component.name}
+                                checked={(formData?.componentIds || []).some(c => c.componentId === component.id)}
+                                onCheckedChange={(checked) => handleComponentChange(component.id, checked)}
+                                labelClassName="text-base text-gray-700 dark:text-gray-300"
+                            />
                         ))}
                     </div>
                 </div>
 
                 {/* Description */}
-                <div className="mt-6">
-                    <h2 className="text-xl font-semibold mb-4">Description</h2>
+                <div className="mt-4">
                     <div className="space-y-2">
-                        <label htmlFor="description" className="block font-medium">
-                            Spell Description
-                        </label>
                         <MarkdownEditor
-                            value={formData.description || ''}
+                            value={formData?.description || ''}
                             onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
                         />
-                        {validation.getError('description') && (
-                            <span className="text-red-500 text-sm">{validation.getError('description')}</span>
+                        {form.validation.getError('description') && (
+                            <span className="text-red-500 text-sm">{form.validation.getError('description')}</span>
                         )}
                     </div>
                 </div>
@@ -606,7 +547,7 @@ export function SpellEdit() {
                     <button
                         type="submit"
                         className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isLoading || validation.validationState.hasErrors}
+                        disabled={isLoading || form.validation.validationState.hasErrors}
                     >
                         {isLoading ? 'Saving...' : id === 'new' ? 'Create Spell' : 'Update Spell'}
                     </button>

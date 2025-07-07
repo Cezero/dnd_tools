@@ -178,7 +178,7 @@ export const referenceTableService: ReferenceTableService = {
     },
 
 
-    async deleteReferenceTable(slug: ReferenceTableSlugParamRequest) {
+    async deleteReferenceTable(slug: ReferenceTableSlugParamRequest): Promise<UpdateResponse> {
         await prisma.referenceTable.delete({
             where: { slug: slug.slug },
         });

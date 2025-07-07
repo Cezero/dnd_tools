@@ -30,10 +30,9 @@ function EstimatePreferredWidthsFromRows(columns: ReferenceTableColumn[], rows: 
     });
 }
 
-// Example render function for structured table data
 export async function RenderStructuredTable(tableData: ReferenceTableDataResponse, tableClass: string): Promise<HastElement> {
     const { columns, rows } = tableData;
-    console.log('tableData', tableData);
+    console.log('[RenderStructuredTable] tableData', tableData);
     const occupiedCells = new Set<string>(); // Stores 'rowIndex-colIndex' strings
 
     const columnsWithPreferredWidths = EstimatePreferredWidthsFromRows(columns, rows);

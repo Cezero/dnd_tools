@@ -1,4 +1,5 @@
 import type { SourceBookMap } from './types';
+import { NameSelectOptionList } from './Util';
 
 export const SOURCE_BOOK_MAP: SourceBookMap = {
     1: { id: 1, name: "Player's Handbook", abbreviation: 'PHB', editionId: 4, hasSpells: false, hasClasses: true },
@@ -148,19 +149,9 @@ export const SOURCE_BOOK_MAP: SourceBookMap = {
     145: { id: 145, name: "An Adventurer's Guide to Eberron", abbreviation: 'AGE', editionId: 5, hasSpells: false, hasClasses: false },
 };
 
-
-
 export const SOURCE_BOOK_LIST = Object.values(SOURCE_BOOK_MAP);
-
-export const SOURCE_BOOK_WITH_CLASSES_SELECT_LIST = SOURCE_BOOK_LIST.filter(sourceBook => sourceBook.hasClasses).map(sourceBook => ({
-    value: sourceBook.id,
-    label: sourceBook.name
-}));
-
-export const SOURCE_BOOK_WITH_SPELLS_SELECT_LIST = SOURCE_BOOK_LIST.filter(sourceBook => sourceBook.hasSpells).map(sourceBook => ({
-    value: sourceBook.id,
-    label: sourceBook.name
-}));
+export const SOURCE_BOOK_WITH_CLASSES_SELECT_LIST = NameSelectOptionList(SOURCE_BOOK_LIST.filter(sourceBook => sourceBook.hasClasses));
+export const SOURCE_BOOK_WITH_SPELLS_SELECT_LIST = NameSelectOptionList(SOURCE_BOOK_LIST.filter(sourceBook => sourceBook.hasSpells));
 
 interface SourceReference {
     bookId: number;

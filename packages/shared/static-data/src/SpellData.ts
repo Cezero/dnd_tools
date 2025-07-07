@@ -1,4 +1,5 @@
-import type { SpellComponentMap, SpellDescriptorMap, SpellRangeMap, SpellSchoolMap, SpellSubschoolMap, Spell, SpellNameMap } from './types';
+import type { SpellComponentMap, SpellDescriptorMap, SpellRangeMap, SpellSchoolMap, SpellSubschoolMap, Spell, SpellSubschoolSelectMap, NameToIdMap } from './types';
+import { NameSelectOptionList } from './Util';
 
 export const SPELL_COMPONENT_MAP: SpellComponentMap = {
     0: { id: 0, abbreviation: 'V', name: 'Verbal' },
@@ -11,10 +12,7 @@ export const SPELL_COMPONENT_MAP: SpellComponentMap = {
 
 export const SPELL_COMPONENT_LIST = Object.values(SPELL_COMPONENT_MAP);
 
-export const SPELL_COMPONENT_SELECT_LIST = SPELL_COMPONENT_LIST.map(component => ({
-    value: component.id,
-    label: component.name
-}));
+export const SPELL_COMPONENT_SELECT_LIST = NameSelectOptionList(SPELL_COMPONENT_LIST);
 
 export const SpellComponentAbbrList = (components: number[]): string => {
     return components.map(component => SPELL_COMPONENT_MAP[component].abbreviation).join(', ');
@@ -47,10 +45,7 @@ export const SPELL_DESCRIPTOR_MAP: SpellDescriptorMap = {
 
 export const SPELL_DESCRIPTOR_LIST = Object.values(SPELL_DESCRIPTOR_MAP);
 
-export const SPELL_DESCRIPTOR_SELECT_LIST = SPELL_DESCRIPTOR_LIST.map(descriptor => ({
-    value: descriptor.id,
-    label: descriptor.name
-}));
+export const SPELL_DESCRIPTOR_SELECT_LIST = NameSelectOptionList(SPELL_DESCRIPTOR_LIST);
 
 export const SpellDescriptorNameList = (descriptors: number[]): string => {
     return descriptors.map(descriptor => SPELL_DESCRIPTOR_MAP[descriptor].name).join(', ');
@@ -85,10 +80,7 @@ export const SPELL_SCHOOL_MAP: SpellSchoolMap = {
 
 export const SPELL_SCHOOL_LIST = Object.values(SPELL_SCHOOL_MAP);
 
-export const SPELL_SCHOOL_SELECT_LIST = SPELL_SCHOOL_LIST.map(school => ({
-    value: school.id,
-    label: school.name
-}));
+export const SPELL_SCHOOL_SELECT_LIST = NameSelectOptionList(SPELL_SCHOOL_LIST);
 
 export const SpellSchoolNameList = (schools: number[]): string => {
     return schools.map(school => SPELL_SCHOOL_MAP[school].name).join(', ');
@@ -116,15 +108,12 @@ export const SPELL_SUBSCHOOL_MAP: SpellSubschoolMap = {
 
 export const SPELL_SUBSCHOOL_LIST = Object.values(SPELL_SUBSCHOOL_MAP);
 
-export const SPELL_SUBSCHOOL_SELECT_LIST = SPELL_SUBSCHOOL_LIST.map(subschool => ({
-    value: subschool.id,
-    label: subschool.name
-}));
+export const SPELL_SUBSCHOOL_SELECT_LIST = NameSelectOptionList(SPELL_SUBSCHOOL_LIST);
 
-export const SPELL_SUBSCHOOL_LIST_BY_SCHOOL_ID: SpellSubschoolMap[] = Object.values(SPELL_SUBSCHOOL_MAP).reduce((acc, school) => {
-    acc[school.id] = Object.values(SPELL_SUBSCHOOL_MAP).filter(subschool => subschool.schoolId === school.id);
+export const SPELL_SUBSCHOOL_LIST_BY_SCHOOL_ID: SpellSubschoolSelectMap[] = Object.values(SPELL_SUBSCHOOL_MAP).reduce((acc, school) => {
+    acc[school.id] = NameSelectOptionList(Object.values(SPELL_SUBSCHOOL_MAP).filter(subschool => subschool.schoolId === school.id));
     return acc;
-}, {} as SpellSubschoolMap[]);
+}, {} as SpellSubschoolSelectMap[]);
 
 export const SpellSubschoolNameList = (subschools: number[]): string => {
     return subschools.map(subschool => SPELL_SUBSCHOOL_MAP[subschool].name).join(', ');
@@ -2906,6 +2895,6 @@ export const _SPELL_ID_MAP: { [key: number]: Spell } = {
 
 export const SPELL_ID_LIST = Object.values(_SPELL_ID_MAP);
 
-export const SPELL_NAME_MAP: SpellNameMap = Object.fromEntries(
+export const SPELL_NAME_MAP: NameToIdMap = Object.fromEntries(
     Object.entries(_SPELL_ID_MAP).map(([key, value]) => [value.name.toLowerCase(), parseInt(key)])
 );

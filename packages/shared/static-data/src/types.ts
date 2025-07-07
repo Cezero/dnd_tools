@@ -1,42 +1,44 @@
-import { ClassResponse, SkillResponse, SpellInQueryResponse, SourceBookWithSpellsResponse } from '@shared/schema';
+export interface SelectOption {
+    value: number;
+    label: string;
+}
 
-export interface Ability {
+export type NameToIdMap = {
+    [key: string]: number;
+};
+
+export type IdToNameMap = {
+    [key: number]: string;
+};
+
+export type BaseMap<C extends CoreComponent> = {
+    [key: number]: C;
+};
+
+export type SelectOptionMap<C extends SelectOption> = {
+    [key: number]: C;
+};
+
+export interface CoreComponent {
     id: number;
     name: string;
+}
+
+export interface CoreComponentAbbreviation extends CoreComponent {
     abbreviation: string;
 }
 
-export interface SavingThrow {
-    id: number;
-    name: string;
-    abbreviation: string;
-}
-
-export interface RpgDie {
-    id: number;
-    name: string;
+export interface RpgDie extends CoreComponent {
     sides: number;
     min: number;
     max: number;
 }
 
-export interface Currency {
-    id: number;
-    name: string;
-    abbreviation: string;
+export interface Currency extends CoreComponentAbbreviation {
     gpValue: number;
 }
 
-export interface Alignment {
-    id: number;
-    name: string;
-    abbreviation: string;
-}
-
-export interface Size {
-    id: number;
-    name: string;
-    abbreviation: string;
+export interface Size extends CoreComponentAbbreviation {
     sizeModifier: number;
     grappleModifier: number;
     hideModifier: number;
@@ -47,22 +49,12 @@ export interface Size {
     naturalReachLong: number;
 }
 
-export interface Language {
-    id: number;
-    name: string;
+export interface Language extends CoreComponent {
     typicalSpeakers: string;
     alphabet: string;
 }
 
-export interface Edition {
-    id: number;
-    name: string;
-    abbreviation: string;
-}
-
-export interface Feat {
-    id: number;
-    name: string;
+export interface Feat extends CoreComponent {
     type: string;
     description: string;
     prerequisites: string;
@@ -71,9 +63,7 @@ export interface Feat {
     sourceId: number;
 }
 
-export interface Item {
-    id: number;
-    name: string;
+export interface Item extends CoreComponent {
     type: string;
     cost: number;
     weight: number;
@@ -81,129 +71,53 @@ export interface Item {
     sourceId: number;
 }
 
-export interface Spell {
-    id: number;
-    name: string;
+export interface Spell extends CoreComponent {
     editionId: number;
 }
 
-export interface SpellComponent {
-    id:  number;
-    abbreviation: string;
-    name: string;
-}
-
-export interface SpellDescriptor {
-    id:  number;
-    name: string;
-}
-
-export interface SpellRange {
-    id:  number;
-    name: string;
-    abbreviation: string;
-}
-
-export interface SpellSchool {
-    id:  number;
-    name: string;
-    abbreviation: string;
-}
-
-export interface SpellSubschool {
-    id:  number;
-    name: string;
-    schoolId:  number;
-}
-
-export interface FeatType {
-    id: number;
-    name: string;
-}
-
-export interface FeatBenefitType {
-    id: number;
-    name: string;
-}
-
-export interface FeatPrerequisiteType {
-    id: number;
-    name: string;
-}
-
-export interface WeaponCategory {
-    id: number;
-    name: string;
-}
-
-export interface WeaponType {
-    id: number;
-    name: string;
-}
-
-export interface DamageType {
-    id: number;
-    name: string;
-}
-
-export interface ArmorCategory {
-    id: number;
-    name: string;
-}
-
-export interface ProficiencyType {
-    id: number;
-    name: string;
+export interface SpellSubschool extends CoreComponent {
+    schoolId: number;
 }
 
 export interface ClassNameMap {
     [key: string]: string;
 }
 
-export interface Skill {
-    id: number;
-    name: string;
+export interface Skill extends CoreComponent {
     abilityId: number;
     trainedOnly: boolean;
 }
 
-export interface SourceBook {
-    id: number;
-    name: string;
-    abbreviation: string;
+export interface SourceBook extends CoreComponentAbbreviation {
     editionId: number;
     hasSpells: boolean;
     hasClasses: boolean;
 }
 
-export interface Class {
-    id: number;
-    name: string;
-    abbreviation: string;
+export interface Class extends CoreComponentAbbreviation {
     editionId: number;
     isPrestige: boolean;
     isVisible: boolean;
     canCastSpells: boolean;
 }
 
-// Map types
-export type AbilityMap = { [key: number]: Ability };
-export type SavingThrowMap = { [key: number]: SavingThrow };
-export type RpgDieMap = { [key: number]: RpgDie };
-export type CurrencyMap = { [key: number]: Currency };
-export type AlignmentMap = { [key: number]: Alignment };
-export type SizeMap = { [key: number]: Size };
-export type LanguageMap = { [key: number]: Language };
-export type EditionMap = { [key: number]: Edition };
-export type FeatMap = { [key: number]: Feat };
-export type ItemMap = { [key: number]: Item };
-export type SpellMap = { [key: number]: Spell };
-export type SpellNameMap = { [key: string]: number };
-export type SpellComponentMap = { [key: number]: SpellComponent };
-export type SpellDescriptorMap = { [key: number]: SpellDescriptor };
-export type SpellRangeMap = { [key: number]: SpellRange };
-export type SpellSchoolMap = { [key: number]: SpellSchool };
-export type SpellSubschoolMap = { [key: number]: SpellSubschool };
-export type SkillMap = { [key: number]: Skill };
-export type SourceBookMap = { [key: number]: SourceBook };
-export type ClassMap = { [key: number]: Class };
+export type AbilityMap = BaseMap<CoreComponentAbbreviation>;
+export type SavingThrowMap = BaseMap<CoreComponentAbbreviation>;
+export type RpgDieMap = BaseMap<RpgDie>;
+export type CurrencyMap = BaseMap<Currency>;
+export type AlignmentMap = BaseMap<CoreComponentAbbreviation>;
+export type SizeMap = BaseMap<Size>;
+export type LanguageMap = BaseMap<Language>;
+export type EditionMap = BaseMap<CoreComponentAbbreviation>;
+export type FeatMap = BaseMap<Feat>;
+export type ItemMap = BaseMap<Item>;
+export type SpellMap = BaseMap<Spell>;
+export type SpellComponentMap = BaseMap<CoreComponentAbbreviation>;
+export type SpellDescriptorMap = BaseMap<CoreComponent>;
+export type SpellRangeMap = BaseMap<CoreComponentAbbreviation>;
+export type SpellSchoolMap = BaseMap<CoreComponentAbbreviation>;
+export type SpellSubschoolMap = BaseMap<SpellSubschool>;
+export type SpellSubschoolSelectMap = SelectOptionMap<SelectOption>;
+export type SkillMap = BaseMap<Skill>;
+export type SourceBookMap = BaseMap<SourceBook>;
+export type ClassMap = BaseMap<Class>;

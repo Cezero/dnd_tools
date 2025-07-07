@@ -1,5 +1,6 @@
 import React from 'react';
 import { z } from 'zod';
+import type { SelectOption } from '@shared/static-data';
 
 // Filter value discriminated union
 export type FilterValue =
@@ -43,11 +44,6 @@ export interface InputFilterComponentProps extends BaseFilterComponentProps {
 export interface BooleanFilterComponentProps extends BaseFilterComponentProps {
     value?: boolean | null;
     onToggle: (value: boolean) => void;
-}
-
-// Generic option interface for both single and multi select
-export interface SelectOption {
-    [key: string]: string | number;
 }
 
 // Single select filter component props

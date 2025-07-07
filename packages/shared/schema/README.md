@@ -66,7 +66,6 @@ import { commonValidations } from '@shared/schema/common';
 ### Race Schemas (`@shared/schema/race`)
 - `RaceQuerySchema` - Race list query parameters
 - `RaceIdParamSchema` - Race ID parameter validation
-- `CreateRaceSchema` - Race creation validation
 - `UpdateRaceSchema` - Race update validation
 - `CreateRaceTraitSchema` - Race trait creation validation
 - `UpdateRaceTraitSchema` - Race trait update validation

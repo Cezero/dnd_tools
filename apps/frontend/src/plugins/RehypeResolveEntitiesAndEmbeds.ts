@@ -4,11 +4,12 @@ import { visit } from 'unist-util-visit';
 
 import { flushTableResolutionQueue } from '@/lib/TableResolution';
 import { SPELL_NAME_MAP, CLASS_NAME_MAP } from '@shared/static-data';
-import { RenderStructuredTable } from '@/plugins/RehypeRenderStructuredTable';
+import { RenderStructuredTable } from '@/plugins/RenderStructuredTable';
 
 
 interface RehypeResolveEntitiesAndEmbedsOptions {
     tableClass?: string;
+    id: string;
 }
 
 type PropsWithEntityData = {
@@ -25,8 +26,8 @@ const entityTypes = {
     class: CLASS_NAME_MAP,
 };
 
-export function RehypeResolveEntitiesAndEmbeds(options: RehypeResolveEntitiesAndEmbedsOptions = {}) {
-    const { tableClass = 'md-table' } = options;
+export function RehypeResolveEntitiesAndEmbeds(options: RehypeResolveEntitiesAndEmbedsOptions) {
+    const { tableClass = 'md-table', id } = options;
     return async function transformer(tree: Root) {
         const entityLinks: Element[] = [];
         const tablePlaceholders: Element[] = [];
@@ -37,6 +38,7 @@ export function RehypeResolveEntitiesAndEmbeds(options: RehypeResolveEntitiesAnd
             }
 
             if (node.tagName === 'div' && props.dataTableSlug) {
+                console.log(`[RehypeResolveEntitiesAndEmbeds] tablePlaceholders - ${id}`, node);
                 tablePlaceholders.push(node);
             }
         });
@@ -60,11 +62,14 @@ export function RehypeResolveEntitiesAndEmbeds(options: RehypeResolveEntitiesAnd
             }
         }
 
-        const resolvedTables = await flushTableResolutionQueue();
+        console.log(`[RehypeResolveEntitiesAndEmbeds] tablePlaceholders - 2 - ${id}`, tablePlaceholders);
+        const resolvedTables = await flushTableResolutionQueue(id);
+        console.log(`[RehypeResolveEntitiesAndEmbeds] resolvedTables - ${id}`, resolvedTables);
         // Replace table placeholders with rendered tables
         for (const node of tablePlaceholders) {
             const props = node.properties as PropsWithEntityData;
             const slug = props.dataTableSlug;
+            console.log(`[RehypeResolveEntitiesAndEmbeds] slug - ${id}`, slug);
             if (slug) {
                 const tableData = resolvedTables[slug];
 

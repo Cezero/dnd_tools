@@ -8,6 +8,13 @@ import type {
     RaceTraitSlugParamRequest,
     CreateRaceTraitRequest,
     UpdateRaceTraitRequest,
+    CreateResponse,
+    GetRaceResponse,
+    UpdateResponse,
+    GetRaceTraitResponse,
+    RaceTraitGetAllResponse,
+    RaceTraitQueryResponse,
+    RaceQueryResponse,
 } from '@shared/schema';
 
 import { RaceService } from './types';
@@ -15,7 +22,7 @@ import { RaceService } from './types';
 const prisma = new PrismaClient();
 
 export const raceService: RaceService = {
-    async getRaces(query: RaceQueryRequest) {
+    async getRaces(query: RaceQueryRequest): Promise<RaceQueryResponse> {
         const page = query.page;
         const limit = query.limit;
         const skip = (page - 1) * limit;
@@ -54,7 +61,7 @@ export const raceService: RaceService = {
         };
     },
 
-    async getRaceById(id: RaceIdParamRequest) {
+    async getRaceById(id: RaceIdParamRequest): Promise<GetRaceResponse | null> {
         return prisma.race.findUnique({
             where: { id: id.id },
             include: {
@@ -65,11 +72,12 @@ export const raceService: RaceService = {
                         trait: true,
                     },
                 },
+                sources: true,
             },
         });
     },
 
-    async createRace(data: CreateRaceRequest) {
+    async createRace(data: CreateRaceRequest): Promise<CreateResponse> {
         // Use Prisma input type directly - it handles nested relationships
         const result = await prisma.race.create({
             data: {
@@ -78,19 +86,33 @@ export const raceService: RaceService = {
                     create: data.languages?.map(languageId => ({ languageId: languageId.languageId }))
                 },
                 traits: {
-                    create: data.traits?.map(traitId => ({ traitId: traitId.traitId }))
+                    create: data.traits?.map(traitId => ({ traitSlug: traitId.traitSlug }))
+                },
+                abilityAdjustments: {
+                    create: data.abilityAdjustments?.map(abilityAdjustment => ({
+                        abilityId: abilityAdjustment.abilityId,
+                        value: abilityAdjustment.value
+                    })) || []
+                },
+                sources: {
+                    create: data.sources?.map(source => ({
+                        sourceBookId: source.sourceBookId,
+                        pageNumber: source.pageNumber
+                    })) || []
                 }
             },
         });
 
-        return { id: result.id, message: 'Race created successfully' };
+        return { id: result.id.toString(), message: 'Race created successfully' };
     },
 
-    async updateRace(id: RaceIdParamRequest, data: UpdateRaceRequest) {
+    async updateRace(id: RaceIdParamRequest, data: UpdateRaceRequest): Promise<UpdateResponse> {
         // Use Prisma input type directly - it handles nested relationships
         await prisma.$transaction(async (tx) => {
             await tx.raceLanguageMap.deleteMany({ where: { raceId: id.id } });
             await tx.raceTraitMap.deleteMany({ where: { raceId: id.id } });
+            await tx.raceAbilityAdjustment.deleteMany({ where: { raceId: id.id } });
+            await tx.raceSourceMap.deleteMany({ where: { raceId: id.id } });
 
             await tx.race.update({
                 where: { id: id.id },
@@ -100,7 +122,19 @@ export const raceService: RaceService = {
                         create: data.languages?.map(languageId => ({ languageId: languageId.languageId }))
                     },
                     traits: {
-                        create: data.traits?.map(traitId => ({ traitId: traitId.traitId }))
+                        create: data.traits?.map(traitId => ({ traitSlug: traitId.traitSlug }))
+                    },
+                    abilityAdjustments: {
+                        create: data.abilityAdjustments?.map(abilityAdjustment => ({
+                            abilityId: abilityAdjustment.abilityId,
+                            value: abilityAdjustment.value
+                        })) || []
+                    },
+                    sources: {
+                        create: data.sources?.map(source => ({
+                            sourceBookId: source.sourceBookId,
+                            pageNumber: source.pageNumber
+                        })) || []
                     }
                 }
             });
@@ -109,7 +143,7 @@ export const raceService: RaceService = {
         return { message: 'Race updated successfully' };
     },
 
-    async deleteRace(id: RaceIdParamRequest) {
+    async deleteRace(id: RaceIdParamRequest): Promise<UpdateResponse> {
         await prisma.race.delete({
             where: { id: id.id },
         });
@@ -117,7 +151,7 @@ export const raceService: RaceService = {
     },
 
     // Race Trait methods
-    async getRaceTraits(query: RaceTraitQueryRequest) {
+    async getRaceTraits(query: RaceTraitQueryRequest): Promise<RaceTraitQueryResponse> {
         const page = query.page;
         const limit = query.limit;
         const skip = (page - 1) * limit;
@@ -127,9 +161,6 @@ export const raceService: RaceService = {
 
         if (query.slug) {
             where.slug = { contains: query.slug };
-        }
-        if (query.name) {
-            where.name = { contains: query.name };
         }
         if (query.hasValue !== undefined) {
             where.hasValue = query.hasValue;
@@ -153,28 +184,28 @@ export const raceService: RaceService = {
         };
     },
 
-    async getRaceTraitsList() {
+    async getRaceTraitsList(): Promise<RaceTraitGetAllResponse> {
         const traits = await prisma.raceTrait.findMany();
 
         return traits;
     },
 
-    async getRaceTraitBySlug(slug: RaceTraitSlugParamRequest) {
+    async getRaceTraitBySlug(slug: RaceTraitSlugParamRequest): Promise<GetRaceTraitResponse | null> {
         return prisma.raceTrait.findUnique({
             where: { slug: slug.slug },
         });
     },
 
-    async createRaceTrait(data: CreateRaceTraitRequest) {
+    async createRaceTrait(data: CreateRaceTraitRequest): Promise<CreateResponse> {
         // Use Prisma input type directly
         const result = await prisma.raceTrait.create({
             data,
         });
 
-        return { slug: result.slug, message: 'Race trait created successfully' };
+        return { id: result.slug, message: 'Race trait created successfully' };
     },
 
-    async updateRaceTrait(slug: RaceTraitSlugParamRequest, data: UpdateRaceTraitRequest) {
+    async updateRaceTrait(slug: RaceTraitSlugParamRequest, data: UpdateRaceTraitRequest): Promise<UpdateResponse> {
         // Use Prisma input type directly
         await prisma.raceTrait.update({
             where: { slug: slug.slug },
@@ -184,7 +215,7 @@ export const raceService: RaceService = {
         return { message: 'Race trait updated successfully' };
     },
 
-    async deleteRaceTrait(slug: RaceTraitSlugParamRequest) {
+    async deleteRaceTrait(slug: RaceTraitSlugParamRequest): Promise<UpdateResponse> {
         await prisma.raceTrait.delete({
             where: { slug: slug.slug },
         });

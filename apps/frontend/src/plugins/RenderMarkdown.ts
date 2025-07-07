@@ -12,6 +12,7 @@ import { RemarkEntitiesAndEmbeds } from '@/plugins/RemarkEntitiesAndEmbeds';
 
 interface RenderMarkdownOptions {
     markdown: string;
+    id: string;
     tableClass?: string;
     userVars?: Record<string, unknown>;
 }
@@ -22,15 +23,15 @@ interface RenderMarkdownOptions {
  * @param {RenderMarkdownOptions} options - The options object containing markdown and optional parameters
  * @returns {Promise<string>} - HTML string output
  */
-export async function RenderMarkdown({ markdown, tableClass = 'md-table', userVars = {} }: RenderMarkdownOptions): Promise<string> {
+export async function RenderMarkdown({ markdown, id, tableClass = 'md-table', userVars = {} }: RenderMarkdownOptions): Promise<string> {
     const processor = unified()
         .use(remarkParse)
         .use(remarkGfm, { singleTilde: false })
         .use(supersub)
-        .use(RemarkEntitiesAndEmbeds) // Sync stage: queue lookups, insert placeholders
+        .use(RemarkEntitiesAndEmbeds, { id }) // Sync stage: queue lookups, insert placeholders
         .use(rehypeRemark, { allowDangerousHtml: true }) // Markdown -> HAST
         .use(rehypeRaw) // Allow inline HTML (e.g., embedded raw HTML tags in markdown)
-        .use(RehypeResolveEntitiesAndEmbeds, { tableClass }) // Async: resolve IDs and fetch tables
+        .use(RehypeResolveEntitiesAndEmbeds, { tableClass, id }) // Async: resolve IDs and fetch tables
         .use(RehypeReplaceVariables, { userVars })
         //    .use(rehypeSanitize, sanitizeSchema) // (optional) prevent unsafe HTML injection
         .use(rehypeStringify); // Serialize to HTML

@@ -2,15 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 
+import { Checkbox } from '@base-ui-components/react/checkbox';
 import {
     ValidatedForm,
     ValidatedInput,
-    ValidatedCheckbox,
     useValidatedForm
 } from '@/components/forms';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { RaceTraitService } from '@/features/admin/features/race-management/RaceTraitService';
-import { CreateRaceTraitSchema, UpdateRaceTraitSchema, RaceTraitSchema } from '@shared/schema';
+import { CreateRaceTraitSchema, UpdateRaceTraitSchema } from '@shared/schema';
+import { CustomCheckbox } from '@/components/forms/FormComponents';
 
 // Type definitions for the form state
 type CreateRaceTraitFormData = z.infer<typeof CreateRaceTraitSchema>;
@@ -32,7 +33,6 @@ export function RaceTraitEdit() {
     // Initialize form data with default values
     const initialFormData: RaceTraitFormData = {
         slug: '',
-        name: '',
         description: '',
         hasValue: false,
         ...(slug !== 'new' && { slug: slug })
@@ -41,7 +41,7 @@ export function RaceTraitEdit() {
     const [formData, setFormData] = useState<RaceTraitFormData>(initialFormData);
 
     // Use the validated form hook
-    const { validation, createFieldProps, createCheckboxProps } = useValidatedForm(
+    const form = useValidatedForm(
         schema,
         formData,
         setFormData,
@@ -80,7 +80,7 @@ export function RaceTraitEdit() {
         setError(null);
 
         // Validate the entire form
-        if (!validation.validateForm(formData)) {
+        if (!form.validation.validateForm(formData)) {
             return;
         }
 
@@ -128,21 +128,12 @@ export function RaceTraitEdit() {
         return <div>No race trait data available</div>;
     }
 
-    // Create field props for each form field
-    const slugProps = createFieldProps('slug');
-    const nameProps = createFieldProps('name');
-    const descriptionProps = createFieldProps('description');
-    const hasValueProps = createCheckboxProps('hasValue');
-
     return (
         <div className="max-w-4xl mx-auto p-6">
             <div className="mb-6">
                 <h1 className="text-3xl font-bold">
                     {slug === 'new' ? 'Create New Race Trait' : 'Edit Race Trait'}
                 </h1>
-                <p className="text-gray-600 dark:text-gray-400">
-                    {slug === 'new' ? 'Create a new race trait definition' : 'Modify race trait details'}
-                </p>
             </div>
 
             {message && (
@@ -159,48 +150,40 @@ export function RaceTraitEdit() {
 
             <ValidatedForm
                 onSubmit={HandleSubmit}
-                validationState={validation.validationState}
+                validationState={form.validation.validationState}
                 isLoading={isLoading}
+                formData={formData}
+                setFormData={setFormData}
+                validation={form.validation}
             >
-                <div className="space-y-4">
-                    <ValidatedInput
-                        name="slug"
-                        label="Trait Slug"
-                        type="text"
-                        required
-                        placeholder="e.g., darkvision, weapon-proficiency"
-                        disabled={slug !== 'new'}
-                        {...slugProps}
-                    />
-
-                    <ValidatedInput
-                        name="name"
-                        label="Trait Name"
-                        type="text"
-                        required
-                        placeholder="e.g., Darkvision, Weapon Proficiency"
-                        {...nameProps}
-                    />
-
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                        <ValidatedInput
+                            field="slug"
+                            label="Trait Slug"
+                            type="text"
+                            componentExtraClassName="flex items-center gap-2"
+                            labelExtraClassName="w-20"
+                            inputExtraClassName="w-auto"
+                            required
+                            placeholder="e.g., darkvision, weapon-proficiency"
+                            disabled={slug !== 'new'}
+                        />
+                        <CustomCheckbox
+                            label="Has Associated Value"
+                            checked={formData.hasValue as boolean}
+                            onCheckedChange={(checked) => setFormData(prev => ({ ...prev, hasValue: checked }))}
+                        />
+                    </div>
                     <div className="space-y-2">
-                        <label htmlFor="description" className="block font-medium">
-                            Trait Description
-                        </label>
                         <MarkdownEditor
                             value={formData.description || ''}
                             onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
-                            userVars={{ traitname: formData.name }}
                         />
-                        {validation.getError('description') && (
-                            <span className="text-red-500 text-sm">{validation.getError('description')}</span>
+                        {form.validation.getError('description') && (
+                            <span className="text-red-500 text-sm">{form.validation.getError('description')}</span>
                         )}
                     </div>
-
-                    <ValidatedCheckbox
-                        name="hasValue"
-                        label="Has Associated Value"
-                        {...hasValueProps}
-                    />
                 </div>
 
                 {/* Action Buttons */}
@@ -216,7 +199,7 @@ export function RaceTraitEdit() {
                     <button
                         type="submit"
                         className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isLoading || validation.validationState.hasErrors}
+                        disabled={isLoading || form.validation.validationState.hasErrors}
                     >
                         {isLoading ? 'Saving...' : slug === 'new' ? 'Create Trait' : 'Update Trait'}
                     </button>

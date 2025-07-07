@@ -5,7 +5,7 @@ import { useAuthAuto } from '@/components/auth';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { ReferenceTableService } from '@/features/admin/features/reference-table-management/ReferenceTableService';
 import { ReferenceTableDataResponse, ReferenceTableSummary } from '@shared/schema';
-import { RenderStructuredTable } from '@/plugins/RehypeRenderStructuredTable';
+import { RenderStructuredTable } from '@/plugins/RenderStructuredTable';
 
 export function ReferenceTableViewer() {
     const { slug } = useParams();

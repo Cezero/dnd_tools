@@ -10,12 +10,7 @@ export const COLUMN_DEFINITIONS: Record<string, ColumnDefinition> = {
             type: 'text-input',
             props: { placeholder: 'Filter by name...' }
         },
-        multiColumn: ['slug', 'name', 'description']
-    },
-    name: {
-        label: 'Name',
-        sortable: true,
-        isDefault: true,
+        multiColumn: ['slug', 'description']
     },
     description: {
         label: 'Description',

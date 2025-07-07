@@ -14,6 +14,7 @@ interface RenderMarkdownToHastOptions {
     allowRawHtml?: boolean;
     extraRehypePlugins?: unknown[];
     tableClass?: string;
+    id?: string;
 }
 
 /**
@@ -23,14 +24,16 @@ interface RenderMarkdownToHastOptions {
  * @returns {Promise<Root>} - A HAST (HTML AST) tree.
  */
 export async function RenderMarkdownToHast(markdown: string, options: RenderMarkdownToHastOptions = {}): Promise<Root> {
+    const { id = `hast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` } = options;
+
     const processor = await unified()
         .use(remarkParse)
         .use(supersub)
-        .use(RemarkEntitiesAndEmbeds)
+        .use(RemarkEntitiesAndEmbeds, { id })
         .use(remarkRehype, { allowDangerousHtml: true })
         .use(rehypeRaw)
         .use(rehypeFormat)
-        .use(RehypeResolveEntitiesAndEmbeds, options);
+        .use(RehypeResolveEntitiesAndEmbeds, { ...options, id });
 
     const file = processor.parse(markdown);
     const tree = await processor.run(file) as Root;

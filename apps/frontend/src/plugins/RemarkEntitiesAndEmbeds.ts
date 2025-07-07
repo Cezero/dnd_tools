@@ -43,14 +43,19 @@ interface VariableNode extends Node {
 
 type ProcessedNode = TextNode | LinkNode | ElementNode | VariableNode;
 
-export function RemarkEntitiesAndEmbeds() {
+interface RemarkEntitiesAndEmbedsOptions {
+    id: string;
+}
+
+export function RemarkEntitiesAndEmbeds(options: RemarkEntitiesAndEmbedsOptions) {
+    const { id } = options;
     return (tree: Root) => {
         visit(tree, 'text', (node: TextNode, index: number, parent: Parent) => {
             // eslint-disable-next-line no-useless-escape
             const regex = /(?:\[([A-Za-z]+):\s*([^\]]+)\])|(?:\{([A-Za-z]+):\s*([^\}]+)\})/g;
             const parts: ProcessedNode[] = [];
             let lastIndex = 0;
-            let match;
+            let match: RegExpExecArray | null;
 
             while ((match = regex.exec(node.value)) !== null) {
                 const [fullMatch, tag1, val1, tag2, val2] = match;
@@ -76,8 +81,8 @@ export function RemarkEntitiesAndEmbeds() {
                         children: [{ type: 'text', value: r_value.toLowerCase() }],
                     });
                 } else if (r_type === 'table') {
-                    // Queue table resolution
-                    queueTableResolution(r_value.toLowerCase());
+                    // Queue table resolution with instance id
+                    queueTableResolution(r_value.toLowerCase(), id);
 
                     parts.push({
                         type: 'element',

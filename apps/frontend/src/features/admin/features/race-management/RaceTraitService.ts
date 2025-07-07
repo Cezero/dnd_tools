@@ -8,6 +8,8 @@ import {
     UpdateRaceTraitSchema,
     RaceTraitSchema,
     RaceTraitQueryResponseSchema,
+    CreateResponseSchema,
+    UpdateResponseSchema,
 } from '@shared/schema';
 
 /**
@@ -51,27 +53,27 @@ export const RaceTraitService = {
     }),
 
     // Create race trait
-    createRaceTrait: typedApi<typeof CreateRaceTraitSchema, typeof RaceTraitSchema>({
+    createRaceTrait: typedApi<typeof CreateRaceTraitSchema, typeof CreateResponseSchema>({
         path: '/races/traits',
         method: 'POST',
         requestSchema: CreateRaceTraitSchema,
-        responseSchema: RaceTraitSchema,
+        responseSchema: CreateResponseSchema,
     }),
 
     // Update race trait with path parameter
-    updateRaceTrait: typedApi<typeof UpdateRaceTraitSchema, typeof RaceTraitSchema, typeof RaceTraitSlugParamSchema>({
+    updateRaceTrait: typedApi<typeof UpdateRaceTraitSchema, typeof UpdateResponseSchema, typeof RaceTraitSlugParamSchema>({
         path: '/races/traits/:slug',
         method: 'PUT',
         requestSchema: UpdateRaceTraitSchema,
         paramsSchema: RaceTraitSlugParamSchema,
-        responseSchema: RaceTraitSchema,
+        responseSchema: UpdateResponseSchema,
     }),
 
     // Delete race trait with path parameter
-    deleteRaceTrait: typedApi<undefined, z.ZodObject<Record<string, never>>, typeof RaceTraitSlugParamSchema>({
+    deleteRaceTrait: typedApi<undefined, typeof UpdateResponseSchema, typeof RaceTraitSlugParamSchema>({
         path: '/races/traits/:slug',
         method: 'DELETE',
         paramsSchema: RaceTraitSlugParamSchema,
-        responseSchema: z.object({}),
+        responseSchema: UpdateResponseSchema,
     }),
 };

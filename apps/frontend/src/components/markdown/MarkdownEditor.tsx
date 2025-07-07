@@ -20,7 +20,7 @@ export function MarkdownEditor({
     useEffect(() => {
         const ProcessMarkdown = async (): Promise<void> => {
             if (value) {
-                const html = await RenderMarkdown({ markdown: value, userVars });
+                const html = await RenderMarkdown({ markdown: value, id, userVars });
                 setRenderedHtml(html);
             } else {
                 setRenderedHtml('');

@@ -5,11 +5,11 @@ import { z } from 'zod';
 import { useAuthAuto } from '@/components/auth';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { RaceService } from '@/features/admin/features/race-management/RaceService';
-import { RaceWithTraitsSchema } from '@shared/schema';
+import { GetRaceResponseSchema } from '@shared/schema';
 import { SIZE_MAP, LANGUAGE_MAP, EDITION_MAP, ABILITY_MAP, CLASS_MAP } from '@shared/static-data';
 
 
-type RaceWithTraitsResponse = z.infer<typeof RaceWithTraitsSchema>;
+type RaceWithTraitsResponse = z.infer<typeof GetRaceResponseSchema>;
 import pluralize from 'pluralize';
 
 export function RaceDetail() {
@@ -80,7 +80,7 @@ export function RaceDetail() {
                         <div>
                             <p><strong>Languages:</strong> {race.languages && race.languages.length > 0 ? race.languages.filter(lang => lang.isAutomatic).map(lang => LANGUAGE_MAP[lang.languageId]?.name).join(', ') : 'None'}</p>
                             <p><strong>Bonus Languages:</strong> {race.languages && race.languages.length > 0 ? race.languages.filter(lang => !lang.isAutomatic).map(lang => LANGUAGE_MAP[lang.languageId]?.name).join(', ') : 'None'}</p>
-                            <p><strong>Ability Adjustments:</strong> {race.adjustments && race.adjustments.length > 0 ? race.adjustments.map(adj => `${ABILITY_MAP[adj.abilityId]?.abbreviation} ${adj.value > 0 ? '+' : ''}${adj.value}`).join(', ') : 'None'}</p>
+                            <p><strong>Ability Adjustments:</strong> {race.abilityAdjustments && race.abilityAdjustments.length > 0 ? race.abilityAdjustments.map(adj => `${ABILITY_MAP[adj.abilityId]?.abbreviation} ${adj.value > 0 ? '+' : ''}${adj.value}`).join(', ') : 'None'}</p>
                         </div>
                     </div>
                     <div className="mt-3 p-2 w-full rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert">
@@ -91,10 +91,9 @@ export function RaceDetail() {
                             <h3 className="text-lg font-bold mb-2">{race.name} Racial Traits</h3>
                             <div className="space-y-2">
                                 {race.traits.map(trait => (
-                                    <div key={trait.traitId} className="gap-2 items-start">
+                                    <div key={trait.traitSlug} className="gap-2 items-start">
                                         <div className="w-full prose dark:prose-invert">
                                             <ProcessMarkdown markdown={trait.trait?.description || ''} userVars={{
-                                                traitname: trait.trait?.name || '',
                                                 racename: race.name,
                                                 racenamelower: race.name.toLowerCase(),
                                                 raceplural: pluralize(race.name),

@@ -58,7 +58,7 @@ export function RaceTraitDetail() {
             <div className={outerContainerClasses}>
                 <div className={innerCellContentClasses}>
                     <div className="flex justify-between items-start mb-2">
-                        <h1 className="text-2xl font-bold">{trait.name} ({trait.slug})</h1>
+                        <h1 className="text-2xl font-bold">{trait.slug}</h1>
                         <div className="text-right">
                             <p><strong>Has Value:</strong> {trait.hasValue ? 'Yes' : 'No'}</p>
                         </div>

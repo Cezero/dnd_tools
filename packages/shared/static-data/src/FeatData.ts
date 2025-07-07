@@ -1,52 +1,56 @@
-import type { FeatType, FeatBenefitType, FeatPrerequisiteType } from './types';
+import type { CoreComponent, BaseMap, IdToNameMap } from './types';
+import { NameSelectOptionList, ObjectIdToNameMap } from './Util';
 
-export const FEAT_TYPES: { [key: string]: FeatType } = {
-    GENERAL: { id: 1, name: 'General' },
-    ITEM_CREATION: { id: 2, name: 'Item Creation' },
-    METAMAGIC: { id: 3, name: 'Metamagic' },
+export const enum FeatType {
+    GENERAL = 1,
+    ITEM_CREATION = 2,
+    METAMAGIC = 3,
 }
 
-export const FEAT_TYPE_BY_ID: { [key: number]: FeatType } = Object.fromEntries(
-    Object.values(FEAT_TYPES).map(obj => [obj.id, obj])
-);
+export const FEAT_TYPES: BaseMap<CoreComponent> = {
+    [FeatType.GENERAL]: { id: FeatType.GENERAL, name: 'General' },
+    [FeatType.ITEM_CREATION]: { id: FeatType.ITEM_CREATION, name: 'Item Creation' },
+    [FeatType.METAMAGIC]: { id: FeatType.METAMAGIC, name: 'Metamagic' },
+}
 
+export const FEAT_TYPE_BY_ID: IdToNameMap = ObjectIdToNameMap(FEAT_TYPES);
 export const FEAT_TYPE_LIST = Object.values(FEAT_TYPES);
-export const FEAT_TYPE_SELECT_LIST = FEAT_TYPE_LIST.map(featType => ({
-    value: featType.id,
-    label: featType.name
-}));
+export const FEAT_TYPE_SELECT_LIST = NameSelectOptionList(FEAT_TYPE_LIST);
 
-export const FEAT_BENEFIT_TYPES: { [key: string]: FeatBenefitType } = {
-    SKILL: { id: 1, name: 'Skill' },
-    SAVE: { id: 2, name: 'Save' },
-    PROFICIENCY: { id: 3, name: 'Proficiency' },
+export const enum FeatBenefitType {
+    SKILL = 1,
+    SAVE = 2,
+    PROFICIENCY = 3,
 }
 
-export const FEAT_BENEFIT_TYPE_BY_ID: { [key: number]: FeatBenefitType } = Object.fromEntries(
-    Object.values(FEAT_BENEFIT_TYPES).map(obj => [obj.id, obj])
-);
+export const FEAT_BENEFIT_TYPES: BaseMap<CoreComponent> = {
+    [FeatBenefitType.SKILL]: { id: FeatBenefitType.SKILL, name: 'Skill' },
+    [FeatBenefitType.SAVE]: { id: FeatBenefitType.SAVE, name: 'Save' },
+    [FeatBenefitType.PROFICIENCY]: { id: FeatBenefitType.PROFICIENCY, name: 'Proficiency' },
+}
 
+export const FEAT_BENEFIT_TYPE_BY_ID: IdToNameMap = ObjectIdToNameMap(FEAT_BENEFIT_TYPES);
 export const FEAT_BENEFIT_TYPE_LIST = Object.values(FEAT_BENEFIT_TYPES);
-export const FEAT_BENEFIT_TYPE_SELECT_LIST = FEAT_BENEFIT_TYPE_LIST.map(featBenefitType => ({
-    value: featBenefitType.id,
-    label: featBenefitType.name
-}));
+export const FEAT_BENEFIT_TYPE_SELECT_LIST = NameSelectOptionList(FEAT_BENEFIT_TYPE_LIST);
 
-export const FEAT_PREREQUISITE_TYPES: { [key: string]: FeatPrerequisiteType } = {
-    ABILITY: { id: 1, name: 'Ability' },
-    SKILL: { id: 2, name: 'Skill' },
-    FEAT: { id: 3, name: 'Feat' },
-    BAB: { id: 4, name: 'Base Attack Bonus' },
-    SPELLCASTING: { id: 5, name: 'Spellcasting' },
-    SPECIAL: { id: 6, name: 'Special' },
+export const enum FeatPrerequisiteType {
+    ABILITY = 1,
+    SKILL = 2,
+    FEAT = 3,
+    BAB = 4,
+    SPELLCASTING = 5,
+    SPECIAL = 6,
 }
 
-export const FEAT_PREREQ_BY_ID: { [key: number]: FeatPrerequisiteType } = Object.fromEntries(
-    Object.values(FEAT_PREREQUISITE_TYPES).map(obj => [obj.id, obj])
-);
+export const FEAT_PREREQUISITE_TYPES: BaseMap<CoreComponent> = {
+    [FeatPrerequisiteType.ABILITY]: { id: FeatPrerequisiteType.ABILITY, name: 'Ability' },
+    [FeatPrerequisiteType.SKILL]: { id: FeatPrerequisiteType.SKILL, name: 'Skill' },
+    [FeatPrerequisiteType.FEAT]: { id: FeatPrerequisiteType.FEAT, name: 'Feat' },
+    [FeatPrerequisiteType.BAB]: { id: FeatPrerequisiteType.BAB, name: 'Base Attack Bonus' },
+    [FeatPrerequisiteType.SPELLCASTING]: { id: FeatPrerequisiteType.SPELLCASTING, name: 'Spellcasting' },
+    [FeatPrerequisiteType.SPECIAL]: { id: FeatPrerequisiteType.SPECIAL, name: 'Special' },
+}
 
+export const FEAT_PREREQ_BY_ID: IdToNameMap = ObjectIdToNameMap(FEAT_PREREQUISITE_TYPES);
 export const FEAT_PREREQUISITE_TYPE_LIST = Object.values(FEAT_PREREQUISITE_TYPES);
-export const FEAT_PREREQUISITE_TYPE_SELECT_LIST = FEAT_PREREQUISITE_TYPE_LIST.map(featPrereqType => ({
-    value: featPrereqType.id,
-    label: featPrereqType.name
-}));
+export const FEAT_PREREQUISITE_TYPE_SELECT_LIST = NameSelectOptionList(FEAT_PREREQUISITE_TYPE_LIST);

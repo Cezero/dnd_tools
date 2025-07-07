@@ -6,7 +6,7 @@ import { RaceEdit } from '@/features/admin/features/race-management/RaceEdit';
 import { RaceList } from '@/features/admin/features/race-management/RaceList';
 import { RaceTraitDetail } from '@/features/admin/features/race-management/RaceTraitDetail';
 import { RaceTraitEdit } from '@/features/admin/features/race-management/RaceTraitEdit';
-import { EDITION_SELECT_LIST, RPG_DICE_SELECT_LIST, ABILITY_SELECT_LIST } from '@shared/static-data';
+import { EDITION_SELECT_LIST, CLASS_SELECT_LIST, SIZE_SELECT_LIST } from '@shared/static-data';
 
 export const routes = [
     { path: 'races', component: RaceList, exact: true, requireAuth: true, requireAdmin: true },
@@ -57,7 +57,7 @@ export const COLUMN_DEFINITIONS: Record<string, ColumnDefinition> = {
         filterConfig: {
             type: 'single-select',
             props: {
-                options: RPG_DICE_SELECT_LIST,
+                options: SIZE_SELECT_LIST,
                 className: 'w-32'
             }
         }
@@ -74,7 +74,7 @@ export const COLUMN_DEFINITIONS: Record<string, ColumnDefinition> = {
         filterConfig: {
             type: 'single-select',
             props: {
-                options: ABILITY_SELECT_LIST,
+                options: CLASS_SELECT_LIST,
                 className: 'w-32'
             }
         }

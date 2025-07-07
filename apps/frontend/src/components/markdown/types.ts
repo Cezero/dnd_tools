@@ -10,5 +10,6 @@ export interface MarkdownEditorProps {
 
 export interface ProcessMarkdownProps {
     markdown: string;
+    id: string;
     userVars?: Record<string, string | number>;
 } 

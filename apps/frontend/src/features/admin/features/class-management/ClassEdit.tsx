@@ -5,16 +5,14 @@ import { z } from 'zod';
 import {
     ValidatedForm,
     ValidatedInput,
-    ValidatedCheckbox,
-    ValidatedListbox,
-    useValidatedForm
+    useValidatedForm,
+    CustomSelect,
+    CustomCheckbox
 } from '@/components/forms';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { ClassService } from '@/features/admin/features/class-management/ClassService';
 import { CreateClassSchema, UpdateClassSchema, ClassIdParamSchema } from '@shared/schema';
-import { RPG_DICE_SELECT_LIST, EDITION_SELECT_LIST, ABILITY_SELECT_LIST } from '@shared/static-data';
-
-
+import { RPG_DICE_SELECT_LIST, EDITION_SELECT_LIST, ABILITY_SELECT_LIST, EDITION_SELECT_LIST_FULL } from '@shared/static-data';
 
 // Type definitions for the form state
 type CreateClassFormData = z.infer<typeof CreateClassSchema>;
@@ -51,7 +49,7 @@ export default function ClassEdit() {
     const [formData, setFormData] = useState<ClassFormData>(initialFormData);
 
     // Use the validated form hook
-    const { validation, createFieldProps, createCheckboxProps } = useValidatedForm(
+    const form = useValidatedForm(
         schema,
         formData,
         setFormData,
@@ -90,7 +88,7 @@ export default function ClassEdit() {
         setError(null);
 
         // Validate the entire form
-        if (!validation.validateForm(formData)) {
+        if (!form.validation.validateForm(formData)) {
             return;
         }
 
@@ -103,6 +101,7 @@ export default function ClassEdit() {
             } else {
                 await ClassService.updateClass(formData as z.infer<typeof UpdateClassSchema>, { id: parseInt(id) });
                 setMessage('Class updated successfully!');
+                navigate(`/admin/classes/${id}`, { state: { fromListParams: location.state?.fromListParams, refresh: true } });
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to save class');
@@ -133,61 +132,12 @@ export default function ClassEdit() {
         return <div>No class data available</div>;
     }
 
-    // Create field props for each form field
-    const nameProps = createFieldProps('name');
-    const abbreviationProps = createFieldProps('abbreviation');
-    const hitDieProps = createFieldProps('hitDie');
-    const skillPointsProps = createFieldProps('skillPoints');
-    const descriptionProps = createFieldProps('description');
-
-    const isPrestigeProps = createCheckboxProps('isPrestige');
-    const isVisibleProps = createCheckboxProps('isVisible');
-    const canCastSpellsProps = createCheckboxProps('canCastSpells');
-
-    // Create listbox props for hit die
-    const hitDieListboxProps = {
-        value: formData.hitDie,
-        onChange: (value: string | number | null) => {
-            const numValue = value as number;
-            setFormData(prev => ({ ...prev, hitDie: numValue }));
-            validation.validateField('hitDie', numValue);
-        },
-        error: validation.getError('hitDie'),
-        hasError: validation.hasError('hitDie')
-    };
-
-    // Create listbox props for edition
-    const editionListboxProps = {
-        value: formData.editionId,
-        onChange: (value: string | number | null) => {
-            const numValue = value as number;
-            setFormData(prev => ({ ...prev, editionId: numValue }));
-            validation.validateField('editionId', numValue);
-        },
-        error: validation.getError('editionId'),
-        hasError: validation.hasError('editionId')
-    };
-
-    // Create listbox props for casting ability
-    const castingAbilityListboxProps = {
-        value: formData.castingAbilityId,
-        onChange: (value: string | number | null) => {
-            setFormData(prev => ({ ...prev, castingAbilityId: value as number | null }));
-            validation.validateField('castingAbilityId', value);
-        },
-        error: validation.getError('castingAbilityId'),
-        hasError: validation.hasError('castingAbilityId')
-    };
-
     return (
         <div className="max-w-4xl mx-auto p-6">
             <div className="mb-6">
                 <h1 className="text-3xl font-bold">
                     {id === 'new' ? 'Create New Class' : 'Edit Class'}
                 </h1>
-                <p className="text-gray-600 dark:text-gray-400">
-                    {id === 'new' ? 'Create a new character class' : 'Modify class details'}
-                </p>
             </div>
 
             {message && (
@@ -204,119 +154,109 @@ export default function ClassEdit() {
 
             <ValidatedForm
                 onSubmit={HandleSubmit}
-                validationState={validation.validationState}
+                validationState={form.validation.validationState}
                 isLoading={isLoading}
+                formData={formData}
+                setFormData={setFormData}
+                validation={form.validation}
             >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Basic Information */}
-                    <div className="space-y-4">
-                        <h2 className="text-xl font-semibold">Basic Information</h2>
-
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div className="flex flex-col gap-2">
                         <ValidatedInput
-                            name="name"
+                            field="name"
                             label="Class Name"
                             type="text"
                             required
+                            componentExtraClassName="flex items-center gap-2"
+                            labelExtraClassName="w-2/7"
+                            inputExtraClassName="w-5/7"
                             placeholder="e.g., Wizard, Fighter, Cleric"
-                            {...nameProps}
                         />
-
                         <ValidatedInput
-                            name="abbreviation"
+                            field="abbreviation"
                             label="Abbreviation"
                             type="text"
                             required
+                            componentExtraClassName="flex items-center gap-2"
+                            labelExtraClassName="w-2/7"
+                            inputExtraClassName="w-5/7"
                             placeholder="e.g., Wiz, Ftr, Clr"
-                            {...abbreviationProps}
                         />
-
-                        <ValidatedListbox
-                            name="editionId"
+                        <CustomSelect
                             label="Edition"
+                            required
+                            componentExtraClassName="flex items-center gap-2"
+                            labelExtraClassName="w-2/7"
+                            itemExtraClassName="w-24"
+                            itemTextExtraClassName="w-16"
                             value={formData.editionId}
-                            onChange={(value) => setFormData(prev => ({ ...prev, editionId: value as number }))}
-                            options={EDITION_SELECT_LIST}
-                            required
-                            {...editionListboxProps}
+                            onValueChange={(value) => setFormData(prev => ({ ...prev, editionId: value as number }))}
+                            options={EDITION_SELECT_LIST_FULL.map(edition => ({ value: edition.value, label: edition.label }))}
+                            placeholder="Select edition"
                         />
-
-                        <ValidatedListbox
-                            name="hitDie"
+                        <CustomSelect
                             label="Hit Die"
-                            value={formData.hitDie}
-                            onChange={(value) => setFormData(prev => ({ ...prev, hitDie: value as number }))}
-                            options={RPG_DICE_SELECT_LIST}
                             required
-                            {...hitDieListboxProps}
+                            componentExtraClassName="flex items-center gap-2"
+                            labelExtraClassName="w-2/7"
+                            itemExtraClassName="w-24"
+                            itemTextExtraClassName="w-16"
+                            value={formData.hitDie}
+                            onValueChange={(value) => setFormData(prev => ({ ...prev, hitDie: value as number }))}
+                            options={RPG_DICE_SELECT_LIST.map(die => ({ value: die.value, label: die.label }))}
+                            placeholder="Select hit die"
                         />
-
                         <ValidatedInput
-                            name="skillPoints"
-                            label="Skill Points per Level"
+                            field="skillPoints"
+                            label="Skill Point Base"
                             type="number"
                             min={0}
-                            max={100}
+                            max={10}
                             step={1}
-                            {...skillPointsProps}
+                            componentExtraClassName="flex items-center gap-2"
+                            labelExtraClassName="w-2/7"
                         />
                     </div>
-
-                    {/* Class Properties */}
-                    <div className="space-y-4">
-                        <h2 className="text-xl font-semibold">Class Properties</h2>
-
-                        <ValidatedCheckbox
-                            name="isPrestige"
+                    <div className="flex justify-end">
+                        <div className="flex flex-col gap-2">
+                        <CustomCheckbox
                             label="Prestige Class"
-                            {...isPrestigeProps}
+                            checked={formData.isPrestige as boolean}
+                            onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isPrestige: checked }))}
                         />
-
-                        <ValidatedCheckbox
-                            name="isVisible"
-                            label="Visible to Players"
-                            {...isVisibleProps}
+                        <CustomCheckbox
+                            label="Visible in Lists"
+                            checked={formData.isVisible as boolean}
+                            onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isVisible: checked }))}
                         />
-
-                        <ValidatedCheckbox
-                            name="canCastSpells"
+                        <CustomCheckbox
                             label="Can Cast Spells"
-                            {...canCastSpellsProps}
+                            checked={formData.canCastSpells as boolean}
+                            onCheckedChange={(checked) => setFormData(prev => ({ ...prev, canCastSpells: checked }))}
                         />
-
                         {formData.canCastSpells && (
-                            <>
-                                <ValidatedListbox
-                                    name="castingAbilityId"
-                                    label="Casting Ability"
-                                    value={formData.castingAbilityId}
-                                    onChange={(value) => setFormData(prev => ({ ...prev, castingAbilityId: value as number | null }))}
-                                    options={ABILITY_SELECT_LIST}
-                                    placeholder="Select casting ability"
-                                    {...castingAbilityListboxProps}
-                                />
-                            </>
+                            <CustomSelect
+                                label="Casting Ability"
+                                value={formData.castingAbilityId}
+                                onValueChange={(value) => setFormData(prev => ({ ...prev, castingAbilityId: value as number | null }))}
+                                options={ABILITY_SELECT_LIST.map(ability => ({ value: ability.value, label: ability.label }))}
+                                placeholder="Select casting ability"
+                            />
                         )}
                     </div>
+                    </div>
                 </div>
-
-                {/* Description */}
                 <div className="mt-6">
-                    <h2 className="text-xl font-semibold mb-4">Description</h2>
                     <div className="space-y-2">
-                        <label htmlFor="description" className="block font-medium">
-                            Class Description
-                        </label>
                         <MarkdownEditor
                             value={formData.description || ''}
                             onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
                         />
-                        {validation.getError('description') && (
-                            <span className="text-red-500 text-sm">{validation.getError('description')}</span>
+                        {form.validation.getError('description') && (
+                            <span className="text-red-500 text-sm">{form.validation.getError('description')}</span>
                         )}
                     </div>
                 </div>
-
-                {/* Action Buttons */}
                 <div className="flex justify-end space-x-4 mt-8">
                     <button
                         type="button"
@@ -329,7 +269,7 @@ export default function ClassEdit() {
                     <button
                         type="submit"
                         className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isLoading || validation.validationState.hasErrors}
+                        disabled={isLoading || form.validation.validationState.hasErrors}
                     >
                         {isLoading ? 'Saving...' : id === 'new' ? 'Create Class' : 'Update Class'}
                     </button>

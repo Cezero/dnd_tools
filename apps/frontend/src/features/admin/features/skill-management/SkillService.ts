@@ -8,6 +8,8 @@ import {
     UpdateSkillSchema,
     SkillQueryResponseSchema,
     SkillSchema,
+    UpdateResponseSchema,
+    CreateResponseSchema,
 } from '@shared/schema';
 
 /**
@@ -51,27 +53,27 @@ export const SkillService = {
     }),
 
     // Create skill
-    createSkill: typedApi<typeof CreateSkillSchema, typeof SkillSchema>({
+    createSkill: typedApi<typeof CreateSkillSchema, typeof CreateResponseSchema>({
         path: '/skills',
         method: 'POST',
         requestSchema: CreateSkillSchema,
-        responseSchema: SkillSchema,
+        responseSchema: CreateResponseSchema,
     }),
 
     // Update skill with path parameter
-    updateSkill: typedApi<typeof UpdateSkillSchema, typeof SkillSchema, typeof SkillIdParamSchema>({
+    updateSkill: typedApi<typeof UpdateSkillSchema, typeof UpdateResponseSchema, typeof SkillIdParamSchema>({
         path: '/skills/:id',
         method: 'PUT',
         requestSchema: UpdateSkillSchema,
         paramsSchema: SkillIdParamSchema,
-        responseSchema: SkillSchema,
+        responseSchema: UpdateResponseSchema,
     }),
 
     // Delete skill with path parameter
-    deleteSkill: typedApi<undefined, z.ZodObject<Record<string, never>>, typeof SkillIdParamSchema>({
+    deleteSkill: typedApi<undefined, typeof UpdateResponseSchema, typeof SkillIdParamSchema>({
         path: '/skills/:id',
         method: 'DELETE',
         paramsSchema: SkillIdParamSchema,
-        responseSchema: z.object({}),
+        responseSchema: UpdateResponseSchema,
     }),
 }; 

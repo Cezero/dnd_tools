@@ -2,18 +2,19 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 
+import { Select } from '@base-ui-components/react/select';
+import { Checkbox } from '@base-ui-components/react/checkbox';
+import { ChevronUpDownIcon } from '@heroicons/react/24/solid';
 import {
     ValidatedForm,
     ValidatedInput,
-    ValidatedCheckbox,
-    ValidatedListbox,
     useValidatedForm
 } from '@/components/forms';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { SkillService } from '@/features/admin/features/skill-management/SkillService';
 import { CreateSkillSchema, UpdateSkillSchema } from '@shared/schema';
-import { ABILITY_MAP } from '@shared/static-data';
-
+import { ABILITY_MAP, ABILITY_SELECT_LIST, SKILL_RETRY_TYPE_MAP } from '@shared/static-data';
+import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
 
 
 // Type definitions for the form state
@@ -54,7 +55,7 @@ export function SkillEdit() {
     const [formData, setFormData] = useState<SkillFormData>(initialFormData);
 
     // Use the validated form hook
-    const { validation, createFieldProps, createCheckboxProps } = useValidatedForm(
+    const form = useValidatedForm(
         schema,
         formData,
         setFormData,
@@ -93,7 +94,7 @@ export function SkillEdit() {
         setError(null);
 
         // Validate the entire form
-        if (!validation.validateForm(formData)) {
+        if (!form.validation.validateForm(formData)) {
             return;
         }
 
@@ -137,35 +138,12 @@ export function SkillEdit() {
         return <div>No skill data available</div>;
     }
 
-    // Create field props for each form field
-    const nameProps = createFieldProps('name');
-    const retryDescriptionProps = createFieldProps('retryDescription');
-    const untrainedNotesProps = createFieldProps('untrainedNotes');
-
-    const trainedOnlyProps = createCheckboxProps('trainedOnly');
-    const affectedByArmorProps = createCheckboxProps('affectedByArmor');
-
-    // Create listbox props for ability
-    const abilityListboxProps = {
-        value: formData.abilityId,
-        onChange: (value: string | number | null) => {
-            const numValue = value as number;
-            setFormData(prev => ({ ...prev, abilityId: numValue }));
-            validation.validateField('abilityId', numValue);
-        },
-        error: validation.getError('abilityId'),
-        hasError: validation.hasError('abilityId')
-    };
-
     return (
         <div className="max-w-4xl mx-auto p-6">
             <div className="mb-6">
                 <h1 className="text-3xl font-bold">
                     {id === 'new' ? 'Create New Skill' : 'Edit Skill'}
                 </h1>
-                <p className="text-gray-600 dark:text-gray-400">
-                    {id === 'new' ? 'Create a new skill' : 'Modify skill details'}
-                </p>
             </div>
 
             {message && (
@@ -182,152 +160,136 @@ export function SkillEdit() {
 
             <ValidatedForm
                 onSubmit={HandleSubmit}
-                validationState={validation.validationState}
+                validationState={form.validation.validationState}
                 isLoading={isLoading}
+                formData={formData}
+                setFormData={setFormData}
+                validation={form.validation}
             >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Basic Information */}
-                    <div className="space-y-4">
-                        <h2 className="text-xl font-semibold">Basic Information</h2>
-
-                        <ValidatedInput
-                            name="name"
-                            label="Skill Name"
-                            type="text"
-                            required
-                            placeholder="e.g., Acrobatics, Diplomacy, Stealth"
-                            {...nameProps}
-                        />
-
-                        <ValidatedListbox
-                            name="abilityId"
-                            label="Ability Score"
-                            value={formData.abilityId}
-                            onChange={(value) => setFormData(prev => ({ ...prev, abilityId: value as number }))}
-                            options={Object.values(ABILITY_MAP).map(ability => ({ value: ability.id, label: ability.name }))}
-                            required
-                            {...abilityListboxProps}
-                        />
-
-                        <ValidatedCheckbox
-                            name="trainedOnly"
-                            label="Trained Only"
-                            {...trainedOnlyProps}
-                        />
-
-                        <ValidatedCheckbox
-                            name="affectedByArmor"
-                            label="Armor Check Penalty"
-                            {...affectedByArmorProps}
-                        />
-                    </div>
-
-                    {/* Skill Properties */}
-                    <div className="space-y-4">
-                        <h2 className="text-xl font-semibold">Skill Properties</h2>
-
+                <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-2">
                         <div className="flex items-center gap-2">
-                            <div className="flex items-center w-30">
-                                <input
-                                    type="checkbox"
-                                    id="retryTypeId"
-                                    name="retryTypeId"
-                                    checked={!!formData.retryTypeId}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, retryTypeId: e.target.checked ? 1 : null }))}
-                                    className="mr-2"
-                                />
-                                <label htmlFor="retryTypeId" className="font-medium">Try Again:</label>
-                            </div>
                             <ValidatedInput
-                                name="retryDescription"
-                                label=""
+                                field="name"
+                                label="Skill Name"
                                 type="text"
-                                placeholder="Description of retry conditions"
-                                {...retryDescriptionProps}
+                                componentExtraClassName="flex items-center gap-2"
+                                labelExtraClassName="w-25"
+                                inputExtraClassName="w-auto"
+                                required
+                                placeholder="e.g., Acrobatics, Diplomacy, Stealth"
                             />
+                            <div className="flex flex-col gap-2">
+                                <CustomSelect
+                                    label="Ability"
+                                    labelExtraClassName="w-15"
+                                    itemExtraClassName="w-18"
+                                    itemTextExtraClassName="w-10"
+                                    componentExtraClassName="w-30 flex items-center gap-2"
+                                    options={ABILITY_SELECT_LIST}
+                                    value={formData.abilityId}
+                                    onValueChange={(value) => setFormData(prev => ({ ...prev, abilityId: value as number }))}
+                                />
+                            </div>
                         </div>
 
-                        <ValidatedInput
-                            name="untrainedNotes"
-                            label="Untrained Description"
-                            type="text"
-                            placeholder="What happens when used untrained"
-                            {...untrainedNotesProps}
-                        />
+                    </div>
+                    <div className="space-y-2 flex justify-end">
+                        <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-2">
+                                <CustomCheckbox
+                                    label="Trained Only"
+                                    checked={formData.trainedOnly as boolean}
+                                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, trainedOnly: checked }))}
+                                />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <CustomCheckbox
+                                    label="Armor Check Penalty"
+                                    checked={formData.affectedByArmor as boolean}
+                                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, affectedByArmor: checked }))}
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
+                <div className="space-y-2">
+                <MarkdownEditor
+                        value={formData.description || ''}
+                        id="description"
+                        label="Description"
+                        onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
+                    />
+                    {form.validation.getError('description') && (
+                        <span className="text-red-500 text-sm">{form.validation.getError('description')}</span>
+                    )}
+                    <CustomSelect
+                        label="Try Again"
+                        labelExtraClassName="w-20"
+                        itemTextExtraClassName="w-15"
+                        componentExtraClassName="flex items-center gap-2"
+                        options={Object.values(SKILL_RETRY_TYPE_MAP).map((type, index) => ({ value: index, label: type }))}
+                        value={formData.retryTypeId}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, retryTypeId: value as number }))}
+                    />
+                    <MarkdownEditor
+                        value={formData.retryDescription || ''}
+                        id="retry"
+                        label="Retry"
+                        onChange={(value) => setFormData(prev => ({ ...prev, retryDescription: value }))}
+                    />
+                    {form.validation.getError('retryDescription') && (
+                        <span className="text-red-500 text-sm">{form.validation.getError('retryDescription')}</span>
+                    )}
 
-                {/* Descriptions */}
-                <div className="mt-6 space-y-6">
-                    <h2 className="text-xl font-semibold">Descriptions</h2>
+                    <MarkdownEditor
+                        value={formData.untrainedNotes || ''}
+                        id="untrained"
+                        label="Untrained"
+                        onChange={(value) => setFormData(prev => ({ ...prev, untrainedNotes: value }))}
+                    />
+                    {form.validation.getError('untrainedNotes') && (
+                        <span className="text-red-500 text-sm">{form.validation.getError('untrainedNotes')}</span>
+                    )}
 
-                    <div className="space-y-2">
-                        <label htmlFor="description" className="block font-medium">
-                            Skill Description
-                        </label>
-                        <MarkdownEditor
-                            value={formData.description || ''}
-                            onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
-                        />
-                        {validation.getError('description') && (
-                            <span className="text-red-500 text-sm">{validation.getError('description')}</span>
-                        )}
-                    </div>
-
-                    <div className="space-y-2">
-                        <label htmlFor="checkDescription" className="block font-medium">
-                            Skill Check Description
-                        </label>
-                        <MarkdownEditor
-                            value={formData.checkDescription || ''}
-                            onChange={(value) => setFormData(prev => ({ ...prev, checkDescription: value }))}
-                        />
-                        {validation.getError('checkDescription') && (
-                            <span className="text-red-500 text-sm">{validation.getError('checkDescription')}</span>
-                        )}
-                    </div>
-
-                    <div className="space-y-2">
-                        <label htmlFor="actionDescription" className="block font-medium">
-                            Action Description
-                        </label>
-                        <MarkdownEditor
-                            value={formData.actionDescription || ''}
-                            onChange={(value) => setFormData(prev => ({ ...prev, actionDescription: value }))}
-                        />
-                        {validation.getError('actionDescription') && (
-                            <span className="text-red-500 text-sm">{validation.getError('actionDescription')}</span>
-                        )}
-                    </div>
-
-                    <div className="space-y-2">
-                        <label htmlFor="synergyNotes" className="block font-medium">
-                            Synergy Notes
-                        </label>
-                        <MarkdownEditor
-                            value={formData.synergyNotes || ''}
-                            onChange={(value) => setFormData(prev => ({ ...prev, synergyNotes: value }))}
-                        />
-                        {validation.getError('synergyNotes') && (
-                            <span className="text-red-500 text-sm">{validation.getError('synergyNotes')}</span>
-                        )}
-                    </div>
-
-                    <div className="space-y-2">
-                        <label htmlFor="specialNotes" className="block font-medium">
-                            Special Notes
-                        </label>
-                        <MarkdownEditor
-                            value={formData.specialNotes || ''}
-                            onChange={(value) => setFormData(prev => ({ ...prev, specialNotes: value }))}
-                        />
-                        {validation.getError('specialNotes') && (
-                            <span className="text-red-500 text-sm">{validation.getError('specialNotes')}</span>
-                        )}
-                    </div>
+                    <MarkdownEditor
+                        value={formData.checkDescription || ''}
+                        id="check"
+                        label="Check"
+                        onChange={(value) => setFormData(prev => ({ ...prev, checkDescription: value }))}
+                    />
+                    {form.validation.getError('checkDescription') && (
+                        <span className="text-red-500 text-sm">{form.validation.getError('checkDescription')}</span>
+                    )}
+                    <MarkdownEditor
+                        value={formData.actionDescription || ''}
+                        id="action"
+                        label="Action"
+                        onChange={(value) => setFormData(prev => ({ ...prev, actionDescription: value }))}
+                    />
+                    {form.validation.getError('actionDescription') && (
+                        <span className="text-red-500 text-sm">{form.validation.getError('actionDescription')}</span>
+                    )}
+                    <MarkdownEditor
+                        value={formData.synergyNotes || ''}
+                        id="synergy"
+                        label="Synergy"
+                        onChange={(value) => setFormData(prev => ({ ...prev, synergyNotes: value }))}
+                    />
+                    {form.validation.getError('synergyNotes') && (
+                        <span className="text-red-500 text-sm">{form.validation.getError('synergyNotes')}</span>
+                    )}
+                    <MarkdownEditor
+                        value={formData.specialNotes || ''}
+                        id="special"
+                        label="Special"
+                        onChange={(value) => setFormData(prev => ({ ...prev, specialNotes: value }))}
+                    />
+                    {form.validation.getError('specialNotes') && (
+                        <span className="text-red-500 text-sm">{form.validation.getError('specialNotes')}</span>
+                    )}
                 </div>
 
-                {/* Action Buttons */}
                 <div className="flex justify-end space-x-4 mt-8">
                     <button
                         type="button"
@@ -340,7 +302,7 @@ export function SkillEdit() {
                     <button
                         type="submit"
                         className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isLoading || validation.validationState.hasErrors}
+                        disabled={isLoading || form.validation.validationState.hasErrors}
                     >
                         {isLoading ? 'Saving...' : id === 'new' ? 'Create Skill' : 'Update Skill'}
                     </button>

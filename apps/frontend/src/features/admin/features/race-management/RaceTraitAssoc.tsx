@@ -8,30 +8,37 @@ import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { RaceTraitService } from '@/features/admin/features/race-management/RaceTraitService';
 import { RaceTraitQuerySchema, RaceTraitSchema } from '@shared/schema';
 
-
 // Type for race trait items
 type RaceTraitItem = z.infer<typeof RaceTraitSchema>;
+
+// Type for the selected trait data
+type SelectedTraitData = {
+    slug: string;
+    description: string;
+    hasValue: boolean;
+    value: string;
+};
+
+// Props interface for RaceTraitAssoc component
+interface RaceTraitAssocProps {
+    /** Whether the dialog is open */
+    isOpen: boolean;
+    /** Function to call when the dialog is closed */
+    onClose: () => void;
+    /** Function to call with the selected trait data when a trait is chosen */
+    onSave: (traits: SelectedTraitData[]) => void;
+    /** Array of trait slugs already associated with the race */
+    initialSelectedTraitIds: string[];
+    /** The ID of the race currently being edited, used for returning to the correct RaceEdit page */
+    raceId?: number;
+}
 
 /**
  * Component for associating a race trait with a race. This dialog allows selecting an existing trait
  * from a list to associate it with a race. When a trait is selected, the dialog closes and the
  * selected trait's information is passed to the `onSave` handler.
- *
- * @param {object} props - The component props.
- * @param {boolean} props.isOpen - Whether the dialog is open.
- * @param {function} props.onClose - Function to call when the dialog is closed.
- * @param {function} props.onSave - Function to call with the selected trait data when a trait is chosen.
- * @param {Array<string>} props.initialSelectedTraitIds - Array of trait slugs already associated with the race.
- * @param {number} [props.raceId] - The ID of the race currently being edited, used for returning to the correct RaceEdit page.
- * @returns {JSX.Element|null} The RaceTraitAssoc component or null if not open.
  */
-export function RaceTraitAssoc({ isOpen, onClose, onSave, initialSelectedTraitIds = [], raceId }: {
-    isOpen: boolean;
-    onClose: () => void;
-    onSave: (traits: Array<{ slug: string; name: string; description: string; hasValue: boolean; value: string }>) => void;
-    initialSelectedTraitIds: string[];
-    raceId?: number;
-}) {
+export function RaceTraitAssoc({ isOpen, onClose, onSave, initialSelectedTraitIds = [], raceId }: RaceTraitAssocProps) {
     const navigate = useNavigate();
     const [currentSelectedTraitIds, setCurrentSelectedTraitIds] = useState<string[]>(initialSelectedTraitIds);
     const [availableTraits, setAvailableTraits] = useState<RaceTraitItem[]>([]);
@@ -44,29 +51,24 @@ export function RaceTraitAssoc({ isOpen, onClose, onSave, initialSelectedTraitId
         slug: {
             label: 'Trait Slug',
             sortable: true,
-            filterable: true,
-            filterType: 'input',
-            filterLabel: 'Search Traits',
-            multiColumn: ['slug', 'name', 'description'],
-            alwaysVisible: true,
-        },
-        name: {
-            label: 'Trait Name',
-            sortable: true,
-            filterable: false
+            filter: {
+                type: 'input',
+                label: 'Search Traits',
+                multiColumn: ['slug', 'description'],
+                alwaysVisible: true
+            },
+            isDefault: true,
         },
         description: {
             label: 'Description',
             sortable: false,
-            filterable: false
+            isDefault: true,
         },
     }), []);
 
     const renderTraitCell = useCallback((item: RaceTraitItem, columnId: string) => {
-        if (columnId === 'name') {
-            return item.name;
-        } else if (columnId === 'description') {
-            return <ProcessMarkdown markdown={item.description || ''} userVars={{ traitname: item.name || '' }} />;
+        if (columnId === 'description') {
+            return <ProcessMarkdown markdown={item.description || ''} />;
         } else if (columnId === 'slug') {
             return item.slug;
         }
@@ -83,7 +85,6 @@ export function RaceTraitAssoc({ isOpen, onClose, onSave, initialSelectedTraitId
             .filter(Boolean)
             .map(trait => ({
                 slug: trait!.slug,
-                name: trait!.name,
                 description: trait!.description,
                 hasValue: trait!.hasValue,
                 value: trait!.hasValue ? '' : '',

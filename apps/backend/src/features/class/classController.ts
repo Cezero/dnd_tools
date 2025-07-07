@@ -8,7 +8,8 @@ import {
     ClassQueryResponse,
     GetAllClassesResponse,
     CreateClassRequest,
-    UpdateClassRequest
+    UpdateClassRequest,
+    UpdateResponse
 } from '@shared/schema';
 
 import { classService } from './classService';
@@ -50,7 +51,7 @@ export async function CreateClass(req: ValidatedBodyT<CreateClassRequest>, res: 
 /**
  * Updates an existing class.
  */
-export async function UpdateClass(req: ValidatedParamsBodyT<ClassIdParamRequest, UpdateClassRequest>, res: Response) {
+export async function UpdateClass(req: ValidatedParamsBodyT<ClassIdParamRequest, UpdateClassRequest, UpdateResponse>, res: Response) {
     await classService.updateClass(req.params, req.body);
     res.status(200).json({message: 'Class updated successfully'});
 }

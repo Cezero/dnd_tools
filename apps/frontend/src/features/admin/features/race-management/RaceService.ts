@@ -1,14 +1,12 @@
-import { z } from 'zod';
-
 import { typedApi } from '@/services/Api';
 import {
     RaceQuerySchema,
     RaceIdParamSchema,
-    CreateRaceSchema,
     UpdateRaceSchema,
     RaceQueryResponseSchema,
-    RaceSchema,
-    RaceWithTraitsSchema,
+    GetRaceResponseSchema,
+    CreateResponseSchema,
+    UpdateResponseSchema,
 } from '@shared/schema';
 
 /**
@@ -44,35 +42,35 @@ export const RaceService = {
     }),
 
     // Get race by ID with path parameter
-    getRaceById: typedApi<undefined, typeof RaceWithTraitsSchema, typeof RaceIdParamSchema>({
+    getRaceById: typedApi<undefined, typeof GetRaceResponseSchema, typeof RaceIdParamSchema>({
         path: '/races/:id',
         method: 'GET',
         paramsSchema: RaceIdParamSchema,
-        responseSchema: RaceWithTraitsSchema,
+        responseSchema: GetRaceResponseSchema,
     }),
 
     // Create race
-    createRace: typedApi<typeof CreateRaceSchema, typeof RaceSchema>({
+    createRace: typedApi<typeof GetRaceResponseSchema, typeof CreateResponseSchema>({
         path: '/races',
         method: 'POST',
-        requestSchema: CreateRaceSchema,
-        responseSchema: RaceSchema,
+        requestSchema: GetRaceResponseSchema,
+        responseSchema: CreateResponseSchema,
     }),
 
     // Update race with path parameter
-    updateRace: typedApi<typeof UpdateRaceSchema, typeof RaceSchema, typeof RaceIdParamSchema>({
+    updateRace: typedApi<typeof UpdateRaceSchema, typeof UpdateResponseSchema, typeof RaceIdParamSchema>({
         path: '/races/:id',
         method: 'PUT',
         requestSchema: UpdateRaceSchema,
         paramsSchema: RaceIdParamSchema,
-        responseSchema: RaceSchema,
+        responseSchema: UpdateResponseSchema,
     }),
 
     // Delete race with path parameter
-    deleteRace: typedApi<undefined, z.ZodObject<Record<string, never>>, typeof RaceIdParamSchema>({
+    deleteRace: typedApi<undefined, typeof UpdateResponseSchema, typeof RaceIdParamSchema>({
         path: '/races/:id',
         method: 'DELETE',
         paramsSchema: RaceIdParamSchema,
-        responseSchema: z.object({}),
+        responseSchema: UpdateResponseSchema,
     }),
 };

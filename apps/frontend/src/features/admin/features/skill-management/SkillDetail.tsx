@@ -4,12 +4,12 @@ import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthAuto } from '@/components/auth';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { SkillService } from '@/features/admin/features/skill-management/SkillService';
-import { SkillResponse } from '@shared/schema';
-import { ABILITY_MAP } from '@shared/static-data';
+import { GetSkillResponse } from '@shared/schema';
+import { ABILITY_MAP, SKILL_RETRY_TYPE_MAP } from '@shared/static-data';
 
 export function SkillDetail(): React.JSX.Element {
     const { id } = useParams();
-    const [skill, setSkill] = useState<SkillResponse | null>(null);
+    const [skill, setSkill] = useState<GetSkillResponse | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const { isAdmin } = useAuthAuto();
     const navigate = useNavigate();
@@ -67,21 +67,23 @@ export function SkillDetail(): React.JSX.Element {
                         </div>
                     </div>
                     <div>
-                        <div className="mt-3 p-2 w-full rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert">
-                            <ProcessMarkdown markdown={skill.description} />
+                        <div className="w-full mb-2">
+                            <ProcessMarkdown markdown={skill.description} id='description' />
                         </div>
-                        <div className="font-bold">
-                            Check:
-                        </div>
-                        <div className="mt-0 p-2 w-full rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert">
-                            <ProcessMarkdown markdown={skill.checkDescription} />
+                        <div className="flex items-start mb-2">
+                            <div className="font-bold w-30">
+                                Check:
+                            </div>
+                            <div className="w-4/5">
+                                <ProcessMarkdown markdown={skill.checkDescription} id='check' />
+                            </div>
                         </div>
                         <div className="flex items-start mb-2">
                             <div className="font-bold w-30">
                                 Action:
                             </div>
                             <div className="w-4/5">
-                                <ProcessMarkdown markdown={skill.actionDescription} />
+                                <ProcessMarkdown markdown={skill.actionDescription} id='action' />
                             </div>
                         </div>
                         {skill.retryDescription && (
@@ -91,11 +93,11 @@ export function SkillDetail(): React.JSX.Element {
                                         Try Again:
                                     </div>
                                     <div>
-                                        {skill.retryTypeId ? 'Yes' : 'No'}
+                                        {SKILL_RETRY_TYPE_MAP[skill.retryTypeId]}
                                     </div>
                                 </div>
                                 <div className="w-4/5">
-                                    {skill.retryDescription}
+                                    <ProcessMarkdown markdown={skill.retryDescription} id='retry' />
                                 </div>
                             </div>)}
                         <div className="flex items-start mb-2">
@@ -103,7 +105,7 @@ export function SkillDetail(): React.JSX.Element {
                                 Special:
                             </div>
                             <div className="w-4/5">
-                                <ProcessMarkdown markdown={skill.specialNotes} />
+                                <ProcessMarkdown markdown={skill.specialNotes} id='special' />
                             </div>
                         </div>
                         {skill.synergyNotes && (
@@ -112,7 +114,7 @@ export function SkillDetail(): React.JSX.Element {
                                     Synergy:
                                 </div>
                                 <div className="w-4/5">
-                                    <ProcessMarkdown markdown={skill.synergyNotes} />
+                                    <ProcessMarkdown markdown={skill.synergyNotes} id='synergy' />
                                 </div>
                             </div>)}
                         {skill.untrainedNotes && (
@@ -121,7 +123,7 @@ export function SkillDetail(): React.JSX.Element {
                                     Untrained:
                                 </div>
                                 <div className="w-4/5">
-                                    {skill.untrainedNotes}
+                                    <ProcessMarkdown markdown={skill.untrainedNotes} id='untrained' />
                                 </div>
                             </div>)}
                     </div>

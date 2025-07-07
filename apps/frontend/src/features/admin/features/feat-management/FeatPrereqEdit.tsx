@@ -2,10 +2,11 @@ import { Dialog } from '@base-ui-components/react/dialog';
 import React, { useState, useEffect, useCallback, Fragment } from 'react';
 import { z } from 'zod';
 
+import { Select } from '@base-ui-components/react/select';
+import { ChevronUpDownIcon } from '@heroicons/react/24/solid';
 import {
     ValidatedForm,
     ValidatedInput,
-    ValidatedListbox,
     useValidatedForm
 } from '@/components/forms';
 import { FeatPrerequisiteSchema } from '@shared/schema';
@@ -138,15 +139,42 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
                             isLoading={isLoading}
                         >
                             <div className="space-y-4">
-                                <ValidatedListbox
-                                    name="typeId"
-                                    label="Prerequisite Type"
-                                    value={formData.typeId}
-                                    onChange={(value) => setFormData(prev => ({ ...prev, typeId: value as number | null }))}
-                                    options={FEAT_PREREQUISITE_TYPE_LIST.map(type => ({ value: type.id, label: type.name }))}
-                                    placeholder="Select a prerequisite type"
-                                    {...typeListboxProps}
-                                />
+                                <div className="flex flex-col">
+                                    <label htmlFor="typeId" className="block font-medium">
+                                        Prerequisite Type
+                                    </label>
+                                    <Select.Root
+                                        value={formData.typeId}
+                                        onValueChange={(value) => setFormData(prev => ({ ...prev, typeId: value as number | null }))}
+                                        items={FEAT_PREREQUISITE_TYPE_LIST.map(type => ({ value: type.id, label: type.name }))}
+                                    >
+                                        <Select.Trigger className="relative w-full cursor-default rounded-md bg-white py-2 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-gray-100 dark:ring-gray-600">
+                                            <Select.Value>
+                                                {(value) => value !== null ? FEAT_PREREQUISITE_TYPE_LIST.find(type => type.id === value)?.name : "Select a prerequisite type"}
+                                            </Select.Value>
+                                            <Select.Icon>
+                                                <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                                            </Select.Icon>
+                                        </Select.Trigger>
+                                        <Select.Portal>
+                                            <Select.Positioner>
+                                                <Select.Popup className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm dark:bg-gray-800 dark:text-gray-100">
+                                                    {FEAT_PREREQUISITE_TYPE_LIST.map(type => (
+                                                        <Select.Item
+                                                            key={type.id}
+                                                            value={type.id}
+                                                            className="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 dark:text-gray-100 hover:bg-blue-600 hover:text-white data-[highlighted]:bg-blue-600 data-[highlighted]:text-white"
+                                                        >
+                                                            <Select.ItemText>
+                                                                {type.name}
+                                                            </Select.ItemText>
+                                                        </Select.Item>
+                                                    ))}
+                                                </Select.Popup>
+                                            </Select.Positioner>
+                                        </Select.Portal>
+                                    </Select.Root>
+                                </div>
 
                                 <ValidatedInput
                                     name="referenceId"

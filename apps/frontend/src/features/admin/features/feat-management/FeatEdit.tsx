@@ -3,18 +3,19 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 
+import { Select } from '@base-ui-components/react/select';
+import { Checkbox } from '@base-ui-components/react/checkbox';
+import { ChevronUpDownIcon } from '@heroicons/react/24/solid';
 import {
     ValidatedForm,
     ValidatedInput,
-    ValidatedCheckbox,
-    ValidatedListbox,
     useValidatedForm
 } from '@/components/forms';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { FeatBenefitEdit } from '@/features/admin/features/feat-management/FeatBenefitEdit';
 import { FeatPrereqEdit } from '@/features/admin/features/feat-management/FeatPrereqEdit';
 import { FeatService } from '@/features/admin/features/feat-management/FeatService';
-import { FeatOptions } from '@/lib/FeatUtil';
+import { FeatOptions } from '@/features/admin/features/feat-management/FeatUtil';
 import { CreateFeatSchema, FeatBenefitSchema, FeatPrerequisiteSchema, UpdateFeatSchema } from '@shared/schema';
 import { FEAT_PREREQUISITE_TYPES, FEAT_TYPE_LIST, FEAT_BENEFIT_TYPE_BY_ID } from '@shared/static-data';
 
@@ -62,7 +63,7 @@ export function FeatEdit() {
     const [formData, setFormData] = useState<FeatFormData>(initialFormData);
 
     // Use the validated form hook
-    const { validation, createFieldProps, createCheckboxProps } = useValidatedForm(
+    const { validation, createFieldProps } = useValidatedForm(
         schema,
         formData,
         setFormData,
@@ -72,6 +73,12 @@ export function FeatEdit() {
             debounceMs: 300
         }
     );
+
+    // Checkbox handlers
+    const handleCheckboxChange = (name: string) => (checked: boolean) => {
+        setFormData(prev => ({ ...prev, [name]: checked }));
+        validation.validateField(name, checked);
+    };
 
     // FeatOptions doesn't need initialization - it's a static utility
     useEffect(() => {
@@ -245,14 +252,9 @@ export function FeatEdit() {
         value: formData.prerequisites as string || ''
     };
 
-    const repeatableProps = {
-        ...createCheckboxProps('repeatable'),
-        checked: formData.repeatable as boolean || false
-    };
-    const fighterBonusProps = {
-        ...createCheckboxProps('fighterBonus'),
-        checked: formData.fighterBonus as boolean || false
-    };
+    // Checkbox handlers for repeatable and fighterBonus
+    const handleRepeatableChange = handleCheckboxChange('repeatable');
+    const handleFighterBonusChange = handleCheckboxChange('fighterBonus');
 
     // Create listbox props for type
     const typeListboxProps = {
@@ -308,28 +310,64 @@ export function FeatEdit() {
                             {...nameProps}
                         />
 
-                        <ValidatedListbox
-                            name="typeId"
-                            label="Feat Type"
-                            value={formData.typeId}
-                            onChange={(value) => setFormData(prev => ({ ...prev, typeId: value as number }))}
-                            options={FEAT_TYPE_LIST.map(type => ({ value: type.id, label: type.name }))}
-                            required
-                            {...typeListboxProps}
-                        />
+                        <div className="flex flex-col">
+                            <label htmlFor="typeId" className="block font-medium">
+                                Feat Type
+                                <span className="text-red-500 ml-1">*</span>
+                            </label>
+                            <Select.Root
+                                value={formData.typeId}
+                                onValueChange={(value) => setFormData(prev => ({ ...prev, typeId: value as number }))}
+                                items={FEAT_TYPE_LIST.map(type => ({ value: type.id, label: type.name }))}
+                            >
+                                <Select.Trigger className="relative w-full cursor-default rounded-md bg-white py-2 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-gray-100 dark:ring-gray-600">
+                                    <Select.Value />
+                                    <Select.Icon>
+                                        <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                                    </Select.Icon>
+                                </Select.Trigger>
+                                <Select.Portal>
+                                    <Select.Positioner>
+                                        <Select.Popup className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm dark:bg-gray-800 dark:text-gray-100">
+                                            {FEAT_TYPE_LIST.map(type => (
+                                                <Select.Item
+                                                    key={type.id}
+                                                    value={type.id}
+                                                    className="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 dark:text-gray-100 hover:bg-blue-600 hover:text-white data-[highlighted]:bg-blue-600 data-[highlighted]:text-white"
+                                                >
+                                                    <Select.ItemText>
+                                                        {type.name}
+                                                    </Select.ItemText>
+                                                </Select.Item>
+                                            ))}
+                                        </Select.Popup>
+                                    </Select.Positioner>
+                                </Select.Portal>
+                            </Select.Root>
+                        </div>
 
                         <div className="space-y-2">
-                            <ValidatedCheckbox
-                                name="repeatable"
-                                label="Can be taken multiple times"
-                                {...repeatableProps}
-                            />
+                            <div className="flex items-center gap-2">
+                                <Checkbox.Root
+                                    checked={formData.repeatable as boolean}
+                                    onCheckedChange={handleRepeatableChange}
+                                    className="h-5 w-5 text-blue-600 rounded dark:bg-gray-700 dark:border-gray-600 accent-blue-600 checked:bg-blue-600 dark:checked:bg-blue-600"
+                                />
+                                <label htmlFor="repeatable" className="font-medium">
+                                    Can be taken multiple times
+                                </label>
+                            </div>
 
-                            <ValidatedCheckbox
-                                name="fighterBonus"
-                                label="Fighter Bonus Feat"
-                                {...fighterBonusProps}
-                            />
+                            <div className="flex items-center gap-2">
+                                <Checkbox.Root
+                                    checked={formData.fighterBonus as boolean}
+                                    onCheckedChange={handleFighterBonusChange}
+                                    className="h-5 w-5 text-blue-600 rounded dark:bg-gray-700 dark:border-gray-600 accent-blue-600 checked:bg-blue-600 dark:checked:bg-blue-600"
+                                />
+                                <label htmlFor="fighterBonus" className="font-medium">
+                                    Fighter Bonus Feat
+                                </label>
+                            </div>
                         </div>
                     </div>
 

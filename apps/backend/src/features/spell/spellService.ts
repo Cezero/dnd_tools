@@ -167,7 +167,6 @@ export const spellService: SpellService = {
                 }
             }
         });
-        console.log('[GetSpellById] spell', spell);
         return spell;
     },
 

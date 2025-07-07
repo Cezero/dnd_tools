@@ -3,28 +3,30 @@ import {
     UpdateRaceRequest,
     RaceQueryRequest,
     CreateRaceRequest,
-    RaceResponse,
     UpdateRaceTraitRequest,
     CreateRaceTraitRequest,
-    RaceTraitResponse,
     RaceIdParamRequest,
     RaceTraitSlugParamRequest,
     RaceQueryResponse,
     RaceTraitQueryResponse,
-    RaceTraitGetAllResponse
+    RaceTraitGetAllResponse,
+    GetRaceResponse,
+    GetRaceTraitResponse,
+    UpdateResponse,
+    CreateResponse
 } from '@shared/schema';
 
 // Service interface
 export interface RaceService {
     getRaces: (query: RaceQueryRequest) => Promise<RaceQueryResponse>;
-    getRaceById: (id: RaceIdParamRequest) => Promise<RaceResponse | null>;
-    createRace: (data: CreateRaceRequest) => Promise<{ id: number; message: string }>;
-    updateRace: (id: RaceIdParamRequest, data: UpdateRaceRequest) => Promise<{ message: string }>;
-    deleteRace: (id: RaceIdParamRequest) => Promise<{ message: string }>;
+    getRaceById: (id: RaceIdParamRequest) => Promise<GetRaceResponse | null>;
+    createRace: (data: CreateRaceRequest) => Promise<CreateResponse>;
+    updateRace: (id: RaceIdParamRequest, data: UpdateRaceRequest) => Promise<UpdateResponse>;
+    deleteRace: (id: RaceIdParamRequest) => Promise<UpdateResponse>;
     getRaceTraits: (query: RaceTraitQueryRequest) => Promise<RaceTraitQueryResponse>;
     getRaceTraitsList: () => Promise<RaceTraitGetAllResponse>;
-    getRaceTraitBySlug: (slug: RaceTraitSlugParamRequest) => Promise<RaceTraitResponse | null>;
-    createRaceTrait: (data: CreateRaceTraitRequest) => Promise<{ slug: string; message: string }>;
-    updateRaceTrait: (slug: RaceTraitSlugParamRequest, data: UpdateRaceTraitRequest) => Promise<{ message: string }>;
-    deleteRaceTrait: (slug: RaceTraitSlugParamRequest) => Promise<{ message: string }>;
+    getRaceTraitBySlug: (slug: RaceTraitSlugParamRequest) => Promise<GetRaceTraitResponse | null>;
+    createRaceTrait: (data: CreateRaceTraitRequest) => Promise<CreateResponse>;
+    updateRaceTrait: (slug: RaceTraitSlugParamRequest, data: UpdateRaceTraitRequest) => Promise<UpdateResponse>;
+    deleteRaceTrait: (slug: RaceTraitSlugParamRequest) => Promise<UpdateResponse>;
 }

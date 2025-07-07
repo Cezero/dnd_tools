@@ -5,7 +5,7 @@ import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
 import { COLUMN_DEFINITIONS } from '@/features/admin/features/skill-management/SkillConfig';
 import { SkillService } from '@/features/admin/features/skill-management/SkillService';
-import { SkillQuerySchema, SkillResponse } from '@shared/schema';
+import { SkillQuerySchema, SkillQueryResponseSchema, SkillQueryResponse, SkillInQueryResponse } from '@shared/schema';
 import { ABILITY_MAP } from '@shared/static-data';
 
 export function SkillList(): React.JSX.Element {
@@ -30,11 +30,11 @@ export function SkillList(): React.JSX.Element {
         }
     };
 
-    const RenderCell = (item: SkillResponse, columnId: string): React.ReactNode => {
+    const RenderCell = (item: SkillInQueryResponse, columnId: string): React.ReactNode => {
         const column = COLUMN_DEFINITIONS[columnId];
         if (!column) return null;
 
-        let cellContent: React.ReactNode = String(item[columnId as keyof SkillResponse] || '');
+        let cellContent: React.ReactNode = String(item[columnId as keyof SkillInQueryResponse] || '');
 
         if (columnId === 'name') {
             cellContent = (
@@ -87,7 +87,7 @@ export function SkillList(): React.JSX.Element {
                     New Skill
                 </button>
             </div>
-            <GenericList<SkillResponse>
+            <GenericList<SkillInQueryResponse>
                 storageKey="skills-list"
                 columnDefinitions={COLUMN_DEFINITIONS}
                 querySchema={SkillQuerySchema}
@@ -95,8 +95,8 @@ export function SkillList(): React.JSX.Element {
                 renderCell={RenderCell}
                 detailPagePath="/admin/skills/:id"
                 itemDesc="skill"
-                editHandler={(item: SkillResponse) => navigate(`/admin/skills/${item.id}/edit`)}
-                deleteHandler={(item: SkillResponse) => HandleDeleteSkill(item.id)}
+                editHandler={(item: SkillInQueryResponse) => navigate(`/admin/skills/${item.id}/edit`)}
+                deleteHandler={(item: SkillInQueryResponse) => HandleDeleteSkill(item.id)}
             />
         </div>
     );

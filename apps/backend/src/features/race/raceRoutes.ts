@@ -4,11 +4,11 @@ import {
     RaceQuerySchema,
     RaceIdParamSchema,
     RaceTraitSlugParamSchema,
-    CreateRaceSchema,
     UpdateRaceSchema,
     CreateRaceTraitSchema,
     UpdateRaceTraitSchema,
-    RaceTraitQuerySchema
+    RaceTraitQuerySchema,
+    GetRaceResponseSchema
 } from '@shared/schema';
 
 import {
@@ -29,10 +29,10 @@ const { router: RaceRouter, get, post, put, delete: deleteRoute } = buildValidat
 
 // Race Read Routes
 get('/', { query: RaceQuerySchema }, GetRaces);
-get('/:id', { params: RaceIdParamSchema }, GetRaceById);
+
 
 // Race Write Routes
-post('/', requireAdmin, { body: CreateRaceSchema }, CreateRace);
+post('/', requireAdmin, { body: GetRaceResponseSchema }, CreateRace);
 put('/:id', requireAdmin, { params: RaceIdParamSchema, body: UpdateRaceSchema }, UpdateRace);
 deleteRoute('/:id', requireAdmin, { params: RaceIdParamSchema }, DeleteRace);
 
@@ -40,7 +40,8 @@ deleteRoute('/:id', requireAdmin, { params: RaceIdParamSchema }, DeleteRace);
 get('/traits', { query: RaceTraitQuerySchema }, GetRaceTraits);
 get('/traits/list', {}, GetAllRaceTraits);
 get('/traits/:slug', { params: RaceTraitSlugParamSchema }, GetRaceTraitBySlug);
-
+// this has to be last because it conflicts with the race trait routes
+get('/:id', { params: RaceIdParamSchema }, GetRaceById);
 // Race Trait Write Routes
 post('/traits', requireAdmin, { body: CreateRaceTraitSchema }, CreateRaceTrait);
 put('/traits/:slug', requireAdmin, { params: RaceTraitSlugParamSchema, body: UpdateRaceTraitSchema }, UpdateRaceTrait);

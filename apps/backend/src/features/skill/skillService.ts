@@ -1,12 +1,12 @@
 import { PrismaClient, Prisma } from '@shared/prisma-client';
-import { CreateSkillRequest, SkillIdParamRequest, SkillQueryRequest, UpdateSkillRequest } from '@shared/schema';
+import { CreateResponse, CreateSkillRequest, GetSkillResponse, SkillIdParamRequest, SkillQueryRequest, SkillQueryResponse, UpdateResponse, UpdateSkillRequest } from '@shared/schema';
 
 import type { SkillService } from './types';
 
 const prisma = new PrismaClient();
 
 export const skillService: SkillService = {
-    async getSkills(query: SkillQueryRequest) {
+    async getSkills(query: SkillQueryRequest): Promise<SkillQueryResponse> {
         const skip = (query.page - 1) * query.limit;
 
         // Build where clause for filtering
@@ -46,21 +46,23 @@ export const skillService: SkillService = {
         };
     },
 
-    async getSkillById(id: SkillIdParamRequest) {
+    async getSkillById(id: SkillIdParamRequest): Promise<GetSkillResponse | null> {
         const skill = await prisma.skill.findUnique({
             where: { id: id.id }
         });
         return skill;
     },
 
-    async createSkill(data: CreateSkillRequest) {
+    async createSkill(data: CreateSkillRequest): Promise<CreateResponse> {
         const skill = await prisma.skill.create({
-            data
+            data: {
+                ...data,
+            },
         });
-        return { id: skill.id, message: 'Skill created successfully' };
+        return { id: skill.id.toString(), message: 'Skill created successfully' };
     },
 
-    async updateSkill(id: SkillIdParamRequest, data: UpdateSkillRequest) {
+    async updateSkill(id: SkillIdParamRequest, data: UpdateSkillRequest): Promise<UpdateResponse> {
         await prisma.skill.update({
             where: { id: id.id },
             data
@@ -68,7 +70,7 @@ export const skillService: SkillService = {
         return { message: 'Skill updated successfully' };
     },
 
-    async deleteSkill(id: SkillIdParamRequest) {
+    async deleteSkill(id: SkillIdParamRequest): Promise<UpdateResponse> {
         await prisma.skill.delete({
             where: { id: id.id }
         });
