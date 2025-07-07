@@ -76,7 +76,7 @@ export function RaceList(): React.JSX.Element {
                 cellContent = CLASS_MAP[item.favoredClassId]?.name || '';
             }
         } else if (columnId === 'description') {
-            cellContent = (<ProcessMarkdown markdown={String(item.description || '')} />);
+            cellContent = (<ProcessMarkdown id={`race-${item.id}-description`} markdown={String(item.description || '')} />);
         }
 
         return cellContent;
@@ -98,7 +98,7 @@ export function RaceList(): React.JSX.Element {
                 </a>
             );
         } else if (columnId === 'description') {
-            cellContent = (<ProcessMarkdown markdown={item.description || ''} />);
+            cellContent = (<ProcessMarkdown id={`race-trait-${item.slug}-description`} markdown={item.description || ''} />);
         } else if (columnId === 'hasValue') {
             cellContent = item.hasValue ? 'Yes' : 'No';
         }

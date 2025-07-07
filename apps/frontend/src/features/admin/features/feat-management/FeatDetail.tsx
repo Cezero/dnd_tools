@@ -4,12 +4,12 @@ import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthAuto } from '@/components/auth';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { FeatService } from '@/features/admin/features/feat-management/FeatService';
-import { FeatResponse } from '@shared/schema';
+import { GetFeatResponse } from '@shared/schema';
 import { FEAT_TYPES, FEAT_BENEFIT_TYPES, FEAT_PREREQUISITE_TYPES } from '@shared/static-data';
 
 export function FeatDetail() {
     const { id } = useParams();
-    const [feat, setFeat] = useState<FeatResponse | null>(null);
+    const [feat, setFeat] = useState<GetFeatResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const { isAdmin } = useAuthAuto();
     const navigate = useNavigate();
@@ -65,30 +65,30 @@ export function FeatDetail() {
                     </div>
                     <div className="mt-3 p-2 w-full rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert">
                         <h3 className="text-lg font-bold">Description:</h3>
-                        <ProcessMarkdown markdown={feat.description || ''} />
+                        <ProcessMarkdown markdown={feat.description || ''} id='description' />
                     </div>
                     {feat.benefit && (
                         <div className="mt-3 p-2 w-full rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert">
                             <h3 className="text-lg font-bold">Benefit:</h3>
-                            <ProcessMarkdown markdown={feat.benefit} />
+                            <ProcessMarkdown markdown={feat.benefit} id='benefit' />
                         </div>
                     )}
                     {feat.normalEffect && (
                         <div className="mt-3 p-2 w-full rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert">
                             <h3 className="text-lg font-bold">Normal:</h3>
-                            <ProcessMarkdown markdown={feat.normalEffect} />
+                            <ProcessMarkdown markdown={feat.normalEffect} id='normal' />
                         </div>
                     )}
                     {feat.specialEffect && (
                         <div className="mt-3 p-2 w-full rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert">
                             <h3 className="text-lg font-bold">Special:</h3>
-                            <ProcessMarkdown markdown={feat.specialEffect} />
+                            <ProcessMarkdown markdown={feat.specialEffect} id='special' />
                         </div>
                     )}
                     {feat.prerequisites && (
                         <div className="mt-3 p-2 w-full rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert">
                             <h3 className="text-lg font-bold">Prerequisite:</h3>
-                            <ProcessMarkdown markdown={feat.prerequisites} />
+                            <ProcessMarkdown markdown={feat.prerequisites} id='prerequisites' />
                         </div>
                     )}
 

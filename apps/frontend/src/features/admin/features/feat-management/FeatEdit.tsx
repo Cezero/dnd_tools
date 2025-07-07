@@ -379,6 +379,7 @@ export function FeatEdit() {
                                 Feat Description
                             </label>
                             <MarkdownEditor
+                                id="description"
                                 value={formData.description || ''}
                                 onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
                             />
@@ -397,6 +398,7 @@ export function FeatEdit() {
                             What the feat provides
                         </label>
                         <MarkdownEditor
+                            id="benefit"
                             value={formData.benefit || ''}
                             onChange={(value) => setFormData(prev => ({ ...prev, benefit: value }))}
                         />
@@ -415,10 +417,10 @@ export function FeatEdit() {
                                 <div key={index} className="rounded border p-2 dark:border-gray-700 grid grid-cols-[2fr_0.1fr] gap-2 items-center">
                                     <div className="flex items-center gap-2">
                                         <div>
-                                            {FEAT_BENEFIT_TYPE_BY_ID[benefit.typeId]?.name}:
+                                            {FEAT_BENEFIT_TYPE_BY_ID[benefit.typeId]?.label}:
                                         </div>
                                         <div>
-                                            {FeatOptions.get(benefit.typeId)[benefit.referenceId]?.name || ''}
+                                            {FeatOptions.get(benefit.typeId)[benefit.referenceId]?.label || ''}
                                         </div>
                                         <div>
                                             {(benefit.amount && benefit.amount > 0 ? `+${benefit.amount}` : `${benefit.amount}`) || ''}
@@ -464,6 +466,7 @@ export function FeatEdit() {
                             What characters without this feat can do
                         </label>
                         <MarkdownEditor
+                            id="normal"
                             value={formData.normalEffect || ''}
                             onChange={(value) => setFormData(prev => ({ ...prev, normalEffect: value }))}
                         />
@@ -481,6 +484,7 @@ export function FeatEdit() {
                             Special rules or exceptions
                         </label>
                         <MarkdownEditor
+                            id="special"
                             value={formData.specialEffect || ''}
                             onChange={(value) => setFormData(prev => ({ ...prev, specialEffect: value }))}
                         />
@@ -498,6 +502,7 @@ export function FeatEdit() {
                             Text description of prerequisites
                         </label>
                         <MarkdownEditor
+                            id="prerequisites"
                             value={formData.prerequisites || ''}
                             onChange={(value) => setFormData(prev => ({ ...prev, prerequisites: value }))}
                         />

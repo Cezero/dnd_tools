@@ -177,6 +177,7 @@ export function RaceTraitEdit() {
                     </div>
                     <div className="space-y-2">
                         <MarkdownEditor
+                            id="description"
                             value={formData.description || ''}
                             onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
                         />

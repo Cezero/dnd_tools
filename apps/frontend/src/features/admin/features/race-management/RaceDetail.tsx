@@ -84,7 +84,7 @@ export function RaceDetail() {
                         </div>
                     </div>
                     <div className="mt-3 p-2 w-full rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert">
-                        <ProcessMarkdown markdown={race.description || ''} />
+                        <ProcessMarkdown id='description' markdown={race.description || ''} />
                     </div>
                     {race.traits && race.traits.length > 0 && (
                         <div className="mt-3">
@@ -93,7 +93,7 @@ export function RaceDetail() {
                                 {race.traits.map(trait => (
                                     <div key={trait.traitSlug} className="gap-2 items-start">
                                         <div className="w-full prose dark:prose-invert">
-                                            <ProcessMarkdown markdown={trait.trait?.description || ''} userVars={{
+                                            <ProcessMarkdown id={`trait-${trait.traitSlug}-description`} markdown={trait.trait?.description || ''} userVars={{
                                                 racename: race.name,
                                                 racenamelower: race.name.toLowerCase(),
                                                 raceplural: pluralize(race.name),

@@ -68,7 +68,7 @@ export function RaceTraitAssoc({ isOpen, onClose, onSave, initialSelectedTraitId
 
     const renderTraitCell = useCallback((item: RaceTraitItem, columnId: string) => {
         if (columnId === 'description') {
-            return <ProcessMarkdown markdown={item.description || ''} />;
+            return <ProcessMarkdown id={`race-trait-${item.slug}-description`} markdown={item.description || ''} />;
         } else if (columnId === 'slug') {
             return item.slug;
         }

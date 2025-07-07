@@ -58,7 +58,7 @@ export function FeatList(): React.JSX.Element {
                 'specialEffect': item.specialEffect,
                 'prerequisites': item.prerequisites,
             };
-            cellContent = (<ProcessMarkdown markdown={String(fieldMap[columnId as keyof typeof fieldMap] || '')} />);
+            cellContent = (<ProcessMarkdown id={`feat-${item.id}-${columnId}`} markdown={String(fieldMap[columnId as keyof typeof fieldMap] || '')} />);
         }
 
         return cellContent;

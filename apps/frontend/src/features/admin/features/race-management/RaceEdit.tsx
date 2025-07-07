@@ -340,6 +340,7 @@ export function RaceEdit() {
                 <div className="mt-6">
                     <div className="space-y-2">
                         <MarkdownEditor
+                            id="description"
                             value={formData.description || ''}
                             onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
                         />
@@ -471,6 +472,7 @@ export function RaceEdit() {
                                     <div className="w-full">
                                         <ProcessMarkdown
                                             markdown={trait.trait?.description || ''}
+                                            id={`trait-${trait.traitSlug}-description`}
                                             userVars={{
                                                 racename: formData.name,
                                                 racenamelower: formData.name.toLowerCase(),

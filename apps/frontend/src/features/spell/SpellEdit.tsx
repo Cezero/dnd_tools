@@ -525,6 +525,7 @@ export function SpellEdit() {
                 <div className="mt-4">
                     <div className="space-y-2">
                         <MarkdownEditor
+                            id="description"
                             value={formData?.description || ''}
                             onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
                         />

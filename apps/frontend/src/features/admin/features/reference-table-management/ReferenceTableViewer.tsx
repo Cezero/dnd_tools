@@ -43,12 +43,12 @@ export function ReferenceTableViewer() {
                     {tableSummary?.description && (
                         <div className="mt-3 p-2 w-full rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert">
                             <h3 className="text-lg font-bold">Description:</h3>
-                            <ProcessMarkdown markdown={tableSummary.description} />
+                            <ProcessMarkdown id='description' markdown={tableSummary.description} />
                         </div>
                     )}
 
                     <div className="mt-4">
-                        <ProcessMarkdown markdown={`[table: ${slug}]`} />
+                        <ProcessMarkdown id='table' markdown={`[table: ${slug}]`} />
                     </div>
 
                     <div className="mt-4 text-right">

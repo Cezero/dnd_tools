@@ -4,12 +4,12 @@ import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthAuto } from '@/components/auth';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { ClassService } from '@/features/admin/features/class-management/ClassService';
-import { ClassResponse } from '@shared/schema';
+import { GetClassResponse } from '@shared/schema';
 import { RPG_DICE, EDITION_MAP, ABILITY_MAP } from '@shared/static-data';
 
 export default function ClassDetail() {
     const { id } = useParams();
-    const [cls, setCls] = useState<ClassResponse | null>(null);
+    const [cls, setCls] = useState<GetClassResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const { isAdmin } = useAuthAuto();
     const navigate = useNavigate();
@@ -71,7 +71,7 @@ export default function ClassDetail() {
                         </div>
                     </div>
                     <div className="mt-3 p-2 w-full rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert">
-                        <ProcessMarkdown markdown={cls.description || ''} />
+                        <ProcessMarkdown markdown={cls.description || ''} id='description' />
                     </div>
                     <div className="mt-4 text-right">
                         <button type="button" onClick={() => navigate(`/admin/classes${fromListParams ? `?${fromListParams}` : ''}`)} className="inline-block px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 border dark:border-gray-500">Back to List</button>

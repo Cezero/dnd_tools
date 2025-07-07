@@ -249,6 +249,7 @@ export default function ClassEdit() {
                 <div className="mt-6">
                     <div className="space-y-2">
                         <MarkdownEditor
+                            id="description"
                             value={formData.description || ''}
                             onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
                         />

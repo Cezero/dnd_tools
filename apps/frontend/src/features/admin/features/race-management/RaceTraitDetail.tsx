@@ -64,7 +64,7 @@ export function RaceTraitDetail() {
                         </div>
                     </div>
                     <div className="mt-3 p-2 w-full rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert">
-                        <ProcessMarkdown markdown={trait.description || ''} />
+                        <ProcessMarkdown id='description' markdown={trait.description || ''} />
                     </div>
                     <div className="mt-4 text-right">
                         <button type="button" onClick={() => navigate(`/admin/races${fromListParams ? `?${fromListParams}` : ''}`)} className="inline-block px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 border dark:border-gray-500">Back to List</button>

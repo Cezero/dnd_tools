@@ -92,7 +92,7 @@ export function SpellDetail(): React.JSX.Element {
                     )}
 
                     <div className="mt-3 p-2 w-full rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert">
-                        <ProcessMarkdown markdown={spell.description || ''} />
+                        <ProcessMarkdown id='description' markdown={spell.description || ''} />
                     </div>
                     <div className="mt-4 text-right">
                         <button type="button" onClick={() => navigate(`/spells${fromListParams ? `?${fromListParams}` : ''}`)} className="inline-block px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 border dark:border-gray-500">Back to List</button>
