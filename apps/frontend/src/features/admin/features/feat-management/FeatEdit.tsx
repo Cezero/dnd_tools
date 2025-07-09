@@ -1,11 +1,8 @@
-import { TrashIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 
-import { Select } from '@base-ui-components/react/select';
-import { Checkbox } from '@base-ui-components/react/checkbox';
-import { ChevronUpDownIcon } from '@heroicons/react/24/solid';
 import {
     ValidatedForm,
     ValidatedInput,
@@ -15,16 +12,15 @@ import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { FeatBenefitEdit } from '@/features/admin/features/feat-management/FeatBenefitEdit';
 import { FeatPrereqEdit } from '@/features/admin/features/feat-management/FeatPrereqEdit';
 import { FeatService } from '@/features/admin/features/feat-management/FeatService';
-import { FeatOptions } from '@/features/admin/features/feat-management/FeatUtil';
-import { CreateFeatSchema, FeatBenefitSchema, FeatPrerequisiteSchema, UpdateFeatSchema } from '@shared/schema';
-import { FEAT_PREREQUISITE_TYPES, FEAT_TYPE_LIST, FEAT_BENEFIT_TYPE_BY_ID } from '@shared/static-data';
-
-
+import { FeatOptions, getPrereqDisplayText } from '@/features/admin/features/feat-management/FeatUtil';
+import { CreateFeatSchema, FeatBenefitMapSchema, FeatPrerequisiteMapSchema, UpdateFeatSchema, GetFeatResponseSchema } from '@shared/schema';
+import { FEAT_PREREQUISITE_TYPES, FEAT_BENEFIT_TYPE_BY_ID, FEAT_TYPE_SELECT_LIST, FeatBenefitType } from '@shared/static-data';
+import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
 
 // Type definitions for the form state
 type FeatFormData = z.infer<typeof CreateFeatSchema> | z.infer<typeof UpdateFeatSchema>;
-type FeatBenefitFormData = z.infer<typeof FeatBenefitSchema>;
-type FeatPrerequisiteFormData = z.infer<typeof FeatPrerequisiteSchema>;
+type FeatBenefitFormData = z.infer<typeof FeatBenefitMapSchema>;
+type FeatPrerequisiteFormData = z.infer<typeof FeatPrerequisiteMapSchema>;
 
 export function FeatEdit() {
     const { id } = useParams<{ id: string }>();
@@ -38,6 +34,7 @@ export function FeatEdit() {
     const [isAddPrereqModalOpen, setIsAddPrereqModalOpen] = useState(false);
     const [editingBenefit, setEditingBenefit] = useState<FeatBenefitFormData | null>(null);
     const [editingPrereq, setEditingPrereq] = useState<FeatPrerequisiteFormData | null>(null);
+    const [prereqDisplayTexts, setPrereqDisplayTexts] = useState<Record<number, string>>({});
 
     const fromListParams = location.state?.fromListParams || '';
 
@@ -63,7 +60,7 @@ export function FeatEdit() {
     const [formData, setFormData] = useState<FeatFormData>(initialFormData);
 
     // Use the validated form hook
-    const { validation, createFieldProps } = useValidatedForm(
+    const form = useValidatedForm(
         schema,
         formData,
         setFormData,
@@ -73,12 +70,6 @@ export function FeatEdit() {
             debounceMs: 300
         }
     );
-
-    // Checkbox handlers
-    const handleCheckboxChange = (name: string) => (checked: boolean) => {
-        setFormData(prev => ({ ...prev, [name]: checked }));
-        validation.validateField(name, checked);
-    };
 
     // FeatOptions doesn't need initialization - it's a static utility
     useEffect(() => {
@@ -103,9 +94,20 @@ export function FeatEdit() {
         fetchFeat();
     }, [id]);
 
-    const HandleMarkdownChange = (name: keyof FeatFormData) => (content: string) => {
-        setFormData(prev => ({ ...prev, [name]: content }));
-    };
+    // Load prerequisite display texts
+    useEffect(() => {
+        const loadPrereqTexts = async () => {
+            if (formData.prereqs && formData.prereqs.length > 0) {
+                const texts: Record<number, string> = {};
+                for (let i = 0; i < formData.prereqs.length; i++) {
+                    const prereq = formData.prereqs[i];
+                    texts[i] = await getPrereqDisplayText(prereq);
+                }
+                setPrereqDisplayTexts(texts);
+            }
+        };
+        loadPrereqTexts();
+    }, [formData.prereqs]);
 
     const HandleAddBenefitClick = useCallback(() => {
         setEditingBenefit({
@@ -138,7 +140,6 @@ export function FeatEdit() {
                 ...prev,
                 benefits: prev.benefits?.filter((_, index) => index !== benefitIndex) || []
             }));
-            setMessage('Benefit removed successfully from feat!');
         }
     }, []);
 
@@ -173,7 +174,6 @@ export function FeatEdit() {
                 ...prev,
                 prereqs: prev.prereqs?.filter((_, index) => index !== prereqIndex) || []
             }));
-            setMessage('Prerequisite removed successfully from feat!');
         }
     }, []);
 
@@ -183,7 +183,7 @@ export function FeatEdit() {
         setError(null);
 
         // Validate the entire form
-        if (!validation.validateForm(formData)) {
+        if (!form.validation.validateForm(formData)) {
             return;
         }
 
@@ -192,10 +192,31 @@ export function FeatEdit() {
             if (id === 'new') {
                 const newFeat = await FeatService.createFeat(formData as z.infer<typeof CreateFeatSchema>);
                 setMessage('Feat created successfully!');
-                setTimeout(() => navigate(`/admin/feats/${newFeat.id}`, { state: { fromListParams: fromListParams, refresh: true } }), 1500);
+
+                // Navigate based on where user came from
+                setTimeout(() => {
+                    if (fromListParams) {
+                        // User came from the list page, go back to list with params
+                        navigate(`/admin/feats${fromListParams}`, { state: { refresh: true } });
+                    } else {
+                        // User came from detail page or direct URL, go to detail page
+                        navigate(`/admin/feats/${newFeat.id}`, { state: { refresh: true } });
+                    }
+                }, 1500);
             } else {
                 await FeatService.updateFeat(formData as z.infer<typeof UpdateFeatSchema>, { id: parseInt(id) });
                 setMessage('Feat updated successfully!');
+
+                // Navigate based on where user came from
+                setTimeout(() => {
+                    if (fromListParams) {
+                        // User came from the list page, go back to list with params
+                        navigate(`/admin/feats${fromListParams}`, { state: { refresh: true } });
+                    } else {
+                        // User came from detail page or direct URL, stay on detail page
+                        navigate(`/admin/feats/${id}`, { state: { refresh: true } });
+                    }
+                }, 1500);
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to save feat');
@@ -226,57 +247,12 @@ export function FeatEdit() {
         return <div>No feat data available</div>;
     }
 
-    // Create field props for each form field
-    const nameProps = {
-        ...createFieldProps('name'),
-        value: formData.name as string || ''
-    };
-    const descriptionProps = {
-        ...createFieldProps('description'),
-        value: formData.description as string || ''
-    };
-    const benefitProps = {
-        ...createFieldProps('benefit'),
-        value: formData.benefit as string || ''
-    };
-    const normalEffectProps = {
-        ...createFieldProps('normalEffect'),
-        value: formData.normalEffect as string || ''
-    };
-    const specialEffectProps = {
-        ...createFieldProps('specialEffect'),
-        value: formData.specialEffect as string || ''
-    };
-    const prerequisitesProps = {
-        ...createFieldProps('prerequisites'),
-        value: formData.prerequisites as string || ''
-    };
-
-    // Checkbox handlers for repeatable and fighterBonus
-    const handleRepeatableChange = handleCheckboxChange('repeatable');
-    const handleFighterBonusChange = handleCheckboxChange('fighterBonus');
-
-    // Create listbox props for type
-    const typeListboxProps = {
-        value: formData.typeId,
-        onChange: (value: string | number | null) => {
-            const numValue = value as number;
-            setFormData(prev => ({ ...prev, typeId: numValue }));
-            validation.validateField('typeId', numValue);
-        },
-        error: validation.getError('typeId'),
-        hasError: validation.hasError('typeId')
-    };
-
     return (
         <div className="max-w-6xl mx-auto p-6">
             <div className="mb-6">
                 <h1 className="text-3xl font-bold">
                     {id === 'new' ? 'Create New Feat' : 'Edit Feat'}
                 </h1>
-                <p className="text-gray-600 dark:text-gray-400">
-                    {id === 'new' ? 'Create a new feat' : 'Modify feat details'}
-                </p>
             </div>
 
             {message && (
@@ -293,272 +269,174 @@ export function FeatEdit() {
 
             <ValidatedForm
                 onSubmit={HandleSubmit}
-                validationState={validation.validationState}
+                validationState={form.validation.validationState}
                 isLoading={isLoading}
+                formData={formData}
+                setFormData={setFormData}
+                validation={form.validation}
             >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Basic Information */}
                     <div className="space-y-4">
-                        <h2 className="text-xl font-semibold">Basic Information</h2>
-
                         <ValidatedInput
-                            name="name"
+                            field="name"
                             label="Feat Name"
                             type="text"
+                            componentExtraClassName='flex items-center gap-2'
                             required
                             placeholder="e.g., Power Attack, Weapon Focus"
-                            {...nameProps}
+                            data-1p-ignore
                         />
-
-                        <div className="flex flex-col">
-                            <label htmlFor="typeId" className="block font-medium">
-                                Feat Type
-                                <span className="text-red-500 ml-1">*</span>
-                            </label>
-                            <Select.Root
-                                value={formData.typeId}
-                                onValueChange={(value) => setFormData(prev => ({ ...prev, typeId: value as number }))}
-                                items={FEAT_TYPE_LIST.map(type => ({ value: type.id, label: type.name }))}
-                            >
-                                <Select.Trigger className="relative w-full cursor-default rounded-md bg-white py-2 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm sm:leading-6 dark:bg-gray-700 dark:text-gray-100 dark:ring-gray-600">
-                                    <Select.Value />
-                                    <Select.Icon>
-                                        <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
-                                    </Select.Icon>
-                                </Select.Trigger>
-                                <Select.Portal>
-                                    <Select.Positioner>
-                                        <Select.Popup className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm dark:bg-gray-800 dark:text-gray-100">
-                                            {FEAT_TYPE_LIST.map(type => (
-                                                <Select.Item
-                                                    key={type.id}
-                                                    value={type.id}
-                                                    className="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 dark:text-gray-100 hover:bg-blue-600 hover:text-white data-[highlighted]:bg-blue-600 data-[highlighted]:text-white"
-                                                >
-                                                    <Select.ItemText>
-                                                        {type.name}
-                                                    </Select.ItemText>
-                                                </Select.Item>
-                                            ))}
-                                        </Select.Popup>
-                                    </Select.Positioner>
-                                </Select.Portal>
-                            </Select.Root>
-                        </div>
-
-                        <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                                <Checkbox.Root
-                                    checked={formData.repeatable as boolean}
-                                    onCheckedChange={handleRepeatableChange}
-                                    className="h-5 w-5 text-blue-600 rounded dark:bg-gray-700 dark:border-gray-600 accent-blue-600 checked:bg-blue-600 dark:checked:bg-blue-600"
-                                />
-                                <label htmlFor="repeatable" className="font-medium">
-                                    Can be taken multiple times
-                                </label>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                <Checkbox.Root
-                                    checked={formData.fighterBonus as boolean}
-                                    onCheckedChange={handleFighterBonusChange}
-                                    className="h-5 w-5 text-blue-600 rounded dark:bg-gray-700 dark:border-gray-600 accent-blue-600 checked:bg-blue-600 dark:checked:bg-blue-600"
-                                />
-                                <label htmlFor="fighterBonus" className="font-medium">
-                                    Fighter Bonus Feat
-                                </label>
-                            </div>
-                        </div>
+                        <CustomSelect
+                            label="Feat Type"
+                            required
+                            placeholder="Select feat type"
+                            componentExtraClassName='flex items-center gap-2'
+                            itemTextExtraClassName='w-24'
+                            value={formData.typeId}
+                            onValueChange={(value) => setFormData(prev => ({ ...prev, typeId: value as number }))}
+                            options={FEAT_TYPE_SELECT_LIST}
+                        />
                     </div>
 
-                    {/* Description */}
-                    <div className="space-y-4">
-                        <h2 className="text-xl font-semibold">Description</h2>
-                        <div className="space-y-2">
-                            <label htmlFor="description" className="block font-medium">
-                                Feat Description
-                            </label>
-                            <MarkdownEditor
-                                id="description"
-                                value={formData.description || ''}
-                                onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
+                    <div className="flex justify-end">
+                        <div className="flex flex-col gap-2">
+                            <CustomCheckbox
+                                label="Repeatable"
+                                checked={formData.repeatable as boolean}
+                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, repeatable: checked }))}
                             />
-                            {validation.getError('description') && (
-                                <span className="text-red-500 text-sm">{validation.getError('description')}</span>
-                            )}
+                            <CustomCheckbox
+                                label="Fighter Bonus Feat"
+                                checked={formData.fighterBonus as boolean}
+                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, fighterBonus: checked }))}
+                            />
                         </div>
                     </div>
                 </div>
-
-                {/* Benefit */}
-                <div className="mt-6">
-                    <h2 className="text-xl font-semibold mb-4">Benefit</h2>
-                    <div className="space-y-2">
-                        <label htmlFor="benefit" className="block font-medium">
-                            What the feat provides
-                        </label>
-                        <MarkdownEditor
-                            id="benefit"
-                            value={formData.benefit || ''}
-                            onChange={(value) => setFormData(prev => ({ ...prev, benefit: value }))}
-                        />
-                        {validation.getError('benefit') && (
-                            <span className="text-red-500 text-sm">{validation.getError('benefit')}</span>
-                        )}
-                    </div>
-                </div>
-
-                {/* Benefits Section */}
-                <div className="mt-6">
-                    <h2 className="text-xl font-semibold mb-4">Benefits</h2>
-                    {formData.benefits && formData.benefits.length > 0 ? (
-                        <div className="space-y-2 border p-3 rounded dark:border-gray-600 mb-4">
-                            {formData.benefits.map((benefit, index) => (
-                                <div key={index} className="rounded border p-2 dark:border-gray-700 grid grid-cols-[2fr_0.1fr] gap-2 items-center">
-                                    <div className="flex items-center gap-2">
-                                        <div>
-                                            {FEAT_BENEFIT_TYPE_BY_ID[benefit.typeId]?.label}:
-                                        </div>
-                                        <div>
-                                            {FeatOptions.get(benefit.typeId)[benefit.referenceId]?.label || ''}
-                                        </div>
-                                        <div>
-                                            {(benefit.amount && benefit.amount > 0 ? `+${benefit.amount}` : `${benefit.amount}`) || ''}
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => HandleDeleteBenefit(index)}
-                                            className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600"
-                                        >
-                                            <TrashIcon className="h-5 w-5" />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => HandleEditBenefitClick(benefit)}
-                                            className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-600"
-                                        >
-                                            Edit
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-gray-500 dark:text-gray-400 mb-4">No benefits added yet.</div>
+                <div className="space-y-2">
+                    <MarkdownEditor
+                        id="description"
+                        value={formData.description || ''}
+                        onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
+                    />
+                    {form.validation.getError('description') && (
+                        <span className="text-red-500 text-sm">{form.validation.getError('description')}</span>
                     )}
 
-                    <button
-                        type="button"
-                        onClick={HandleAddBenefitClick}
-                        className="px-4 py-2 bg-green-600 rounded hover:bg-green-700 text-white"
-                    >
-                        Add Benefit
-                    </button>
-                </div>
+                    <MarkdownEditor
+                        id="benefit"
+                        label="Benefit"
+                        value={formData.benefit || ''}
+                        onChange={(value) => setFormData(prev => ({ ...prev, benefit: value }))}
+                    />
+                    {form.validation.getError('benefit') && (
+                        <span className="text-red-500 text-sm">{form.validation.getError('benefit')}</span>
+                    )}
 
-                {/* Normal Effect */}
-                <div className="mt-6">
-                    <h2 className="text-xl font-semibold mb-4">Normal</h2>
+                    <div className="flex items-center gap-2 border p-3 rounded dark:border-gray-600">
+                        {formData.benefits && formData.benefits.length > 0 ? (
+                            <>
+                                {
+                                    formData.benefits.map((benefit, index) => (
+                                        <div key={index} className="flex gap-2 items-center rounded border p-2 dark:border-gray-700">
+                                            <button
+                                                type="button"
+                                                onClick={() => HandleEditBenefitClick(benefit)}
+                                                className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-600"
+                                            >
+                                                {FEAT_BENEFIT_TYPE_BY_ID[benefit.typeId]}: {FeatOptions(benefit.typeId).find(option => option.value === benefit.referenceId)?.label || ''} {benefit.typeId !== FeatBenefitType.PROFICIENCY && benefit.amount && benefit.amount > 0 ? `+${benefit.amount}` : benefit.typeId !== FeatBenefitType.PROFICIENCY && benefit.amount ? `${benefit.amount}` : ''}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                title="Delete Benefit"
+                                                onClick={() => HandleDeleteBenefit(index)}
+                                                className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600"
+                                            >
+                                                <TrashIcon className="h-5 w-5" />
+                                            </button>
+                                        </div>
+                                    ))
+                                }
+                            </>
+                        ) : (
+                            <div className="border p-2 rounded dark:border-gray-600">No benefits added yet.</div>
+                        )}
+                        <button
+                            type="button"
+                            title="Add Benefit"
+                            onClick={HandleAddBenefitClick}
+                            className="text-green-500 hover:text-green-700"
+                        >
+                            <PlusIcon className="h-5 w-5" />
+                        </button>
+                    </div>
                     <div className="space-y-2">
-                        <label htmlFor="normalEffect" className="block font-medium">
-                            What characters without this feat can do
-                        </label>
                         <MarkdownEditor
-                            id="normal"
+                            id="normalEffect"
+                            label="Normal"
                             value={formData.normalEffect || ''}
                             onChange={(value) => setFormData(prev => ({ ...prev, normalEffect: value }))}
                         />
-                        {validation.getError('normalEffect') && (
-                            <span className="text-red-500 text-sm">{validation.getError('normalEffect')}</span>
+                        {form.validation.getError('normalEffect') && (
+                            <span className="text-red-500 text-sm">{form.validation.getError('normalEffect')}</span>
                         )}
                     </div>
-                </div>
-
-                {/* Special Effect */}
-                <div className="mt-6">
-                    <h2 className="text-xl font-semibold mb-4">Special</h2>
                     <div className="space-y-2">
-                        <label htmlFor="specialEffect" className="block font-medium">
-                            Special rules or exceptions
-                        </label>
                         <MarkdownEditor
-                            id="special"
+                            id="specialEffect"
+                            label="Special"
                             value={formData.specialEffect || ''}
                             onChange={(value) => setFormData(prev => ({ ...prev, specialEffect: value }))}
                         />
-                        {validation.getError('specialEffect') && (
-                            <span className="text-red-500 text-sm">{validation.getError('specialEffect')}</span>
+                        {form.validation.getError('specialEffect') && (
+                            <span className="text-red-500 text-sm">{form.validation.getError('specialEffect')}</span>
                         )}
                     </div>
-                </div>
-
-                {/* Prerequisites */}
-                <div className="mt-6">
-                    <h2 className="text-xl font-semibold mb-4">Prerequisites</h2>
                     <div className="space-y-2">
-                        <label htmlFor="prerequisites" className="block font-medium">
-                            Text description of prerequisites
-                        </label>
                         <MarkdownEditor
                             id="prerequisites"
+                            label="Prerequisites"
                             value={formData.prerequisites || ''}
                             onChange={(value) => setFormData(prev => ({ ...prev, prerequisites: value }))}
                         />
-                        {validation.getError('prerequisites') && (
-                            <span className="text-red-500 text-sm">{validation.getError('prerequisites')}</span>
+                        {form.validation.getError('prerequisites') && (
+                            <span className="text-red-500 text-sm">{form.validation.getError('prerequisites')}</span>
                         )}
                     </div>
                 </div>
 
-                {/* Prerequisites Section */}
-                <div className="mt-6">
-                    <h2 className="text-xl font-semibold mb-4">Prerequisite Requirements</h2>
+                <div className="flex items-center gap-2 border p-3 rounded dark:border-gray-600">
                     {formData.prereqs && formData.prereqs.length > 0 ? (
-                        <div className="space-y-2 border p-3 rounded dark:border-gray-600 mb-4">
+                        <div className="flex items-center gap-2">
                             {formData.prereqs.map((prereq, index) => (
-                                <div key={index} className="rounded border p-2 dark:border-gray-700 grid grid-cols-[2fr_0.1fr] gap-2 items-center">
-                                    <div className="flex items-center gap-2">
-                                        <div>
-                                            {FEAT_PREREQUISITE_TYPES[prereq.typeId]?.name}:
-                                        </div>
-                                        <div>
-                                            {prereq.referenceId || ''}
-                                        </div>
-                                        <div>
-                                            {(prereq.amount && prereq.amount > 0 ? `${prereq.amount}` : `${prereq.amount}`) || ''}
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => HandleDeletePrereq(index)}
-                                            className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600"
-                                        >
-                                            <TrashIcon className="h-5 w-5" />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => HandleEditPrereqClick(prereq)}
-                                            className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-600"
-                                        >
-                                            Edit
-                                        </button>
-                                    </div>
+                                <div key={index} className="flex gap-2 items-center rounded border p-2 dark:border-gray-700">
+                                    <button
+                                        type="button"
+                                        onClick={() => HandleEditPrereqClick(prereq)}
+                                        className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-600"
+                                    >
+                                        {prereqDisplayTexts[index] || 'Loading...'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => HandleDeletePrereq(index)}
+                                        className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600"
+                                    >
+                                        <TrashIcon className="h-5 w-5" />
+                                    </button>
                                 </div>
                             ))}
                         </div>
                     ) : (
-                        <div className="text-gray-500 dark:text-gray-400 mb-4">No prerequisites added yet.</div>
+                        <div className="border p-2 rounded dark:border-gray-600">No prerequisites added yet.</div>
                     )}
 
                     <button
                         type="button"
                         onClick={HandleAddPrereqClick}
-                        className="px-4 py-2 bg-green-600 rounded hover:bg-green-700 text-white"
+                        className="text-green-500 hover:text-green-700"
                     >
-                        Add Prerequisite
+                        <PlusIcon className="h-5 w-5" />
                     </button>
                 </div>
 
@@ -575,7 +453,7 @@ export function FeatEdit() {
                     <button
                         type="submit"
                         className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isLoading || validation.validationState.hasErrors}
+                        disabled={isLoading || form.validation.validationState.hasErrors}
                     >
                         {isLoading ? 'Saving...' : id === 'new' ? 'Create Feat' : 'Update Feat'}
                     </button>
@@ -591,6 +469,7 @@ export function FeatEdit() {
                     }}
                     onSave={HandleSaveBenefit}
                     initialBenefitData={editingBenefit}
+                    featId={parseInt(id || '0')}
                 />
             )}
 

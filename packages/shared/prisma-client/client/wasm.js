@@ -131,7 +131,12 @@ exports.Prisma.ClassScalarFieldEnum = {
   hitDie: 'hitDie',
   description: 'description',
   skillPoints: 'skillPoints',
-  castingAbilityId: 'castingAbilityId'
+  castingAbilityId: 'castingAbilityId',
+  spellProgression: 'spellProgression',
+  babProgression: 'babProgression',
+  fortProgression: 'fortProgression',
+  refProgression: 'refProgression',
+  willProgression: 'willProgression'
 };
 
 exports.Prisma.ClassFeatureScalarFieldEnum = {
@@ -143,22 +148,6 @@ exports.Prisma.ClassFeatureMapScalarFieldEnum = {
   classId: 'classId',
   featureSlug: 'featureSlug',
   level: 'level'
-};
-
-exports.Prisma.ClassSpellProgressionScalarFieldEnum = {
-  classId: 'classId',
-  level: 'level',
-  spellLevel: 'spellLevel',
-  spellSlots: 'spellSlots'
-};
-
-exports.Prisma.ClassLevelAttributeScalarFieldEnum = {
-  classId: 'classId',
-  level: 'level',
-  baseAttackBonus: 'baseAttackBonus',
-  fortSave: 'fortSave',
-  refSave: 'refSave',
-  willSave: 'willSave'
 };
 
 exports.Prisma.ClassSkillMapScalarFieldEnum = {
@@ -237,6 +226,7 @@ exports.Prisma.SkillScalarFieldEnum = {
   untrainedNotes: 'untrainedNotes',
   affectedByArmor: 'affectedByArmor',
   description: 'description',
+  restrictionNotes: 'restrictionNotes',
   trainedOnly: 'trainedOnly'
 };
 
@@ -460,7 +450,8 @@ exports.Prisma.SkillOrderByRelevanceFieldEnum = {
   specialNotes: 'specialNotes',
   synergyNotes: 'synergyNotes',
   untrainedNotes: 'untrainedNotes',
-  description: 'description'
+  description: 'description',
+  restrictionNotes: 'restrictionNotes'
 };
 
 exports.Prisma.FeatOrderByRelevanceFieldEnum = {
@@ -550,8 +541,6 @@ exports.Prisma.ModelName = {
   Class: 'Class',
   ClassFeature: 'ClassFeature',
   ClassFeatureMap: 'ClassFeatureMap',
-  ClassSpellProgression: 'ClassSpellProgression',
-  ClassLevelAttribute: 'ClassLevelAttribute',
   ClassSkillMap: 'ClassSkillMap',
   ClassSourceMap: 'ClassSourceMap',
   SpellLevelMap: 'SpellLevelMap',

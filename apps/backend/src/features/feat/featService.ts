@@ -5,7 +5,7 @@ import {
     CreateFeatRequest,
     UpdateFeatRequest,
     GetAllFeatsResponse,
-    FeatResponse
+    GetFeatResponse
 } from '@shared/schema';
 
 import type { FeatService } from './types';
@@ -54,7 +54,7 @@ export const featService: FeatService = {
                 orderBy: { name: 'asc' },
                 include: {
                     benefits: true,
-                    prerequisitesMap: true,
+                    prereqs: true,
                 },
             }),
             prisma.feat.count({ where }),
@@ -75,16 +75,16 @@ export const featService: FeatService = {
         return feats as GetAllFeatsResponse;
     },
 
-    async getFeatById(query:FeatIdParamRequest) {
+    async getFeatById(query: FeatIdParamRequest) {
         const feat = await prisma.feat.findUnique({
             where: { id: query.id },
             include: {
                 benefits: true,
-                prerequisitesMap: true,
+                prereqs: true,
             },
         });
 
-        return feat as FeatResponse;
+        return feat as GetFeatResponse;
     },
 
     async createFeat(data: CreateFeatRequest) {
@@ -95,7 +95,7 @@ export const featService: FeatService = {
                     benefits: data.benefits ? {
                         create: data.benefits
                     } : undefined,
-                    prerequisitesMap: data.prereqs ? {
+                    prereqs: data.prereqs ? {
                         create: data.prereqs
                     } : undefined,
                 },
@@ -104,7 +104,7 @@ export const featService: FeatService = {
             return newFeat.id;
         });
 
-        return { id: result, message: 'Feat created successfully' };
+        return { id: result.toString(), message: 'Feat created successfully' };
     },
 
     async updateFeat(query: FeatIdParamRequest, data: UpdateFeatRequest) {
@@ -117,7 +117,7 @@ export const featService: FeatService = {
                         deleteMany: {},
                         create: data.benefits
                     } : undefined,
-                    prerequisitesMap: data.prereqs ? {
+                    prereqs: data.prereqs ? {
                         deleteMany: {},
                         create: data.prereqs
                     } : undefined,

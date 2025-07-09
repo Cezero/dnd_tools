@@ -47,7 +47,7 @@ export const FEAT_PREREQUISITE_TYPES: BaseMap<CoreComponent> = {
     [FeatPrerequisiteType.SKILL]: { id: FeatPrerequisiteType.SKILL, name: 'Skill' },
     [FeatPrerequisiteType.FEAT]: { id: FeatPrerequisiteType.FEAT, name: 'Feat' },
     [FeatPrerequisiteType.BAB]: { id: FeatPrerequisiteType.BAB, name: 'Base Attack Bonus' },
-    [FeatPrerequisiteType.SPELLCASTING]: { id: FeatPrerequisiteType.SPELLCASTING, name: 'Spellcasting' },
+    [FeatPrerequisiteType.SPELLCASTING]: { id: FeatPrerequisiteType.SPELLCASTING, name: 'Caster Level' },
     [FeatPrerequisiteType.SPECIAL]: { id: FeatPrerequisiteType.SPECIAL, name: 'Special' },
 }
 

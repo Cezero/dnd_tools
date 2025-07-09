@@ -278,10 +278,11 @@ export function SpellEdit() {
                             inputExtraClassName="w-4/5"
                             required
                             placeholder="e.g., Magic Missile, Fireball, Cure Wounds"
+                            data-1p-ignore
                         />
                         <div className="flex items-center gap-2">
-                        <label className="w-1/5">Range (raw)</label>
-                        <input type="text" disabled value={formData?.range} className="w-4/5 disabled:opacity-50 disabled:cursor-not-allowed block p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                            <label className="w-1/5">Range (raw)</label>
+                            <input type="text" disabled value={formData?.range} className="w-4/5 disabled:opacity-50 disabled:cursor-not-allowed block p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
                         </div>
                         <CustomSelect
                             label="Range Type"

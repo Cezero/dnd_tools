@@ -2,40 +2,37 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 
-import { Checkbox } from '@base-ui-components/react/checkbox';
 import {
     ValidatedForm,
     ValidatedInput,
     useValidatedForm
 } from '@/components/forms';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
-import { RaceTraitService } from '@/features/admin/features/race-management/RaceTraitService';
-import { CreateRaceTraitSchema, UpdateRaceTraitSchema } from '@shared/schema';
-import { CustomCheckbox } from '@/components/forms/FormComponents';
+import { ClassFeatureService } from '@/features/admin/features/class-management/ClassFeatureService';
+import { CreateClassFeatureSchema, UpdateClassFeatureSchema } from '@shared/schema';
 
-type RaceTraitFormData = z.infer<typeof CreateRaceTraitSchema> | z.infer<typeof UpdateRaceTraitSchema>;
+type ClassFeatureFormData = z.infer<typeof CreateClassFeatureSchema> | z.infer<typeof UpdateClassFeatureSchema>;
 
-export function RaceTraitEdit() {
+export function ClassFeatureEdit() {
     const { slug } = useParams<{ slug: string }>();
     const navigate = useNavigate();
     const location = useLocation();
-    const [trait, setTrait] = useState<RaceTraitFormData | null>(null);
+    const [feature, setFeature] = useState<ClassFeatureFormData | null>(null);
     const [message, setMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
     // Determine which schema to use based on whether we're creating or editing
-    const schema = slug === 'new' ? CreateRaceTraitSchema : UpdateRaceTraitSchema;
+    const schema = slug === 'new' ? CreateClassFeatureSchema : UpdateClassFeatureSchema;
 
     // Initialize form data with default values
-    const initialFormData: RaceTraitFormData = {
+    const initialFormData: ClassFeatureFormData = {
         slug: '',
         description: '',
-        hasValue: false,
         ...(slug !== 'new' && { slug: slug })
     };
 
-    const [formData, setFormData] = useState<RaceTraitFormData>(initialFormData);
+    const [formData, setFormData] = useState<ClassFeatureFormData>(initialFormData);
 
     // Use the validated form hook
     const form = useValidatedForm(
@@ -50,25 +47,25 @@ export function RaceTraitEdit() {
     );
 
     useEffect(() => {
-        const fetchTrait = async () => {
+        const fetchFeature = async () => {
             if (slug === 'new') {
-                setTrait(initialFormData);
+                setFeature(initialFormData);
                 return;
             }
 
             try {
                 setIsLoading(true);
-                const fetchedTrait = await RaceTraitService.getRaceTraitBySlug(undefined, { slug });
-                setTrait(fetchedTrait);
-                setFormData(fetchedTrait);
+                const fetchedFeature = await ClassFeatureService.getClassFeatureBySlug(undefined, { slug });
+                setFeature(fetchedFeature);
+                setFormData(fetchedFeature);
             } catch (err) {
-                setError(err instanceof Error ? err.message : 'Failed to fetch race trait');
+                setError(err instanceof Error ? err.message : 'Failed to fetch class feature');
             } finally {
                 setIsLoading(false);
             }
         };
 
-        fetchTrait();
+        fetchFeature();
     }, [slug]);
 
     const HandleSubmit = async (e: React.FormEvent) => {
@@ -84,52 +81,52 @@ export function RaceTraitEdit() {
         try {
             setIsLoading(true);
             if (slug === 'new') {
-                const newTrait = await RaceTraitService.createRaceTrait(formData as z.infer<typeof CreateRaceTraitSchema>);
-                setMessage('Race trait created successfully!');
-                if (location.state?.from === 'RaceTraitAssoc' && location.state?.raceId) {
-                    navigate(`/admin/races/${location.state.raceId}/edit`, { state: { newTrait: newTrait } });
+                const newFeature = await ClassFeatureService.createClassFeature(formData as z.infer<typeof CreateClassFeatureSchema>);
+                setMessage('Class feature created successfully!');
+                if (location.state?.from === 'ClassFeatureAssoc' && location.state?.classId) {
+                    navigate(`/admin/classes/${location.state.classId}/edit`, { state: { newFeature: newFeature } });
                 } else {
-                    navigate('/admin/races');
+                    navigate('/admin/classes');
                 }
             } else {
-                await RaceTraitService.updateRaceTrait(formData as z.infer<typeof UpdateRaceTraitSchema>, { slug });
-                setMessage('Race trait updated successfully!');
-                navigate('/admin/races');
+                await ClassFeatureService.updateClassFeature(formData as z.infer<typeof UpdateClassFeatureSchema>, { slug });
+                setMessage('Class feature updated successfully!');
+                navigate('/admin/classes');
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to save race trait');
+            setError(err instanceof Error ? err.message : 'Failed to save class feature');
         } finally {
             setIsLoading(false);
         }
     };
 
-    if (isLoading && !trait) {
+    if (isLoading && !feature) {
         return <div className="flex justify-center items-center h-64">Loading...</div>;
     }
 
-    if (error && !trait) {
+    if (error && !feature) {
         return (
             <div className="flex flex-col items-center justify-center h-64">
                 <p className="text-red-500 mb-4">{error}</p>
                 <button
-                    onClick={() => navigate('/admin/races')}
+                    onClick={() => navigate('/admin/classes')}
                     className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                 >
-                    Back to Races
+                    Back to Classes
                 </button>
             </div>
         );
     }
 
-    if (!trait) {
-        return <div>No race trait data available</div>;
+    if (!feature) {
+        return <div>No class feature data available</div>;
     }
 
     return (
         <div className="max-w-4xl mx-auto p-6">
             <div className="mb-6">
                 <h1 className="text-3xl font-bold">
-                    {slug === 'new' ? 'Create New Race Trait' : 'Edit Race Trait'}
+                    {slug === 'new' ? 'Create New Class Feature' : 'Edit Class Feature'}
                 </h1>
             </div>
 
@@ -157,19 +154,14 @@ export function RaceTraitEdit() {
                     <div className="flex items-center justify-between gap-2">
                         <ValidatedInput
                             field="slug"
-                            label="Trait Slug"
+                            label="Feature Slug"
                             type="text"
                             componentExtraClassName="flex items-center gap-2"
                             labelExtraClassName="w-20"
                             inputExtraClassName="w-auto"
                             required
-                            placeholder="e.g., darkvision, weapon-proficiency"
+                            placeholder="e.g., spellcasting, weapon-proficiency"
                             disabled={slug !== 'new'}
-                        />
-                        <CustomCheckbox
-                            label="Has Associated Value"
-                            checked={formData.hasValue as boolean}
-                            onCheckedChange={(checked) => setFormData(prev => ({ ...prev, hasValue: checked }))}
                         />
                     </div>
                     <div className="space-y-2">
@@ -188,7 +180,7 @@ export function RaceTraitEdit() {
                 <div className="flex justify-end space-x-4 mt-8">
                     <button
                         type="button"
-                        onClick={() => navigate('/admin/races')}
+                        onClick={() => navigate('/admin/classes')}
                         className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                         disabled={isLoading}
                     >
@@ -199,10 +191,10 @@ export function RaceTraitEdit() {
                         className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={isLoading || form.validation.validationState.hasErrors}
                     >
-                        {isLoading ? 'Saving...' : slug === 'new' ? 'Create Trait' : 'Update Trait'}
+                        {isLoading ? 'Saving...' : slug === 'new' ? 'Create Feature' : 'Update Feature'}
                     </button>
                 </div>
             </ValidatedForm>
         </div>
     );
-}
+} 

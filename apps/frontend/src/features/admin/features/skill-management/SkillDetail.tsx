@@ -126,6 +126,15 @@ export function SkillDetail(): React.JSX.Element {
                                     <ProcessMarkdown markdown={skill.untrainedNotes} id='untrained' />
                                 </div>
                             </div>)}
+                        {skill.restrictionNotes && (
+                            <div className="flex items-start mb-2">
+                                <div className="font-bold w-30">
+                                    Restriction:
+                                </div>
+                                <div className="w-4/5">
+                                    <ProcessMarkdown markdown={skill.restrictionNotes} id='restriction' />
+                                </div>
+                            </div>)}
                     </div>
                     <div className="mt-4 text-right">
                         <button type="button" onClick={() => navigate(`/admin/skills${fromListParams ? `?${fromListParams}` : ''}`)} className="inline-block px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 border dark:border-gray-500">Back to List</button>

@@ -1,4 +1,4 @@
-import type { ClassMap, NameToIdMap, SelectOption } from './types';
+import type { ClassMap, NameToIdMap, SelectOption, SpellTable } from './types';
 import { NameSelectOptionList } from './Util';
 
 export const CLASS_MAP: ClassMap = {
@@ -148,3 +148,277 @@ export const CLASS_WITH_SPELLS_SELECT_LIST = NameSelectOptionList(CLASS_VISIBLE_
 export function GetBaseClassesByEdition(editionId: number): SelectOption[] {
     return NameSelectOptionList(CLASS_LIST.filter(cl => cl.editionId === editionId && !cl.isPrestige));
 }
+
+// Good Save Progression: floor(level / 2) + 2
+export function getGoodSave(level: number): number {
+    return Math.floor(level / 2) + 2;
+}
+
+// Poor Save Progression: floor(level / 3)
+export function getPoorSave(level: number): number {
+    return Math.floor(level / 3);
+}
+
+// Good Base Attack Bonus: Level (full progression)
+export function getGoodBAB(level: number): string {
+    return formatIterativeBAB(level);
+}
+
+// Average Base Attack Bonus: floor(3 * level / 4)
+export function getAverageBAB(level: number): string {
+    const bab = Math.floor((3 * level) / 4);
+    return formatIterativeBAB(bab);
+}
+
+// Poor Base Attack Bonus: floor(level / 2)
+export function getPoorBAB(level: number): string {
+    const bab = Math.floor(level / 2);
+    return formatIterativeBAB(bab);
+}
+
+// Format iterative BAB like +11/+6/+1 etc.
+function formatIterativeBAB(bab: number): string {
+    if (bab <= 0) return "+0";
+
+    const attacks: number[] = [];
+    let current = bab;
+
+    while (current > 0) {
+        attacks.push(current);
+        current -= 5;
+    }
+
+    return attacks.map(a => `+${a}`).join('/');
+}
+
+export const ProgressionType = {
+    good: 0,
+    average: 1,
+    poor: 2,
+} as const;
+
+export type ProgressionType = typeof ProgressionType[keyof typeof ProgressionType];
+
+export function getSaveProgression(level: number, progressionType: typeof ProgressionType.good | typeof ProgressionType.poor): number {
+    if (progressionType === ProgressionType.good) return getGoodSave(level);
+    if (progressionType === ProgressionType.poor) return getPoorSave(level);
+    throw new Error('Invalid progression type');
+}
+
+export function getBABProgression(level: number, progressionType: typeof ProgressionType.good | typeof ProgressionType.average | typeof ProgressionType.poor): string {
+    if (progressionType === ProgressionType.good) return getGoodBAB(level);
+    if (progressionType === ProgressionType.average) return getAverageBAB(level);
+    if (progressionType === ProgressionType.poor) return getPoorBAB(level);
+    throw new Error('Invalid progression type');
+}
+
+const _XP_TABLE: number[] = [
+    0,     // Level 1
+    1000,  // Level 2
+    3000,  // Level 3
+    6000,  // Level 4
+    10000, // Level 5
+    15000, // Level 6
+    21000, // Level 7
+    28000, // Level 8
+    36000, // Level 9
+    45000, // Level 10
+    55000, // Level 11
+    66000, // Level 12
+    78000, // Level 13
+    91000, // Level 14
+    105000,// Level 15
+    120000,// Level 16
+    136000,// Level 17
+    153000,// Level 18
+    171000,// Level 19
+    190000 // Level 20
+];
+
+export function getXPTotalForLevel(level: number): number {
+    if (level < 21) return _XP_TABLE[level];
+
+    // XP at level 20 is 190,000
+    // XP increase from level 21 onward is: ∑(i * 1000) for i = 21 to level
+    const baseXP = 190000;
+    const n = level;
+    const m = 20;
+
+    // Sum from m+1 to n: S = 1000 * (n(n+1)/2 - m(m+1)/2)
+    const xp = baseXP + 1000 * ((n * (n + 1) - m * (m + 1)) / 2);
+    return xp;
+}
+
+
+export function getClassSkillMaxRanks(level: number): number {
+    return level + 3;
+}
+
+export function getCrossClassSkillMaxRanks(level: number): number {
+    return (level + 3) / 2;
+}
+
+export function formatHalfRank(ranks: number): string {
+    const whole = Math.floor(ranks);
+    return ranks === whole
+        ? `${whole}`
+        : `${whole}-1/2`;
+}
+
+export function getFeatCount(level: number): number {
+    return 1 + Math.floor((level - 1) / 3);
+}
+
+export function getAbilityScoreIncreases(level: number): number {
+    return Math.floor(level / 4);
+}
+
+export const BARD_SPELL_TABLE: SpellTable = {
+    1: { 0: 2 },
+    2: { 0: 3, 1: 0 },
+    3: { 0: 3, 1: 1 },
+    4: { 0: 3, 1: 2, 2: 0 },
+    5: { 0: 3, 1: 3, 2: 1 },
+    6: { 0: 3, 1: 3, 2: 2 },
+    7: { 0: 3, 1: 3, 2: 2, 3: 0 },
+    8: { 0: 3, 1: 3, 2: 3, 3: 1 },
+    9: { 0: 3, 1: 3, 2: 3, 3: 2 },
+    10: { 0: 3, 1: 3, 2: 3, 3: 2, 4: 0 },
+    11: { 0: 3, 1: 3, 2: 3, 3: 3, 4: 1 },
+    12: { 0: 3, 1: 3, 2: 3, 3: 3, 4: 2 },
+    13: { 0: 3, 1: 3, 2: 3, 3: 3, 4: 2, 5: 0 },
+    14: { 0: 4, 1: 3, 2: 3, 3: 3, 4: 3, 5: 1 },
+    15: { 0: 4, 1: 4, 2: 3, 3: 3, 4: 3, 5: 2 },
+    16: { 0: 4, 1: 4, 2: 4, 3: 3, 4: 3, 5: 2, 6: 0 },
+    17: { 0: 4, 1: 4, 2: 4, 3: 4, 4: 3, 5: 3, 6: 1 },
+    18: { 0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 3, 6: 2 },
+    19: { 0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 3 },
+    20: { 0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 4 },
+};
+
+export const DIVINE_SPELL_TABLE: SpellTable = {
+    1: { 0: 3, 1: 1 },
+    2: { 0: 4, 1: 2 },
+    3: { 0: 4, 1: 2, 2: 1 },
+    4: { 0: 5, 1: 3, 2: 2 },
+    5: { 0: 5, 1: 3, 2: 2, 3: 1 },
+    6: { 0: 5, 1: 3, 2: 3, 3: 2 },
+    7: { 0: 6, 1: 4, 2: 3, 3: 2, 4: 1 },
+    8: { 0: 6, 1: 4, 2: 3, 3: 3, 4: 2 },
+    9: { 0: 6, 1: 4, 2: 4, 3: 3, 4: 2, 5: 1 },
+    10: { 0: 6, 1: 4, 2: 4, 3: 3, 4: 3, 5: 2 },
+    11: { 0: 6, 1: 5, 2: 4, 3: 4, 4: 3, 5: 2, 6: 1 },
+    12: { 0: 6, 1: 5, 2: 4, 3: 4, 4: 3, 5: 3, 6: 2 },
+    13: { 0: 6, 1: 5, 2: 5, 3: 4, 4: 4, 5: 3, 6: 2, 7: 1 },
+    14: { 0: 6, 1: 5, 2: 5, 3: 4, 4: 4, 5: 3, 6: 3, 7: 2 },
+    15: { 0: 6, 1: 5, 2: 5, 3: 5, 4: 4, 5: 4, 6: 3, 7: 2, 8: 1 },
+    16: { 0: 6, 1: 5, 2: 5, 3: 5, 4: 4, 5: 4, 6: 3, 7: 3, 8: 2 },
+    17: { 0: 6, 1: 5, 2: 5, 3: 5, 4: 5, 5: 4, 6: 4, 7: 3, 8: 2, 9: 1 },
+    18: { 0: 6, 1: 5, 2: 5, 3: 5, 4: 5, 5: 4, 6: 4, 7: 3, 8: 3, 9: 2 },
+    19: { 0: 6, 1: 5, 2: 5, 3: 5, 4: 5, 5: 5, 6: 4, 7: 4, 8: 3, 9: 3 },
+    20: { 0: 6, 1: 5, 2: 5, 3: 5, 4: 5, 5: 5, 6: 4, 7: 4, 8: 4, 9: 4 },
+};
+
+export const HYBRID_SPELL_TABLE: SpellTable = {
+    4: { 1: 0 },
+    5: { 1: 0 },
+    6: { 1: 1 },
+    7: { 1: 1 },
+    8: { 1: 1, 2: 0 },
+    9: { 1: 1, 2: 0 },
+    10: { 1: 1, 2: 1 },
+    11: { 1: 1, 2: 1, 3: 0 },
+    12: { 1: 1, 2: 1, 3: 1 },
+    13: { 1: 1, 2: 1, 3: 1 },
+    14: { 1: 2, 2: 1, 3: 1, 4: 0 },
+    15: { 1: 2, 2: 1, 3: 1, 4: 1 },
+    16: { 1: 2, 2: 2, 3: 1, 4: 1 },
+    17: { 1: 2, 2: 2, 3: 2, 4: 1 },
+    18: { 1: 3, 2: 2, 3: 2, 4: 1 },
+    19: { 1: 3, 2: 3, 3: 3, 4: 2 },
+    20: { 1: 3, 2: 3, 3: 3, 4: 3 },
+};
+
+export const SORCERER_SPELL_TABLE: SpellTable = {
+    1: { 0: 5, 1: 3 },
+    2: { 0: 6, 1: 4 },
+    3: { 0: 6, 1: 5 },
+    4: { 0: 6, 1: 6, 2: 3 },
+    5: { 0: 6, 1: 6, 2: 4 },
+    6: { 0: 6, 1: 6, 2: 5, 3: 3 },
+    7: { 0: 6, 1: 6, 2: 6, 3: 4 },
+    8: { 0: 6, 1: 6, 2: 6, 3: 5, 4: 3 },
+    9: { 0: 6, 1: 6, 2: 6, 3: 6, 4: 4 },
+    10: { 0: 6, 1: 6, 2: 6, 3: 6, 4: 5, 5: 3 },
+    11: { 0: 6, 1: 6, 2: 6, 3: 6, 4: 6, 5: 4 },
+    12: { 0: 6, 1: 6, 2: 6, 3: 6, 4: 6, 5: 5, 6: 3 },
+    13: { 0: 6, 1: 6, 2: 6, 3: 6, 4: 6, 5: 6, 6: 4 },
+    14: { 0: 6, 1: 6, 2: 6, 3: 6, 4: 6, 5: 6, 6: 5, 7: 3 },
+    15: { 0: 6, 1: 6, 2: 6, 3: 6, 4: 6, 5: 6, 6: 6, 7: 4 },
+    16: { 0: 6, 1: 6, 2: 6, 3: 6, 4: 6, 5: 6, 6: 6, 7: 5, 8: 3 },
+    17: { 0: 6, 1: 6, 2: 6, 3: 6, 4: 6, 5: 6, 6: 6, 7: 6, 8: 4 },
+    18: { 0: 6, 1: 6, 2: 6, 3: 6, 4: 6, 5: 6, 6: 6, 7: 6, 8: 5, 9: 3 },
+    19: { 0: 6, 1: 6, 2: 6, 3: 6, 4: 6, 5: 6, 6: 6, 7: 6, 8: 6, 9: 4 },
+    20: { 0: 6, 1: 6, 2: 6, 3: 6, 4: 6, 5: 6, 6: 6, 7: 6, 8: 6, 9: 6 },
+};
+
+export const WIZARD_SPELL_TABLE: SpellTable = {
+    1: { 0: 3, 1: 1 },
+    2: { 0: 4, 1: 2 },
+    3: { 0: 4, 1: 2, 2: 1 },
+    4: { 0: 4, 1: 3, 2: 2 },
+    5: { 0: 4, 1: 3, 2: 2, 3: 1 },
+    6: { 0: 4, 1: 3, 2: 3, 3: 2 },
+    7: { 0: 4, 1: 4, 2: 3, 3: 2, 4: 1 },
+    8: { 0: 4, 1: 4, 2: 3, 3: 3, 4: 2 },
+    9: { 0: 4, 1: 4, 2: 4, 3: 3, 4: 2, 5: 1 },
+    10: { 0: 4, 1: 4, 2: 4, 3: 3, 4: 3, 5: 2 },
+    11: { 0: 4, 1: 4, 2: 4, 3: 4, 4: 3, 5: 2, 6: 1 },
+    12: { 0: 4, 1: 4, 2: 4, 3: 4, 4: 3, 5: 3, 6: 2 },
+    13: { 0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 3, 6: 2, 7: 1 },
+    14: { 0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 3, 6: 3, 7: 2 },
+    15: { 0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 3, 7: 2, 8: 1 },
+    16: { 0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 3, 7: 3, 8: 2 },
+    17: { 0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 3, 8: 2, 9: 1 },
+    18: { 0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 3, 8: 3, 9: 2 },
+    19: { 0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4, 8: 3, 9: 3 },
+    20: { 0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4, 8: 4, 9: 4 },
+};
+
+export const SpellProgressionType = {
+    bard: 0,
+    devine: 1,
+    hybrid: 2,
+    sorcerer: 3,
+    wizard: 4,
+} as const;
+
+export type SpellProgressionType = typeof SpellProgressionType[keyof typeof SpellProgressionType];
+
+export const SPELL_TABLE_MAP: { [key in SpellProgressionType]: SpellTable } = {
+    [SpellProgressionType.bard]: BARD_SPELL_TABLE,
+    [SpellProgressionType.devine]: DIVINE_SPELL_TABLE,
+    [SpellProgressionType.hybrid]: HYBRID_SPELL_TABLE,
+    [SpellProgressionType.sorcerer]: SORCERER_SPELL_TABLE,
+    [SpellProgressionType.wizard]: WIZARD_SPELL_TABLE,
+};
+
+// Select lists for progression types
+export const BAB_PROGRESSION_SELECT_LIST = [
+    { value: ProgressionType.good, label: 'Good' },
+    { value: ProgressionType.average, label: 'Average' },
+    { value: ProgressionType.poor, label: 'Poor' },
+];
+
+export const SAVE_PROGRESSION_SELECT_LIST = [
+    { value: ProgressionType.good, label: 'Good' },
+    { value: ProgressionType.poor, label: 'Poor' },
+];
+
+export const SPELL_PROGRESSION_SELECT_LIST = [
+    { value: SpellProgressionType.bard, label: 'Bard' },
+    { value: SpellProgressionType.devine, label: 'Divine' },
+    { value: SpellProgressionType.hybrid, label: 'Hybrid' },
+    { value: SpellProgressionType.sorcerer, label: 'Sorcerer' },
+    { value: SpellProgressionType.wizard, label: 'Wizard' },
+];

@@ -30,8 +30,6 @@ export interface CoreComponentAbbreviation extends CoreComponent {
 
 export interface RpgDie extends CoreComponent {
     sides: number;
-    min: number;
-    max: number;
 }
 
 export interface Currency extends CoreComponentAbbreviation {
@@ -100,6 +98,9 @@ export interface Class extends CoreComponentAbbreviation {
     isVisible: boolean;
     canCastSpells: boolean;
 }
+
+export type SpellTable = { [characterLevel: number]: { [spellLevel: number]: number } };
+
 
 export type AbilityMap = BaseMap<CoreComponentAbbreviation>;
 export type SavingThrowMap = BaseMap<CoreComponentAbbreviation>;

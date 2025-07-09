@@ -1,16 +1,28 @@
 import { RpgDieMap, CurrencyMap, AlignmentMap, SizeMap, LanguageMap, EditionMap } from './types';
 import { AbbreviationSelectOptionList, NameSelectOptionList } from './Util';
 
+export enum RpgDice {
+    D4 = 0,
+    D6 = 1,
+    D8 = 2,
+    D10 = 3,
+    D12 = 4,
+    D20 = 5,
+    D100 = 6,
+    D2 = 7,
+    D3 = 8,
+}
+
 export const RPG_DICE: RpgDieMap = {
-    0: { id: 0, name: 'd4', sides: 4, min: 1, max: 4 },
-    1: { id: 1, name: 'd6', sides: 6, min: 1, max: 6 },
-    2: { id: 2, name: 'd8', sides: 8, min: 1, max: 8 },
-    3: { id: 3, name: 'd10', sides: 10, min: 1, max: 10 },
-    4: { id: 4, name: 'd12', sides: 12, min: 1, max: 12 },
-    5: { id: 5, name: 'd20', sides: 20, min: 1, max: 20 },
-    6: { id: 6, name: 'd100', sides: 100, min: 1, max: 100 },
-    7: { id: 7, name: 'd2', sides: 2, min: 1, max: 2 },
-    8: { id: 8, name: 'd3', sides: 3, min: 1, max: 3 },
+    [RpgDice.D4]: { id: RpgDice.D4, name: 'd4', sides: 4 },
+    [RpgDice.D6]: { id: RpgDice.D6, name: 'd6', sides: 6 },
+    [RpgDice.D8]: { id: RpgDice.D8, name: 'd8', sides: 8 },
+    [RpgDice.D10]: { id: RpgDice.D10, name: 'd10', sides: 10 },
+    [RpgDice.D12]: { id: RpgDice.D12, name: 'd12', sides: 12 },
+    [RpgDice.D20]: { id: RpgDice.D20, name: 'd20', sides: 20 },
+    [RpgDice.D100]: { id: RpgDice.D100, name: 'd100', sides: 100 },
+    [RpgDice.D2]: { id: RpgDice.D2, name: 'd2', sides: 2 },
+    [RpgDice.D3]: { id: RpgDice.D3, name: 'd3', sides: 3 },
 }
 
 export const RPG_DICE_LIST = Object.values(RPG_DICE);

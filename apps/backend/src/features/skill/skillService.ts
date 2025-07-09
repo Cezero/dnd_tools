@@ -7,7 +7,8 @@ const prisma = new PrismaClient();
 
 export const skillService: SkillService = {
     async getSkills(query: SkillQueryRequest): Promise<SkillQueryResponse> {
-        const skip = (query.page - 1) * query.limit;
+        const offset = (query.page - 1) * query.limit;
+        console.log('offset', offset);
 
         // Build where clause for filtering
         const where: Prisma.SkillWhereInput = {};
@@ -31,7 +32,7 @@ export const skillService: SkillService = {
         const [skills, total] = await Promise.all([
             prisma.skill.findMany({
                 where,
-                skip,
+                skip: offset,
                 take: query.limit,
                 orderBy: { name: 'asc' }
             }),

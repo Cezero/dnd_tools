@@ -48,6 +48,8 @@ export const PROFICIENCY_TYPES: BaseMap<CoreComponent> = {
     4: { id: 4, name: 'Light Armor' },
     5: { id: 5, name: 'Medium Armor' },
     6: { id: 6, name: 'Heavy Armor' },
+    7: { id: 7, name: 'Shield' },
+    8: { id: 8, name: 'Tower Shield' },
 };
 
 export const PROFICIENCY_TYPE_LIST = Object.values(PROFICIENCY_TYPES);

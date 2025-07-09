@@ -3,7 +3,7 @@ import { Response } from 'express';
 import { ValidatedQueryT, ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types'
 import {
     FeatIdParamRequest,
-    FeatResponse,
+    GetFeatResponse,
     FeatQueryResponse,
     FeatQueryRequest,
     CreateFeatRequest,
@@ -30,7 +30,7 @@ export async function GetAllFeats(req: ValidatedNoInput<GetAllFeatsResponse>, re
 /**
  * Fetches a single feat by its ID.
  */
-export async function GetFeatById(req: ValidatedParamsT<FeatIdParamRequest, FeatResponse>, res: Response) {
+export async function GetFeatById(req: ValidatedParamsT<FeatIdParamRequest, GetFeatResponse>, res: Response) {
     const feat = await featService.getFeatById(req.params);
 
     if (!feat) {
@@ -45,22 +45,22 @@ export async function GetFeatById(req: ValidatedParamsT<FeatIdParamRequest, Feat
  * Creates a new feat.
  */
 export async function CreateFeat(req: ValidatedBodyT<CreateFeatRequest>, res: Response) {
-    await featService.createFeat(req.body);
-    res.status(201).json({message: 'Feat created successfully'});
+    const result = await featService.createFeat(req.body);
+    res.status(201).json(result);
 }
 
 /**
  * Updates an existing feat.
  */
 export async function UpdateFeat(req: ValidatedParamsBodyT<FeatIdParamRequest, UpdateFeatRequest>, res: Response) {
-    await featService.updateFeat(req.params, req.body);
-    res.status(200).json({message: 'Feat updated successfully'});
+    const result = await featService.updateFeat(req.params, req.body);
+    res.status(200).json(result);
 }
 
 /**
  * Deletes a feat by its ID.
  */
 export async function DeleteFeat(req: ValidatedParamsT<FeatIdParamRequest>, res: Response) {
-    await featService.deleteFeat(req.params);
-    res.status(200).json({message: 'Feat deleted successfully'});
+    const result = await featService.deleteFeat(req.params);
+    res.status(200).json(result);
 } 

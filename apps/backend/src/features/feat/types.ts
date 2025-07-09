@@ -1,17 +1,20 @@
 import {
     FeatQueryRequest,
-    FeatResponse,
+    GetFeatResponse,
+    GetAllFeatsResponse,
     FeatIdParamRequest,
     UpdateFeatRequest,
     CreateFeatRequest,
-    FeatQueryResponse
+    FeatQueryResponse,
+    UpdateResponse,
+    CreateResponse,
 } from '@shared/schema';
 
 export interface FeatService {
     getFeats: (query: FeatQueryRequest) => Promise<FeatQueryResponse>;
-    getAllFeats: () => Promise<Array<FeatResponse>>;
-    getFeatById: (id: FeatIdParamRequest) => Promise<FeatResponse | null>;
-    createFeat: (data: CreateFeatRequest) => Promise<{ id: number; message: string }>;
-    updateFeat: (id: FeatIdParamRequest, data: UpdateFeatRequest) => Promise<{ message: string }>;
-    deleteFeat: (id: FeatIdParamRequest) => Promise<{ message: string }>;
-} 
+    getAllFeats: () => Promise<GetAllFeatsResponse>;
+    getFeatById: (id: FeatIdParamRequest) => Promise<GetFeatResponse | null>;
+    createFeat: (data: CreateFeatRequest) => Promise<CreateResponse>;
+    updateFeat: (id: FeatIdParamRequest, data: UpdateFeatRequest) => Promise<UpdateResponse>;
+    deleteFeat: (id: FeatIdParamRequest) => Promise<UpdateResponse>;
+}

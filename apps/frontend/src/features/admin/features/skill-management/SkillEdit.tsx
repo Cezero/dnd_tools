@@ -139,7 +139,7 @@ export function SkillEdit() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto p-6">
+        <div className="w-4/5 mx-auto p-6">
             <div className="mb-6">
                 <h1 className="text-3xl font-bold">
                     {id === 'new' ? 'Create New Skill' : 'Edit Skill'}
@@ -178,6 +178,7 @@ export function SkillEdit() {
                                 inputExtraClassName="w-auto"
                                 required
                                 placeholder="e.g., Acrobatics, Diplomacy, Stealth"
+                                data-1p-ignore
                             />
                             <div className="flex flex-col gap-2">
                                 <CustomSelect
@@ -214,7 +215,7 @@ export function SkillEdit() {
                     </div>
                 </div>
                 <div className="space-y-2">
-                <MarkdownEditor
+                    <MarkdownEditor
                         value={formData.description || ''}
                         id="description"
                         label="Description"
@@ -222,6 +223,24 @@ export function SkillEdit() {
                     />
                     {form.validation.getError('description') && (
                         <span className="text-red-500 text-sm">{form.validation.getError('description')}</span>
+                    )}
+                    <MarkdownEditor
+                        value={formData.checkDescription || ''}
+                        id="check"
+                        label="Check"
+                        onChange={(value) => setFormData(prev => ({ ...prev, checkDescription: value }))}
+                    />
+                    {form.validation.getError('checkDescription') && (
+                        <span className="text-red-500 text-sm">{form.validation.getError('checkDescription')}</span>
+                    )}
+                    <MarkdownEditor
+                        value={formData.actionDescription || ''}
+                        id="action"
+                        label="Action"
+                        onChange={(value) => setFormData(prev => ({ ...prev, actionDescription: value }))}
+                    />
+                    {form.validation.getError('actionDescription') && (
+                        <span className="text-red-500 text-sm">{form.validation.getError('actionDescription')}</span>
                     )}
                     <CustomSelect
                         label="Try Again"
@@ -241,34 +260,14 @@ export function SkillEdit() {
                     {form.validation.getError('retryDescription') && (
                         <span className="text-red-500 text-sm">{form.validation.getError('retryDescription')}</span>
                     )}
-
                     <MarkdownEditor
-                        value={formData.untrainedNotes || ''}
-                        id="untrained"
-                        label="Untrained"
-                        onChange={(value) => setFormData(prev => ({ ...prev, untrainedNotes: value }))}
+                        value={formData.specialNotes || ''}
+                        id="special"
+                        label="Special"
+                        onChange={(value) => setFormData(prev => ({ ...prev, specialNotes: value }))}
                     />
-                    {form.validation.getError('untrainedNotes') && (
-                        <span className="text-red-500 text-sm">{form.validation.getError('untrainedNotes')}</span>
-                    )}
-
-                    <MarkdownEditor
-                        value={formData.checkDescription || ''}
-                        id="check"
-                        label="Check"
-                        onChange={(value) => setFormData(prev => ({ ...prev, checkDescription: value }))}
-                    />
-                    {form.validation.getError('checkDescription') && (
-                        <span className="text-red-500 text-sm">{form.validation.getError('checkDescription')}</span>
-                    )}
-                    <MarkdownEditor
-                        value={formData.actionDescription || ''}
-                        id="action"
-                        label="Action"
-                        onChange={(value) => setFormData(prev => ({ ...prev, actionDescription: value }))}
-                    />
-                    {form.validation.getError('actionDescription') && (
-                        <span className="text-red-500 text-sm">{form.validation.getError('actionDescription')}</span>
+                    {form.validation.getError('specialNotes') && (
+                        <span className="text-red-500 text-sm">{form.validation.getError('specialNotes')}</span>
                     )}
                     <MarkdownEditor
                         value={formData.synergyNotes || ''}
@@ -280,13 +279,22 @@ export function SkillEdit() {
                         <span className="text-red-500 text-sm">{form.validation.getError('synergyNotes')}</span>
                     )}
                     <MarkdownEditor
-                        value={formData.specialNotes || ''}
-                        id="special"
-                        label="Special"
-                        onChange={(value) => setFormData(prev => ({ ...prev, specialNotes: value }))}
+                        value={formData.untrainedNotes || ''}
+                        id="untrained"
+                        label="Untrained"
+                        onChange={(value) => setFormData(prev => ({ ...prev, untrainedNotes: value }))}
                     />
-                    {form.validation.getError('specialNotes') && (
-                        <span className="text-red-500 text-sm">{form.validation.getError('specialNotes')}</span>
+                    {form.validation.getError('untrainedNotes') && (
+                        <span className="text-red-500 text-sm">{form.validation.getError('untrainedNotes')}</span>
+                    )}
+                    <MarkdownEditor
+                        value={formData.restrictionNotes || ''}
+                        id="restriction"
+                        label="Restriction"
+                        onChange={(value) => setFormData(prev => ({ ...prev, restrictionNotes: value }))}
+                    />
+                    {form.validation.getError('restrictionNotes') && (
+                        <span className="text-red-500 text-sm">{form.validation.getError('restrictionNotes')}</span>
                     )}
                 </div>
 

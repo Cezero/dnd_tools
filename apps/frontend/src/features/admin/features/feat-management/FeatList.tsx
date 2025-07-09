@@ -6,7 +6,7 @@ import { GenericList } from '@/components/generic-list/GenericList';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { COLUMN_DEFINITIONS } from '@/features/admin/features/feat-management/FeatConfig';
 import { FeatService } from '@/features/admin/features/feat-management/FeatService';
-import { FeatQuerySchema, FeatResponse } from '@shared/schema';
+import { FeatQuerySchema, FeatInQueryResponse } from '@shared/schema';
 import { FEAT_TYPES } from '@shared/static-data';
 
 export function FeatList(): React.JSX.Element {
@@ -31,11 +31,11 @@ export function FeatList(): React.JSX.Element {
         }
     };
 
-    const RenderCell = (item: FeatResponse, columnId: string): React.ReactNode => {
+    const RenderCell = (item: FeatInQueryResponse, columnId: string): React.ReactNode => {
         const column = COLUMN_DEFINITIONS[columnId];
         if (!column) return null;
 
-        let cellContent: React.ReactNode = String(item[columnId as keyof FeatResponse] || '');
+        let cellContent: React.ReactNode = String(item[columnId as keyof FeatInQueryResponse] || '');
 
         if (columnId === 'name') {
             cellContent = (
@@ -79,7 +79,7 @@ export function FeatList(): React.JSX.Element {
                     New Feat
                 </button>
             </div>
-            <GenericList<FeatResponse>
+            <GenericList<FeatInQueryResponse>
                 storageKey="feats-list"
                 columnDefinitions={COLUMN_DEFINITIONS}
                 querySchema={FeatQuerySchema}

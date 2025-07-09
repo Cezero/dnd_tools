@@ -24,11 +24,13 @@
     "license": "ISC",
     "packageManager": "pnpm@10.12.4",
     "dependencies": {
+        "@mrleebo/prisma-ast": "^0.13.0",
         "@prisma/client": "6.11.0",
         "@shared/prisma-client": "workspace:*",
         "@shared/schema": "workspace:*",
         "@types/bcrypt": "^5.0.2",
         "@types/jsonwebtoken": "^9.0.10",
+        "@shared/static-data": "workspace:*",
         "bcrypt": "^6.0.0",
         "cors": "^2.8.5",
         "dotenv": "^17.0.0",

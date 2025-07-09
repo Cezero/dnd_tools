@@ -1,11 +1,14 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { z } from 'zod';
 
 import { useAuthAuto } from '@/components/auth';
-import { GenericList } from '@/components/generic-list';
+import { GenericList } from '@/components/generic-list/GenericList';
+import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { COLUMN_DEFINITIONS } from '@/features/admin/features/class-management/ClassConfig';
 import { ClassService } from '@/features/admin/features/class-management/ClassService';
-import { ClassQuerySchema, ClassInQueryResponse } from '@shared/schema';
+import { ClassFeatureService } from '@/features/admin/features/class-management/ClassFeatureService';
+import { ClassQuerySchema, ClassInQueryResponse, ClassFeatureQuerySchema, ClassFeatureSchema } from '@shared/schema';
 import { RPG_DICE, EDITION_MAP, ABILITY_MAP, GetSourceDisplay } from '@shared/static-data';
 
 export default function ClassList(): React.JSX.Element {
@@ -17,6 +20,10 @@ export default function ClassList(): React.JSX.Element {
         navigate('/admin/classes/new/edit', { state: { fromListParams: location.search } });
     };
 
+    const HandleNewClassFeatureClick = (): void => {
+        navigate('/admin/classes/features/new/edit', { state: { fromListParams: location.search } });
+    };
+
     const HandleDeleteClass = async (id: number): Promise<void> => {
         if (window.confirm('Are you sure you want to delete this class?')) {
             try {
@@ -24,6 +31,17 @@ export default function ClassList(): React.JSX.Element {
             } catch (error) {
                 console.error('Failed to delete class:', error);
                 alert('Failed to delete class.');
+            }
+        }
+    };
+
+    const HandleDeleteClassFeature = async (slug: string): Promise<void> => {
+        if (window.confirm('Are you sure you want to delete this class feature?')) {
+            try {
+                await ClassFeatureService.deleteClassFeature(undefined, { slug });
+            } catch (error) {
+                console.error('Failed to delete class feature:', error);
+                alert('Failed to delete class feature.');
             }
         }
     };
@@ -65,6 +83,25 @@ export default function ClassList(): React.JSX.Element {
         return cellContent;
     };
 
+    const RenderFeatureCell = (item: z.infer<typeof ClassFeatureSchema>, columnId: string): React.ReactNode => {
+        let cellContent: React.ReactNode = String(item[columnId as keyof z.infer<typeof ClassFeatureSchema>] || '');
+
+        if (columnId === 'slug') {
+            cellContent = (
+                <a
+                    onClick={() => navigate(`/admin/classes/features/${item.slug}`)}
+                    className="text-blue-600 hover:underline cursor-pointer"
+                >
+                    {item.slug}
+                </a>
+            );
+        } else if (columnId === 'description') {
+            cellContent = (<ProcessMarkdown id={`class-feature-${item.slug}-description`} markdown={item.description || ''} />);
+        }
+
+        return cellContent;
+    };
+
     if (isAuthLoading) {
         return <div className="p-4">Loading...</div>;
     }
@@ -75,7 +112,7 @@ export default function ClassList(): React.JSX.Element {
             <div className="mb-4 flex justify-end">
                 <button
                     onClick={HandleNewClassClick}
-                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                    className="bg-blue-500 hover:bg-blue-700 font-bold py-2 px-4 rounded"
                 >
                     New Class
                 </button>
@@ -90,6 +127,43 @@ export default function ClassList(): React.JSX.Element {
                 itemDesc="class"
                 editHandler={(item) => navigate(`/admin/classes/${item.id}/edit`)}
                 deleteHandler={(item) => HandleDeleteClass(item.id)}
+            />
+
+            <h2 className="text-xl font-bold mb-4 mt-8">Class Feature Definitions</h2>
+            <div className="mb-4 flex justify-end">
+                <button
+                    onClick={HandleNewClassFeatureClick}
+                    className="bg-blue-500 hover:bg-blue-700 font-bold py-2 px-4 rounded"
+                >
+                    New Class Feature
+                </button>
+            </div>
+            <GenericList<z.infer<typeof ClassFeatureSchema>>
+                storageKey="class-features-list"
+                columnDefinitions={{
+                    slug: {
+                        label: 'Feature Slug',
+                        sortable: true,
+                        isDefault: true,
+                        isRequired: true,
+                        filterConfig: {
+                            type: 'text-input',
+                            props: { placeholder: 'Filter by slug...' }
+                        }
+                    },
+                    description: {
+                        label: 'Description',
+                        sortable: false,
+                        isDefault: true,
+                    },
+                }}
+                querySchema={ClassFeatureQuerySchema}
+                serviceFunction={ClassFeatureService.getClassFeatures}
+                renderCell={RenderFeatureCell}
+                detailPagePath="/admin/classes/features/:slug"
+                itemDesc="class feature"
+                editHandler={(item: z.infer<typeof ClassFeatureSchema>) => navigate(`/admin/classes/features/${item.slug}/edit`)}
+                deleteHandler={(item: z.infer<typeof ClassFeatureSchema>) => HandleDeleteClassFeature(item.slug)}
             />
         </div>
     );

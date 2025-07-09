@@ -86,7 +86,7 @@ export const ReferenceTableUpdateSchema = ReferenceTableSchema.extend({
     columns: z.array(TableColumnSchema.omit({ tableSlug: true })).nullable(),
     rows: z.array(
         TableRowSchema.omit({ tableSlug: true }).extend({
-            cells: z.array(TableCellSchema.omit({ tableSlug: true })).nullable(),
+            cells: z.array(TableCellSchema.omit({ tableSlug: true, rowIndex: true })).nullable(),
         })
     ).nullable(),
 });

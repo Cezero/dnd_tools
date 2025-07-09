@@ -263,7 +263,7 @@ export function ReferenceTableEditor() {
             }
         }
         FetchTable();
-    }, [tableSlug]);
+    }, [slug]);
 
 
     const HandleChange = (rowIndex: number, columnId: string, value: string) => {
@@ -399,7 +399,6 @@ export function ReferenceTableEditor() {
                     const rowSpan = cellData?.rowSpan || 1;
 
                     currentRowCells.push({
-                        rowIndex: rowIndex,
                         columnIndex: colIndex,
                         value: cellData?.value ?? '',
                         colSpan: colSpan,
@@ -414,7 +413,7 @@ export function ReferenceTableEditor() {
         };
         console.log('[ReferenceTableEditor:HandleSave] tableData', tableData);
         try {
-            if (tableSlug === 'new') {
+            if (slug === 'new') {
                 const response = await ReferenceTableService.createReferenceTable(tableData);
                 setTableId(response.id); // Update tableId with the new slug
                 navigate('/admin/referencetables');

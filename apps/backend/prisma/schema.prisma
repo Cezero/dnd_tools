@@ -24,10 +24,13 @@ model Class {
     description      String? @db.Text
     skillPoints      Int
     castingAbilityId Int?
+    spellProgression Int?
+    babProgression   Int
+    fortProgression  Int
+    refProgression   Int
+    willProgression  Int
 
     features         ClassFeatureMap[]
-    attributes       ClassLevelAttribute[]
-    spellProgression ClassSpellProgression[]
     skills           ClassSkillMap[]
     sourceBookInfo   ClassSourceMap[]
     spellLevels      SpellLevelMap[]
@@ -49,29 +52,6 @@ model ClassFeatureMap {
     feature ClassFeature @relation(fields: [featureSlug], references: [slug])
 
     @@id([classId, featureSlug])
-}
-
-model ClassSpellProgression {
-    classId     Int
-    level       Int
-    spellLevel  Int
-    spellSlots  Int
-
-    class Class @relation(fields: [classId], references: [id])
-
-    @@id([classId, level, spellLevel])
-}
-
-model ClassLevelAttribute {
-    classId         Int
-    level           Int
-    baseAttackBonus Int
-    fortSave        Int
-    refSave         Int
-    willSave        Int
-
-    class Class @relation(fields: [classId], references: [id])
-    @@id([classId, level])
 }
 
 model ClassSkillMap {
@@ -198,6 +178,7 @@ model Skill {
     untrainedNotes    String?  @db.Text
     affectedByArmor   Boolean  @default(false)
     description       String?  @db.Text
+    restrictionNotes  String?  @db.Text
     trainedOnly       Boolean?
 
     classes ClassSkillMap[]
@@ -219,8 +200,8 @@ model Feat {
     repeatable    Boolean?
     fighterBonus  Boolean?
 
-    benefits         FeatBenefitMap[]
-    prerequisitesMap FeatPrerequisiteMap[]
+    benefits   FeatBenefitMap[]
+    prereqs    FeatPrerequisiteMap[]
 }
 
 model FeatBenefitMap {

@@ -154,7 +154,7 @@ export const raceService: RaceService = {
     async getRaceTraits(query: RaceTraitQueryRequest): Promise<RaceTraitQueryResponse> {
         const page = query.page;
         const limit = query.limit;
-        const skip = (page - 1) * limit;
+        const offset = (query.page - 1) * query.limit;
 
         // Build where clause for filtering
         const where: Prisma.RaceTraitWhereInput = {};
@@ -169,7 +169,7 @@ export const raceService: RaceService = {
         const [traits, total] = await Promise.all([
             prisma.raceTrait.findMany({
                 where,
-                skip,
+                skip: offset,
                 take: limit,
                 orderBy: { slug: 'asc' },
             }),

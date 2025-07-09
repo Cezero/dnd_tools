@@ -1,10 +1,24 @@
 import { PrismaClient, Prisma } from '@shared/prisma-client';
-import { ClassIdParamRequest, ClassQueryRequest, CreateClassRequest, GetAllClassesResponse, GetClassResponse, UpdateClassRequest } from '@shared/schema';
+import {
+    ClassIdParamRequest,
+    ClassQueryRequest,
+    CreateClassRequest,
+    GetAllClassesResponse,
+    GetClassResponse,
+    UpdateClassRequest,
+    ClassFeatureQueryRequest,
+    ClassFeatureSlugParamRequest,
+    CreateClassFeatureRequest,
+    UpdateClassFeatureRequest,
+    ClassFeatureQueryResponse,
+    GetClassFeatureResponse,
+    GetAllClassFeaturesResponse
+} from '@shared/schema';
+import type { SpellProgressionType, ProgressionType } from '@shared/static-data';
 
 import type { ClassService } from './types';
 
 const prisma = new PrismaClient();
-
 
 export const classService: ClassService = {
     async getClasses(query: ClassQueryRequest) {
@@ -61,11 +75,21 @@ export const classService: ClassService = {
             prisma.class.count({ where }),
         ]);
 
+        // Cast enum fields to the correct types
+        const typedClasses = classes.map(cls => ({
+            ...cls,
+            spellProgression: cls.spellProgression as SpellProgressionType | null,
+            babProgression: cls.babProgression as ProgressionType,
+            fortProgression: cls.fortProgression as ProgressionType,
+            refProgression: cls.refProgression as ProgressionType,
+            willProgression: cls.willProgression as ProgressionType
+        }));
+
         return {
             page,
             limit,
             total,
-            results: classes,
+            results: typedClasses,
         };
     },
 
@@ -84,55 +108,55 @@ export const classService: ClassService = {
                         pageNumber: true
                     }
                 },
-                features: true,
-                attributes: true,
-                spellProgression: true,
+                features: {
+                    include: {
+                        feature: {
+                            select: {
+                                description: true
+                            }
+                        }
+                    }
+                },
                 skills: true,
             },
         });
 
-        return classData as GetClassResponse;
+        const flattenedFeatures = classData?.features.map((f) => ({
+            description: f.feature.description,
+            classId: f.classId,
+            featureSlug: f.featureSlug,
+            level: f.level,
+        })) ?? [];
+
+        return {
+            ...classData,
+            features: flattenedFeatures,
+        } as GetClassResponse;
     },
 
     async createClass(data: CreateClassRequest) {
-            const result = await prisma.class.create({
-                data: {
-                    ...data,
-                    sourceBookInfo: {
-                        create: data.sourceBookInfo?.map(sourceBookInfo => ({
-                            sourceBookId: sourceBookInfo.sourceBookId,
-                            pageNumber: sourceBookInfo.pageNumber
-                        })) || [],
-                    },
-                    features: {
-                        create: data.features?.map(feature => ({
-                            featureSlug: feature.featureSlug,
-                            level: feature.level
-                        })) || [],
-                    },
-                    attributes: {
-                        create: data.attributes?.map(attribute => ({
-                            level: attribute.level,
-                            baseAttackBonus: attribute.baseAttackBonus,
-                            fortSave: attribute.fortSave,
-                            refSave: attribute.refSave,
-                            willSave: attribute.willSave
-                        })) || [],
-                    },
-                    spellProgression: {
-                        create: data.spellProgression?.map(spellProgression => ({
-                            level: spellProgression.level,
-                            spellLevel: spellProgression.spellLevel,
-                            spellSlots: spellProgression.spellSlots
-                        })) || [],
-                    },
-                    skills: {
-                        create: data.skills?.map(skill => ({
-                            skillId: skill.skillId
-                        })) || [],
-                    },
+        const result = await prisma.class.create({
+            data: {
+                ...data,
+                sourceBookInfo: {
+                    create: data.sourceBookInfo?.map(sourceBookInfo => ({
+                        sourceBookId: sourceBookInfo.sourceBookId,
+                        pageNumber: sourceBookInfo.pageNumber
+                    })) || [],
                 },
-            });
+                features: {
+                    create: data.features?.map(feature => ({
+                        featureSlug: feature.featureSlug,
+                        level: feature.level
+                    })) || [],
+                },
+                skills: {
+                    create: data.skills?.map(skill => ({
+                        skillId: skill.skillId
+                    })) || [],
+                },
+            },
+        });
 
         return { id: result.id, message: 'Class created successfully' };
     },
@@ -141,8 +165,6 @@ export const classService: ClassService = {
         await prisma.$transaction(async (tx) => {
             await tx.classSourceMap.deleteMany({ where: { classId: query.id } });
             await tx.classFeatureMap.deleteMany({ where: { classId: query.id } });
-            await tx.classLevelAttribute.deleteMany({ where: { classId: query.id } });
-            await tx.classSpellProgression.deleteMany({ where: { classId: query.id } });
             await tx.classSkillMap.deleteMany({ where: { classId: query.id } });
             await tx.class.update({
                 where: { id: query.id },
@@ -158,22 +180,6 @@ export const classService: ClassService = {
                         create: data.features?.map(feature => ({
                             featureSlug: feature.featureSlug,
                             level: feature.level
-                        })) || [],
-                    },
-                    attributes: {
-                        create: data.attributes?.map(attribute => ({
-                            level: attribute.level,
-                            baseAttackBonus: attribute.baseAttackBonus,
-                            fortSave: attribute.fortSave,
-                            refSave: attribute.refSave,
-                            willSave: attribute.willSave
-                        })) || [],
-                    },
-                    spellProgression: {
-                        create: data.spellProgression?.map(spellProgression => ({
-                            level: spellProgression.level,
-                            spellLevel: spellProgression.spellLevel,
-                            spellSlots: spellProgression.spellSlots
                         })) || [],
                     },
                     skills: {
@@ -194,5 +200,80 @@ export const classService: ClassService = {
         });
 
         return { message: 'Class deleted successfully' };
+    },
+
+    // Class Feature methods
+    async getClassFeatures(query: ClassFeatureQueryRequest): Promise<ClassFeatureQueryResponse> {
+        const page = query.page;
+        const limit = query.limit;
+        const offset = (page - 1) * limit;
+
+        const where: Prisma.ClassFeatureWhereInput = {};
+
+        if (query.slug) {
+            where.slug = { contains: query.slug };
+        }
+        if (query.description) {
+            where.description = { contains: query.description };
+        }
+
+        const [features, total] = await Promise.all([
+            prisma.classFeature.findMany({
+                where,
+                skip: offset,
+                take: limit,
+                orderBy: { slug: 'asc' },
+            }),
+            prisma.classFeature.count({ where }),
+        ]);
+
+        return {
+            page,
+            limit,
+            total,
+            results: features,
+        };
+    },
+
+    async getAllClassFeatures(): Promise<GetAllClassFeaturesResponse> {
+        const features = await prisma.classFeature.findMany();
+        return features;
+    },
+
+    async getClassFeatureBySlug(query: ClassFeatureSlugParamRequest): Promise<GetClassFeatureResponse | null> {
+        const featureData = await prisma.classFeature.findUnique({
+            where: { slug: query.slug },
+        });
+
+        return featureData as GetClassFeatureResponse;
+    },
+
+    async createClassFeature(data: CreateClassFeatureRequest) {
+        const result = await prisma.classFeature.create({
+            data: {
+                ...data,
+            },
+        });
+
+        return { id: result.slug, message: 'Class feature created successfully' };
+    },
+
+    async updateClassFeature(query: ClassFeatureSlugParamRequest, data: UpdateClassFeatureRequest) {
+        await prisma.classFeature.update({
+            where: { slug: query.slug },
+            data: {
+                ...data,
+            },
+        });
+
+        return { message: 'Class feature updated successfully' };
+    },
+
+    async deleteClassFeature(query: ClassFeatureSlugParamRequest) {
+        await prisma.classFeature.delete({
+            where: { slug: query.slug },
+        });
+
+        return { message: 'Class feature deleted successfully' };
     },
 };

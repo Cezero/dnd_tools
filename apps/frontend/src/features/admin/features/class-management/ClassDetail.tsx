@@ -3,9 +3,11 @@ import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
+import { ClassProgressionTable } from '@/components/ClassProgressionTable';
 import { ClassService } from '@/features/admin/features/class-management/ClassService';
+import { generateClassProgression } from '@/lib/ClassProgression';
 import { GetClassResponse } from '@shared/schema';
-import { RPG_DICE, EDITION_MAP, ABILITY_MAP } from '@shared/static-data';
+import { RPG_DICE, EDITION_MAP, ABILITY_MAP, _SKILL_MAP } from '@shared/static-data';
 
 export default function ClassDetail() {
     const { id } = useParams();
@@ -73,6 +75,78 @@ export default function ClassDetail() {
                     <div className="mt-3 p-2 w-full rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert">
                         <ProcessMarkdown markdown={cls.description || ''} id='description' />
                     </div>
+                    <div className="mt-4">
+                        <h3 className="text-lg font-semibold mb-2">Class Progression</h3>
+                        {(() => {
+                            const progressionConfig = {
+                                babProgression: cls.babProgression,
+                                fortProgression: cls.fortProgression,
+                                refProgression: cls.refProgression,
+                                willProgression: cls.willProgression,
+                                spellProgression: cls.spellProgression !== null ? cls.spellProgression : undefined,
+                            };
+                            const progression = generateClassProgression(progressionConfig);
+                            return (
+                                <ClassProgressionTable
+                                    progression={progression}
+                                    className="mt-2"
+                                />
+                            );
+                        })()}
+                    </div>
+                    {/* Class Skills Section */}
+                    {cls.skills && cls.skills.length > 0 && (
+                        <div className="mt-4">
+                            <h3 className="text-lg font-semibold mb-2">Class Skills</h3>
+                            <div className="flex flex-wrap gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md">
+                                {cls.skills.map((skill, index) => (
+                                    <span key={skill.skillId} className="text-sm">
+                                        {_SKILL_MAP[skill.skillId]?.name || 'Unknown Skill'}
+                                        {index < cls.skills!.length - 1 && ','}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Class Features Section */}
+                    {cls.features && cls.features.length > 0 && (
+                        <div className="mt-4">
+                            <h3 className="text-lg font-semibold mb-2">Class Features</h3>
+                            <div className="space-y-4">
+                                {(() => {
+                                    // Group features by level
+                                    const groupedFeatures = cls.features.reduce((acc, feature) => {
+                                        const level = feature.level;
+                                        if (!acc[level]) {
+                                            acc[level] = [];
+                                        }
+                                        acc[level].push(feature);
+                                        return acc;
+                                    }, {} as Record<number, typeof cls.features>);
+
+                                    // Sort levels and render each group
+                                    return Object.keys(groupedFeatures)
+                                        .sort((a, b) => parseInt(a) - parseInt(b))
+                                        .map(level => (
+                                            <div key={level} className="border border-gray-200 dark:border-gray-600 rounded-md p-3">
+                                                <h4 className="text-md font-medium mb-2">Level {level}</h4>
+                                                <div className="space-y-2">
+                                                    {groupedFeatures[parseInt(level)].map((feature, index) => (
+                                                        <div key={index} className="p-2">
+                                                            <ProcessMarkdown markdown={feature.description} id='description' />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ));
+                                })()}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Class Progression Table */}
+
                     <div className="mt-4 text-right">
                         <button type="button" onClick={() => navigate(`/admin/classes${fromListParams ? `?${fromListParams}` : ''}`)} className="inline-block px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 border dark:border-gray-500">Back to List</button>
                         {isAdmin && (

@@ -1,0 +1,7 @@
+# Cursor Rules
+
+## Server Management
+- Do not attempt to run development servers, production servers, or any other server processes
+- Do not use `npm run dev`, `npm start`, `pnpm dev`, or similar commands
+- If server functionality is needed, ask the user to run the appropriate command themselves
+- Focus on code analysis, file editing, and development tasks that don't require running servers 

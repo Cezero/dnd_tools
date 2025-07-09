@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { PageQueryResponseSchema, PageQuerySchema } from './query.js';
 import { SourceMapSchema } from './sourcebook.js';
 import { optionalBooleanParam, optionalIntegerParam } from './utils.js';
+import { SpellProgressionType, ProgressionType } from '@shared/static-data';
 
 // Schema for class query parameters
 export const ClassQuerySchema = PageQuerySchema.extend({
@@ -23,6 +24,12 @@ export const ClassQuerySchema = PageQuerySchema.extend({
     }),
 });
 
+// Schema for class feature query parameters
+export const ClassFeatureQuerySchema = PageQuerySchema.extend({
+    slug: z.string().optional(),
+    description: z.string().optional(),
+});
+
 export const ClassFeatureSchema = z.object({
     slug: z.string().min(1, 'Feature slug is required').max(100, 'Feature slug must be less than 100 characters').trim(),
     description: z.string().max(10000, 'Description must be less than 10000 characters'),
@@ -31,24 +38,39 @@ export const ClassFeatureSchema = z.object({
 export const ClassFeatureMapSchema = z.object({
     classId: z.number().int().positive('Class ID must be a positive integer'),
     featureSlug: z.string().min(1, 'Feature slug is required').max(100, 'Feature slug must be less than 100 characters').trim(),
+    description: z.string().max(10000, 'Description must be less than 10000 characters'),
     level: z.number().int().min(1, 'Level must be at least 1').max(20, 'Level must be at most 20'),
 });
 
-export const ClassLevelAttributeSchema = z.object({
-    classId: z.number().int().positive('Class ID must be a positive integer'),
-    level: z.number().int().min(1, 'Level must be at least 1').max(20, 'Level must be at most 20'),
-    baseAttackBonus: z.number().int().min(1, 'Base attack bonus must be at least 1').max(20, 'Base attack bonus must be at most 20'),
-    fortSave: z.number().int().min(1, 'Fortitude save must be at least 1').max(10, 'Fortitude save must be at most 10'),
-    refSave: z.number().int().min(1, 'Reflex save must be at least 1').max(10, 'Reflex save must be at most 10'),
-    willSave: z.number().int().min(1, 'Will save must be at least 1').max(10, 'Will save must be at most 10'),
+// Schema for class feature path parameters
+export const ClassFeatureSlugParamSchema = z.object({
+    slug: z.string(),
 });
 
-export const ClassSpellProgressionSchema = z.object({
-    classId: z.number().int().positive('Class ID must be a positive integer'),
-    level: z.number().int().min(1, 'Level must be at least 1').max(20, 'Level must be at most 20'),
-    spellLevel: z.number().int().min(1, 'Spell level must be at least 1').max(9, 'Spell level must be at most 9'),
-    spellSlots: z.number().int().min(1, 'Spell slots must be non-negative').max(10, 'Spell slots must be at most 10'),
+// Schema for class feature base
+export const BaseClassFeatureSchema = z.object({
+    slug: z.string()
+        .min(1, 'Feature slug is required')
+        .max(100, 'Feature slug must be less than 100 characters')
+        .trim(),
+    description: z.string().max(10000, 'Description must be less than 10000 characters'),
 });
+
+export const ClassFeatureSummarySchema = BaseClassFeatureSchema.extend({
+    slug: z.string(),
+});
+
+export const ClassFeatureQueryResponseSchema = PageQueryResponseSchema.extend({
+    results: z.array(ClassFeatureSummarySchema),
+});
+
+export const GetAllClassFeaturesResponseSchema = z.array(ClassFeatureSummarySchema);
+
+export const GetClassFeatureResponseSchema = BaseClassFeatureSchema;
+
+export const UpdateClassFeatureSchema = BaseClassFeatureSchema.partial();
+
+export const CreateClassFeatureSchema = BaseClassFeatureSchema;
 
 export const ClassSkillSchema = z.object({
     classId: z.number().int().positive('Class ID must be a positive integer'),
@@ -72,11 +94,14 @@ export const BaseClassSchema = z.object({
     hitDie: z.number().int().min(1, 'Hit die must be at least 1').max(20, 'Hit die must be at most 20'),
     skillPoints: z.number().int().min(0, 'Skill points must be non-negative').max(100, 'Skill points must be less than 100'),
     castingAbilityId: z.number().int().positive('Casting ability ID must be a positive integer').nullable(),
+    spellProgression: z.nativeEnum(SpellProgressionType).nullable(),
+    babProgression: z.nativeEnum(ProgressionType),
+    fortProgression: z.nativeEnum(ProgressionType),
+    refProgression: z.nativeEnum(ProgressionType),
+    willProgression: z.nativeEnum(ProgressionType),
     description: z.string().max(10000, 'Description must be less than 10000 characters').nullable(),
     sourceBookInfo: z.array(SourceMapSchema).nullable(),
     features: z.array(ClassFeatureMapSchema).nullable(),
-    attributes: z.array(ClassLevelAttributeSchema).nullable(),
-    spellProgression: z.array(ClassSpellProgressionSchema).nullable(),
     skills: z.array(ClassSkillSchema).nullable(),
 });
 // Schema for class path parameters
@@ -86,8 +111,6 @@ export const ClassIdParamSchema = z.object({
 
 export const ClassSummarySchema = BaseClassSchema.omit({
     features: true,
-    attributes: true,
-    spellProgression: true,
     skills: true,
 }).extend({
     id: z.number().int().positive('Class ID must be a positive integer'),
@@ -114,3 +137,13 @@ export type GetAllClassesResponse = z.infer<typeof GetAllClassesResponseSchema>;
 export type CreateClassRequest = z.infer<typeof CreateClassSchema>;
 export type UpdateClassRequest = z.infer<typeof UpdateClassSchema>;
 export type GetClassResponse = z.infer<typeof GetClassResponseSchema>;
+
+// Class feature type exports
+export type ClassFeatureQueryRequest = z.infer<typeof ClassFeatureQuerySchema>;
+export type ClassFeatureQueryResponse = z.infer<typeof ClassFeatureQueryResponseSchema>;
+export type ClassFeatureInQueryResponse = z.infer<typeof ClassFeatureSummarySchema>;
+export type ClassFeatureSlugParamRequest = z.infer<typeof ClassFeatureSlugParamSchema>;
+export type GetAllClassFeaturesResponse = z.infer<typeof GetAllClassFeaturesResponseSchema>;
+export type CreateClassFeatureRequest = z.infer<typeof CreateClassFeatureSchema>;
+export type UpdateClassFeatureRequest = z.infer<typeof UpdateClassFeatureSchema>;
+export type GetClassFeatureResponse = z.infer<typeof GetClassFeatureResponseSchema>;

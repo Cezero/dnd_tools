@@ -2,7 +2,6 @@ import { z } from 'zod';
 import { PageQueryResponseSchema, PageQuerySchema } from './query.js';
 import { optionalBooleanParam, optionalIntegerParam, optionalStringParam } from './utils.js';
 
-// Schema for feat query parameters
 export const FeatQuerySchema = PageQuerySchema.extend({
     name: optionalStringParam(),
     typeId: optionalIntegerParam(),
@@ -15,12 +14,10 @@ export const FeatQuerySchema = PageQuerySchema.extend({
     fighterBonus: optionalBooleanParam(),
 });
 
-// Schema for feat path parameters
 export const FeatIdParamSchema = z.object({
     id: z.string().transform((val: string) => parseInt(val)),
 });
 
-// Schema for feat benefit (matches Prisma FeatBenefitMap model)
 export const FeatBenefitMapSchema = z.object({
     typeId: z.number().int().positive('Benefit type ID must be a positive integer'),
     referenceId: z.number().int().positive('Reference ID must be a positive integer').nullable(),
@@ -28,7 +25,6 @@ export const FeatBenefitMapSchema = z.object({
     index: z.number().int().min(0, 'Benefit index must be non-negative'),
 });
 
-// Schema for feat prerequisite (matches Prisma FeatPrerequisiteMap model)
 export const FeatPrerequisiteMapSchema = z.object({
     index: z.number().int().min(0, 'Prerequisite index must be non-negative'),
     typeId: z.number().int().positive('Prerequisite type must be a positive integer'),
@@ -36,7 +32,6 @@ export const FeatPrerequisiteMapSchema = z.object({
     referenceId: z.number().int().positive('Reference ID must be a positive integer').nullable(),
 });
 
-// Schema for feat base
 export const BaseFeatSchema = z.object({
     name: z.string()
         .min(1, 'Feat name is required')
@@ -58,44 +53,41 @@ export const FeatSchema = BaseFeatSchema.extend({
     id: z.number().int().positive('Feat ID must be a positive integer'),
 });
 
+export const FeatInQueryResponseSchema = FeatSchema.omit({ benefits: true, prereqs: true });
+
 export const FeatQueryResponseSchema = PageQueryResponseSchema.extend({
-    results: z.array(FeatSchema),
+    results: z.array(FeatInQueryResponseSchema),
 });
 
-export const GetAllFeatsResponseSchema = z.array(FeatSchema);
+export const GetAllFeatsResponseSchema = z.array(FeatSchema
+    .omit({
+        typeId: true,
+        description: true,
+        normalEffect: true,
+        specialEffect: true,
+        prerequisites: true,
+        repeatable: true,
+        fighterBonus: true,
+        benefits: true,
+        prereqs: true,
+    }));
 
 export const CreateFeatSchema = BaseFeatSchema;
 
-// Schema for updating a feat (same as create but all fields optional)
+export const GetFeatResponseSchema = BaseFeatSchema;
+
 export const UpdateFeatSchema = BaseFeatSchema.partial();
 
-// Schema for feat benefit base
-export const FeatBenefitSchema = z.object({
-    typeId: z.number().int().positive('Benefit type ID must be a positive integer'),
-    referenceId: z.number().int().positive('Reference ID must be a positive integer').nullable(),
-    amount: z.number().int().min(0, 'Benefit amount must be non-negative').nullable(),
-    index: z.number().int().min(0, 'Benefit index must be non-negative'),
-});
-
-// Schema for feat prerequisite base
-export const FeatPrerequisiteSchema = z.object({
-    typeId: z.number().int().positive('Prerequisite type must be a positive integer'),
-    amount: z.number().int().min(0, 'Prerequisite amount must be non-negative').nullable(),
-    referenceId: z.number().int().positive('Reference ID must be a positive integer').nullable(),
-    index: z.number().int().min(0, 'Prerequisite index must be non-negative'),
-});
-
-// Type inference from schemas
 export type FeatQueryRequest = z.infer<typeof FeatQuerySchema>;
 export type FeatIdParamRequest = z.infer<typeof FeatIdParamSchema>;
+export type FeatQueryResponse = z.infer<typeof FeatQueryResponseSchema>;
+export type FeatInQueryResponse = z.infer<typeof FeatInQueryResponseSchema>;
 export type CreateFeatRequest = z.infer<typeof CreateFeatSchema>;
 export type UpdateFeatRequest = z.infer<typeof UpdateFeatSchema>;
-export type FeatQueryResponse = z.infer<typeof FeatQueryResponseSchema>;
+
 export type GetAllFeatsResponse = z.infer<typeof GetAllFeatsResponseSchema>;
-export type FeatResponse = z.infer<typeof FeatSchema>;
+export type GetFeatResponse = z.infer<typeof GetFeatResponseSchema>;
 
-// Feat benefit types
-export type FeatBenefit = z.infer<typeof FeatBenefitSchema>;
+export type FeatBenefitMap = z.infer<typeof FeatBenefitMapSchema>;
 
-// Feat prerequisite types
-export type FeatPrerequisite = z.infer<typeof FeatPrerequisiteSchema>;
+export type FeatPrerequisiteMap = z.infer<typeof FeatPrerequisiteMapSchema>;

@@ -1,4 +1,3 @@
-import { z } from 'zod';
 
 import { typedApi } from '@/services/Api';
 import {
@@ -7,7 +6,11 @@ import {
     CreateFeatSchema,
     UpdateFeatSchema,
     FeatQueryResponseSchema,
-    FeatSchema,
+    UpdateResponseSchema,
+    CreateResponseSchema,
+    BaseFeatSchema,
+    GetFeatResponseSchema,
+    GetAllFeatsResponseSchema,
 } from '@shared/schema';
 
 /**
@@ -42,36 +45,40 @@ export const FeatService = {
         responseSchema: FeatQueryResponseSchema,
     }),
 
-    // Get feat by ID with path parameter
-    getFeatById: typedApi<undefined, typeof FeatSchema, typeof FeatIdParamSchema>({
+    getAllFeats: typedApi<undefined, typeof GetAllFeatsResponseSchema>({
+        path: '/feats/all',
+        method: 'GET',
+        responseSchema: GetAllFeatsResponseSchema,
+    }),
+
+    getFeatById: typedApi<undefined, typeof GetFeatResponseSchema, typeof FeatIdParamSchema>({
         path: '/feats/:id',
         method: 'GET',
         paramsSchema: FeatIdParamSchema,
-        responseSchema: FeatSchema,
+        responseSchema: GetFeatResponseSchema,
     }),
 
     // Create feat
-    createFeat: typedApi<typeof CreateFeatSchema, typeof FeatSchema>({
+    createFeat: typedApi<typeof CreateFeatSchema, typeof CreateResponseSchema>({
         path: '/feats',
         method: 'POST',
         requestSchema: CreateFeatSchema,
-        responseSchema: FeatSchema,
+        responseSchema: CreateResponseSchema,
     }),
 
-    // Update feat with path parameter
-    updateFeat: typedApi<typeof UpdateFeatSchema, typeof FeatSchema, typeof FeatIdParamSchema>({
+    updateFeat: typedApi<typeof UpdateFeatSchema, typeof UpdateResponseSchema, typeof FeatIdParamSchema>({
         path: '/feats/:id',
         method: 'PUT',
         requestSchema: UpdateFeatSchema,
+        responseSchema: UpdateResponseSchema,
         paramsSchema: FeatIdParamSchema,
-        responseSchema: FeatSchema,
     }),
 
     // Delete feat with path parameter
-    deleteFeat: typedApi<undefined, z.ZodObject<Record<string, never>>, typeof FeatIdParamSchema>({
+    deleteFeat: typedApi<undefined, typeof UpdateResponseSchema, typeof FeatIdParamSchema>({
         path: '/feats/:id',
         method: 'DELETE',
         paramsSchema: FeatIdParamSchema,
-        responseSchema: z.object({}),
+        responseSchema: UpdateResponseSchema,
     }),
 };

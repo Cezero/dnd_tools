@@ -272,6 +272,7 @@ export function RaceEdit() {
                             inputExtraClassName="w-auto"
                             required
                             placeholder="e.g., Human, Elf, Dwarf"
+                            data-1p-ignore
                         />
                         <div className="flex items-center gap-4 w-full">
                             <CustomSelect

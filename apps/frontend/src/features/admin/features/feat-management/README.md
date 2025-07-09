@@ -11,20 +11,20 @@ This feature provides admin functionality for managing D&D feats, including list
 - **Schema Layer**: Comprehensive Zod schemas for feats, benefits, and prerequisites
 - **Service Layer**: Typed services using `typedApi` with full TypeScript support
 - **Component Architecture**: Modern React components with proper TypeScript interfaces
-- **Base UI Migration**: Successfully migrated from Headless UI to Base UI for React 19 compatibility
+- **Base UI Migration**: Successfully migrated to Base UI components for React 19 compatibility
 
 #### **Main Components**
-- **FeatList**: Typed service integration, `useAuthAuto` hook, proper filtering
-- **FeatDetail**: Typed service integration, proper TypeScript types, markdown rendering
-- **FeatEdit**: `ValidatedForm` components, Zod validation, dialog-based editing for benefits/prerequisites
-- **FeatBenefitEdit**: Base UI Dialog component, receives data as props from FeatEdit
-- **FeatPrereqEdit**: Base UI Dialog component, receives data as props from FeatEdit
+- **FeatList**: Generic list with filtering, pagination, and admin actions
+- **FeatDetail**: Detailed view with markdown rendering and admin controls
+- **FeatEdit**: Comprehensive form with dialog-based benefit/prerequisite editing
+- **FeatBenefitEdit**: Base UI Dialog component for inline benefit editing
+- **FeatPrereqEdit**: Base UI Dialog component for inline prerequisite editing
 
 #### **Code Optimizations**
-- **Direct Assignment Pattern**: Eliminated verbose property assignment in all components
 - **Type Safety**: Full TypeScript support with proper interfaces and validation
 - **Performance**: Optimized re-renders and state management
 - **Maintainability**: Clean, consistent code patterns throughout
+- **Modern UI**: Base UI components for consistent styling and interactions
 
 ## Architecture
 
@@ -38,6 +38,7 @@ FeatService.getFeatById(undefined, { id: 123 })
 FeatService.createFeat(formData)
 FeatService.updateFeat(formData, { id: 123 })
 FeatService.deleteFeat(undefined, { id: 123 })
+FeatService.getAllFeats() // For prerequisite selection
 ```
 
 ### Schema Structure
@@ -47,20 +48,19 @@ FeatQuerySchema          // Query parameters for feat list
 FeatIdParamSchema        // Path parameters for feat operations
 CreateFeatSchema         // Create feat validation
 UpdateFeatSchema         // Update feat validation
+BaseFeatSchema          // Base feat structure
 FeatSchema              // Complete feat response
 FeatQueryResponseSchema  // Paginated feat list response
+GetAllFeatsResponseSchema // Simplified feat list for selection
 
 // Benefit and prerequisite schemas
-FeatBenefitSchema, FeatPrerequisiteSchema
-FeatBenefitQuerySchema, FeatPrerequisiteQuerySchema
-CreateFeatBenefitSchema, CreateFeatPrerequisiteSchema
-UpdateFeatBenefitSchema, UpdateFeatPrerequisiteSchema
+FeatBenefitMapSchema, FeatPrerequisiteMapSchema
 ```
 
 ### Component Structure
 
 #### **Main Components**
-- **FeatList**: Lists all feats with filtering, pagination, and admin actions
+- **FeatList**: Uses `GenericList` component with column definitions and filtering
 - **FeatDetail**: Shows detailed view with markdown rendering and admin controls
 - **FeatEdit**: Comprehensive form with dialog-based benefit/prerequisite editing
 - **FeatBenefitEdit**: Base UI Dialog for inline benefit editing
@@ -90,10 +90,10 @@ const feats = await FeatService.getFeats({
     name: "Power Attack" 
 });
 
-// Create feat with direct formData assignment
+// Create feat with form data
 const newFeat = await FeatService.createFeat(formData);
 
-// Update feat with direct formData assignment
+// Update feat with form data
 await FeatService.updateFeat(formData, { id: 123 });
 ```
 
@@ -105,6 +105,7 @@ await FeatService.updateFeat(formData, { id: 123 });
     onClose={() => setIsAddBenefitModalOpen(false)}
     onSave={HandleSaveBenefit}
     initialBenefitData={editingBenefit}
+    featId={parseInt(id || '0')}
 />
 ```
 
@@ -115,6 +116,7 @@ await FeatService.updateFeat(formData, { id: 123 });
 - Inline editing without page navigation
 - Consistent styling and interactions
 - Proper loading states and error handling
+- Markdown editing with live preview
 
 ### **✅ Type Safety**
 - Full TypeScript support throughout
@@ -123,10 +125,10 @@ await FeatService.updateFeat(formData, { id: 123 });
 - Compile-time error checking
 
 ### **✅ Performance Optimizations**
-- Direct formData assignment (no verbose property mapping)
 - Optimized re-renders with proper dependency arrays
 - Efficient state management
 - Lazy loading and memoization where appropriate
+- Proper cleanup and memory management
 
 ### **✅ Code Quality**
 - Clean, maintainable code patterns
@@ -142,16 +144,11 @@ await FeatService.updateFeat(formData, { id: 123 });
 - [x] Core component architecture
 
 ### **Phase 2: Modernization ✅ COMPLETED**
-- [x] Base UI migration from Headless UI
+- [x] Base UI migration for React 19 compatibility
 - [x] Dialog-based editing pattern
 - [x] TypeScript interfaces and validation
 
-### **Phase 3: Optimization ✅ COMPLETED**
-- [x] Direct assignment pattern implementation
-- [x] Performance optimizations
-- [x] Code cleanup and consistency
-
-### **Phase 4: Integration ✅ COMPLETED**
+### **Phase 3: Integration ✅ COMPLETED**
 - [x] Service integration across all components
 - [x] Authentication and authorization
 - [x] Error handling and user feedback
@@ -169,10 +166,11 @@ await FeatService.updateFeat(formData, { id: 123 });
 - **Inline Editing**: No page navigation for editing benefits/prerequisites
 - **Responsive Design**: Works well on all screen sizes
 - **Accessibility**: Proper ARIA labels and keyboard navigation
+- **Markdown Support**: Rich text editing with live preview
 
 ### **3. Performance**
 - **Optimized Rendering**: Minimal re-renders with proper React patterns
-- **Efficient Data Flow**: Direct assignment reduces unnecessary object creation
+- **Efficient Data Flow**: Optimized state management
 - **Lazy Loading**: Components load only when needed
 - **Memory Management**: Proper cleanup and state management
 
@@ -187,7 +185,7 @@ await FeatService.updateFeat(formData, { id: 123 });
 ### **Form Validation**
 ```typescript
 // Using ValidatedForm with Zod schemas
-const { validation, createFieldProps } = useValidatedForm(
+const form = useValidatedForm(
     schema,
     formData,
     setFormData,
@@ -199,30 +197,16 @@ const { validation, createFieldProps } = useValidatedForm(
 );
 ```
 
-### **Direct Assignment Pattern**
-```typescript
-// Before (verbose)
-const result = {
-    index: formData.index,
-    featId: formData.featId,
-    typeId: formData.typeId,
-    referenceId: formData.referenceId,
-    amount: formData.amount,
-};
-onSave(result);
-
-// After (clean)
-onSave(formData);
-```
-
 ### **Base UI Dialog Structure**
 ```typescript
 <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
     <Dialog.Backdrop className="fixed inset-0 bg-black bg-opacity-25 z-40" />
     <Dialog.Portal>
-        <Dialog.Popup className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-md transform overflow-visible rounded-2xl bg-white p-6">
-                <Dialog.Title>Edit Feat Benefit</Dialog.Title>
+        <Dialog.Popup className="fixed inset-0 flex items-center justify-center p-2">
+            <div className="w-full max-w-md transform overflow-visible rounded-2xl bg-white p-2 text-left align-middle shadow-xl transition-all dark:bg-gray-800">
+                <Dialog.Title className="text-lg border rounded-2xl p-2 dark:border-gray-700 font-medium mb-4 dark:bg-gray-900">
+                    Edit Feat Benefit
+                </Dialog.Title>
                 {/* Form content */}
             </div>
         </Dialog.Popup>
@@ -230,12 +214,75 @@ onSave(formData);
 </Dialog.Root>
 ```
 
+### **Generic List Integration**
+```typescript
+// Column definitions for filtering and display
+export const COLUMN_DEFINITIONS: Record<string, ColumnDefinition> = {
+    name: {
+        label: 'Feat Name',
+        sortable: true,
+        isRequired: true,
+        isDefault: true,
+        filterConfig: {
+            type: 'text-input',
+            props: { placeholder: 'Filter by name...' }
+        }
+    },
+    typeId: {
+        label: 'Feat Type',
+        sortable: true,
+        isDefault: true,
+        filterConfig: {
+            type: 'multi-select',
+            props: {
+                options: FEAT_TYPE_SELECT_LIST,
+                className: 'w-32'
+            }
+        }
+    }
+    // ... more columns
+};
+```
+
+## Component Details
+
+### **FeatList Component**
+- Uses `GenericList` for consistent list behavior
+- Implements custom cell rendering for markdown content
+- Provides filtering, sorting, and pagination
+- Includes admin actions (edit, delete)
+
+### **FeatDetail Component**
+- Displays comprehensive feat information
+- Renders markdown content with `ProcessMarkdown`
+- Shows structured benefits and prerequisites
+- Provides navigation back to list or edit
+
+### **FeatEdit Component**
+- Comprehensive form with markdown editors
+- Dialog-based editing for benefits and prerequisites
+- Real-time validation with Zod schemas
+- Proper error handling and user feedback
+
+### **FeatBenefitEdit Component**
+- Base UI Dialog for inline benefit editing
+- Dynamic form fields based on benefit type
+- Integration with `FeatOptions` utility
+- Proper validation and error handling
+
+### **FeatPrereqEdit Component**
+- Base UI Dialog for inline prerequisite editing
+- Dynamic form fields based on prerequisite type
+- Fetches feat list for feat prerequisites
+- Supports ability scores, skills, and feats
+
 ## Future Enhancements
 
 ### **Planned Improvements**
 1. **Advanced Filtering**: More sophisticated filter options
 2. **Audit Trail**: Track changes and modifications
 3. **Advanced Search**: Full-text search capabilities
+4. **Bulk Operations**: Edit multiple feats at once
 
 ### **Performance Optimizations**
 1. **Virtual Scrolling**: For large feat lists
@@ -248,8 +295,9 @@ onSave(formData);
 - **React 19 Compatible**: Successfully migrated to Base UI for future React compatibility
 - **Type Safety**: All components use proper TypeScript interfaces
 - **Validation**: Comprehensive Zod validation for all data
-- **Performance**: Optimized with direct assignment patterns and efficient rendering
+- **Performance**: Optimized with efficient rendering and state management
 - **Maintainability**: Clean, consistent code patterns throughout
 - **Accessibility**: Proper ARIA labels and keyboard navigation support
+- **Markdown Support**: Rich text editing with live preview capabilities
 
-The feat-management feature is now a modern, well-architected, and fully optimized React application that provides an excellent developer and user experience. 
+The feat-management feature is now a modern, well-architected, and fully optimized React application that provides an excellent developer and user experience with comprehensive feat management capabilities. 
