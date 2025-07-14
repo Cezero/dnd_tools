@@ -54,59 +54,22 @@ export const SpellQueryResponseSchema = PageQueryResponseSchema.extend({
     results: z.array(SpellSchema),
 });
 
+export const MultiSelectSchema = z.object({
+    values: z.array(z.number().int().positive('Value must be a positive integer')),
+    logic: z.enum(['or', 'and']).optional(),
+});
+
 // Schema for spell query parameters
 export const SpellQuerySchema = PageQuerySchema.extend({
     name: optionalStringParam(),
     editionId: optionalIntegerParam(),
-    spellLevel: z.union([z.string(), z.array(z.string())]).optional().transform((val) => {
-        if (!val) return undefined;
-        if (Array.isArray(val)) {
-            return val.map(v => parseInt(v));
-        }
-        return [parseInt(val)];
-    }),
-    classId: z.union([z.string(), z.array(z.string())]).optional().transform((val) => {
-        if (!val) return undefined;
-        if (Array.isArray(val)) {
-            return val.map(v => parseInt(v));
-        }
-        return [parseInt(val)];
-    }),
-    schoolId: z.union([z.string(), z.array(z.string())]).optional().transform((val) => {
-        if (!val) return undefined;
-        if (Array.isArray(val)) {
-            return val.map(v => parseInt(v));
-        }
-        return [parseInt(val)];
-    }),
-    subSchoolId: z.union([z.string(), z.array(z.string())]).optional().transform((val) => {
-        if (!val) return undefined;
-        if (Array.isArray(val)) {
-            return val.map(v => parseInt(v));
-        }
-        return [parseInt(val)];
-    }),
-    descriptorId: z.union([z.string(), z.array(z.string())]).optional().transform((val) => {
-        if (!val) return undefined;
-        if (Array.isArray(val)) {
-            return val.map(v => parseInt(v));
-        }
-        return [parseInt(val)];
-    }),
-    sourceId: z.union([z.string(), z.array(z.string())]).optional().transform((val) => {
-        if (!val) return undefined;
-        if (Array.isArray(val)) {
-            return val.map(v => parseInt(v));
-        }
-        return [parseInt(val)];
-    }),
-    componentId: z.union([z.string(), z.array(z.string())]).optional().transform((val) => {
-        if (!val) return undefined;
-        if (Array.isArray(val)) {
-            return val.map(v => parseInt(v));
-        }
-        return [parseInt(val)];
-    }),
+    spellLevel: z.number().int().positive('Spell level must be a positive integer').nullable().optional(),
+    classId: MultiSelectSchema.nullable().optional(),
+    schoolId: MultiSelectSchema.nullable().optional(),
+    subSchoolId: MultiSelectSchema.nullable().optional(),
+    descriptorId: MultiSelectSchema.nullable().optional(),
+    sourceId: MultiSelectSchema.nullable().optional(),
+    componentId: MultiSelectSchema.nullable().optional(),
 });
 
 // Schema for spell path parameters

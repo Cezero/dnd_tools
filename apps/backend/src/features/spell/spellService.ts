@@ -6,71 +6,113 @@ import type { SpellService } from './types';
 const prisma = new PrismaClient();
 
 export const spellService: SpellService = {
-    async getSpells(query: SpellQueryRequest): Promise<SpellQueryResponse> {
-        const page = query.page;
-        const limit = query.limit;
+    async getAllSpells(): Promise<SpellQueryResponse> {
+        const [spells, total] = await Promise.all([
+            prisma.spell.findMany({
+                include: {
+                    levelMapping: {
+                        select: {
+                            classId: true,
+                            level: true
+                        },
+                        where: { isVisible: true },
+                    },
+                    descriptorIds: {
+                        select: {
+                            descriptorId: true
+                        }
+                    },
+                    schoolIds: {
+                        select: {
+                            schoolId: true
+                        }
+                    },
+                    subSchoolIds: {
+                        select: {
+                            subSchoolId: true
+                        }
+                    },
+                    componentIds: {
+                        select: {
+                            componentId: true
+                        }
+                    },
+                    sourceBookInfo: {
+                        select: {
+                            sourceBookId: true,
+                            pageNumber: true
+                        }
+                    }
+                },
+                orderBy: { name: 'asc' }
+            }),
+            prisma.spell.count()
+        ]);
+        return {
+            page: 1,
+            limit: spells.length,
+            total: spells.length,
+            results: spells
+        };
+    },
+
+    async getSpells(body: SpellQueryRequest): Promise<SpellQueryResponse> {
+        const page = body.page ?? 1;
+        const limit = body.limit ?? 10;
         const skip = (page - 1) * limit;
 
         const where: Prisma.SpellWhereInput = {};
 
-        if (query.name) {
-            where.name = { contains: query.name };
+        if (body.name) {
+            where.name = { contains: body.name };
         }
 
-        if (query.sourceId) {
+        if (body.sourceId) {
             where.sourceBookInfo = {
                 some: {
-                    sourceBookId: { in: query.sourceId }
+                    sourceBookId: { in: body.sourceId.values }
                 }
             };
         }
 
-        if (query.editionId) {
-            if (query.editionId === 4) {
+        if (body.editionId) {
+            if (body.editionId === 4) {
                 where.editionId = { in: [4, 5] };
             } else {
-                where.editionId = query.editionId;
+                where.editionId = body.editionId;
             }
         }
 
-        if (query.classId) {
+        if (body.classId || body.spellLevel) {
             where.levelMapping = {
                 some: {
-                    classId: { in: query.classId },
+                    ...(body.classId && { classId: { in: body.classId.values } }),
+                    ...(body.spellLevel && { level: body.spellLevel }),
                     isVisible: true
                 }
             };
         }
 
-        if (query.spellLevel) {
-            where.levelMapping = {
-                some: {
-                    level: { in: query.spellLevel },
-                    isVisible: true
-                }
-            };
-        }
-
-        if (query.schoolId) {
+        if (body.schoolId) {
             where.schoolIds = {
                 some: {
-                    schoolId: { in: query.schoolId }
+                    schoolId: { in: body.schoolId.values }
                 }
             };
         }
 
-        if (query.descriptorId) {
+        if (body.descriptorId) {
             where.descriptorIds = {
                 some: {
-                    descriptorId: { in: query.descriptorId }
+                    descriptorId: { in: body.descriptorId.values }
                 }
             };
         }
 
-        if (query.componentId) {
+        if (body.componentId) {
             where.componentIds = {
                 some: {
-                    componentId: { in: query.componentId }
+                    componentId: { in: body.componentId.values }
                 }
             };
         }
@@ -219,6 +261,6 @@ export const spellService: SpellService = {
         await prisma.spell.delete({
             where: { id: id.id }
         });
-            return { message: 'Spell deleted successfully' };
-        }
-    };
+        return { message: 'Spell deleted successfully' };
+    }
+};

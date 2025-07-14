@@ -82,6 +82,7 @@ export function ReferenceTablesList(): React.JSX.Element {
                 itemDesc="reference table"
                 editHandler={(item) => navigate(`/admin/referencetables/${item.slug}/edit`)}
                 deleteHandler={(item) => HandleDeleteTable(item.slug)}
+                refreshTrigger={refreshTrigger}
             />
         </div>
     );

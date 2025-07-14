@@ -36,6 +36,7 @@ export interface ValidatedInputProps {
     max?: number;
     step?: number;
     rows?: number;
+    nested?: boolean;
 }
 
 export const ValidatedInput = forwardRef<HTMLInputElement | HTMLTextAreaElement, ValidatedInputProps>(
@@ -49,11 +50,40 @@ export const ValidatedInput = forwardRef<HTMLInputElement | HTMLTextAreaElement,
         inputExtraClassName = '',
         disabled = false,
         rows = 4,
+        nested = false,
         ...props
     }, ref) => {
         const { formData, setFormData, validation } = useFormContext();
 
-        const value = formData[field] ?? '';
+        // Helper function to get nested value
+        const getNestedValue = (obj: Record<string, unknown>, path: string): unknown => {
+            if (!nested) return obj[path] ?? '';
+            return path.split('.').reduce((current, key) => {
+                return current && typeof current === 'object' ? (current as Record<string, unknown>)[key] : undefined;
+            }, obj) ?? '';
+        };
+
+        // Helper function to set nested value
+        const setNestedValue = (obj: Record<string, unknown>, path: string, value: unknown): Record<string, unknown> => {
+            if (!nested) return { ...obj, [path]: value };
+
+            const keys = path.split('.');
+            const newObj = { ...obj };
+            let current = newObj;
+
+            for (let i = 0; i < keys.length - 1; i++) {
+                const key = keys[i];
+                if (!(key in current) || typeof current[key] !== 'object') {
+                    current[key] = {};
+                }
+                current = current[key] as Record<string, unknown>;
+            }
+
+            current[keys[keys.length - 1]] = value;
+            return newObj;
+        };
+
+        const value = getNestedValue(formData, field);
         const error = validation.getError(field);
         const hasError = validation.hasError(field);
 
@@ -62,11 +92,11 @@ export const ValidatedInput = forwardRef<HTMLInputElement | HTMLTextAreaElement,
 
             // Convert to number for number inputs
             if (type === 'number') {
-                const numValue = e.target.value === '' ? '' : Number(e.target.value);
+                const numValue = e.target.value === '' ? null : Number(e.target.value);
                 value = numValue;
             }
 
-            setFormData(prev => ({ ...prev, [field]: value }));
+            setFormData(prev => setNestedValue(prev, field, value));
             validation.validateField(field, value);
         };
 
@@ -75,7 +105,7 @@ export const ValidatedInput = forwardRef<HTMLInputElement | HTMLTextAreaElement,
 
             // Convert to number for number inputs
             if (type === 'number') {
-                const numValue = e.target.value === '' ? '' : Number(e.target.value);
+                const numValue = e.target.value === '' ? null : Number(e.target.value);
                 value = numValue;
             }
 

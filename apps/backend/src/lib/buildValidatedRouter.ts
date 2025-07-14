@@ -50,7 +50,7 @@ export function buildValidatedHandler<
                 query: schemas.query
                     ? schemas.query.parse(stripUndefinedKeys(req.query))
                     : req.query,
-                body: schemas.body ? schemas.body.parse(req.body) : req.body,
+                body: schemas.body ? schemas.body.parse(stripUndefinedKeys(req.body)) : req.body,
                 headers: schemas.headers ? schemas.headers.parse(req.headers) : req.headers,
             };
 

@@ -34,6 +34,7 @@ model Class {
     skills           ClassSkillMap[]
     sourceBookInfo   ClassSourceMap[]
     spellLevels      SpellLevelMap[]
+    proficiencies    ClassProficiencies[]
 }
 
 model ClassFeature {
@@ -41,6 +42,17 @@ model ClassFeature {
     description String  @db.Text
 
     classes ClassFeatureMap[]
+}
+
+model ClassProficiencies {
+    classId     Int
+    featId      Int
+    itemId      Int?
+
+    class  Class  @relation(fields: [classId], references: [id])
+    feat   Feat   @relation(fields: [featId], references: [id])
+
+    @@id([classId, featId])
 }
 
 model ClassFeatureMap {
@@ -202,6 +214,8 @@ model Feat {
 
     benefits   FeatBenefitMap[]
     prereqs    FeatPrerequisiteMap[]
+
+    classProficiencies  ClassProficiencies[]
 }
 
 model FeatBenefitMap {
@@ -304,34 +318,147 @@ model RaceSourceMap {
 // Mundane Armor, Weapons etc.
 // =================
 
+model Item {
+    id                 Int     @id @default(autoincrement())
+    name               String  @db.VarChar(100)
+    description        String? @db.Text
+    typeId             Int @default(1)
+    cost               Decimal? @db.Decimal(10,2)
+    weight             Decimal? @db.Decimal(5,2)
+    quantity           Int?
+
+    armor Armor?
+    weapon Weapon?
+
+    ItemType   ItemType @relation(fields: [typeId], references: [id])
+
+    characterItems CharacterItem[]
+    itemTemplate   ItemTemplate[]
+}
+
+model ItemType {
+    id      Int @id @default(autoincrement())
+    name    String  @db.VarChar(100)
+
+    itemLinks Item[]
+}
+
 model Armor {
-    id                 Int      @id @default(autoincrement())
-    name               String   @db.VarChar(100)
-    description        String?  @db.Text
+    id                 Int      @id
     category           Int
-    cost               Decimal? @db.Decimal(5, 2)
     bonus              Int?
     dexterityCap       Int?
     checkPenalty       Int?
     arcaneSpellFailure Int?
     speedCapThirty     Int?
     speedCapTwenty     Int?
-    weight             Int?
+
+    item         Item @relation(fields: [id], references: [id], onDelete: Cascade)
 }
 
 model Weapon {
-    id           Int      @id @default(autoincrement())
-    name         String
-    description  String?  @db.Text
+    id           Int   @id
     category     Int
     type         Int
-    cost         Decimal? @db.Decimal(5, 2)
+    attackBonus  Int?
     damageSmall  String?
     damageMedium String?
     critical     String?
     range        String?
-    weight       Decimal? @db.Decimal(5, 2)
-    damageTypeId Int?
+    damageType   String?
+    reach        Boolean @default(false)
+    double       Boolean @default(false)
+    nonlethal    Boolean @default(false)
+
+    item         Item @relation(fields: [id], references: [id], onDelete: Cascade)
+}
+
+model ItemProperty {
+  id                       Int     @id @default(autoincrement())
+  name                     String  @db.VarChar(100) // e.g. "Vorpal", "+2 Enhancement"
+  type                     ItemPropertyType
+  flatCostModifier         Int?    // in copper
+  costMultiplier           Float?  // e.g. 2.0 for Barding
+  costFormula              String? // optional expression string
+  enhancementBonusValue    Int?    // e.g. 2 for "+2"
+  bonusEquivalentModifier  Int?    // e.g. 5 for Vorpal
+  exclusiveMaterial        Boolean @default(false)
+
+  appliesTo                ItemPropertyAppliesTo[]
+  incompatibilitiesA       ItemPropertyIncompatibility[] @relation("IncompatibilityA")
+  incompatibilitiesB       ItemPropertyIncompatibility[] @relation("IncompatibilityB")
+  templateProperties       ItemTemplateProperty[]
+  characterItemProperties  CharacterItemProperty[]
+}
+
+enum ItemPropertyType {
+  Material
+  Enhancement
+  SpecialAbility
+  Structural
+}
+
+model ItemPropertyAppliesTo {
+  id           Int                  @id @default(autoincrement())
+  property     ItemProperty         @relation(fields: [propertyId], references: [id])
+  propertyId   Int
+  itemType     ItemApplicableTypeEnum
+}
+
+enum ItemApplicableTypeEnum {
+  Weapon
+  Armor
+  Shield
+  MountArmor
+  Ammunition
+}
+
+model ItemPropertyIncompatibility {
+  id            Int           @id @default(autoincrement())
+  propertyA     ItemProperty  @relation("IncompatibilityA", fields: [propertyAId], references: [id])
+  propertyAId   Int
+  propertyB     ItemProperty  @relation("IncompatibilityB", fields: [propertyBId], references: [id])
+  propertyBId   Int
+}
+
+model ItemTemplate {
+  id           Int     @id @default(autoincrement())
+  name         String  @db.VarChar(100)
+  itemId       Int
+
+  item         Item    @relation(fields: [itemId], references: [id])
+  
+  templateProperties ItemTemplateProperty[]
+}
+
+model ItemTemplateProperty {
+  id          Int          @id @default(autoincrement())
+  templateId  Int
+  propertyId  Int
+
+  template    ItemTemplate  @relation(fields: [templateId], references: [id])
+  property    ItemProperty  @relation(fields: [propertyId], references: [id])
+}
+
+model CharacterItem {
+  id              Int                  @id @default(autoincrement())
+  name            String               // e.g. "Vorpal Dragonbane Longsword"
+  quantity        Int?
+  characterId     Int
+  baseItemId      Int
+
+  character       UserCharacter            @relation(fields: [characterId], references: [id])
+  baseItem        Item                 @relation(fields: [baseItemId], references: [id])
+  
+  characterItemProperties CharacterItemProperty[]
+}
+
+model CharacterItemProperty {
+  id               Int               @id @default(autoincrement())
+  characterItemId  Int
+  propertyId       Int
+  characterItem    CharacterItem     @relation(fields: [characterItemId], references: [id])
+  property         ItemProperty      @relation(fields: [propertyId], references: [id])
 }
 
 // =================
@@ -428,7 +555,9 @@ model UserCharacter {
     gender      String?
     notes       String? @db.Text
 
-    attributes UserCharacterAttribute[]
+    attributes     UserCharacterAttribute[]
+    characterItems CharacterItem[]
+
     race       Race                     @relation(fields: [raceId], references: [id])
     user       User                     @relation(fields: [userId], references: [id])
 }

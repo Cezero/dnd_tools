@@ -1,0 +1,290 @@
+[
+    {
+        "name": "Padded",
+        "description": "Padded armor features quilted layers of cloth and batting. It gets hot quickly and can become foul with sweat, grime, lice, and fleas.",
+        "type": "ARMOR",
+        "cost": "5.00",
+        "weight": 10.0,
+        "armor": {
+            "category": 1,
+            "bonus": 1,
+            "dexterityCap": 8,
+            "checkPenalty": 0,
+            "arcaneSpellFailure": 5,
+            "speedCapThirty": 30,
+            "speedCapTwenty": 20
+        }
+    },
+    {
+        "name": "Leather",
+        "description": "The breastplate and shoulder protectors of this armor are made of leather that has been stiffened by boiling in oil. The rest of the armor is made of softer and more flexible leather.",
+        "type": "ARMOR",
+        "cost": "10.00",
+        "weight": 15.0,
+        "armor": {
+            "category": 1,
+            "bonus": 2,
+            "dexterityCap": 6,
+            "checkPenalty": 0,
+            "arcaneSpellFailure": 10,
+            "speedCapThirty": 30,
+            "speedCapTwenty": 20
+        }
+    },
+    {
+        "name": "Studded Leather",
+        "description": "This armor is made from tough but flexible leather (not hardened leather as with normal leather armor) reinforced with close-set metal rivets.",
+        "type": "ARMOR",
+        "cost": "25.00",
+        "weight": 20.0,
+        "armor": {
+            "category": 1,
+            "bonus": 3,
+            "dexterityCap": 5,
+            "checkPenalty": -1,
+            "arcaneSpellFailure": 15,
+            "speedCapThirty": 30,
+            "speedCapTwenty": 20
+        }
+    },
+    {
+        "name": "Chain Shirt",
+        "description": "A chain shirt protects your torso while leaving your limbs free and mobile. It includes a layer of quilted fabric worn underneath to prevent chafing and to cushion the impact of blows. A chain shirt comes with a steel cap.",
+        "type": "ARMOR",
+        "cost": "100.00",
+        "weight": 25.0,
+        "armor": {
+            "category": 1,
+            "bonus": 4,
+            "dexterityCap": 4,
+            "checkPenalty": -2,
+            "arcaneSpellFailure": 20,
+            "speedCapThirty": 30,
+            "speedCapTwenty": 20
+        }
+    },
+    {
+        "name": "Hide",
+        "description": "This armor is prepared from multiple layers of leather and animal hides. It is stiff and hard to move in. Druids, who wear only nonmetallic armor, favor hide.",
+        "type": "ARMOR",
+        "cost": "15.00",
+        "weight": 25.0,
+        "armor": {
+            "category": 2,
+            "bonus": 3,
+            "dexterityCap": 4,
+            "checkPenalty": -3,
+            "arcaneSpellFailure": 20,
+            "speedCapThirty": 20,
+            "speedCapTwenty": 15
+        }
+    },
+    {
+        "name": "Scale Mail",
+        "description": "This armor consists of a coat and leggings (and perhaps a separate skirt) of leather covered with overlapping pieces of metal, much like the scales of a fish. The suit includes gauntlets.",
+        "type": "ARMOR",
+        "cost": "50.00",
+        "weight": 30.0,
+        "armor": {
+            "category": 2,
+            "bonus": 4,
+            "dexterityCap": 3,
+            "checkPenalty": -4,
+            "arcaneSpellFailure": 25,
+            "speedCapThirty": 20,
+            "speedCapTwenty": 15
+        }
+    },
+    {
+        "name": "Chainmail",
+        "description": "This armor is made of interlocking metal rings. It includes a layer of quilted fabric worn underneath to prevent chafing and to cushion the impact of blows. Several layers of mail are hung over vital areas. Most of the armor's weight hangs from the shoulders, making chainmail uncomfortable to wear for long periods of time. The suit includes gauntlets.",
+        "type": "ARMOR",
+        "cost": "150.00",
+        "weight": 40.0,
+        "armor": {
+            "category": 2,
+            "bonus": 5,
+            "dexterityCap": 2,
+            "checkPenalty": -5,
+            "arcaneSpellFailure": 30,
+            "speedCapThirty": 20,
+            "speedCapTwenty": 15
+        }
+    },
+    {
+        "name": "Breastplate",
+        "description": "A breastplate covers your front and your back. It comes with a helmet and greaves (plates to cover your lower legs). A light suit or skirt of studded leather beneath the breastplate protects your limbs without restricting movement much.",
+        "type": "ARMOR",
+        "cost": "200.00",
+        "weight": 30.0,
+        "armor": {
+            "category": 2,
+            "bonus": 5,
+            "dexterityCap": 3,
+            "checkPenalty": -4,
+            "arcaneSpellFailure": 25,
+            "speedCapThirty": 20,
+            "speedCapTwenty": 15
+        }
+    },
+    {
+        "name": "Splint Mail",
+        "description": "This armor is made of narrow vertical strips of metal riveted to a backing of leather that is worn over cloth padding. Flexible chainmail protects the joints. The suit includes gauntlets.",
+        "type": "ARMOR",
+        "cost": "200.00",
+        "weight": 45.0,
+        "armor": {
+            "category": 3,
+            "bonus": 6,
+            "dexterityCap": 0,
+            "checkPenalty": -7,
+            "arcaneSpellFailure": 40,
+            "speedCapThirty": 20,
+            "speedCapTwenty": 15
+        }
+    },
+    {
+        "name": "Banded Mail",
+        "description": "This armor is made of overlapping strips of metal sewn to a backing of leather and chainmail. The strips cover vulnerable areas, while the chain and leather protect the joints and provide freedom of movement. Straps and buckles distribute the weight evenly. The suit includes gauntlets.",
+        "type": "ARMOR",
+        "cost": "250.00",
+        "weight": 35.0,
+        "armor": {
+            "category": 3,
+            "bonus": 6,
+            "dexterityCap": 1,
+            "checkPenalty": -6,
+            "arcaneSpellFailure": 35,
+            "speedCapThirty": 20,
+            "speedCapTwenty": 15
+        }
+    },
+    {
+        "name": "Half-Plate",
+        "description": "This armor is a combination of chainmail with metal plates (breastplate, epaulettes, elbow guards, gauntlets, tasses, and greaves) covering vital areas. Buckles and straps hold the whole suit together and distribute the weight, but the armor still hangs more loosely than full plate. The suit includes gauntlets.",
+        "type": "ARMOR",
+        "cost": "600.00",
+        "weight": 50.0,
+        "armor": {
+            "category": 3,
+            "bonus": 7,
+            "dexterityCap": 0,
+            "checkPenalty": -7,
+            "arcaneSpellFailure": 40,
+            "speedCapThirty": 20,
+            "speedCapTwenty": 15
+        }
+    },
+    {
+        "name": "Full Plate",
+        "description": "This armor consists of shaped and fitted metal plates riveted and interlocked to cover the entire body. The suit includes gauntlets, heavy leather boots, a visored helmet, and a thick layer of padding that is worn underneath the armor. Buckles and straps distribute the weight over the body, so full plate hampers movement less than splint mail even though splint is lighter. Each suit of full plate must be individually fitted to its owner by a master armorsmith, although a captured suit can be resized to fit a new owner at a cost of 200 to 800 (2d4 x100) gold pieces. Full plate is also known as field plate.",
+        "type": "ARMOR",
+        "cost": "1500.00",
+        "weight": 50.0,
+        "armor": {
+            "category": 3,
+            "bonus": 8,
+            "dexterityCap": 1,
+            "checkPenalty": -6,
+            "arcaneSpellFailure": 35,
+            "speedCapThirty": 20,
+            "speedCapTwenty": 15
+        }
+    },
+    {
+        "name": "Buckler",
+        "description": "This small metal shield is worn strapped to your forearm. You can use a bow or crossbow without penalty while carrying it. You can also use your shield arm to wield a weapon (whether you are using an off-hand weapon or using your off hand to help wield a two-handed weapon), but you take a -1 penalty on attack rolls while doing so because of the extra weight on your arm. This penalty stacks with those that may apply for fighting with your off hand and for fighting with two weapons. In any case, if you use a weapon in your off hand, you don't get the buckler's AC bonus for the rest of the round. You can't bash someone with a buckler.",
+        "type": "ARMOR",
+        "cost": "15.00",
+        "weight": 5.0,
+        "armor": {
+            "category": 4,
+            "bonus": 1,
+            "dexterityCap": null,
+            "checkPenalty": -1,
+            "arcaneSpellFailure": 5,
+            "speedCapThirty": null,
+            "speedCapTwenty": null
+        }
+    },
+    {
+        "name": "Shield, Light Wooden",
+        "description": "You strap a shield to your forearm and grip it with your hand. A light shield's weight lets you carry other items in that hand, although you cannot use weapons with it. Wooden and steel shields offer the same basic protection, though they respond differently to special attacks (such as warp wood and heat metal). You can bash an opponent with a light shield, using it as an off-hand weapon. Used this way, a light shield is a martial bludgeoning weapon. For the purpose of penalties on attack rolls, treat a light shield as a light weapon. If you use your shield as a weapon, you lose its AC bonus until your next action (usually until the next round). An enhancement bonus on a shield does not improve the effectiveness of a shield bash made with it, but the shield can be made into a magic weapon in its own right.",
+        "type": "ARMOR",
+        "cost": "3.00",
+        "weight": 5.0,
+        "armor": {
+            "category": 4,
+            "bonus": 1,
+            "dexterityCap": null,
+            "checkPenalty": -1,
+            "arcaneSpellFailure": 5,
+            "speedCapThirty": null,
+            "speedCapTwenty": null
+        }
+    },
+    {
+        "name": "Shield, Light Steel",
+        "description": "You strap a shield to your forearm and grip it with your hand. A light shield's weight lets you carry other items in that hand, although you cannot use weapons with it. Wooden and steel shields offer the same basic protection, though they respond differently to special attacks (such as warp wood and heat metal). You can bash an opponent with a light shield, using it as an off-hand weapon. Used this way, a light shield is a martial bludgeoning weapon. For the purpose of penalties on attack rolls, treat a light shield as a light weapon. If you use your shield as a weapon, you lose its AC bonus until your next action (usually until the next round). An enhancement bonus on a shield does not improve the effectiveness of a shield bash made with it, but the shield can be made into a magic weapon in its own right.",
+        "type": "ARMOR",
+        "cost": "9.00",
+        "weight": 6.0,
+        "armor": {
+            "category": 4,
+            "bonus": 1,
+            "dexterityCap": null,
+            "checkPenalty": -1,
+            "arcaneSpellFailure": 5,
+            "speedCapThirty": null,
+            "speedCapTwenty": null
+        }
+    },
+    {
+        "name": "Shield, Heavy Wooden",
+        "description": "You strap a shield to your forearm and grip it with your hand. A heavy shield is so heavy that you can't use your shield hand for anything else. Wooden and steel shields offer the same basic protection, though they respond differently to special attacks (such as warp wood and heat metal). You can bash an opponent with a heavy shield, using it as an off-hand weapon. Used this way, a heavy shield is a martial bludgeoning weapon. For the purpose of penalties on attack rolls, treat a heavy shield as a one-handed weapon. If you use your shield as a weapon, you lose its AC bonus until your next action (usually until the next round). An enhancement bonus on a shield does not improve the effectiveness of a shield bash made with it, but the shield can be made into a magic weapon in its own right.",
+        "type": "ARMOR",
+        "cost": "7.00",
+        "weight": 10.0,
+        "armor": {
+            "category": 4,
+            "bonus": 2,
+            "dexterityCap": null,
+            "checkPenalty": -2,
+            "arcaneSpellFailure": 15,
+            "speedCapThirty": null,
+            "speedCapTwenty": null
+        }
+    },
+    {
+        "name": "Shield, Heavy Steel",
+        "description": "You strap a shield to your forearm and grip it with your hand. A heavy shield is so heavy that you can't use your shield hand for anything else. Wooden and steel shields offer the same basic protection, though they respond differently to special attacks (such as warp wood and heat metal). You can bash an opponent with a heavy shield, using it as an off-hand weapon. Used this way, a heavy shield is a martial bludgeoning weapon. For the purpose of penalties on attack rolls, treat a heavy shield as a one-handed weapon. If you use your shield as a weapon, you lose its AC bonus until your next action (usually until the next round). An enhancement bonus on a shield does not improve the effectiveness of a shield bash made with it, but the shield can be made into a magic weapon in its own right.",
+        "type": "ARMOR",
+        "cost": "20.00",
+        "weight": 15.0,
+        "armor": {
+            "category": 4,
+            "bonus": 2,
+            "dexterityCap": null,
+            "checkPenalty": -2,
+            "arcaneSpellFailure": 15,
+            "speedCapThirty": null,
+            "speedCapTwenty": null
+        }
+    },
+    {
+        "name": "Shield, Tower",
+        "description": "This massive wooden shield is nearly as tall as you are. In most situations, it provides the indicated shield bonus to your AC. However, you can instead use it as total cover, though you must give up your attacks to do so. The shield does not, however, provide cover against targeted spells; a spellcaster can cast a spell on you by targeting the shield you are holding. You cannot bash with a tower shield, nor can you use your shield hand for anything else. When employing a tower shield in combat, you take a -2 penalty on attack rolls because of the shield's encumbrance.",
+        "type": "ARMOR",
+        "cost": "30.00",
+        "weight": 45.0,
+        "armor": {
+            "category": 4,
+            "bonus": 4,
+            "dexterityCap": 2,
+            "checkPenalty": -10,
+            "arcaneSpellFailure": 50,
+            "speedCapThirty": null,
+            "speedCapTwenty": null
+        }
+    }
+]

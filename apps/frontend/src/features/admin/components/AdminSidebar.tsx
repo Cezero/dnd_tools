@@ -149,10 +149,21 @@ export function AdminSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden 
                                         text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 
                                         ${isExpanded ? 'justify-start' : 'justify-center'}
                                         ${location.pathname === '/admin/feats' ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
-                            title="Skills"
+                            title="Feats"
                         >
                             <TableCellsIcon className={`${location.pathname === '/admin/feats' ? 'text-blue-600 dark:text-blue-400' : ''} w-7 h-7`} />
                             {isExpanded && <span className={`ml-3 ${location.pathname.startsWith('/admin/feats') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Feats</span>}
+                        </Link>
+                        <Link
+                            to="/admin/items"
+                            className={`flex items-center px-4 py-2 rounded 
+                                        text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 
+                                        ${isExpanded ? 'justify-start' : 'justify-center'}
+                                        ${location.pathname === '/admin/items' ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
+                            title="Items"
+                        >
+                            <TableCellsIcon className={`${location.pathname === '/admin/items' ? 'text-blue-600 dark:text-blue-400' : ''} w-7 h-7`} />
+                            {isExpanded && <span className={`ml-3 ${location.pathname.startsWith('/admin/items') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Items</span>}
                         </Link>
                         {/* Add other admin functions here */}
                     </nav>

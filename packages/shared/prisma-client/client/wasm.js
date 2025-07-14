@@ -20,12 +20,12 @@ exports.Prisma = Prisma
 exports.$Enums = {}
 
 /**
- * Prisma Client JS version: 6.11.0
- * Query Engine version: 9c30299f5a0ea26a96790e13f796dc6094db3173
+ * Prisma Client JS version: 6.11.1
+ * Query Engine version: f40f79ec31188888a2e33acda0ecc8fd10a853a9
  */
 Prisma.prismaVersion = {
-  client: "6.11.0",
-  engine: "9c30299f5a0ea26a96790e13f796dc6094db3173"
+  client: "6.11.1",
+  engine: "f40f79ec31188888a2e33acda0ecc8fd10a853a9"
 }
 
 Prisma.PrismaClientKnownRequestError = () => {
@@ -142,6 +142,12 @@ exports.Prisma.ClassScalarFieldEnum = {
 exports.Prisma.ClassFeatureScalarFieldEnum = {
   slug: 'slug',
   description: 'description'
+};
+
+exports.Prisma.ClassProficienciesScalarFieldEnum = {
+  classId: 'classId',
+  featId: 'featId',
+  itemId: 'itemId'
 };
 
 exports.Prisma.ClassFeatureMapScalarFieldEnum = {
@@ -301,34 +307,95 @@ exports.Prisma.RaceSourceMapScalarFieldEnum = {
   pageNumber: 'pageNumber'
 };
 
-exports.Prisma.ArmorScalarFieldEnum = {
+exports.Prisma.ItemScalarFieldEnum = {
   id: 'id',
   name: 'name',
   description: 'description',
-  category: 'category',
+  typeId: 'typeId',
   cost: 'cost',
+  weight: 'weight',
+  quantity: 'quantity'
+};
+
+exports.Prisma.ItemTypeScalarFieldEnum = {
+  id: 'id',
+  name: 'name'
+};
+
+exports.Prisma.ArmorScalarFieldEnum = {
+  id: 'id',
+  category: 'category',
   bonus: 'bonus',
   dexterityCap: 'dexterityCap',
   checkPenalty: 'checkPenalty',
   arcaneSpellFailure: 'arcaneSpellFailure',
   speedCapThirty: 'speedCapThirty',
-  speedCapTwenty: 'speedCapTwenty',
-  weight: 'weight'
+  speedCapTwenty: 'speedCapTwenty'
 };
 
 exports.Prisma.WeaponScalarFieldEnum = {
   id: 'id',
-  name: 'name',
-  description: 'description',
   category: 'category',
   type: 'type',
-  cost: 'cost',
+  attackBonus: 'attackBonus',
   damageSmall: 'damageSmall',
   damageMedium: 'damageMedium',
   critical: 'critical',
   range: 'range',
-  weight: 'weight',
-  damageTypeId: 'damageTypeId'
+  damageType: 'damageType',
+  reach: 'reach',
+  double: 'double',
+  nonlethal: 'nonlethal'
+};
+
+exports.Prisma.ItemPropertyScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  type: 'type',
+  flatCostModifier: 'flatCostModifier',
+  costMultiplier: 'costMultiplier',
+  costFormula: 'costFormula',
+  enhancementBonusValue: 'enhancementBonusValue',
+  bonusEquivalentModifier: 'bonusEquivalentModifier',
+  exclusiveMaterial: 'exclusiveMaterial'
+};
+
+exports.Prisma.ItemPropertyAppliesToScalarFieldEnum = {
+  id: 'id',
+  propertyId: 'propertyId',
+  itemType: 'itemType'
+};
+
+exports.Prisma.ItemPropertyIncompatibilityScalarFieldEnum = {
+  id: 'id',
+  propertyAId: 'propertyAId',
+  propertyBId: 'propertyBId'
+};
+
+exports.Prisma.ItemTemplateScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  itemId: 'itemId'
+};
+
+exports.Prisma.ItemTemplatePropertyScalarFieldEnum = {
+  id: 'id',
+  templateId: 'templateId',
+  propertyId: 'propertyId'
+};
+
+exports.Prisma.CharacterItemScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  quantity: 'quantity',
+  characterId: 'characterId',
+  baseItemId: 'baseItemId'
+};
+
+exports.Prisma.CharacterItemPropertyScalarFieldEnum = {
+  id: 'id',
+  characterItemId: 'characterItemId',
+  propertyId: 'propertyId'
 };
 
 exports.Prisma.SourceBookScalarFieldEnum = {
@@ -478,18 +545,34 @@ exports.Prisma.RaceTraitMapOrderByRelevanceFieldEnum = {
   traitSlug: 'traitSlug'
 };
 
-exports.Prisma.ArmorOrderByRelevanceFieldEnum = {
+exports.Prisma.ItemOrderByRelevanceFieldEnum = {
   name: 'name',
   description: 'description'
 };
 
+exports.Prisma.ItemTypeOrderByRelevanceFieldEnum = {
+  name: 'name'
+};
+
 exports.Prisma.WeaponOrderByRelevanceFieldEnum = {
-  name: 'name',
-  description: 'description',
   damageSmall: 'damageSmall',
   damageMedium: 'damageMedium',
   critical: 'critical',
-  range: 'range'
+  range: 'range',
+  damageType: 'damageType'
+};
+
+exports.Prisma.ItemPropertyOrderByRelevanceFieldEnum = {
+  name: 'name',
+  costFormula: 'costFormula'
+};
+
+exports.Prisma.ItemTemplateOrderByRelevanceFieldEnum = {
+  name: 'name'
+};
+
+exports.Prisma.CharacterItemOrderByRelevanceFieldEnum = {
+  name: 'name'
 };
 
 exports.Prisma.SourceBookOrderByRelevanceFieldEnum = {
@@ -531,6 +614,21 @@ exports.Prisma.UserOrderByRelevanceFieldEnum = {
   email: 'email',
   password: 'password'
 };
+exports.ItemPropertyType = exports.$Enums.ItemPropertyType = {
+  Material: 'Material',
+  Enhancement: 'Enhancement',
+  SpecialAbility: 'SpecialAbility',
+  Structural: 'Structural'
+};
+
+exports.ItemApplicableTypeEnum = exports.$Enums.ItemApplicableTypeEnum = {
+  Weapon: 'Weapon',
+  Armor: 'Armor',
+  Shield: 'Shield',
+  MountArmor: 'MountArmor',
+  Ammunition: 'Ammunition'
+};
+
 exports.TextAlignment = exports.$Enums.TextAlignment = {
   left: 'left',
   center: 'center',
@@ -540,6 +638,7 @@ exports.TextAlignment = exports.$Enums.TextAlignment = {
 exports.Prisma.ModelName = {
   Class: 'Class',
   ClassFeature: 'ClassFeature',
+  ClassProficiencies: 'ClassProficiencies',
   ClassFeatureMap: 'ClassFeatureMap',
   ClassSkillMap: 'ClassSkillMap',
   ClassSourceMap: 'ClassSourceMap',
@@ -560,8 +659,17 @@ exports.Prisma.ModelName = {
   RaceAbilityAdjustment: 'RaceAbilityAdjustment',
   RaceLanguageMap: 'RaceLanguageMap',
   RaceSourceMap: 'RaceSourceMap',
+  Item: 'Item',
+  ItemType: 'ItemType',
   Armor: 'Armor',
   Weapon: 'Weapon',
+  ItemProperty: 'ItemProperty',
+  ItemPropertyAppliesTo: 'ItemPropertyAppliesTo',
+  ItemPropertyIncompatibility: 'ItemPropertyIncompatibility',
+  ItemTemplate: 'ItemTemplate',
+  ItemTemplateProperty: 'ItemTemplateProperty',
+  CharacterItem: 'CharacterItem',
+  CharacterItemProperty: 'CharacterItemProperty',
   SourceBook: 'SourceBook',
   ReferenceTable: 'ReferenceTable',
   ReferenceTableColumn: 'ReferenceTableColumn',

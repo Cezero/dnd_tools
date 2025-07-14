@@ -9,6 +9,7 @@ import { referenceTableRoutes } from '../features/referencetables';
 import { skillRoutes } from '../features/skill';
 import { spellRoutes } from '../features/spell';
 import { userProfileRoutes } from '../features/userProfile';
+import { itemRoutes } from '../features/item';
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use('/referencetables', referenceTableRoutes);
 router.use('/skills', skillRoutes);
 router.use('/spells', spellRoutes);
 router.use('/user/profile', userProfileRoutes);
+router.use('/items', itemRoutes);
 
 export { router as routes }; 

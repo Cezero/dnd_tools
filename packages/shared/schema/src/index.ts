@@ -9,3 +9,4 @@ export * from './referencetables.js';
 export * from './skill.js';
 export * from './spell.js';
 export * from './sourcebook.js';
+export * from './item.js';

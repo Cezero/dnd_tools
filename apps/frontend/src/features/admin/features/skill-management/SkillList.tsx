@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
@@ -12,6 +12,7 @@ export function SkillList(): React.JSX.Element {
     const navigate = useNavigate();
     const location = useLocation();
     const { isLoading: isAuthLoading } = useAuthAuto();
+    const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
 
     const HandleNewSkillClick = (): void => {
         navigate('/admin/skills/new/edit', { state: { fromListParams: location.search } });
@@ -21,8 +22,7 @@ export function SkillList(): React.JSX.Element {
         if (window.confirm('Are you sure you want to delete this skill?')) {
             try {
                 await SkillService.deleteSkill(undefined, { id });
-                // Refresh the list by navigating to the same page
-                navigate('/admin/skills', { replace: true });
+                setRefreshTrigger(prev => prev + 1);
             } catch (error) {
                 console.error('Failed to delete skill:', error);
                 alert('Failed to delete skill.');
@@ -97,6 +97,7 @@ export function SkillList(): React.JSX.Element {
                 itemDesc="skill"
                 editHandler={(item: SkillInQueryResponse) => navigate(`/admin/skills/${item.id}/edit`)}
                 deleteHandler={(item: SkillInQueryResponse) => HandleDeleteSkill(item.id)}
+                refreshTrigger={refreshTrigger}
             />
         </div>
     );

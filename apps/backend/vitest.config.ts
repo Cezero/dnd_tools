@@ -12,8 +12,8 @@ export default defineConfig({
     },
     resolve: {
         alias: {
-            '@shared/prisma-client': path.resolve(__dirname, '../packages/shared/prisma-client'),
-            '@shared/schema': path.resolve(__dirname, '../packages/shared/schema'),
+            '@shared/prisma-client': path.resolve(__dirname, '../../packages/shared/prisma-client/client'),
+            '@shared/schema': path.resolve(__dirname, '../../packages/shared/schema'),
         },
     },
 }); 

@@ -6,12 +6,13 @@ import {
     UpdateSpellSchema
 } from '@shared/schema';
 
-import { GetSpells, GetSpellById, UpdateSpell, DeleteSpell } from './spellController';
+import { GetSpells, GetSpellById, UpdateSpell, DeleteSpell, GetAllSpells } from './spellController';
 
-const { router: SpellRouter, get, put, delete: deleteRoute } = buildValidatedRouter();
+const { router: SpellRouter, get, put, delete: deleteRoute, post } = buildValidatedRouter();
 
 
-get('/', { query: SpellQuerySchema }, GetSpells);
+get('/', {}, GetAllSpells);
+post('/', { body: SpellQuerySchema }, GetSpells);
 get('/:id', { params: SpellIdParamSchema }, GetSpellById);
 put('/:id', requireAdmin, { params: SpellIdParamSchema, body: UpdateSpellSchema }, UpdateSpell);
 deleteRoute('/:id', requireAdmin, { params: SpellIdParamSchema }, DeleteSpell);

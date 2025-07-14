@@ -3,6 +3,7 @@ import type { SpellIdParamRequest, SpellQueryRequest, SpellQueryResponse, GetSpe
 
 
 export interface SpellService {
+    getAllSpells(): Promise<SpellQueryResponse>;
     getSpells(query: SpellQueryRequest): Promise<SpellQueryResponse>;
     getSpellById(id: SpellIdParamRequest): Promise<GetSpellResponse | null>;
     updateSpell(id: SpellIdParamRequest, data: UpdateSpellRequest): Promise<{ message: string }>;

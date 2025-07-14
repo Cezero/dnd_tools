@@ -89,6 +89,7 @@ export function FeatList(): React.JSX.Element {
                 itemDesc="feat"
                 editHandler={(item) => navigate(`/admin/feats/${item.id}/edit`)}
                 deleteHandler={(item) => HandleDeleteFeat(item.id)}
+                refreshTrigger={refreshTrigger}
             />
         </div>
     );

@@ -1,78 +1,151 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Select } from '@base-ui-components/react/select';
 import { Checkbox } from '@base-ui-components/react/checkbox';
-import { ChevronUpDownIcon, ChevronRightIcon, CheckIcon } from '@heroicons/react/24/outline';
-
-/**
- * CustomSelect Component Usage Examples:
- * 
- * // Basic usage with string values
- * <CustomSelect
- *   label="Choose a color"
- *   value={selectedColor}
- *   onValueChange={setSelectedColor}
- *   options={[
- *     { value: 'red', label: 'Red' },
- *     { value: 'blue', label: 'Blue' },
- *     { value: 'green', label: 'Green' }
- *   ]}
- * />
- * 
- * // With number values and custom placeholder
- * <CustomSelect<number>
- *   label="Select Level"
- *   required
- *   value={selectedLevel}
- *   onValueChange={setSelectedLevel}
- *   options={[...Array(10).keys()].map(level => ({ 
- *     value: level, 
- *     label: `Level ${level}` 
- *   }))}
- *   placeholder="Choose a level"
- * />
- * 
- * // With custom styling
- * <CustomSelect
- *   label="Custom Style"
- *   value={selectedValue}
- *   onValueChange={setSelectedValue}
- *   options={options}
- *   triggerClassName="custom-trigger-class"
- *   popupClassName="custom-popup-class"
- *   itemClassName="custom-item-class"
- * />
- * 
- * CustomCheckbox Component Usage Examples:
- * 
- * // Basic usage
- * <CustomCheckbox
- *   label="Enable notifications"
- *   checked={notificationsEnabled}
- *   onCheckedChange={setNotificationsEnabled}
- * />
- * 
- * // With custom styling
- * <CustomCheckbox
- *   label="Custom Style"
- *   checked={isChecked}
- *   onCheckedChange={setIsChecked}
- *   className="custom-container-class"
- *   checkboxClassName="custom-checkbox-class"
- *   labelClassName="custom-label-class"
- * />
- * 
- * // With disabled state
- * <CustomCheckbox
- *   label="Disabled option"
- *   checked={isChecked}
- *   onCheckedChange={setIsChecked}
- *   disabled={true}
- * />
- */
+import { CheckIcon, ChevronRightIcon, ChevronUpDownIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
+import { PlusCircleIcon as PlusCircleIconSolid } from '@heroicons/react/24/solid';
 
 export interface SelectOption<T = string | number> {
     value: T;
     label: string;
+}
+
+export interface CustomSelectMultiProps<T = string | number> {
+    value?: T | null;
+    onValueChange?: (value: T) => void;
+
+    selectedValues?: T[];
+    onSelectedValuesChange?: (values: T[]) => void;
+    logicType?: 'or' | 'and';
+    onLogicChange?: (logic: 'or' | 'and') => void;
+
+    options: SelectOption<T>[];
+    placeholder?: string;
+    label?: string;
+    required?: boolean;
+    disabled?: boolean;
+    componentExtraClassName?: string;
+    triggerExtraClassName?: string;
+    popupExtraClassName?: string;
+    itemExtraClassName?: string;
+    itemTextExtraClassName?: string;
+    icon?: React.ReactNode;
+    labelExtraClassName?: string;
+}
+
+export function CustomSelectMulti<T = string | number>({
+    value,
+    onValueChange,
+
+    selectedValues = [],
+    onSelectedValuesChange,
+    logicType = 'or',
+    onLogicChange,
+
+    options,
+    placeholder = 'Select an option',
+    label,
+    required = false,
+    disabled = false,
+    componentExtraClassName = '',
+    triggerExtraClassName = '',
+    popupExtraClassName = '',
+    itemExtraClassName = '',
+    itemTextExtraClassName = '',
+    icon = <ChevronUpDownIcon className="h-5 w-5" aria-hidden="true" />,
+    labelExtraClassName = '',
+}: CustomSelectMultiProps<T>) {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        if (isOpen) document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isOpen]);
+
+    const toggleValue = (val: T) => {
+        if (!onSelectedValuesChange) return;
+        if (selectedValues.includes(val)) {
+            onSelectedValuesChange(selectedValues.filter((v) => v !== val));
+        } else {
+            onSelectedValuesChange([...selectedValues, val]);
+        }
+    };
+
+    const getLabel = (val: T) => options.find((opt) => opt.value === val)?.label || '';
+
+    const renderDisplayValue = () => {
+        if (!selectedValues.length) return placeholder;
+        return selectedValues.map(getLabel).join(logicType === 'and' ? ' and ' : ' or ');
+    };
+
+    return (
+        <div className={`${componentExtraClassName}`} ref={dropdownRef}>
+            {label && (
+                <label className={`block font-medium ${labelExtraClassName}`}>
+                    {label}{required && <span className="text-red-500 ml-1">*</span>}
+                </label>
+            )}
+            <div className="relative">
+                <button
+                    type="button"
+                    onClick={() => setIsOpen(!isOpen)}
+                    className={`text-left flex justify-between items-center gap-2 pl-2 pr-3 py-2 rounded-md bg-white shadow-sm ring-1 ring-gray-300 dark:bg-gray-700 dark:ring-gray-600 ${triggerExtraClassName}`}
+                    disabled={disabled}
+                >
+                    <span>{renderDisplayValue()}</span>
+                    {icon}
+                </button>
+                {isOpen && (
+                    <div
+                        className={`absolute z-60 top-0 left-0 max-h-60 overflow-auto rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 ${popupExtraClassName}`}
+                    >
+                        <>
+                            {onLogicChange && (
+                                <div className="px-2 py-1 gap-2 flex items-center text-sm text-gray-500">
+                                    Logic:
+                                    <button
+                                        type="button"
+                                        className="flex items-center gap-1 text-blue-600 hover:underline"
+                                        onClick={() => onLogicChange(logicType === 'or' ? 'and' : 'or')}
+                                    >
+                                        {logicType === 'or' ? <PlusCircleIcon className="h-4 w-4" /> : <PlusCircleIconSolid className="h-4 w-4" />}
+                                        {logicType.toUpperCase()}
+                                    </button>
+                                </div>
+                            )}
+                            {options.map((opt) => {
+                                const selected = selectedValues.includes(opt.value);
+                                return (
+                                    <div
+                                        key={String(opt.value)}
+                                        className={`px-2 flex items-center gap-1 cursor-pointer hover:bg-blue-600 hover:text-white ${itemExtraClassName}`}
+                                        onClick={() => toggleValue(opt.value)}
+                                    >
+                                        {selected && (
+                                            <>
+                                                <ChevronRightIcon className="h-4 w-4 text-blue-500" />
+                                                <span className={`${itemTextExtraClassName} text-blue-500`}>{opt.label}</span>
+                                            </>
+                                        ) || (
+                                                <>
+                                                    <div className="h-4 w-4"></div>
+                                                    <span className={`${itemTextExtraClassName}`}>{opt.label}</span>
+                                                </>
+                                            )}
+                                    </div>
+                                );
+                            })}
+                        </>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
 }
 
 export interface CustomSelectProps<T = string | number> {
@@ -174,6 +247,7 @@ export interface CustomCheckboxProps {
     labelClassName?: string;
     required?: boolean;
     id?: string;
+    labelPosition?: 'left' | 'right';
 }
 
 export function CustomCheckbox({
@@ -193,12 +267,18 @@ export function CustomCheckbox({
     `.replace(/\s+/g, ' ').trim(),
     labelClassName = "font-medium",
     required = false,
-    id
+    id,
+    labelPosition = 'right'
 }: CustomCheckboxProps) {
     const checkboxId = id || `checkbox-${Math.random().toString(36).slice(2, 11)}`;
 
     return (
         <div className={`flex items-center gap-2 ${componentExtraClassName}`}>
+            {label && labelPosition === 'left' && (
+                <label htmlFor={checkboxId} className={labelClassName}>
+                    {label}{required && <span className="text-red-500 ml-1">*</span>}
+                </label>
+            )}
             <Checkbox.Root
                 id={checkboxId}
                 checked={checked}
@@ -210,7 +290,7 @@ export function CustomCheckbox({
                     <CheckIcon />
                 </Checkbox.Indicator>
             </Checkbox.Root>
-            {label && (
+            {label && labelPosition === 'right' && (
                 <label htmlFor={checkboxId} className={labelClassName}>
                     {label}{required && <span className="text-red-500 ml-1">*</span>}
                 </label>

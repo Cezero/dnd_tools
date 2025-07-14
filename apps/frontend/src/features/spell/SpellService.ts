@@ -34,9 +34,15 @@ import {
  */
 export const SpellService = {
     // Get spells with query parameters
-    getSpells: typedApi<typeof SpellQuerySchema, typeof SpellQueryResponseSchema>({
+    getAllSpells: typedApi({
         path: '/spells',
         method: 'GET',
+        responseSchema: SpellQueryResponseSchema,
+    }),
+
+    getSpells: typedApi({
+        path: '/spells',
+        method: 'POST',
         requestSchema: SpellQuerySchema,
         responseSchema: SpellQueryResponseSchema,
     }),

@@ -11,11 +11,11 @@ export const WEAPON_CATEGORY_LIST = Object.values(WEAPON_CATEGORIES);
 export const WEAPON_CATEGORY_SELECT_LIST = NameSelectOptionList(WEAPON_CATEGORY_LIST);
 
 export const WEAPON_TYPES: BaseMap<CoreComponent> = {
-    1: { id: 1, name: 'Unarmed Attacks' },
-    2: { id: 2, name: 'Light Melee' },
-    3: { id: 3, name: 'One-Handed Melee' },
-    4: { id: 4, name: 'Two-Handed Melee' },
-    5: { id: 5, name: 'Ranged' }
+    1: { id: 1, name: 'Unarmed Attack' },
+    2: { id: 2, name: 'Light Melee Weapon' },
+    3: { id: 3, name: 'One-Handed Melee Weapon' },
+    4: { id: 4, name: 'Two-Handed Melee Weapon' },
+    5: { id: 5, name: 'Ranged Weapon' }
 };
 
 export const WEAPON_TYPE_LIST = Object.values(WEAPON_TYPES);
@@ -31,9 +31,9 @@ export const DAMAGE_TYPE_LIST = Object.values(DAMAGE_TYPES);
 export const DAMAGE_TYPE_SELECT_LIST = NameSelectOptionList(DAMAGE_TYPE_LIST);
 
 export const ARMOR_CATEGORIES: BaseMap<CoreComponent> = {
-    1: { id: 1, name: 'Light' },
-    2: { id: 2, name: 'Medium' },
-    3: { id: 3, name: 'Heavy' },
+    1: { id: 1, name: 'Light Armor' },
+    2: { id: 2, name: 'Medium Armor' },
+    3: { id: 3, name: 'Heavy Armor' },
     4: { id: 4, name: 'Shield' },
     5: { id: 5, name: 'Extra' },
 };
@@ -54,3 +54,20 @@ export const PROFICIENCY_TYPES: BaseMap<CoreComponent> = {
 
 export const PROFICIENCY_TYPE_LIST = Object.values(PROFICIENCY_TYPES);
 export const PROFICIENCY_TYPE_SELECT_LIST = NameSelectOptionList(PROFICIENCY_TYPE_LIST);
+
+export const ITEM_TYPES: BaseMap<CoreComponent> = {
+    1: { id: 1, name: 'Armor' },
+    2: { id: 2, name: 'Weapon' },
+    3: { id: 3, name: 'Gear' },
+    4: { id: 4, name: 'Ammo' },
+    5: { id: 5, name: 'Tool' },
+    6: { id: 6, name: 'Transport' },
+    7: { id: 7, name: 'Clothing' },
+    8: { id: 8, name: 'Food & Drink' },
+    9: { id: 9, name: 'Mounts & Animals' },
+    10: { id: 10, name: 'Other' },
+    11: { id: 11, name: 'Service' }
+};
+
+export const ITEM_TYPE_LIST = Object.values(ITEM_TYPES);
+export const ITEM_TYPE_SELECT_LIST = NameSelectOptionList(ITEM_TYPE_LIST);

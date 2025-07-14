@@ -1,764 +1,433 @@
-import { FunnelIcon as FunnelIconOutline, Cog6ToothIcon as Cog6ToothIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
-import { FunnelIcon as FunnelIconSolid, TrashIcon, ChevronDoubleUpIcon, ChevronDoubleDownIcon } from '@heroicons/react/24/solid';
+import {
+    DndContext,
+    closestCenter,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    useSortable,
+    horizontalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import pluralize from 'pluralize';
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import {
+    useReactTable,
+    getCoreRowModel,
+    getFilteredRowModel,
+    getSortedRowModel,
+    getPaginationRowModel,
+    flexRender,
+    type ColumnDef,
+    type PaginationState,
+} from '@tanstack/react-table';
+import type { GenericListProps } from './types';
+import { PAGE_LIMITS } from './types';
+import { usePersistentTableState } from './usePersistantTableState';
+import { ColumnHeaderContextMenu } from './ColumnHeaderContextMenu';
+import { FloatingTextInput } from './FloatingTextInput';
 
-import { BooleanInput } from './BooleanInput';
-import { ColumnConfigModal, UseColumnConfig } from './ColumnConfig';
-import { MultiSelect } from './MultiSelect';
-import { SingleSelect } from './SingleSelect';
-import { TextInput } from './TextInput';
-import type {
-    FilterValue,
-    FilterState,
-    DataItem,
-    GenericListProps,
-    ColumnDefinition,
-    FilterConfig,
-    InputFilterComponentProps,
-    BooleanFilterComponentProps,
-    SingleSelectFilterComponentProps,
-    MultiSelectFilterComponentProps
-} from './types';
-
-// Type guards for filter values
-function isInputFilter(value: unknown): value is { type: 'input'; value: string } {
-    return typeof value === 'object' && value !== null && 'type' in value && value.type === 'input';
-}
-
-function isMultiSelectFilter(value: unknown): value is { type: 'multi-select'; value: { values: string[]; logic: 'or' | 'and' } } {
-    return typeof value === 'object' && value !== null && 'type' in value && value.type === 'multi-select';
-}
-
-function isBooleanFilter(value: unknown): value is { type: 'boolean'; value: boolean | null } {
-    return typeof value === 'object' && value !== null && 'type' in value && value.type === 'boolean';
-}
-
-export function GenericList<T = DataItem>({
-    // Configuration props
-    storageKey,
-    columnDefinitions,
-    querySchema,
-    serviceFunction,
-    renderCell,
-
-    // Routing props
-    detailPagePath,
-    itemDesc = 'items',
-    dynamicFilterDelay = 500,
-    initialLimit = 25,
-    isColumnConfigurable = true,
-
-    // Option selector props
-    isOptionSelector = false,
-    selectedIds = [],
-    onSelectedIdsChange,
-    editHandler,
-    deleteHandler,
-}: GenericListProps<T>): React.JSX.Element {
-    const [data, setData] = useState<T[]>([]);
-    const [total, setTotal] = useState<number>(0);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
-    const navigate = useNavigate();
-
-    // Internal state for selected IDs when in option selector mode
-    const [internalSelectedIds, setInternalSelectedIds] = useState<(string | number)[]>(selectedIds);
-
-    // Call onSelectedIdsChange when internalSelectedIds changes
-    useEffect(() => {
-        if (isOptionSelector && onSelectedIdsChange) {
-            onSelectedIdsChange(internalSelectedIds);
-        }
-    }, [internalSelectedIds, isOptionSelector, onSelectedIdsChange]);
-
-    const getStoredValue = useCallback((key: string, defaultValue: string | number | boolean | object): string | number | boolean | object => {
-        try {
-            const stored = localStorage.getItem(`${storageKey}-${key}`);
-            const parsed = stored ? JSON.parse(stored) : defaultValue;
-            return parsed;
-        } catch (error) {
-            console.error('Error reading from localStorage', error);
-            return defaultValue;
-        }
-    }, [storageKey]);
-
-    const setStoredValue = useCallback((key: string, value: string | number | boolean | object): void => {
-        try {
-            localStorage.setItem(`${storageKey}-${key}`, JSON.stringify(value));
-        } catch (error) {
-            console.error('Error writing to localStorage', error);
-        }
-    }, [storageKey]);
-
-    const [page, setPage] = useState<number>(() => getStoredValue('page', 1) as number);
-    const [limit, setLimit] = useState<number>(() => getStoredValue('limit', initialLimit) as number);
-    const [sortKey, setSortKey] = useState<string>(() => getStoredValue('sortKey', '') as string);
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-
-    // Helper function to check if a column has filter configuration
-    const hasFilterConfig = (column: ColumnDefinition): column is ColumnDefinition & { filterConfig: FilterConfig } => {
-        return column.filterConfig !== undefined;
+function SortableHeaderCell({ header, allColumns, onToggleVisibility, onSort, columnFilters, handleFilterChange, handleClearFilter, onRestoreHiddenColumn }) {
+    const { attributes, listeners, setNodeRef, transition, transform } =
+        useSortable({ id: header.id });
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
     };
-
-    const [filters, setFilters] = useState<FilterState>(() => {
-        const storedFilterValues = getStoredValue('filterValues', {}) as Record<string, unknown>;
-        const currentFilters: FilterState = {};
-
-        for (const key in columnDefinitions) {
-            const column = columnDefinitions[key];
-            const storedValue = storedFilterValues[key];
-
-            // Only create filters for columns that have filterConfig
-            if (!hasFilterConfig(column)) {
-                continue;
-            }
-
-            const filterType = column.filterConfig!.type;
-
-            if (filterType === 'multi-select') {
-                // Handle multi-select with values array and logic
-                if (storedValue && typeof storedValue === 'object' && 'values' in storedValue) {
-                    const multiSelectValue = storedValue as { values: string[]; logic?: string };
-                    currentFilters[key] = {
-                        type: 'multi-select',
-                        value: {
-                            values: multiSelectValue.values || [],
-                            logic: (multiSelectValue.logic === 'and' ? 'and' : 'or') as 'or' | 'and'
-                        }
-                    };
-                } else {
-                    // Default value
-                    currentFilters[key] = {
-                        type: 'multi-select',
-                        value: { values: [], logic: 'or' }
-                    };
-                }
-            } else if (filterType === 'boolean') {
-                // Handle boolean values
-                currentFilters[key] = {
-                    type: 'boolean',
-                    value: storedValue !== undefined ? storedValue as boolean : null
-                };
-            } else if (filterType === 'text-input') {
-                // Handle input string values
-                currentFilters[key] = {
-                    type: 'input',
-                    value: storedValue !== undefined ? storedValue as string : ''
-                };
-            } else if (filterType === 'single-select') {
-                // Handle single-select values
-                currentFilters[key] = {
-                    type: 'input',
-                    value: storedValue !== undefined ? storedValue as string : ''
-                };
-            }
-        }
-
-        return currentFilters;
-    });
-
-    const [displayFilter, setDisplayFilter] = useState<string>('');
-
-    // Derive default columns from column definitions
-    const defaultColumns = useMemo(() => {
-        return Object.entries(columnDefinitions)
-            .filter(([_, column]) => column.isDefault === true) // Only include columns where isDefault is explicitly true
-            .map(([columnId, _]) => columnId);
-    }, [columnDefinitions]);
-
-    // Derive required column ID from column definitions
-    const requiredColumnId = useMemo(() => {
-        const requiredColumn = Object.entries(columnDefinitions).find(([_, column]) => column.isRequired === true);
-        return requiredColumn ? requiredColumn[0] : '';
-    }, [columnDefinitions]);
-
-    const { visibleColumns, setVisibleColumns } = UseColumnConfig(storageKey, defaultColumns, columnDefinitions);
-    const [isConfigOpen, setIsConfigOpen] = useState<boolean>(false);
-
-    const thRefs = useRef<Record<string, HTMLTableCellElement | null>>({});
-    const lastClickedElement = useRef<EventTarget | null>(null);
-
-    // Helper function to render filter components from column definition
-    const renderFilterComponent = (columnId: string, column: ColumnDefinition): React.ReactNode => {
-        if (!hasFilterConfig(column)) {
-            return null;
-        }
-
-        const baseProps = {
-            open: displayFilter === columnId,
-            onOpenChange: (newOpenState: boolean) => {
-                if (newOpenState) {
-                    setDisplayFilter(columnId);
-                } else {
-                    setDisplayFilter('');
-                }
-            },
-            dynamic: column.dynamicFilter,
-            dynamicFilterDelay: dynamicFilterDelay,
-            multiColumn: column.multiColumn,
-            appendClassName: 'absolute top-0 left-0 z-50',
-        };
-
-        switch (column.filterConfig.type) {
-            case 'text-input': {
-                const props: InputFilterComponentProps = {
-                    ...baseProps,
-                    ...column.filterConfig.props,
-                    selected: getFilterValueForComponent(columnId, 'input') as string,
-                    onChange: (value: string) => handleFilterChange(columnId, value),
-                };
-                return React.createElement(TextInput, { key: columnId, ...props });
-            }
-            case 'boolean': {
-                const props: BooleanFilterComponentProps = {
-                    ...baseProps,
-                    ...column.filterConfig.props,
-                    value: getFilterValueForComponent(columnId, 'boolean') as boolean | null,
-                    onToggle: (value: boolean | null) => handleFilterChange(columnId, value),
-                };
-                return React.createElement(BooleanInput, { key: columnId, ...props });
-            }
-            case 'single-select': {
-                const props: SingleSelectFilterComponentProps = {
-                    ...baseProps,
-                    ...column.filterConfig.props,
-                    displayKey: column.filterConfig.props.displayKey || 'label',
-                    valueKey: column.filterConfig.props.valueKey || 'value',
-                    selected: getFilterValueForComponent(columnId, 'single-select') as string | number | null,
-                    onChange: (value: string | number | null) => handleFilterChange(columnId, value),
-                };
-                return React.createElement(SingleSelect, { key: columnId, ...props });
-            }
-            case 'multi-select': {
-                const props: MultiSelectFilterComponentProps = {
-                    ...baseProps,
-                    ...column.filterConfig.props,
-                    displayKey: column.filterConfig.props.displayKey || 'label',
-                    valueKey: column.filterConfig.props.valueKey || 'value',
-                    selected: getFilterValueForComponent(columnId, 'multi-select') as (string | number)[],
-                    onChange: (values: (string | number)[]) => handleFilterChange(columnId, values),
-                    logicType: (filters[columnId] as FilterValue) && isMultiSelectFilter(filters[columnId]) ? filters[columnId].value.logic : 'or',
-                    onLogicChange: (newLogic: 'or' | 'and') => handleLogicChange(columnId, newLogic),
-                };
-                return React.createElement(MultiSelect, { key: columnId, ...props });
-            }
-            default:
-                return null;
-        }
-    };
-
-    // Modify visibleColumns if in option selector mode
-    const adjustedVisibleColumns = useMemo(() => {
-        if (isOptionSelector) {
-            return ['__selector_column__', ...visibleColumns];
-        }
-        return visibleColumns;
-    }, [isOptionSelector, visibleColumns]);
-
-    // Helper function to get filter value for component props
-    const getFilterValueForComponent = (filterKey: string, filterType?: string): string | boolean | string[] | string | number | null => {
-        const filterValue = filters[filterKey];
-        if (!filterValue) return '';
-
-        if (filterType === 'multi-select' && isMultiSelectFilter(filterValue)) {
-            return filterValue.value.values;
-        }
-        if (filterType === 'boolean' && isBooleanFilter(filterValue)) {
-            return filterValue.value;
-        }
-        if (filterType === 'text-input' && isInputFilter(filterValue)) {
-            return filterValue.value;
-        }
-        if (filterType === 'single-select' && isInputFilter(filterValue)) {
-            // For single-select, we store as string but need to return as string | number | null
-            return filterValue.value || null;
-        }
-        return '';
-    };
-
-    // Helper function to check if a filter is applied
-    const isFilterApplied = (filterKey: string): boolean => {
-        const filterValue = filters[filterKey];
-        if (!filterValue) return false;
-
-        if (isMultiSelectFilter(filterValue)) {
-            return filterValue.value.values.length > 0;
-        }
-        if (isBooleanFilter(filterValue)) {
-            return filterValue.value !== null;
-        }
-        if (isInputFilter(filterValue)) {
-            return filterValue.value !== '';
-        }
-        return false;
-    };
-
-    // Helper function to parse detailPagePath and extract parameter name
-    const getPathParameter = useCallback((path: string): string => {
-        const match = path.match(/:([^/]+)/);
-        return match ? match[1] : 'id'; // Default to 'id' if no parameter found
-    }, []);
-
-    // Get the actual key to use for the item
-    const getItemKey = useCallback((item: T): string | number => {
-        const key = detailPagePath ? getPathParameter(detailPagePath) : 'id';
-        return item[key] as string | number;
-    }, [detailPagePath, getPathParameter]);
-
-    // useEffect for data fetching, now depends on local state variables
-    useEffect(() => {
-        const currentParams = new URLSearchParams();
-        currentParams.set('page', page.toString());
-        currentParams.set('limit', limit.toString());
-        if (sortKey) currentParams.set('sort', sortKey);
-        if (sortOrder) currentParams.set('order', sortOrder);
-
-        for (const key in filters) {
-            const column = columnDefinitions[key];
-            const paramName = column?.paramName || key;
-            const multiColumns = column?.multiColumn;
-            const filterValue = filters[key];
-
-            if (!hasFilterConfig(column)) {
-                continue;
-            }
-
-            const filterType = column.filterConfig!.type;
-
-            if (filterType === 'text-input' && isInputFilter(filterValue)) {
-                if (multiColumns && filterValue.value !== '') {
-                    currentParams.set('mclist', multiColumns.join(','));
-                    currentParams.set('mcfilter', filterValue.value);
-                } else if (filterValue.value !== '') {
-                    currentParams.set(paramName, filterValue.value);
-                }
-            } else if (filterType === 'multi-select' && isMultiSelectFilter(filterValue)) {
-                if (filterValue.value.values.length > 0) {
-                    currentParams.set(paramName, filterValue.value.values.join(','));
-                    currentParams.set(`${paramName}_logic`, filterValue.value.logic);
-                }
-            } else if (filterType === 'boolean' && isBooleanFilter(filterValue)) {
-                if (filterValue.value !== null) {
-                    currentParams.set(paramName, String(filterValue.value));
-                }
-            }
-        }
-        setIsLoading(true);
-
-        // Parse the URLSearchParams using the provided query schema
-        const queryObject = Object.fromEntries(currentParams.entries());
-        const queryParams = querySchema.parse(queryObject);
-
-        serviceFunction(queryParams)
-            .then(result => {
-                setData(result.results);
-                setTotal(result.total);
-            })
-            .catch(error => {
-                console.error('Error fetching list data:', error);
-            })
-            .finally(() => {
-                setIsLoading(false);
-            });
-    }, [page, limit, sortKey, sortOrder, filters, querySchema, serviceFunction, columnDefinitions]);
-
-    // New useEffect to sync state to localStorage
-    useEffect(() => {
-        setStoredValue('page', page);
-        setStoredValue('limit', limit);
-        setStoredValue('sortKey', sortKey);
-        setStoredValue('sortOrder', sortOrder);
-
-        // Extract and store only filter values, not the entire filter objects
-        const filterValues: Record<string, unknown> = {};
-        for (const key in filters) {
-            const filter = filters[key];
-            if (isInputFilter(filter)) {
-                filterValues[key] = filter.value;
-            } else if (isBooleanFilter(filter)) {
-                filterValues[key] = filter.value;
-            } else if (isMultiSelectFilter(filter)) {
-                filterValues[key] = {
-                    values: filter.value.values,
-                    logic: filter.value.logic
-                };
-            }
-        }
-        setStoredValue('filterValues', filterValues);
-    }, [page, limit, sortKey, sortOrder, filters, setStoredValue]);
-
-    useEffect(() => {
-        const HandleClickOutside = (event: MouseEvent): void => {
-            if (displayFilter && thRefs.current[displayFilter] && !thRefs.current[displayFilter]?.contains(event.target as Node)) {
-                // If the closed filter was a multi-select, clear its active state
-                const column = columnDefinitions[displayFilter];
-                if (hasFilterConfig(column) && column.filterConfig!.type === 'multi-select') {
-                    setDisplayFilter('');
-                }
-                lastClickedElement.current = event.target;
-            }
-        };
-
-        document.addEventListener('mousedown', HandleClickOutside, true);
-        return () => {
-            document.removeEventListener('mousedown', HandleClickOutside, true);
-        };
-    }, [displayFilter, columnDefinitions]);
-
-    const handleFilterChange = useCallback((filterKey: string, value: string | boolean | string[] | (string | number)[] | string | number | null): void => {
-        setFilters(prev => {
-            const newFilters = { ...prev };
-            const column = columnDefinitions[filterKey];
-
-            if (!hasFilterConfig(column)) {
-                return newFilters;
-            }
-
-            const filterType = column.filterConfig!.type;
-
-            if (filterType === 'multi-select') {
-                // Convert to string array for storage
-                const stringValues = Array.isArray(value) ? value.map(v => String(v)) : [];
-                newFilters[filterKey] = {
-                    type: 'multi-select',
-                    value: { values: stringValues, logic: 'or' }
-                };
-            } else if (filterType === 'boolean') {
-                newFilters[filterKey] = {
-                    type: 'boolean',
-                    value: value as boolean | null
-                };
-            } else if (filterType === 'single-select') {
-                // Convert to string for storage
-                const stringValue = value !== null ? String(value) : '';
-                newFilters[filterKey] = {
-                    type: 'input',
-                    value: stringValue
-                };
-            } else {
-                newFilters[filterKey] = {
-                    type: 'input',
-                    value: value as string
-                };
-            }
-            return newFilters;
-        });
-
-        // Reset pagination to page 1 when filters change
-        setPage(1);
-
-        // Optionally, close single-select dropdowns immediately
-        const column = columnDefinitions[filterKey];
-        if (hasFilterConfig(column) && column.filterConfig!.type === 'boolean') {
-            setDisplayFilter('');
-        }
-    }, [columnDefinitions]);
-
-    const handleLogicChange = useCallback((filterKey: string, newLogic: string): void => {
-        setFilters(prev => {
-            const newFilters = { ...prev };
-            const currentFilter = prev[filterKey];
-
-            if (isMultiSelectFilter(currentFilter)) {
-                newFilters[filterKey] = {
-                    type: 'multi-select',
-                    value: {
-                        ...currentFilter.value,
-                        logic: (newLogic === 'and' ? 'and' : 'or') as 'or' | 'and'
-                    }
-                };
-            }
-            return newFilters;
-        });
-    }, []);
-
-    const HandleSort = (key: string): void => {
-        if (sortKey === key) {
-            if (sortOrder === 'asc') {
-                setSortOrder('desc');
-            } else if (sortOrder === 'desc') {
-                setSortKey('');
-                setSortOrder('asc');
-            }
-        } else {
-            setSortKey(key);
-            setSortOrder('asc');
-        }
-    };
-
-    const HandleLimitChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
-        const newLimit = parseInt(e.target.value);
-        setLimit(newLimit);
-        setPage(Math.min(page, Math.ceil(total / newLimit) || 1));
-    };
-
-    const HandlePageChange = (newPage: number): void => {
-        setPage(newPage);
-    };
-
-    const RenderColumnHeader = (columnId: string, isLastColumn: boolean): React.ReactNode => {
-        const column = columnDefinitions[columnId];
-        if (!column) {
-            // If it's the selector column, return an empty header
-            if (columnId === '__selector_column__') {
-                return <th key={columnId} className="relative border-b p-1 text-left text-md border-gray-600 dark:border-gray-700 dark:bg-gray-900"></th>;
-            }
-            return null;
-        }
-
-        // Check if a filter is applied to this column
-        const isFiltered = isFilterApplied(columnId);
-
-        return (
-            <th
-                key={columnId}
-                ref={(el: HTMLTableCellElement | null) => { thRefs.current[columnId] = el; }}
-                onClick={() => {
-                    if (displayFilter !== columnId && column.sortable === true) {
-                        HandleSort(columnId);
-                    }
-                }}
-                className={`relative border-b p-1 text-left text-md border-gray-600 dark:border-gray-700 dark:bg-gray-900 ${column.sortable === true ? 'cursor-pointer' : ''}`}
-            >
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                        <div
-                            title={column.sortable === true ? (
-                                sortKey === columnId ? (
-                                    sortOrder === 'asc' ? `Sort descending by ${column.label}` : `Clear sort for ${column.label}`
-                                ) : `Sort ascending by ${column.label}`
-                            ) : undefined}
-                        >
-                            {column.label}
-                        </div>
-                        {hasFilterConfig(column) && !column.alwaysVisible && (
-                            <button onClick={(e) => { e.stopPropagation(); setDisplayFilter(columnId); }} className="ml-2" title={`Filter by ${column.label}`}>
-                                {isFiltered ? <FunnelIconSolid className="w-4 h-4 text-blue-600" /> : <FunnelIconOutline className="w-4 h-4 text-gray-500" />}
-                            </button>
-                        )}
-                        {column.sortable === true && sortKey === columnId && (
-                            <span className="ml-1"
-                                title={sortKey === columnId ? (
-                                    sortOrder === 'asc' ? `Sort descending by ${column.label}` : `Clear sort for ${column.label}`
-                                ) : `Sort ascending by ${column.label}`}
-                            >
-                                {sortOrder === 'asc' ? (
-                                    <ChevronDoubleUpIcon className="w-4 h-4" />
-                                ) : (
-                                    <ChevronDoubleDownIcon className="w-4 h-4" />
-                                )}
-                            </span>
-                        )}
-                    </div>
-                    {isLastColumn && isColumnConfigurable && !isOptionSelector && (
-                        <button
-                            onClick={(e) => { e.stopPropagation(); setIsConfigOpen(true); }}
-                            className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors ml-2"
-                            title="Configure columns"
-                        >
-                            <Cog6ToothIcon className="w-4 h-4" />
-                        </button>
-                    )}
-                </div>
-                {displayFilter === columnId && hasFilterConfig(column) && !column.alwaysVisible && renderFilterComponent(columnId, column)}
-            </th>
-        );
-    };
-
-    // Helper function to replace path parameter with actual value
-    const replacePathParameter = useCallback((path: string, item: T): string => {
-        const paramName = getPathParameter(path);
-        const value = getItemKey(item);
-        return path.replace(`:${paramName}`, String(value));
-    }, [getPathParameter, getItemKey]);
-
-    if (isLoading) {
-        return <div className="p-4 bg-white dark:bg-[#121212]">Loading...</div>;
-    }
+    const handleResize = header.getResizeHandler();
 
     return (
-        <div className="p-4 bg-white dark:bg-[#121212]">
-            <div className="relative">
-                {/* Always visible filters */}
-                {Object.entries(columnDefinitions).map(([columnId, column]) => {
-                    if (hasFilterConfig(column) && column.filterConfig.type === 'text-input' && column.alwaysVisible) {
-                        const props: InputFilterComponentProps = {
-                            id: `always-visible-filter-${columnId}`,
-                            selected: getFilterValueForComponent(columnId, 'input') as string,
-                            onChange: (value: string) => handleFilterChange(columnId, value),
-                            dynamic: column.dynamicFilter,
-                            dynamicFilterDelay: dynamicFilterDelay,
-                            ...column.filterConfig.props,
-                        };
-
-                        return (
-                            <div key={columnId} className="mb-2 flex items-center">
-                                <label htmlFor={`always-visible-filter-${columnId}`} className="mr-2 font-semibold dark:text-white">{column.filterLabel || column.label}:</label>
-                                {React.createElement(TextInput, props)}
-                            </div>
-                        );
-                    }
-                    return null;
-                })}
-                <table className="w-full border-collapse border border-solid border-gray-600">
-                    <thead>
-                        <tr>
-                            {adjustedVisibleColumns.map((columnId, index) =>
-                                RenderColumnHeader(columnId, index === adjustedVisibleColumns.length - 1)
-                            )}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {data === undefined || data.length === 0 ? (
-                            <tr>
-                                <td colSpan={adjustedVisibleColumns.length} className="p-4 text-center text-gray-500 dark:text-gray-400">
-                                    No {pluralize(itemDesc, 2)} match the current filters.
-                                </td>
-                            </tr>
-                        ) : (
-                            data.map(item => (
-                                <tr key={String(getItemKey(item))} className="hover:bg-gray-100 dark:hover:bg-gray-800 odd:bg-gray-500 even:bg-white dark:odd:bg-[#141e2d] dark:even:bg-[#121212]">
-                                    {adjustedVisibleColumns.map((columnId, colIndex) => {
-                                        const isLastVisibleColumn = colIndex === adjustedVisibleColumns.length - 1;
-
-                                        // Handle selector column
-                                        if (columnId === '__selector_column__') {
-                                            const itemId = getItemKey(item) as string | number;
-                                            const isChecked = internalSelectedIds.includes(itemId);
-                                            const HandleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-                                                e.stopPropagation();
-                                                setInternalSelectedIds(prev => {
-                                                    if (e.target.checked) {
-                                                        return [...prev, itemId];
-                                                    } else {
-                                                        return prev.filter(id => id !== itemId);
-                                                    }
-                                                });
-                                            };
-
-                                            return (
-                                                <td key={columnId} className="p-1 border border-dotted border-gray-600 text-md">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isChecked}
-                                                        onChange={HandleCheckboxChange}
-                                                        className="h-4 w-4 accent-blue-600 dark:bg-gray-700 dark:accent-gray-400 dark:border-gray-600 focus:ring-0 focus:ring-offset-0"
-                                                    />
-                                                </td>
-                                            );
-                                        }
-
-                                        return (
-                                            <td
-                                                key={columnId}
-                                                className={`p-1 border border-dotted border-gray-600 text-md ${columnId === requiredColumnId && detailPagePath ? 'cursor-pointer' : ''}`}
-                                                onClick={columnId === requiredColumnId && detailPagePath ? (e: React.MouseEvent) => {
-                                                    if (e.target === lastClickedElement.current) {
-                                                        e.stopPropagation();
-                                                        lastClickedElement.current = null;
-                                                        return;
-                                                    }
-                                                    navigate(replacePathParameter(detailPagePath, item));
-                                                } : undefined}
-                                                title={columnId === requiredColumnId && detailPagePath ? `View ${itemDesc} details` : undefined}
-                                            >
-                                                <div className="flex justify-between items-center w-full">
-                                                    <span>{renderCell(item, columnId, isLastVisibleColumn)}</span>
-                                                    {isLastVisibleColumn && (editHandler || deleteHandler) && (
-                                                        <div className="flex items-center">
-                                                            {editHandler && (
-                                                                <button
-                                                                    onClick={(e: React.MouseEvent) => { e.stopPropagation(); editHandler(item); }}
-                                                                    className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 mr-2"
-                                                                    title={`Edit ${itemDesc}`}
-                                                                >
-                                                                    <PencilSquareIcon className="w-4 h-4" />
-                                                                </button>
-                                                            )}
-                                                            {deleteHandler && (
-                                                                <button
-                                                                    onClick={(e: React.MouseEvent) => { e.stopPropagation(); deleteHandler(item); }}
-                                                                    className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-600"
-                                                                    title={`Delete ${itemDesc}`}
-                                                                >
-                                                                    <TrashIcon className="w-4 h-4" />
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        );
-                                    })}
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
-            <div className="mt-4 flex justify-between items-center">
-                <div>
-                    Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, total)} of {total} items
-                </div>
-                <div className="flex gap-2">
-                    <div className="flex items-center gap-2">
-                        <label htmlFor="limit-select" className="text-sm">Show:</label>
-                        <select
-                            id="limit-select"
-                            value={limit}
-                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { e.stopPropagation(); e.preventDefault(); HandleLimitChange(e); }}
-                            className="p-1 border rounded dark:bg-gray-700 dark:border-gray-600"
-                        >
-                            <option value="10">10</option>
-                            <option value="25">25</option>
-                            <option value="50">50</option>
-                            <option value="100">100</option>
-                            <option value="200">200</option>
-                        </select>
-                    </div>
-                    <button
-                        onClick={(e: React.MouseEvent) => { e.stopPropagation(); e.preventDefault(); HandlePageChange(1); }}
-                        disabled={page === 1}
-                        className="px-3 py-1 border rounded disabled:opacity-50"
-                    >
-                        First
-                    </button>
-                    <button
-                        onClick={(e: React.MouseEvent) => { e.stopPropagation(); e.preventDefault(); HandlePageChange(page - 1); }}
-                        disabled={page === 1}
-                        className="px-3 py-1 border rounded disabled:opacity-50"
-                    >
-                        Previous
-                    </button>
-                    <span className="px-3 py-1">
-                        Page {page} of {Math.ceil(total / limit)}
-                    </span>
-                    <button
-                        onClick={(e: React.MouseEvent) => { e.stopPropagation(); e.preventDefault(); HandlePageChange(page + 1); }}
-                        disabled={page >= Math.ceil(total / limit)}
-                        className="px-3 py-1 border rounded disabled:opacity-50"
-                    >
-                        Next
-                    </button>
-                    <button
-                        onClick={(e: React.MouseEvent) => { e.stopPropagation(); e.preventDefault(); HandlePageChange(Math.ceil(total / limit)); }}
-                        disabled={page >= Math.ceil(total / limit)}
-                        className="px-3 py-1 border rounded disabled:opacity-50"
-                    >
-                        Last
-                    </button>
-                </div>
-            </div>
-            {isColumnConfigurable && (
-                <ColumnConfigModal
-                    isOpen={isConfigOpen}
-                    onClose={() => setIsConfigOpen(false)}
-                    visibleColumns={visibleColumns}
-                    setVisibleColumns={setVisibleColumns}
-                    columnDefinitions={columnDefinitions}
+        <th
+            ref={setNodeRef}
+            style={{ ...style, width: header.getSize() }}
+            className="relative"
+            data-column-id={header.id}
+        >
+            <ColumnHeaderContextMenu
+                header={header}
+                allColumns={allColumns}
+                onToggleVisibility={onToggleVisibility}
+                onSort={onSort}
+                columnFilters={columnFilters}
+                handleFilterChange={handleFilterChange}
+                handleClearFilter={handleClearFilter}
+                onRestoreHiddenColumn={onRestoreHiddenColumn}
+                dragAttributes={attributes}
+                dragListeners={listeners}
+            />
+            {header.column.getCanResize() && (
+                <div
+                    onMouseDown={e => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        handleResize?.(e);
+                    }}
+                    onTouchStart={e => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        handleResize?.(e);
+                    }}
+                    className="absolute top-0 right-0 w-1 h-full cursor-col-resize select-none"
                 />
             )}
-        </div>
+        </th>
+    );
+}
+
+export function GenericList<T>({
+    storageKey,
+    columns,
+    serviceFunction,
+    itemDesc = 'items',
+    initialLimit = 20,
+}: GenericListProps<T>) {
+    const [data, setData] = useState<T[]>([]);
+    const [total, setTotal] = useState(0);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // State for floating text input
+    const [textInputState, setTextInputState] = useState<{
+        isVisible: boolean;
+        columnId: string | null;
+        position: { x: number; y: number; width: number };
+    }>({
+        isVisible: false,
+        columnId: null,
+        position: { x: 0, y: 0, width: 0 }
+    });
+
+    const columnDefs = useMemo<ColumnDef<T>[]>(() => [...columns], [columns]);
+    const defaultColumnOrder = columnDefs.map(col => {
+        if ('id' in col && col.id) return col.id;
+        if ('accessorKey' in col && col.accessorKey) return String(col.accessorKey);
+        console.warn('Missing id/accessorKey in column:', col);
+        return ''; // fallback to empty string if really broken
+    }).filter(Boolean); // remove blanks
+
+    const {
+        columnVisibility,
+        setColumnVisibility,
+        columnFilters,
+        setColumnFilters,
+        sorting,
+        setSorting,
+        columnSizing,
+        setColumnSizing,
+        columnOrder,
+        setColumnOrder,
+    } = usePersistentTableState(storageKey, defaultColumnOrder);
+
+    const [pagination, setPagination] = useState<PaginationState>({
+        pageIndex: 0,
+        pageSize: initialLimit,
+    });
+
+    const handleSortingChange = (updater: any) => {
+        // Simply pass through the sorting change
+        const newSorting = typeof updater === 'function' ? updater(sorting) : updater;
+        setSorting(newSorting);
+    };
+
+    const onSort = (columnId: string, direction: 'asc' | 'desc') => {
+        // Check if this is the same sort that's already active
+        const currentSort = sorting.find(s => s.id === columnId);
+        const isCurrentlySorted = currentSort &&
+            ((direction === 'asc' && !currentSort.desc) ||
+                (direction === 'desc' && currentSort.desc));
+
+        if (isCurrentlySorted) {
+            // If clicking the same sort direction, clear sorting
+            setSorting([]);
+        } else {
+            // Otherwise, set the new sort direction
+            const newSort = { id: columnId, desc: direction === 'desc' };
+            setSorting([newSort]);
+        }
+    };
+
+    // Toggle visibility handler
+    const onToggleVisibility = (columnId: string) => {
+        setColumnVisibility(old => {
+            // If the column is undefined in the state, it's visible by default
+            // If it's explicitly false, it's hidden
+            // If it's explicitly true, it's visible
+            const currentVisibility = old[columnId] ?? true; // undefined means visible
+            return {
+                ...old,
+                [columnId]: !currentVisibility,
+            };
+        });
+    };
+
+    // Restore hidden column handler
+    const onRestoreHiddenColumn = (hiddenColumnId: string, positionAfterColumnId: string) => {
+        // First, make the hidden column visible
+        setColumnVisibility(old => ({
+            ...old,
+            [hiddenColumnId]: true,
+        }));
+
+        // Then, reposition it to the right of the specified column
+        setColumnOrder(oldOrder => {
+            const currentIndex = oldOrder.indexOf(hiddenColumnId);
+            const targetIndex = oldOrder.indexOf(positionAfterColumnId);
+
+            if (currentIndex === -1) {
+                // Column not in order, add it after the target column
+                const newOrder = [...oldOrder];
+                newOrder.splice(targetIndex + 1, 0, hiddenColumnId);
+                return newOrder;
+            } else if (currentIndex !== targetIndex + 1) {
+                // Column exists but not in the right position, move it
+                const newOrder = [...oldOrder];
+                newOrder.splice(currentIndex, 1);
+                newOrder.splice(targetIndex + 1, 0, hiddenColumnId);
+                return newOrder;
+            }
+
+            return oldOrder;
+        });
+    };
+
+    // Filter handlers
+    const handleFilterChange = (columnId: string, value: any) => {
+        // Handle text input toggle
+        if (value && value.type === 'toggle_text_input') {
+            const headerElement = document.querySelector(`[data-column-id="${columnId}"]`);
+            if (headerElement) {
+                const rect = headerElement.getBoundingClientRect();
+                setTextInputState({
+                    isVisible: true,
+                    columnId,
+                    position: {
+                        x: rect.left,
+                        y: rect.bottom + 5,
+                        width: rect.width
+                    }
+                });
+            }
+            return;
+        }
+
+        if (value === null) {
+            // Remove filter
+            setColumnFilters(prev => prev.filter(f => f.id !== columnId));
+        } else {
+            // Add or update filter
+            setColumnFilters(prev => {
+                const existing = prev.find(f => f.id === columnId);
+                if (existing) {
+                    return prev.map(f => f.id === columnId ? value : f);
+                } else {
+                    return [...prev, value];
+                }
+            });
+        }
+    };
+
+    const handleClearFilter = (columnId: string) => {
+        setColumnFilters(prev => prev.filter(f => f.id !== columnId));
+    };
+
+    // Handle text input value changes
+    const handleTextInputValueChange = (columnId: string, value: string) => {
+        if (value.trim() === '') {
+            setColumnFilters(prev => {
+                const newFilters = prev.filter(f => f.id !== columnId);
+                return newFilters;
+            });
+        } else {
+            setColumnFilters(prev => {
+                const existing = prev.find(f => f.id === columnId);
+                let newFilters;
+                if (existing) {
+                    newFilters = prev.map(f => f.id === columnId ? { id: columnId, value: value.trim() } : f);
+                } else {
+                    newFilters = [...prev, { id: columnId, value: value.trim() }];
+                }
+                return newFilters;
+            });
+        }
+    };
+
+    // Handle text input close
+    const handleTextInputClose = () => {
+        setTextInputState(prev => ({ ...prev, isVisible: false }));
+    };
+    const sensors = useSensors(useSensor(PointerSensor));
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+
+        const oldIndex = columnOrder.indexOf(String(active.id));
+        const newIndex = columnOrder.indexOf(String(over.id));
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+            const newOrder = arrayMove(columnOrder, oldIndex, newIndex);
+            setColumnOrder(newOrder);
+        }
+    };
+
+    const table = useReactTable({
+        data,
+        columns,
+        state: {
+            sorting,
+            columnFilters,
+            pagination,
+            columnVisibility,
+            columnSizing,
+            columnOrder,
+        },
+        manualPagination: false,
+        manualSorting: false,
+        manualFiltering: false,
+        enableColumnResizing: true,
+        columnResizeMode: 'onChange',
+        onPaginationChange: setPagination,
+        onSortingChange: handleSortingChange,
+        onColumnFiltersChange: setColumnFilters,
+        onColumnVisibilityChange: setColumnVisibility,
+        onColumnSizingChange: setColumnSizing,
+        onColumnOrderChange: setColumnOrder,
+        getPaginationRowModel: getPaginationRowModel(),
+        getCoreRowModel: getCoreRowModel(),
+        getFilteredRowModel: getFilteredRowModel(),
+        getSortedRowModel: getSortedRowModel()
+    });
+
+    useEffect(() => {
+        setIsLoading(true);
+
+        serviceFunction().then(({ results, total }) => {
+            setData(results);
+            setTotal(total);
+        }).catch(console.error).finally(() => setIsLoading(false));
+    }, []);
+
+    const paginatedRows = table.getPaginationRowModel().rows;
+    const filteredRows = table.getFilteredRowModel().rows;
+
+    const start = filteredRows.length === 0 ? 0 : pagination.pageIndex * pagination.pageSize + 1;
+    const end = start + paginatedRows.length - 1;
+    const filteredTotal = filteredRows.length;
+
+    return (
+        <>
+            <div className="p-4">
+                {isLoading ? <div>Loading...</div> : (
+                    <>
+                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                            {textInputState.isVisible && textInputState.columnId && (
+                                <FloatingTextInput
+                                    columnId={textInputState.columnId}
+                                    isVisible={textInputState.isVisible}
+                                    position={textInputState.position}
+                                    currentValue={String(columnFilters.find(f => f.id === textInputState.columnId)?.value || '')}
+                                    onValueChange={handleTextInputValueChange}
+                                    onClose={handleTextInputClose}
+                                />
+                            )}
+                            <SortableContext
+                                items={table.getVisibleLeafColumns().map(col => col.id)}
+                                strategy={horizontalListSortingStrategy}
+                            >
+                                <table className="table-fixed w-full border-collapse border border-solid border-gray-600">
+                                    <thead>
+                                        {table.getHeaderGroups().map(headerGroup => (
+                                            <tr key={headerGroup.id}>
+                                                {headerGroup.headers.map(header => (
+                                                    <SortableHeaderCell key={header.id} header={header} allColumns={table.getAllColumns()} onToggleVisibility={onToggleVisibility} onSort={onSort} columnFilters={columnFilters} handleFilterChange={handleFilterChange} handleClearFilter={handleClearFilter} onRestoreHiddenColumn={onRestoreHiddenColumn} />
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </thead>
+                                    <tbody>
+                                        {table.getRowModel().rows.length === 0 ? (
+                                            <tr><td colSpan={columns.length}>No {pluralize(itemDesc, 2)} found.</td></tr>
+                                        ) : (
+                                            table.getRowModel().rows.map(row => (
+                                                <tr key={row.id} className="hover:bg-gray-100 dark:hover:bg-gray-800 odd:bg-gray-500 even:bg-white dark:odd:bg-[#141e2d] dark:even:bg-[#121212]">
+                                                    {row.getVisibleCells().map(cell => (
+                                                        <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                                                    ))}
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </SortableContext>
+                        </DndContext>
+
+                        <div className="flex justify-between mt-4">
+                            <div>
+                                Showing {start}–{end} of {filteredTotal}
+                            </div>
+                            <div className="flex gap-2 items-center">
+                                <select
+                                    value={pagination.pageSize}
+                                    onChange={(e) => {
+                                        const newPageSize = Number(e.target.value);
+                                        table.setPageSize(newPageSize);
+                                        setPagination(prev => ({
+                                            ...prev,
+                                            pageSize: newPageSize,
+                                            pageIndex: 0 // Reset to first page when changing page size
+                                        }));
+                                    }}
+                                    className="px-2 py-1 border rounded bg-white dark:bg-gray-800"
+                                    title="Select number of items per page"
+                                >
+                                    {PAGE_LIMITS.map(option => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                <button
+                                    onClick={() => table.setPageIndex(0)}
+                                    disabled={!table.getCanPreviousPage()}
+                                    className="px-2 py-1 border rounded disabled:opacity-50"
+                                >
+                                    First
+                                </button>
+                                <button
+                                    onClick={() => table.previousPage()}
+                                    disabled={!table.getCanPreviousPage()}
+                                    className="px-2 py-1 border rounded disabled:opacity-50"
+                                >
+                                    &lt; Prev
+                                </button>
+
+                                <span className="px-2">
+                                    Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+                                </span>
+
+                                <button
+                                    onClick={() => table.nextPage()}
+                                    disabled={!table.getCanNextPage()}
+                                    className="px-2 py-1 border rounded disabled:opacity-50"
+                                >
+                                    Next &gt;
+                                </button>
+                                <button
+                                    onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                                    disabled={!table.getCanNextPage()}
+                                    className="px-2 py-1 border rounded disabled:opacity-50"
+                                >
+                                    Last
+                                </button>
+                            </div>
+
+                        </div>
+                    </>
+                )}
+            </div>
+        </>
     );
 }
