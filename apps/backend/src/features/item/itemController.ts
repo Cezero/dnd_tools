@@ -1,8 +1,6 @@
 import { Response } from 'express';
-import { ValidatedQueryT, ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types';
+import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types';
 import {
-    ItemQueryRequest,
-    ItemQueryResponse,
     ItemIdParamRequest,
     ItemWithDetails,
     GetAllItemsResponse,
@@ -12,11 +10,6 @@ import {
     CreateResponse
 } from '@shared/schema';
 import { itemService } from './itemService';
-
-export async function GetItems(req: ValidatedQueryT<ItemQueryRequest, ItemQueryResponse>, res: Response) {
-    const result = await itemService.getItems(req.query);
-    res.json(result);
-}
 
 export async function GetAllItems(req: ValidatedNoInput<GetAllItemsResponse>, res: Response) {
     const items = await itemService.getAllItems();

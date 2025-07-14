@@ -1,21 +1,10 @@
 import { z } from 'zod';
-import { PageQueryResponseSchema, PageQuerySchema } from './query.js';
-import { optionalIntegerParam, optionalStringParam } from './utils.js';
+import { QueryResponseSchema } from './query.js';
 
-// Schema for character query parameters
-export const CharacterQuerySchema = PageQuerySchema.extend({
-    sort: z.enum(['name', 'createdAt', 'age']).optional().default('name'),
-    order: z.enum(['asc', 'desc']).optional().default('asc'),
-    name: optionalStringParam(),
-    userId: optionalIntegerParam(),
-});
-
-// Schema for character path parameters
 export const CharacterIdParamSchema = z.object({
     id: z.string().transform((val: string) => parseInt(val)),
 });
 
-// Schema for character base
 export const BaseCharacterSchema = z.object({
     userId: z.number().int().positive('User ID must be a positive integer'),
     name: z.string()
@@ -37,22 +26,16 @@ export const CharacterSchema = BaseCharacterSchema.extend({
     id: z.number().int().positive('Character ID must be a positive integer'),
 });
 
-export const CharacterQueryResponseSchema = PageQueryResponseSchema.extend({
+export const GetAllCharactersResponseSchema = QueryResponseSchema.extend({
     results: z.array(CharacterSchema),
 });
 
-export const GetAllCharactersResponseSchema = z.array(CharacterSchema);
-
-// Schema for updating a character (same as create but all fields optional)
 export const UpdateCharacterSchema = BaseCharacterSchema.partial();
 
 export const CreateCharacterSchema = BaseCharacterSchema;
 
-// Type inference from schemas
-export type CharacterQueryRequest = z.infer<typeof CharacterQuerySchema>;
 export type CharacterIdParamRequest = z.infer<typeof CharacterIdParamSchema>;
 export type CreateCharacterRequest = z.infer<typeof CreateCharacterSchema>;
 export type UpdateCharacterRequest = z.infer<typeof UpdateCharacterSchema>; 
-export type CharacterQueryResponse = z.infer<typeof CharacterQueryResponseSchema>;
 export type CharacterResponse = z.infer<typeof CharacterSchema>;
 export type GetAllCharactersResponse = z.infer<typeof GetAllCharactersResponseSchema>;

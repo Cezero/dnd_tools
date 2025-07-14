@@ -334,6 +334,9 @@ importers:
 
   packages/shared/schema:
     dependencies:
+      '@shared/prisma-client':
+        specifier: workspace:*
+        version: link:../prisma-client
       '@shared/static-data':
         specifier: workspace:*
         version: link:../static-data

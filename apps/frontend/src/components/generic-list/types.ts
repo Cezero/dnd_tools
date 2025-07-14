@@ -1,5 +1,6 @@
 import type { SelectOption } from '@shared/static-data';
 import { ColumnDef } from '@tanstack/react-table';
+import type { RouteConfig, RouteType } from '@/types';
 
 export const PAGE_LIMITS: SelectOption[] = [
     { value: 10, label: '10' },
@@ -28,6 +29,7 @@ export interface GenericListProps<T> {
     serviceFunction: () => Promise<{ results: T[]; total: number }>;
     itemDesc?: string;
     initialLimit?: number;
+    routes?: RouteConfig[];
 }
 
 export interface GenericListColumnMeta {

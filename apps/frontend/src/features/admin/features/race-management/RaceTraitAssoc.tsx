@@ -6,12 +6,10 @@ import { z } from 'zod';
 import { GenericList } from '@/components/generic-list/GenericList';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { RaceTraitService } from '@/features/admin/features/race-management/RaceTraitService';
-import { RaceTraitQuerySchema, RaceTraitSchema } from '@shared/schema';
+import { RaceTraitSchema } from '@shared/schema';
 
-// Type for race trait items
 type RaceTraitItem = z.infer<typeof RaceTraitSchema>;
 
-// Type for the selected trait data
 type SelectedTraitData = {
     slug: string;
     description: string;
@@ -114,7 +112,6 @@ export function RaceTraitAssoc({ isOpen, onClose, onSave, initialSelectedTraitId
                                     selectedIds={currentSelectedTraitIds}
                                     onSelectedIdsChange={handleSelectedIdsChange}
                                     columnDefinitions={columnDefinitions}
-                                    querySchema={RaceTraitQuerySchema}
                                     serviceFunction={RaceTraitService.getRaceTraits}
                                     renderCell={renderTraitCell}
                                     detailPagePath="/admin/races/traits/:slug"

@@ -1,13 +1,13 @@
 import { buildValidatedRouter } from '@/lib/buildValidatedRouter';
 import { requireAdmin } from '@/middleware/authMiddleware';
 import {
-    ReferenceTableQuerySchema,
     ReferenceTableSlugParamSchema,
     ReferenceTableUpdateSchema
 } from '@shared/schema';
 
 import {
     GetReferenceTables,
+    GetAllReferenceTables,
     GetReferenceTable,
     CreateReferenceTable,
     UpdateReferenceTable,
@@ -17,7 +17,8 @@ import {
 
 const { router: ReferenceTableRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
 
-get('/', { query: ReferenceTableQuerySchema }, GetReferenceTables);
+get('/', {}, GetReferenceTables);
+get('/list', {}, GetAllReferenceTables);
 
 get('/:slug', { params: ReferenceTableSlugParamSchema }, GetReferenceTable);
 

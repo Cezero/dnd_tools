@@ -1,10 +1,8 @@
 import { PrismaClient, Prisma } from '@shared/prisma-client';
 import type {
-    RaceQueryRequest,
     RaceIdParamRequest,
     CreateRaceRequest,
     UpdateRaceRequest,
-    RaceTraitQueryRequest,
     RaceTraitSlugParamRequest,
     CreateRaceTraitRequest,
     UpdateRaceTraitRequest,
@@ -12,9 +10,8 @@ import type {
     GetRaceResponse,
     UpdateResponse,
     GetRaceTraitResponse,
-    RaceTraitGetAllResponse,
-    RaceTraitQueryResponse,
-    RaceQueryResponse,
+    GetAllRacesResponse,
+    GetAllRaceTraitsResponse,
 } from '@shared/schema';
 
 import { RaceService } from './types';
@@ -22,41 +19,16 @@ import { RaceService } from './types';
 const prisma = new PrismaClient();
 
 export const raceService: RaceService = {
-    async getRaces(query: RaceQueryRequest): Promise<RaceQueryResponse> {
-        const page = query.page;
-        const limit = query.limit;
-        const skip = (page - 1) * limit;
-
-        // Build where clause for filtering
-        const where: Prisma.RaceWhereInput = {};
-
-        if (query.name) {
-            where.name = { contains: query.name };
-        }
-        if (query.editionId) {
-            where.editionId = query.editionId;
-        }
-        if (query.isVisible !== undefined) {
-            where.isVisible = query.isVisible;
-        }
-        if (query.description) {
-            where.description = { contains: query.description };
-        }
-
-        const [races, total] = await Promise.all([
+    async getAllRaces(): Promise<GetAllRacesResponse> {
+        const [races] = await Promise.all([
             prisma.race.findMany({
-                where,
-                skip,
-                take: limit,
                 orderBy: { name: 'asc' },
             }),
-            prisma.race.count({ where }),
+            prisma.race.count(),
         ]);
 
         return {
-            page,
-            limit,
-            total,
+            total: races.length,
             results: races,
         };
     },
@@ -151,43 +123,19 @@ export const raceService: RaceService = {
     },
 
     // Race Trait methods
-    async getRaceTraits(query: RaceTraitQueryRequest): Promise<RaceTraitQueryResponse> {
-        const page = query.page;
-        const limit = query.limit;
-        const offset = (query.page - 1) * query.limit;
+    async getRaceTraits(): Promise<GetAllRaceTraitsResponse> {
 
-        // Build where clause for filtering
-        const where: Prisma.RaceTraitWhereInput = {};
-
-        if (query.slug) {
-            where.slug = { contains: query.slug };
-        }
-        if (query.hasValue !== undefined) {
-            where.hasValue = query.hasValue;
-        }
-
-        const [traits, total] = await Promise.all([
+        const [traits] = await Promise.all([
             prisma.raceTrait.findMany({
-                where,
-                skip: offset,
-                take: limit,
                 orderBy: { slug: 'asc' },
             }),
-            prisma.raceTrait.count({ where }),
+            prisma.raceTrait.count(),
         ]);
 
         return {
-            page,
-            limit,
-            total,
+            total: traits.length,
             results: traits,
         };
-    },
-
-    async getRaceTraitsList(): Promise<RaceTraitGetAllResponse> {
-        const traits = await prisma.raceTrait.findMany();
-
-        return traits;
     },
 
     async getRaceTraitBySlug(slug: RaceTraitSlugParamRequest): Promise<GetRaceTraitResponse | null> {

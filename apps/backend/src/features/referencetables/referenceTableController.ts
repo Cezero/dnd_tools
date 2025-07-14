@@ -5,7 +5,8 @@ import {
     ValidatedParamsT,
     ValidatedParamsBodyT,
     ValidatedBodyT,
-    ValidatedParamsQueryT
+    ValidatedParamsQueryT,
+    ValidatedNoInput
 } from '@/util/validated-types'
 import {
     ReferenceTableDataResponse,
@@ -14,6 +15,7 @@ import {
     ReferenceTableQueryResponse,
     ReferenceTableSlugParamRequest,
     ReferenceTableSummary,
+    GetAllReferenceTablesResponse,
     CreateResponse,
     UpdateResponse,
 } from '@shared/schema';
@@ -23,6 +25,11 @@ import { referenceTableService } from './referenceTableService';
 export async function GetReferenceTables(req: ValidatedQueryT<ReferenceTableQueryRequest, ReferenceTableQueryResponse>, res: Response) {
     const result = await referenceTableService.getReferenceTables(req.query);
     res.json(result);
+}
+
+export async function GetAllReferenceTables(req: ValidatedNoInput<GetAllReferenceTablesResponse>, res: Response) {
+    const tables = await referenceTableService.getAllReferenceTables();
+    res.json(tables);
 }
 
 export async function CreateReferenceTable(req: ValidatedBodyT<ReferenceTableUpdate, CreateResponse>, res: Response) {
@@ -43,7 +50,7 @@ export async function DeleteReferenceTable(req: ValidatedParamsT<ReferenceTableS
 export async function GetReferenceTable(req: ValidatedParamsT<ReferenceTableSlugParamRequest, ReferenceTableDataResponse>, res: Response) {
     const tableData = await referenceTableService.getReferenceTableData(req.params);
     if (!tableData) {
-        res.status(404).json({error: 'Reference table not found'});
+        res.status(404).json({ error: 'Reference table not found' });
         return;
     }
     res.json(tableData);

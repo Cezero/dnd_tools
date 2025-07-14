@@ -1,22 +1,18 @@
 import { typedApi } from '@/services/Api';
 import {
-    RaceQuerySchema,
     RaceIdParamSchema,
     UpdateRaceSchema,
-    RaceQueryResponseSchema,
     GetRaceResponseSchema,
     CreateResponseSchema,
     UpdateResponseSchema,
+    GetAllRacesResponseSchema,
 } from '@shared/schema';
 
 /**
  * RaceService with path parameter support
  * 
  * Usage examples:
- * 
- * // Get races with query parameters
- * const races = await RaceService.getRaces({ page: 1, limit: 10 });
- * 
+ *
  * // Get race by ID (path parameter)
  * const race = await RaceService.getRaceById(undefined, { id: 123 });
  * 
@@ -33,15 +29,12 @@ import {
  * await RaceService.deleteRace(undefined, { id: 123 });
  */
 export const RaceService = {
-    // Get races with query parameters
-    getRaces: typedApi<typeof RaceQuerySchema, typeof RaceQueryResponseSchema>({
+    getRaces: typedApi({
         path: '/races',
         method: 'GET',
-        requestSchema: RaceQuerySchema,
-        responseSchema: RaceQueryResponseSchema,
+        responseSchema: GetAllRacesResponseSchema,
     }),
 
-    // Get race by ID with path parameter
     getRaceById: typedApi<undefined, typeof GetRaceResponseSchema, typeof RaceIdParamSchema>({
         path: '/races/:id',
         method: 'GET',
@@ -49,7 +42,6 @@ export const RaceService = {
         responseSchema: GetRaceResponseSchema,
     }),
 
-    // Create race
     createRace: typedApi<typeof GetRaceResponseSchema, typeof CreateResponseSchema>({
         path: '/races',
         method: 'POST',
@@ -57,7 +49,6 @@ export const RaceService = {
         responseSchema: CreateResponseSchema,
     }),
 
-    // Update race with path parameter
     updateRace: typedApi<typeof UpdateRaceSchema, typeof UpdateResponseSchema, typeof RaceIdParamSchema>({
         path: '/races/:id',
         method: 'PUT',
@@ -66,7 +57,6 @@ export const RaceService = {
         responseSchema: UpdateResponseSchema,
     }),
 
-    // Delete race with path parameter
     deleteRace: typedApi<undefined, typeof UpdateResponseSchema, typeof RaceIdParamSchema>({
         path: '/races/:id',
         method: 'DELETE',

@@ -3,11 +3,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
-import { COLUMN_DEFINITIONS } from '@/features/admin/features/item-management/ItemConfig';
+import { ITEM_COLUMNS } from '@/features/admin/features/item-management/ItemColumns';
 import { ItemService } from '@/features/admin/features/item-management/ItemService';
-import { ItemQuerySchema, ItemWithDetails } from '@shared/schema';
-import { formatCostAsCurrency } from './utils';
-import { ITEM_TYPES } from '@shared/static-data';
+import { ItemWithDetails } from '@shared/schema';
+import { routes } from './ItemConfig';
 
 export function ItemList(): React.JSX.Element {
     const navigate = useNavigate();
@@ -31,35 +30,6 @@ export function ItemList(): React.JSX.Element {
         }
     };
 
-    const RenderCell = (item: ItemWithDetails, columnId: string): React.ReactNode => {
-        const column = COLUMN_DEFINITIONS[columnId];
-        if (!column) return null;
-
-        let cellContent: React.ReactNode = String(item[columnId as keyof ItemWithDetails] || '');
-
-        if (columnId === 'name') {
-            cellContent = (
-                <a
-                    onClick={() => navigate(`/admin/items/${item.id}`)}
-                    className="text-blue-600 hover:underline cursor-pointer"
-                >
-                    {item.name}
-                </a>
-            );
-        } else if (columnId === 'typeId') {
-            cellContent = ITEM_TYPES[item.typeId].name;
-        } else if (columnId === 'cost') {
-            cellContent = formatCostAsCurrency(item.cost);
-        } else if (columnId === 'weight') {
-            cellContent = item.weight !== null ? `${item.weight} lbs` : '-';
-        } else if (columnId === 'description') {
-            const description = item.description || '';
-            cellContent = description.length > 200 ? `${description.substring(0, 200)}...` : description;
-        }
-
-        return cellContent;
-    };
-
     if (isAuthLoading) {
         return <div className="p-4">Loading...</div>;
     }
@@ -77,15 +47,10 @@ export function ItemList(): React.JSX.Element {
             </div>
             <GenericList<ItemWithDetails>
                 storageKey="items-list"
-                columnDefinitions={COLUMN_DEFINITIONS}
-                querySchema={ItemQuerySchema}
-                serviceFunction={ItemService.getItems}
-                renderCell={RenderCell}
-                detailPagePath="/admin/items/:id"
+                columns={ITEM_COLUMNS}
+                serviceFunction={() => ItemService.getItems({})}
                 itemDesc="item"
-                editHandler={(item: ItemWithDetails) => navigate(`/admin/items/${item.id}/edit`)}
-                deleteHandler={(item: ItemWithDetails) => HandleDeleteItem(item.id)}
-                refreshTrigger={refreshTrigger}
+                routes={routes}
             />
         </div>
     );

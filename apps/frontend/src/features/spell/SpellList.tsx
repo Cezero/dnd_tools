@@ -5,6 +5,7 @@ import { GenericList } from '@/components/generic-list/GenericList';
 import { SPELL_COLUMNS } from '@/features/spell/SpellColumns';
 import { SpellService } from '@/features/spell/SpellService';
 import { SpellInQueryResponse } from '@shared/schema';
+import { routes } from './SpellConfig';
 
 export function SpellList(): React.JSX.Element {
     const { isLoading: isAuthLoading } = useAuthAuto();
@@ -21,6 +22,7 @@ export function SpellList(): React.JSX.Element {
                 columns={SPELL_COLUMNS}
                 serviceFunction={() => SpellService.getAllSpells({})}
                 itemDesc="spell"
+                routes={routes}
             />
         </div>
     );

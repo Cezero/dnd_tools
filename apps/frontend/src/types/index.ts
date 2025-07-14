@@ -1,5 +1,7 @@
 import React from 'react';
 
+export type RouteType = 'list' | 'detail' | 'edit' | 'delete';
+
 export interface RouteConfig {
     path: string;
     component: React.ComponentType<Record<string, unknown>>;
@@ -8,6 +10,7 @@ export interface RouteConfig {
     requireAuth?: boolean; // Requires authentication
     requireAdmin?: boolean; // Requires admin privileges
     redirectTo?: string; // Custom redirect path for unauthorized access
+    routeType?: RouteType; // Type of route for navigation purposes
 }
 
 export interface NavigationItem {

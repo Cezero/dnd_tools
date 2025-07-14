@@ -1,18 +1,5 @@
 import { z } from 'zod';
-import { PageQueryResponseSchema, PageQuerySchema } from './query.js';
-import { optionalBooleanParam, optionalIntegerParam, optionalStringParam } from './utils.js';
-
-export const FeatQuerySchema = PageQuerySchema.extend({
-    name: optionalStringParam(),
-    typeId: optionalIntegerParam(),
-    description: optionalStringParam(),
-    benefit: optionalStringParam(),
-    normalEffect: optionalStringParam(),
-    specialEffect: optionalStringParam(),
-    prerequisites: optionalStringParam(),
-    repeatable: optionalBooleanParam(),
-    fighterBonus: optionalBooleanParam(),
-});
+import { QueryResponseSchema } from './query.js';
 
 export const FeatIdParamSchema = z.object({
     id: z.string().transform((val: string) => parseInt(val)),
@@ -55,22 +42,9 @@ export const FeatSchema = BaseFeatSchema.extend({
 
 export const FeatInQueryResponseSchema = FeatSchema.omit({ benefits: true, prereqs: true });
 
-export const FeatQueryResponseSchema = PageQueryResponseSchema.extend({
+export const GetAllFeatsResponseSchema = QueryResponseSchema.extend({
     results: z.array(FeatInQueryResponseSchema),
 });
-
-export const GetAllFeatsResponseSchema = z.array(FeatSchema
-    .omit({
-        typeId: true,
-        description: true,
-        normalEffect: true,
-        specialEffect: true,
-        prerequisites: true,
-        repeatable: true,
-        fighterBonus: true,
-        benefits: true,
-        prereqs: true,
-    }));
 
 export const CreateFeatSchema = BaseFeatSchema;
 
@@ -78,9 +52,7 @@ export const GetFeatResponseSchema = BaseFeatSchema;
 
 export const UpdateFeatSchema = BaseFeatSchema.partial();
 
-export type FeatQueryRequest = z.infer<typeof FeatQuerySchema>;
 export type FeatIdParamRequest = z.infer<typeof FeatIdParamSchema>;
-export type FeatQueryResponse = z.infer<typeof FeatQueryResponseSchema>;
 export type FeatInQueryResponse = z.infer<typeof FeatInQueryResponseSchema>;
 export type CreateFeatRequest = z.infer<typeof CreateFeatSchema>;
 export type UpdateFeatRequest = z.infer<typeof UpdateFeatSchema>;

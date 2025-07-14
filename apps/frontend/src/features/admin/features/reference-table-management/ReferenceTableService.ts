@@ -1,22 +1,18 @@
 import { typedApi } from '@/services/Api';
 import {
-    ReferenceTableQuerySchema,
     ReferenceTableSlugParamSchema,
-    ReferenceTableQueryResponseSchema,
     ReferenceTableDataResponseSchema,
     ReferenceTableUpdateSchema,
     CreateResponseSchema,
     UpdateResponseSchema,
     ReferenceTableSummarySchema,
+    GetAllReferenceTablesResponseSchema,
 } from '@shared/schema';
 
 /**
  * ReferenceTableService with path parameter support
  * 
  * Usage examples:
- * 
- * // Get reference tables with query parameters
- * const tables = await ReferenceTableService.getReferenceTables({ page: 1, limit: 10 });
  * 
  * // Get reference table by identifier (path parameter)
  * const table = await ReferenceTableService.getReferenceTableByIdentifier(undefined, { identifier: "example-table" });
@@ -34,15 +30,12 @@ import {
  * await ReferenceTableService.deleteReferenceTable(undefined, { identifier: "example-table" });
  */
 export const ReferenceTableService = {
-    // Get reference tables with query parameters
-    getReferenceTables: typedApi<typeof ReferenceTableQuerySchema, typeof ReferenceTableQueryResponseSchema>({
+    getReferenceTables: typedApi({
         path: '/referencetables',
         method: 'GET',
-        requestSchema: ReferenceTableQuerySchema,
-        responseSchema: ReferenceTableQueryResponseSchema,
+        responseSchema: GetAllReferenceTablesResponseSchema,
     }),
 
-    // Get reference table by identifier with path parameter
     getReferenceTableByIdentifier: typedApi<undefined, typeof ReferenceTableDataResponseSchema, typeof ReferenceTableSlugParamSchema>({
         path: '/referencetables/:slug',
         method: 'GET',
@@ -50,7 +43,6 @@ export const ReferenceTableService = {
         responseSchema: ReferenceTableDataResponseSchema,
     }),
 
-    // get reference table summary by slug
     getReferenceTableSummaryBySlug: typedApi<undefined, typeof ReferenceTableSummarySchema, typeof ReferenceTableSlugParamSchema>({
         path: '/referencetables/:slug/summary',
         method: 'GET',
@@ -58,7 +50,6 @@ export const ReferenceTableService = {
         responseSchema: ReferenceTableSummarySchema,
     }),
 
-    // Create reference table
     createReferenceTable: typedApi<typeof ReferenceTableUpdateSchema, typeof CreateResponseSchema>({
         path: '/referencetables',
         method: 'POST',
@@ -66,7 +57,6 @@ export const ReferenceTableService = {
         responseSchema: CreateResponseSchema,
     }),
 
-    // Update reference table with path parameter
     updateReferenceTable: typedApi<typeof ReferenceTableUpdateSchema, typeof UpdateResponseSchema, typeof ReferenceTableSlugParamSchema>({
         path: '/referencetables/:slug',
         method: 'PUT',
@@ -75,7 +65,6 @@ export const ReferenceTableService = {
         responseSchema: UpdateResponseSchema,
     }),
 
-    // Delete reference table with path parameter
     deleteReferenceTable: typedApi<undefined, typeof UpdateResponseSchema, typeof ReferenceTableSlugParamSchema>({
         path: '/referencetables/:slug',
         method: 'DELETE',

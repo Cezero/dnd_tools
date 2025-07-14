@@ -1,14 +1,11 @@
 
 import { typedApi } from '@/services/Api';
 import {
-    FeatQuerySchema,
     FeatIdParamSchema,
     CreateFeatSchema,
     UpdateFeatSchema,
-    FeatQueryResponseSchema,
     UpdateResponseSchema,
     CreateResponseSchema,
-    BaseFeatSchema,
     GetFeatResponseSchema,
     GetAllFeatsResponseSchema,
 } from '@shared/schema';
@@ -17,9 +14,6 @@ import {
  * FeatService with path parameter support
  * 
  * Usage examples:
- * 
- * // Get feats with query parameters
- * const feats = await FeatService.getFeats({ page: 1, limit: 10 });
  * 
  * // Get feat by ID (path parameter)
  * const feat = await FeatService.getFeatById(undefined, { id: 123 });
@@ -37,16 +31,8 @@ import {
  * await FeatService.deleteFeat(undefined, { id: 123 });
  */
 export const FeatService = {
-    // Get feats with query parameters
-    getFeats: typedApi<typeof FeatQuerySchema, typeof FeatQueryResponseSchema>({
+    getFeats: typedApi({
         path: '/feats',
-        method: 'GET',
-        requestSchema: FeatQuerySchema,
-        responseSchema: FeatQueryResponseSchema,
-    }),
-
-    getAllFeats: typedApi<undefined, typeof GetAllFeatsResponseSchema>({
-        path: '/feats/all',
         method: 'GET',
         responseSchema: GetAllFeatsResponseSchema,
     }),
@@ -58,7 +44,6 @@ export const FeatService = {
         responseSchema: GetFeatResponseSchema,
     }),
 
-    // Create feat
     createFeat: typedApi<typeof CreateFeatSchema, typeof CreateResponseSchema>({
         path: '/feats',
         method: 'POST',
@@ -74,7 +59,6 @@ export const FeatService = {
         paramsSchema: FeatIdParamSchema,
     }),
 
-    // Delete feat with path parameter
     deleteFeat: typedApi<undefined, typeof UpdateResponseSchema, typeof FeatIdParamSchema>({
         path: '/feats/:id',
         method: 'DELETE',

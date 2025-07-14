@@ -5,6 +5,7 @@ import {
     ReferenceTableQueryResponse,
     ReferenceTableSlugParamRequest,
     ReferenceTableUpdate,
+    GetAllReferenceTablesResponse,
     UpdateResponse,
     CreateResponse,
     ReferenceTableSummary
@@ -205,5 +206,25 @@ export const referenceTableService: ReferenceTableService = {
             rows: table._count.rows,
             columns: table._count.columns,
         };
+    },
+
+    async getAllReferenceTables(): Promise<GetAllReferenceTablesResponse> {
+        const tables = await prisma.referenceTable.findMany({
+            orderBy: { name: 'asc' },
+            include: {
+                _count: {
+                    select: {
+                        rows: true,
+                        columns: true,
+                    },
+                },
+            },
+        });
+
+        return tables.map(table => ({
+            ...table,
+            rows: table._count.rows,
+            columns: table._count.columns,
+        }));
     }
 };

@@ -1,9 +1,7 @@
 import { z } from 'zod';
-import { PageQueryResponseSchema, PageQuerySchema } from './query.js';
-import { optionalIntegerParam, optionalStringParam } from './utils.js';
+import { QueryResponseSchema } from './query.js';
 import { SourceMapSchema } from './sourcebook.js';
 
-// Nested relationship schemas for Prisma compatibility
 export const SpellSchoolMapSchema = z.object({
     schoolId: z.number().int().nonnegative('School ID must be a positive integer'),
 });
@@ -50,29 +48,10 @@ export const SpellSchema = z.object({
     sourceBookInfo: z.array(SourceMapSchema).nullable(),
 });
 
-export const SpellQueryResponseSchema = PageQueryResponseSchema.extend({
+export const GetAllSpellsResponseSchema = QueryResponseSchema.extend({
     results: z.array(SpellSchema),
 });
 
-export const MultiSelectSchema = z.object({
-    values: z.array(z.number().int().positive('Value must be a positive integer')),
-    logic: z.enum(['or', 'and']).optional(),
-});
-
-// Schema for spell query parameters
-export const SpellQuerySchema = PageQuerySchema.extend({
-    name: optionalStringParam(),
-    editionId: optionalIntegerParam(),
-    spellLevel: z.number().int().positive('Spell level must be a positive integer').nullable().optional(),
-    classId: MultiSelectSchema.nullable().optional(),
-    schoolId: MultiSelectSchema.nullable().optional(),
-    subSchoolId: MultiSelectSchema.nullable().optional(),
-    descriptorId: MultiSelectSchema.nullable().optional(),
-    sourceId: MultiSelectSchema.nullable().optional(),
-    componentId: MultiSelectSchema.nullable().optional(),
-});
-
-// Schema for spell path parameters
 export const SpellIdParamSchema = z.object({
     id: z.string().transform((val: string) => parseInt(val)),
 });
@@ -85,12 +64,10 @@ export const GetSpellResponseSchema = SpellSchema.omit({
     id: true
 });
 
-// Type inference from schemas
-export type SpellQueryRequest = z.infer<typeof SpellQuerySchema>;
 export type SpellIdParamRequest = z.infer<typeof SpellIdParamSchema>;
 export type UpdateSpellRequest = z.infer<typeof UpdateSpellSchema>;
 export type GetSpellResponse = z.infer<typeof GetSpellResponseSchema>;
-export type SpellQueryResponse = z.infer<typeof SpellQueryResponseSchema>;
+export type GetAllSpellsResponse = z.infer<typeof GetAllSpellsResponseSchema>;
 export type SpellInQueryResponse = z.infer<typeof SpellSchema>;
 export type SpellSchoolMap = z.infer<typeof SpellSchoolMapSchema>;
 export type SpellSubschoolMap = z.infer<typeof SpellSubschoolMapSchema>;

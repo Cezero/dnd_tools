@@ -1,17 +1,12 @@
 import { Response } from 'express';
 
-import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT } from '@/util/validated-types'
-import { SpellIdParamRequest, SpellQueryRequest, SpellQueryResponse, UpdateSpellRequest, GetSpellResponse } from '@shared/schema';
+import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types'
+import { SpellIdParamRequest, SpellQueryResponse, UpdateSpellRequest, GetSpellResponse } from '@shared/schema';
 
 import { spellService } from './spellService';
 
-export async function GetAllSpells(req: ValidatedBodyT<SpellQueryRequest, SpellQueryResponse>, res: Response) {
+export async function GetAllSpells(req: ValidatedNoInput<SpellQueryResponse>, res: Response) {
     const result = await spellService.getAllSpells();
-    res.json(result);
-}
-
-export async function GetSpells(req: ValidatedBodyT<SpellQueryRequest, SpellQueryResponse>, res: Response) {
-    const result = await spellService.getSpells(req.body);
     res.json(result);
 }
 

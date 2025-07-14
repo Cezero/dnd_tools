@@ -1,12 +1,10 @@
 import { buildValidatedRouter } from '@/lib/buildValidatedRouter.js';
 import {
-    ItemQuerySchema,
     ItemIdParamSchema,
     CreateItemSchema,
     UpdateItemSchema
 } from '@shared/schema';
 import {
-    GetItems,
     GetAllItems,
     GetItemById,
     CreateItem,
@@ -18,7 +16,7 @@ import { requireAdmin } from '../../middleware/authMiddleware.js';
 const { router: ItemRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
 
 // Read routes
-get('/', { query: ItemQuerySchema }, GetItems);
+get('/', {}, GetAllItems);
 get('/all', {}, GetAllItems);
 get('/:id', { params: ItemIdParamSchema }, GetItemById);
 

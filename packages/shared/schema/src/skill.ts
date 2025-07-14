@@ -1,16 +1,6 @@
 import { z } from 'zod';
-import { PageQueryResponseSchema, PageQuerySchema } from './query.js';
-import { optionalIntegerParam, optionalBooleanParam, optionalStringParam } from './utils.js';
+import { QueryResponseSchema } from './query.js';
 
-// Schema for skill query parameters
-export const SkillQuerySchema = PageQuerySchema.extend({
-    trainedOnly: optionalBooleanParam(),
-    affectedByArmor: optionalBooleanParam(),
-    name: optionalStringParam(),
-    abilityId: optionalIntegerParam(),
-});
-
-// Schema for skill path parameters
 export const SkillIdParamSchema = z.object({
     id: z.string().transform((val: string) => parseInt(val)),
 });
@@ -34,20 +24,17 @@ export const SkillSchema = z.object({
 
 export const CreateSkillSchema = SkillSchema.omit({ id: true });
 
-// Schema for updating a skill (same as create but all fields optional)
 export const UpdateSkillSchema = SkillSchema.omit({ id: true }).partial();
 
-export const SkillQueryResponseSchema = PageQueryResponseSchema.extend({
+export const GetAllSkillsResponseSchema = QueryResponseSchema.extend({
     results: z.array(SkillSchema),
 });
 
 export const GetSkillResponseSchema = SkillSchema.omit({ id: true });
 
-// Type inference from schemas
-export type SkillQueryRequest = z.infer<typeof SkillQuerySchema>;
 export type SkillIdParamRequest = z.infer<typeof SkillIdParamSchema>;
-export type SkillQueryResponse = z.infer<typeof SkillQueryResponseSchema>;
 export type SkillInQueryResponse = z.infer<typeof SkillSchema>;
+export type GetAllSkillsResponse = z.infer<typeof GetAllSkillsResponseSchema>;
 export type GetSkillResponse = z.infer<typeof GetSkillResponseSchema>;
 export type CreateSkillRequest = z.infer<typeof CreateSkillSchema>;
 export type UpdateSkillRequest = z.infer<typeof UpdateSkillSchema>; 

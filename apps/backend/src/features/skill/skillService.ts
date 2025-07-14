@@ -1,5 +1,5 @@
 import { PrismaClient, Prisma } from '@shared/prisma-client';
-import { CreateResponse, CreateSkillRequest, GetSkillResponse, SkillIdParamRequest, SkillQueryRequest, SkillQueryResponse, UpdateResponse, UpdateSkillRequest } from '@shared/schema';
+import { CreateResponse, CreateSkillRequest, GetSkillResponse, SkillIdParamRequest, SkillQueryRequest, SkillQueryResponse, UpdateResponse, UpdateSkillRequest, GetAllSkillsResponse } from '@shared/schema';
 
 import type { SkillService } from './types';
 
@@ -76,5 +76,12 @@ export const skillService: SkillService = {
             where: { id: id.id }
         });
         return { message: 'Skill deleted successfully' };
+    },
+
+    async getAllSkills(): Promise<GetAllSkillsResponse> {
+        const skills = await prisma.skill.findMany({
+            orderBy: { name: 'asc' }
+        });
+        return skills;
     }
 };

@@ -1,6 +1,5 @@
 import { buildValidatedRouter } from '@/lib/buildValidatedRouter.js';
 import {
-    FeatQuerySchema,
     FeatIdParamSchema,
     CreateFeatSchema,
     UpdateFeatSchema
@@ -18,7 +17,7 @@ import { requireAdmin } from '../../middleware/authMiddleware.js';
 
 const { router: FeatRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
 
-get('/', { query: FeatQuerySchema }, GetFeats);
+get('/', {}, GetFeats);
 
 get('/all', {}, GetAllFeats);
 

@@ -1,7 +1,6 @@
 import { buildValidatedRouter } from '@/lib/buildValidatedRouter';
 import { requireAdmin } from '@/middleware/authMiddleware';
 import {
-    SkillQuerySchema,
     SkillIdParamSchema,
     CreateSkillSchema,
     UpdateSkillSchema
@@ -9,6 +8,7 @@ import {
 
 import {
     GetSkills,
+    GetAllSkills,
     GetSkillById,
     CreateSkill,
     UpdateSkill,
@@ -18,7 +18,8 @@ import {
 const { router: SkillRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
 
 
-get('/', { query: SkillQuerySchema }, GetSkills);
+get('/', {}, GetSkills);
+get('/list', {}, GetAllSkills);
 get('/:id', { params: SkillIdParamSchema }, GetSkillById);
 post('/', requireAdmin, { body: CreateSkillSchema }, CreateSkill);
 put('/:id', requireAdmin, { params: SkillIdParamSchema, body: UpdateSkillSchema }, UpdateSkill);

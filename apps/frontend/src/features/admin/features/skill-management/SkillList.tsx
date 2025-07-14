@@ -3,10 +3,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
-import { COLUMN_DEFINITIONS } from '@/features/admin/features/skill-management/SkillConfig';
+import { SKILL_COLUMNS } from '@/features/admin/features/skill-management/SkillColumns';
 import { SkillService } from '@/features/admin/features/skill-management/SkillService';
-import { SkillQuerySchema, SkillQueryResponseSchema, SkillQueryResponse, SkillInQueryResponse } from '@shared/schema';
-import { ABILITY_MAP } from '@shared/static-data';
+import { SkillInQueryResponse } from '@shared/schema';
+import { routes } from './SkillConfig';
 
 export function SkillList(): React.JSX.Element {
     const navigate = useNavigate();
@@ -30,48 +30,6 @@ export function SkillList(): React.JSX.Element {
         }
     };
 
-    const RenderCell = (item: SkillInQueryResponse, columnId: string): React.ReactNode => {
-        const column = COLUMN_DEFINITIONS[columnId];
-        if (!column) return null;
-
-        let cellContent: React.ReactNode = String(item[columnId as keyof SkillInQueryResponse] || '');
-
-        if (columnId === 'name') {
-            cellContent = (
-                <a
-                    onClick={() => navigate(`/admin/skills/${item.id}`)}
-                    className="text-blue-600 hover:underline cursor-pointer"
-                >
-                    {item.name}
-                </a>
-            );
-        } else if (columnId === 'abilityId') {
-            cellContent = `${ABILITY_MAP[item.abilityId]?.abbreviation || ''}`;
-        } else if (columnId === 'trainedOnly') {
-            cellContent = item.trainedOnly ? 'Yes' : 'No';
-        } else if (columnId === 'affectedByArmor') {
-            cellContent = item.affectedByArmor ? 'Yes' : 'No';
-        } else if (columnId === 'checkDescription') {
-            cellContent = item.checkDescription || '';
-        } else if (columnId === 'actionDescription') {
-            cellContent = item.actionDescription || '';
-        } else if (columnId === 'retryTypeId') {
-            cellContent = item.retryTypeId ? 'Yes' : 'No';
-        } else if (columnId === 'retryDescription') {
-            cellContent = item.retryDescription || '';
-        } else if (columnId === 'specialNotes') {
-            cellContent = item.specialNotes || '';
-        } else if (columnId === 'synergyNotes') {
-            cellContent = item.synergyNotes || '';
-        } else if (columnId === 'untrainedNotes') {
-            cellContent = item.untrainedNotes || '';
-        } else if (columnId === 'description') {
-            cellContent = item.description || '';
-        }
-
-        return cellContent;
-    };
-
     if (isAuthLoading) {
         return <div className="p-4">Loading...</div>;
     }
@@ -89,15 +47,10 @@ export function SkillList(): React.JSX.Element {
             </div>
             <GenericList<SkillInQueryResponse>
                 storageKey="skills-list"
-                columnDefinitions={COLUMN_DEFINITIONS}
-                querySchema={SkillQuerySchema}
-                serviceFunction={SkillService.getSkills}
-                renderCell={RenderCell}
-                detailPagePath="/admin/skills/:id"
+                columns={SKILL_COLUMNS}
+                serviceFunction={() => SkillService.getSkills({})}
                 itemDesc="skill"
-                editHandler={(item: SkillInQueryResponse) => navigate(`/admin/skills/${item.id}/edit`)}
-                deleteHandler={(item: SkillInQueryResponse) => HandleDeleteSkill(item.id)}
-                refreshTrigger={refreshTrigger}
+                routes={routes}
             />
         </div>
     );

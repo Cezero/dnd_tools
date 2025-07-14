@@ -17,7 +17,7 @@ import { requireAuth } from '../../middleware/authMiddleware.js';
 
 const { router: CharacterRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
 
-get('/', { query: CharacterQuerySchema }, GetAllCharacters);
+get('/', {}, GetAllCharacters);
 get('/:id', { params: CharacterIdParamSchema }, GetCharacterById);
 post('/', requireAuth, { body: CreateCharacterSchema }, CreateCharacter);
 put('/:id', requireAuth, { params: CharacterIdParamSchema, body: UpdateCharacterSchema }, UpdateCharacter);

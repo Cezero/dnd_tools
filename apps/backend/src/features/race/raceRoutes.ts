@@ -1,18 +1,17 @@
 import { buildValidatedRouter } from '@/lib/buildValidatedRouter';
 import { requireAdmin } from '@/middleware/authMiddleware';
 import {
-    RaceQuerySchema,
     RaceIdParamSchema,
     RaceTraitSlugParamSchema,
     UpdateRaceSchema,
     CreateRaceTraitSchema,
     UpdateRaceTraitSchema,
-    RaceTraitQuerySchema,
-    GetRaceResponseSchema
+    CreateRaceSchema
 } from '@shared/schema';
 
 import {
     GetRaces,
+    GetAllRaces,
     GetRaceById,
     CreateRace,
     UpdateRace,
@@ -28,16 +27,17 @@ import {
 const { router: RaceRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
 
 // Race Read Routes
-get('/', { query: RaceQuerySchema }, GetRaces);
+get('/', {}, GetRaces);
+get('/list', {}, GetAllRaces);
 
 
 // Race Write Routes
-post('/', requireAdmin, { body: GetRaceResponseSchema }, CreateRace);
+post('/', requireAdmin, { body: CreateRaceSchema }, CreateRace);
 put('/:id', requireAdmin, { params: RaceIdParamSchema, body: UpdateRaceSchema }, UpdateRace);
 deleteRoute('/:id', requireAdmin, { params: RaceIdParamSchema }, DeleteRace);
 
 // Race Trait Read Routes
-get('/traits', { query: RaceTraitQuerySchema }, GetRaceTraits);
+get('/traits', {}, GetRaceTraits);
 get('/traits/list', {}, GetAllRaceTraits);
 get('/traits/:slug', { params: RaceTraitSlugParamSchema }, GetRaceTraitBySlug);
 // this has to be last because it conflicts with the race trait routes

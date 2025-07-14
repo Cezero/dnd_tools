@@ -21,6 +21,7 @@ import {
     RaceQueryResponse,
     RaceTraitQueryResponse,
     RaceTraitGetAllResponse,
+    GetAllRacesResponse,
     UpdateResponse,
     CreateResponse,
 } from '@shared/schema';
@@ -34,6 +35,11 @@ export async function GetRaces(req: ValidatedQueryT<RaceQueryRequest, RaceQueryR
     res.json(result);
 }
 
+export async function GetAllRaces(req: ValidatedNoInput<GetAllRacesResponse>, res: Response) {
+    const races = await raceService.getAllRaces();
+    res.json(races);
+}
+
 /**
  * Fetches a single race by its ID.
  */
@@ -41,7 +47,7 @@ export async function GetRaceById(req: ValidatedParamsT<RaceIdParamRequest, GetR
     const race = await raceService.getRaceById(req.params);
 
     if (!race) {
-        res.status(404).json({error: 'Race not found'});
+        res.status(404).json({ error: 'Race not found' });
         return;
     }
 
@@ -53,7 +59,7 @@ export async function GetRaceById(req: ValidatedParamsT<RaceIdParamRequest, GetR
  */
 export async function UpdateRace(req: ValidatedParamsBodyT<RaceIdParamRequest, UpdateRaceRequest, UpdateResponse>, res: Response) {
     await raceService.updateRace(req.params, req.body);
-    res.json({message: 'Race updated successfully'});
+    res.json({ message: 'Race updated successfully' });
 }
 
 /**
@@ -87,7 +93,7 @@ export async function GetRaceTraitBySlug(req: ValidatedParamsT<RaceTraitSlugPara
     const trait = await raceService.getRaceTraitBySlug(req.params);
 
     if (!trait) {
-        res.status(404).json({error: 'Race trait not found'});
+        res.status(404).json({ error: 'Race trait not found' });
         return;
     }
 

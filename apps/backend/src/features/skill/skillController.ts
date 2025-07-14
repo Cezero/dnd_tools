@@ -1,7 +1,7 @@
 import { Response } from 'express';
 
-import { ValidatedQueryT, ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT } from '@/util/validated-types'
-import { CreateSkillRequest, SkillIdParamRequest, SkillQueryRequest, UpdateSkillRequest, SkillQueryResponse, UpdateResponse, CreateResponse, GetSkillResponse } from '@shared/schema';
+import { ValidatedQueryT, ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types'
+import { CreateSkillRequest, SkillIdParamRequest, SkillQueryRequest, UpdateSkillRequest, SkillQueryResponse, UpdateResponse, CreateResponse, GetSkillResponse, GetAllSkillsResponse } from '@shared/schema';
 
 import { skillService } from './skillService.js';
 /**
@@ -12,6 +12,11 @@ export async function GetSkills(req: ValidatedQueryT<SkillQueryRequest, SkillQue
     res.json(result);
 }
 
+export async function GetAllSkills(req: ValidatedNoInput<GetAllSkillsResponse>, res: Response) {
+    const skills = await skillService.getAllSkills();
+    res.json(skills);
+}
+
 /**
  * Fetches a single skill by ID.
  */
@@ -19,7 +24,7 @@ export async function GetSkillById(req: ValidatedParamsT<SkillIdParamRequest, Ge
     const skill = await skillService.getSkillById({ id: req.params.id });
 
     if (!skill) {
-        res.status(404).json({error: 'Skill not found'});
+        res.status(404).json({ error: 'Skill not found' });
         return;
     }
 

@@ -2,11 +2,10 @@ import { z } from 'zod';
 
 import { typedApi } from '@/services/Api';
 import {
-    SpellQuerySchema,
     SpellIdParamSchema,
     UpdateSpellSchema,
-    SpellQueryResponseSchema,
     GetSpellResponseSchema,
+    GetAllSpellsResponseSchema,
 } from '@shared/schema';
 
 /**
@@ -33,18 +32,10 @@ import {
  * await SpellService.deleteSpell(undefined, { id: 123 });
  */
 export const SpellService = {
-    // Get spells with query parameters
     getAllSpells: typedApi({
         path: '/spells',
         method: 'GET',
-        responseSchema: SpellQueryResponseSchema,
-    }),
-
-    getSpells: typedApi({
-        path: '/spells',
-        method: 'POST',
-        requestSchema: SpellQuerySchema,
-        responseSchema: SpellQueryResponseSchema,
+        responseSchema: GetAllSpellsResponseSchema,
     }),
 
     // Get spell by ID with path parameter

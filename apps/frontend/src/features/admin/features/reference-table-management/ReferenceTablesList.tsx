@@ -3,9 +3,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
-import { COLUMN_DEFINITIONS } from '@/features/admin/features/reference-table-management/ReferenceTableConfig';
+import { REFERENCE_TABLE_COLUMNS } from '@/features/admin/features/reference-table-management/ReferenceTableColumns';
 import { ReferenceTableService } from '@/features/admin/features/reference-table-management/ReferenceTableService';
-import { ReferenceTableQuerySchema, ReferenceTableSummary } from '@shared/schema';
+import { ReferenceTableSummary } from '@shared/schema';
+import { routes } from './ReferenceTableConfig';
 
 export function ReferenceTablesList(): React.JSX.Element {
     const navigate = useNavigate();
@@ -29,34 +30,6 @@ export function ReferenceTablesList(): React.JSX.Element {
         }
     };
 
-    const RenderCell = (item: ReferenceTableSummary, columnId: string): React.ReactNode => {
-        const column = COLUMN_DEFINITIONS[columnId];
-        if (!column) return null;
-
-        let cellContent: React.ReactNode = String(item[columnId] || '');
-
-        if (columnId === 'name') {
-            cellContent = (
-                <a
-                    onClick={() => navigate(`/admin/referencetables/${item.slug}`)}
-                    className="text-blue-600 hover:underline cursor-pointer"
-                >
-                    {item.name}
-                </a>
-            );
-        } else if (columnId === 'slug') {
-            cellContent = item.slug;
-        } else if (columnId === 'description') {
-            cellContent = item.description || '';
-        } else if (columnId === 'rows') {
-            cellContent = item.rows || 0;
-        } else if (columnId === 'columns') {
-            cellContent = item.columns || 0;
-        }
-
-        return cellContent;
-    };
-
     if (isAuthLoading) {
         return <div className="p-4">Loading...</div>;
     }
@@ -72,17 +45,12 @@ export function ReferenceTablesList(): React.JSX.Element {
                     New Table
                 </button>
             </div>
-            <GenericList<any>
+            <GenericList<ReferenceTableSummary>
                 storageKey="reference-tables-list"
-                columnDefinitions={COLUMN_DEFINITIONS}
-                querySchema={ReferenceTableQuerySchema}
-                serviceFunction={ReferenceTableService.getReferenceTables}
-                renderCell={RenderCell}
-                detailPagePath="/admin/referencetables/:slug"
+                columns={REFERENCE_TABLE_COLUMNS}
+                serviceFunction={() => ReferenceTableService.getReferenceTables({ sort: 'name', order: 'asc' })}
                 itemDesc="reference table"
-                editHandler={(item) => navigate(`/admin/referencetables/${item.slug}/edit`)}
-                deleteHandler={(item) => HandleDeleteTable(item.slug)}
-                refreshTrigger={refreshTrigger}
+                routes={routes}
             />
         </div>
     );

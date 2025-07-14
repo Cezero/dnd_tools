@@ -1,23 +1,19 @@
 import { typedApi } from '@/services/Api';
 import {
-    ClassQuerySchema,
     ClassIdParamSchema,
     CreateClassSchema,
     UpdateClassSchema,
-    ClassQueryResponseSchema,
     GetClassResponseSchema,
     CreateResponseSchema,
     UpdateResponseSchema,
+    GetAllClassesResponseSchema,
 } from '@shared/schema';
 
 /**
  * ClassService with path parameter support
- * 
+ *
  * Usage examples:
- * 
- * // Get classes with query parameters
- * const classes = await ClassService.getClasses({ page: 1, limit: 10 });
- * 
+ *
  * // Get class by ID (path parameter)
  * const class = await ClassService.getClassById(undefined, { id: 123 });
  * 
@@ -34,15 +30,12 @@ import {
  * await ClassService.deleteClass(undefined, { id: 123 });
  */
 export const ClassService = {
-    // Get classes with query parameters
-    getClasses: typedApi<typeof ClassQuerySchema, typeof ClassQueryResponseSchema>({
+    getClasses: typedApi({
         path: '/classes',
         method: 'GET',
-        requestSchema: ClassQuerySchema,
-        responseSchema: ClassQueryResponseSchema,
+        responseSchema: GetAllClassesResponseSchema,
     }),
 
-    // Get class by ID with path parameter
     getClassById: typedApi<undefined, typeof GetClassResponseSchema, typeof ClassIdParamSchema>({
         path: '/classes/:id',
         method: 'GET',
@@ -50,7 +43,6 @@ export const ClassService = {
         responseSchema: GetClassResponseSchema,
     }),
 
-    // Create class
     createClass: typedApi<typeof CreateClassSchema, typeof CreateResponseSchema>({
         path: '/classes',
         method: 'POST',
@@ -58,7 +50,6 @@ export const ClassService = {
         responseSchema: CreateResponseSchema,
     }),
 
-    // Update class with path parameter
     updateClass: typedApi<typeof UpdateClassSchema, typeof UpdateResponseSchema, typeof ClassIdParamSchema>({
         path: '/classes/:id',
         method: 'PUT',
@@ -67,7 +58,6 @@ export const ClassService = {
         responseSchema: UpdateResponseSchema,
     }),
 
-    // Delete class with path parameter
     deleteClass: typedApi<undefined, typeof UpdateResponseSchema, typeof ClassIdParamSchema>({
         path: '/classes/:id',
         method: 'DELETE',

@@ -1,80 +1,34 @@
 import { PrismaClient, Prisma } from '@shared/prisma-client';
 import {
-    ItemQueryRequest,
     ItemIdParamRequest,
     CreateItemRequest,
     UpdateItemRequest,
-    ItemQueryResponse,
     ItemWithDetails,
     GetAllItemsResponse,
     CreateResponse,
     UpdateResponse
 } from '@shared/schema';
 
+import type { ItemService } from './types';
+
 const prisma = new PrismaClient();
 
-export const itemService = {
-    async getItems(query: ItemQueryRequest): Promise<ItemQueryResponse> {
-        const page = query.page;
-        const limit = query.limit;
-        const offset = (page - 1) * limit;
-        const where: Prisma.ItemWhereInput = {};
-
-        console.log('Item query received:', query);
-
-        if (query.name) where.name = { contains: query.name };
-        if (query.typeId) where.typeId = query.typeId;
-
-        // Handle cost filter - support partial matching and numeric comparison
-        if (query.cost) {
-            const costValue = query.cost.trim();
-            if (costValue !== '') {
-                // Try to parse as number for exact match
-                const parsedCost = parseFloat(costValue);
-                if (!isNaN(parsedCost)) {
-                    // For numeric input, use exact match
-                    where.cost = { equals: parsedCost };
-                }
-                // Note: Prisma Decimal fields don't support 'contains' for partial matching
-                // For partial matching, we'd need to use string operations or different approach
-            }
-        }
-
-        // Handle weight filter - support numeric comparison
-        if (query.weight) {
-            const weightValue = query.weight.trim();
-            if (weightValue !== '') {
-                // Try to parse as number for exact match
-                const parsedWeight = parseFloat(weightValue);
-                if (!isNaN(parsedWeight) && parsedWeight >= 0) {
-                    where.weight = { equals: parsedWeight };
-                }
-                // If not a valid number, we could add range logic here later
-                // For now, we only support exact numeric matches
-            }
-        }
-
-        console.log('Prisma where clause:', where);
-
-        const [items, total] = await Promise.all([
+export const itemService: ItemService = {
+    async getAllItems(): Promise<GetAllItemsResponse> {
+        const [items] = await Promise.all([
             prisma.item.findMany({
-                where,
-                include: { armor: true, weapon: true },
-                skip: offset,
-                take: limit,
-                orderBy: { name: 'asc' },
+                include: {
+                    armor: true,
+                    weapon: true
+                },
+                orderBy: { name: 'asc' }
             }),
-            prisma.item.count({ where }),
+            prisma.item.count()
         ]);
         return {
-            page,
-            limit,
-            total,
-            results: items as ItemWithDetails[],
+            total: items.length,
+            results: items,
         };
-    },
-    async getAllItems(): Promise<GetAllItemsResponse> {
-        return prisma.item.findMany({ include: { armor: true, weapon: true } }) as Promise<GetAllItemsResponse>;
     },
     async getItemById(params: ItemIdParamRequest): Promise<ItemWithDetails | null> {
         return prisma.item.findUnique({

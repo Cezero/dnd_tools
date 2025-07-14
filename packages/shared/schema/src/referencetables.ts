@@ -1,14 +1,5 @@
 import { z } from 'zod';
-import { PageQueryResponseSchema, PageQuerySchema } from './query.js';
-import { optionalStringParam } from './utils.js';
-
-// Schema for reference table query parameters
-export const ReferenceTableQuerySchema = PageQuerySchema.extend({
-    sort: z.enum(['name', 'slug']).optional().default('name'),
-    order: z.enum(['asc', 'desc']).optional().default('asc'),
-    name: optionalStringParam(),
-    slug: optionalStringParam(),
-});
+import { QueryResponseSchema } from './query.js';
 
 // Schema for reference table slug - path parameter
 export const ReferenceTableSlugParamSchema = z.object({
@@ -77,7 +68,7 @@ export const ReferenceTableSummarySchema = ReferenceTableSchema.extend({
     columns: z.number().int().min(0, 'Columns must be non-negative'),
 });
 
-export const ReferenceTableQueryResponseSchema = PageQueryResponseSchema.extend({
+export const GetAllReferenceTablesResponseSchema = QueryResponseSchema.extend({
     results: z.array(ReferenceTableSummarySchema),
 });
 
@@ -91,11 +82,9 @@ export const ReferenceTableUpdateSchema = ReferenceTableSchema.extend({
     ).nullable(),
 });
 
-// Type inference from schemas
-export type ReferenceTableQueryRequest = z.infer<typeof ReferenceTableQuerySchema>;
 export type ReferenceTableSlugParamRequest = z.infer<typeof ReferenceTableSlugParamSchema>;
 export type ReferenceTableDataResponse = z.infer<typeof ReferenceTableDataResponseSchema>;
-export type ReferenceTableQueryResponse = z.infer<typeof ReferenceTableQueryResponseSchema>;
+export type GetAllReferenceTablesResponse = z.infer<typeof GetAllReferenceTablesResponseSchema>;
 export type ReferenceTableSummary = z.infer<typeof ReferenceTableSummarySchema>;
 export type ReferenceTable = z.infer<typeof ReferenceTableSchema>;
 export type ReferenceTableUpdate = z.infer<typeof ReferenceTableUpdateSchema>;

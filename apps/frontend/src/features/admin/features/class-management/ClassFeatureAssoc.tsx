@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { GenericList } from '@/components/generic-list/GenericList';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { ClassFeatureService } from '@/features/admin/features/class-management/ClassFeatureService';
-import { ClassFeatureQuerySchema, ClassFeatureSchema } from '@shared/schema';
+import { ClassFeatureSchema } from '@shared/schema';
 
 // Type for class feature items
 type ClassFeatureItem = z.infer<typeof ClassFeatureSchema>;
@@ -129,7 +129,6 @@ export function ClassFeatureAssoc({ isOpen, onClose, onSave, initialSelectedFeat
                                     selectedIds={currentSelectedFeatureIds}
                                     onSelectedIdsChange={handleSelectedIdsChange}
                                     columnDefinitions={columnDefinitions}
-                                    querySchema={ClassFeatureQuerySchema}
                                     serviceFunction={ClassFeatureService.getClassFeatures}
                                     renderCell={renderFeatureCell}
                                     detailPagePath="/admin/classes/features/:slug"

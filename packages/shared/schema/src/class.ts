@@ -1,34 +1,7 @@
 import { z } from 'zod';
-import { PageQueryResponseSchema, PageQuerySchema } from './query.js';
+import { QueryResponseSchema } from './query.js';
 import { SourceMapSchema } from './sourcebook.js';
-import { optionalBooleanParam, optionalIntegerParam } from './utils.js';
 import { SpellProgressionType, ProgressionType } from '@shared/static-data';
-
-// Schema for class query parameters
-export const ClassQuerySchema = PageQuerySchema.extend({
-    name: z.string().optional(),
-    abbreviation: z.string().optional(),
-    editionId: optionalIntegerParam(),
-    isPrestige: optionalBooleanParam(),
-    isVisible: optionalBooleanParam(),
-    canCastSpells: optionalBooleanParam(),
-    hitDie: optionalIntegerParam(),
-    skillPoints: optionalIntegerParam(),
-    castingAbilityId: optionalIntegerParam(),
-    sourceId: z.union([z.string(), z.array(z.string())]).optional().transform((val) => {
-        if (!val) return undefined;
-        if (Array.isArray(val)) {
-            return val.map(v => parseInt(v));
-        }
-        return [parseInt(val)];
-    }),
-});
-
-// Schema for class feature query parameters
-export const ClassFeatureQuerySchema = PageQuerySchema.extend({
-    slug: z.string().optional(),
-    description: z.string().optional(),
-});
 
 export const ClassFeatureSchema = z.object({
     slug: z.string().min(1, 'Feature slug is required').max(100, 'Feature slug must be less than 100 characters').trim(),
@@ -42,12 +15,10 @@ export const ClassFeatureMapSchema = z.object({
     level: z.number().int().min(1, 'Level must be at least 1').max(20, 'Level must be at most 20'),
 });
 
-// Schema for class feature path parameters
 export const ClassFeatureSlugParamSchema = z.object({
     slug: z.string(),
 });
 
-// Schema for class feature base
 export const BaseClassFeatureSchema = z.object({
     slug: z.string()
         .min(1, 'Feature slug is required')
@@ -60,11 +31,9 @@ export const ClassFeatureSummarySchema = BaseClassFeatureSchema.extend({
     slug: z.string(),
 });
 
-export const ClassFeatureQueryResponseSchema = PageQueryResponseSchema.extend({
+export const GetAllClassFeaturesResponseSchema = QueryResponseSchema.extend({
     results: z.array(ClassFeatureSummarySchema),
 });
-
-export const GetAllClassFeaturesResponseSchema = z.array(ClassFeatureSummarySchema);
 
 export const GetClassFeatureResponseSchema = BaseClassFeatureSchema;
 
@@ -77,7 +46,6 @@ export const ClassSkillSchema = z.object({
     skillId: z.number().int().positive('Skill ID must be a positive integer'),
 });
 
-// Schema for class base
 export const BaseClassSchema = z.object({
     name: z.string()
         .min(1, 'Class name is required')
@@ -104,7 +72,7 @@ export const BaseClassSchema = z.object({
     features: z.array(ClassFeatureMapSchema).nullable(),
     skills: z.array(ClassSkillSchema).nullable(),
 });
-// Schema for class path parameters
+
 export const ClassIdParamSchema = z.object({
     id: z.string().transform((val: string) => parseInt(val)),
 });
@@ -116,11 +84,9 @@ export const ClassSummarySchema = BaseClassSchema.omit({
     id: z.number().int().positive('Class ID must be a positive integer'),
 });
 
-export const ClassQueryResponseSchema = PageQueryResponseSchema.extend({
+export const GetAllClassesResponseSchema = QueryResponseSchema.extend({
     results: z.array(ClassSummarySchema),
 });
-
-export const GetAllClassesResponseSchema = z.array(ClassSummarySchema);
 
 export const GetClassResponseSchema = BaseClassSchema;
 
@@ -128,9 +94,6 @@ export const UpdateClassSchema = BaseClassSchema.partial();
 
 export const CreateClassSchema = BaseClassSchema;
 
-// Type inference from schemas
-export type ClassQueryRequest = z.infer<typeof ClassQuerySchema>;
-export type ClassQueryResponse = z.infer<typeof ClassQueryResponseSchema>;
 export type ClassInQueryResponse = z.infer<typeof ClassSummarySchema>;
 export type ClassIdParamRequest = z.infer<typeof ClassIdParamSchema>;
 export type GetAllClassesResponse = z.infer<typeof GetAllClassesResponseSchema>;
@@ -138,9 +101,6 @@ export type CreateClassRequest = z.infer<typeof CreateClassSchema>;
 export type UpdateClassRequest = z.infer<typeof UpdateClassSchema>;
 export type GetClassResponse = z.infer<typeof GetClassResponseSchema>;
 
-// Class feature type exports
-export type ClassFeatureQueryRequest = z.infer<typeof ClassFeatureQuerySchema>;
-export type ClassFeatureQueryResponse = z.infer<typeof ClassFeatureQueryResponseSchema>;
 export type ClassFeatureInQueryResponse = z.infer<typeof ClassFeatureSummarySchema>;
 export type ClassFeatureSlugParamRequest = z.infer<typeof ClassFeatureSlugParamSchema>;
 export type GetAllClassFeaturesResponse = z.infer<typeof GetAllClassFeaturesResponseSchema>;

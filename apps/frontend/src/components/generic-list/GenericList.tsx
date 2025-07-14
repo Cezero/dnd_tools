@@ -14,7 +14,10 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import pluralize from 'pluralize';
+import { useAuthAuto } from '@/components/auth';
 import {
     useReactTable,
     getCoreRowModel,
@@ -44,7 +47,7 @@ function SortableHeaderCell({ header, allColumns, onToggleVisibility, onSort, co
         <th
             ref={setNodeRef}
             style={{ ...style, width: header.getSize() }}
-            className="relative"
+            className="relative px-2"
             data-column-id={header.id}
         >
             <ColumnHeaderContextMenu
@@ -84,10 +87,13 @@ export function GenericList<T>({
     serviceFunction,
     itemDesc = 'items',
     initialLimit = 20,
+    routes,
 }: GenericListProps<T>) {
     const [data, setData] = useState<T[]>([]);
     const [total, setTotal] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
+    const navigate = useNavigate();
+    const { isAdmin } = useAuthAuto();
 
     // State for floating text input
     const [textInputState, setTextInputState] = useState<{
@@ -273,6 +279,87 @@ export function GenericList<T>({
         }
     };
 
+    // Find the required column (usually 'name' or 'id')
+    const requiredColumn = useMemo(() => {
+        return columns.find(col => (col.meta as any)?.required === true);
+    }, [columns]);
+
+    // Helper function to find route by type
+    const findRouteByType = (routeType: 'detail' | 'edit' | 'delete') => {
+        return routes?.find(route => route.routeType === routeType);
+    };
+
+    // Navigation cell renderer for detail links
+    const renderDetailCell = (item: T, cellValue: any) => {
+        const detailRoute = findRouteByType('detail');
+        if (!detailRoute) return cellValue;
+
+        const itemId = (item as any).id;
+        if (!itemId) return cellValue;
+
+        // Extract the base path from the detail route (e.g., 'spells/:id' -> 'spells')
+        const basePath = detailRoute.path.split('/:')[0];
+        const detailPath = `/${basePath}/${itemId}`;
+
+        return (
+            <a
+                onClick={() => navigate(detailPath)}
+                className="text-blue-600 hover:underline cursor-pointer"
+            >
+                {cellValue}
+            </a>
+        );
+    };
+
+    // Render action icons for edit/delete
+    const renderActionIcons = (item: T) => {
+        const editRoute = findRouteByType('edit');
+        const deleteRoute = findRouteByType('delete');
+
+        const itemId = (item as any).id;
+        if (!itemId) return null;
+
+        const actions = [];
+
+        if (editRoute && (!editRoute.requireAdmin || isAdmin)) {
+            // Extract the base path from the edit route (e.g., 'spells/:id/edit' -> 'spells')
+            const basePath = editRoute.path.split('/:')[0];
+            const editPath = `/${basePath}/${itemId}/edit`;
+
+            actions.push(
+                <a
+                    key="edit"
+                    onClick={() => navigate(editPath)}
+                    className="text-blue-600 hover:text-blue-800 cursor-pointer ml-2"
+                    title="Edit"
+                >
+                    <PencilIcon className="h-4 w-4" />
+                </a>
+            );
+        }
+
+        if (deleteRoute && (!deleteRoute.requireAdmin || isAdmin)) {
+            // Extract the base path from the delete route (e.g., 'spells/:id/delete' -> 'spells')
+            const basePath = deleteRoute.path.split('/:')[0];
+            const deletePath = `/${basePath}/${itemId}/delete`;
+
+            actions.push(
+                <a
+                    key="delete"
+                    onClick={() => navigate(deletePath)}
+                    className="text-red-600 hover:text-red-800 cursor-pointer ml-2"
+                    title="Delete"
+                >
+                    <TrashIcon className="h-4 w-4" />
+                </a>
+            );
+        }
+
+        return actions.length > 0 ? (
+            <div className="flex items-center">{actions}</div>
+        ) : null;
+    };
+
     const table = useReactTable({
         data,
         columns,
@@ -353,9 +440,32 @@ export function GenericList<T>({
                                         ) : (
                                             table.getRowModel().rows.map(row => (
                                                 <tr key={row.id} className="hover:bg-gray-100 dark:hover:bg-gray-800 odd:bg-gray-500 even:bg-white dark:odd:bg-[#141e2d] dark:even:bg-[#121212]">
-                                                    {row.getVisibleCells().map(cell => (
-                                                        <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                                                    ))}
+                                                    {row.getVisibleCells().map((cell, cellIndex) => {
+                                                        const cellValue = flexRender(cell.column.columnDef.cell, cell.getContext());
+                                                        const isRequiredColumn = (cell.column.columnDef.meta as any)?.required === true;
+                                                        const isLastVisibleCell = cellIndex === row.getVisibleCells().length - 1;
+
+                                                        let finalCellValue = cellValue;
+
+                                                        // Apply detail navigation to required column
+                                                        if (isRequiredColumn && routes) {
+                                                            finalCellValue = renderDetailCell(row.original, cellValue);
+                                                        }
+
+                                                        // Add action icons to the last visible cell
+                                                        const actionIcons = isLastVisibleCell ? renderActionIcons(row.original) : null;
+
+                                                        if (actionIcons) {
+                                                            finalCellValue = (
+                                                                <div className="flex items-center justify-between">
+                                                                    <span>{finalCellValue}</span>
+                                                                    {actionIcons}
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        return <td key={cell.id} className="px-2">{finalCellValue}</td>;
+                                                    })}
                                                 </tr>
                                             ))
                                         )}

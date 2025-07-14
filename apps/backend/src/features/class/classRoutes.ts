@@ -1,10 +1,8 @@
 import { buildValidatedRouter } from '@/lib/buildValidatedRouter.js';
 import {
-    ClassQuerySchema,
     ClassIdParamSchema,
     CreateClassSchema,
     UpdateClassSchema,
-    ClassFeatureQuerySchema,
     ClassFeatureSlugParamSchema,
     CreateClassFeatureSchema,
     UpdateClassFeatureSchema
@@ -30,11 +28,11 @@ import { requireAdmin } from '../../middleware/authMiddleware.js';
 const { router: ClassRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
 
 // Class Read Routes
-get('/', { query: ClassQuerySchema }, GetClasses);
+get('/', {}, GetClasses);
 get('/all', {}, GetAllClasses);
 
 // Class Feature Read Routes
-get('/features', { query: ClassFeatureQuerySchema }, GetClassFeatures);
+get('/features', {}, GetClassFeatures);
 get('/features/list', {}, GetAllClassFeatures);
 get('/features/:slug', { params: ClassFeatureSlugParamSchema }, GetClassFeatureBySlug);
 

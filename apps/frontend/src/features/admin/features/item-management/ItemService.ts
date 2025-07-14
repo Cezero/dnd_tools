@@ -2,24 +2,20 @@ import { z } from 'zod';
 
 import { typedApi } from '@/services/Api';
 import {
-    ItemQuerySchema,
     ItemIdParamSchema,
     CreateItemSchema,
     UpdateItemSchema,
-    ItemQueryResponseSchema,
     ItemWithDetailsSchema,
     UpdateResponseSchema,
     CreateResponseSchema,
+    GetAllItemsResponseSchema,
 } from '@shared/schema';
 
 /**
  * ItemService with path parameter support
  * 
  * Usage examples:
- * 
- * // Get items with query parameters
- * const items = await ItemService.getItems({ page: 1, limit: 10 });
- * 
+ *
  * // Get item by ID (path parameter)
  * const item = await ItemService.getItemById(undefined, { id: 123 });
  * 
@@ -36,15 +32,12 @@ import {
  * await ItemService.deleteItem(undefined, { id: 123 });
  */
 export const ItemService = {
-    // Get items with query parameters
-    getItems: typedApi<typeof ItemQuerySchema, typeof ItemQueryResponseSchema>({
+    getItems: typedApi({
         path: '/items',
         method: 'GET',
-        requestSchema: ItemQuerySchema,
-        responseSchema: ItemQueryResponseSchema,
+        responseSchema: GetAllItemsResponseSchema,
     }),
 
-    // Get item by ID with path parameter
     getItemById: typedApi<undefined, typeof ItemWithDetailsSchema, typeof ItemIdParamSchema>({
         path: '/items/:id',
         method: 'GET',
@@ -52,7 +45,6 @@ export const ItemService = {
         responseSchema: ItemWithDetailsSchema,
     }),
 
-    // Create item
     createItem: typedApi<typeof CreateItemSchema, typeof CreateResponseSchema>({
         path: '/items',
         method: 'POST',
@@ -60,7 +52,6 @@ export const ItemService = {
         responseSchema: CreateResponseSchema,
     }),
 
-    // Update item with path parameter
     updateItem: typedApi<typeof UpdateItemSchema, typeof UpdateResponseSchema, typeof ItemIdParamSchema>({
         path: '/items/:id',
         method: 'PUT',
@@ -69,7 +60,6 @@ export const ItemService = {
         responseSchema: UpdateResponseSchema,
     }),
 
-    // Delete item with path parameter
     deleteItem: typedApi<undefined, typeof UpdateResponseSchema, typeof ItemIdParamSchema>({
         path: '/items/:id',
         method: 'DELETE',

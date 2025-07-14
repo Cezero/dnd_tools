@@ -1,30 +1,26 @@
 import {
-    RaceTraitQueryRequest,
     UpdateRaceRequest,
-    RaceQueryRequest,
     CreateRaceRequest,
     UpdateRaceTraitRequest,
     CreateRaceTraitRequest,
     RaceIdParamRequest,
     RaceTraitSlugParamRequest,
-    RaceQueryResponse,
-    RaceTraitQueryResponse,
-    RaceTraitGetAllResponse,
+    GetAllRacesResponse,
     GetRaceResponse,
     GetRaceTraitResponse,
     UpdateResponse,
-    CreateResponse
+    CreateResponse,
+    GetAllRaceTraitsResponse
 } from '@shared/schema';
 
 // Service interface
 export interface RaceService {
-    getRaces: (query: RaceQueryRequest) => Promise<RaceQueryResponse>;
+    getAllRaces: () => Promise<GetAllRacesResponse>;
     getRaceById: (id: RaceIdParamRequest) => Promise<GetRaceResponse | null>;
     createRace: (data: CreateRaceRequest) => Promise<CreateResponse>;
     updateRace: (id: RaceIdParamRequest, data: UpdateRaceRequest) => Promise<UpdateResponse>;
     deleteRace: (id: RaceIdParamRequest) => Promise<UpdateResponse>;
-    getRaceTraits: (query: RaceTraitQueryRequest) => Promise<RaceTraitQueryResponse>;
-    getRaceTraitsList: () => Promise<RaceTraitGetAllResponse>;
+    getRaceTraits: () => Promise<GetAllRaceTraitsResponse>;
     getRaceTraitBySlug: (slug: RaceTraitSlugParamRequest) => Promise<GetRaceTraitResponse | null>;
     createRaceTrait: (data: CreateRaceTraitRequest) => Promise<CreateResponse>;
     updateRaceTrait: (slug: RaceTraitSlugParamRequest, data: UpdateRaceTraitRequest) => Promise<UpdateResponse>;
