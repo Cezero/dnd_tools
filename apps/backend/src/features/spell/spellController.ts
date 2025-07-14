@@ -1,11 +1,11 @@
 import { Response } from 'express';
 
 import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types'
-import { SpellIdParamRequest, SpellQueryResponse, UpdateSpellRequest, GetSpellResponse } from '@shared/schema';
+import { SpellIdParamRequest, UpdateSpellRequest, GetSpellResponse, GetAllSpellsResponse } from '@shared/schema';
 
 import { spellService } from './spellService';
 
-export async function GetAllSpells(req: ValidatedNoInput<SpellQueryResponse>, res: Response) {
+export async function GetAllSpells(req: ValidatedNoInput<GetAllSpellsResponse>, res: Response) {
     const result = await spellService.getAllSpells();
     res.json(result);
 }

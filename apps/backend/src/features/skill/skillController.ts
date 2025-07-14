@@ -1,17 +1,12 @@
 import { Response } from 'express';
 
-import { ValidatedQueryT, ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types'
-import { CreateSkillRequest, SkillIdParamRequest, SkillQueryRequest, UpdateSkillRequest, SkillQueryResponse, UpdateResponse, CreateResponse, GetSkillResponse, GetAllSkillsResponse } from '@shared/schema';
+import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedNoInput, ValidatedBodyT } from '@/util/validated-types'
+import { CreateSkillRequest, SkillIdParamRequest, UpdateSkillRequest, UpdateResponse, CreateResponse, GetSkillResponse, GetAllSkillsResponse } from '@shared/schema';
 
 import { skillService } from './skillService.js';
 /**
  * Fetches all skills from the database with pagination and filtering.
  */
-export async function GetSkills(req: ValidatedQueryT<SkillQueryRequest, SkillQueryResponse>, res: Response) {
-    const result = await skillService.getSkills(req.query);
-    res.json(result);
-}
-
 export async function GetAllSkills(req: ValidatedNoInput<GetAllSkillsResponse>, res: Response) {
     const skills = await skillService.getAllSkills();
     res.json(skills);

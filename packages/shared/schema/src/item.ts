@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { QueryResponseSchema } from './query.js';
-import { Decimal } from '@shared/prisma-client/client/runtime/library.js';
+import { Decimal } from 'decimal.js';
 
 export const ItemIdParamSchema = z.object({
     id: z.string().transform((val: string) => parseInt(val)),

@@ -1,49 +1,22 @@
-import { PrismaClient, Prisma } from '@shared/prisma-client';
-import { CreateResponse, CreateSkillRequest, GetSkillResponse, SkillIdParamRequest, SkillQueryRequest, SkillQueryResponse, UpdateResponse, UpdateSkillRequest, GetAllSkillsResponse } from '@shared/schema';
+import { PrismaClient } from '@shared/prisma-client';
+import { CreateResponse, CreateSkillRequest, GetSkillResponse, SkillIdParamRequest, UpdateResponse, UpdateSkillRequest, GetAllSkillsResponse } from '@shared/schema';
 
 import type { SkillService } from './types';
 
 const prisma = new PrismaClient();
 
 export const skillService: SkillService = {
-    async getSkills(query: SkillQueryRequest): Promise<SkillQueryResponse> {
-        const offset = (query.page - 1) * query.limit;
-        console.log('offset', offset);
-
-        // Build where clause for filtering
-        const where: Prisma.SkillWhereInput = {};
-
-        if (query.name) {
-            where.name = { contains: query.name };
-        }
-
-        if (query.abilityId) {
-            where.abilityId = query.abilityId;
-        }
-
-        if (query.trainedOnly !== undefined) {
-            where.trainedOnly = query.trainedOnly;
-        }
-
-        if (query.affectedByArmor !== undefined) {
-            where.affectedByArmor = query.affectedByArmor;
-        }
-
-        const [skills, total] = await Promise.all([
+    async getAllSkills(): Promise<GetAllSkillsResponse> {
+        const [skills] = await Promise.all([
             prisma.skill.findMany({
-                where,
-                skip: offset,
-                take: query.limit,
                 orderBy: { name: 'asc' }
             }),
-            prisma.skill.count({ where })
+            prisma.skill.count()
         ]);
 
         return {
-            page: query.page,
-            limit: query.limit,
-            total,
-            results: skills
+            total: skills.length,
+            results: skills,
         };
     },
 
@@ -77,11 +50,4 @@ export const skillService: SkillService = {
         });
         return { message: 'Skill deleted successfully' };
     },
-
-    async getAllSkills(): Promise<GetAllSkillsResponse> {
-        const skills = await prisma.skill.findMany({
-            orderBy: { name: 'asc' }
-        });
-        return skills;
-    }
 };

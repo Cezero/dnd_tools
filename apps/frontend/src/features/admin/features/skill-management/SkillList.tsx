@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
+import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { SKILL_COLUMNS } from '@/features/admin/features/skill-management/SkillColumns';
 import { SkillService } from '@/features/admin/features/skill-management/SkillService';
 import { SkillInQueryResponse } from '@shared/schema';
@@ -12,22 +13,9 @@ export function SkillList(): React.JSX.Element {
     const navigate = useNavigate();
     const location = useLocation();
     const { isLoading: isAuthLoading } = useAuthAuto();
-    const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
 
     const HandleNewSkillClick = (): void => {
         navigate('/admin/skills/new/edit', { state: { fromListParams: location.search } });
-    };
-
-    const HandleDeleteSkill = async (id: number): Promise<void> => {
-        if (window.confirm('Are you sure you want to delete this skill?')) {
-            try {
-                await SkillService.deleteSkill(undefined, { id });
-                setRefreshTrigger(prev => prev + 1);
-            } catch (error) {
-                console.error('Failed to delete skill:', error);
-                alert('Failed to delete skill.');
-            }
-        }
     };
 
     if (isAuthLoading) {
@@ -51,6 +39,7 @@ export function SkillList(): React.JSX.Element {
                 serviceFunction={() => SkillService.getSkills({})}
                 itemDesc="skill"
                 routes={routes}
+                deleteServiceFunction={createIdDeleteServiceFunction(SkillService.deleteSkill)}
             />
         </div>
     );

@@ -1,13 +1,11 @@
 import { Response } from 'express';
 
-import { ValidatedQueryT, ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types'
+import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types'
 import {
-    CharacterQueryRequest,
     CharacterIdParamRequest,
     CreateCharacterRequest,
     UpdateCharacterRequest,
     CharacterResponse,
-    CharacterQueryResponse,
     GetAllCharactersResponse
 } from '@shared/schema';
 

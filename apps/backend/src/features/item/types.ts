@@ -10,8 +10,8 @@ import {
 
 export interface ItemService {
     getAllItems: () => Promise<GetAllItemsResponse>;
-    getItemById: (id: ItemIdParamRequest) => Promise<ItemWithDetails | null>;
+    getItemById: (params: ItemIdParamRequest) => Promise<ItemWithDetails | null>;
     createItem: (data: CreateItemRequest) => Promise<CreateResponse>;
-    updateItem: (id: ItemIdParamRequest, data: UpdateItemRequest) => Promise<UpdateResponse>;
-    deleteItem: (id: ItemIdParamRequest) => Promise<UpdateResponse>;
+    updateItem: (params: ItemIdParamRequest, data: UpdateItemRequest) => Promise<UpdateResponse>;
+    deleteItem: (params: ItemIdParamRequest) => Promise<UpdateResponse>;
 }

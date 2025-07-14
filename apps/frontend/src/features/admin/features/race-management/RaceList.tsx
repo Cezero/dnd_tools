@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
+import { createIdDeleteServiceFunction, createSlugDeleteServiceFunction } from '@/components/generic-list/types';
 import { RACE_COLUMNS } from '@/features/admin/features/race-management/RaceColumns';
 import { RACE_TRAIT_COLUMNS } from '@/features/admin/features/race-management/RaceTraitColumns';
 import { RaceService } from '@/features/admin/features/race-management/RaceService';
@@ -25,27 +26,7 @@ export function RaceList(): React.JSX.Element {
         navigate('/admin/races/traits/new/edit', { state: { fromListParams: location.search } });
     };
 
-    const HandleDeleteRace = async (id: number): Promise<void> => {
-        if (window.confirm('Are you sure you want to delete this race?')) {
-            try {
-                await RaceService.deleteRace(undefined, { id });
-            } catch (error) {
-                console.error('Failed to delete race:', error);
-                alert('Failed to delete race.');
-            }
-        }
-    };
 
-    const HandleDeleteRaceTrait = async (slug: string): Promise<void> => {
-        if (window.confirm('Are you sure you want to delete this race trait?')) {
-            try {
-                await RaceTraitService.deleteRaceTrait(undefined, { slug });
-            } catch (error) {
-                console.error('Failed to delete race trait:', error);
-                alert('Failed to delete race trait.');
-            }
-        }
-    };
 
     if (isAuthLoading) {
         return <div className="p-4">Loading...</div>;
@@ -68,6 +49,7 @@ export function RaceList(): React.JSX.Element {
                 serviceFunction={() => RaceService.getRaces({})}
                 itemDesc="race"
                 routes={routes}
+                deleteServiceFunction={createIdDeleteServiceFunction(RaceService.deleteRace)}
             />
 
             <h2 className="text-xl font-bold mb-4 mt-8">Race Trait Definitions</h2>
@@ -85,6 +67,7 @@ export function RaceList(): React.JSX.Element {
                 serviceFunction={() => RaceTraitService.getRaceTraits({})}
                 itemDesc="race trait"
                 routes={routes}
+                deleteServiceFunction={createSlugDeleteServiceFunction(RaceTraitService.deleteRaceTrait)}
             />
         </div>
     );

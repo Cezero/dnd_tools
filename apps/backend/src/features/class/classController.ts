@@ -1,20 +1,16 @@
 import { Response } from 'express';
 
-import { ValidatedQueryT, ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types'
+import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types'
 import {
     ClassIdParamRequest,
-    ClassQueryRequest,
     GetClassResponse,
-    ClassQueryResponse,
     GetAllClassesResponse,
     CreateClassRequest,
     UpdateClassRequest,
     UpdateResponse,
-    ClassFeatureQueryRequest,
     ClassFeatureSlugParamRequest,
     CreateClassFeatureRequest,
     UpdateClassFeatureRequest,
-    ClassFeatureQueryResponse,
     GetClassFeatureResponse,
     GetAllClassFeaturesResponse,
     CreateResponse
@@ -24,11 +20,6 @@ import { classService } from './classService';
 /**
  * Fetches all classes from the database with pagination and filtering.
  */
-export async function GetClasses(req: ValidatedQueryT<ClassQueryRequest, ClassQueryResponse>, res: Response) {
-    const result = await classService.getClasses(req.query);
-    res.json(result);
-}
-
 export async function GetAllClasses(req: ValidatedNoInput<GetAllClassesResponse>, res: Response) {
     const classes = await classService.getAllClasses();
     res.json(classes);
@@ -75,14 +66,6 @@ export async function DeleteClass(req: ValidatedParamsT<ClassIdParamRequest>, re
 // Class Feature methods
 /**
  * Fetches all class features from the database with pagination and filtering.
- */
-export async function GetClassFeatures(req: ValidatedQueryT<ClassFeatureQueryRequest, ClassFeatureQueryResponse>, res: Response) {
-    const result = await classService.getClassFeatures(req.query);
-    res.json(result);
-}
-
-/**
- * Fetches all class features from the database.
  */
 export async function GetAllClassFeatures(req: ValidatedNoInput<GetAllClassFeaturesResponse>, res: Response) {
     const features = await classService.getAllClassFeatures();

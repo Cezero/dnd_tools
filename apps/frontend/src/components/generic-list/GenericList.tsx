@@ -88,6 +88,7 @@ export function GenericList<T>({
     itemDesc = 'items',
     initialLimit = 20,
     routes,
+    deleteServiceFunction,
 }: GenericListProps<T>) {
     const [data, setData] = useState<T[]>([]);
     const [total, setTotal] = useState(0);
@@ -314,7 +315,6 @@ export function GenericList<T>({
     // Render action icons for edit/delete
     const renderActionIcons = (item: T) => {
         const editRoute = findRouteByType('edit');
-        const deleteRoute = findRouteByType('delete');
 
         const itemId = (item as any).id;
         if (!itemId) return null;
@@ -338,15 +338,24 @@ export function GenericList<T>({
             );
         }
 
-        if (deleteRoute && (!deleteRoute.requireAdmin || isAdmin)) {
-            // Extract the base path from the delete route (e.g., 'spells/:id/delete' -> 'spells')
-            const basePath = deleteRoute.path.split('/:')[0];
-            const deletePath = `/${basePath}/${itemId}/delete`;
-
+        if (deleteServiceFunction && (!editRoute?.requireAdmin || isAdmin)) {
             actions.push(
                 <a
                     key="delete"
-                    onClick={() => navigate(deletePath)}
+                    onClick={async () => {
+                        if (window.confirm(`Are you sure you want to delete this ${itemDesc}?`)) {
+                            try {
+                                await deleteServiceFunction(itemId);
+                                // Refresh the data after successful deletion
+                                const { results, total } = await serviceFunction();
+                                setData(results);
+                                setTotal(total);
+                            } catch (error) {
+                                console.error(`Failed to delete ${itemDesc}:`, error);
+                                alert(`Failed to delete ${itemDesc}.`);
+                            }
+                        }
+                    }}
                     className="text-red-600 hover:text-red-800 cursor-pointer ml-2"
                     title="Delete"
                 >

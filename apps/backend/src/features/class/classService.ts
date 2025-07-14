@@ -1,18 +1,16 @@
-import { PrismaClient, Prisma } from '@shared/prisma-client';
+import { PrismaClient } from '@shared/prisma-client';
 import {
     ClassIdParamRequest,
-    ClassQueryRequest,
     CreateClassRequest,
     GetAllClassesResponse,
     GetClassResponse,
     UpdateClassRequest,
-    ClassFeatureQueryRequest,
     ClassFeatureSlugParamRequest,
     CreateClassFeatureRequest,
     UpdateClassFeatureRequest,
-    ClassFeatureQueryResponse,
     GetClassFeatureResponse,
-    GetAllClassFeaturesResponse
+    GetAllClassFeaturesResponse,
+    CreateResponse
 } from '@shared/schema';
 import type { SpellProgressionType, ProgressionType } from '@shared/static-data';
 
@@ -21,58 +19,12 @@ import type { ClassService } from './types';
 const prisma = new PrismaClient();
 
 export const classService: ClassService = {
-    async getClasses(query: ClassQueryRequest) {
-        const page = query.page;
-        const limit = query.limit;
-        const offset = (page - 1) * limit;
-
-        const where: Prisma.ClassWhereInput = {};
-
-        if (query.name) {
-            where.name = { contains: query.name };
-        }
-        if (query.editionId) {
-            where.editionId = query.editionId;
-        }
-        if (query.isPrestige !== undefined) {
-            where.isPrestige = query.isPrestige;
-        }
-        if (query.isVisible !== undefined) {
-            where.isVisible = query.isVisible;
-        }
-        if (query.canCastSpells !== undefined) {
-            where.canCastSpells = query.canCastSpells;
-        }
-        if (query.hitDie) {
-            where.hitDie = query.hitDie;
-        }
-        if (query.castingAbilityId) {
-            where.castingAbilityId = query.castingAbilityId;
-        }
-        if (query.sourceId) {
-            where.sourceBookInfo = {
-                some: {
-                    sourceBookId: { in: query.sourceId }
-                }
-            };
-        }
-
-        const [classes, total] = await Promise.all([
+    async getAllClasses(): Promise<GetAllClassesResponse> {
+        const [classes] = await Promise.all([
             prisma.class.findMany({
-                where,
-                include: {
-                    sourceBookInfo: {
-                        select: {
-                            sourceBookId: true,
-                            pageNumber: true
-                        }
-                    }
-                },
-                skip: offset,
-                take: limit,
                 orderBy: { name: 'asc' },
             }),
-            prisma.class.count({ where }),
+            prisma.class.count(),
         ]);
 
         // Cast enum fields to the correct types
@@ -86,16 +38,9 @@ export const classService: ClassService = {
         }));
 
         return {
-            page,
-            limit,
-            total,
-            results: typedClasses,
+            total: classes.length,
+            results: typedClasses as GetAllClassesResponse['results'],
         };
-    },
-
-    async getAllClasses() {
-        const classes = await prisma.class.findMany() as GetAllClassesResponse;
-        return classes;
     },
 
     async getClassById(query: ClassIdParamRequest) {
@@ -134,7 +79,7 @@ export const classService: ClassService = {
         } as GetClassResponse;
     },
 
-    async createClass(data: CreateClassRequest) {
+    async createClass(data: CreateClassRequest): Promise<CreateResponse> {
         const result = await prisma.class.create({
             data: {
                 ...data,
@@ -158,7 +103,7 @@ export const classService: ClassService = {
             },
         });
 
-        return { id: result.id, message: 'Class created successfully' };
+        return { id: result.id.toString(), message: 'Class created successfully' };
     },
 
     async updateClass(query: ClassIdParamRequest, data: UpdateClassRequest) {
@@ -203,41 +148,18 @@ export const classService: ClassService = {
     },
 
     // Class Feature methods
-    async getClassFeatures(query: ClassFeatureQueryRequest): Promise<ClassFeatureQueryResponse> {
-        const page = query.page;
-        const limit = query.limit;
-        const offset = (page - 1) * limit;
-
-        const where: Prisma.ClassFeatureWhereInput = {};
-
-        if (query.slug) {
-            where.slug = { contains: query.slug };
-        }
-        if (query.description) {
-            where.description = { contains: query.description };
-        }
-
+    async getAllClassFeatures(): Promise<GetAllClassFeaturesResponse> {
         const [features, total] = await Promise.all([
             prisma.classFeature.findMany({
-                where,
-                skip: offset,
-                take: limit,
                 orderBy: { slug: 'asc' },
             }),
-            prisma.classFeature.count({ where }),
+            prisma.classFeature.count(),
         ]);
 
         return {
-            page,
-            limit,
-            total,
+            total: features.length,
             results: features,
         };
-    },
-
-    async getAllClassFeatures(): Promise<GetAllClassFeaturesResponse> {
-        const features = await prisma.classFeature.findMany();
-        return features;
     },
 
     async getClassFeatureBySlug(query: ClassFeatureSlugParamRequest): Promise<GetClassFeatureResponse | null> {

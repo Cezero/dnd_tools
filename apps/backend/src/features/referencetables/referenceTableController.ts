@@ -1,18 +1,14 @@
 import { Response } from 'express';
 
 import {
-    ValidatedQueryT,
     ValidatedParamsT,
     ValidatedParamsBodyT,
     ValidatedBodyT,
-    ValidatedParamsQueryT,
     ValidatedNoInput
 } from '@/util/validated-types'
 import {
     ReferenceTableDataResponse,
-    ReferenceTableQueryRequest,
     ReferenceTableUpdate,
-    ReferenceTableQueryResponse,
     ReferenceTableSlugParamRequest,
     ReferenceTableSummary,
     GetAllReferenceTablesResponse,
@@ -21,11 +17,6 @@ import {
 } from '@shared/schema';
 
 import { referenceTableService } from './referenceTableService';
-
-export async function GetReferenceTables(req: ValidatedQueryT<ReferenceTableQueryRequest, ReferenceTableQueryResponse>, res: Response) {
-    const result = await referenceTableService.getReferenceTables(req.query);
-    res.json(result);
-}
 
 export async function GetAllReferenceTables(req: ValidatedNoInput<GetAllReferenceTablesResponse>, res: Response) {
     const tables = await referenceTableService.getAllReferenceTables();

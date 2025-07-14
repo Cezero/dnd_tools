@@ -1,7 +1,6 @@
-import { ReferenceTableDataResponse, ReferenceTableQueryRequest, ReferenceTableQueryResponse, ReferenceTableSummary, ReferenceTableUpdate, ReferenceTableSlugParamRequest, GetAllReferenceTablesResponse } from '@shared/schema';
+import { ReferenceTableDataResponse, ReferenceTableSummary, ReferenceTableUpdate, ReferenceTableSlugParamRequest, GetAllReferenceTablesResponse } from '@shared/schema';
 
 export interface ReferenceTableService {
-    getReferenceTables: (query: ReferenceTableQueryRequest) => Promise<ReferenceTableQueryResponse>;
     getAllReferenceTables: () => Promise<GetAllReferenceTablesResponse>;
     getReferenceTableData: (identifier: ReferenceTableSlugParamRequest) => Promise<ReferenceTableDataResponse | null>;
     createReferenceTable: (data: ReferenceTableUpdate) => Promise<{ id: string; message: string }>;

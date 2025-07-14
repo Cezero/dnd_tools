@@ -2,6 +2,7 @@ import React from 'react';
 
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
+import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { SPELL_COLUMNS } from '@/features/spell/SpellColumns';
 import { SpellService } from '@/features/spell/SpellService';
 import { SpellInQueryResponse } from '@shared/schema';
@@ -23,6 +24,7 @@ export function SpellList(): React.JSX.Element {
                 serviceFunction={() => SpellService.getAllSpells({})}
                 itemDesc="spell"
                 routes={routes}
+                deleteServiceFunction={createIdDeleteServiceFunction(SpellService.deleteSpell)}
             />
         </div>
     );

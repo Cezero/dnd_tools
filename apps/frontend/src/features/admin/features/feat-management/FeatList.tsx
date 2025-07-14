@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
+import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { FEAT_COLUMNS } from '@/features/admin/features/feat-management/FeatColumns';
 import { FeatService } from '@/features/admin/features/feat-management/FeatService';
 import { FeatInQueryResponse } from '@shared/schema';
@@ -12,22 +13,9 @@ export function FeatList(): React.JSX.Element {
     const navigate = useNavigate();
     const location = useLocation();
     const { isLoading: isAuthLoading } = useAuthAuto();
-    const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
 
     const HandleNewFeatClick = (): void => {
         navigate('/admin/feats/new/edit', { state: { fromListParams: location.search } });
-    };
-
-    const HandleDeleteFeat = async (id: number): Promise<void> => {
-        if (window.confirm('Are you sure you want to delete this feat?')) {
-            try {
-                await FeatService.deleteFeat(undefined, { id });
-                setRefreshTrigger(prev => prev + 1);
-            } catch (error) {
-                console.error('Failed to delete feat:', error);
-                alert('Failed to delete feat.');
-            }
-        }
     };
 
     if (isAuthLoading) {
@@ -51,6 +39,7 @@ export function FeatList(): React.JSX.Element {
                 serviceFunction={() => FeatService.getFeats({})}
                 itemDesc="feat"
                 routes={routes}
+                deleteServiceFunction={createIdDeleteServiceFunction(FeatService.deleteFeat)}
             />
         </div>
     );

@@ -6,7 +6,6 @@ import {
 } from '@shared/schema';
 
 import {
-    GetFeats,
     GetAllFeats,
     GetFeatById,
     CreateFeat,
@@ -17,9 +16,7 @@ import { requireAdmin } from '../../middleware/authMiddleware.js';
 
 const { router: FeatRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
 
-get('/', {}, GetFeats);
-
-get('/all', {}, GetAllFeats);
+get('/', {}, GetAllFeats);
 
 get('/:id', { params: FeatIdParamSchema }, GetFeatById);
 

@@ -12,9 +12,9 @@
         "clean": "rm -rf dist"
     },
     "dependencies": {
-        "zod": "^3.25.67",
         "@shared/static-data": "workspace:*",
-        "@shared/prisma-client": "workspace:*"
+        "decimal.js": "^10.6.0",
+        "zod": "^3.25.67"
     },
     "devDependencies": {
         "typescript": "^5.3.3"

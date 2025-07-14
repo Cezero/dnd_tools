@@ -7,7 +7,6 @@ import {
 } from '@shared/schema';
 
 import {
-    GetSkills,
     GetAllSkills,
     GetSkillById,
     CreateSkill,
@@ -18,8 +17,7 @@ import {
 const { router: SkillRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
 
 
-get('/', {}, GetSkills);
-get('/list', {}, GetAllSkills);
+get('/', {}, GetAllSkills);
 get('/:id', { params: SkillIdParamSchema }, GetSkillById);
 post('/', requireAdmin, { body: CreateSkillSchema }, CreateSkill);
 put('/:id', requireAdmin, { params: SkillIdParamSchema, body: UpdateSkillSchema }, UpdateSkill);

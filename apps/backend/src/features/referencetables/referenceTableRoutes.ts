@@ -6,7 +6,6 @@ import {
 } from '@shared/schema';
 
 import {
-    GetReferenceTables,
     GetAllReferenceTables,
     GetReferenceTable,
     CreateReferenceTable,
@@ -17,8 +16,7 @@ import {
 
 const { router: ReferenceTableRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
 
-get('/', {}, GetReferenceTables);
-get('/list', {}, GetAllReferenceTables);
+get('/', {}, GetAllReferenceTables);
 
 get('/:slug', { params: ReferenceTableSlugParamSchema }, GetReferenceTable);
 

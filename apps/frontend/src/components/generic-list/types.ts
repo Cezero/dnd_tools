@@ -23,6 +23,34 @@ export interface DataItem {
     id: string | number;
 }
 
+// Generic delete service function type
+export type DeleteServiceFunction = (id: number | string) => Promise<void>;
+
+// Utility functions to create delete service functions
+export const createDeleteServiceFunction = (
+    serviceMethod: (params: any, idParams: any) => Promise<any>,
+    idParamName: 'id' | 'slug' = 'id'
+): DeleteServiceFunction => {
+    return async (id: number | string) => {
+        const params = idParamName === 'id'
+            ? { [idParamName]: Number(id) }
+            : { [idParamName]: String(id) };
+        await serviceMethod(undefined, params);
+    };
+};
+
+export const createIdDeleteServiceFunction = (
+    serviceMethod: (params: any, idParams: { id: number }) => Promise<any>
+): DeleteServiceFunction => {
+    return createDeleteServiceFunction(serviceMethod, 'id');
+};
+
+export const createSlugDeleteServiceFunction = (
+    serviceMethod: (params: any, slugParams: { slug: string }) => Promise<any>
+): DeleteServiceFunction => {
+    return createDeleteServiceFunction(serviceMethod, 'slug');
+};
+
 export interface GenericListProps<T> {
     storageKey?: string;
     columns: ColumnDef<T, any>[];
@@ -30,6 +58,7 @@ export interface GenericListProps<T> {
     itemDesc?: string;
     initialLimit?: number;
     routes?: RouteConfig[];
+    deleteServiceFunction?: DeleteServiceFunction;
 }
 
 export interface GenericListColumnMeta {

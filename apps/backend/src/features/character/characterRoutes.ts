@@ -1,6 +1,5 @@
 import { buildValidatedRouter } from '@/lib/buildValidatedRouter.js';
 import {
-    CharacterQuerySchema,
     CharacterIdParamSchema,
     CreateCharacterSchema,
     UpdateCharacterSchema

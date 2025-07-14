@@ -10,13 +10,11 @@ import {
 } from '@shared/schema';
 
 import {
-    GetRaces,
     GetAllRaces,
     GetRaceById,
     CreateRace,
     UpdateRace,
     DeleteRace,
-    GetRaceTraits,
     GetRaceTraitBySlug,
     CreateRaceTrait,
     UpdateRaceTrait,
@@ -27,8 +25,7 @@ import {
 const { router: RaceRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
 
 // Race Read Routes
-get('/', {}, GetRaces);
-get('/list', {}, GetAllRaces);
+get('/', {}, GetAllRaces);
 
 
 // Race Write Routes
@@ -37,8 +34,7 @@ put('/:id', requireAdmin, { params: RaceIdParamSchema, body: UpdateRaceSchema },
 deleteRoute('/:id', requireAdmin, { params: RaceIdParamSchema }, DeleteRace);
 
 // Race Trait Read Routes
-get('/traits', {}, GetRaceTraits);
-get('/traits/list', {}, GetAllRaceTraits);
+get('/traits', {}, GetAllRaceTraits);
 get('/traits/:slug', { params: RaceTraitSlugParamSchema }, GetRaceTraitBySlug);
 // this has to be last because it conflicts with the race trait routes
 get('/:id', { params: RaceIdParamSchema }, GetRaceById);

@@ -1,8 +1,6 @@
-import { PrismaClient, Prisma } from '@shared/prisma-client';
+import { PrismaClient } from '@shared/prisma-client';
 import {
     ReferenceTableDataResponse,
-    ReferenceTableQueryRequest,
-    ReferenceTableQueryResponse,
     ReferenceTableSlugParamRequest,
     ReferenceTableUpdate,
     GetAllReferenceTablesResponse,
@@ -16,30 +14,9 @@ import { ReferenceTableService } from './types';
 const prisma = new PrismaClient();
 
 export const referenceTableService: ReferenceTableService = {
-    async getReferenceTables(query: ReferenceTableQueryRequest): Promise<ReferenceTableQueryResponse> {
-
-        const offset = (query.page - 1) * query.limit;
-
-        const allowedSorts = ['name', 'slug'];
-        const sortBy = allowedSorts.includes(query.sort) ? query.sort : 'name';
-        const sortOrder = query.order === 'desc' ? 'desc' : 'asc';
-
-        // Build where clause for filtering
-        const where: Prisma.ReferenceTableWhereInput = {};
-
-        if (query.name) {
-            where.name = { contains: query.name };
-        }
-        if (query.slug) {
-            where.slug = { contains: query.slug };
-        }
-
-        const [tables, total] = await Promise.all([
+    async getAllReferenceTables(): Promise<GetAllReferenceTablesResponse> {
+        const [tables] = await Promise.all([
             prisma.referenceTable.findMany({
-                where,
-                skip: offset,
-                take: query.limit,
-                orderBy: { [sortBy]: sortOrder },
                 include: {
                     _count: {
                         select: {
@@ -49,19 +26,17 @@ export const referenceTableService: ReferenceTableService = {
                     },
                 },
             }),
-            prisma.referenceTable.count({ where }),
+            prisma.referenceTable.count(),
         ]);
 
-        const results: ReferenceTableQueryResponse['results'] = tables.map(table => ({
+        const results: GetAllReferenceTablesResponse['results'] = tables.map(table => ({
             ...table,
             rows: table._count.rows,
             columns: table._count.columns,
         }));
 
         return {
-            page: query.page,
-            limit: query.limit,
-            total,
+            total: tables.length,
             results: results
         };
     },
@@ -207,24 +182,4 @@ export const referenceTableService: ReferenceTableService = {
             columns: table._count.columns,
         };
     },
-
-    async getAllReferenceTables(): Promise<GetAllReferenceTablesResponse> {
-        const tables = await prisma.referenceTable.findMany({
-            orderBy: { name: 'asc' },
-            include: {
-                _count: {
-                    select: {
-                        rows: true,
-                        columns: true,
-                    },
-                },
-            },
-        });
-
-        return tables.map(table => ({
-            ...table,
-            rows: table._count.rows,
-            columns: table._count.columns,
-        }));
-    }
 };

@@ -1,52 +1,26 @@
 import { PrismaClient, Prisma } from '@shared/prisma-client';
-import { CharacterIdParamRequest, CharacterQueryRequest, CharacterResponse, CreateCharacterRequest, GetAllCharactersResponse, UpdateCharacterRequest } from '@shared/schema';
+import { CharacterIdParamRequest, CharacterResponse, CreateCharacterRequest, CreateResponse, GetAllCharactersResponse, UpdateCharacterRequest, UpdateResponse } from '@shared/schema';
 
 import type { CharacterService } from './types';
 
 const prisma = new PrismaClient();
 
-export const characterService: CharacterService = {
-    async getCharacters(query: CharacterQueryRequest) {
-        const page = query.page;
-        const limit = query.limit;
-        const offset = (page - 1) * limit;
-
-        // Build where clause for filtering
-        const where: Prisma.UserCharacterWhereInput = {};
-
-        if (query.name) {
-            where.name = { contains: query.name };
-        }
-        if (query.userId) {
-            where.userId = query.userId;
-        }
-
+export const characterService: CharacterService = { 
+    async getAllCharacters(): Promise<GetAllCharactersResponse> {
         const [characters, total] = await Promise.all([
             prisma.userCharacter.findMany({
-                where,
-                skip: offset,
-                take: limit,
                 orderBy: { name: 'asc' },
-                include: {
-                    race: {
-                        select: {
-                            name: true,
-                        },
-                    },
-                },
             }),
-            prisma.userCharacter.count({ where }),
+            prisma.userCharacter.count(),
         ]);
 
         return {
-            page,
-            limit,
-            total,
+            total: characters.length,
             results: characters,
         };
     },
 
-    async getCharacterById(query: CharacterIdParamRequest) {
+    async getCharacterById(query: CharacterIdParamRequest): Promise<CharacterResponse | null> {
         const character = await prisma.userCharacter.findUnique({
             where: { id: query.id },
             include: {
@@ -61,15 +35,15 @@ export const characterService: CharacterService = {
         return character as CharacterResponse;
     },
 
-    async createCharacter(data: CreateCharacterRequest) {
+    async createCharacter(data: CreateCharacterRequest): Promise<CreateResponse> {
         const result = await prisma.userCharacter.create({
             data,
         });
 
-        return { id: result.id, message: 'Character created successfully' };
+        return { id: result.id.toString(), message: 'Character created successfully' };
     },
 
-    async updateCharacter(query: CharacterIdParamRequest, data: UpdateCharacterRequest) {
+    async updateCharacter(query: CharacterIdParamRequest, data: UpdateCharacterRequest): Promise<UpdateResponse> {
         await prisma.userCharacter.update({
             where: { id: query.id },
             data,
@@ -78,25 +52,11 @@ export const characterService: CharacterService = {
         return { message: 'Character updated successfully' };
     },
 
-    async deleteCharacter(query: CharacterIdParamRequest) {
+    async deleteCharacter(query: CharacterIdParamRequest): Promise<UpdateResponse> {
         await prisma.userCharacter.delete({
             where: { id: query.id },
         });
 
         return { message: 'Character deleted successfully' };
-    },
-
-    async getAllCharacters() {
-        const characters = await prisma.userCharacter.findMany({
-            include: {
-                race: {
-                    select: {
-                        name: true,
-                    },
-                },
-            },
-        });
-
-        return characters as GetAllCharactersResponse;
     },
 }; 

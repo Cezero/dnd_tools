@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
+import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { ITEM_COLUMNS } from '@/features/admin/features/item-management/ItemColumns';
 import { ItemService } from '@/features/admin/features/item-management/ItemService';
 import { ItemWithDetails } from '@shared/schema';
@@ -12,22 +13,9 @@ export function ItemList(): React.JSX.Element {
     const navigate = useNavigate();
     const location = useLocation();
     const { isLoading: isAuthLoading } = useAuthAuto();
-    const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
 
     const HandleNewItemClick = (): void => {
         navigate('/admin/items/new/edit', { state: { fromListParams: location.search } });
-    };
-
-    const HandleDeleteItem = async (id: number): Promise<void> => {
-        if (window.confirm('Are you sure you want to delete this item?')) {
-            try {
-                await ItemService.deleteItem(undefined, { id });
-                setRefreshTrigger(prev => prev + 1);
-            } catch (error) {
-                console.error('Failed to delete item:', error);
-                alert('Failed to delete item.');
-            }
-        }
     };
 
     if (isAuthLoading) {
@@ -51,6 +39,7 @@ export function ItemList(): React.JSX.Element {
                 serviceFunction={() => ItemService.getItems({})}
                 itemDesc="item"
                 routes={routes}
+                deleteServiceFunction={createIdDeleteServiceFunction(ItemService.deleteItem)}
             />
         </div>
     );

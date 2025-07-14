@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
+import { createSlugDeleteServiceFunction } from '@/components/generic-list/types';
 import { REFERENCE_TABLE_COLUMNS } from '@/features/admin/features/reference-table-management/ReferenceTableColumns';
 import { ReferenceTableService } from '@/features/admin/features/reference-table-management/ReferenceTableService';
 import { ReferenceTableSummary } from '@shared/schema';
@@ -12,22 +13,9 @@ export function ReferenceTablesList(): React.JSX.Element {
     const navigate = useNavigate();
     const location = useLocation();
     const { isLoading: isAuthLoading } = useAuthAuto();
-    const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
 
     const HandleNewTableClick = (): void => {
         navigate('/admin/referencetables/new/edit', { state: { fromListParams: location.search } });
-    };
-
-    const HandleDeleteTable = async (slug: string): Promise<void> => {
-        if (window.confirm('Are you sure you want to delete this reference table?')) {
-            try {
-                await ReferenceTableService.deleteReferenceTable(undefined, { slug });
-                setRefreshTrigger(prev => prev + 1);
-            } catch (error) {
-                console.error('Failed to delete reference table:', error);
-                alert('Failed to delete reference table.');
-            }
-        }
     };
 
     if (isAuthLoading) {
@@ -51,6 +39,7 @@ export function ReferenceTablesList(): React.JSX.Element {
                 serviceFunction={() => ReferenceTableService.getReferenceTables({ sort: 'name', order: 'asc' })}
                 itemDesc="reference table"
                 routes={routes}
+                deleteServiceFunction={createSlugDeleteServiceFunction(ReferenceTableService.deleteReferenceTable)}
             />
         </div>
     );

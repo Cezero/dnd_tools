@@ -1,7 +1,6 @@
 import { Response } from 'express';
 
 import {
-    ValidatedQueryT,
     ValidatedParamsT,
     ValidatedParamsBodyT,
     ValidatedBodyT,
@@ -10,31 +9,22 @@ import {
 import {
     GetRaceTraitResponse,
     GetRaceResponse,
-    RaceTraitQueryRequest,
-    RaceQueryRequest,
     RaceIdParamRequest,
     RaceTraitSlugParamRequest,
     CreateRaceRequest,
     CreateRaceTraitRequest,
     UpdateRaceRequest,
     UpdateRaceTraitRequest,
-    RaceQueryResponse,
-    RaceTraitQueryResponse,
-    RaceTraitGetAllResponse,
     GetAllRacesResponse,
     UpdateResponse,
     CreateResponse,
+    GetAllRaceTraitsResponse,
 } from '@shared/schema';
 
 import { raceService } from './raceService';
 /**
  * Fetches all races from the database with pagination and filtering.
  */
-export async function GetRaces(req: ValidatedQueryT<RaceQueryRequest, RaceQueryResponse>, res: Response) {
-    const result = await raceService.getRaces(req.query);
-    res.json(result);
-}
-
 export async function GetAllRaces(req: ValidatedNoInput<GetAllRacesResponse>, res: Response) {
     const races = await raceService.getAllRaces();
     res.json(races);
@@ -78,12 +68,9 @@ export async function DeleteRace(req: ValidatedParamsT<RaceIdParamRequest, Updat
     res.json(result);
 }
 
-/**
- * Fetches all race traits from the database.
- */
-export async function GetRaceTraits(req: ValidatedQueryT<RaceTraitQueryRequest, RaceTraitQueryResponse>, res: Response) {
-    const result = await raceService.getRaceTraits(req.query);
-    res.json(result);
+export async function GetAllRaceTraits(req: ValidatedNoInput<GetAllRaceTraitsResponse>, res: Response) {
+    const traits = await raceService.getRaceTraits();
+    res.json(traits);
 }
 
 /**
@@ -98,11 +85,6 @@ export async function GetRaceTraitBySlug(req: ValidatedParamsT<RaceTraitSlugPara
     }
 
     res.json(trait);
-}
-
-export async function GetAllRaceTraits(req: ValidatedNoInput<RaceTraitGetAllResponse>, res: Response) {
-    const traits = await raceService.getRaceTraitsList();
-    res.json(traits);
 }
 
 /**

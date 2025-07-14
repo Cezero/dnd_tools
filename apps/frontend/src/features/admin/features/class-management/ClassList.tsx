@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
+import { createIdDeleteServiceFunction, createSlugDeleteServiceFunction } from '@/components/generic-list/types';
 import { CLASS_COLUMNS } from '@/features/admin/features/class-management/ClassColumns';
 import { CLASS_FEATURE_COLUMNS } from '@/features/admin/features/class-management/ClassFeatureColumns';
 import { ClassService } from '@/features/admin/features/class-management/ClassService';
@@ -24,27 +25,7 @@ export default function ClassList(): React.JSX.Element {
         navigate('/admin/classes/features/new/edit', { state: { fromListParams: location.search } });
     };
 
-    const HandleDeleteClass = async (id: number): Promise<void> => {
-        if (window.confirm('Are you sure you want to delete this class?')) {
-            try {
-                await ClassService.deleteClass(undefined, { id });
-            } catch (error) {
-                console.error('Failed to delete class:', error);
-                alert('Failed to delete class.');
-            }
-        }
-    };
 
-    const HandleDeleteClassFeature = async (slug: string): Promise<void> => {
-        if (window.confirm('Are you sure you want to delete this class feature?')) {
-            try {
-                await ClassFeatureService.deleteClassFeature(undefined, { slug });
-            } catch (error) {
-                console.error('Failed to delete class feature:', error);
-                alert('Failed to delete class feature.');
-            }
-        }
-    };
 
     if (isAuthLoading) {
         return <div className="p-4">Loading...</div>;
@@ -67,6 +48,7 @@ export default function ClassList(): React.JSX.Element {
                 serviceFunction={() => ClassService.getClasses({})}
                 itemDesc="class"
                 routes={routes}
+                deleteServiceFunction={createIdDeleteServiceFunction(ClassService.deleteClass)}
             />
 
             <h2 className="text-xl font-bold mb-4 mt-8">Class Feature Definitions</h2>
@@ -84,6 +66,7 @@ export default function ClassList(): React.JSX.Element {
                 serviceFunction={() => ClassFeatureService.getClassFeatures({})}
                 itemDesc="class feature"
                 routes={routes}
+                deleteServiceFunction={createSlugDeleteServiceFunction(ClassFeatureService.deleteClassFeature)}
             />
         </div>
     );

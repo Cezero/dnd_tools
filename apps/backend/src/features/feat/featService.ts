@@ -1,11 +1,12 @@
-import { PrismaClient, Prisma } from '@shared/prisma-client';
+import { PrismaClient } from '@shared/prisma-client';
 import {
-    FeatIdParamRequest,
-    FeatQueryRequest,
+    FeatIdParamRequest, 
     CreateFeatRequest,
     UpdateFeatRequest,
     GetAllFeatsResponse,
-    GetFeatResponse
+    GetFeatResponse,
+    CreateResponse,
+    UpdateResponse
 } from '@shared/schema';
 
 import type { FeatService } from './types';
@@ -13,69 +14,21 @@ import type { FeatService } from './types';
 const prisma = new PrismaClient();
 
 export const featService: FeatService = {
-    async getFeats(query: FeatQueryRequest) {
-        const page = query.page;
-        const limit = query.limit;
-        const skip = (page - 1) * limit;
-
-        // Build where clause for filtering
-        const where: Prisma.FeatWhereInput = {};
-
-        if (query.name) {
-            where.name = { contains: query.name };
-        }
-        if (query.typeId) {
-            where.typeId = query.typeId;
-        }
-        if (query.description) {
-            where.description = { contains: query.description };
-        }
-        if (query.benefit) {
-            where.benefit = { contains: query.benefit };
-        }
-        if (query.normalEffect) {
-            where.normalEffect = { contains: query.normalEffect };
-        }
-        if (query.specialEffect) {
-            where.specialEffect = { contains: query.specialEffect };
-        }
-        if (query.prerequisites) {
-            where.prerequisites = { contains: query.prerequisites };
-        }
-        if (query.repeatable !== undefined) {
-            where.repeatable = query.repeatable;
-        }
-
-        const [feats, total] = await Promise.all([
+    async getAllFeats(): Promise<GetAllFeatsResponse> {
+        const [feats] = await Promise.all([
             prisma.feat.findMany({
-                where,
-                skip,
-                take: limit,
                 orderBy: { name: 'asc' },
-                include: {
-                    benefits: true,
-                    prereqs: true,
-                },
             }),
-            prisma.feat.count({ where }),
+            prisma.feat.count(),
         ]);
 
         return {
-            page,
-            limit,
-            total,
+            total: feats.length,
             results: feats,
         };
     },
 
-    async getAllFeats() {
-        const feats = await prisma.feat.findMany({
-            orderBy: { name: 'asc' },
-        });
-        return feats as GetAllFeatsResponse;
-    },
-
-    async getFeatById(query: FeatIdParamRequest) {
+    async getFeatById(query: FeatIdParamRequest): Promise<GetFeatResponse | null> {
         const feat = await prisma.feat.findUnique({
             where: { id: query.id },
             include: {
@@ -87,7 +40,7 @@ export const featService: FeatService = {
         return feat as GetFeatResponse;
     },
 
-    async createFeat(data: CreateFeatRequest) {
+    async createFeat(data: CreateFeatRequest): Promise<CreateResponse> {
         const result = await prisma.$transaction(async (tx) => {
             const newFeat = await tx.feat.create({
                 data: {
@@ -107,7 +60,7 @@ export const featService: FeatService = {
         return { id: result.toString(), message: 'Feat created successfully' };
     },
 
-    async updateFeat(query: FeatIdParamRequest, data: UpdateFeatRequest) {
+    async updateFeat(query: FeatIdParamRequest, data: UpdateFeatRequest): Promise<UpdateResponse> {
         await prisma.$transaction(async (tx) => {
             const updatedFeat = await tx.feat.update({
                 where: { id: query.id },
@@ -130,7 +83,7 @@ export const featService: FeatService = {
         return { message: 'Feat updated successfully' };
     },
 
-    async deleteFeat(query: FeatIdParamRequest) {
+    async deleteFeat(query: FeatIdParamRequest): Promise<UpdateResponse> {
         await prisma.feat.delete({
             where: { id: query.id },
         });

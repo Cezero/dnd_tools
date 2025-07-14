@@ -9,13 +9,11 @@ import {
 } from '@shared/schema';
 
 import {
-    GetClasses,
     GetAllClasses,
     GetClassById,
     CreateClass,
     UpdateClass,
     DeleteClass,
-    GetClassFeatures,
     GetAllClassFeatures,
     GetClassFeatureBySlug,
     CreateClassFeature,
@@ -28,12 +26,10 @@ import { requireAdmin } from '../../middleware/authMiddleware.js';
 const { router: ClassRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
 
 // Class Read Routes
-get('/', {}, GetClasses);
-get('/all', {}, GetAllClasses);
+get('/', {}, GetAllClasses);
 
 // Class Feature Read Routes
-get('/features', {}, GetClassFeatures);
-get('/features/list', {}, GetAllClassFeatures);
+get('/features', {}, GetAllClassFeatures);
 get('/features/:slug', { params: ClassFeatureSlugParamSchema }, GetClassFeatureBySlug);
 
 // this has to be last because it conflicts with the class feature routes

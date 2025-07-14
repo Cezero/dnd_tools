@@ -38,8 +38,6 @@ export const userProfileService: UserProfileService = {
                 email: user.email,
                 isAdmin: user.isAdmin,
                 preferredEditionId: user.preferredEditionId,
-                is_admin: user.isAdmin,
-                preferred_edition_id: user.preferredEditionId
             };
         } catch (error) {
             console.error('Error fetching user profile:', error);
@@ -85,8 +83,6 @@ export const userProfileService: UserProfileService = {
                 email: updatedUser.email,
                 isAdmin: updatedUser.isAdmin,
                 preferredEditionId: updatedUser.preferredEditionId,
-                is_admin: updatedUser.isAdmin,
-                preferred_edition_id: updatedUser.preferredEditionId
             },
             token: newToken
         };
