@@ -10,7 +10,7 @@ import { CLASS_FEATURE_COLUMNS } from '@/features/admin/features/class-managemen
 import { ClassService } from '@/features/admin/features/class-management/ClassService';
 import { ClassFeatureService } from '@/features/admin/features/class-management/ClassFeatureService';
 import { ClassInQueryResponse, ClassFeatureSchema } from '@shared/schema';
-import { routes } from './ClassConfig';
+import { routes, classFeatureRoutes } from './ClassConfig';
 
 export default function ClassList(): React.JSX.Element {
     const navigate = useNavigate();
@@ -42,14 +42,17 @@ export default function ClassList(): React.JSX.Element {
                     New Class
                 </button>
             </div>
-            <GenericList<ClassInQueryResponse>
-                storageKey="classes-list"
-                columns={CLASS_COLUMNS}
-                serviceFunction={() => ClassService.getClasses({})}
-                itemDesc="class"
-                routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction(ClassService.deleteClass)}
-            />
+            <div id="classes-list-container">
+                <GenericList<ClassInQueryResponse>
+                    storageKey="classes-list"
+                    columns={CLASS_COLUMNS}
+                    serviceFunction={() => ClassService.getClasses({})}
+                    itemDesc="class"
+                    routes={routes}
+                    deleteServiceFunction={createIdDeleteServiceFunction(ClassService.deleteClass)}
+                    basePath="/admin"
+                />
+            </div>
 
             <h2 className="text-xl font-bold mb-4 mt-8">Class Feature Definitions</h2>
             <div className="mb-4 flex justify-end">
@@ -60,14 +63,17 @@ export default function ClassList(): React.JSX.Element {
                     New Class Feature
                 </button>
             </div>
-            <GenericList<z.infer<typeof ClassFeatureSchema>>
-                storageKey="class-features-list"
-                columns={CLASS_FEATURE_COLUMNS}
-                serviceFunction={() => ClassFeatureService.getClassFeatures({})}
-                itemDesc="class feature"
-                routes={routes}
-                deleteServiceFunction={createSlugDeleteServiceFunction(ClassFeatureService.deleteClassFeature)}
-            />
+            <div id="class-features-list-container">
+                <GenericList<z.infer<typeof ClassFeatureSchema>>
+                    storageKey="class-features-list"
+                    columns={CLASS_FEATURE_COLUMNS}
+                    serviceFunction={() => ClassFeatureService.getClassFeatures({})}
+                    itemDesc="class feature"
+                    routes={classFeatureRoutes}
+                    deleteServiceFunction={createSlugDeleteServiceFunction(ClassFeatureService.deleteClassFeature)}
+                    basePath="/admin"
+                />
+            </div>
         </div>
     );
 }

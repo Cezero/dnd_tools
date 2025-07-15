@@ -6,12 +6,47 @@ import {
     ABILITY_SELECT_LIST,
     EDITION_SELECT_LIST_FULL,
     SOURCE_BOOK_WITH_CLASSES_SELECT_LIST,
+    SOURCE_BOOK_MAP,
     RPG_DICE,
     EDITION_MAP,
     ABILITY_MAP,
     GetSourceDisplay
 } from '@shared/static-data';
 import { createContainsFilter, createEqualsFilter, createArrayIdFilter } from '@/components/generic-list/filterFunctions';
+
+// Function to get source book options filtered by current edition selection
+const getSourceBookOptionsForEdition = (currentFilters: any[]) => {
+    // Find the current edition filter
+    const editionFilter = currentFilters.find(f => f.id === 'editionId');
+    let selectedEditionIds: number[] = [];
+
+    if (editionFilter) {
+        if (editionFilter.value && typeof editionFilter.value === 'object' && 'values' in editionFilter.value) {
+            selectedEditionIds = editionFilter.value.values;
+        } else if (Array.isArray(editionFilter.value)) {
+            selectedEditionIds = editionFilter.value;
+        } else if (editionFilter.value) {
+            selectedEditionIds = [editionFilter.value];
+        }
+    }
+
+    // If no edition is selected, show all source books with classes
+    if (selectedEditionIds.length === 0) {
+        return SOURCE_BOOK_WITH_CLASSES_SELECT_LIST;
+    }
+
+    // Filter source books to only include those that:
+    // 1. Have classes (hasClasses: true)
+    // 2. Match the selected edition(s)
+    const filteredSourceBooks = Object.values(SOURCE_BOOK_MAP).filter(book =>
+        book.hasClasses && selectedEditionIds.includes(book.editionId)
+    );
+
+    return filteredSourceBooks.map(book => ({
+        value: book.id,
+        label: `${book.name}`
+    }));
+};
 
 export const CLASS_COLUMNS: ColumnDef<ClassInQueryResponse, unknown>[] = [
     {
@@ -42,7 +77,7 @@ export const CLASS_COLUMNS: ColumnDef<ClassInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 100,
-        filterFn: createEqualsFilter(),
+        filterFn: createArrayIdFilter('editionId'),
         cell: info => {
             const editionId = info.getValue() as number;
             return EDITION_MAP[editionId]?.abbreviation || '';
@@ -158,6 +193,9 @@ export const CLASS_COLUMNS: ColumnDef<ClassInQueryResponse, unknown>[] = [
         header: 'Description',
         enableResizing: true,
         size: 200,
+        meta: {
+            truncate: 200,
+        },
     },
     {
         accessorKey: 'sourceBookInfo',
@@ -176,7 +214,7 @@ export const CLASS_COLUMNS: ColumnDef<ClassInQueryResponse, unknown>[] = [
         },
         meta: {
             filterType: FilterType.MULTI_SELECT,
-            options: SOURCE_BOOK_WITH_CLASSES_SELECT_LIST,
+            options: getSourceBookOptionsForEdition,
         },
     }
 ]; 

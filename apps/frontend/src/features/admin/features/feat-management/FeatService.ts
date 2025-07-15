@@ -8,6 +8,8 @@ import {
     CreateResponseSchema,
     GetFeatResponseSchema,
     GetAllFeatsResponseSchema,
+    FeatQuerySchema,
+    FeatQueryResponseSchema,
 } from '@shared/schema';
 
 /**
@@ -64,5 +66,12 @@ export const FeatService = {
         method: 'DELETE',
         paramsSchema: FeatIdParamSchema,
         responseSchema: UpdateResponseSchema,
+    }),
+
+    featQuery: typedApi<typeof FeatQuerySchema, typeof FeatQueryResponseSchema>({
+        path: '/feats/query',
+        method: 'GET',
+        requestSchema: FeatQuerySchema,
+        responseSchema: FeatQueryResponseSchema,
     }),
 };

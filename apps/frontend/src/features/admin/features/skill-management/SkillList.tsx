@@ -40,6 +40,7 @@ export function SkillList(): React.JSX.Element {
                 itemDesc="skill"
                 routes={routes}
                 deleteServiceFunction={createIdDeleteServiceFunction(SkillService.deleteSkill)}
+                basePath="/admin"
             />
         </div>
     );

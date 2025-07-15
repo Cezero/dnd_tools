@@ -6,7 +6,8 @@ import {
     ItemWithDetails,
     GetAllItemsResponse,
     CreateResponse,
-    UpdateResponse
+    UpdateResponse,
+    ItemQueryRequest
 } from '@shared/schema';
 
 import type { ItemService } from './types';
@@ -22,6 +23,47 @@ export const itemService: ItemService = {
                     weapon: true
                 },
                 orderBy: { name: 'asc' }
+            }),
+            prisma.item.count()
+        ]);
+        return {
+            total: items.length,
+            results: items,
+        };
+    },
+    async itemQuery(query: ItemQueryRequest): Promise<GetAllItemsResponse> {
+        let whereClause: Prisma.ItemWhereInput = {};
+        if (query.queryType === 'byType') {
+            whereClause = {
+                typeId: query.typeId
+            }
+        } else if (query.queryType === 'byCategory') {
+            whereClause = {
+                typeId: query.typeId,
+                OR: [
+                    {
+                        armor: {
+                            category: query.category
+                        }
+                    },
+                    {
+                        weapon: {
+                            category: query.category
+                        }
+                    }
+                ]
+            }
+        } else if (query.queryType === 'byName') {
+            whereClause = {
+                name: {
+                    contains: query.name,
+                }
+            }
+        }
+        const [items] = await Promise.all([
+            prisma.item.findMany({
+                where: whereClause,
+                include: { armor: true, weapon: true },
             }),
             prisma.item.count()
         ]);

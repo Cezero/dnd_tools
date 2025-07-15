@@ -403,6 +403,51 @@ export const SPELL_TABLE_MAP: { [key in SpellProgressionType]: SpellTable } = {
     [SpellProgressionType.wizard]: WIZARD_SPELL_TABLE,
 };
 
+// Feature Aspect enum for class feature progressions
+export const FeatureAspect = {
+    bonus: 'bonus',
+    usesPerDay: 'usesPerDay',
+    usesPerWeek: 'usesPerWeek',
+    damageDie: 'damageDie',
+    form: 'form',
+    size: 'size',
+    secondaryUsesPerDay: 'secondaryUsesPerDay',
+    bonusFeat: 'bonusFeat',
+    distance: 'distance',
+    attackBonus: 'attackBonus',
+    nthFeature: 'nthFeature',
+    damageReduction: 'damageReduction',
+} as const;
+
+export type FeatureAspect = typeof FeatureAspect[keyof typeof FeatureAspect];
+
+// Select list for feature aspects
+export const FEATURE_ASPECT_SELECT_LIST = [
+    { value: FeatureAspect.bonus, label: 'Bonus' },
+    { value: FeatureAspect.usesPerDay, label: 'Uses Per Day' },
+    { value: FeatureAspect.usesPerWeek, label: 'Uses Per Week' },
+    { value: FeatureAspect.damageDie, label: 'Damage Die' },
+    { value: FeatureAspect.form, label: 'Form' },
+    { value: FeatureAspect.size, label: 'Size' },
+    { value: FeatureAspect.secondaryUsesPerDay, label: 'Secondary Uses Per Day' },
+    { value: FeatureAspect.bonusFeat, label: 'Bonus Feat' },
+    { value: FeatureAspect.distance, label: 'Distance' },
+    { value: FeatureAspect.attackBonus, label: 'Attack Bonus' },
+    { value: FeatureAspect.damageReduction, label: 'Damage Reduction' },
+];
+
+// Map of aspect formatters
+export const ASPECT_FORMATTERS: Record<string, (valueInt: number | null, valueString: string | null) => string> = {
+    [FeatureAspect.usesPerDay]: (valueInt) => valueInt ? `${valueInt}/day` : '',
+    [FeatureAspect.bonus]: (valueInt) => {
+        if (valueInt !== null) {
+            return valueInt > 0 ? `+${valueInt}` : `${valueInt}`;
+        }
+        return '';
+    },
+    [FeatureAspect.damageReduction]: (valueInt) => valueInt ? `${valueInt}/—` : '',
+};
+
 // Select lists for progression types
 export const BAB_PROGRESSION_SELECT_LIST = [
     { value: ProgressionType.good, label: 'Good' },

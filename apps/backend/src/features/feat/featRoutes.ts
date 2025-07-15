@@ -2,7 +2,8 @@ import { buildValidatedRouter } from '@/lib/buildValidatedRouter.js';
 import {
     FeatIdParamSchema,
     CreateFeatSchema,
-    UpdateFeatSchema
+    UpdateFeatSchema,
+    FeatQuerySchema
 } from '@shared/schema';
 
 import {
@@ -11,13 +12,14 @@ import {
     CreateFeat,
     UpdateFeat,
     DeleteFeat,
+    GetFeatQuery,
 } from './featController.js';
 import { requireAdmin } from '../../middleware/authMiddleware.js';
 
 const { router: FeatRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
 
 get('/', {}, GetAllFeats);
-
+get('/query', { query: FeatQuerySchema }, GetFeatQuery);
 get('/:id', { params: FeatIdParamSchema }, GetFeatById);
 
 post('/', requireAdmin, { body: CreateFeatSchema }, CreateFeat);

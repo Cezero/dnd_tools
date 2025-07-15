@@ -23,6 +23,14 @@ export const raceService: RaceService = {
         const [races] = await Promise.all([
             prisma.race.findMany({
                 orderBy: { name: 'asc' },
+                include: {
+                    sources: {
+                        select: {
+                            sourceBookId: true,
+                            pageNumber: true
+                        }
+                    }
+                },
             }),
             prisma.race.count(),
         ]);

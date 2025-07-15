@@ -13,7 +13,7 @@ import {
     horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import pluralize from 'pluralize';
@@ -33,6 +33,7 @@ import { PAGE_LIMITS } from './types';
 import { usePersistentTableState } from './usePersistantTableState';
 import { ColumnHeaderContextMenu } from './ColumnHeaderContextMenu';
 import { FloatingTextInput } from './FloatingTextInput';
+import { createCellRenderer } from './columnUtils';
 
 function SortableHeaderCell({ header, allColumns, onToggleVisibility, onSort, columnFilters, handleFilterChange, handleClearFilter, onRestoreHiddenColumn }) {
     const { attributes, listeners, setNodeRef, transition, transform } =
@@ -89,12 +90,49 @@ export function GenericList<T>({
     initialLimit = 20,
     routes,
     deleteServiceFunction,
+    basePath = '',
+    isOptionSelector = false,
+    selectedIds = [],
+    onSelectedIdsChange,
 }: GenericListProps<T>) {
     const [data, setData] = useState<T[]>([]);
     const [total, setTotal] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
     const { isAdmin } = useAuthAuto();
+
+    // Internal state for selected IDs when in option selector mode
+    const [internalSelectedIds, setInternalSelectedIds] = useState<(string | number)[]>(selectedIds);
+
+    // Store the current callback and state in refs to avoid dependency issues
+    const onSelectedIdsChangeRef = useRef(onSelectedIdsChange);
+    const internalSelectedIdsRef = useRef(internalSelectedIds);
+    const serviceFunctionRef = useRef(serviceFunction);
+    const selectedIdsRef = useRef(selectedIds);
+    onSelectedIdsChangeRef.current = onSelectedIdsChange;
+    internalSelectedIdsRef.current = internalSelectedIds;
+    serviceFunctionRef.current = serviceFunction;
+    selectedIdsRef.current = selectedIds;
+
+    // Sync internal state with prop changes
+    useEffect(() => {
+        // Only update if the arrays are actually different
+        const currentSelectedIds = selectedIdsRef.current;
+        const currentInternalIds = internalSelectedIdsRef.current;
+
+        if (currentSelectedIds.length !== currentInternalIds.length ||
+            currentSelectedIds.some((id, index) => id !== currentInternalIds[index])) {
+            setInternalSelectedIds(currentSelectedIds);
+        }
+    }, [selectedIds]);
+
+    // Create a stable callback for updating selected IDs
+    const handleInternalSelectedIdsChange = useCallback((newSelectedIds: (string | number)[]) => {
+        setInternalSelectedIds(newSelectedIds);
+        if (isOptionSelector && onSelectedIdsChangeRef.current) {
+            onSelectedIdsChangeRef.current(newSelectedIds);
+        }
+    }, [isOptionSelector]);
 
     // State for floating text input
     const [textInputState, setTextInputState] = useState<{
@@ -107,13 +145,85 @@ export function GenericList<T>({
         position: { x: 0, y: 0, width: 0 }
     });
 
-    const columnDefs = useMemo<ColumnDef<T>[]>(() => [...columns], [columns]);
-    const defaultColumnOrder = columnDefs.map(col => {
-        if ('id' in col && col.id) return col.id;
-        if ('accessorKey' in col && col.accessorKey) return String(col.accessorKey);
-        console.warn('Missing id/accessorKey in column:', col);
-        return ''; // fallback to empty string if really broken
-    }).filter(Boolean); // remove blanks
+    // Process columns to add automatic cell renderers for truncation and markdown
+    const processedColumns = useMemo<ColumnDef<T>[]>(() => {
+        return columns.map(column => {
+            const meta = column.meta as any;
+
+            // If column has truncate or isMarkdown meta properties, add a cell renderer
+            if (meta?.truncate || meta?.isMarkdown) {
+                const getMarkdownId = meta?.isMarkdown ? (row: T) => {
+                    const id = (row as any).id || (row as any).slug;
+                    const columnKey = (column as any).accessorKey || column.id;
+                    return `${columnKey}-${id}-description`;
+                } : undefined;
+
+                return {
+                    ...column,
+                    cell: createCellRenderer<T>(meta, getMarkdownId)
+                };
+            }
+
+            return column;
+        });
+    }, [columns]);
+
+    const columnDefs = useMemo<ColumnDef<T>[]>(() => [...processedColumns], [processedColumns]);
+    const defaultColumnOrder = useMemo(() => {
+        return columnDefs.map(col => {
+            if ('id' in col && col.id) return col.id;
+            if ('accessorKey' in col && col.accessorKey) return String(col.accessorKey);
+            console.warn('Missing id/accessorKey in column:', col);
+            return ''; // fallback to empty string if really broken
+        }).filter(Boolean); // remove blanks
+    }, [columnDefs]);
+
+    // Create a stable selection cell component
+    const SelectionCell = useCallback(({ row }: { row: any }) => {
+        const itemId = (row.original as any).id || (row.original as any).slug;
+        const isChecked = internalSelectedIdsRef.current.includes(itemId);
+
+        return (
+            <input
+                type="checkbox"
+                checked={isChecked}
+                onChange={(e) => {
+                    e.stopPropagation();
+                    const newSelectedIds = e.target.checked
+                        ? [...internalSelectedIdsRef.current, itemId]
+                        : internalSelectedIdsRef.current.filter(id => id !== itemId);
+                    handleInternalSelectedIdsChange(newSelectedIds);
+                }}
+                className="h-4 w-4 accent-blue-600 dark:bg-gray-700 dark:accent-gray-400 dark:border-gray-600 focus:ring-0 focus:ring-offset-0"
+            />
+        );
+    }, [handleInternalSelectedIdsChange]);
+
+    // Create selection column definition - make it stable to avoid re-renders
+    const selectionColumn: ColumnDef<T> = useMemo(() => ({
+        id: '__selector__',
+        header: () => null,
+        cell: ({ row }) => <SelectionCell row={row} />,
+        size: 40,
+        enableSorting: false,
+        enableColumnFilter: false,
+    }), [SelectionCell]);
+
+    // Combine columns with selection column if needed
+    const finalColumns = useMemo(() => {
+        if (isOptionSelector) {
+            return [selectionColumn, ...columnDefs];
+        }
+        return columnDefs;
+    }, [isOptionSelector, selectionColumn, columnDefs]);
+
+    // Add selector column to column order if in option selector mode
+    const adjustedColumnOrder = useMemo(() => {
+        if (isOptionSelector) {
+            return ['__selector__', ...defaultColumnOrder];
+        }
+        return defaultColumnOrder;
+    }, [isOptionSelector, defaultColumnOrder]);
 
     const {
         columnVisibility,
@@ -126,7 +236,7 @@ export function GenericList<T>({
         setColumnSizing,
         columnOrder,
         setColumnOrder,
-    } = usePersistentTableState(storageKey, defaultColumnOrder);
+    } = usePersistentTableState(storageKey, adjustedColumnOrder);
 
     const [pagination, setPagination] = useState<PaginationState>({
         pageIndex: 0,
@@ -295,12 +405,13 @@ export function GenericList<T>({
         const detailRoute = findRouteByType('detail');
         if (!detailRoute) return cellValue;
 
-        const itemId = (item as any).id;
+        // Handle both id and slug identifiers
+        const itemId = (item as any).id || (item as any).slug;
         if (!itemId) return cellValue;
 
-        // Extract the base path from the detail route (e.g., 'spells/:id' -> 'spells')
-        const basePath = detailRoute.path.split('/:')[0];
-        const detailPath = `/${basePath}/${itemId}`;
+        // Extract the route path from the detail route (e.g., 'spells/:id' -> 'spells')
+        const routePath = detailRoute.path.split('/:')[0];
+        const detailPath = `${basePath}/${routePath}/${itemId}`;
 
         return (
             <a
@@ -316,15 +427,16 @@ export function GenericList<T>({
     const renderActionIcons = (item: T) => {
         const editRoute = findRouteByType('edit');
 
-        const itemId = (item as any).id;
+        // Handle both id and slug identifiers
+        const itemId = (item as any).id || (item as any).slug;
         if (!itemId) return null;
 
         const actions = [];
 
         if (editRoute && (!editRoute.requireAdmin || isAdmin)) {
-            // Extract the base path from the edit route (e.g., 'spells/:id/edit' -> 'spells')
-            const basePath = editRoute.path.split('/:')[0];
-            const editPath = `/${basePath}/${itemId}/edit`;
+            // Extract the route path from the edit route (e.g., 'spells/:id/edit' -> 'spells')
+            const routePath = editRoute.path.split('/:')[0];
+            const editPath = `${basePath}/${routePath}/${itemId}/edit`;
 
             actions.push(
                 <a
@@ -371,7 +483,7 @@ export function GenericList<T>({
 
     const table = useReactTable({
         data,
-        columns,
+        columns: finalColumns,
         state: {
             sorting,
             columnFilters,
@@ -400,7 +512,7 @@ export function GenericList<T>({
     useEffect(() => {
         setIsLoading(true);
 
-        serviceFunction().then(({ results, total }) => {
+        serviceFunctionRef.current().then(({ results, total }) => {
             setData(results);
             setTotal(total);
         }).catch(console.error).finally(() => setIsLoading(false));
@@ -445,7 +557,7 @@ export function GenericList<T>({
                                     </thead>
                                     <tbody>
                                         {table.getRowModel().rows.length === 0 ? (
-                                            <tr><td colSpan={columns.length}>No {pluralize(itemDesc, 2)} found.</td></tr>
+                                            <tr><td colSpan={finalColumns.length}>No {pluralize(itemDesc, 2)} found.</td></tr>
                                         ) : (
                                             table.getRowModel().rows.map(row => (
                                                 <tr key={row.id} className="hover:bg-gray-100 dark:hover:bg-gray-800 odd:bg-gray-500 even:bg-white dark:odd:bg-[#141e2d] dark:even:bg-[#121212]">
@@ -461,8 +573,8 @@ export function GenericList<T>({
                                                             finalCellValue = renderDetailCell(row.original, cellValue);
                                                         }
 
-                                                        // Add action icons to the last visible cell
-                                                        const actionIcons = isLastVisibleCell ? renderActionIcons(row.original) : null;
+                                                        // Add action icons to the last visible cell (but not in option selector mode)
+                                                        const actionIcons = isLastVisibleCell && !isOptionSelector ? renderActionIcons(row.original) : null;
 
                                                         if (actionIcons) {
                                                             finalCellValue = (

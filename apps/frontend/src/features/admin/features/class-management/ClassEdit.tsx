@@ -13,11 +13,139 @@ import {
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { ClassService } from '@/features/admin/features/class-management/ClassService';
 import { ClassFeatureAssoc } from '@/features/admin/features/class-management/ClassFeatureAssoc';
-import { CreateClassSchema, UpdateClassSchema } from '@shared/schema';
-import { RPG_DICE_SELECT_LIST, ABILITY_SELECT_LIST, EDITION_SELECT_LIST_FULL, _SKILL_MAP, SKILL_SELECT_LIST, BAB_PROGRESSION_SELECT_LIST, SAVE_PROGRESSION_SELECT_LIST, SPELL_PROGRESSION_SELECT_LIST } from '@shared/static-data';
+import { ClassProficiencyService, type ProficiencyFeat, type ProficiencyItem } from '@/features/admin/features/class-management/ClassProficiencyService';
+import { ClassProficiencyInQueryResponse, CreateClassSchema, UpdateClassSchema } from '@shared/schema';
+import { RPG_DICE_SELECT_LIST, ABILITY_SELECT_LIST, EDITION_SELECT_LIST_FULL, _SKILL_MAP, SKILL_SELECT_LIST, BAB_PROGRESSION_SELECT_LIST, SAVE_PROGRESSION_SELECT_LIST, SPELL_PROGRESSION_SELECT_LIST, FEATURE_ASPECT_SELECT_LIST, ASPECT_FORMATTERS } from '@shared/static-data';
+import { ClassFeatureProgressionDetailInQueryResponse } from '@shared/schema';
+import { formatProgressionValue } from '@/lib/Formatters';
 
 // Type definitions for the form state
 type ClassFormData = z.infer<typeof CreateClassSchema> | z.infer<typeof UpdateClassSchema>;
+
+// Feature Progression Form Component
+interface FeatureProgressionFormProps {
+    progression: ClassFeatureProgressionDetailInQueryResponse | null;
+    availableFeatures: Array<{ featureSlug: string; description: string; level: number }>;
+    preSelectedFeature?: string;
+    onSave: (progression: ClassFeatureProgressionDetailInQueryResponse) => void;
+    onCancel: () => void;
+}
+
+function FeatureProgressionForm({ progression, availableFeatures, preSelectedFeature, onSave, onCancel }: FeatureProgressionFormProps) {
+    const [formData, setFormData] = useState<ClassFeatureProgressionDetailInQueryResponse>({
+        featureSlug: progression?.featureSlug || preSelectedFeature || '',
+        level: progression?.level || 1,
+        aspect: progression?.aspect || '',
+        valueInt: progression?.valueInt || null,
+        valueString: progression?.valueString || null,
+        note: progression?.note || null,
+        featureName: progression?.featureName || '',
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        onSave(formData);
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+                <CustomSelect
+                    label="Feature"
+                    required
+                    value={formData.featureSlug}
+                    onValueChange={(value) => {
+                        const feature = availableFeatures.find(f => f.featureSlug === value);
+                        setFormData(prev => ({
+                            ...prev,
+                            featureSlug: value as string,
+                            featureName: feature?.featureSlug || '',
+                        }));
+                    }}
+                    options={availableFeatures.map(f => ({ value: f.featureSlug, label: f.featureSlug }))}
+                    placeholder="Select a feature"
+                    disabled={!!preSelectedFeature}
+                />
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium mb-1">Level</label>
+                <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={formData.level}
+                    onChange={(e) => setFormData(prev => ({ ...prev, level: parseInt(e.target.value) }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md dark:border-gray-600 dark:bg-gray-700"
+                    required
+                />
+            </div>
+
+            <div>
+                <CustomSelect
+                    label="Aspect"
+                    required
+                    value={formData.aspect}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, aspect: value as string }))}
+                    options={FEATURE_ASPECT_SELECT_LIST}
+                    placeholder="Select an aspect"
+                />
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium mb-1">Numeric Value</label>
+                <input
+                    type="number"
+                    value={formData.valueInt || ''}
+                    onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        valueInt: e.target.value ? parseInt(e.target.value) : null
+                    }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md dark:border-gray-600 dark:bg-gray-700"
+                    placeholder="e.g., 1, 2, -1"
+                />
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium mb-1">String Value</label>
+                <input
+                    type="text"
+                    value={formData.valueString || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, valueString: e.target.value || null }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md dark:border-gray-600 dark:bg-gray-700"
+                    placeholder="e.g., 1d6, Large, 30ft"
+                />
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium mb-1">Note</label>
+                <textarea
+                    value={formData.note || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value || null }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md dark:border-gray-600 dark:bg-gray-700"
+                    rows={3}
+                    placeholder="Additional description or clarification"
+                />
+            </div>
+
+            <div className="flex justify-end space-x-2">
+                <button
+                    type="button"
+                    onClick={onCancel}
+                    className="px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="submit"
+                    className="px-4 py-2 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                >
+                    {progression ? 'Update' : 'Add'} Progression
+                </button>
+            </div>
+        </form>
+    );
+}
 
 export default function ClassEdit() {
     const { id } = useParams<{ id: string }>();
@@ -28,6 +156,16 @@ export default function ClassEdit() {
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isFeatureAssocOpen, setIsFeatureAssocOpen] = useState(false);
+    const [isProficiencyDialogOpen, setIsProficiencyDialogOpen] = useState(false);
+    const [proficiencyFeats, setProficiencyFeats] = useState<ProficiencyFeat[]>([]);
+    const [selectedProficiencyFeat, setSelectedProficiencyFeat] = useState<ProficiencyFeat | null>(null);
+    const [proficiencyItems, setProficiencyItems] = useState<ProficiencyItem[]>([]);
+    const [selectedProficiencyItem, setSelectedProficiencyItem] = useState<number | null>(null);
+    const [proficiencyDisplay, setProficiencyDisplay] = useState<ClassProficiencyInQueryResponse[]>([]);
+    const [featureProgressions, setFeatureProgressions] = useState<ClassFeatureProgressionDetailInQueryResponse[]>([]);
+    const [isProgressionDialogOpen, setIsProgressionDialogOpen] = useState(false);
+    const [editingProgression, setEditingProgression] = useState<ClassFeatureProgressionDetailInQueryResponse | null>(null);
+    const [preSelectedFeature, setPreSelectedFeature] = useState<string | undefined>(undefined);
 
     // Determine which schema to use based on whether we're creating or editing
     const schema = id === 'new' ? CreateClassSchema : UpdateClassSchema;
@@ -59,6 +197,103 @@ export default function ClassEdit() {
         }));
     }, []);
 
+    /**
+ * Handles adding a proficiency to the class.
+ */
+    const handleAddProficiency = useCallback(async (featId: number, itemId: number) => {
+        setFormData(prev => {
+            const newProficiencyEntry = { classId: parseInt(id), featId, itemId };
+            const existingIndex = prev.proficiencies?.findIndex(prof =>
+                prof.featId === featId && prof.itemId === itemId
+            ) ?? -1;
+
+            if (existingIndex !== -1) {
+                // Proficiency already exists, don't add duplicate
+                return prev;
+            } else {
+                const newProficiencies = [...(prev.proficiencies || []), newProficiencyEntry];
+
+                // Update display information
+                ClassProficiencyService.getProficiencyDisplay(newProficiencies).then(displayInfo => {
+                    setProficiencyDisplay(displayInfo);
+                });
+
+                return { ...prev, proficiencies: newProficiencies };
+            }
+        });
+    }, [id]);
+
+    /**
+ * Handles the removal of a proficiency from the class's proficiency list.
+ */
+    const handleRemoveProficiency = useCallback((featId: number, itemId: number) => {
+        setFormData(prev => {
+            const newProficiencies = prev.proficiencies?.filter(prof =>
+                !(prof.featId === featId && prof.itemId === itemId)
+            ) || [];
+
+            // Update display information
+            ClassProficiencyService.getProficiencyDisplay(newProficiencies).then(displayInfo => {
+                setProficiencyDisplay(displayInfo);
+            });
+
+            return { ...prev, proficiencies: newProficiencies };
+        });
+    }, []);
+
+    /**
+     * Opens the proficiency dialog and loads proficiency feats
+     */
+    const handleOpenProficiencyDialog = useCallback(async () => {
+        try {
+            const feats = await ClassProficiencyService.getProficiencyFeats();
+            setProficiencyFeats(feats);
+            setSelectedProficiencyFeat(null);
+            setSelectedProficiencyItem(null);
+            setProficiencyItems([]);
+            setIsProficiencyDialogOpen(true);
+        } catch (error) {
+            console.error('Failed to load proficiency feats:', error);
+        }
+    }, []);
+
+    /**
+     * Handles feat selection in the proficiency dialog
+     */
+    const handleFeatSelection = useCallback(async (featId: number) => {
+        const feat = proficiencyFeats.find(f => f.id === featId);
+        if (feat) {
+            setSelectedProficiencyFeat(feat);
+            setSelectedProficiencyItem(null);
+
+            // Load items for this proficiency type
+            try {
+                const items = await ClassProficiencyService.getItemsByProficiencyType(feat.proficiencyTypeId);
+                setProficiencyItems(items);
+            } catch (error) {
+                console.error('Failed to load items for proficiency type:', error);
+                setProficiencyItems([]);
+            }
+        }
+    }, [proficiencyFeats]);
+
+    /**
+     * Handles item selection in the proficiency dialog
+     */
+    const handleItemSelection = useCallback((itemId: number) => {
+        setSelectedProficiencyItem(itemId);
+    }, []);
+
+    /**
+     * Handles adding the selected proficiency
+     */
+    const handleAddSelectedProficiency = useCallback(() => {
+        if (selectedProficiencyFeat && selectedProficiencyItem !== null) {
+            handleAddProficiency(selectedProficiencyFeat.id, selectedProficiencyItem);
+            setIsProficiencyDialogOpen(false);
+        }
+    }, [selectedProficiencyFeat, selectedProficiencyItem, handleAddProficiency]);
+
     // Initialize form data with default values
     const initialFormData: ClassFormData = {
         name: '',
@@ -76,10 +311,91 @@ export default function ClassEdit() {
         refProgression: 2, // poor
         willProgression: 2, // poor
         spellProgression: null,
+        featureProgression: [],
         ...(id !== 'new' && { id: parseInt(id) })
     };
 
     const [formData, setFormData] = useState<ClassFormData>(initialFormData);
+
+    /**
+     * Handles adding a feature progression to the class.
+     */
+    const handleAddProgression = useCallback((progression: ClassFeatureProgressionDetailInQueryResponse) => {
+        setFormData(prev => {
+            const existingIndex = prev.featureProgression?.findIndex(p =>
+                p.featureSlug === progression.featureSlug &&
+                p.level === progression.level &&
+                p.aspect === progression.aspect
+            ) ?? -1;
+
+            if (existingIndex !== -1) {
+                // Progression already exists, don't add duplicate
+                return prev;
+            } else {
+                return {
+                    ...prev,
+                    featureProgression: [...(prev.featureProgression || []), progression]
+                };
+            }
+        });
+    }, [id]);
+
+    /**
+     * Handles the removal of a feature progression from the class.
+     */
+    const handleRemoveProgression = useCallback((featureSlug: string, level: number, aspect: string) => {
+        setFormData(prev => ({
+            ...prev,
+            featureProgression: prev.featureProgression?.filter(p =>
+                !(p.featureSlug === featureSlug && p.level === level && p.aspect === aspect)
+            ) || []
+        }));
+    }, []);
+
+    /**
+     * Handles updating a feature progression.
+     */
+    const handleUpdateProgression = useCallback((oldProgression: ClassFeatureProgressionDetailInQueryResponse, updatedProgression: ClassFeatureProgressionDetailInQueryResponse) => {
+        setFormData(prev => {
+            const progressionIndex = prev.featureProgression?.findIndex(p =>
+                p.featureSlug === oldProgression.featureSlug &&
+                p.level === oldProgression.level &&
+                p.aspect === oldProgression.aspect
+            ) ?? -1;
+
+            if (progressionIndex === -1) {
+                // If we can't find the old progression, just add the new one
+                return {
+                    ...prev,
+                    featureProgression: [...(prev.featureProgression || []), updatedProgression]
+                };
+            }
+
+            const newFeatureProgression = [...(prev.featureProgression || [])];
+            newFeatureProgression[progressionIndex] = updatedProgression;
+
+            return {
+                ...prev,
+                featureProgression: newFeatureProgression
+            };
+        });
+    }, [id]);
+
+    /**
+     * Opens the progression dialog for adding a new progression.
+     */
+    const handleOpenProgressionDialog = useCallback(() => {
+        setEditingProgression(null);
+        setIsProgressionDialogOpen(true);
+    }, []);
+
+    /**
+     * Opens the progression dialog for editing an existing progression.
+     */
+    const handleEditProgression = useCallback((progression: ClassFeatureProgressionDetailInQueryResponse) => {
+        setEditingProgression(progression);
+        setIsProgressionDialogOpen(true);
+    }, []);
 
     // Use the validated form hook
     const form = useValidatedForm(
@@ -105,6 +421,17 @@ export default function ClassEdit() {
                 const fetchedClass = await ClassService.getClassById(undefined, { id: parseInt(id) });
                 setCls(fetchedClass);
                 setFormData(fetchedClass);
+
+                // Load proficiency display information
+                if (fetchedClass.proficiencies && fetchedClass.proficiencies.length > 0) {
+                    const displayInfo = await ClassProficiencyService.getProficiencyDisplay(fetchedClass.proficiencies);
+                    setProficiencyDisplay(displayInfo);
+                }
+
+                // Set feature progressions
+                if (fetchedClass.featureProgression) {
+                    setFeatureProgressions(fetchedClass.featureProgression);
+                }
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to fetch class');
             } finally {
@@ -412,6 +739,7 @@ export default function ClassEdit() {
                             <span className="text-gray-500 dark:text-gray-400">No skills added.</span>
                         )}
                         <CustomSelect
+                            key={`skill-select-${formData.skills?.length || 0}`}
                             label=""
                             value={null}
                             componentExtraClassName="flex items-center gap-1 text-sm"
@@ -426,6 +754,38 @@ export default function ClassEdit() {
                                 .filter(skill => !formData.skills?.some(cs => cs.skillId === skill.value))}
                             placeholder="Add"
                         />
+                    </div>
+                </div>
+
+                {/* Class Proficiencies Section */}
+                <div className="mt-4">
+                    <h3 className="text-lg font-semibold mb-2">Class Proficiencies</h3>
+                    <div className="flex flex-wrap gap-2 mb-2 p-2 border rounded dark:border-gray-600 min-h-[40px]">
+                        {proficiencyDisplay.length > 0 ? (
+                            proficiencyDisplay.map((proficiency, index) => (
+                                <span key={`${proficiency.featId}-${proficiency.itemId}`} className="group relative text-sm pt-1 pb-1 pl-0 pr-0 cursor-pointer">
+                                    {proficiency.itemName} ({proficiency.featName})
+                                    {index < proficiencyDisplay.length - 1 && ','}
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveProficiency(proficiency.featId, proficiency.itemId)}
+                                        className="absolute inset-0 flex items-center justify-center text-red-600 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="Remove Proficiency"
+                                    >
+                                        <TrashIcon className="h-5 w-5" />
+                                    </button>
+                                </span>
+                            ))
+                        ) : (
+                            <span className="text-gray-500 dark:text-gray-400">No proficiencies added.</span>
+                        )}
+                        <button
+                            type="button"
+                            onClick={handleOpenProficiencyDialog}
+                            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+                        >
+                            Add
+                        </button>
                     </div>
                 </div>
 
@@ -444,38 +804,104 @@ export default function ClassEdit() {
 
                     {formData.features && formData.features.length > 0 ? (
                         <div className="space-y-2">
-                            {formData.features.map((feature, index) => (
-                                <div key={index} className="flex items-center gap-4 p-3 border border-gray-200 rounded-md dark:border-gray-600">
-                                    <div className="flex-1">
-                                        <div className="font-medium">{feature.featureSlug}</div>
+                            {formData.features.map((feature, index) => {
+                                const featureProgressions = formData.featureProgression?.filter(p => p.featureSlug === feature.featureSlug) || [];
+
+                                return (
+                                    <div key={index} className="border border-gray-200 rounded-md dark:border-gray-600">
+                                        <div className="flex items-center gap-4 p-3">
+                                            <div className="flex-1">
+                                                <div className="font-medium">{feature.featureSlug}</div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <label className="text-sm">Level:</label>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    max="20"
+                                                    value={feature.level}
+                                                    onChange={(e) => {
+                                                        const newFeatures = [...(formData.features || [])];
+                                                        newFeatures[index] = { ...feature, level: parseInt(e.target.value) };
+                                                        setFormData(prev => ({ ...prev, features: newFeatures }));
+                                                    }}
+                                                    className="w-16 px-2 py-1 border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700"
+                                                />
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const newFeatures = formData.features?.filter((_, i) => i !== index) || [];
+                                                    setFormData(prev => ({ ...prev, features: newFeatures }));
+                                                }}
+                                                className="px-2 py-1 text-red-500 hover:text-red-700"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+
+                                        {/* Feature Progressions */}
+                                        {featureProgressions.length > 0 && (
+                                            <div className="border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 p-3">
+                                                <div className="flex flex-wrap gap-2 items-center">
+                                                    {featureProgressions.map((progression, progIndex) => (
+                                                        <div key={progIndex} className="flex items-center gap-1">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleEditProgression(progression)}
+                                                                className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                                                            >
+                                                                {progression.aspect in ASPECT_FORMATTERS ? (
+                                                                    `L${progression.level}: ${formatProgressionValue(progression.aspect, progression.valueInt, progression.valueString)}`
+                                                                ) : (
+                                                                    `L${progression.level} - ${FEATURE_ASPECT_SELECT_LIST.find(a => a.value === progression.aspect)?.label || progression.aspect} - ${formatProgressionValue(progression.aspect, progression.valueInt, progression.valueString)}`
+                                                                )}
+                                                                {progression.note && ` (${progression.note})`}
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleRemoveProgression(progression.featureSlug, progression.level, progression.aspect)}
+                                                                className="text-red-500 hover:text-red-700"
+                                                                title="Remove Progression"
+                                                            >
+                                                                <TrashIcon className="h-4 w-4" />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setEditingProgression(null);
+                                                            setPreSelectedFeature(feature.featureSlug);
+                                                            setIsProgressionDialogOpen(true);
+                                                        }}
+                                                        className="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                                    >
+                                                        Add Progression
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Add Progression button for features without progressions */}
+                                        {featureProgressions.length === 0 && (
+                                            <div className="border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 p-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setEditingProgression(null);
+                                                        setPreSelectedFeature(feature.featureSlug);
+                                                        setIsProgressionDialogOpen(true);
+                                                    }}
+                                                    className="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                                >
+                                                    Add Progression
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <label className="text-sm">Level:</label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            max="20"
-                                            value={feature.level}
-                                            onChange={(e) => {
-                                                const newFeatures = [...(formData.features || [])];
-                                                newFeatures[index] = { ...feature, level: parseInt(e.target.value) };
-                                                setFormData(prev => ({ ...prev, features: newFeatures }));
-                                            }}
-                                            className="w-16 px-2 py-1 border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700"
-                                        />
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            const newFeatures = formData.features?.filter((_, i) => i !== index) || [];
-                                            setFormData(prev => ({ ...prev, features: newFeatures }));
-                                        }}
-                                        className="px-2 py-1 text-red-500 hover:text-red-700"
-                                    >
-                                        Remove
-                                    </button>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     ) : (
                         <div className="text-gray-500 text-center py-4 border border-dashed border-gray-300 rounded-md dark:border-gray-600">
@@ -483,6 +909,7 @@ export default function ClassEdit() {
                         </div>
                     )}
                 </div>
+
                 <div className="flex justify-end space-x-4 mt-8">
                     <button
                         type="button"
@@ -528,6 +955,105 @@ export default function ClassEdit() {
                 initialSelectedFeatureIds={formData.features?.map(f => f.featureSlug) || []}
                 classId={id !== 'new' ? parseInt(id) : undefined}
             />
+
+            {/* Class Proficiency Dialog */}
+            {isProficiencyDialogOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-25 z-40 flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+                        <h3 className="text-lg font-semibold mb-4">Add Class Proficiency</h3>
+
+                        <div className="space-y-4">
+                            {/* Feat Selection */}
+                            <div>
+                                <CustomSelect
+                                    label="Select Proficiency Feat"
+                                    popupExtraClassName='w-60'
+                                    triggerExtraClassName="w-60"
+                                    itemExtraClassName="w-68"
+                                    itemTextExtraClassName="w-60"
+                                    value={selectedProficiencyFeat?.id || null}
+                                    onValueChange={(value) => handleFeatSelection(value as number)}
+                                    options={proficiencyFeats.map(feat => ({ value: feat.id, label: feat.name }))}
+                                    placeholder="Choose a proficiency feat"
+                                />
+                            </div>
+
+                            {/* Item Selection - only show if feat is selected */}
+                            {selectedProficiencyFeat && (
+                                <div>
+                                    <CustomSelect
+                                        label="Select Items"
+                                        popupExtraClassName='w-60'
+                                        triggerExtraClassName="w-60"
+                                        itemExtraClassName="w-68"
+                                        itemTextExtraClassName="w-60"
+                                        value={selectedProficiencyItem}
+                                        onValueChange={(value) => handleItemSelection(value as number)}
+                                        options={[
+                                            { value: -1, label: 'All Items' },
+                                            ...proficiencyItems
+                                                .filter(item => !formData.proficiencies?.some(prof =>
+                                                    prof.featId === selectedProficiencyFeat.id && prof.itemId === item.id
+                                                ))
+                                                .sort((a, b) => a.name.localeCompare(b.name))
+                                                .map(item => ({ value: item.id, label: item.name }))
+                                        ]}
+                                        placeholder="Choose items or 'All Items'"
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex justify-end space-x-2 mt-6">
+                            <button
+                                type="button"
+                                onClick={() => setIsProficiencyDialogOpen(false)}
+                                className="px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleAddSelectedProficiency}
+                                disabled={!selectedProficiencyFeat || selectedProficiencyItem === null}
+                                className="px-4 py-2 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Add Proficiency
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Feature Progression Dialog */}
+            {isProgressionDialogOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-25 z-40 flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+                        <h3 className="text-lg font-semibold mb-4">
+                            {editingProgression ? 'Edit Feature Progression' : 'Add Feature Progression'}
+                        </h3>
+
+                        <FeatureProgressionForm
+                            progression={editingProgression}
+                            availableFeatures={formData.features || []}
+                            preSelectedFeature={preSelectedFeature}
+                            onSave={(progression) => {
+                                if (editingProgression) {
+                                    handleUpdateProgression(editingProgression, progression);
+                                } else {
+                                    handleAddProgression(progression);
+                                }
+                                setIsProgressionDialogOpen(false);
+                                setPreSelectedFeature(undefined);
+                            }}
+                            onCancel={() => {
+                                setIsProgressionDialogOpen(false);
+                                setPreSelectedFeature(undefined);
+                            }}
+                        />
+                    </div>
+                </div>
+            )}
         </div >
     );
 }

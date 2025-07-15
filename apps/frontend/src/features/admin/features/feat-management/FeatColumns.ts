@@ -2,8 +2,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { FilterType } from '@/components/generic-list/types';
 import { FeatInQueryResponse } from '@shared/schema';
 import { FEAT_TYPE_SELECT_LIST } from '@shared/static-data';
-import { createContainsFilter, createEqualsFilter } from '@/components/generic-list/filterFunctions';
-import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
+import { createContainsFilter, createEqualsFilter, createArrayIdFilter } from '@/components/generic-list/filterFunctions';
 
 export const FEAT_COLUMNS: ColumnDef<FeatInQueryResponse, unknown>[] = [
     {
@@ -27,7 +26,7 @@ export const FEAT_COLUMNS: ColumnDef<FeatInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 120,
-        filterFn: createEqualsFilter(),
+        filterFn: createArrayIdFilter('typeId'),
         cell: info => {
             const typeId = info.getValue() as number;
             return FEAT_TYPE_SELECT_LIST.find(type => type.value === typeId)?.label || typeId;
@@ -42,74 +41,69 @@ export const FEAT_COLUMNS: ColumnDef<FeatInQueryResponse, unknown>[] = [
         header: 'Description',
         enableResizing: true,
         size: 200,
-        cell: info => {
-            const description = info.getValue() as string;
-            return <ProcessMarkdown id={ `feat-${info.row.original.id}-description` } markdown = { description || ''
-        } />;
+        meta: {
+            isMarkdown: true,
+            truncate: 200,
         },
     },
-{
-    accessorKey: 'benefit',
+    {
+        accessorKey: 'benefit',
         header: 'Benefit',
-            enableResizing: true,
-                size: 200,
-                    cell: info => {
-                        const benefit = info.getValue() as string;
-                        return <ProcessMarkdown id={ `feat-${info.row.original.id}-benefit` } markdown = { benefit || ''
-                    } />;
-},
+        enableResizing: true,
+        size: 200,
+        meta: {
+            isMarkdown: true,
+            truncate: 200,
+        },
     },
-{
-    accessorKey: 'normalEffect',
+    {
+        accessorKey: 'normalEffect',
         header: 'Normal',
-            enableResizing: true,
-                size: 150,
-                    cell: info => {
-                        const normalEffect = info.getValue() as string;
-                        return <ProcessMarkdown id={ `feat-${info.row.original.id}-normalEffect` } markdown = { normalEffect || ''
-                    } />;
-},
+        enableResizing: true,
+        size: 150,
+        meta: {
+            isMarkdown: true,
+            truncate: 200,
+        },
     },
-{
-    accessorKey: 'specialEffect',
+    {
+        accessorKey: 'specialEffect',
         header: 'Special',
-            enableResizing: true,
-                size: 150,
-                    cell: info => {
-                        const specialEffect = info.getValue() as string;
-                        return <ProcessMarkdown id={ `feat-${info.row.original.id}-specialEffect` } markdown = { specialEffect || ''
-                    } />;
-},
+        enableResizing: true,
+        size: 150,
+        meta: {
+            isMarkdown: true,
+            truncate: 200,
+        },
     },
-{
-    accessorKey: 'prerequisites',
+    {
+        accessorKey: 'prerequisites',
         header: 'Prerequisite',
-            enableResizing: true,
-                size: 150,
-                    cell: info => {
-                        const prerequisites = info.getValue() as string;
-                        return <ProcessMarkdown id={ `feat-${info.row.original.id}-prerequisites` } markdown = { prerequisites || ''
-                    } />;
-},
+        enableResizing: true,
+        size: 150,
+        meta: {
+            isMarkdown: true,
+            truncate: 200,
+        },
     },
-{
-    accessorKey: 'repeatable',
+    {
+        accessorKey: 'repeatable',
         header: 'Multi-Times',
-            enableSorting: true,
-                enableColumnFilter: true,
-                    enableResizing: true,
-                        size: 100,
-                            filterFn: createEqualsFilter(),
-                                cell: info => {
-                                    const repeatable = info.getValue() as boolean;
-                                    return repeatable ? 'Yes' : 'No';
-                                },
-                                    meta: {
-        filterType: FilterType.SINGLE_SELECT,
+        enableSorting: true,
+        enableColumnFilter: true,
+        enableResizing: true,
+        size: 100,
+        filterFn: createEqualsFilter(),
+        cell: info => {
+            const repeatable = info.getValue() as boolean;
+            return repeatable ? 'Yes' : 'No';
+        },
+        meta: {
+            filterType: FilterType.SINGLE_SELECT,
             options: [
                 { value: true, label: 'Yes' },
                 { value: false, label: 'No' }
             ]
-    },
-}
+        },
+    }
 ]; 

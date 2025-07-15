@@ -40,6 +40,7 @@ export function FeatList(): React.JSX.Element {
                 itemDesc="feat"
                 routes={routes}
                 deleteServiceFunction={createIdDeleteServiceFunction(FeatService.deleteFeat)}
+                basePath="/admin"
             />
         </div>
     );

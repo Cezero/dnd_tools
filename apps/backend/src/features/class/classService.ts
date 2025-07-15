@@ -23,6 +23,17 @@ export const classService: ClassService = {
         const [classes] = await Promise.all([
             prisma.class.findMany({
                 orderBy: { name: 'asc' },
+                include: {
+                    sourceBookInfo: {
+                        select: {
+                            sourceBookId: true,
+                            pageNumber: true
+                        }
+                    },
+                    features: true,
+                    skills: true,
+                    proficiencies: true,
+                }
             }),
             prisma.class.count(),
         ]);
@@ -62,9 +73,40 @@ export const classService: ClassService = {
                         }
                     }
                 },
+                featureProgression: {
+                    include: {
+                        feature: {
+                            select: {
+                                slug: true,
+                                name: true
+                            }
+                        }
+                    }
+                },
+                proficiencies: {
+                    include: {
+                        feat: {
+                            select: {
+                                name: true
+                            }
+                        },
+                        item: {
+                            select: {
+                                name: true
+                            }
+                        }
+                    }
+                },
                 skills: true,
             },
         });
+
+        const flattenedProficiencies = classData?.proficiencies.map((p) => ({
+            featName: p.feat.name,
+            itemName: p.item.name,
+            featId: p.featId,
+            itemId: p.itemId,
+        })) ?? [];
 
         const flattenedFeatures = classData?.features.map((f) => ({
             description: f.feature.description,
@@ -73,9 +115,21 @@ export const classService: ClassService = {
             level: f.level,
         })) ?? [];
 
+        const flattenedFeatureProgressions = classData?.featureProgression.map((p) => ({
+            featureName: p.feature.name || p.feature.slug,
+            featureSlug: p.featureSlug,
+            level: p.level,
+            aspect: p.aspect,
+            valueInt: p.valueInt,
+            valueString: p.valueString,
+            note: p.note,
+        })) ?? [];
+
         return {
             ...classData,
             features: flattenedFeatures,
+            proficiencies: flattenedProficiencies,
+            featureProgression: flattenedFeatureProgressions,
         } as GetClassResponse;
     },
 
@@ -100,6 +154,22 @@ export const classService: ClassService = {
                         skillId: skill.skillId
                     })) || [],
                 },
+                proficiencies: {
+                    create: data.proficiencies?.map(proficiency => ({
+                        featId: proficiency.featId,
+                        itemId: proficiency.itemId
+                    })) || [],
+                },
+                featureProgression: {
+                    create: data.featureProgression?.map(progression => ({
+                        featureSlug: progression.featureSlug,
+                        level: progression.level,
+                        aspect: progression.aspect,
+                        valueInt: progression.valueInt,
+                        valueString: progression.valueString,
+                        note: progression.note
+                    })) || [],
+                },
             },
         });
 
@@ -111,6 +181,9 @@ export const classService: ClassService = {
             await tx.classSourceMap.deleteMany({ where: { classId: query.id } });
             await tx.classFeatureMap.deleteMany({ where: { classId: query.id } });
             await tx.classSkillMap.deleteMany({ where: { classId: query.id } });
+            await tx.classProficiencies.deleteMany({ where: { classId: query.id } });
+            await tx.classFeatureProgression.deleteMany({ where: { classId: query.id } });
+
             await tx.class.update({
                 where: { id: query.id },
                 data: {
@@ -130,6 +203,22 @@ export const classService: ClassService = {
                     skills: {
                         create: data.skills?.map(skill => ({
                             skillId: skill.skillId
+                        })) || [],
+                    },
+                    proficiencies: {
+                        create: data.proficiencies?.map(proficiency => ({
+                            featId: proficiency.featId,
+                            itemId: proficiency.itemId
+                        })) || [],
+                    },
+                    featureProgression: {
+                        create: data.featureProgression?.map(progression => ({
+                            featureSlug: progression.featureSlug,
+                            level: progression.level,
+                            aspect: progression.aspect,
+                            valueInt: progression.valueInt,
+                            valueString: progression.valueString,
+                            note: progression.note
                         })) || [],
                     },
                 },

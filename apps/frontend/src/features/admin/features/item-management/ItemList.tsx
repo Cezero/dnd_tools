@@ -40,6 +40,7 @@ export function ItemList(): React.JSX.Element {
                 itemDesc="item"
                 routes={routes}
                 deleteServiceFunction={createIdDeleteServiceFunction(ItemService.deleteItem)}
+                basePath="/admin"
             />
         </div>
     );

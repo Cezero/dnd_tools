@@ -10,7 +10,7 @@ import { RACE_TRAIT_COLUMNS } from '@/features/admin/features/race-management/Ra
 import { RaceService } from '@/features/admin/features/race-management/RaceService';
 import { RaceTraitService } from '@/features/admin/features/race-management/RaceTraitService';
 import { RaceInQueryResponse, RaceTraitSchema } from '@shared/schema';
-import { routes } from './RaceConfig';
+import { routes, raceTraitRoutes } from './RaceConfig';
 
 
 export function RaceList(): React.JSX.Element {
@@ -50,6 +50,7 @@ export function RaceList(): React.JSX.Element {
                 itemDesc="race"
                 routes={routes}
                 deleteServiceFunction={createIdDeleteServiceFunction(RaceService.deleteRace)}
+                basePath="/admin"
             />
 
             <h2 className="text-xl font-bold mb-4 mt-8">Race Trait Definitions</h2>
@@ -66,8 +67,9 @@ export function RaceList(): React.JSX.Element {
                 columns={RACE_TRAIT_COLUMNS}
                 serviceFunction={() => RaceTraitService.getRaceTraits({})}
                 itemDesc="race trait"
-                routes={routes}
+                routes={raceTraitRoutes}
                 deleteServiceFunction={createSlugDeleteServiceFunction(RaceTraitService.deleteRaceTrait)}
+                basePath="/admin"
             />
         </div>
     );

@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { QueryResponseSchema } from './query.js';
 
+export const FeatQuerySchema = z.object({
+    queryType: z.enum(['proficiency']),
+});
+
 export const FeatIdParamSchema = z.object({
     id: z.string().transform((val: string) => parseInt(val)),
 });
@@ -42,6 +46,10 @@ export const FeatSchema = BaseFeatSchema.extend({
 
 export const FeatInQueryResponseSchema = FeatSchema.omit({ benefits: true, prereqs: true });
 
+export const FeatQueryResponseSchema = QueryResponseSchema.extend({
+    results: z.array(FeatSchema),
+});
+
 export const GetAllFeatsResponseSchema = QueryResponseSchema.extend({
     results: z.array(FeatInQueryResponseSchema),
 });
@@ -56,8 +64,10 @@ export type FeatIdParamRequest = z.infer<typeof FeatIdParamSchema>;
 export type FeatInQueryResponse = z.infer<typeof FeatInQueryResponseSchema>;
 export type CreateFeatRequest = z.infer<typeof CreateFeatSchema>;
 export type UpdateFeatRequest = z.infer<typeof UpdateFeatSchema>;
+export type FeatQueryRequest = z.infer<typeof FeatQuerySchema>;
 
 export type GetAllFeatsResponse = z.infer<typeof GetAllFeatsResponseSchema>;
+export type FeatQueryResponse = z.infer<typeof FeatQueryResponseSchema>;
 export type GetFeatResponse = z.infer<typeof GetFeatResponseSchema>;
 
 export type FeatBenefitMap = z.infer<typeof FeatBenefitMapSchema>;

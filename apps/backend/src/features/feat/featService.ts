@@ -1,13 +1,16 @@
-import { PrismaClient } from '@shared/prisma-client';
+import { Prisma, PrismaClient } from '@shared/prisma-client';
 import {
-    FeatIdParamRequest, 
+    FeatIdParamRequest,
     CreateFeatRequest,
     UpdateFeatRequest,
     GetAllFeatsResponse,
     GetFeatResponse,
     CreateResponse,
-    UpdateResponse
+    UpdateResponse,
+    FeatQueryResponse,
+    FeatQueryRequest
 } from '@shared/schema';
+import { FeatBenefitType } from '@shared/static-data';
 
 import type { FeatService } from './types';
 
@@ -22,6 +25,35 @@ export const featService: FeatService = {
             prisma.feat.count(),
         ]);
 
+        return {
+            total: feats.length,
+            results: feats,
+        };
+    },
+
+    async featQuery(query: FeatQueryRequest): Promise<FeatQueryResponse> {
+        let whereClause: Prisma.FeatWhereInput = {};
+        if (query.queryType === 'proficiency') {
+            whereClause = {
+                benefits: {
+                    some: {
+                        typeId: FeatBenefitType.PROFICIENCY
+                    }
+                }
+            }
+        }
+        const [feats] = await Promise.all([
+            prisma.feat.findMany({
+                where: whereClause,
+                include: {
+                    benefits: true,
+                    prereqs: true,
+                },
+            }),
+            prisma.feat.count({
+                where: whereClause,
+            }),
+        ]);
         return {
             total: feats.length,
             results: feats,

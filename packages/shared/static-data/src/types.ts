@@ -52,6 +52,11 @@ export interface Language extends CoreComponent {
     alphabet: string;
 }
 
+export interface Proficiency extends CoreComponent {
+    itemTypeId: number;
+    category: number;
+}
+
 export interface Feat extends CoreComponent {
     type: string;
     description: string;
@@ -110,6 +115,7 @@ export type AlignmentMap = BaseMap<CoreComponentAbbreviation>;
 export type SizeMap = BaseMap<Size>;
 export type LanguageMap = BaseMap<Language>;
 export type EditionMap = BaseMap<CoreComponentAbbreviation>;
+export type ProficiencyMap = BaseMap<Proficiency>;
 export type FeatMap = BaseMap<Feat>;
 export type ItemMap = BaseMap<Item>;
 export type SpellMap = BaseMap<Spell>;

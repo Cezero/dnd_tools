@@ -1,4 +1,4 @@
-import { buildValidatedRouter } from '@/lib/buildValidatedRouter';
+import { buildValidatedRouter } from '@/lib/buildValidatedRouter.js';
 import { requireAdmin } from '@/middleware/authMiddleware';
 import {
     ReferenceTableSlugParamSchema,

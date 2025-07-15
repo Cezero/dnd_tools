@@ -12,3 +12,8 @@ export const routes: RouteConfig[] = [
     { path: 'races/traits/:slug', component: RaceTraitDetail, exact: true, requireAuth: true, requireAdmin: true, routeType: 'detail' },
     { path: 'races/traits/:slug/edit', component: RaceTraitEdit, exact: true, requireAuth: true, requireAdmin: true, routeType: 'edit' },
 ];
+
+export const raceTraitRoutes: RouteConfig[] = [
+    { path: 'races/traits/:slug', component: RaceTraitDetail, exact: true, requireAuth: true, requireAdmin: true, routeType: 'detail' },
+    { path: 'races/traits/:slug/edit', component: RaceTraitEdit, exact: true, requireAuth: true, requireAdmin: true, routeType: 'edit' },
+];

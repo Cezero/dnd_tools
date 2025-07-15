@@ -57,7 +57,10 @@ export function ClassFeatureDetail() {
                 <div className={innerCellContentClasses}>
                     <div className="flex justify-between items-start mb-2">
                         <div>
-                            <h1 className="text-2xl font-bold mb-2">{feature.slug}</h1>
+                            <h1 className="text-2xl font-bold mb-2">{feature.name || feature.slug}</h1>
+                            {feature.name && feature.name !== feature.slug && (
+                                <p className="text-gray-600 dark:text-gray-400 text-sm">Slug: {feature.slug}</p>
+                            )}
                         </div>
                     </div>
                     <div className="mt-3 p-2 w-full rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert">

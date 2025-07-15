@@ -11,13 +11,15 @@ interface FilterSubmenuProps {
     filterConfig: any; // Column meta containing filterType and options
     currentFilter: any; // Current filter value from columnFilters
     onFilterChange: (value: any) => void;
+    columnFilters?: any[]; // All current column filters for dynamic options
 }
 
 export const FilterSubmenu: React.FC<FilterSubmenuProps> = ({
     columnId,
     filterConfig,
     currentFilter,
-    onFilterChange
+    onFilterChange,
+    columnFilters = []
 }) => {
     const [textValue, setTextValue] = useState(currentFilter?.value || '');
     const inputRef = useRef<HTMLInputElement>(null);
@@ -34,9 +36,18 @@ export const FilterSubmenu: React.FC<FilterSubmenuProps> = ({
 
     const { filterType, options } = filterConfig;
 
+    // Handle dynamic options function
+    const getOptions = () => {
+        if (typeof options === 'function') {
+            return options(columnFilters);
+        }
+        return options;
+    };
+
     switch (filterType) {
         case FilterType.SINGLE_SELECT:
-            if (!options) {
+            const singleSelectOptions = getOptions();
+            if (!singleSelectOptions) {
                 return (
                     <div className="px-2 py-1 text-sm text-gray-500 dark:text-gray-400">
                         No options available
@@ -45,7 +56,7 @@ export const FilterSubmenu: React.FC<FilterSubmenuProps> = ({
             }
             return (
                 <ContextMenuSingleSelect
-                    options={options}
+                    options={singleSelectOptions}
                     selected={currentFilter?.value || null}
                     onValueChange={(value) => {
                         if (value === null) {
@@ -58,7 +69,8 @@ export const FilterSubmenu: React.FC<FilterSubmenuProps> = ({
             );
 
         case FilterType.MULTI_SELECT:
-            if (!options) {
+            const multiSelectOptions = getOptions();
+            if (!multiSelectOptions) {
                 return (
                     <div className="px-2 py-1 text-sm text-gray-500 dark:text-gray-400">
                         No options available
@@ -76,7 +88,7 @@ export const FilterSubmenu: React.FC<FilterSubmenuProps> = ({
 
             return (
                 <ContextMenuMultiSelect
-                    options={options}
+                    options={multiSelectOptions}
                     selected={selectedValues}
                     onValueChange={(values) => {
                         if (values.length === 0) {

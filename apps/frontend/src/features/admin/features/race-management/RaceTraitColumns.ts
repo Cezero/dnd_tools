@@ -25,30 +25,29 @@ export const RACE_TRAIT_COLUMNS: ColumnDef<z.infer<typeof RaceTraitSchema>, unkn
         header: 'Description',
         enableResizing: true,
         size: 300,
-        cell: info => {
-            const description = info.getValue() as string;
-            return <ProcessMarkdown id={ `race-trait-${info.row.original.slug}-description` } markdown = { description || ''
-        } />;
+        meta: {
+            truncate: 200,
+            isMarkdown: true,
         },
     },
-{
-    accessorKey: 'hasValue',
+    {
+        accessorKey: 'hasValue',
         header: 'Has Value',
-            enableSorting: true,
-                enableColumnFilter: true,
-                    enableResizing: true,
-                        size: 100,
-                            filterFn: createEqualsFilter(),
-                                cell: info => {
-                                    const hasValue = info.getValue() as boolean;
-                                    return hasValue ? 'Yes' : 'No';
-                                },
-                                    meta: {
-        filterType: FilterType.SINGLE_SELECT,
+        enableSorting: true,
+        enableColumnFilter: true,
+        enableResizing: true,
+        size: 100,
+        filterFn: createEqualsFilter(),
+        cell: info => {
+            const hasValue = info.getValue() as boolean;
+            return hasValue ? 'Yes' : 'No';
+        },
+        meta: {
+            filterType: FilterType.SINGLE_SELECT,
             options: [
                 { value: true, label: 'Yes' },
                 { value: false, label: 'No' }
             ]
-    },
-}
+        },
+    }
 ]; 

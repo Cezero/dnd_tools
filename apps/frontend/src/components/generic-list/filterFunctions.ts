@@ -1,16 +1,24 @@
 import { filterFns } from '@tanstack/react-table';
 
 // Generic filter function for arrays of objects with a specific ID field
+// Also handles single values by treating them as single-element arrays
 export const createArrayIdFilter = (idField: string) => (row: any, columnId: string, filterValue: any) => {
     const value = row.getValue(columnId);
 
     // Handle null/undefined values
-    if (!value || !Array.isArray(value)) {
+    if (!value) {
         return false;
     }
 
-    // Extract the IDs from the array of objects
-    const ids = value.map((item: any) => item[idField]);
+    // Extract the IDs - handle both single values and arrays
+    let ids: any[];
+    if (Array.isArray(value)) {
+        // If it's an array of objects, extract the IDs
+        ids = value.map((item: any) => item[idField]);
+    } else {
+        // If it's a single value, treat it as a single-element array
+        ids = [value];
+    }
 
     // Handle the custom filter structure used by GenericList
     // filterValue can be either a direct value or an object with { id, value }

@@ -127,7 +127,8 @@ export const ColumnHeaderContextMenu: React.FC<ColumnHeaderContextMenuProps> = (
                                     <Tooltip.Popup className="px-2 py-1 text-xs text-white bg-gray-900 dark:bg-gray-700 rounded shadow-lg">
                                         {formatFilterTooltip(
                                             columnFilters.find(f => f.id === header.id),
-                                            header.column.columnDef.meta as any
+                                            header.column.columnDef.meta as any,
+                                            columnFilters
                                         )}
                                     </Tooltip.Popup>
                                 </Tooltip.Positioner>
@@ -210,6 +211,7 @@ export const ColumnHeaderContextMenu: React.FC<ColumnHeaderContextMenuProps> = (
                                                 columnId={header.id}
                                                 filterConfig={header.column.columnDef.meta}
                                                 currentFilter={columnFilters.find(f => f.id === header.id)}
+                                                columnFilters={columnFilters}
                                                 onFilterChange={(value) => {
                                                     handleFilterChange(header.id, value);
                                                     setIsFilterSubmenuOpen(false);

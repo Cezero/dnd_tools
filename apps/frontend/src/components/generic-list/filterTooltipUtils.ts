@@ -7,11 +7,21 @@ interface FilterValue {
 
 export const formatFilterTooltip = (
     filter: FilterValue,
-    columnMeta: GenericListColumnMeta
+    columnMeta: GenericListColumnMeta,
+    columnFilters?: any[] // Add columnFilters parameter for dynamic options
 ): string => {
     if (!filter || !filter.value) {
         return '';
     }
+
+    // Helper function to get options (handle both static arrays and dynamic functions)
+    const getOptions = () => {
+        if (!columnMeta.options) return null;
+        if (typeof columnMeta.options === 'function') {
+            return columnMeta.options(columnFilters || []);
+        }
+        return columnMeta.options;
+    };
 
     switch (columnMeta.filterType) {
         case FilterType.TEXT_INPUT:
@@ -20,8 +30,9 @@ export const formatFilterTooltip = (
 
         case FilterType.SINGLE_SELECT:
             // For single select, find the label for the selected value
-            if (columnMeta.options) {
-                const option = columnMeta.options.find(opt => opt.value === filter.value);
+            const singleSelectOptions = getOptions();
+            if (singleSelectOptions) {
+                const option = singleSelectOptions.find(opt => opt.value === filter.value);
                 return option ? option.label : String(filter.value);
             }
             return String(filter.value);
@@ -32,10 +43,11 @@ export const formatFilterTooltip = (
                 const logicType = filter.value.logicType || 'or';
                 const delimiter = logicType === 'and' ? ' & ' : ' | ';
 
-                if (columnMeta.options) {
+                const multiSelectOptions = getOptions();
+                if (multiSelectOptions) {
                     // Map values to labels
                     const labels = filter.value.values.map((value: string | number) => {
-                        const option = columnMeta.options!.find(opt => opt.value === value);
+                        const option = multiSelectOptions.find(opt => opt.value === value);
                         return option ? option.label : String(value);
                     });
                     return labels.join(delimiter);

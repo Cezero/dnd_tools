@@ -30,29 +30,33 @@ model Class {
     refProgression   Int
     willProgression  Int
 
-    features         ClassFeatureMap[]
-    skills           ClassSkillMap[]
-    sourceBookInfo   ClassSourceMap[]
-    spellLevels      SpellLevelMap[]
-    proficiencies    ClassProficiencies[]
+    features            ClassFeatureMap[]
+    featureProgression  ClassFeatureProgression[]
+    skills              ClassSkillMap[]
+    sourceBookInfo      ClassSourceMap[]
+    spellLevels         SpellLevelMap[]
+    proficiencies       ClassProficiencies[]
 }
 
 model ClassFeature {
     slug        String  @id
+    name        String  @default("")
     description String  @db.Text
 
     classes ClassFeatureMap[]
+    progressions ClassFeatureProgression[]
 }
 
 model ClassProficiencies {
     classId     Int
     featId      Int
-    itemId      Int?
+    itemId      Int  // -1 means "all items"
 
     class  Class  @relation(fields: [classId], references: [id])
     feat   Feat   @relation(fields: [featId], references: [id])
+    item   Item   @relation(fields: [itemId], references: [id])
 
-    @@id([classId, featId])
+    @@id([classId, featId, itemId])
 }
 
 model ClassFeatureMap {
@@ -64,6 +68,21 @@ model ClassFeatureMap {
     feature ClassFeature @relation(fields: [featureSlug], references: [slug])
 
     @@id([classId, featureSlug])
+}
+
+model ClassFeatureProgression {
+    featureSlug  String
+    classId      Int
+    level        Int
+    aspect       String   // e.g. "usesPerDay", "damageDie", "bonus", "size", etc.
+    valueInt     Int?     // For numeric values
+    valueString  String?  // For dice, named sizes, etc.
+    note         String?  // Clarifying or descriptive text
+
+   feature      ClassFeature @relation(fields: [featureSlug], references: [slug])
+   class        Class        @relation(fields: [classId], references: [id])
+
+   @@id([featureSlug, classId, level, aspect])
 }
 
 model ClassSkillMap {
@@ -332,8 +351,10 @@ model Item {
 
     ItemType   ItemType @relation(fields: [typeId], references: [id])
 
-    characterItems CharacterItem[]
-    itemTemplate   ItemTemplate[]
+    characterItems     CharacterItem[]
+    itemTemplate       ItemTemplate[]
+    classProficiencies ClassProficiencies[]
+
 }
 
 model ItemType {

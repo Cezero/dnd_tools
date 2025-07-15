@@ -59,6 +59,12 @@ export interface GenericListProps<T> {
     initialLimit?: number;
     routes?: RouteConfig[];
     deleteServiceFunction?: DeleteServiceFunction;
+    basePath?: string; // Optional base path prefix for navigation links (e.g., '/admin')
+
+    // Selection props
+    isOptionSelector?: boolean;
+    selectedIds?: (string | number)[];
+    onSelectedIdsChange?: (selectedIds: (string | number)[]) => void;
 }
 
 export interface GenericListColumnMeta {
@@ -66,4 +72,6 @@ export interface GenericListColumnMeta {
     filterType?: FilterType;
     options?: SelectOption[];
     placeholder?: string;
+    truncate?: number; // Number of characters to truncate to
+    isMarkdown?: boolean; // Whether to wrap content in ProcessMarkdown
 }

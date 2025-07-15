@@ -21,14 +21,22 @@ export const CLASS_FEATURE_COLUMNS: ColumnDef<z.infer<typeof ClassFeatureSchema>
         },
     },
     {
+        accessorKey: 'name',
+        header: 'Name',
+        enableSorting: true,
+        enableColumnFilter: true,
+        enableResizing: true,
+        size: 200,
+        filterFn: createContainsFilter(),
+    },
+    {
         accessorKey: 'description',
         header: 'Description',
         enableResizing: true,
         size: 300,
-        cell: info => {
-            const description = info.getValue() as string;
-            return <ProcessMarkdown id={ `class-feature-${info.row.original.slug}-description` } markdown = { description || ''
-        } />;
+        meta: {
+            truncate: 200,
+            isMarkdown: true,
         },
     }
 ]; 

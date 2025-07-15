@@ -9,6 +9,7 @@ import {
     UpdateResponseSchema,
     CreateResponseSchema,
     GetAllItemsResponseSchema,
+    ItemQuerySchema,
 } from '@shared/schema';
 
 /**
@@ -65,5 +66,12 @@ export const ItemService = {
         method: 'DELETE',
         paramsSchema: ItemIdParamSchema,
         responseSchema: UpdateResponseSchema,
+    }),
+
+    itemQuery: typedApi<typeof ItemQuerySchema, typeof GetAllItemsResponseSchema>({
+        path: '/items/query',
+        method: 'GET',
+        requestSchema: ItemQuerySchema,
+        responseSchema: GetAllItemsResponseSchema,
     }),
 }; 

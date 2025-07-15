@@ -12,3 +12,8 @@ export const routes: RouteConfig[] = [
     { path: 'classes/features/:slug', component: ClassFeatureDetail, exact: true, requireAuth: true, requireAdmin: true, routeType: 'detail' },
     { path: 'classes/features/:slug/edit', component: ClassFeatureEdit, exact: true, requireAuth: true, requireAdmin: true, routeType: 'edit' },
 ];
+
+export const classFeatureRoutes: RouteConfig[] = [
+    { path: 'classes/features/:slug', component: ClassFeatureDetail, exact: true, requireAuth: true, requireAdmin: true, routeType: 'detail' },
+    { path: 'classes/features/:slug/edit', component: ClassFeatureEdit, exact: true, requireAuth: true, requireAdmin: true, routeType: 'edit' },
+];

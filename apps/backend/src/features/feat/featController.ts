@@ -1,12 +1,14 @@
 import { Response } from 'express';
 
-import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types'
+import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput, ValidatedQueryT } from '@/util/validated-types'
 import {
     FeatIdParamRequest,
     GetFeatResponse,
     CreateFeatRequest,
     UpdateFeatRequest,
     GetAllFeatsResponse,
+    FeatQueryRequest,
+    FeatQueryResponse,
 } from '@shared/schema';
 
 import { featService } from './featService.js';
@@ -17,6 +19,11 @@ import { featService } from './featService.js';
  */
 export async function GetAllFeats(req: ValidatedNoInput<GetAllFeatsResponse>, res: Response) {
     const feats = await featService.getAllFeats();
+    res.json(feats);
+}
+
+export async function GetFeatQuery(req: ValidatedQueryT<FeatQueryRequest, FeatQueryResponse>, res: Response) {
+    const feats = await featService.featQuery(req.query);
     res.json(feats);
 }
 

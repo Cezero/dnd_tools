@@ -28,6 +28,7 @@ export function ClassFeatureEdit() {
     // Initialize form data with default values
     const initialFormData: ClassFeatureFormData = {
         slug: '',
+        name: '',
         description: '',
         ...(slug !== 'new' && { slug: slug })
     };
@@ -150,7 +151,7 @@ export function ClassFeatureEdit() {
                 setFormData={setFormData}
                 validation={form.validation}
             >
-                <div className="space-y-2">
+                <div className="space-y-4">
                     <div className="flex items-center justify-between gap-2">
                         <ValidatedInput
                             field="slug"
@@ -162,6 +163,19 @@ export function ClassFeatureEdit() {
                             required
                             placeholder="e.g., spellcasting, weapon-proficiency"
                             disabled={slug !== 'new'}
+                        />
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                        <ValidatedInput
+                            field="name"
+                            label="Feature Name"
+                            type="text"
+                            componentExtraClassName="flex items-center gap-2"
+                            labelExtraClassName="w-20"
+                            inputExtraClassName="w-auto"
+                            required
+                            placeholder="e.g., Spellcasting, Weapon Proficiency"
+                            data-1p-ignore
                         />
                     </div>
                     <div className="space-y-2">

@@ -36,10 +36,11 @@ export function ReferenceTablesList(): React.JSX.Element {
             <GenericList<ReferenceTableSummary>
                 storageKey="reference-tables-list"
                 columns={REFERENCE_TABLE_COLUMNS}
-                serviceFunction={() => ReferenceTableService.getReferenceTables({ sort: 'name', order: 'asc' })}
+                serviceFunction={() => ReferenceTableService.getReferenceTables({})}
                 itemDesc="reference table"
                 routes={routes}
                 deleteServiceFunction={createSlugDeleteServiceFunction(ReferenceTableService.deleteReferenceTable)}
+                basePath="/admin"
             />
         </div>
     );

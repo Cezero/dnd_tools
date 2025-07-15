@@ -8,6 +8,7 @@ import { ClassService } from '@/features/admin/features/class-management/ClassSe
 import { generateClassProgression } from '@/lib/ClassProgression';
 import { GetClassResponse } from '@shared/schema';
 import { RPG_DICE, EDITION_MAP, ABILITY_MAP, _SKILL_MAP } from '@shared/static-data';
+import { formatClassProficiencies, formatProgressionValue } from '@/lib/Formatters';
 
 export default function ClassDetail() {
     const { id } = useParams();
@@ -109,6 +110,16 @@ export default function ClassDetail() {
                         </div>
                     )}
 
+                    {/* Class Proficiencies Section */}
+                    {cls.proficiencies && cls.proficiencies.length > 0 && (
+                        <div className="mt-4">
+                            <h3 className="text-lg font-semibold mb-2">Class Proficiencies</h3>
+                            <div className="flex flex-wrap gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md">
+                                {formatClassProficiencies(cls.proficiencies)}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Class Features Section */}
                     {cls.features && cls.features.length > 0 && (
                         <div className="mt-4">
@@ -119,11 +130,31 @@ export default function ClassDetail() {
                                     const groupedFeatures = cls.features.reduce((acc, feature) => {
                                         const level = feature.level;
                                         if (!acc[level]) {
-                                            acc[level] = [];
+                                            acc[level] = { features: [], progressions: [] };
                                         }
-                                        acc[level].push(feature);
+                                        acc[level].features.push(feature);
                                         return acc;
-                                    }, {} as Record<number, typeof cls.features>);
+                                    }, {} as Record<number, { features: typeof cls.features, progressions: any[] }>);
+
+                                    // Add progressions to their respective levels, but suppress if feature is first granted at same level
+                                    if (cls.featureProgression && cls.featureProgression.length > 0) {
+                                        cls.featureProgression.forEach(progression => {
+                                            const level = progression.level;
+                                            if (!groupedFeatures[level]) {
+                                                groupedFeatures[level] = { features: [], progressions: [] };
+                                            }
+
+                                            // Check if this feature is first granted at this level
+                                            const featureFirstGrantedAtLevel = cls.features?.some(feature =>
+                                                feature.featureSlug === progression.featureSlug && feature.level === level
+                                            );
+
+                                            // Only add progression if feature is not first granted at this level
+                                            if (!featureFirstGrantedAtLevel) {
+                                                groupedFeatures[level].progressions.push(progression);
+                                            }
+                                        });
+                                    }
 
                                     // Sort levels and render each group
                                     return Object.keys(groupedFeatures)
@@ -132,9 +163,17 @@ export default function ClassDetail() {
                                             <div key={level} className="border border-gray-200 dark:border-gray-600 rounded-md p-3">
                                                 <h4 className="text-md font-medium mb-2">Level {level}</h4>
                                                 <div className="space-y-2">
-                                                    {groupedFeatures[parseInt(level)].map((feature, index) => (
-                                                        <div key={index} className="p-2">
+                                                    {/* Features */}
+                                                    {groupedFeatures[parseInt(level)].features.map((feature, index) => (
+                                                        <div key={`feature-${index}`} className="p-2">
                                                             <ProcessMarkdown markdown={feature.description} id='description' />
+                                                        </div>
+                                                    ))}
+                                                    {/* Progressions */}
+                                                    {groupedFeatures[parseInt(level)].progressions.map((progression, index) => (
+                                                        <div key={`progression-${index}`} className="p-2">
+                                                            <span className="font-semibold">{progression.featureName || progression.featureSlug}:</span> {formatProgressionValue(progression.aspect, progression.valueInt, progression.valueString)}
+                                                            {progression.note && ` (${progression.note})`}
                                                         </div>
                                                     ))}
                                                 </div>

@@ -9,8 +9,7 @@ import {
     CLASS_MAP,
     SIZE_MAP
 } from '@shared/static-data';
-import { createContainsFilter, createEqualsFilter } from '@/components/generic-list/filterFunctions';
-import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
+import { createContainsFilter, createEqualsFilter, createArrayIdFilter } from '@/components/generic-list/filterFunctions';
 
 export const RACE_COLUMNS: ColumnDef<RaceInQueryResponse, unknown>[] = [
     {
@@ -34,7 +33,7 @@ export const RACE_COLUMNS: ColumnDef<RaceInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 100,
-        filterFn: createEqualsFilter(),
+        filterFn: createArrayIdFilter('editionId'),
         cell: info => {
             const editionId = info.getValue() as number;
             return EDITION_MAP[editionId]?.abbreviation || '';
@@ -69,54 +68,53 @@ export const RACE_COLUMNS: ColumnDef<RaceInQueryResponse, unknown>[] = [
         header: 'Description',
         enableResizing: true,
         size: 200,
-        cell: info => {
-            const description = info.getValue() as string;
-            return <ProcessMarkdown id={ `race-${info.row.original.id}-description` } markdown = { description || ''
-        } />;
+        meta: {
+            truncate: 200,
+            isMarkdown: true,
         },
     },
-{
-    accessorKey: 'sizeId',
+    {
+        accessorKey: 'sizeId',
         header: 'Size',
-            enableSorting: true,
-                enableColumnFilter: true,
-                    enableResizing: true,
-                        size: 100,
-                            filterFn: createEqualsFilter(),
-                                cell: info => {
-                                    const sizeId = info.getValue() as number;
-                                    return SIZE_MAP[sizeId]?.name || '';
-                                },
-                                    meta: {
-        filterType: FilterType.SINGLE_SELECT,
+        enableSorting: true,
+        enableColumnFilter: true,
+        enableResizing: true,
+        size: 100,
+        filterFn: createEqualsFilter(),
+        cell: info => {
+            const sizeId = info.getValue() as number;
+            return SIZE_MAP[sizeId]?.name || '';
+        },
+        meta: {
+            filterType: FilterType.SINGLE_SELECT,
             options: SIZE_SELECT_LIST,
         },
-},
-{
-    accessorKey: 'speed',
-        header: 'Speed',
-            enableSorting: true,
-                enableResizing: true,
-                    size: 100,
     },
-{
-    accessorKey: 'favoredClassId',
+    {
+        accessorKey: 'speed',
+        header: 'Speed',
+        enableSorting: true,
+        enableResizing: true,
+        size: 100,
+    },
+    {
+        accessorKey: 'favoredClassId',
         header: 'Favored Class',
-            enableSorting: true,
-                enableColumnFilter: true,
-                    enableResizing: true,
-                        size: 120,
-                            filterFn: createEqualsFilter(),
-                                cell: info => {
-                                    const favoredClassId = info.getValue() as number;
-                                    if (favoredClassId === -1) {
-                                        return 'Any';
-                                    }
-                                    return CLASS_MAP[favoredClassId]?.name || '';
-                                },
-                                    meta: {
-        filterType: FilterType.SINGLE_SELECT,
+        enableSorting: true,
+        enableColumnFilter: true,
+        enableResizing: true,
+        size: 120,
+        filterFn: createEqualsFilter(),
+        cell: info => {
+            const favoredClassId = info.getValue() as number;
+            if (favoredClassId === -1) {
+                return 'Any';
+            }
+            return CLASS_MAP[favoredClassId]?.name || '';
+        },
+        meta: {
+            filterType: FilterType.SINGLE_SELECT,
             options: CLASS_SELECT_LIST,
         },
-}
+    }
 ]; 
