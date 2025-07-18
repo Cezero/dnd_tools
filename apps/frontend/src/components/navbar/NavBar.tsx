@@ -1,19 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 import { withAuthContext } from '@/components/auth/withAuth';
 import { ThemeToggle } from '@/components/navbar/themeToggle';
-import { FeatureNavigation } from '@/features/FeatureRoutes';
 import { NavBarService } from '@/services/NavBarService';
-import { EDITION_SELECT_LIST, EditionSelect } from '@shared/static-data';
+import { EDITION_SELECT_LIST, SelectOption } from '@shared/static-data';
 
 import type { NavBarProps } from './types';
 
 function NavBarComponent({ auth }: NavBarProps): React.JSX.Element {
-    const location = useLocation();
     const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const [editions, setEditions] = useState<EditionSelect[]>([]);
+    const [editions, setEditions] = useState<SelectOption[]>([]);
     const [selectedEdition, setSelectedEdition] = useState<string>('4');
     const [isUpdatingEdition, setIsUpdatingEdition] = useState<boolean>(false);
 
@@ -60,7 +58,7 @@ function NavBarComponent({ auth }: NavBarProps): React.JSX.Element {
             const editionIdForBackend = parseInt(newEditionId, 10);
 
             // Use NavBarService instead of direct auth call
-            const response = await NavBarService.updatePreferredEdition(editionIdForBackend);
+            await NavBarService.updatePreferredEdition(editionIdForBackend);
 
             // Update auth context with new user data
             await auth.UpdatePreferredEdition(editionIdForBackend);
@@ -74,37 +72,11 @@ function NavBarComponent({ auth }: NavBarProps): React.JSX.Element {
     };
 
     return (
-        <nav className="bg-gray-100 dark:bg-gray-800 h-11 shadow flex">
+        <nav className="sticky top-0 z-50 h-11 bg-gray-100 dark:bg-gray-800 shadow flex">
             <div className="flex items-center pl-4">
                 <Link to="/" className="font-bold text-lg">DnD Tools</Link>
             </div>
-            <div className="flex items-end space-x-1 ml-6">
-                {FeatureNavigation.map((item) => {
-                    const isActive = location.pathname.startsWith(item.path);
-                    return (
-                        <Link
-                            key={item.path}
-                            to={item.path}
-                            className={`px-2 border border-b-0 border-gray-300 dark:border-gray-600 rounded-t-lg 
-                ${isActive ? 'bg-white dark:bg-gray-900 font-bold' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-                        >
-                            {item.label}
-                        </Link>
-                    );
-                })}
-            </div>
-            <div className="flex items-end space-x-1 mr-6 ml-auto">
-                {auth.user && auth.user.isAdmin && (
-                    <Link
-                        to="/admin"
-                        className={`px-2 border border-b-0 border-gray-300 dark:border-gray-600 rounded-t-lg 
-              ${location.pathname.startsWith('/admin') ? 'bg-white dark:bg-gray-900 font-bold' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-                    >
-                        Admin
-                    </Link>
-                )}
-            </div>
-            <div className="flex items-center space-x-2 pr-4">
+            <div className="flex items-center space-x-2 pr-4 ml-auto">
                 {editions.length > 0 && (
                     <div className="flex items-center space-x-1">
                         <select

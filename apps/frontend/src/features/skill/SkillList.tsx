@@ -1,0 +1,49 @@
+import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+
+import { useAuthAuto } from '@/components/auth';
+import { GenericList } from '@/components/generic-list/GenericList';
+import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
+import { SKILL_COLUMNS } from '@/features/skill/SkillColumns';
+import { SkillService } from '@/features/skill/SkillService';
+import { SkillInQueryResponse } from '@shared/schema';
+import { routes } from './SkillConfig';
+
+export function SkillList(): React.JSX.Element {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { isLoading: isAuthLoading, isAdmin } = useAuthAuto();
+
+    const HandleNewSkillClick = (): void => {
+        navigate('/admin/skills/new/edit', { state: { fromListParams: location.search } });
+    };
+
+    if (isAuthLoading) {
+        return <div className="p-4">Loading...</div>;
+    }
+
+    return (
+        <div className="p-4">
+            <h1 className="text-2xl font-bold mb-4">Skills</h1>
+            {isAdmin && (
+                <div className="mb-4 flex justify-end">
+                    <button
+                        onClick={HandleNewSkillClick}
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                    >
+                        New Skill
+                    </button>
+                </div>
+            )}
+            <GenericList<SkillInQueryResponse>
+                storageKey="skills-list"
+                columns={SKILL_COLUMNS}
+                serviceFunction={() => SkillService.getSkills({})}
+                itemDesc="skill"
+                routes={routes}
+                deleteServiceFunction={createIdDeleteServiceFunction(SkillService.deleteSkill)}
+                basePath="/admin"
+            />
+        </div>
+    );
+} 

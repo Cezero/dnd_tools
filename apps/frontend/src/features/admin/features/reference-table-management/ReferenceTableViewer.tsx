@@ -14,8 +14,8 @@ export function ReferenceTableViewer() {
     const location = useLocation();
     const fromListParams = location.state?.fromListParams || '';
 
-    const innerCellContentClasses = "p-3 bg-white dark:bg-gray-700 dark:border-gray-500 rounded-lg border w-full";
-    const outerContainerClasses = "w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-500 rounded-lg shadow-lg p-1";
+    const innerCellContentClasses = "p-3 bg-content border-content rounded-lg border w-full";
+    const outerContainerClasses = "w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-600 rounded-lg shadow-lg p-1";
 
     const [tableSummary, setTableSummary] = useState<ReferenceTableSummary | null>(null);
 

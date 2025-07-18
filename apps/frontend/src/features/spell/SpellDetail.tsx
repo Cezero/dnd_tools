@@ -32,8 +32,8 @@ export function SpellDetail(): React.JSX.Element {
         Initialize();
     }, [id, location.state]);
 
-    const innerCellContentClasses = "p-3 bg-white dark:bg-gray-700 dark:border-gray-500 rounded-lg border w-full";
-    const outerContainerClasses = "w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-500 rounded-lg shadow-lg p-1";
+    const innerCellContentClasses = "p-3 bg-content border-content rounded-lg border w-full";
+    const outerContainerClasses = "w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-600 rounded-lg shadow-lg p-1";
 
     if (isLoading) return (
         <div className="pt-8">
@@ -91,7 +91,7 @@ export function SpellDetail(): React.JSX.Element {
                         </div>
                     )}
 
-                    <div className="mt-3 p-2 w-full rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert">
+                    <div className="mt-3 p-2 w-full prose dark:prose-invert">
                         <ProcessMarkdown id='description' markdown={spell.description || ''} />
                     </div>
                     <div className="mt-4 text-right">

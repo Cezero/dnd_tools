@@ -1,9 +1,4 @@
-import { routes as classRoutes } from '@/features/admin/features/class-management/ClassConfig';
-import { routes as featRoutes } from '@/features/admin/features/feat-management/FeatConfig';
-import { routes as itemRoutes } from '@/features/admin/features/item-management/ItemConfig';
-import { routes as raceRoutes } from '@/features/admin/features/race-management/RaceConfig';
 import { routes as referenceTableRoutes } from '@/features/admin/features/reference-table-management/ReferenceTableConfig';
-import { routes as skillRoutes } from '@/features/admin/features/skill-management/SkillConfig';
 import { AdminDashboardContent } from '@/features/admin/pages/AdminDashboardContent';
 import { AdminDashboardPage } from '@/features/admin/pages/AdminDashboardPage';
 import { RouteConfig, NavigationItem } from '@/types';
@@ -20,12 +15,7 @@ export const routes: RouteConfig[] = [
                 component: AdminDashboardContent,
                 exact: true,
             },
-            ...referenceTableRoutes,
-            ...raceRoutes,
-            ...classRoutes,
-            ...skillRoutes,
-            ...featRoutes,
-            ...itemRoutes,
+            ...referenceTableRoutes
         ],
     },
 ];

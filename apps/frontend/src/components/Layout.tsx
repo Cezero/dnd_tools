@@ -1,15 +1,37 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 
 import { NavBar } from '@/components/navbar';
+import { MainSidebar } from '@/components/sidebar';
+import { ScrollArea } from '@base-ui-components/react/scroll-area';
 
 export function Layout(): React.JSX.Element {
+    const [sidebarExpanded, setSidebarExpanded] = useState<boolean>(true);
+    const [sidebarHidden, setSidebarHidden] = useState<boolean>(false);
+
     return (
-        <div className="flex flex-col min-h-screen">
+        <div className="h-screen flex flex-col">
             <NavBar />
-            <main className="flex-grow bg-gray-100 dark:bg-[#121212]">
-                <Outlet />
-            </main>
+            <div>
+                <MainSidebar
+                    isExpanded={sidebarExpanded}
+                    setIsExpanded={setSidebarExpanded}
+                    isHidden={sidebarHidden}
+                    setIsHidden={setSidebarHidden}
+                />
+                <main className={`h-[calc(100vh-2.75rem)] flex flex-col transition-all duration-300 ease-in-out ${sidebarHidden ? 'ml-0' : sidebarExpanded ? 'ml-50' : 'ml-16'}`}>
+                    <ScrollArea.Root className="flex-1 overflow-hidden">
+                        <ScrollArea.Viewport className="h-full">
+                            <ScrollArea.Content className="min-h-full">
+                                <Outlet />
+                            </ScrollArea.Content>
+                        </ScrollArea.Viewport>
+                        <ScrollArea.Scrollbar orientation="vertical" className="Scrollbar">
+                            <ScrollArea.Thumb className="Thumb" />
+                        </ScrollArea.Scrollbar>
+                    </ScrollArea.Root>
+                </main>
+            </div>
         </div>
     );
 }

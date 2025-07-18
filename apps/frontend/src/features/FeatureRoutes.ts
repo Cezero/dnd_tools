@@ -1,9 +1,20 @@
 import { routes as adminRoutes } from '@/features/admin/config/AdminConfig';
-import { routes as featRoutes } from '@/features/admin/features/feat-management/FeatConfig';
-import { routes as skillRoutes } from '@/features/admin/features/skill-management/SkillConfig';
-import { routes as characterRoutes, navigation as characterNavigation } from '@/features/character/CharacterConfig';
-import { routes as spellRoutes, navigation as spellNavigation } from '@/features/spell/SpellConfig';
-import { RouteConfig, NavigationItem } from '@/types';
+import { routes as featRoutes } from '@/features/feat/FeatConfig';
+import { routes as skillRoutes } from '@/features/skill/SkillConfig';
+import { routes as characterRoutes } from '@/features/character/CharacterConfig';
+import { routes as spellRoutes } from '@/features/spell/SpellConfig';
+import { routes as classRoutes } from '@/features/class/ClassConfig';
+import { routes as raceRoutes } from '@/features/race/RaceConfig';
+import { routes as itemRoutes } from '@/features/item/ItemConfig';
+import { RouteConfig } from '@/types';
 
-export const FeatureRoutes: RouteConfig[] = [...spellRoutes, ...characterRoutes, ...adminRoutes, ...skillRoutes, ...featRoutes];
-export const FeatureNavigation: NavigationItem[] = [characterNavigation, spellNavigation]; 
+export const FeatureRoutes: RouteConfig[] = [
+    ...spellRoutes,
+    ...characterRoutes,
+    ...adminRoutes,
+    ...skillRoutes,
+    ...featRoutes,
+    ...classRoutes,
+    ...raceRoutes,
+    ...itemRoutes,
+]; 
