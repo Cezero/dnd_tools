@@ -5222,6 +5222,7 @@ export namespace Prisma {
     skillPoints: number | null
     castingAbilityId: number | null
     spellProgression: number | null
+    spellsKnown: number | null
     babProgression: number | null
     fortProgression: number | null
     refProgression: number | null
@@ -5235,6 +5236,7 @@ export namespace Prisma {
     skillPoints: number | null
     castingAbilityId: number | null
     spellProgression: number | null
+    spellsKnown: number | null
     babProgression: number | null
     fortProgression: number | null
     refProgression: number | null
@@ -5254,6 +5256,7 @@ export namespace Prisma {
     skillPoints: number | null
     castingAbilityId: number | null
     spellProgression: number | null
+    spellsKnown: number | null
     babProgression: number | null
     fortProgression: number | null
     refProgression: number | null
@@ -5273,6 +5276,7 @@ export namespace Prisma {
     skillPoints: number | null
     castingAbilityId: number | null
     spellProgression: number | null
+    spellsKnown: number | null
     babProgression: number | null
     fortProgression: number | null
     refProgression: number | null
@@ -5292,6 +5296,7 @@ export namespace Prisma {
     skillPoints: number
     castingAbilityId: number
     spellProgression: number
+    spellsKnown: number
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -5307,6 +5312,7 @@ export namespace Prisma {
     skillPoints?: true
     castingAbilityId?: true
     spellProgression?: true
+    spellsKnown?: true
     babProgression?: true
     fortProgression?: true
     refProgression?: true
@@ -5320,6 +5326,7 @@ export namespace Prisma {
     skillPoints?: true
     castingAbilityId?: true
     spellProgression?: true
+    spellsKnown?: true
     babProgression?: true
     fortProgression?: true
     refProgression?: true
@@ -5339,6 +5346,7 @@ export namespace Prisma {
     skillPoints?: true
     castingAbilityId?: true
     spellProgression?: true
+    spellsKnown?: true
     babProgression?: true
     fortProgression?: true
     refProgression?: true
@@ -5358,6 +5366,7 @@ export namespace Prisma {
     skillPoints?: true
     castingAbilityId?: true
     spellProgression?: true
+    spellsKnown?: true
     babProgression?: true
     fortProgression?: true
     refProgression?: true
@@ -5377,6 +5386,7 @@ export namespace Prisma {
     skillPoints?: true
     castingAbilityId?: true
     spellProgression?: true
+    spellsKnown?: true
     babProgression?: true
     fortProgression?: true
     refProgression?: true
@@ -5483,6 +5493,7 @@ export namespace Prisma {
     skillPoints: number
     castingAbilityId: number | null
     spellProgression: number | null
+    spellsKnown: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -5521,6 +5532,7 @@ export namespace Prisma {
     skillPoints?: boolean
     castingAbilityId?: boolean
     spellProgression?: boolean
+    spellsKnown?: boolean
     babProgression?: boolean
     fortProgression?: boolean
     refProgression?: boolean
@@ -5549,13 +5561,14 @@ export namespace Prisma {
     skillPoints?: boolean
     castingAbilityId?: boolean
     spellProgression?: boolean
+    spellsKnown?: boolean
     babProgression?: boolean
     fortProgression?: boolean
     refProgression?: boolean
     willProgression?: boolean
   }
 
-  export type ClassOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "abbreviation" | "editionId" | "isPrestige" | "isVisible" | "canCastSpells" | "hitDie" | "description" | "skillPoints" | "castingAbilityId" | "spellProgression" | "babProgression" | "fortProgression" | "refProgression" | "willProgression", ExtArgs["result"]["class"]>
+  export type ClassOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "abbreviation" | "editionId" | "isPrestige" | "isVisible" | "canCastSpells" | "hitDie" | "description" | "skillPoints" | "castingAbilityId" | "spellProgression" | "spellsKnown" | "babProgression" | "fortProgression" | "refProgression" | "willProgression", ExtArgs["result"]["class"]>
   export type ClassInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     features?: boolean | Class$featuresArgs<ExtArgs>
     featureProgression?: boolean | Class$featureProgressionArgs<ExtArgs>
@@ -5589,6 +5602,7 @@ export namespace Prisma {
       skillPoints: number
       castingAbilityId: number | null
       spellProgression: number | null
+      spellsKnown: number | null
       babProgression: number
       fortProgression: number
       refProgression: number
@@ -5980,6 +5994,7 @@ export namespace Prisma {
     readonly skillPoints: FieldRef<"Class", 'Int'>
     readonly castingAbilityId: FieldRef<"Class", 'Int'>
     readonly spellProgression: FieldRef<"Class", 'Int'>
+    readonly spellsKnown: FieldRef<"Class", 'Int'>
     readonly babProgression: FieldRef<"Class", 'Int'>
     readonly fortProgression: FieldRef<"Class", 'Int'>
     readonly refProgression: FieldRef<"Class", 'Int'>
@@ -48513,6 +48528,7 @@ export namespace Prisma {
     skillPoints: 'skillPoints',
     castingAbilityId: 'castingAbilityId',
     spellProgression: 'spellProgression',
+    spellsKnown: 'spellsKnown',
     babProgression: 'babProgression',
     fortProgression: 'fortProgression',
     refProgression: 'refProgression',
@@ -49305,6 +49321,7 @@ export namespace Prisma {
     skillPoints?: IntFilter<"Class"> | number
     castingAbilityId?: IntNullableFilter<"Class"> | number | null
     spellProgression?: IntNullableFilter<"Class"> | number | null
+    spellsKnown?: IntNullableFilter<"Class"> | number | null
     babProgression?: IntFilter<"Class"> | number
     fortProgression?: IntFilter<"Class"> | number
     refProgression?: IntFilter<"Class"> | number
@@ -49330,6 +49347,7 @@ export namespace Prisma {
     skillPoints?: SortOrder
     castingAbilityId?: SortOrderInput | SortOrder
     spellProgression?: SortOrderInput | SortOrder
+    spellsKnown?: SortOrderInput | SortOrder
     babProgression?: SortOrder
     fortProgression?: SortOrder
     refProgression?: SortOrder
@@ -49359,6 +49377,7 @@ export namespace Prisma {
     skillPoints?: IntFilter<"Class"> | number
     castingAbilityId?: IntNullableFilter<"Class"> | number | null
     spellProgression?: IntNullableFilter<"Class"> | number | null
+    spellsKnown?: IntNullableFilter<"Class"> | number | null
     babProgression?: IntFilter<"Class"> | number
     fortProgression?: IntFilter<"Class"> | number
     refProgression?: IntFilter<"Class"> | number
@@ -49384,6 +49403,7 @@ export namespace Prisma {
     skillPoints?: SortOrder
     castingAbilityId?: SortOrderInput | SortOrder
     spellProgression?: SortOrderInput | SortOrder
+    spellsKnown?: SortOrderInput | SortOrder
     babProgression?: SortOrder
     fortProgression?: SortOrder
     refProgression?: SortOrder
@@ -49411,6 +49431,7 @@ export namespace Prisma {
     skillPoints?: IntWithAggregatesFilter<"Class"> | number
     castingAbilityId?: IntNullableWithAggregatesFilter<"Class"> | number | null
     spellProgression?: IntNullableWithAggregatesFilter<"Class"> | number | null
+    spellsKnown?: IntNullableWithAggregatesFilter<"Class"> | number | null
     babProgression?: IntWithAggregatesFilter<"Class"> | number
     fortProgression?: IntWithAggregatesFilter<"Class"> | number
     refProgression?: IntWithAggregatesFilter<"Class"> | number
@@ -52028,6 +52049,7 @@ export namespace Prisma {
     skillPoints: number
     castingAbilityId?: number | null
     spellProgression?: number | null
+    spellsKnown?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -52053,6 +52075,7 @@ export namespace Prisma {
     skillPoints: number
     castingAbilityId?: number | null
     spellProgression?: number | null
+    spellsKnown?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -52077,6 +52100,7 @@ export namespace Prisma {
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
     spellProgression?: NullableIntFieldUpdateOperationsInput | number | null
+    spellsKnown?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -52102,6 +52126,7 @@ export namespace Prisma {
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
     spellProgression?: NullableIntFieldUpdateOperationsInput | number | null
+    spellsKnown?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -52127,6 +52152,7 @@ export namespace Prisma {
     skillPoints: number
     castingAbilityId?: number | null
     spellProgression?: number | null
+    spellsKnown?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -52145,6 +52171,7 @@ export namespace Prisma {
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
     spellProgression?: NullableIntFieldUpdateOperationsInput | number | null
+    spellsKnown?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -52164,6 +52191,7 @@ export namespace Prisma {
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
     spellProgression?: NullableIntFieldUpdateOperationsInput | number | null
+    spellsKnown?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -54772,6 +54800,7 @@ export namespace Prisma {
     skillPoints?: SortOrder
     castingAbilityId?: SortOrder
     spellProgression?: SortOrder
+    spellsKnown?: SortOrder
     babProgression?: SortOrder
     fortProgression?: SortOrder
     refProgression?: SortOrder
@@ -54785,6 +54814,7 @@ export namespace Prisma {
     skillPoints?: SortOrder
     castingAbilityId?: SortOrder
     spellProgression?: SortOrder
+    spellsKnown?: SortOrder
     babProgression?: SortOrder
     fortProgression?: SortOrder
     refProgression?: SortOrder
@@ -54804,6 +54834,7 @@ export namespace Prisma {
     skillPoints?: SortOrder
     castingAbilityId?: SortOrder
     spellProgression?: SortOrder
+    spellsKnown?: SortOrder
     babProgression?: SortOrder
     fortProgression?: SortOrder
     refProgression?: SortOrder
@@ -54823,6 +54854,7 @@ export namespace Prisma {
     skillPoints?: SortOrder
     castingAbilityId?: SortOrder
     spellProgression?: SortOrder
+    spellsKnown?: SortOrder
     babProgression?: SortOrder
     fortProgression?: SortOrder
     refProgression?: SortOrder
@@ -54836,6 +54868,7 @@ export namespace Prisma {
     skillPoints?: SortOrder
     castingAbilityId?: SortOrder
     spellProgression?: SortOrder
+    spellsKnown?: SortOrder
     babProgression?: SortOrder
     fortProgression?: SortOrder
     refProgression?: SortOrder
@@ -60586,6 +60619,7 @@ export namespace Prisma {
     skillPoints: number
     castingAbilityId?: number | null
     spellProgression?: number | null
+    spellsKnown?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -60610,6 +60644,7 @@ export namespace Prisma {
     skillPoints: number
     castingAbilityId?: number | null
     spellProgression?: number | null
+    spellsKnown?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -60715,6 +60750,7 @@ export namespace Prisma {
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
     spellProgression?: NullableIntFieldUpdateOperationsInput | number | null
+    spellsKnown?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -60739,6 +60775,7 @@ export namespace Prisma {
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
     spellProgression?: NullableIntFieldUpdateOperationsInput | number | null
+    spellsKnown?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -60840,6 +60877,7 @@ export namespace Prisma {
     skillPoints: number
     castingAbilityId?: number | null
     spellProgression?: number | null
+    spellsKnown?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -60864,6 +60902,7 @@ export namespace Prisma {
     skillPoints: number
     castingAbilityId?: number | null
     spellProgression?: number | null
+    spellsKnown?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -60922,6 +60961,7 @@ export namespace Prisma {
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
     spellProgression?: NullableIntFieldUpdateOperationsInput | number | null
+    spellsKnown?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -60946,6 +60986,7 @@ export namespace Prisma {
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
     spellProgression?: NullableIntFieldUpdateOperationsInput | number | null
+    spellsKnown?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -61013,6 +61054,7 @@ export namespace Prisma {
     skillPoints: number
     castingAbilityId?: number | null
     spellProgression?: number | null
+    spellsKnown?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -61037,6 +61079,7 @@ export namespace Prisma {
     skillPoints: number
     castingAbilityId?: number | null
     spellProgression?: number | null
+    spellsKnown?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -61101,6 +61144,7 @@ export namespace Prisma {
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
     spellProgression?: NullableIntFieldUpdateOperationsInput | number | null
+    spellsKnown?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -61125,6 +61169,7 @@ export namespace Prisma {
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
     spellProgression?: NullableIntFieldUpdateOperationsInput | number | null
+    spellsKnown?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -61148,6 +61193,7 @@ export namespace Prisma {
     skillPoints: number
     castingAbilityId?: number | null
     spellProgression?: number | null
+    spellsKnown?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -61172,6 +61218,7 @@ export namespace Prisma {
     skillPoints: number
     castingAbilityId?: number | null
     spellProgression?: number | null
+    spellsKnown?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -61249,6 +61296,7 @@ export namespace Prisma {
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
     spellProgression?: NullableIntFieldUpdateOperationsInput | number | null
+    spellsKnown?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -61273,6 +61321,7 @@ export namespace Prisma {
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
     spellProgression?: NullableIntFieldUpdateOperationsInput | number | null
+    spellsKnown?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -61340,6 +61389,7 @@ export namespace Prisma {
     skillPoints: number
     castingAbilityId?: number | null
     spellProgression?: number | null
+    spellsKnown?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -61364,6 +61414,7 @@ export namespace Prisma {
     skillPoints: number
     castingAbilityId?: number | null
     spellProgression?: number | null
+    spellsKnown?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -61431,6 +61482,7 @@ export namespace Prisma {
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
     spellProgression?: NullableIntFieldUpdateOperationsInput | number | null
+    spellsKnown?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -61455,6 +61507,7 @@ export namespace Prisma {
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
     spellProgression?: NullableIntFieldUpdateOperationsInput | number | null
+    spellsKnown?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -61564,6 +61617,7 @@ export namespace Prisma {
     skillPoints: number
     castingAbilityId?: number | null
     spellProgression?: number | null
+    spellsKnown?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -61588,6 +61642,7 @@ export namespace Prisma {
     skillPoints: number
     castingAbilityId?: number | null
     spellProgression?: number | null
+    spellsKnown?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -61685,6 +61740,7 @@ export namespace Prisma {
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
     spellProgression?: NullableIntFieldUpdateOperationsInput | number | null
+    spellsKnown?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -61709,6 +61765,7 @@ export namespace Prisma {
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
     spellProgression?: NullableIntFieldUpdateOperationsInput | number | null
+    spellsKnown?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number

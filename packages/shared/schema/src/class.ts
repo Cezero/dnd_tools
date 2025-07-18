@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { QueryResponseSchema } from './query.js';
 import { SourceMapSchema } from './sourcebook.js';
-import { SpellProgressionType, ProgressionType } from '@shared/static-data';
+import { SpellProgressionType, ProgressionType, SpellsKnownType } from '@shared/static-data';
 
 export const ClassFeatureSchema = z.object({
     slug: z.string().min(1, 'Feature slug is required').max(100, 'Feature slug must be less than 100 characters').trim(),
@@ -77,10 +77,11 @@ export const BaseClassSchema = z.object({
     isPrestige: z.boolean().default(false),
     isVisible: z.boolean().default(true),
     canCastSpells: z.boolean().default(false),
-    hitDie: z.number().int().min(1, 'Hit die must be at least 1').max(20, 'Hit die must be at most 20'),
+    hitDie: z.number().int().min(0, 'Hit die must be at least 0').max(20, 'Hit die must be at most 20'),
     skillPoints: z.number().int().min(0, 'Skill points must be non-negative').max(100, 'Skill points must be less than 100'),
     castingAbilityId: z.number().int().positive('Casting ability ID must be a positive integer').nullable(),
     spellProgression: z.nativeEnum(SpellProgressionType).nullable(),
+    spellsKnown: z.nativeEnum(SpellsKnownType).nullable(),
     babProgression: z.nativeEnum(ProgressionType),
     fortProgression: z.nativeEnum(ProgressionType),
     refProgression: z.nativeEnum(ProgressionType),

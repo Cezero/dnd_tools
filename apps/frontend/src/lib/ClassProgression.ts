@@ -4,7 +4,9 @@ import {
     getPoorSave,
     ProgressionType,
     SpellProgressionType,
-    SPELL_TABLE_MAP
+    SpellsKnownType,
+    SPELL_TABLE_MAP,
+    SPELLS_KNOWN_TABLE_MAP
 } from '@shared/static-data';
 
 export interface ProgressionRow {
@@ -14,6 +16,7 @@ export interface ProgressionRow {
     ref: number;
     will: number;
     spells?: { [spellLevel: number]: number };
+    spellsKnown?: { [spellLevel: number]: number };
 }
 
 export interface ClassProgressionConfig {
@@ -22,6 +25,7 @@ export interface ClassProgressionConfig {
     refProgression: ProgressionType;
     willProgression: ProgressionType;
     spellProgression?: SpellProgressionType;
+    spellsKnown?: SpellsKnownType;
 }
 
 /**
@@ -44,6 +48,14 @@ export function generateClassProgression(config: ClassProgressionConfig): Progre
             const spellTable = SPELL_TABLE_MAP[config.spellProgression];
             if (spellTable && spellTable[level]) {
                 row.spells = { ...spellTable[level] };
+            }
+        }
+
+        // Add spells known progression if defined
+        if (config.spellsKnown !== undefined && config.spellsKnown !== null && config.spellsKnown !== SpellsKnownType.none) {
+            const spellsKnownTable = SPELLS_KNOWN_TABLE_MAP[config.spellsKnown];
+            if (spellsKnownTable && spellsKnownTable[level]) {
+                row.spellsKnown = { ...spellsKnownTable[level] };
             }
         }
 

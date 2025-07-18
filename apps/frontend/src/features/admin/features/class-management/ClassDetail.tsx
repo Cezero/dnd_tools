@@ -8,7 +8,7 @@ import { ClassService } from '@/features/admin/features/class-management/ClassSe
 import { generateClassProgression } from '@/lib/ClassProgression';
 import { GetClassResponse } from '@shared/schema';
 import { RPG_DICE, EDITION_MAP, ABILITY_MAP, _SKILL_MAP } from '@shared/static-data';
-import { formatClassProficiencies, formatProgressionValue } from '@/lib/Formatters';
+import { formatClassProficiencies, formatProgression } from '@/lib/Formatters';
 
 export default function ClassDetail() {
     const { id } = useParams();
@@ -74,7 +74,7 @@ export default function ClassDetail() {
                         </div>
                     </div>
                     <div className="mt-3 p-2 w-full rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert">
-                        <ProcessMarkdown markdown={cls.description || ''} id='description' />
+                        <ProcessMarkdown markdown={cls.description || ''} id='class-description' />
                     </div>
                     <div className="mt-4">
                         <h3 className="text-lg font-semibold mb-2">Class Progression</h3>
@@ -85,6 +85,7 @@ export default function ClassDetail() {
                                 refProgression: cls.refProgression,
                                 willProgression: cls.willProgression,
                                 spellProgression: cls.spellProgression !== null ? cls.spellProgression : undefined,
+                                spellsKnown: cls.spellsKnown !== null ? cls.spellsKnown : undefined,
                             };
                             const progression = generateClassProgression(progressionConfig);
                             return (
@@ -166,16 +167,26 @@ export default function ClassDetail() {
                                                     {/* Features */}
                                                     {groupedFeatures[parseInt(level)].features.map((feature, index) => (
                                                         <div key={`feature-${index}`} className="p-2">
-                                                            <ProcessMarkdown markdown={feature.description} id='description' />
+                                                            <ProcessMarkdown
+                                                                markdown={feature.description}
+                                                                id={`feature-${level}-${index}`}
+                                                                userVars={{
+                                                                    classname: cls.name.toLowerCase()
+                                                                }}
+                                                            />
                                                         </div>
                                                     ))}
                                                     {/* Progressions */}
-                                                    {groupedFeatures[parseInt(level)].progressions.map((progression, index) => (
-                                                        <div key={`progression-${index}`} className="p-2">
-                                                            <span className="font-semibold">{progression.featureName || progression.featureSlug}:</span> {formatProgressionValue(progression.aspect, progression.valueInt, progression.valueString)}
-                                                            {progression.note && ` (${progression.note})`}
-                                                        </div>
-                                                    ))}
+                                                    {groupedFeatures[parseInt(level)].progressions.map((progression, index) => {
+                                                        const formatted = formatProgression(progression);
+                                                        return (
+                                                            <div key={`progression-${index}`} className="p-2">
+                                                                <span className="font-semibold">{formatted.label}</span>
+                                                                {formatted.value && ` ${formatted.value}`}
+                                                                {formatted.note && ` (${formatted.note})`}
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
                                         ));

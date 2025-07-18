@@ -24,7 +24,6 @@ export function SpellList(): React.JSX.Element {
                 serviceFunction={() => SpellService.getAllSpells({})}
                 itemDesc="spell"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction(SpellService.deleteSpell)}
             />
         </div>
     );

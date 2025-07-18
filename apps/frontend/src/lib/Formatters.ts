@@ -1,4 +1,4 @@
-import { ClassProficiencyInQueryResponse } from "@shared/schema";
+import { ClassProficiencyInQueryResponse, ClassFeatureProgressionDetailInQueryResponse } from "@shared/schema";
 import { ASPECT_FORMATTERS } from "@shared/static-data";
 
 export function formatClassProficiencies(proficiencies: ClassProficiencyInQueryResponse[]): string {
@@ -44,7 +44,48 @@ export function formatClassProficiencies(proficiencies: ClassProficiencyInQueryR
         .join(', ');
 }
 
-// Helper function to format progression values
+// Types for progression formatting
+export interface ProgressionFormatter {
+    label?: (progression: ClassFeatureProgressionDetailInQueryResponse) => string;
+    value: (valueInt: number | null, valueString: string | null) => string;
+}
+
+export interface ProgressionFormatConfig {
+    [aspect: string]: ProgressionFormatter;
+}
+
+// Default progression formatters
+export const PROGRESSION_FORMATTERS: ProgressionFormatConfig = {
+    bonusFeat: {
+        label: () => 'Bonus Feat',
+        value: () => ''
+    },
+    usesPerDay: {
+        value: (valueInt) => valueInt ? `${valueInt}/day` : ''
+    },
+    secondaryUsesPerDay: {
+        value: (valueInt) => valueInt ? `${valueInt}/day` : ''
+    },
+    usesPerWeek: {
+        value: (valueInt) => valueInt ? `${valueInt}/week` : ''
+    },
+    bonus: {
+        value: (valueInt) => {
+            if (valueInt !== null) {
+                return valueInt > 0 ? `+${valueInt}` : `${valueInt}`;
+            }
+            return '';
+        }
+    },
+    damageReduction: {
+        value: (valueInt) => valueInt ? `${valueInt}/—` : ''
+    },
+    distance: {
+        value: (valueInt, valueString) => valueInt ? `${valueInt} ft.` : valueString ? `${valueString} distance` : ''
+    }
+};
+
+// Helper function to format progression values (legacy function for backward compatibility)
 export function formatProgressionValue(aspect: string, valueInt: number | null, valueString: string | null): string {
     const formatter = ASPECT_FORMATTERS[aspect];
     if (formatter) {
@@ -59,5 +100,30 @@ export function formatProgressionValue(aspect: string, valueInt: number | null, 
         return valueString;
     }
     return '';
+}
+
+// New function to format complete progression display
+export function formatProgression(progression: ClassFeatureProgressionDetailInQueryResponse): { label: string; value: string; note?: string } {
+    const formatter = PROGRESSION_FORMATTERS[progression.aspect];
+
+    if (formatter) {
+        const label = formatter.label ? formatter.label(progression) : `${progression.featureName || progression.featureSlug}:`;
+        const value = formatter.value(progression.valueInt, progression.valueString);
+
+        return {
+            label,
+            value,
+            note: progression.note || undefined
+        };
+    }
+
+    // Default formatting for aspects without custom formatters
+    const value = formatProgressionValue(progression.aspect, progression.valueInt, progression.valueString);
+
+    return {
+        label: `${progression.featureName || progression.featureSlug}:`,
+        value,
+        note: progression.note || undefined
+    };
 }
 

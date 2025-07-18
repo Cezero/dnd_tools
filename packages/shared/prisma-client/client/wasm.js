@@ -133,6 +133,7 @@ exports.Prisma.ClassScalarFieldEnum = {
   skillPoints: 'skillPoints',
   castingAbilityId: 'castingAbilityId',
   spellProgression: 'spellProgression',
+  spellsKnown: 'spellsKnown',
   babProgression: 'babProgression',
   fortProgression: 'fortProgression',
   refProgression: 'refProgression',

@@ -15,9 +15,9 @@ import { ClassService } from '@/features/admin/features/class-management/ClassSe
 import { ClassFeatureAssoc } from '@/features/admin/features/class-management/ClassFeatureAssoc';
 import { ClassProficiencyService, type ProficiencyFeat, type ProficiencyItem } from '@/features/admin/features/class-management/ClassProficiencyService';
 import { ClassProficiencyInQueryResponse, CreateClassSchema, UpdateClassSchema } from '@shared/schema';
-import { RPG_DICE_SELECT_LIST, ABILITY_SELECT_LIST, EDITION_SELECT_LIST_FULL, _SKILL_MAP, SKILL_SELECT_LIST, BAB_PROGRESSION_SELECT_LIST, SAVE_PROGRESSION_SELECT_LIST, SPELL_PROGRESSION_SELECT_LIST, FEATURE_ASPECT_SELECT_LIST, ASPECT_FORMATTERS } from '@shared/static-data';
+import { RPG_DICE_SELECT_LIST, ABILITY_SELECT_LIST, EDITION_SELECT_LIST_FULL, _SKILL_MAP, SKILL_SELECT_LIST, BAB_PROGRESSION_SELECT_LIST, SAVE_PROGRESSION_SELECT_LIST, SPELL_PROGRESSION_SELECT_LIST, SPELLS_KNOWN_SELECT_LIST, SpellsKnownType, FEATURE_ASPECT_SELECT_LIST, ASPECT_FORMATTERS } from '@shared/static-data';
 import { ClassFeatureProgressionDetailInQueryResponse } from '@shared/schema';
-import { formatProgressionValue } from '@/lib/Formatters';
+import { formatProgression } from '@/lib/Formatters';
 
 // Type definitions for the form state
 type ClassFormData = z.infer<typeof CreateClassSchema> | z.infer<typeof UpdateClassSchema>;
@@ -311,6 +311,7 @@ export default function ClassEdit() {
         refProgression: 2, // poor
         willProgression: 2, // poor
         spellProgression: null,
+        spellsKnown: null,
         featureProgression: [],
         ...(id !== 'new' && { id: parseInt(id) })
     };
@@ -687,7 +688,7 @@ export default function ClassEdit() {
                         </div>
                     </div>
                     {formData.canCastSpells && (
-                        <div className="mt-4">
+                        <div className="mt-4 space-y-4">
                             <CustomSelect
                                 label="Spell Progression"
                                 componentExtraClassName="flex items-center gap-2"
@@ -698,6 +699,17 @@ export default function ClassEdit() {
                                 onValueChange={(value) => setFormData(prev => ({ ...prev, spellProgression: value as 0 | 1 | 2 | 3 | 4 | null }))}
                                 options={SPELL_PROGRESSION_SELECT_LIST}
                                 placeholder="Select spell progression"
+                            />
+                            <CustomSelect
+                                label="Spells Known Progression"
+                                componentExtraClassName="flex items-center gap-2"
+                                labelExtraClassName="w-32"
+                                itemExtraClassName="w-32"
+                                itemTextExtraClassName="w-24"
+                                value={formData.spellsKnown}
+                                onValueChange={(value) => setFormData(prev => ({ ...prev, spellsKnown: value as 0 | 1 | 2 | null }))}
+                                options={SPELLS_KNOWN_SELECT_LIST}
+                                placeholder="Select spells known progression"
                             />
                         </div>
                     )}
@@ -826,6 +838,7 @@ export default function ClassEdit() {
                                                         setFormData(prev => ({ ...prev, features: newFeatures }));
                                                     }}
                                                     className="w-16 px-2 py-1 border border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700"
+                                                    id={`feature-level-${feature.featureSlug}-${index}`}
                                                 />
                                             </div>
                                             <button
@@ -851,12 +864,10 @@ export default function ClassEdit() {
                                                                 onClick={() => handleEditProgression(progression)}
                                                                 className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
                                                             >
-                                                                {progression.aspect in ASPECT_FORMATTERS ? (
-                                                                    `L${progression.level}: ${formatProgressionValue(progression.aspect, progression.valueInt, progression.valueString)}`
-                                                                ) : (
-                                                                    `L${progression.level} - ${FEATURE_ASPECT_SELECT_LIST.find(a => a.value === progression.aspect)?.label || progression.aspect} - ${formatProgressionValue(progression.aspect, progression.valueInt, progression.valueString)}`
-                                                                )}
-                                                                {progression.note && ` (${progression.note})`}
+                                                                {(() => {
+                                                                    const formatted = formatProgression(progression);
+                                                                    return `L${progression.level}: ${formatted.label}${formatted.value ? ` ${formatted.value}` : ''}${formatted.note ? ` (${formatted.note})` : ''}`;
+                                                                })()}
                                                             </button>
                                                             <button
                                                                 type="button"

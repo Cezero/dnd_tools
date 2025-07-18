@@ -12,7 +12,7 @@ import {
     GetAllClassFeaturesResponse,
     CreateResponse
 } from '@shared/schema';
-import type { SpellProgressionType, ProgressionType } from '@shared/static-data';
+import type { SpellProgressionType, ProgressionType, SpellsKnownType } from '@shared/static-data';
 
 import type { ClassService } from './types';
 
@@ -42,6 +42,7 @@ export const classService: ClassService = {
         const typedClasses = classes.map(cls => ({
             ...cls,
             spellProgression: cls.spellProgression as SpellProgressionType | null,
+            spellsKnown: cls.spellsKnown as SpellsKnownType | null,
             babProgression: cls.babProgression as ProgressionType,
             fortProgression: cls.fortProgression as ProgressionType,
             refProgression: cls.refProgression as ProgressionType,

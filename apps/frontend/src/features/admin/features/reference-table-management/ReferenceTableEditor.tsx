@@ -399,7 +399,7 @@ export function ReferenceTableEditor() {
                     const rowSpan = cellData?.rowSpan || 1;
 
                     currentRowCells.push({
-                        columnIndex: colIndex,
+                        columnIndex: parseInt(col.accessorKey.replace('col', '')),
                         value: cellData?.value ?? '',
                         colSpan: colSpan,
                         rowSpan: rowSpan

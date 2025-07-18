@@ -393,7 +393,14 @@ export const SpellProgressionType = {
     wizard: 4,
 } as const;
 
+export const SpellsKnownType = {
+    none: 0,
+    bard: 1,
+    sorcerer: 2,
+} as const;
+
 export type SpellProgressionType = typeof SpellProgressionType[keyof typeof SpellProgressionType];
+export type SpellsKnownType = typeof SpellsKnownType[keyof typeof SpellsKnownType];
 
 export const SPELL_TABLE_MAP: { [key in SpellProgressionType]: SpellTable } = {
     [SpellProgressionType.bard]: BARD_SPELL_TABLE,
@@ -446,6 +453,7 @@ export const ASPECT_FORMATTERS: Record<string, (valueInt: number | null, valueSt
         return '';
     },
     [FeatureAspect.damageReduction]: (valueInt) => valueInt ? `${valueInt}/—` : '',
+    [FeatureAspect.bonusFeat]: () => '',
 };
 
 // Select lists for progression types
@@ -467,3 +475,61 @@ export const SPELL_PROGRESSION_SELECT_LIST = [
     { value: SpellProgressionType.sorcerer, label: 'Sorcerer' },
     { value: SpellProgressionType.wizard, label: 'Wizard' },
 ];
+
+export const BARD_SPELLS_KNOWN_TABLE: SpellTable = {
+    1: { 0: 4 },
+    2: { 0: 5, 1:2 },
+    3: { 0: 6, 1:3 },
+    4: { 0: 6, 1:3, 2:2 },
+    5: { 0: 6, 1:4, 2:3 },
+    6: { 0: 6, 1:4, 2:3 },
+    7: { 0: 6, 1:4, 2:4, 3:2 },
+    8: { 0: 6, 1:4, 2:4, 3:3 },
+    9: { 0: 6, 1:4, 2:4, 3:3 },
+    10: { 0: 6, 1:4, 2:4, 3:4, 4:2 },
+    11: { 0: 6, 1:4, 2:4, 3:4, 4:3 },
+    12: { 0: 6, 1:4, 2:4, 3:4, 4:3 },
+    13: { 0: 6, 1:4, 2:4, 3:4, 4:4, 5:2 },
+    14: { 0: 6, 1:4, 2:4, 3:4, 4:4, 5:3 },
+    15: { 0: 6, 1:4, 2:4, 3:4, 4:4, 5:3 },
+    16: { 0: 6, 1:4, 2:4, 3:4, 4:4, 5:4, 6:2 },
+    17: { 0: 6, 1:5, 2:5, 3:4, 4:4, 5:4, 6:3 },
+    18: { 0: 6, 1:5, 2:5, 3:5, 4:4, 5:4, 6:3 },
+    19: { 0: 6, 1:5, 2:5, 3:5, 4:5, 5:4, 6:4 },
+    20: { 0: 6, 1:5, 2:5, 3:5, 4:5, 5:5, 6:4 },
+};
+
+export const SORCERER_SPELLS_KNOWN_TABLE: SpellTable = {
+    1: { 0: 4, 1: 2 },
+    2: { 0: 5, 1: 2 },
+    3: { 0: 5, 1: 3 },
+    4: { 0: 6, 1: 3, 2: 1 },
+    5: { 0: 6, 1: 4, 2: 2 },
+    6: { 0: 7, 1: 4, 2: 2, 3: 1 },
+    7: { 0: 7, 1: 5, 2: 3, 3: 2 },
+    8: { 0: 8, 1: 5, 2: 3, 3: 2, 4: 1 },
+    9: { 0: 8, 1: 5, 2: 4, 3: 3, 4: 2 },
+    10: { 0: 9, 1: 5, 2: 4, 3: 3, 4: 2, 5: 1 },
+    11: { 0: 9, 1: 5, 2: 5, 3: 4, 4: 3, 5: 2 },
+    12: { 0: 9, 1: 5, 2: 5, 3: 4, 4: 3, 5: 2, 6: 1 },
+    13: { 0: 9, 1: 5, 2: 5, 3: 4, 4: 4, 5: 3, 6: 2 },
+    14: { 0: 9, 1: 5, 2: 5, 3: 4, 4: 4, 5: 3, 6: 2, 7: 1 },
+    15: { 0: 9, 1: 5, 2: 5, 3: 4, 4: 4, 5: 4, 6: 3, 7: 2 },
+    16: { 0: 9, 1: 5, 2: 5, 3: 4, 4: 4, 5: 4, 6: 3, 7: 2, 8: 1 },
+    17: { 0: 9, 1: 5, 2: 5, 3: 4, 4: 4, 5: 4, 6: 3, 7: 3, 8: 2 },
+    18: { 0: 9, 1: 5, 2: 5, 3: 4, 4: 4, 5: 4, 6: 3, 7: 3, 8: 2, 9: 1 },
+    19: { 0: 9, 1: 5, 2: 5, 3: 4, 4: 4, 5: 4, 6: 3, 7: 3, 8: 3, 9: 2 },
+    20: { 0: 9, 1: 5, 2: 5, 3: 4, 4: 4, 5: 4, 6: 3, 7: 3, 8: 3, 9: 3 },
+};
+
+export const SPELLS_KNOWN_SELECT_LIST = [
+    { value: SpellsKnownType.none, label: 'None' },
+    { value: SpellsKnownType.bard, label: 'Bard' },
+    { value: SpellsKnownType.sorcerer, label: 'Sorcerer' },
+];
+
+export const SPELLS_KNOWN_TABLE_MAP: { [key in SpellsKnownType]: SpellTable } = {
+    [SpellsKnownType.none]: {},
+    [SpellsKnownType.bard]: BARD_SPELLS_KNOWN_TABLE,
+    [SpellsKnownType.sorcerer]: SORCERER_SPELLS_KNOWN_TABLE,
+};

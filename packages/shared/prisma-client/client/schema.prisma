@@ -25,6 +25,7 @@ model Class {
   skillPoints      Int
   castingAbilityId Int?
   spellProgression Int?
+  spellsKnown      Int?
   babProgression   Int
   fortProgression  Int
   refProgression   Int
