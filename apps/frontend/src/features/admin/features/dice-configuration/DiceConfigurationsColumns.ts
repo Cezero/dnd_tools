@@ -1,0 +1,94 @@
+import { ColumnDef } from '@tanstack/react-table';
+import { FilterType } from '@/components/generic-list/types';
+import { getDiceThemeById, DICE_THEME_SELECT_LIST } from '@shared/static-data';
+import type { AvailableDiceConfigs } from '@shared/schema';
+import { createContainsFilter, createEqualsFilter } from '@/components/generic-list/filterFunctions';
+import { formatColorWithSwatch } from '@/lib/ColorFormatters';
+
+// Type for the config items in the list (from AvailableDiceConfigs)
+export type ConfigListItem = AvailableDiceConfigs['configs'][0];
+
+export const DICE_CONFIGURATION_COLUMNS: ColumnDef<ConfigListItem, unknown>[] = [
+    {
+        accessorKey: 'name',
+        header: 'Configuration Name',
+        enableSorting: true,
+        enableColumnFilter: true,
+        enableResizing: true,
+        size: 200,
+        filterFn: createContainsFilter(),
+        meta: {
+            required: true,
+            filterType: FilterType.TEXT_INPUT,
+            placeholder: 'Filter by name...'
+        },
+    },
+    {
+        accessorKey: 'isDefault',
+        header: 'Default',
+        enableSorting: true,
+        enableColumnFilter: true,
+        enableResizing: true,
+        size: 80,
+        filterFn: createEqualsFilter(),
+        cell: info => {
+            const isDefault = info.getValue() as boolean;
+            return isDefault ? 'Yes' : 'No';
+        },
+        meta: {
+            filterType: FilterType.SINGLE_SELECT,
+            options: [
+                { value: true, label: 'Yes' },
+                { value: false, label: 'No' }
+            ],
+        },
+    },
+    {
+        accessorKey: 'theme',
+        header: '3D Theme',
+        enableSorting: true,
+        enableColumnFilter: true,
+        enableResizing: true,
+        size: 120,
+        filterFn: createEqualsFilter(),
+        cell: info => {
+            const themeId = info.getValue() as number;
+            const theme = getDiceThemeById(themeId);
+            return theme?.name || themeId;
+        },
+        meta: {
+            filterType: FilterType.SINGLE_SELECT,
+            options: DICE_THEME_SELECT_LIST,
+        },
+    },
+    {
+        accessorKey: 'themeColor',
+        header: 'Theme Color',
+        enableSorting: true,
+        enableColumnFilter: true,
+        enableResizing: true,
+        size: 120,
+        filterFn: createContainsFilter(),
+        cell: info => {
+            const color = info.getValue() as string;
+            return formatColorWithSwatch(color);
+        },
+        meta: {
+            filterType: FilterType.TEXT_INPUT,
+            placeholder: 'Filter by color...'
+        },
+    },
+    {
+        accessorKey: 'scale',
+        header: 'Scale',
+        enableSorting: true,
+        enableColumnFilter: true,
+        enableResizing: true,
+        size: 80,
+        filterFn: createEqualsFilter(),
+        meta: {
+            filterType: FilterType.TEXT_INPUT,
+            placeholder: 'Filter by scale...'
+        },
+    },
+]; 

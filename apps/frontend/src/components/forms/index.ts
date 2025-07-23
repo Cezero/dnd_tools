@@ -12,4 +12,6 @@ export {
     type CustomSelectProps,
     type CustomCheckboxProps,
     type SelectOption,
-} from './FormComponents'; 
+} from './FormComponents';
+
+export { SliderControl } from './SliderControl'; 

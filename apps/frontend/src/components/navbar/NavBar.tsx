@@ -3,17 +3,12 @@ import { Link } from 'react-router-dom';
 
 import { withAuthContext } from '@/components/auth/withAuth';
 import { ThemeToggle } from '@/components/navbar/themeToggle';
-import { NavBarService } from '@/services/NavBarService';
-import { EDITION_SELECT_LIST, SelectOption } from '@shared/static-data';
 
 import type { NavBarProps } from './types';
 
 function NavBarComponent({ auth }: NavBarProps): React.JSX.Element {
     const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const [editions, setEditions] = useState<SelectOption[]>([]);
-    const [selectedEdition, setSelectedEdition] = useState<string>('4');
-    const [isUpdatingEdition, setIsUpdatingEdition] = useState<boolean>(false);
 
     const ToggleDropdown = (): void => {
         setIsDropdownOpen(!isDropdownOpen);
@@ -25,19 +20,6 @@ function NavBarComponent({ auth }: NavBarProps): React.JSX.Element {
     };
 
     useEffect(() => {
-        async function LoadEditions(): Promise<void> {
-            setEditions(EDITION_SELECT_LIST);
-
-            // Set initial selected edition from user profile or default
-            if (auth.user?.preferredEditionId) {
-                setSelectedEdition(String(auth.user.preferredEditionId));
-            } else {
-                setSelectedEdition('4');
-            }
-        }
-
-        LoadEditions();
-
         function HandleClickOutside(event: MouseEvent): void {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setIsDropdownOpen(false);
@@ -47,29 +29,7 @@ function NavBarComponent({ auth }: NavBarProps): React.JSX.Element {
         return () => {
             document.removeEventListener("mousedown", HandleClickOutside);
         };
-    }, [auth.user]); // Depend on user to re-evaluate preferred edition on login/logout
-
-    const HandleEditionChange = async (event: React.ChangeEvent<HTMLSelectElement>): Promise<void> => {
-        const newEditionId = event.target.value;
-        setSelectedEdition(newEditionId);
-
-        try {
-            setIsUpdatingEdition(true);
-            const editionIdForBackend = parseInt(newEditionId, 10);
-
-            // Use NavBarService instead of direct auth call
-            await NavBarService.updatePreferredEdition(editionIdForBackend);
-
-            // Update auth context with new user data
-            await auth.UpdatePreferredEdition(editionIdForBackend);
-        } catch (error) {
-            console.error('Failed to update preferred edition:', error);
-            // Revert selection on error
-            setSelectedEdition(String(auth.user?.preferredEditionId || '4'));
-        } finally {
-            setIsUpdatingEdition(false);
-        }
-    };
+    }, []);
 
     return (
         <nav className="sticky top-0 z-50 h-11 bg-gray-100 dark:bg-gray-800 shadow flex">
@@ -77,26 +37,6 @@ function NavBarComponent({ auth }: NavBarProps): React.JSX.Element {
                 <Link to="/" className="font-bold text-lg">DnD Tools</Link>
             </div>
             <div className="flex items-center space-x-2 pr-4 ml-auto">
-                {editions.length > 0 && (
-                    <div className="flex items-center space-x-1">
-                        <select
-                            value={selectedEdition}
-                            onChange={HandleEditionChange}
-                            disabled={isUpdatingEdition}
-                            className="bg-gray-200 dark:bg-gray-700 text-black dark:text-white text-sm px-2 py-1 rounded focus:outline-none disabled:opacity-50"
-                        >
-                            {editions.map(option => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
-                            ))}
-                        </select>
-                        {isUpdatingEdition && (
-                            <span className="text-xs text-gray-500">Updating...</span>
-                        )}
-                    </div>
-                )}
-
                 {auth.user ? (
                     <div className="relative">
                         <button onClick={ToggleDropdown} className="text-sm items-center rounded hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none">

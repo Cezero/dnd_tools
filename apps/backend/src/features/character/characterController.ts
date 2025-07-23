@@ -13,7 +13,13 @@ import { characterService } from './characterService';
 
 
 export async function GetAllCharacters(req: ValidatedNoInput<GetAllCharactersResponse>, res: Response) {
-    const result = await characterService.getAllCharacters();
+    const userId = req.user?.id;
+    if (!userId) {
+        res.status(401).json({ error: 'User not authenticated' });
+        return;
+    }
+
+    const result = await characterService.getAllCharacters(userId);
     res.json(result);
 }
 
@@ -29,7 +35,15 @@ export async function GetCharacterById(req: ValidatedParamsT<CharacterIdParamReq
 }
 
 export async function CreateCharacter(req: ValidatedBodyT<CreateCharacterRequest>, res: Response) {
-    await characterService.createCharacter(req.body);
+    const userId = req.user?.id;
+    if (!userId) {
+        res.status(401).json({ error: 'User not authenticated' });
+        return;
+    }
+
+    // Add the user ID to the character data
+    const characterData = { ...req.body, userId };
+    await characterService.createCharacter(characterData);
     res.status(201).json({ message: 'Character created successfully' });
 }
 

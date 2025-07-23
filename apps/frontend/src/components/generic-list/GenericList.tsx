@@ -89,6 +89,7 @@ export function GenericList<T>({
     itemDesc = 'items',
     initialLimit = 20,
     routes,
+    functions,
     deleteServiceFunction,
     basePath = '',
     isOptionSelector = false,
@@ -402,6 +403,19 @@ export function GenericList<T>({
 
     // Navigation cell renderer for detail links
     const renderDetailCell = (item: T, cellValue: any) => {
+        // If functions are provided, use the detail function
+        if (functions?.detail) {
+            return (
+                <a
+                    onClick={() => functions.detail!(item)}
+                    className="text-blue-600 hover:underline cursor-pointer"
+                >
+                    {cellValue}
+                </a>
+            );
+        }
+
+        // Fall back to route-based navigation
         const detailRoute = findRouteByType('detail');
         if (!detailRoute) return cellValue;
 
@@ -425,13 +439,60 @@ export function GenericList<T>({
 
     // Render action icons for edit/delete
     const renderActionIcons = (item: T) => {
+        const actions = [];
+
+        // If functions are provided, use them
+        if (functions) {
+            if (functions.edit) {
+                actions.push(
+                    <a
+                        key="edit"
+                        onClick={() => functions.edit!(item)}
+                        className="text-blue-600 hover:text-blue-800 cursor-pointer ml-2"
+                        title="Edit"
+                    >
+                        <PencilIcon className="h-4 w-4" />
+                    </a>
+                );
+            }
+
+            if (functions.delete) {
+                actions.push(
+                    <a
+                        key="delete"
+                        onClick={async () => {
+                            if (window.confirm(`Are you sure you want to delete this ${itemDesc}?`)) {
+                                try {
+                                    await functions.delete!(item);
+                                    // Refresh the data after successful deletion
+                                    const { results, total } = await serviceFunction();
+                                    setData(results);
+                                    setTotal(total);
+                                } catch (error) {
+                                    console.error(`Failed to delete ${itemDesc}:`, error);
+                                    alert(`Failed to delete ${itemDesc}.`);
+                                }
+                            }
+                        }}
+                        className="text-red-600 hover:text-red-800 cursor-pointer ml-2"
+                        title="Delete"
+                    >
+                        <TrashIcon className="h-4 w-4" />
+                    </a>
+                );
+            }
+
+            return actions.length > 0 ? (
+                <div className="flex items-center">{actions}</div>
+            ) : null;
+        }
+
+        // Fall back to route-based actions
         const editRoute = findRouteByType('edit');
 
         // Handle both id and slug identifiers
         const itemId = (item as any).id || (item as any).slug;
         if (!itemId) return null;
-
-        const actions = [];
 
         if (editRoute && (!editRoute.requireAdmin || isAdmin)) {
             // Extract the route path from the edit route (e.g., 'spells/:id/edit' -> 'spells')
@@ -557,7 +618,13 @@ export function GenericList<T>({
                                     </thead>
                                     <tbody>
                                         {table.getRowModel().rows.length === 0 ? (
-                                            <tr><td colSpan={finalColumns.length}>No {pluralize(itemDesc, 2)} found.</td></tr>
+                                            <tr>
+                                                <td colSpan={finalColumns.length} className="text-center py-8">
+                                                    <div className="text-lg font-medium text-gray-600 dark:text-gray-400">
+                                                        No {pluralize(itemDesc, 2)} found.
+                                                    </div>
+                                                </td>
+                                            </tr>
                                         ) : (
                                             table.getRowModel().rows.map(row => (
                                                 <tr key={row.id} className="hover:bg-gray-100 dark:hover:bg-gray-800 odd:bg-gray-500 even:bg-white dark:odd:bg-[#141e2d] dark:even:bg-[#121212]">
@@ -569,7 +636,7 @@ export function GenericList<T>({
                                                         let finalCellValue = cellValue;
 
                                                         // Apply detail navigation to required column
-                                                        if (isRequiredColumn && routes) {
+                                                        if (isRequiredColumn && (routes || functions?.detail)) {
                                                             finalCellValue = renderDetailCell(row.original, cellValue);
                                                         }
 
@@ -595,67 +662,69 @@ export function GenericList<T>({
                             </SortableContext>
                         </DndContext>
 
-                        <div className="flex justify-between mt-4">
-                            <div>
-                                Showing {start}–{end} of {filteredTotal}
+                        {filteredTotal > 0 && (
+                            <div className="flex justify-between mt-4">
+                                <div>
+                                    Showing {start}–{end} of {filteredTotal}
+                                </div>
+                                <div className="flex gap-2 items-center">
+                                    <select
+                                        value={pagination.pageSize}
+                                        onChange={(e) => {
+                                            const newPageSize = Number(e.target.value);
+                                            table.setPageSize(newPageSize);
+                                            setPagination(prev => ({
+                                                ...prev,
+                                                pageSize: newPageSize,
+                                                pageIndex: 0 // Reset to first page when changing page size
+                                            }));
+                                        }}
+                                        className="px-2 py-1 border rounded bg-white dark:bg-gray-800"
+                                        title="Select number of items per page"
+                                    >
+                                        {PAGE_LIMITS.map(option => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <button
+                                        onClick={() => table.setPageIndex(0)}
+                                        disabled={!table.getCanPreviousPage()}
+                                        className="px-2 py-1 border rounded disabled:opacity-50"
+                                    >
+                                        First
+                                    </button>
+                                    <button
+                                        onClick={() => table.previousPage()}
+                                        disabled={!table.getCanPreviousPage()}
+                                        className="px-2 py-1 border rounded disabled:opacity-50"
+                                    >
+                                        &lt; Prev
+                                    </button>
+
+                                    <span className="px-2">
+                                        Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+                                    </span>
+
+                                    <button
+                                        onClick={() => table.nextPage()}
+                                        disabled={!table.getCanNextPage()}
+                                        className="px-2 py-1 border rounded disabled:opacity-50"
+                                    >
+                                        Next &gt;
+                                    </button>
+                                    <button
+                                        onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                                        disabled={!table.getCanNextPage()}
+                                        className="px-2 py-1 border rounded disabled:opacity-50"
+                                    >
+                                        Last
+                                    </button>
+                                </div>
+
                             </div>
-                            <div className="flex gap-2 items-center">
-                                <select
-                                    value={pagination.pageSize}
-                                    onChange={(e) => {
-                                        const newPageSize = Number(e.target.value);
-                                        table.setPageSize(newPageSize);
-                                        setPagination(prev => ({
-                                            ...prev,
-                                            pageSize: newPageSize,
-                                            pageIndex: 0 // Reset to first page when changing page size
-                                        }));
-                                    }}
-                                    className="px-2 py-1 border rounded bg-white dark:bg-gray-800"
-                                    title="Select number of items per page"
-                                >
-                                    {PAGE_LIMITS.map(option => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </select>
-                                <button
-                                    onClick={() => table.setPageIndex(0)}
-                                    disabled={!table.getCanPreviousPage()}
-                                    className="px-2 py-1 border rounded disabled:opacity-50"
-                                >
-                                    First
-                                </button>
-                                <button
-                                    onClick={() => table.previousPage()}
-                                    disabled={!table.getCanPreviousPage()}
-                                    className="px-2 py-1 border rounded disabled:opacity-50"
-                                >
-                                    &lt; Prev
-                                </button>
-
-                                <span className="px-2">
-                                    Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
-                                </span>
-
-                                <button
-                                    onClick={() => table.nextPage()}
-                                    disabled={!table.getCanNextPage()}
-                                    className="px-2 py-1 border rounded disabled:opacity-50"
-                                >
-                                    Next &gt;
-                                </button>
-                                <button
-                                    onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                                    disabled={!table.getCanNextPage()}
-                                    className="px-2 py-1 border rounded disabled:opacity-50"
-                                >
-                                    Last
-                                </button>
-                            </div>
-
-                        </div>
+                        )}
                     </>
                 )}
             </div>

@@ -10,6 +10,19 @@ export * from './src/SourceData';
 export * from './src/SpellData';
 export * from './src/FeatData';
 export * from './src/ItemData';
+// Export DiceData with explicit names to avoid conflicts
+export {
+    DiceTheme,
+    DICE_THEMES,
+    DICE_THEME_LIST,
+    DICE_THEME_SELECT_LIST,
+    DICE_THEME_NAMES,
+    getDiceThemeBySystemName,
+    getDiceThemeById,
+    getSystemNameById,
+    isDiceThemeValid,
+    doesThemeIgnoreColor
+} from './src/DiceData';
 
 // Re-export specific modules for direct access
 export * as AbilityData from './src/AbilityData';
@@ -20,6 +33,7 @@ export * as SourceData from './src/SourceData';
 export * as SpellData from './src/SpellData';
 export * as FeatData from './src/FeatData';
 export * as ItemData from './src/ItemData';
+export * as DiceData from './src/DiceData';
 
 // Default export for backward compatibility
 import * as AbilityDataModule from './src/AbilityData';
@@ -30,6 +44,7 @@ import * as SourceDataModule from './src/SourceData';
 import * as SpellDataModule from './src/SpellData';
 import * as FeatDataModule from './src/FeatData';
 import * as ItemDataModule from './src/ItemData';
+import * as DiceDataModule from './src/DiceData';
 
 const staticData = {
     AbilityData: AbilityDataModule,
@@ -40,6 +55,7 @@ const staticData = {
     SpellData: SpellDataModule,
     FeatData: FeatDataModule,
     ItemData: ItemDataModule,
+    DiceData: DiceDataModule,
 };
 
 export default staticData; 

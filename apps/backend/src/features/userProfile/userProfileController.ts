@@ -1,11 +1,10 @@
 import { Response } from 'express';
 
-import { ValidatedParamsT, ValidatedParamsBodyT } from '@/util/validated-types'
-import type { UpdateUserProfileRequest, UserProfileIdParamRequest, UserProfileResponse, UserProfileUpdateResponse } from '@shared/schema';
+import type { UpdateUserProfileRequest, UserProfileResponse, UserProfileUpdateResponse } from '@shared/schema';
 
 import { userProfileService } from './userProfileService';
 
-export async function GetUserProfile(req: ValidatedParamsT<UserProfileIdParamRequest, UserProfileResponse>, res: Response) {
+export async function GetUserProfile(req: any, res: Response) {
     const id = req.user?.id;
     if (!id) {
         res.status(401).json({
@@ -24,13 +23,10 @@ export async function GetUserProfile(req: ValidatedParamsT<UserProfileIdParamReq
         return;
     }
 
-    res.json({
-        success: true,
-        data: profile
-    });
+    res.json(profile);
 }
 
-export async function UpdateUserProfile(req: ValidatedParamsBodyT<UserProfileIdParamRequest, UpdateUserProfileRequest, UserProfileUpdateResponse>, res: Response) {
+export async function UpdateUserProfile(req: any, res: Response) {
     const id = req.user?.id;
     if (!id) {
         res.status(401).json({
@@ -42,8 +38,5 @@ export async function UpdateUserProfile(req: ValidatedParamsBodyT<UserProfileIdP
 
     const result: UserProfileUpdateResponse = await userProfileService.updateUserProfile(id, req.body);
 
-    res.json({
-        success: true,
-        data: result
-    });
+    res.json(result);
 } 

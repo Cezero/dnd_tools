@@ -1,21 +1,33 @@
 import { PrismaClient, Prisma } from '@shared/prisma-client';
 import { CharacterIdParamRequest, CharacterResponse, CreateCharacterRequest, CreateResponse, GetAllCharactersResponse, UpdateCharacterRequest, UpdateResponse } from '@shared/schema';
+import type { AuthUser } from '@shared/schema';
 
 import type { CharacterService } from './types';
 
 const prisma = new PrismaClient();
 
-export const characterService: CharacterService = { 
-    async getAllCharacters(): Promise<GetAllCharactersResponse> {
+export const characterService: CharacterService = {
+    async getAllCharacters(userId: number): Promise<GetAllCharactersResponse> {
         const [characters, total] = await Promise.all([
             prisma.userCharacter.findMany({
+                where: { userId },
+                include: {
+                    race: {
+                        select: {
+                            id: true,
+                            name: true,
+                        },
+                    },
+                },
                 orderBy: { name: 'asc' },
             }),
-            prisma.userCharacter.count(),
+            prisma.userCharacter.count({
+                where: { userId },
+            }),
         ]);
 
         return {
-            total: characters.length,
+            total,
             results: characters,
         };
     },

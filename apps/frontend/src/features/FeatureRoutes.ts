@@ -6,6 +6,7 @@ import { routes as spellRoutes } from '@/features/spell/SpellConfig';
 import { routes as classRoutes } from '@/features/class/ClassConfig';
 import { routes as raceRoutes } from '@/features/race/RaceConfig';
 import { routes as itemRoutes } from '@/features/item/ItemConfig';
+import { routes as profileRoutes } from '@/features/profile/ProfileConfig';
 import { RouteConfig } from '@/types';
 
 export const FeatureRoutes: RouteConfig[] = [
@@ -17,4 +18,5 @@ export const FeatureRoutes: RouteConfig[] = [
     ...classRoutes,
     ...raceRoutes,
     ...itemRoutes,
+    ...profileRoutes,
 ]; 

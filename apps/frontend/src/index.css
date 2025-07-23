@@ -8,13 +8,19 @@
 @theme {
     --color-text: black;
     --color-text-dark: #d1d5db;
+    --color-secondary-text: #6b7280;
+    --color-secondary-text-dark: #6F7E97;
     --color-background: #f3f4f6;
     --color-background-dark: #111827;
     --grid-auto-rows: auto;
     --color-bg-content: #ffffff;
     --color-bg-content-dark: #364153;
+    --color-bg-secondary: #e5e7eb;
+    --color-bg-secondary-dark: #6F7E97;
     --color-border-content: #000000;
     --color-border-content-dark: #6a7282;
+    --color-border-secondary: #6F7E97;
+    --color-border-secondary-dark: #A1ADC2;
 }
 
 @layer base {
@@ -38,6 +44,18 @@
 
     .text-color-default {
         color: var(--color-text);
+    }
+
+    .text-secondary {
+        color: var(--color-secondary-text);
+    }
+
+    .bg-secondary {
+        background-color: var(--color-bg-secondary);
+    }
+
+    .border-secondary {
+        border-color: var(--color-border-secondary);
     }
 }
 
@@ -84,10 +102,23 @@
     --color-background: var(--color-background-dark);
     --color-bg-content: var(--color-bg-content-dark);
     --color-border-content: var(--color-border-content-dark);
+    --color-secondary-text: var(--color-secondary-text-dark);
+    --color-bg-secondary: var(--color-bg-secondary-dark);
+    --color-border-secondary: var(--color-border-secondary-dark);
 }
 
 html,
 body {
     height: 100%;
     overflow: hidden;
+}
+
+.dice-box-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 100;
+    width: 100%;
+    height: 100%;
 }

@@ -2,8 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 
-import { ReactComponent as AxeSword } from '@/assets/icons/axe-sword.svg';
-import { ReactComponent as ArmorVest } from '@/assets/icons/armor-vest.svg';
+import { AxeSword, ArmorVest } from '@/assets/icons';
 
 import {
     ValidatedForm,

@@ -1,7 +1,17 @@
-import { ChevronRightIcon, ChevronLeftIcon, UserGroupIcon, SparklesIcon, TableCellsIcon, BookOpenIcon, ChevronDownIcon, AcademicCapIcon, UserIcon, WrenchScrewdriverIcon, StarIcon, CubeIcon, ChartBarIcon, TableCellsIcon as TableCellsIcon2, Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { ChevronRightIcon, ChevronLeftIcon, UserGroupIcon, SparklesIcon, TableCellsIcon, BookOpenIcon, ChevronDownIcon, AcademicCapIcon, UserIcon, WrenchScrewdriverIcon, StarIcon, CubeIcon, ChartBarIcon, TableCellsIcon as TableCellsIcon2, Cog6ToothIcon, CubeTransparentIcon, BeakerIcon } from '@heroicons/react/24/outline';
 import React, { useRef, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { NavigationMenu } from '@base-ui-components/react/navigation-menu';
+
+// Custom Link component for NavigationMenu.Link to enable client-side routing
+function CustomLink(props: NavigationMenu.Link.Props) {
+    return (
+        <NavigationMenu.Link
+            render={<Link to={props.href} />}
+            {...props}
+        />
+    );
+}
 
 interface MainSidebarProps {
     isExpanded: boolean;
@@ -123,7 +133,7 @@ export function MainSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }
                                         )}
                                     </NavigationMenu.Trigger>
                                     <NavigationMenu.Content>
-                                        <NavigationMenu.Link
+                                        <CustomLink
                                             className={`flex items-center px-4 py-2 text-sm
                                                         text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600
                                                         ${location.pathname.startsWith('/spells') ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
@@ -131,8 +141,8 @@ export function MainSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }
                                         >
                                             <SparklesIcon className={`${location.pathname.startsWith('/spells') ? 'text-blue-600 dark:text-blue-400' : ''} w-4 h-4 mr-2`} />
                                             <span className={`${location.pathname.startsWith('/spells') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Spells</span>
-                                        </NavigationMenu.Link>
-                                        <NavigationMenu.Link
+                                        </CustomLink>
+                                        <CustomLink
                                             className={`flex items-center px-4 py-2 text-sm
                                                         text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600
                                                         ${location.pathname.startsWith('/classes') ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
@@ -140,8 +150,8 @@ export function MainSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }
                                         >
                                             <AcademicCapIcon className={`${location.pathname.startsWith('/classes') ? 'text-blue-600 dark:text-blue-400' : ''} w-4 h-4 mr-2`} />
                                             <span className={`${location.pathname.startsWith('/classes') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Classes</span>
-                                        </NavigationMenu.Link>
-                                        <NavigationMenu.Link
+                                        </CustomLink>
+                                        <CustomLink
                                             className={`flex items-center px-4 py-2 text-sm
                                                         text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600
                                                         ${location.pathname.startsWith('/races') ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
@@ -149,8 +159,8 @@ export function MainSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }
                                         >
                                             <UserIcon className={`${location.pathname.startsWith('/races') ? 'text-blue-600 dark:text-blue-400' : ''} w-4 h-4 mr-2`} />
                                             <span className={`${location.pathname.startsWith('/races') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Races</span>
-                                        </NavigationMenu.Link>
-                                        <NavigationMenu.Link
+                                        </CustomLink>
+                                        <CustomLink
                                             className={`flex items-center px-4 py-2 text-sm
                                                         text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600
                                                         ${location.pathname.startsWith('/skills') ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
@@ -158,8 +168,8 @@ export function MainSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }
                                         >
                                             <WrenchScrewdriverIcon className={`${location.pathname.startsWith('/skills') ? 'text-blue-600 dark:text-blue-400' : ''} w-4 h-4 mr-2`} />
                                             <span className={`${location.pathname.startsWith('/skills') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Skills</span>
-                                        </NavigationMenu.Link>
-                                        <NavigationMenu.Link
+                                        </CustomLink>
+                                        <CustomLink
                                             className={`flex items-center px-4 py-2 text-sm
                                                         text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600
                                                         ${location.pathname.startsWith('/feats') ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
@@ -167,8 +177,8 @@ export function MainSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }
                                         >
                                             <StarIcon className={`${location.pathname.startsWith('/feats') ? 'text-blue-600 dark:text-blue-400' : ''} w-4 h-4 mr-2`} />
                                             <span className={`${location.pathname.startsWith('/feats') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Feats</span>
-                                        </NavigationMenu.Link>
-                                        <NavigationMenu.Link
+                                        </CustomLink>
+                                        <CustomLink
                                             className={`flex items-center px-4 py-2 text-sm
                                                         text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600
                                                         ${location.pathname.startsWith('/items') ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
@@ -176,7 +186,7 @@ export function MainSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }
                                         >
                                             <CubeIcon className={`${location.pathname.startsWith('/items') ? 'text-blue-600 dark:text-blue-400' : ''} w-4 h-4 mr-2`} />
                                             <span className={`${location.pathname.startsWith('/items') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Items</span>
-                                        </NavigationMenu.Link>
+                                        </CustomLink>
                                     </NavigationMenu.Content>
                                 </NavigationMenu.Item>
 
@@ -197,7 +207,7 @@ export function MainSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }
                                         )}
                                     </NavigationMenu.Trigger>
                                     <NavigationMenu.Content>
-                                        <NavigationMenu.Link
+                                        <CustomLink
                                             className={`flex items-center px-4 py-2 text-sm
                                                         text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600
                                                         ${location.pathname === '/admin' ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
@@ -205,8 +215,8 @@ export function MainSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }
                                         >
                                             <ChartBarIcon className={`${location.pathname === '/admin' ? 'text-blue-600 dark:text-blue-400' : ''} w-4 h-4 mr-2`} />
                                             <span className={`${location.pathname === '/admin' ? 'text-blue-600 dark:text-blue-400' : ''}`}>Dashboard</span>
-                                        </NavigationMenu.Link>
-                                        <NavigationMenu.Link
+                                        </CustomLink>
+                                        <CustomLink
                                             className={`flex items-center px-4 py-2 text-sm
                                                         text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600
                                                         ${location.pathname.startsWith('/admin/referencetables') ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
@@ -214,7 +224,25 @@ export function MainSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }
                                         >
                                             <TableCellsIcon2 className={`${location.pathname.startsWith('/admin/referencetables') ? 'text-blue-600 dark:text-blue-400' : ''} w-4 h-4 mr-2`} />
                                             <span className={`${location.pathname.startsWith('/admin/referencetables') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Reference Tables</span>
-                                        </NavigationMenu.Link>
+                                        </CustomLink>
+                                        <CustomLink
+                                            className={`flex items-center px-4 py-2 text-sm
+                                                        text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600
+                                                        ${location.pathname.startsWith('/admin/dice-configuration') ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
+                                            href="/admin/dice-configuration"
+                                        >
+                                            <CubeTransparentIcon className={`${location.pathname.startsWith('/admin/dice-configuration') ? 'text-blue-600 dark:text-blue-400' : ''} w-4 h-4 mr-2`} />
+                                            <span className={`${location.pathname.startsWith('/admin/dice-configuration') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Dice Configuration</span>
+                                        </CustomLink>
+                                        <CustomLink
+                                            className={`flex items-center px-4 py-2 text-sm
+                                                        text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600
+                                                        ${location.pathname.startsWith('/admin/dice-testing') ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
+                                            href="/admin/dice-testing"
+                                        >
+                                            <BeakerIcon className={`${location.pathname.startsWith('/admin/dice-testing') ? 'text-blue-600 dark:text-blue-400' : ''} w-4 h-4 mr-2`} />
+                                            <span className={`${location.pathname.startsWith('/admin/dice-testing') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Dice Testing</span>
+                                        </CustomLink>
                                     </NavigationMenu.Content>
                                 </NavigationMenu.Item>
                             </NavigationMenu.List>

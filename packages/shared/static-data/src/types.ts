@@ -104,6 +104,12 @@ export interface Class extends CoreComponentAbbreviation {
     canCastSpells: boolean;
 }
 
+export interface DiceTheme extends CoreComponent {
+    systemName: string;
+    description: string;
+    ignoresThemeColor: boolean;
+}
+
 export type SpellTable = { [characterLevel: number]: { [spellLevel: number]: number } };
 
 
@@ -128,3 +134,4 @@ export type SpellSubschoolSelectMap = SelectOptionMap<SelectOption>;
 export type SkillMap = BaseMap<Skill>;
 export type SourceBookMap = BaseMap<SourceBook>;
 export type ClassMap = BaseMap<Class>;
+export type DiceThemeMap = { [key: string]: DiceTheme };

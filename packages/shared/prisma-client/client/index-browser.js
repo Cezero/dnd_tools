@@ -478,7 +478,40 @@ exports.Prisma.UserScalarFieldEnum = {
   isAdmin: 'isAdmin',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  preferredEditionId: 'preferredEditionId'
+  preferredEditionId: 'preferredEditionId',
+  diceConfigBase: 'diceConfigBase'
+};
+
+exports.Prisma.DiceBoxAdminConfigScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  isDefault: 'isDefault',
+  gravity: 'gravity',
+  mass: 'mass',
+  friction: 'friction',
+  restitution: 'restitution',
+  angularDamping: 'angularDamping',
+  linearDamping: 'linearDamping',
+  spinForce: 'spinForce',
+  throwForce: 'throwForce',
+  startingHeight: 'startingHeight',
+  settleTimeout: 'settleTimeout',
+  lightIntensity: 'lightIntensity',
+  enableShadows: 'enableShadows',
+  shadowTransparency: 'shadowTransparency',
+  theme: 'theme',
+  themeColor: 'themeColor',
+  iconColor: 'iconColor',
+  scale: 'scale',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.UserDiceConfigOverrideScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  propertyName: 'propertyName',
+  propertyValue: 'propertyValue'
 };
 
 exports.Prisma.SortOrder = {
@@ -634,6 +667,17 @@ exports.Prisma.UserOrderByRelevanceFieldEnum = {
   email: 'email',
   password: 'password'
 };
+
+exports.Prisma.DiceBoxAdminConfigOrderByRelevanceFieldEnum = {
+  name: 'name',
+  themeColor: 'themeColor',
+  iconColor: 'iconColor'
+};
+
+exports.Prisma.UserDiceConfigOverrideOrderByRelevanceFieldEnum = {
+  propertyName: 'propertyName',
+  propertyValue: 'propertyValue'
+};
 exports.ItemPropertyType = exports.$Enums.ItemPropertyType = {
   Material: 'Material',
   Enhancement: 'Enhancement',
@@ -698,7 +742,9 @@ exports.Prisma.ModelName = {
   ReferenceTableCell: 'ReferenceTableCell',
   UserCharacter: 'UserCharacter',
   UserCharacterAttribute: 'UserCharacterAttribute',
-  User: 'User'
+  User: 'User',
+  DiceBoxAdminConfig: 'DiceBoxAdminConfig',
+  UserDiceConfigOverride: 'UserDiceConfigOverride'
 };
 
 /**

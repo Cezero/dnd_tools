@@ -5,3 +5,4 @@ alwaysApply: false
 ---
 Use Prisma Client for all database interactions, and prefer parameterized queries and `select`/`include` to limit data.
 Use Prisma Input types when appropriate
+Do not attempt to migrate the prisma schema, instead prompt the user.

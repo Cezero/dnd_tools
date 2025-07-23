@@ -6,7 +6,7 @@ import { GetUserProfile, UpdateUserProfile } from './userProfileController';
 
 const { router: UserProfileRouter, get, put } = buildValidatedRouter();
 
-get('/', requireAuth, { params: UserProfileIdParamSchema }, GetUserProfile);
-put('/', requireAuth, { params: UserProfileIdParamSchema, body: UpdateUserProfileSchema }, UpdateUserProfile);
+get('/', requireAuth, {}, GetUserProfile);
+put('/', requireAuth, { body: UpdateUserProfileSchema }, UpdateUserProfile);
 
 export { UserProfileRouter };

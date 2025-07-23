@@ -228,6 +228,16 @@ export type UserCharacterAttribute = $Result.DefaultSelection<Prisma.$UserCharac
  * 
  */
 export type User = $Result.DefaultSelection<Prisma.$UserPayload>
+/**
+ * Model DiceBoxAdminConfig
+ * 
+ */
+export type DiceBoxAdminConfig = $Result.DefaultSelection<Prisma.$DiceBoxAdminConfigPayload>
+/**
+ * Model UserDiceConfigOverride
+ * 
+ */
+export type UserDiceConfigOverride = $Result.DefaultSelection<Prisma.$UserDiceConfigOverridePayload>
 
 /**
  * Enums
@@ -830,6 +840,26 @@ export class PrismaClient<
     * ```
     */
   get user(): Prisma.UserDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.diceBoxAdminConfig`: Exposes CRUD operations for the **DiceBoxAdminConfig** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more DiceBoxAdminConfigs
+    * const diceBoxAdminConfigs = await prisma.diceBoxAdminConfig.findMany()
+    * ```
+    */
+  get diceBoxAdminConfig(): Prisma.DiceBoxAdminConfigDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.userDiceConfigOverride`: Exposes CRUD operations for the **UserDiceConfigOverride** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more UserDiceConfigOverrides
+    * const userDiceConfigOverrides = await prisma.userDiceConfigOverride.findMany()
+    * ```
+    */
+  get userDiceConfigOverride(): Prisma.UserDiceConfigOverrideDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -1312,7 +1342,9 @@ export namespace Prisma {
     ReferenceTableCell: 'ReferenceTableCell',
     UserCharacter: 'UserCharacter',
     UserCharacterAttribute: 'UserCharacterAttribute',
-    User: 'User'
+    User: 'User',
+    DiceBoxAdminConfig: 'DiceBoxAdminConfig',
+    UserDiceConfigOverride: 'UserDiceConfigOverride'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1331,7 +1363,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "class" | "classFeature" | "classProficiencies" | "classFeatureMap" | "classFeatureProgression" | "classSkillMap" | "classSourceMap" | "spellLevelMap" | "spell" | "spellDescriptorMap" | "spellSchoolMap" | "spellSourceMap" | "spellSubschoolMap" | "spellComponentMap" | "skill" | "feat" | "featBenefitMap" | "featPrerequisiteMap" | "race" | "raceTrait" | "raceTraitMap" | "raceAbilityAdjustment" | "raceLanguageMap" | "raceSourceMap" | "item" | "itemType" | "armor" | "weapon" | "itemProperty" | "itemPropertyAppliesTo" | "itemPropertyIncompatibility" | "itemTemplate" | "itemTemplateProperty" | "characterItem" | "characterItemProperty" | "sourceBook" | "referenceTable" | "referenceTableColumn" | "referenceTableRow" | "referenceTableCell" | "userCharacter" | "userCharacterAttribute" | "user"
+      modelProps: "class" | "classFeature" | "classProficiencies" | "classFeatureMap" | "classFeatureProgression" | "classSkillMap" | "classSourceMap" | "spellLevelMap" | "spell" | "spellDescriptorMap" | "spellSchoolMap" | "spellSourceMap" | "spellSubschoolMap" | "spellComponentMap" | "skill" | "feat" | "featBenefitMap" | "featPrerequisiteMap" | "race" | "raceTrait" | "raceTraitMap" | "raceAbilityAdjustment" | "raceLanguageMap" | "raceSourceMap" | "item" | "itemType" | "armor" | "weapon" | "itemProperty" | "itemPropertyAppliesTo" | "itemPropertyIncompatibility" | "itemTemplate" | "itemTemplateProperty" | "characterItem" | "characterItemProperty" | "sourceBook" | "referenceTable" | "referenceTableColumn" | "referenceTableRow" | "referenceTableCell" | "userCharacter" | "userCharacterAttribute" | "user" | "diceBoxAdminConfig" | "userDiceConfigOverride"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -4173,6 +4205,138 @@ export namespace Prisma {
           }
         }
       }
+      DiceBoxAdminConfig: {
+        payload: Prisma.$DiceBoxAdminConfigPayload<ExtArgs>
+        fields: Prisma.DiceBoxAdminConfigFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.DiceBoxAdminConfigFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiceBoxAdminConfigPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.DiceBoxAdminConfigFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiceBoxAdminConfigPayload>
+          }
+          findFirst: {
+            args: Prisma.DiceBoxAdminConfigFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiceBoxAdminConfigPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.DiceBoxAdminConfigFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiceBoxAdminConfigPayload>
+          }
+          findMany: {
+            args: Prisma.DiceBoxAdminConfigFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiceBoxAdminConfigPayload>[]
+          }
+          create: {
+            args: Prisma.DiceBoxAdminConfigCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiceBoxAdminConfigPayload>
+          }
+          createMany: {
+            args: Prisma.DiceBoxAdminConfigCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.DiceBoxAdminConfigDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiceBoxAdminConfigPayload>
+          }
+          update: {
+            args: Prisma.DiceBoxAdminConfigUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiceBoxAdminConfigPayload>
+          }
+          deleteMany: {
+            args: Prisma.DiceBoxAdminConfigDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.DiceBoxAdminConfigUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.DiceBoxAdminConfigUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiceBoxAdminConfigPayload>
+          }
+          aggregate: {
+            args: Prisma.DiceBoxAdminConfigAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateDiceBoxAdminConfig>
+          }
+          groupBy: {
+            args: Prisma.DiceBoxAdminConfigGroupByArgs<ExtArgs>
+            result: $Utils.Optional<DiceBoxAdminConfigGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.DiceBoxAdminConfigCountArgs<ExtArgs>
+            result: $Utils.Optional<DiceBoxAdminConfigCountAggregateOutputType> | number
+          }
+        }
+      }
+      UserDiceConfigOverride: {
+        payload: Prisma.$UserDiceConfigOverridePayload<ExtArgs>
+        fields: Prisma.UserDiceConfigOverrideFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.UserDiceConfigOverrideFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserDiceConfigOverridePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.UserDiceConfigOverrideFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserDiceConfigOverridePayload>
+          }
+          findFirst: {
+            args: Prisma.UserDiceConfigOverrideFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserDiceConfigOverridePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.UserDiceConfigOverrideFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserDiceConfigOverridePayload>
+          }
+          findMany: {
+            args: Prisma.UserDiceConfigOverrideFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserDiceConfigOverridePayload>[]
+          }
+          create: {
+            args: Prisma.UserDiceConfigOverrideCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserDiceConfigOverridePayload>
+          }
+          createMany: {
+            args: Prisma.UserDiceConfigOverrideCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.UserDiceConfigOverrideDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserDiceConfigOverridePayload>
+          }
+          update: {
+            args: Prisma.UserDiceConfigOverrideUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserDiceConfigOverridePayload>
+          }
+          deleteMany: {
+            args: Prisma.UserDiceConfigOverrideDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.UserDiceConfigOverrideUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.UserDiceConfigOverrideUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserDiceConfigOverridePayload>
+          }
+          aggregate: {
+            args: Prisma.UserDiceConfigOverrideAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateUserDiceConfigOverride>
+          }
+          groupBy: {
+            args: Prisma.UserDiceConfigOverrideGroupByArgs<ExtArgs>
+            result: $Utils.Optional<UserDiceConfigOverrideGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.UserDiceConfigOverrideCountArgs<ExtArgs>
+            result: $Utils.Optional<UserDiceConfigOverrideCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -4300,6 +4464,8 @@ export namespace Prisma {
     userCharacter?: UserCharacterOmit
     userCharacterAttribute?: UserCharacterAttributeOmit
     user?: UserOmit
+    diceBoxAdminConfig?: DiceBoxAdminConfigOmit
+    userDiceConfigOverride?: UserDiceConfigOverrideOmit
   }
 
   /* Types for Logging */
@@ -5174,10 +5340,12 @@ export namespace Prisma {
 
   export type UserCountOutputType = {
     characters: number
+    diceConfigOverrides: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     characters?: boolean | UserCountOutputTypeCountCharactersArgs
+    diceConfigOverrides?: boolean | UserCountOutputTypeCountDiceConfigOverridesArgs
   }
 
   // Custom InputTypes
@@ -5196,6 +5364,44 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountCharactersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: UserCharacterWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountDiceConfigOverridesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: UserDiceConfigOverrideWhereInput
+  }
+
+
+  /**
+   * Count Type DiceBoxAdminConfigCountOutputType
+   */
+
+  export type DiceBoxAdminConfigCountOutputType = {
+    users: number
+  }
+
+  export type DiceBoxAdminConfigCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    users?: boolean | DiceBoxAdminConfigCountOutputTypeCountUsersArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * DiceBoxAdminConfigCountOutputType without action
+   */
+  export type DiceBoxAdminConfigCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiceBoxAdminConfigCountOutputType
+     */
+    select?: DiceBoxAdminConfigCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * DiceBoxAdminConfigCountOutputType without action
+   */
+  export type DiceBoxAdminConfigCountOutputTypeCountUsersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: UserWhereInput
   }
 
 
@@ -47490,11 +47696,13 @@ export namespace Prisma {
   export type UserAvgAggregateOutputType = {
     id: number | null
     preferredEditionId: number | null
+    diceConfigBase: number | null
   }
 
   export type UserSumAggregateOutputType = {
     id: number | null
     preferredEditionId: number | null
+    diceConfigBase: number | null
   }
 
   export type UserMinAggregateOutputType = {
@@ -47506,6 +47714,7 @@ export namespace Prisma {
     createdAt: Date | null
     updatedAt: Date | null
     preferredEditionId: number | null
+    diceConfigBase: number | null
   }
 
   export type UserMaxAggregateOutputType = {
@@ -47517,6 +47726,7 @@ export namespace Prisma {
     createdAt: Date | null
     updatedAt: Date | null
     preferredEditionId: number | null
+    diceConfigBase: number | null
   }
 
   export type UserCountAggregateOutputType = {
@@ -47528,6 +47738,7 @@ export namespace Prisma {
     createdAt: number
     updatedAt: number
     preferredEditionId: number
+    diceConfigBase: number
     _all: number
   }
 
@@ -47535,11 +47746,13 @@ export namespace Prisma {
   export type UserAvgAggregateInputType = {
     id?: true
     preferredEditionId?: true
+    diceConfigBase?: true
   }
 
   export type UserSumAggregateInputType = {
     id?: true
     preferredEditionId?: true
+    diceConfigBase?: true
   }
 
   export type UserMinAggregateInputType = {
@@ -47551,6 +47764,7 @@ export namespace Prisma {
     createdAt?: true
     updatedAt?: true
     preferredEditionId?: true
+    diceConfigBase?: true
   }
 
   export type UserMaxAggregateInputType = {
@@ -47562,6 +47776,7 @@ export namespace Prisma {
     createdAt?: true
     updatedAt?: true
     preferredEditionId?: true
+    diceConfigBase?: true
   }
 
   export type UserCountAggregateInputType = {
@@ -47573,6 +47788,7 @@ export namespace Prisma {
     createdAt?: true
     updatedAt?: true
     preferredEditionId?: true
+    diceConfigBase?: true
     _all?: true
   }
 
@@ -47671,6 +47887,7 @@ export namespace Prisma {
     createdAt: Date
     updatedAt: Date
     preferredEditionId: number | null
+    diceConfigBase: number | null
     _count: UserCountAggregateOutputType | null
     _avg: UserAvgAggregateOutputType | null
     _sum: UserSumAggregateOutputType | null
@@ -47701,7 +47918,10 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     preferredEditionId?: boolean
+    diceConfigBase?: boolean
     characters?: boolean | User$charactersArgs<ExtArgs>
+    diceConfigOverrides?: boolean | User$diceConfigOverridesArgs<ExtArgs>
+    diceConfigBaseRef?: boolean | User$diceConfigBaseRefArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -47716,11 +47936,14 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     preferredEditionId?: boolean
+    diceConfigBase?: boolean
   }
 
-  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "username" | "email" | "password" | "isAdmin" | "createdAt" | "updatedAt" | "preferredEditionId", ExtArgs["result"]["user"]>
+  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "username" | "email" | "password" | "isAdmin" | "createdAt" | "updatedAt" | "preferredEditionId" | "diceConfigBase", ExtArgs["result"]["user"]>
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     characters?: boolean | User$charactersArgs<ExtArgs>
+    diceConfigOverrides?: boolean | User$diceConfigOverridesArgs<ExtArgs>
+    diceConfigBaseRef?: boolean | User$diceConfigBaseRefArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -47728,6 +47951,8 @@ export namespace Prisma {
     name: "User"
     objects: {
       characters: Prisma.$UserCharacterPayload<ExtArgs>[]
+      diceConfigOverrides: Prisma.$UserDiceConfigOverridePayload<ExtArgs>[]
+      diceConfigBaseRef: Prisma.$DiceBoxAdminConfigPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -47738,6 +47963,7 @@ export namespace Prisma {
       createdAt: Date
       updatedAt: Date
       preferredEditionId: number | null
+      diceConfigBase: number | null
     }, ExtArgs["result"]["user"]>
     composites: {}
   }
@@ -48079,6 +48305,8 @@ export namespace Prisma {
   export interface Prisma__UserClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     characters<T extends User$charactersArgs<ExtArgs> = {}>(args?: Subset<T, User$charactersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserCharacterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    diceConfigOverrides<T extends User$diceConfigOverridesArgs<ExtArgs> = {}>(args?: Subset<T, User$diceConfigOverridesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserDiceConfigOverridePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    diceConfigBaseRef<T extends User$diceConfigBaseRefArgs<ExtArgs> = {}>(args?: Subset<T, User$diceConfigBaseRefArgs<ExtArgs>>): Prisma__DiceBoxAdminConfigClient<$Result.GetResult<Prisma.$DiceBoxAdminConfigPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -48116,6 +48344,7 @@ export namespace Prisma {
     readonly createdAt: FieldRef<"User", 'DateTime'>
     readonly updatedAt: FieldRef<"User", 'DateTime'>
     readonly preferredEditionId: FieldRef<"User", 'Int'>
+    readonly diceConfigBase: FieldRef<"User", 'Int'>
   }
     
 
@@ -48483,6 +48712,49 @@ export namespace Prisma {
   }
 
   /**
+   * User.diceConfigOverrides
+   */
+  export type User$diceConfigOverridesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserDiceConfigOverride
+     */
+    select?: UserDiceConfigOverrideSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserDiceConfigOverride
+     */
+    omit?: UserDiceConfigOverrideOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserDiceConfigOverrideInclude<ExtArgs> | null
+    where?: UserDiceConfigOverrideWhereInput
+    orderBy?: UserDiceConfigOverrideOrderByWithRelationInput | UserDiceConfigOverrideOrderByWithRelationInput[]
+    cursor?: UserDiceConfigOverrideWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: UserDiceConfigOverrideScalarFieldEnum | UserDiceConfigOverrideScalarFieldEnum[]
+  }
+
+  /**
+   * User.diceConfigBaseRef
+   */
+  export type User$diceConfigBaseRefArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiceBoxAdminConfig
+     */
+    select?: DiceBoxAdminConfigSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DiceBoxAdminConfig
+     */
+    omit?: DiceBoxAdminConfigOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiceBoxAdminConfigInclude<ExtArgs> | null
+    where?: DiceBoxAdminConfigWhereInput
+  }
+
+  /**
    * User without action
    */
   export type UserDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -48498,6 +48770,2194 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: UserInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model DiceBoxAdminConfig
+   */
+
+  export type AggregateDiceBoxAdminConfig = {
+    _count: DiceBoxAdminConfigCountAggregateOutputType | null
+    _avg: DiceBoxAdminConfigAvgAggregateOutputType | null
+    _sum: DiceBoxAdminConfigSumAggregateOutputType | null
+    _min: DiceBoxAdminConfigMinAggregateOutputType | null
+    _max: DiceBoxAdminConfigMaxAggregateOutputType | null
+  }
+
+  export type DiceBoxAdminConfigAvgAggregateOutputType = {
+    id: number | null
+    gravity: number | null
+    mass: number | null
+    friction: number | null
+    restitution: number | null
+    angularDamping: number | null
+    linearDamping: number | null
+    spinForce: number | null
+    throwForce: number | null
+    startingHeight: number | null
+    settleTimeout: number | null
+    lightIntensity: number | null
+    shadowTransparency: number | null
+    theme: number | null
+    scale: number | null
+  }
+
+  export type DiceBoxAdminConfigSumAggregateOutputType = {
+    id: number | null
+    gravity: number | null
+    mass: number | null
+    friction: number | null
+    restitution: number | null
+    angularDamping: number | null
+    linearDamping: number | null
+    spinForce: number | null
+    throwForce: number | null
+    startingHeight: number | null
+    settleTimeout: number | null
+    lightIntensity: number | null
+    shadowTransparency: number | null
+    theme: number | null
+    scale: number | null
+  }
+
+  export type DiceBoxAdminConfigMinAggregateOutputType = {
+    id: number | null
+    name: string | null
+    isDefault: boolean | null
+    gravity: number | null
+    mass: number | null
+    friction: number | null
+    restitution: number | null
+    angularDamping: number | null
+    linearDamping: number | null
+    spinForce: number | null
+    throwForce: number | null
+    startingHeight: number | null
+    settleTimeout: number | null
+    lightIntensity: number | null
+    enableShadows: boolean | null
+    shadowTransparency: number | null
+    theme: number | null
+    themeColor: string | null
+    iconColor: string | null
+    scale: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type DiceBoxAdminConfigMaxAggregateOutputType = {
+    id: number | null
+    name: string | null
+    isDefault: boolean | null
+    gravity: number | null
+    mass: number | null
+    friction: number | null
+    restitution: number | null
+    angularDamping: number | null
+    linearDamping: number | null
+    spinForce: number | null
+    throwForce: number | null
+    startingHeight: number | null
+    settleTimeout: number | null
+    lightIntensity: number | null
+    enableShadows: boolean | null
+    shadowTransparency: number | null
+    theme: number | null
+    themeColor: string | null
+    iconColor: string | null
+    scale: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type DiceBoxAdminConfigCountAggregateOutputType = {
+    id: number
+    name: number
+    isDefault: number
+    gravity: number
+    mass: number
+    friction: number
+    restitution: number
+    angularDamping: number
+    linearDamping: number
+    spinForce: number
+    throwForce: number
+    startingHeight: number
+    settleTimeout: number
+    lightIntensity: number
+    enableShadows: number
+    shadowTransparency: number
+    theme: number
+    themeColor: number
+    iconColor: number
+    scale: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type DiceBoxAdminConfigAvgAggregateInputType = {
+    id?: true
+    gravity?: true
+    mass?: true
+    friction?: true
+    restitution?: true
+    angularDamping?: true
+    linearDamping?: true
+    spinForce?: true
+    throwForce?: true
+    startingHeight?: true
+    settleTimeout?: true
+    lightIntensity?: true
+    shadowTransparency?: true
+    theme?: true
+    scale?: true
+  }
+
+  export type DiceBoxAdminConfigSumAggregateInputType = {
+    id?: true
+    gravity?: true
+    mass?: true
+    friction?: true
+    restitution?: true
+    angularDamping?: true
+    linearDamping?: true
+    spinForce?: true
+    throwForce?: true
+    startingHeight?: true
+    settleTimeout?: true
+    lightIntensity?: true
+    shadowTransparency?: true
+    theme?: true
+    scale?: true
+  }
+
+  export type DiceBoxAdminConfigMinAggregateInputType = {
+    id?: true
+    name?: true
+    isDefault?: true
+    gravity?: true
+    mass?: true
+    friction?: true
+    restitution?: true
+    angularDamping?: true
+    linearDamping?: true
+    spinForce?: true
+    throwForce?: true
+    startingHeight?: true
+    settleTimeout?: true
+    lightIntensity?: true
+    enableShadows?: true
+    shadowTransparency?: true
+    theme?: true
+    themeColor?: true
+    iconColor?: true
+    scale?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type DiceBoxAdminConfigMaxAggregateInputType = {
+    id?: true
+    name?: true
+    isDefault?: true
+    gravity?: true
+    mass?: true
+    friction?: true
+    restitution?: true
+    angularDamping?: true
+    linearDamping?: true
+    spinForce?: true
+    throwForce?: true
+    startingHeight?: true
+    settleTimeout?: true
+    lightIntensity?: true
+    enableShadows?: true
+    shadowTransparency?: true
+    theme?: true
+    themeColor?: true
+    iconColor?: true
+    scale?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type DiceBoxAdminConfigCountAggregateInputType = {
+    id?: true
+    name?: true
+    isDefault?: true
+    gravity?: true
+    mass?: true
+    friction?: true
+    restitution?: true
+    angularDamping?: true
+    linearDamping?: true
+    spinForce?: true
+    throwForce?: true
+    startingHeight?: true
+    settleTimeout?: true
+    lightIntensity?: true
+    enableShadows?: true
+    shadowTransparency?: true
+    theme?: true
+    themeColor?: true
+    iconColor?: true
+    scale?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type DiceBoxAdminConfigAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which DiceBoxAdminConfig to aggregate.
+     */
+    where?: DiceBoxAdminConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DiceBoxAdminConfigs to fetch.
+     */
+    orderBy?: DiceBoxAdminConfigOrderByWithRelationInput | DiceBoxAdminConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: DiceBoxAdminConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DiceBoxAdminConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DiceBoxAdminConfigs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned DiceBoxAdminConfigs
+    **/
+    _count?: true | DiceBoxAdminConfigCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: DiceBoxAdminConfigAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: DiceBoxAdminConfigSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: DiceBoxAdminConfigMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: DiceBoxAdminConfigMaxAggregateInputType
+  }
+
+  export type GetDiceBoxAdminConfigAggregateType<T extends DiceBoxAdminConfigAggregateArgs> = {
+        [P in keyof T & keyof AggregateDiceBoxAdminConfig]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateDiceBoxAdminConfig[P]>
+      : GetScalarType<T[P], AggregateDiceBoxAdminConfig[P]>
+  }
+
+
+
+
+  export type DiceBoxAdminConfigGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DiceBoxAdminConfigWhereInput
+    orderBy?: DiceBoxAdminConfigOrderByWithAggregationInput | DiceBoxAdminConfigOrderByWithAggregationInput[]
+    by: DiceBoxAdminConfigScalarFieldEnum[] | DiceBoxAdminConfigScalarFieldEnum
+    having?: DiceBoxAdminConfigScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: DiceBoxAdminConfigCountAggregateInputType | true
+    _avg?: DiceBoxAdminConfigAvgAggregateInputType
+    _sum?: DiceBoxAdminConfigSumAggregateInputType
+    _min?: DiceBoxAdminConfigMinAggregateInputType
+    _max?: DiceBoxAdminConfigMaxAggregateInputType
+  }
+
+  export type DiceBoxAdminConfigGroupByOutputType = {
+    id: number
+    name: string
+    isDefault: boolean
+    gravity: number
+    mass: number
+    friction: number
+    restitution: number
+    angularDamping: number
+    linearDamping: number
+    spinForce: number
+    throwForce: number
+    startingHeight: number
+    settleTimeout: number
+    lightIntensity: number
+    enableShadows: boolean
+    shadowTransparency: number
+    theme: number
+    themeColor: string
+    iconColor: string | null
+    scale: number
+    createdAt: Date
+    updatedAt: Date
+    _count: DiceBoxAdminConfigCountAggregateOutputType | null
+    _avg: DiceBoxAdminConfigAvgAggregateOutputType | null
+    _sum: DiceBoxAdminConfigSumAggregateOutputType | null
+    _min: DiceBoxAdminConfigMinAggregateOutputType | null
+    _max: DiceBoxAdminConfigMaxAggregateOutputType | null
+  }
+
+  type GetDiceBoxAdminConfigGroupByPayload<T extends DiceBoxAdminConfigGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<DiceBoxAdminConfigGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof DiceBoxAdminConfigGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], DiceBoxAdminConfigGroupByOutputType[P]>
+            : GetScalarType<T[P], DiceBoxAdminConfigGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type DiceBoxAdminConfigSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    name?: boolean
+    isDefault?: boolean
+    gravity?: boolean
+    mass?: boolean
+    friction?: boolean
+    restitution?: boolean
+    angularDamping?: boolean
+    linearDamping?: boolean
+    spinForce?: boolean
+    throwForce?: boolean
+    startingHeight?: boolean
+    settleTimeout?: boolean
+    lightIntensity?: boolean
+    enableShadows?: boolean
+    shadowTransparency?: boolean
+    theme?: boolean
+    themeColor?: boolean
+    iconColor?: boolean
+    scale?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    users?: boolean | DiceBoxAdminConfig$usersArgs<ExtArgs>
+    _count?: boolean | DiceBoxAdminConfigCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["diceBoxAdminConfig"]>
+
+
+
+  export type DiceBoxAdminConfigSelectScalar = {
+    id?: boolean
+    name?: boolean
+    isDefault?: boolean
+    gravity?: boolean
+    mass?: boolean
+    friction?: boolean
+    restitution?: boolean
+    angularDamping?: boolean
+    linearDamping?: boolean
+    spinForce?: boolean
+    throwForce?: boolean
+    startingHeight?: boolean
+    settleTimeout?: boolean
+    lightIntensity?: boolean
+    enableShadows?: boolean
+    shadowTransparency?: boolean
+    theme?: boolean
+    themeColor?: boolean
+    iconColor?: boolean
+    scale?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type DiceBoxAdminConfigOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "isDefault" | "gravity" | "mass" | "friction" | "restitution" | "angularDamping" | "linearDamping" | "spinForce" | "throwForce" | "startingHeight" | "settleTimeout" | "lightIntensity" | "enableShadows" | "shadowTransparency" | "theme" | "themeColor" | "iconColor" | "scale" | "createdAt" | "updatedAt", ExtArgs["result"]["diceBoxAdminConfig"]>
+  export type DiceBoxAdminConfigInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    users?: boolean | DiceBoxAdminConfig$usersArgs<ExtArgs>
+    _count?: boolean | DiceBoxAdminConfigCountOutputTypeDefaultArgs<ExtArgs>
+  }
+
+  export type $DiceBoxAdminConfigPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "DiceBoxAdminConfig"
+    objects: {
+      users: Prisma.$UserPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      name: string
+      isDefault: boolean
+      gravity: number
+      mass: number
+      friction: number
+      restitution: number
+      angularDamping: number
+      linearDamping: number
+      spinForce: number
+      throwForce: number
+      startingHeight: number
+      settleTimeout: number
+      lightIntensity: number
+      enableShadows: boolean
+      shadowTransparency: number
+      theme: number
+      themeColor: string
+      iconColor: string | null
+      scale: number
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["diceBoxAdminConfig"]>
+    composites: {}
+  }
+
+  type DiceBoxAdminConfigGetPayload<S extends boolean | null | undefined | DiceBoxAdminConfigDefaultArgs> = $Result.GetResult<Prisma.$DiceBoxAdminConfigPayload, S>
+
+  type DiceBoxAdminConfigCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<DiceBoxAdminConfigFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: DiceBoxAdminConfigCountAggregateInputType | true
+    }
+
+  export interface DiceBoxAdminConfigDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['DiceBoxAdminConfig'], meta: { name: 'DiceBoxAdminConfig' } }
+    /**
+     * Find zero or one DiceBoxAdminConfig that matches the filter.
+     * @param {DiceBoxAdminConfigFindUniqueArgs} args - Arguments to find a DiceBoxAdminConfig
+     * @example
+     * // Get one DiceBoxAdminConfig
+     * const diceBoxAdminConfig = await prisma.diceBoxAdminConfig.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends DiceBoxAdminConfigFindUniqueArgs>(args: SelectSubset<T, DiceBoxAdminConfigFindUniqueArgs<ExtArgs>>): Prisma__DiceBoxAdminConfigClient<$Result.GetResult<Prisma.$DiceBoxAdminConfigPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one DiceBoxAdminConfig that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {DiceBoxAdminConfigFindUniqueOrThrowArgs} args - Arguments to find a DiceBoxAdminConfig
+     * @example
+     * // Get one DiceBoxAdminConfig
+     * const diceBoxAdminConfig = await prisma.diceBoxAdminConfig.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends DiceBoxAdminConfigFindUniqueOrThrowArgs>(args: SelectSubset<T, DiceBoxAdminConfigFindUniqueOrThrowArgs<ExtArgs>>): Prisma__DiceBoxAdminConfigClient<$Result.GetResult<Prisma.$DiceBoxAdminConfigPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first DiceBoxAdminConfig that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiceBoxAdminConfigFindFirstArgs} args - Arguments to find a DiceBoxAdminConfig
+     * @example
+     * // Get one DiceBoxAdminConfig
+     * const diceBoxAdminConfig = await prisma.diceBoxAdminConfig.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends DiceBoxAdminConfigFindFirstArgs>(args?: SelectSubset<T, DiceBoxAdminConfigFindFirstArgs<ExtArgs>>): Prisma__DiceBoxAdminConfigClient<$Result.GetResult<Prisma.$DiceBoxAdminConfigPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first DiceBoxAdminConfig that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiceBoxAdminConfigFindFirstOrThrowArgs} args - Arguments to find a DiceBoxAdminConfig
+     * @example
+     * // Get one DiceBoxAdminConfig
+     * const diceBoxAdminConfig = await prisma.diceBoxAdminConfig.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends DiceBoxAdminConfigFindFirstOrThrowArgs>(args?: SelectSubset<T, DiceBoxAdminConfigFindFirstOrThrowArgs<ExtArgs>>): Prisma__DiceBoxAdminConfigClient<$Result.GetResult<Prisma.$DiceBoxAdminConfigPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more DiceBoxAdminConfigs that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiceBoxAdminConfigFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all DiceBoxAdminConfigs
+     * const diceBoxAdminConfigs = await prisma.diceBoxAdminConfig.findMany()
+     * 
+     * // Get first 10 DiceBoxAdminConfigs
+     * const diceBoxAdminConfigs = await prisma.diceBoxAdminConfig.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const diceBoxAdminConfigWithIdOnly = await prisma.diceBoxAdminConfig.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends DiceBoxAdminConfigFindManyArgs>(args?: SelectSubset<T, DiceBoxAdminConfigFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DiceBoxAdminConfigPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a DiceBoxAdminConfig.
+     * @param {DiceBoxAdminConfigCreateArgs} args - Arguments to create a DiceBoxAdminConfig.
+     * @example
+     * // Create one DiceBoxAdminConfig
+     * const DiceBoxAdminConfig = await prisma.diceBoxAdminConfig.create({
+     *   data: {
+     *     // ... data to create a DiceBoxAdminConfig
+     *   }
+     * })
+     * 
+     */
+    create<T extends DiceBoxAdminConfigCreateArgs>(args: SelectSubset<T, DiceBoxAdminConfigCreateArgs<ExtArgs>>): Prisma__DiceBoxAdminConfigClient<$Result.GetResult<Prisma.$DiceBoxAdminConfigPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many DiceBoxAdminConfigs.
+     * @param {DiceBoxAdminConfigCreateManyArgs} args - Arguments to create many DiceBoxAdminConfigs.
+     * @example
+     * // Create many DiceBoxAdminConfigs
+     * const diceBoxAdminConfig = await prisma.diceBoxAdminConfig.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends DiceBoxAdminConfigCreateManyArgs>(args?: SelectSubset<T, DiceBoxAdminConfigCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a DiceBoxAdminConfig.
+     * @param {DiceBoxAdminConfigDeleteArgs} args - Arguments to delete one DiceBoxAdminConfig.
+     * @example
+     * // Delete one DiceBoxAdminConfig
+     * const DiceBoxAdminConfig = await prisma.diceBoxAdminConfig.delete({
+     *   where: {
+     *     // ... filter to delete one DiceBoxAdminConfig
+     *   }
+     * })
+     * 
+     */
+    delete<T extends DiceBoxAdminConfigDeleteArgs>(args: SelectSubset<T, DiceBoxAdminConfigDeleteArgs<ExtArgs>>): Prisma__DiceBoxAdminConfigClient<$Result.GetResult<Prisma.$DiceBoxAdminConfigPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one DiceBoxAdminConfig.
+     * @param {DiceBoxAdminConfigUpdateArgs} args - Arguments to update one DiceBoxAdminConfig.
+     * @example
+     * // Update one DiceBoxAdminConfig
+     * const diceBoxAdminConfig = await prisma.diceBoxAdminConfig.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends DiceBoxAdminConfigUpdateArgs>(args: SelectSubset<T, DiceBoxAdminConfigUpdateArgs<ExtArgs>>): Prisma__DiceBoxAdminConfigClient<$Result.GetResult<Prisma.$DiceBoxAdminConfigPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more DiceBoxAdminConfigs.
+     * @param {DiceBoxAdminConfigDeleteManyArgs} args - Arguments to filter DiceBoxAdminConfigs to delete.
+     * @example
+     * // Delete a few DiceBoxAdminConfigs
+     * const { count } = await prisma.diceBoxAdminConfig.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends DiceBoxAdminConfigDeleteManyArgs>(args?: SelectSubset<T, DiceBoxAdminConfigDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more DiceBoxAdminConfigs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiceBoxAdminConfigUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many DiceBoxAdminConfigs
+     * const diceBoxAdminConfig = await prisma.diceBoxAdminConfig.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends DiceBoxAdminConfigUpdateManyArgs>(args: SelectSubset<T, DiceBoxAdminConfigUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one DiceBoxAdminConfig.
+     * @param {DiceBoxAdminConfigUpsertArgs} args - Arguments to update or create a DiceBoxAdminConfig.
+     * @example
+     * // Update or create a DiceBoxAdminConfig
+     * const diceBoxAdminConfig = await prisma.diceBoxAdminConfig.upsert({
+     *   create: {
+     *     // ... data to create a DiceBoxAdminConfig
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the DiceBoxAdminConfig we want to update
+     *   }
+     * })
+     */
+    upsert<T extends DiceBoxAdminConfigUpsertArgs>(args: SelectSubset<T, DiceBoxAdminConfigUpsertArgs<ExtArgs>>): Prisma__DiceBoxAdminConfigClient<$Result.GetResult<Prisma.$DiceBoxAdminConfigPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of DiceBoxAdminConfigs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiceBoxAdminConfigCountArgs} args - Arguments to filter DiceBoxAdminConfigs to count.
+     * @example
+     * // Count the number of DiceBoxAdminConfigs
+     * const count = await prisma.diceBoxAdminConfig.count({
+     *   where: {
+     *     // ... the filter for the DiceBoxAdminConfigs we want to count
+     *   }
+     * })
+    **/
+    count<T extends DiceBoxAdminConfigCountArgs>(
+      args?: Subset<T, DiceBoxAdminConfigCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], DiceBoxAdminConfigCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a DiceBoxAdminConfig.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiceBoxAdminConfigAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends DiceBoxAdminConfigAggregateArgs>(args: Subset<T, DiceBoxAdminConfigAggregateArgs>): Prisma.PrismaPromise<GetDiceBoxAdminConfigAggregateType<T>>
+
+    /**
+     * Group by DiceBoxAdminConfig.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiceBoxAdminConfigGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends DiceBoxAdminConfigGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: DiceBoxAdminConfigGroupByArgs['orderBy'] }
+        : { orderBy?: DiceBoxAdminConfigGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, DiceBoxAdminConfigGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetDiceBoxAdminConfigGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the DiceBoxAdminConfig model
+   */
+  readonly fields: DiceBoxAdminConfigFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for DiceBoxAdminConfig.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__DiceBoxAdminConfigClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    users<T extends DiceBoxAdminConfig$usersArgs<ExtArgs> = {}>(args?: Subset<T, DiceBoxAdminConfig$usersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the DiceBoxAdminConfig model
+   */
+  interface DiceBoxAdminConfigFieldRefs {
+    readonly id: FieldRef<"DiceBoxAdminConfig", 'Int'>
+    readonly name: FieldRef<"DiceBoxAdminConfig", 'String'>
+    readonly isDefault: FieldRef<"DiceBoxAdminConfig", 'Boolean'>
+    readonly gravity: FieldRef<"DiceBoxAdminConfig", 'Float'>
+    readonly mass: FieldRef<"DiceBoxAdminConfig", 'Float'>
+    readonly friction: FieldRef<"DiceBoxAdminConfig", 'Float'>
+    readonly restitution: FieldRef<"DiceBoxAdminConfig", 'Float'>
+    readonly angularDamping: FieldRef<"DiceBoxAdminConfig", 'Float'>
+    readonly linearDamping: FieldRef<"DiceBoxAdminConfig", 'Float'>
+    readonly spinForce: FieldRef<"DiceBoxAdminConfig", 'Float'>
+    readonly throwForce: FieldRef<"DiceBoxAdminConfig", 'Float'>
+    readonly startingHeight: FieldRef<"DiceBoxAdminConfig", 'Int'>
+    readonly settleTimeout: FieldRef<"DiceBoxAdminConfig", 'Int'>
+    readonly lightIntensity: FieldRef<"DiceBoxAdminConfig", 'Float'>
+    readonly enableShadows: FieldRef<"DiceBoxAdminConfig", 'Boolean'>
+    readonly shadowTransparency: FieldRef<"DiceBoxAdminConfig", 'Float'>
+    readonly theme: FieldRef<"DiceBoxAdminConfig", 'Int'>
+    readonly themeColor: FieldRef<"DiceBoxAdminConfig", 'String'>
+    readonly iconColor: FieldRef<"DiceBoxAdminConfig", 'String'>
+    readonly scale: FieldRef<"DiceBoxAdminConfig", 'Float'>
+    readonly createdAt: FieldRef<"DiceBoxAdminConfig", 'DateTime'>
+    readonly updatedAt: FieldRef<"DiceBoxAdminConfig", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * DiceBoxAdminConfig findUnique
+   */
+  export type DiceBoxAdminConfigFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiceBoxAdminConfig
+     */
+    select?: DiceBoxAdminConfigSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DiceBoxAdminConfig
+     */
+    omit?: DiceBoxAdminConfigOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiceBoxAdminConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which DiceBoxAdminConfig to fetch.
+     */
+    where: DiceBoxAdminConfigWhereUniqueInput
+  }
+
+  /**
+   * DiceBoxAdminConfig findUniqueOrThrow
+   */
+  export type DiceBoxAdminConfigFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiceBoxAdminConfig
+     */
+    select?: DiceBoxAdminConfigSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DiceBoxAdminConfig
+     */
+    omit?: DiceBoxAdminConfigOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiceBoxAdminConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which DiceBoxAdminConfig to fetch.
+     */
+    where: DiceBoxAdminConfigWhereUniqueInput
+  }
+
+  /**
+   * DiceBoxAdminConfig findFirst
+   */
+  export type DiceBoxAdminConfigFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiceBoxAdminConfig
+     */
+    select?: DiceBoxAdminConfigSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DiceBoxAdminConfig
+     */
+    omit?: DiceBoxAdminConfigOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiceBoxAdminConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which DiceBoxAdminConfig to fetch.
+     */
+    where?: DiceBoxAdminConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DiceBoxAdminConfigs to fetch.
+     */
+    orderBy?: DiceBoxAdminConfigOrderByWithRelationInput | DiceBoxAdminConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for DiceBoxAdminConfigs.
+     */
+    cursor?: DiceBoxAdminConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DiceBoxAdminConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DiceBoxAdminConfigs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DiceBoxAdminConfigs.
+     */
+    distinct?: DiceBoxAdminConfigScalarFieldEnum | DiceBoxAdminConfigScalarFieldEnum[]
+  }
+
+  /**
+   * DiceBoxAdminConfig findFirstOrThrow
+   */
+  export type DiceBoxAdminConfigFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiceBoxAdminConfig
+     */
+    select?: DiceBoxAdminConfigSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DiceBoxAdminConfig
+     */
+    omit?: DiceBoxAdminConfigOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiceBoxAdminConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which DiceBoxAdminConfig to fetch.
+     */
+    where?: DiceBoxAdminConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DiceBoxAdminConfigs to fetch.
+     */
+    orderBy?: DiceBoxAdminConfigOrderByWithRelationInput | DiceBoxAdminConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for DiceBoxAdminConfigs.
+     */
+    cursor?: DiceBoxAdminConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DiceBoxAdminConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DiceBoxAdminConfigs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DiceBoxAdminConfigs.
+     */
+    distinct?: DiceBoxAdminConfigScalarFieldEnum | DiceBoxAdminConfigScalarFieldEnum[]
+  }
+
+  /**
+   * DiceBoxAdminConfig findMany
+   */
+  export type DiceBoxAdminConfigFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiceBoxAdminConfig
+     */
+    select?: DiceBoxAdminConfigSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DiceBoxAdminConfig
+     */
+    omit?: DiceBoxAdminConfigOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiceBoxAdminConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which DiceBoxAdminConfigs to fetch.
+     */
+    where?: DiceBoxAdminConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DiceBoxAdminConfigs to fetch.
+     */
+    orderBy?: DiceBoxAdminConfigOrderByWithRelationInput | DiceBoxAdminConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing DiceBoxAdminConfigs.
+     */
+    cursor?: DiceBoxAdminConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DiceBoxAdminConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DiceBoxAdminConfigs.
+     */
+    skip?: number
+    distinct?: DiceBoxAdminConfigScalarFieldEnum | DiceBoxAdminConfigScalarFieldEnum[]
+  }
+
+  /**
+   * DiceBoxAdminConfig create
+   */
+  export type DiceBoxAdminConfigCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiceBoxAdminConfig
+     */
+    select?: DiceBoxAdminConfigSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DiceBoxAdminConfig
+     */
+    omit?: DiceBoxAdminConfigOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiceBoxAdminConfigInclude<ExtArgs> | null
+    /**
+     * The data needed to create a DiceBoxAdminConfig.
+     */
+    data: XOR<DiceBoxAdminConfigCreateInput, DiceBoxAdminConfigUncheckedCreateInput>
+  }
+
+  /**
+   * DiceBoxAdminConfig createMany
+   */
+  export type DiceBoxAdminConfigCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many DiceBoxAdminConfigs.
+     */
+    data: DiceBoxAdminConfigCreateManyInput | DiceBoxAdminConfigCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * DiceBoxAdminConfig update
+   */
+  export type DiceBoxAdminConfigUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiceBoxAdminConfig
+     */
+    select?: DiceBoxAdminConfigSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DiceBoxAdminConfig
+     */
+    omit?: DiceBoxAdminConfigOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiceBoxAdminConfigInclude<ExtArgs> | null
+    /**
+     * The data needed to update a DiceBoxAdminConfig.
+     */
+    data: XOR<DiceBoxAdminConfigUpdateInput, DiceBoxAdminConfigUncheckedUpdateInput>
+    /**
+     * Choose, which DiceBoxAdminConfig to update.
+     */
+    where: DiceBoxAdminConfigWhereUniqueInput
+  }
+
+  /**
+   * DiceBoxAdminConfig updateMany
+   */
+  export type DiceBoxAdminConfigUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update DiceBoxAdminConfigs.
+     */
+    data: XOR<DiceBoxAdminConfigUpdateManyMutationInput, DiceBoxAdminConfigUncheckedUpdateManyInput>
+    /**
+     * Filter which DiceBoxAdminConfigs to update
+     */
+    where?: DiceBoxAdminConfigWhereInput
+    /**
+     * Limit how many DiceBoxAdminConfigs to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * DiceBoxAdminConfig upsert
+   */
+  export type DiceBoxAdminConfigUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiceBoxAdminConfig
+     */
+    select?: DiceBoxAdminConfigSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DiceBoxAdminConfig
+     */
+    omit?: DiceBoxAdminConfigOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiceBoxAdminConfigInclude<ExtArgs> | null
+    /**
+     * The filter to search for the DiceBoxAdminConfig to update in case it exists.
+     */
+    where: DiceBoxAdminConfigWhereUniqueInput
+    /**
+     * In case the DiceBoxAdminConfig found by the `where` argument doesn't exist, create a new DiceBoxAdminConfig with this data.
+     */
+    create: XOR<DiceBoxAdminConfigCreateInput, DiceBoxAdminConfigUncheckedCreateInput>
+    /**
+     * In case the DiceBoxAdminConfig was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<DiceBoxAdminConfigUpdateInput, DiceBoxAdminConfigUncheckedUpdateInput>
+  }
+
+  /**
+   * DiceBoxAdminConfig delete
+   */
+  export type DiceBoxAdminConfigDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiceBoxAdminConfig
+     */
+    select?: DiceBoxAdminConfigSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DiceBoxAdminConfig
+     */
+    omit?: DiceBoxAdminConfigOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiceBoxAdminConfigInclude<ExtArgs> | null
+    /**
+     * Filter which DiceBoxAdminConfig to delete.
+     */
+    where: DiceBoxAdminConfigWhereUniqueInput
+  }
+
+  /**
+   * DiceBoxAdminConfig deleteMany
+   */
+  export type DiceBoxAdminConfigDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which DiceBoxAdminConfigs to delete
+     */
+    where?: DiceBoxAdminConfigWhereInput
+    /**
+     * Limit how many DiceBoxAdminConfigs to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * DiceBoxAdminConfig.users
+   */
+  export type DiceBoxAdminConfig$usersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the User
+     */
+    select?: UserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the User
+     */
+    omit?: UserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    where?: UserWhereInput
+    orderBy?: UserOrderByWithRelationInput | UserOrderByWithRelationInput[]
+    cursor?: UserWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: UserScalarFieldEnum | UserScalarFieldEnum[]
+  }
+
+  /**
+   * DiceBoxAdminConfig without action
+   */
+  export type DiceBoxAdminConfigDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiceBoxAdminConfig
+     */
+    select?: DiceBoxAdminConfigSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DiceBoxAdminConfig
+     */
+    omit?: DiceBoxAdminConfigOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiceBoxAdminConfigInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model UserDiceConfigOverride
+   */
+
+  export type AggregateUserDiceConfigOverride = {
+    _count: UserDiceConfigOverrideCountAggregateOutputType | null
+    _avg: UserDiceConfigOverrideAvgAggregateOutputType | null
+    _sum: UserDiceConfigOverrideSumAggregateOutputType | null
+    _min: UserDiceConfigOverrideMinAggregateOutputType | null
+    _max: UserDiceConfigOverrideMaxAggregateOutputType | null
+  }
+
+  export type UserDiceConfigOverrideAvgAggregateOutputType = {
+    id: number | null
+    userId: number | null
+  }
+
+  export type UserDiceConfigOverrideSumAggregateOutputType = {
+    id: number | null
+    userId: number | null
+  }
+
+  export type UserDiceConfigOverrideMinAggregateOutputType = {
+    id: number | null
+    userId: number | null
+    propertyName: string | null
+    propertyValue: string | null
+  }
+
+  export type UserDiceConfigOverrideMaxAggregateOutputType = {
+    id: number | null
+    userId: number | null
+    propertyName: string | null
+    propertyValue: string | null
+  }
+
+  export type UserDiceConfigOverrideCountAggregateOutputType = {
+    id: number
+    userId: number
+    propertyName: number
+    propertyValue: number
+    _all: number
+  }
+
+
+  export type UserDiceConfigOverrideAvgAggregateInputType = {
+    id?: true
+    userId?: true
+  }
+
+  export type UserDiceConfigOverrideSumAggregateInputType = {
+    id?: true
+    userId?: true
+  }
+
+  export type UserDiceConfigOverrideMinAggregateInputType = {
+    id?: true
+    userId?: true
+    propertyName?: true
+    propertyValue?: true
+  }
+
+  export type UserDiceConfigOverrideMaxAggregateInputType = {
+    id?: true
+    userId?: true
+    propertyName?: true
+    propertyValue?: true
+  }
+
+  export type UserDiceConfigOverrideCountAggregateInputType = {
+    id?: true
+    userId?: true
+    propertyName?: true
+    propertyValue?: true
+    _all?: true
+  }
+
+  export type UserDiceConfigOverrideAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which UserDiceConfigOverride to aggregate.
+     */
+    where?: UserDiceConfigOverrideWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UserDiceConfigOverrides to fetch.
+     */
+    orderBy?: UserDiceConfigOverrideOrderByWithRelationInput | UserDiceConfigOverrideOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: UserDiceConfigOverrideWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UserDiceConfigOverrides from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UserDiceConfigOverrides.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned UserDiceConfigOverrides
+    **/
+    _count?: true | UserDiceConfigOverrideCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: UserDiceConfigOverrideAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: UserDiceConfigOverrideSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: UserDiceConfigOverrideMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: UserDiceConfigOverrideMaxAggregateInputType
+  }
+
+  export type GetUserDiceConfigOverrideAggregateType<T extends UserDiceConfigOverrideAggregateArgs> = {
+        [P in keyof T & keyof AggregateUserDiceConfigOverride]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateUserDiceConfigOverride[P]>
+      : GetScalarType<T[P], AggregateUserDiceConfigOverride[P]>
+  }
+
+
+
+
+  export type UserDiceConfigOverrideGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: UserDiceConfigOverrideWhereInput
+    orderBy?: UserDiceConfigOverrideOrderByWithAggregationInput | UserDiceConfigOverrideOrderByWithAggregationInput[]
+    by: UserDiceConfigOverrideScalarFieldEnum[] | UserDiceConfigOverrideScalarFieldEnum
+    having?: UserDiceConfigOverrideScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: UserDiceConfigOverrideCountAggregateInputType | true
+    _avg?: UserDiceConfigOverrideAvgAggregateInputType
+    _sum?: UserDiceConfigOverrideSumAggregateInputType
+    _min?: UserDiceConfigOverrideMinAggregateInputType
+    _max?: UserDiceConfigOverrideMaxAggregateInputType
+  }
+
+  export type UserDiceConfigOverrideGroupByOutputType = {
+    id: number
+    userId: number
+    propertyName: string
+    propertyValue: string
+    _count: UserDiceConfigOverrideCountAggregateOutputType | null
+    _avg: UserDiceConfigOverrideAvgAggregateOutputType | null
+    _sum: UserDiceConfigOverrideSumAggregateOutputType | null
+    _min: UserDiceConfigOverrideMinAggregateOutputType | null
+    _max: UserDiceConfigOverrideMaxAggregateOutputType | null
+  }
+
+  type GetUserDiceConfigOverrideGroupByPayload<T extends UserDiceConfigOverrideGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<UserDiceConfigOverrideGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof UserDiceConfigOverrideGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], UserDiceConfigOverrideGroupByOutputType[P]>
+            : GetScalarType<T[P], UserDiceConfigOverrideGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type UserDiceConfigOverrideSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    propertyName?: boolean
+    propertyValue?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["userDiceConfigOverride"]>
+
+
+
+  export type UserDiceConfigOverrideSelectScalar = {
+    id?: boolean
+    userId?: boolean
+    propertyName?: boolean
+    propertyValue?: boolean
+  }
+
+  export type UserDiceConfigOverrideOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "propertyName" | "propertyValue", ExtArgs["result"]["userDiceConfigOverride"]>
+  export type UserDiceConfigOverrideInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $UserDiceConfigOverridePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "UserDiceConfigOverride"
+    objects: {
+      user: Prisma.$UserPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      userId: number
+      propertyName: string
+      propertyValue: string
+    }, ExtArgs["result"]["userDiceConfigOverride"]>
+    composites: {}
+  }
+
+  type UserDiceConfigOverrideGetPayload<S extends boolean | null | undefined | UserDiceConfigOverrideDefaultArgs> = $Result.GetResult<Prisma.$UserDiceConfigOverridePayload, S>
+
+  type UserDiceConfigOverrideCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<UserDiceConfigOverrideFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: UserDiceConfigOverrideCountAggregateInputType | true
+    }
+
+  export interface UserDiceConfigOverrideDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['UserDiceConfigOverride'], meta: { name: 'UserDiceConfigOverride' } }
+    /**
+     * Find zero or one UserDiceConfigOverride that matches the filter.
+     * @param {UserDiceConfigOverrideFindUniqueArgs} args - Arguments to find a UserDiceConfigOverride
+     * @example
+     * // Get one UserDiceConfigOverride
+     * const userDiceConfigOverride = await prisma.userDiceConfigOverride.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends UserDiceConfigOverrideFindUniqueArgs>(args: SelectSubset<T, UserDiceConfigOverrideFindUniqueArgs<ExtArgs>>): Prisma__UserDiceConfigOverrideClient<$Result.GetResult<Prisma.$UserDiceConfigOverridePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one UserDiceConfigOverride that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {UserDiceConfigOverrideFindUniqueOrThrowArgs} args - Arguments to find a UserDiceConfigOverride
+     * @example
+     * // Get one UserDiceConfigOverride
+     * const userDiceConfigOverride = await prisma.userDiceConfigOverride.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends UserDiceConfigOverrideFindUniqueOrThrowArgs>(args: SelectSubset<T, UserDiceConfigOverrideFindUniqueOrThrowArgs<ExtArgs>>): Prisma__UserDiceConfigOverrideClient<$Result.GetResult<Prisma.$UserDiceConfigOverridePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first UserDiceConfigOverride that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserDiceConfigOverrideFindFirstArgs} args - Arguments to find a UserDiceConfigOverride
+     * @example
+     * // Get one UserDiceConfigOverride
+     * const userDiceConfigOverride = await prisma.userDiceConfigOverride.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends UserDiceConfigOverrideFindFirstArgs>(args?: SelectSubset<T, UserDiceConfigOverrideFindFirstArgs<ExtArgs>>): Prisma__UserDiceConfigOverrideClient<$Result.GetResult<Prisma.$UserDiceConfigOverridePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first UserDiceConfigOverride that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserDiceConfigOverrideFindFirstOrThrowArgs} args - Arguments to find a UserDiceConfigOverride
+     * @example
+     * // Get one UserDiceConfigOverride
+     * const userDiceConfigOverride = await prisma.userDiceConfigOverride.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends UserDiceConfigOverrideFindFirstOrThrowArgs>(args?: SelectSubset<T, UserDiceConfigOverrideFindFirstOrThrowArgs<ExtArgs>>): Prisma__UserDiceConfigOverrideClient<$Result.GetResult<Prisma.$UserDiceConfigOverridePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more UserDiceConfigOverrides that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserDiceConfigOverrideFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all UserDiceConfigOverrides
+     * const userDiceConfigOverrides = await prisma.userDiceConfigOverride.findMany()
+     * 
+     * // Get first 10 UserDiceConfigOverrides
+     * const userDiceConfigOverrides = await prisma.userDiceConfigOverride.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const userDiceConfigOverrideWithIdOnly = await prisma.userDiceConfigOverride.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends UserDiceConfigOverrideFindManyArgs>(args?: SelectSubset<T, UserDiceConfigOverrideFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserDiceConfigOverridePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a UserDiceConfigOverride.
+     * @param {UserDiceConfigOverrideCreateArgs} args - Arguments to create a UserDiceConfigOverride.
+     * @example
+     * // Create one UserDiceConfigOverride
+     * const UserDiceConfigOverride = await prisma.userDiceConfigOverride.create({
+     *   data: {
+     *     // ... data to create a UserDiceConfigOverride
+     *   }
+     * })
+     * 
+     */
+    create<T extends UserDiceConfigOverrideCreateArgs>(args: SelectSubset<T, UserDiceConfigOverrideCreateArgs<ExtArgs>>): Prisma__UserDiceConfigOverrideClient<$Result.GetResult<Prisma.$UserDiceConfigOverridePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many UserDiceConfigOverrides.
+     * @param {UserDiceConfigOverrideCreateManyArgs} args - Arguments to create many UserDiceConfigOverrides.
+     * @example
+     * // Create many UserDiceConfigOverrides
+     * const userDiceConfigOverride = await prisma.userDiceConfigOverride.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends UserDiceConfigOverrideCreateManyArgs>(args?: SelectSubset<T, UserDiceConfigOverrideCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a UserDiceConfigOverride.
+     * @param {UserDiceConfigOverrideDeleteArgs} args - Arguments to delete one UserDiceConfigOverride.
+     * @example
+     * // Delete one UserDiceConfigOverride
+     * const UserDiceConfigOverride = await prisma.userDiceConfigOverride.delete({
+     *   where: {
+     *     // ... filter to delete one UserDiceConfigOverride
+     *   }
+     * })
+     * 
+     */
+    delete<T extends UserDiceConfigOverrideDeleteArgs>(args: SelectSubset<T, UserDiceConfigOverrideDeleteArgs<ExtArgs>>): Prisma__UserDiceConfigOverrideClient<$Result.GetResult<Prisma.$UserDiceConfigOverridePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one UserDiceConfigOverride.
+     * @param {UserDiceConfigOverrideUpdateArgs} args - Arguments to update one UserDiceConfigOverride.
+     * @example
+     * // Update one UserDiceConfigOverride
+     * const userDiceConfigOverride = await prisma.userDiceConfigOverride.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends UserDiceConfigOverrideUpdateArgs>(args: SelectSubset<T, UserDiceConfigOverrideUpdateArgs<ExtArgs>>): Prisma__UserDiceConfigOverrideClient<$Result.GetResult<Prisma.$UserDiceConfigOverridePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more UserDiceConfigOverrides.
+     * @param {UserDiceConfigOverrideDeleteManyArgs} args - Arguments to filter UserDiceConfigOverrides to delete.
+     * @example
+     * // Delete a few UserDiceConfigOverrides
+     * const { count } = await prisma.userDiceConfigOverride.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends UserDiceConfigOverrideDeleteManyArgs>(args?: SelectSubset<T, UserDiceConfigOverrideDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more UserDiceConfigOverrides.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserDiceConfigOverrideUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many UserDiceConfigOverrides
+     * const userDiceConfigOverride = await prisma.userDiceConfigOverride.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends UserDiceConfigOverrideUpdateManyArgs>(args: SelectSubset<T, UserDiceConfigOverrideUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one UserDiceConfigOverride.
+     * @param {UserDiceConfigOverrideUpsertArgs} args - Arguments to update or create a UserDiceConfigOverride.
+     * @example
+     * // Update or create a UserDiceConfigOverride
+     * const userDiceConfigOverride = await prisma.userDiceConfigOverride.upsert({
+     *   create: {
+     *     // ... data to create a UserDiceConfigOverride
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the UserDiceConfigOverride we want to update
+     *   }
+     * })
+     */
+    upsert<T extends UserDiceConfigOverrideUpsertArgs>(args: SelectSubset<T, UserDiceConfigOverrideUpsertArgs<ExtArgs>>): Prisma__UserDiceConfigOverrideClient<$Result.GetResult<Prisma.$UserDiceConfigOverridePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of UserDiceConfigOverrides.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserDiceConfigOverrideCountArgs} args - Arguments to filter UserDiceConfigOverrides to count.
+     * @example
+     * // Count the number of UserDiceConfigOverrides
+     * const count = await prisma.userDiceConfigOverride.count({
+     *   where: {
+     *     // ... the filter for the UserDiceConfigOverrides we want to count
+     *   }
+     * })
+    **/
+    count<T extends UserDiceConfigOverrideCountArgs>(
+      args?: Subset<T, UserDiceConfigOverrideCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], UserDiceConfigOverrideCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a UserDiceConfigOverride.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserDiceConfigOverrideAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends UserDiceConfigOverrideAggregateArgs>(args: Subset<T, UserDiceConfigOverrideAggregateArgs>): Prisma.PrismaPromise<GetUserDiceConfigOverrideAggregateType<T>>
+
+    /**
+     * Group by UserDiceConfigOverride.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserDiceConfigOverrideGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends UserDiceConfigOverrideGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: UserDiceConfigOverrideGroupByArgs['orderBy'] }
+        : { orderBy?: UserDiceConfigOverrideGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, UserDiceConfigOverrideGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetUserDiceConfigOverrideGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the UserDiceConfigOverride model
+   */
+  readonly fields: UserDiceConfigOverrideFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for UserDiceConfigOverride.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__UserDiceConfigOverrideClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the UserDiceConfigOverride model
+   */
+  interface UserDiceConfigOverrideFieldRefs {
+    readonly id: FieldRef<"UserDiceConfigOverride", 'Int'>
+    readonly userId: FieldRef<"UserDiceConfigOverride", 'Int'>
+    readonly propertyName: FieldRef<"UserDiceConfigOverride", 'String'>
+    readonly propertyValue: FieldRef<"UserDiceConfigOverride", 'String'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * UserDiceConfigOverride findUnique
+   */
+  export type UserDiceConfigOverrideFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserDiceConfigOverride
+     */
+    select?: UserDiceConfigOverrideSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserDiceConfigOverride
+     */
+    omit?: UserDiceConfigOverrideOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserDiceConfigOverrideInclude<ExtArgs> | null
+    /**
+     * Filter, which UserDiceConfigOverride to fetch.
+     */
+    where: UserDiceConfigOverrideWhereUniqueInput
+  }
+
+  /**
+   * UserDiceConfigOverride findUniqueOrThrow
+   */
+  export type UserDiceConfigOverrideFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserDiceConfigOverride
+     */
+    select?: UserDiceConfigOverrideSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserDiceConfigOverride
+     */
+    omit?: UserDiceConfigOverrideOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserDiceConfigOverrideInclude<ExtArgs> | null
+    /**
+     * Filter, which UserDiceConfigOverride to fetch.
+     */
+    where: UserDiceConfigOverrideWhereUniqueInput
+  }
+
+  /**
+   * UserDiceConfigOverride findFirst
+   */
+  export type UserDiceConfigOverrideFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserDiceConfigOverride
+     */
+    select?: UserDiceConfigOverrideSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserDiceConfigOverride
+     */
+    omit?: UserDiceConfigOverrideOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserDiceConfigOverrideInclude<ExtArgs> | null
+    /**
+     * Filter, which UserDiceConfigOverride to fetch.
+     */
+    where?: UserDiceConfigOverrideWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UserDiceConfigOverrides to fetch.
+     */
+    orderBy?: UserDiceConfigOverrideOrderByWithRelationInput | UserDiceConfigOverrideOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for UserDiceConfigOverrides.
+     */
+    cursor?: UserDiceConfigOverrideWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UserDiceConfigOverrides from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UserDiceConfigOverrides.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of UserDiceConfigOverrides.
+     */
+    distinct?: UserDiceConfigOverrideScalarFieldEnum | UserDiceConfigOverrideScalarFieldEnum[]
+  }
+
+  /**
+   * UserDiceConfigOverride findFirstOrThrow
+   */
+  export type UserDiceConfigOverrideFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserDiceConfigOverride
+     */
+    select?: UserDiceConfigOverrideSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserDiceConfigOverride
+     */
+    omit?: UserDiceConfigOverrideOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserDiceConfigOverrideInclude<ExtArgs> | null
+    /**
+     * Filter, which UserDiceConfigOverride to fetch.
+     */
+    where?: UserDiceConfigOverrideWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UserDiceConfigOverrides to fetch.
+     */
+    orderBy?: UserDiceConfigOverrideOrderByWithRelationInput | UserDiceConfigOverrideOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for UserDiceConfigOverrides.
+     */
+    cursor?: UserDiceConfigOverrideWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UserDiceConfigOverrides from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UserDiceConfigOverrides.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of UserDiceConfigOverrides.
+     */
+    distinct?: UserDiceConfigOverrideScalarFieldEnum | UserDiceConfigOverrideScalarFieldEnum[]
+  }
+
+  /**
+   * UserDiceConfigOverride findMany
+   */
+  export type UserDiceConfigOverrideFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserDiceConfigOverride
+     */
+    select?: UserDiceConfigOverrideSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserDiceConfigOverride
+     */
+    omit?: UserDiceConfigOverrideOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserDiceConfigOverrideInclude<ExtArgs> | null
+    /**
+     * Filter, which UserDiceConfigOverrides to fetch.
+     */
+    where?: UserDiceConfigOverrideWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UserDiceConfigOverrides to fetch.
+     */
+    orderBy?: UserDiceConfigOverrideOrderByWithRelationInput | UserDiceConfigOverrideOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing UserDiceConfigOverrides.
+     */
+    cursor?: UserDiceConfigOverrideWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UserDiceConfigOverrides from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UserDiceConfigOverrides.
+     */
+    skip?: number
+    distinct?: UserDiceConfigOverrideScalarFieldEnum | UserDiceConfigOverrideScalarFieldEnum[]
+  }
+
+  /**
+   * UserDiceConfigOverride create
+   */
+  export type UserDiceConfigOverrideCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserDiceConfigOverride
+     */
+    select?: UserDiceConfigOverrideSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserDiceConfigOverride
+     */
+    omit?: UserDiceConfigOverrideOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserDiceConfigOverrideInclude<ExtArgs> | null
+    /**
+     * The data needed to create a UserDiceConfigOverride.
+     */
+    data: XOR<UserDiceConfigOverrideCreateInput, UserDiceConfigOverrideUncheckedCreateInput>
+  }
+
+  /**
+   * UserDiceConfigOverride createMany
+   */
+  export type UserDiceConfigOverrideCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many UserDiceConfigOverrides.
+     */
+    data: UserDiceConfigOverrideCreateManyInput | UserDiceConfigOverrideCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * UserDiceConfigOverride update
+   */
+  export type UserDiceConfigOverrideUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserDiceConfigOverride
+     */
+    select?: UserDiceConfigOverrideSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserDiceConfigOverride
+     */
+    omit?: UserDiceConfigOverrideOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserDiceConfigOverrideInclude<ExtArgs> | null
+    /**
+     * The data needed to update a UserDiceConfigOverride.
+     */
+    data: XOR<UserDiceConfigOverrideUpdateInput, UserDiceConfigOverrideUncheckedUpdateInput>
+    /**
+     * Choose, which UserDiceConfigOverride to update.
+     */
+    where: UserDiceConfigOverrideWhereUniqueInput
+  }
+
+  /**
+   * UserDiceConfigOverride updateMany
+   */
+  export type UserDiceConfigOverrideUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update UserDiceConfigOverrides.
+     */
+    data: XOR<UserDiceConfigOverrideUpdateManyMutationInput, UserDiceConfigOverrideUncheckedUpdateManyInput>
+    /**
+     * Filter which UserDiceConfigOverrides to update
+     */
+    where?: UserDiceConfigOverrideWhereInput
+    /**
+     * Limit how many UserDiceConfigOverrides to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * UserDiceConfigOverride upsert
+   */
+  export type UserDiceConfigOverrideUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserDiceConfigOverride
+     */
+    select?: UserDiceConfigOverrideSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserDiceConfigOverride
+     */
+    omit?: UserDiceConfigOverrideOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserDiceConfigOverrideInclude<ExtArgs> | null
+    /**
+     * The filter to search for the UserDiceConfigOverride to update in case it exists.
+     */
+    where: UserDiceConfigOverrideWhereUniqueInput
+    /**
+     * In case the UserDiceConfigOverride found by the `where` argument doesn't exist, create a new UserDiceConfigOverride with this data.
+     */
+    create: XOR<UserDiceConfigOverrideCreateInput, UserDiceConfigOverrideUncheckedCreateInput>
+    /**
+     * In case the UserDiceConfigOverride was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<UserDiceConfigOverrideUpdateInput, UserDiceConfigOverrideUncheckedUpdateInput>
+  }
+
+  /**
+   * UserDiceConfigOverride delete
+   */
+  export type UserDiceConfigOverrideDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserDiceConfigOverride
+     */
+    select?: UserDiceConfigOverrideSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserDiceConfigOverride
+     */
+    omit?: UserDiceConfigOverrideOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserDiceConfigOverrideInclude<ExtArgs> | null
+    /**
+     * Filter which UserDiceConfigOverride to delete.
+     */
+    where: UserDiceConfigOverrideWhereUniqueInput
+  }
+
+  /**
+   * UserDiceConfigOverride deleteMany
+   */
+  export type UserDiceConfigOverrideDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which UserDiceConfigOverrides to delete
+     */
+    where?: UserDiceConfigOverrideWhereInput
+    /**
+     * Limit how many UserDiceConfigOverrides to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * UserDiceConfigOverride without action
+   */
+  export type UserDiceConfigOverrideDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserDiceConfigOverride
+     */
+    select?: UserDiceConfigOverrideSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserDiceConfigOverride
+     */
+    omit?: UserDiceConfigOverrideOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserDiceConfigOverrideInclude<ExtArgs> | null
   }
 
 
@@ -48999,10 +51459,49 @@ export namespace Prisma {
     isAdmin: 'isAdmin',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
-    preferredEditionId: 'preferredEditionId'
+    preferredEditionId: 'preferredEditionId',
+    diceConfigBase: 'diceConfigBase'
   };
 
   export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+  export const DiceBoxAdminConfigScalarFieldEnum: {
+    id: 'id',
+    name: 'name',
+    isDefault: 'isDefault',
+    gravity: 'gravity',
+    mass: 'mass',
+    friction: 'friction',
+    restitution: 'restitution',
+    angularDamping: 'angularDamping',
+    linearDamping: 'linearDamping',
+    spinForce: 'spinForce',
+    throwForce: 'throwForce',
+    startingHeight: 'startingHeight',
+    settleTimeout: 'settleTimeout',
+    lightIntensity: 'lightIntensity',
+    enableShadows: 'enableShadows',
+    shadowTransparency: 'shadowTransparency',
+    theme: 'theme',
+    themeColor: 'themeColor',
+    iconColor: 'iconColor',
+    scale: 'scale',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type DiceBoxAdminConfigScalarFieldEnum = (typeof DiceBoxAdminConfigScalarFieldEnum)[keyof typeof DiceBoxAdminConfigScalarFieldEnum]
+
+
+  export const UserDiceConfigOverrideScalarFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    propertyName: 'propertyName',
+    propertyValue: 'propertyValue'
+  };
+
+  export type UserDiceConfigOverrideScalarFieldEnum = (typeof UserDiceConfigOverrideScalarFieldEnum)[keyof typeof UserDiceConfigOverrideScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -49232,6 +51731,23 @@ export namespace Prisma {
   };
 
   export type UserOrderByRelevanceFieldEnum = (typeof UserOrderByRelevanceFieldEnum)[keyof typeof UserOrderByRelevanceFieldEnum]
+
+
+  export const DiceBoxAdminConfigOrderByRelevanceFieldEnum: {
+    name: 'name',
+    themeColor: 'themeColor',
+    iconColor: 'iconColor'
+  };
+
+  export type DiceBoxAdminConfigOrderByRelevanceFieldEnum = (typeof DiceBoxAdminConfigOrderByRelevanceFieldEnum)[keyof typeof DiceBoxAdminConfigOrderByRelevanceFieldEnum]
+
+
+  export const UserDiceConfigOverrideOrderByRelevanceFieldEnum: {
+    propertyName: 'propertyName',
+    propertyValue: 'propertyValue'
+  };
+
+  export type UserDiceConfigOverrideOrderByRelevanceFieldEnum = (typeof UserDiceConfigOverrideOrderByRelevanceFieldEnum)[keyof typeof UserDiceConfigOverrideOrderByRelevanceFieldEnum]
 
 
   /**
@@ -51976,7 +54492,10 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
     preferredEditionId?: IntNullableFilter<"User"> | number | null
+    diceConfigBase?: IntNullableFilter<"User"> | number | null
     characters?: UserCharacterListRelationFilter
+    diceConfigOverrides?: UserDiceConfigOverrideListRelationFilter
+    diceConfigBaseRef?: XOR<DiceBoxAdminConfigNullableScalarRelationFilter, DiceBoxAdminConfigWhereInput> | null
   }
 
   export type UserOrderByWithRelationInput = {
@@ -51988,7 +54507,10 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     preferredEditionId?: SortOrderInput | SortOrder
+    diceConfigBase?: SortOrderInput | SortOrder
     characters?: UserCharacterOrderByRelationAggregateInput
+    diceConfigOverrides?: UserDiceConfigOverrideOrderByRelationAggregateInput
+    diceConfigBaseRef?: DiceBoxAdminConfigOrderByWithRelationInput
     _relevance?: UserOrderByRelevanceInput
   }
 
@@ -52004,7 +54526,10 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
     preferredEditionId?: IntNullableFilter<"User"> | number | null
+    diceConfigBase?: IntNullableFilter<"User"> | number | null
     characters?: UserCharacterListRelationFilter
+    diceConfigOverrides?: UserDiceConfigOverrideListRelationFilter
+    diceConfigBaseRef?: XOR<DiceBoxAdminConfigNullableScalarRelationFilter, DiceBoxAdminConfigWhereInput> | null
   }, "id">
 
   export type UserOrderByWithAggregationInput = {
@@ -52016,6 +54541,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     preferredEditionId?: SortOrderInput | SortOrder
+    diceConfigBase?: SortOrderInput | SortOrder
     _count?: UserCountOrderByAggregateInput
     _avg?: UserAvgOrderByAggregateInput
     _max?: UserMaxOrderByAggregateInput
@@ -52035,6 +54561,204 @@ export namespace Prisma {
     createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
     preferredEditionId?: IntNullableWithAggregatesFilter<"User"> | number | null
+    diceConfigBase?: IntNullableWithAggregatesFilter<"User"> | number | null
+  }
+
+  export type DiceBoxAdminConfigWhereInput = {
+    AND?: DiceBoxAdminConfigWhereInput | DiceBoxAdminConfigWhereInput[]
+    OR?: DiceBoxAdminConfigWhereInput[]
+    NOT?: DiceBoxAdminConfigWhereInput | DiceBoxAdminConfigWhereInput[]
+    id?: IntFilter<"DiceBoxAdminConfig"> | number
+    name?: StringFilter<"DiceBoxAdminConfig"> | string
+    isDefault?: BoolFilter<"DiceBoxAdminConfig"> | boolean
+    gravity?: FloatFilter<"DiceBoxAdminConfig"> | number
+    mass?: FloatFilter<"DiceBoxAdminConfig"> | number
+    friction?: FloatFilter<"DiceBoxAdminConfig"> | number
+    restitution?: FloatFilter<"DiceBoxAdminConfig"> | number
+    angularDamping?: FloatFilter<"DiceBoxAdminConfig"> | number
+    linearDamping?: FloatFilter<"DiceBoxAdminConfig"> | number
+    spinForce?: FloatFilter<"DiceBoxAdminConfig"> | number
+    throwForce?: FloatFilter<"DiceBoxAdminConfig"> | number
+    startingHeight?: IntFilter<"DiceBoxAdminConfig"> | number
+    settleTimeout?: IntFilter<"DiceBoxAdminConfig"> | number
+    lightIntensity?: FloatFilter<"DiceBoxAdminConfig"> | number
+    enableShadows?: BoolFilter<"DiceBoxAdminConfig"> | boolean
+    shadowTransparency?: FloatFilter<"DiceBoxAdminConfig"> | number
+    theme?: IntFilter<"DiceBoxAdminConfig"> | number
+    themeColor?: StringFilter<"DiceBoxAdminConfig"> | string
+    iconColor?: StringNullableFilter<"DiceBoxAdminConfig"> | string | null
+    scale?: FloatFilter<"DiceBoxAdminConfig"> | number
+    createdAt?: DateTimeFilter<"DiceBoxAdminConfig"> | Date | string
+    updatedAt?: DateTimeFilter<"DiceBoxAdminConfig"> | Date | string
+    users?: UserListRelationFilter
+  }
+
+  export type DiceBoxAdminConfigOrderByWithRelationInput = {
+    id?: SortOrder
+    name?: SortOrder
+    isDefault?: SortOrder
+    gravity?: SortOrder
+    mass?: SortOrder
+    friction?: SortOrder
+    restitution?: SortOrder
+    angularDamping?: SortOrder
+    linearDamping?: SortOrder
+    spinForce?: SortOrder
+    throwForce?: SortOrder
+    startingHeight?: SortOrder
+    settleTimeout?: SortOrder
+    lightIntensity?: SortOrder
+    enableShadows?: SortOrder
+    shadowTransparency?: SortOrder
+    theme?: SortOrder
+    themeColor?: SortOrder
+    iconColor?: SortOrderInput | SortOrder
+    scale?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    users?: UserOrderByRelationAggregateInput
+    _relevance?: DiceBoxAdminConfigOrderByRelevanceInput
+  }
+
+  export type DiceBoxAdminConfigWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    AND?: DiceBoxAdminConfigWhereInput | DiceBoxAdminConfigWhereInput[]
+    OR?: DiceBoxAdminConfigWhereInput[]
+    NOT?: DiceBoxAdminConfigWhereInput | DiceBoxAdminConfigWhereInput[]
+    name?: StringFilter<"DiceBoxAdminConfig"> | string
+    isDefault?: BoolFilter<"DiceBoxAdminConfig"> | boolean
+    gravity?: FloatFilter<"DiceBoxAdminConfig"> | number
+    mass?: FloatFilter<"DiceBoxAdminConfig"> | number
+    friction?: FloatFilter<"DiceBoxAdminConfig"> | number
+    restitution?: FloatFilter<"DiceBoxAdminConfig"> | number
+    angularDamping?: FloatFilter<"DiceBoxAdminConfig"> | number
+    linearDamping?: FloatFilter<"DiceBoxAdminConfig"> | number
+    spinForce?: FloatFilter<"DiceBoxAdminConfig"> | number
+    throwForce?: FloatFilter<"DiceBoxAdminConfig"> | number
+    startingHeight?: IntFilter<"DiceBoxAdminConfig"> | number
+    settleTimeout?: IntFilter<"DiceBoxAdminConfig"> | number
+    lightIntensity?: FloatFilter<"DiceBoxAdminConfig"> | number
+    enableShadows?: BoolFilter<"DiceBoxAdminConfig"> | boolean
+    shadowTransparency?: FloatFilter<"DiceBoxAdminConfig"> | number
+    theme?: IntFilter<"DiceBoxAdminConfig"> | number
+    themeColor?: StringFilter<"DiceBoxAdminConfig"> | string
+    iconColor?: StringNullableFilter<"DiceBoxAdminConfig"> | string | null
+    scale?: FloatFilter<"DiceBoxAdminConfig"> | number
+    createdAt?: DateTimeFilter<"DiceBoxAdminConfig"> | Date | string
+    updatedAt?: DateTimeFilter<"DiceBoxAdminConfig"> | Date | string
+    users?: UserListRelationFilter
+  }, "id">
+
+  export type DiceBoxAdminConfigOrderByWithAggregationInput = {
+    id?: SortOrder
+    name?: SortOrder
+    isDefault?: SortOrder
+    gravity?: SortOrder
+    mass?: SortOrder
+    friction?: SortOrder
+    restitution?: SortOrder
+    angularDamping?: SortOrder
+    linearDamping?: SortOrder
+    spinForce?: SortOrder
+    throwForce?: SortOrder
+    startingHeight?: SortOrder
+    settleTimeout?: SortOrder
+    lightIntensity?: SortOrder
+    enableShadows?: SortOrder
+    shadowTransparency?: SortOrder
+    theme?: SortOrder
+    themeColor?: SortOrder
+    iconColor?: SortOrderInput | SortOrder
+    scale?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: DiceBoxAdminConfigCountOrderByAggregateInput
+    _avg?: DiceBoxAdminConfigAvgOrderByAggregateInput
+    _max?: DiceBoxAdminConfigMaxOrderByAggregateInput
+    _min?: DiceBoxAdminConfigMinOrderByAggregateInput
+    _sum?: DiceBoxAdminConfigSumOrderByAggregateInput
+  }
+
+  export type DiceBoxAdminConfigScalarWhereWithAggregatesInput = {
+    AND?: DiceBoxAdminConfigScalarWhereWithAggregatesInput | DiceBoxAdminConfigScalarWhereWithAggregatesInput[]
+    OR?: DiceBoxAdminConfigScalarWhereWithAggregatesInput[]
+    NOT?: DiceBoxAdminConfigScalarWhereWithAggregatesInput | DiceBoxAdminConfigScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"DiceBoxAdminConfig"> | number
+    name?: StringWithAggregatesFilter<"DiceBoxAdminConfig"> | string
+    isDefault?: BoolWithAggregatesFilter<"DiceBoxAdminConfig"> | boolean
+    gravity?: FloatWithAggregatesFilter<"DiceBoxAdminConfig"> | number
+    mass?: FloatWithAggregatesFilter<"DiceBoxAdminConfig"> | number
+    friction?: FloatWithAggregatesFilter<"DiceBoxAdminConfig"> | number
+    restitution?: FloatWithAggregatesFilter<"DiceBoxAdminConfig"> | number
+    angularDamping?: FloatWithAggregatesFilter<"DiceBoxAdminConfig"> | number
+    linearDamping?: FloatWithAggregatesFilter<"DiceBoxAdminConfig"> | number
+    spinForce?: FloatWithAggregatesFilter<"DiceBoxAdminConfig"> | number
+    throwForce?: FloatWithAggregatesFilter<"DiceBoxAdminConfig"> | number
+    startingHeight?: IntWithAggregatesFilter<"DiceBoxAdminConfig"> | number
+    settleTimeout?: IntWithAggregatesFilter<"DiceBoxAdminConfig"> | number
+    lightIntensity?: FloatWithAggregatesFilter<"DiceBoxAdminConfig"> | number
+    enableShadows?: BoolWithAggregatesFilter<"DiceBoxAdminConfig"> | boolean
+    shadowTransparency?: FloatWithAggregatesFilter<"DiceBoxAdminConfig"> | number
+    theme?: IntWithAggregatesFilter<"DiceBoxAdminConfig"> | number
+    themeColor?: StringWithAggregatesFilter<"DiceBoxAdminConfig"> | string
+    iconColor?: StringNullableWithAggregatesFilter<"DiceBoxAdminConfig"> | string | null
+    scale?: FloatWithAggregatesFilter<"DiceBoxAdminConfig"> | number
+    createdAt?: DateTimeWithAggregatesFilter<"DiceBoxAdminConfig"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"DiceBoxAdminConfig"> | Date | string
+  }
+
+  export type UserDiceConfigOverrideWhereInput = {
+    AND?: UserDiceConfigOverrideWhereInput | UserDiceConfigOverrideWhereInput[]
+    OR?: UserDiceConfigOverrideWhereInput[]
+    NOT?: UserDiceConfigOverrideWhereInput | UserDiceConfigOverrideWhereInput[]
+    id?: IntFilter<"UserDiceConfigOverride"> | number
+    userId?: IntFilter<"UserDiceConfigOverride"> | number
+    propertyName?: StringFilter<"UserDiceConfigOverride"> | string
+    propertyValue?: StringFilter<"UserDiceConfigOverride"> | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }
+
+  export type UserDiceConfigOverrideOrderByWithRelationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    propertyName?: SortOrder
+    propertyValue?: SortOrder
+    user?: UserOrderByWithRelationInput
+    _relevance?: UserDiceConfigOverrideOrderByRelevanceInput
+  }
+
+  export type UserDiceConfigOverrideWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    userId_propertyName?: UserDiceConfigOverrideUserIdPropertyNameCompoundUniqueInput
+    AND?: UserDiceConfigOverrideWhereInput | UserDiceConfigOverrideWhereInput[]
+    OR?: UserDiceConfigOverrideWhereInput[]
+    NOT?: UserDiceConfigOverrideWhereInput | UserDiceConfigOverrideWhereInput[]
+    userId?: IntFilter<"UserDiceConfigOverride"> | number
+    propertyName?: StringFilter<"UserDiceConfigOverride"> | string
+    propertyValue?: StringFilter<"UserDiceConfigOverride"> | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }, "id" | "userId_propertyName">
+
+  export type UserDiceConfigOverrideOrderByWithAggregationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    propertyName?: SortOrder
+    propertyValue?: SortOrder
+    _count?: UserDiceConfigOverrideCountOrderByAggregateInput
+    _avg?: UserDiceConfigOverrideAvgOrderByAggregateInput
+    _max?: UserDiceConfigOverrideMaxOrderByAggregateInput
+    _min?: UserDiceConfigOverrideMinOrderByAggregateInput
+    _sum?: UserDiceConfigOverrideSumOrderByAggregateInput
+  }
+
+  export type UserDiceConfigOverrideScalarWhereWithAggregatesInput = {
+    AND?: UserDiceConfigOverrideScalarWhereWithAggregatesInput | UserDiceConfigOverrideScalarWhereWithAggregatesInput[]
+    OR?: UserDiceConfigOverrideScalarWhereWithAggregatesInput[]
+    NOT?: UserDiceConfigOverrideScalarWhereWithAggregatesInput | UserDiceConfigOverrideScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"UserDiceConfigOverride"> | number
+    userId?: IntWithAggregatesFilter<"UserDiceConfigOverride"> | number
+    propertyName?: StringWithAggregatesFilter<"UserDiceConfigOverride"> | string
+    propertyValue?: StringWithAggregatesFilter<"UserDiceConfigOverride"> | string
   }
 
   export type ClassCreateInput = {
@@ -54590,6 +57314,8 @@ export namespace Prisma {
     updatedAt?: Date | string
     preferredEditionId?: number | null
     characters?: UserCharacterCreateNestedManyWithoutUserInput
+    diceConfigOverrides?: UserDiceConfigOverrideCreateNestedManyWithoutUserInput
+    diceConfigBaseRef?: DiceBoxAdminConfigCreateNestedOneWithoutUsersInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -54601,7 +57327,9 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     preferredEditionId?: number | null
+    diceConfigBase?: number | null
     characters?: UserCharacterUncheckedCreateNestedManyWithoutUserInput
+    diceConfigOverrides?: UserDiceConfigOverrideUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserUpdateInput = {
@@ -54613,6 +57341,8 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     preferredEditionId?: NullableIntFieldUpdateOperationsInput | number | null
     characters?: UserCharacterUpdateManyWithoutUserNestedInput
+    diceConfigOverrides?: UserDiceConfigOverrideUpdateManyWithoutUserNestedInput
+    diceConfigBaseRef?: DiceBoxAdminConfigUpdateOneWithoutUsersNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -54624,7 +57354,9 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     preferredEditionId?: NullableIntFieldUpdateOperationsInput | number | null
+    diceConfigBase?: NullableIntFieldUpdateOperationsInput | number | null
     characters?: UserCharacterUncheckedUpdateManyWithoutUserNestedInput
+    diceConfigOverrides?: UserDiceConfigOverrideUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -54636,6 +57368,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     preferredEditionId?: number | null
+    diceConfigBase?: number | null
   }
 
   export type UserUpdateManyMutationInput = {
@@ -54657,6 +57390,228 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     preferredEditionId?: NullableIntFieldUpdateOperationsInput | number | null
+    diceConfigBase?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type DiceBoxAdminConfigCreateInput = {
+    name?: string
+    isDefault?: boolean
+    gravity?: number
+    mass?: number
+    friction?: number
+    restitution?: number
+    angularDamping?: number
+    linearDamping?: number
+    spinForce?: number
+    throwForce?: number
+    startingHeight?: number
+    settleTimeout?: number
+    lightIntensity?: number
+    enableShadows?: boolean
+    shadowTransparency?: number
+    theme?: number
+    themeColor?: string
+    iconColor?: string | null
+    scale?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    users?: UserCreateNestedManyWithoutDiceConfigBaseRefInput
+  }
+
+  export type DiceBoxAdminConfigUncheckedCreateInput = {
+    id?: number
+    name?: string
+    isDefault?: boolean
+    gravity?: number
+    mass?: number
+    friction?: number
+    restitution?: number
+    angularDamping?: number
+    linearDamping?: number
+    spinForce?: number
+    throwForce?: number
+    startingHeight?: number
+    settleTimeout?: number
+    lightIntensity?: number
+    enableShadows?: boolean
+    shadowTransparency?: number
+    theme?: number
+    themeColor?: string
+    iconColor?: string | null
+    scale?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    users?: UserUncheckedCreateNestedManyWithoutDiceConfigBaseRefInput
+  }
+
+  export type DiceBoxAdminConfigUpdateInput = {
+    name?: StringFieldUpdateOperationsInput | string
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    gravity?: FloatFieldUpdateOperationsInput | number
+    mass?: FloatFieldUpdateOperationsInput | number
+    friction?: FloatFieldUpdateOperationsInput | number
+    restitution?: FloatFieldUpdateOperationsInput | number
+    angularDamping?: FloatFieldUpdateOperationsInput | number
+    linearDamping?: FloatFieldUpdateOperationsInput | number
+    spinForce?: FloatFieldUpdateOperationsInput | number
+    throwForce?: FloatFieldUpdateOperationsInput | number
+    startingHeight?: IntFieldUpdateOperationsInput | number
+    settleTimeout?: IntFieldUpdateOperationsInput | number
+    lightIntensity?: FloatFieldUpdateOperationsInput | number
+    enableShadows?: BoolFieldUpdateOperationsInput | boolean
+    shadowTransparency?: FloatFieldUpdateOperationsInput | number
+    theme?: IntFieldUpdateOperationsInput | number
+    themeColor?: StringFieldUpdateOperationsInput | string
+    iconColor?: NullableStringFieldUpdateOperationsInput | string | null
+    scale?: FloatFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    users?: UserUpdateManyWithoutDiceConfigBaseRefNestedInput
+  }
+
+  export type DiceBoxAdminConfigUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    name?: StringFieldUpdateOperationsInput | string
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    gravity?: FloatFieldUpdateOperationsInput | number
+    mass?: FloatFieldUpdateOperationsInput | number
+    friction?: FloatFieldUpdateOperationsInput | number
+    restitution?: FloatFieldUpdateOperationsInput | number
+    angularDamping?: FloatFieldUpdateOperationsInput | number
+    linearDamping?: FloatFieldUpdateOperationsInput | number
+    spinForce?: FloatFieldUpdateOperationsInput | number
+    throwForce?: FloatFieldUpdateOperationsInput | number
+    startingHeight?: IntFieldUpdateOperationsInput | number
+    settleTimeout?: IntFieldUpdateOperationsInput | number
+    lightIntensity?: FloatFieldUpdateOperationsInput | number
+    enableShadows?: BoolFieldUpdateOperationsInput | boolean
+    shadowTransparency?: FloatFieldUpdateOperationsInput | number
+    theme?: IntFieldUpdateOperationsInput | number
+    themeColor?: StringFieldUpdateOperationsInput | string
+    iconColor?: NullableStringFieldUpdateOperationsInput | string | null
+    scale?: FloatFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    users?: UserUncheckedUpdateManyWithoutDiceConfigBaseRefNestedInput
+  }
+
+  export type DiceBoxAdminConfigCreateManyInput = {
+    id?: number
+    name?: string
+    isDefault?: boolean
+    gravity?: number
+    mass?: number
+    friction?: number
+    restitution?: number
+    angularDamping?: number
+    linearDamping?: number
+    spinForce?: number
+    throwForce?: number
+    startingHeight?: number
+    settleTimeout?: number
+    lightIntensity?: number
+    enableShadows?: boolean
+    shadowTransparency?: number
+    theme?: number
+    themeColor?: string
+    iconColor?: string | null
+    scale?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type DiceBoxAdminConfigUpdateManyMutationInput = {
+    name?: StringFieldUpdateOperationsInput | string
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    gravity?: FloatFieldUpdateOperationsInput | number
+    mass?: FloatFieldUpdateOperationsInput | number
+    friction?: FloatFieldUpdateOperationsInput | number
+    restitution?: FloatFieldUpdateOperationsInput | number
+    angularDamping?: FloatFieldUpdateOperationsInput | number
+    linearDamping?: FloatFieldUpdateOperationsInput | number
+    spinForce?: FloatFieldUpdateOperationsInput | number
+    throwForce?: FloatFieldUpdateOperationsInput | number
+    startingHeight?: IntFieldUpdateOperationsInput | number
+    settleTimeout?: IntFieldUpdateOperationsInput | number
+    lightIntensity?: FloatFieldUpdateOperationsInput | number
+    enableShadows?: BoolFieldUpdateOperationsInput | boolean
+    shadowTransparency?: FloatFieldUpdateOperationsInput | number
+    theme?: IntFieldUpdateOperationsInput | number
+    themeColor?: StringFieldUpdateOperationsInput | string
+    iconColor?: NullableStringFieldUpdateOperationsInput | string | null
+    scale?: FloatFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DiceBoxAdminConfigUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    name?: StringFieldUpdateOperationsInput | string
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    gravity?: FloatFieldUpdateOperationsInput | number
+    mass?: FloatFieldUpdateOperationsInput | number
+    friction?: FloatFieldUpdateOperationsInput | number
+    restitution?: FloatFieldUpdateOperationsInput | number
+    angularDamping?: FloatFieldUpdateOperationsInput | number
+    linearDamping?: FloatFieldUpdateOperationsInput | number
+    spinForce?: FloatFieldUpdateOperationsInput | number
+    throwForce?: FloatFieldUpdateOperationsInput | number
+    startingHeight?: IntFieldUpdateOperationsInput | number
+    settleTimeout?: IntFieldUpdateOperationsInput | number
+    lightIntensity?: FloatFieldUpdateOperationsInput | number
+    enableShadows?: BoolFieldUpdateOperationsInput | boolean
+    shadowTransparency?: FloatFieldUpdateOperationsInput | number
+    theme?: IntFieldUpdateOperationsInput | number
+    themeColor?: StringFieldUpdateOperationsInput | string
+    iconColor?: NullableStringFieldUpdateOperationsInput | string | null
+    scale?: FloatFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type UserDiceConfigOverrideCreateInput = {
+    propertyName: string
+    propertyValue: string
+    user: UserCreateNestedOneWithoutDiceConfigOverridesInput
+  }
+
+  export type UserDiceConfigOverrideUncheckedCreateInput = {
+    id?: number
+    userId: number
+    propertyName: string
+    propertyValue: string
+  }
+
+  export type UserDiceConfigOverrideUpdateInput = {
+    propertyName?: StringFieldUpdateOperationsInput | string
+    propertyValue?: StringFieldUpdateOperationsInput | string
+    user?: UserUpdateOneRequiredWithoutDiceConfigOverridesNestedInput
+  }
+
+  export type UserDiceConfigOverrideUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    userId?: IntFieldUpdateOperationsInput | number
+    propertyName?: StringFieldUpdateOperationsInput | string
+    propertyValue?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type UserDiceConfigOverrideCreateManyInput = {
+    id?: number
+    userId: number
+    propertyName: string
+    propertyValue: string
+  }
+
+  export type UserDiceConfigOverrideUpdateManyMutationInput = {
+    propertyName?: StringFieldUpdateOperationsInput | string
+    propertyValue?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type UserDiceConfigOverrideUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    userId?: IntFieldUpdateOperationsInput | number
+    propertyName?: StringFieldUpdateOperationsInput | string
+    propertyValue?: StringFieldUpdateOperationsInput | string
   }
 
   export type IntFilter<$PrismaModel = never> = {
@@ -57130,6 +60085,21 @@ export namespace Prisma {
     not?: NestedDateTimeFilter<$PrismaModel> | Date | string
   }
 
+  export type UserDiceConfigOverrideListRelationFilter = {
+    every?: UserDiceConfigOverrideWhereInput
+    some?: UserDiceConfigOverrideWhereInput
+    none?: UserDiceConfigOverrideWhereInput
+  }
+
+  export type DiceBoxAdminConfigNullableScalarRelationFilter = {
+    is?: DiceBoxAdminConfigWhereInput | null
+    isNot?: DiceBoxAdminConfigWhereInput | null
+  }
+
+  export type UserDiceConfigOverrideOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
   export type UserOrderByRelevanceInput = {
     fields: UserOrderByRelevanceFieldEnum | UserOrderByRelevanceFieldEnum[]
     sort: SortOrder
@@ -57145,11 +60115,13 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     preferredEditionId?: SortOrder
+    diceConfigBase?: SortOrder
   }
 
   export type UserAvgOrderByAggregateInput = {
     id?: SortOrder
     preferredEditionId?: SortOrder
+    diceConfigBase?: SortOrder
   }
 
   export type UserMaxOrderByAggregateInput = {
@@ -57161,6 +60133,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     preferredEditionId?: SortOrder
+    diceConfigBase?: SortOrder
   }
 
   export type UserMinOrderByAggregateInput = {
@@ -57172,11 +60145,13 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     preferredEditionId?: SortOrder
+    diceConfigBase?: SortOrder
   }
 
   export type UserSumOrderByAggregateInput = {
     id?: SortOrder
     preferredEditionId?: SortOrder
+    diceConfigBase?: SortOrder
   }
 
   export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -57191,6 +60166,202 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedDateTimeFilter<$PrismaModel>
     _max?: NestedDateTimeFilter<$PrismaModel>
+  }
+
+  export type FloatFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[]
+    notIn?: number[]
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatFilter<$PrismaModel> | number
+  }
+
+  export type UserListRelationFilter = {
+    every?: UserWhereInput
+    some?: UserWhereInput
+    none?: UserWhereInput
+  }
+
+  export type UserOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type DiceBoxAdminConfigOrderByRelevanceInput = {
+    fields: DiceBoxAdminConfigOrderByRelevanceFieldEnum | DiceBoxAdminConfigOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type DiceBoxAdminConfigCountOrderByAggregateInput = {
+    id?: SortOrder
+    name?: SortOrder
+    isDefault?: SortOrder
+    gravity?: SortOrder
+    mass?: SortOrder
+    friction?: SortOrder
+    restitution?: SortOrder
+    angularDamping?: SortOrder
+    linearDamping?: SortOrder
+    spinForce?: SortOrder
+    throwForce?: SortOrder
+    startingHeight?: SortOrder
+    settleTimeout?: SortOrder
+    lightIntensity?: SortOrder
+    enableShadows?: SortOrder
+    shadowTransparency?: SortOrder
+    theme?: SortOrder
+    themeColor?: SortOrder
+    iconColor?: SortOrder
+    scale?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type DiceBoxAdminConfigAvgOrderByAggregateInput = {
+    id?: SortOrder
+    gravity?: SortOrder
+    mass?: SortOrder
+    friction?: SortOrder
+    restitution?: SortOrder
+    angularDamping?: SortOrder
+    linearDamping?: SortOrder
+    spinForce?: SortOrder
+    throwForce?: SortOrder
+    startingHeight?: SortOrder
+    settleTimeout?: SortOrder
+    lightIntensity?: SortOrder
+    shadowTransparency?: SortOrder
+    theme?: SortOrder
+    scale?: SortOrder
+  }
+
+  export type DiceBoxAdminConfigMaxOrderByAggregateInput = {
+    id?: SortOrder
+    name?: SortOrder
+    isDefault?: SortOrder
+    gravity?: SortOrder
+    mass?: SortOrder
+    friction?: SortOrder
+    restitution?: SortOrder
+    angularDamping?: SortOrder
+    linearDamping?: SortOrder
+    spinForce?: SortOrder
+    throwForce?: SortOrder
+    startingHeight?: SortOrder
+    settleTimeout?: SortOrder
+    lightIntensity?: SortOrder
+    enableShadows?: SortOrder
+    shadowTransparency?: SortOrder
+    theme?: SortOrder
+    themeColor?: SortOrder
+    iconColor?: SortOrder
+    scale?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type DiceBoxAdminConfigMinOrderByAggregateInput = {
+    id?: SortOrder
+    name?: SortOrder
+    isDefault?: SortOrder
+    gravity?: SortOrder
+    mass?: SortOrder
+    friction?: SortOrder
+    restitution?: SortOrder
+    angularDamping?: SortOrder
+    linearDamping?: SortOrder
+    spinForce?: SortOrder
+    throwForce?: SortOrder
+    startingHeight?: SortOrder
+    settleTimeout?: SortOrder
+    lightIntensity?: SortOrder
+    enableShadows?: SortOrder
+    shadowTransparency?: SortOrder
+    theme?: SortOrder
+    themeColor?: SortOrder
+    iconColor?: SortOrder
+    scale?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type DiceBoxAdminConfigSumOrderByAggregateInput = {
+    id?: SortOrder
+    gravity?: SortOrder
+    mass?: SortOrder
+    friction?: SortOrder
+    restitution?: SortOrder
+    angularDamping?: SortOrder
+    linearDamping?: SortOrder
+    spinForce?: SortOrder
+    throwForce?: SortOrder
+    startingHeight?: SortOrder
+    settleTimeout?: SortOrder
+    lightIntensity?: SortOrder
+    shadowTransparency?: SortOrder
+    theme?: SortOrder
+    scale?: SortOrder
+  }
+
+  export type FloatWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[]
+    notIn?: number[]
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedFloatFilter<$PrismaModel>
+    _min?: NestedFloatFilter<$PrismaModel>
+    _max?: NestedFloatFilter<$PrismaModel>
+  }
+
+  export type UserDiceConfigOverrideOrderByRelevanceInput = {
+    fields: UserDiceConfigOverrideOrderByRelevanceFieldEnum | UserDiceConfigOverrideOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type UserDiceConfigOverrideUserIdPropertyNameCompoundUniqueInput = {
+    userId: number
+    propertyName: string
+  }
+
+  export type UserDiceConfigOverrideCountOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    propertyName?: SortOrder
+    propertyValue?: SortOrder
+  }
+
+  export type UserDiceConfigOverrideAvgOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+  }
+
+  export type UserDiceConfigOverrideMaxOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    propertyName?: SortOrder
+    propertyValue?: SortOrder
+  }
+
+  export type UserDiceConfigOverrideMinOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    propertyName?: SortOrder
+    propertyValue?: SortOrder
+  }
+
+  export type UserDiceConfigOverrideSumOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
   }
 
   export type ClassFeatureMapCreateNestedManyWithoutClassInput = {
@@ -59894,11 +63065,31 @@ export namespace Prisma {
     connect?: UserCharacterWhereUniqueInput | UserCharacterWhereUniqueInput[]
   }
 
+  export type UserDiceConfigOverrideCreateNestedManyWithoutUserInput = {
+    create?: XOR<UserDiceConfigOverrideCreateWithoutUserInput, UserDiceConfigOverrideUncheckedCreateWithoutUserInput> | UserDiceConfigOverrideCreateWithoutUserInput[] | UserDiceConfigOverrideUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: UserDiceConfigOverrideCreateOrConnectWithoutUserInput | UserDiceConfigOverrideCreateOrConnectWithoutUserInput[]
+    createMany?: UserDiceConfigOverrideCreateManyUserInputEnvelope
+    connect?: UserDiceConfigOverrideWhereUniqueInput | UserDiceConfigOverrideWhereUniqueInput[]
+  }
+
+  export type DiceBoxAdminConfigCreateNestedOneWithoutUsersInput = {
+    create?: XOR<DiceBoxAdminConfigCreateWithoutUsersInput, DiceBoxAdminConfigUncheckedCreateWithoutUsersInput>
+    connectOrCreate?: DiceBoxAdminConfigCreateOrConnectWithoutUsersInput
+    connect?: DiceBoxAdminConfigWhereUniqueInput
+  }
+
   export type UserCharacterUncheckedCreateNestedManyWithoutUserInput = {
     create?: XOR<UserCharacterCreateWithoutUserInput, UserCharacterUncheckedCreateWithoutUserInput> | UserCharacterCreateWithoutUserInput[] | UserCharacterUncheckedCreateWithoutUserInput[]
     connectOrCreate?: UserCharacterCreateOrConnectWithoutUserInput | UserCharacterCreateOrConnectWithoutUserInput[]
     createMany?: UserCharacterCreateManyUserInputEnvelope
     connect?: UserCharacterWhereUniqueInput | UserCharacterWhereUniqueInput[]
+  }
+
+  export type UserDiceConfigOverrideUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<UserDiceConfigOverrideCreateWithoutUserInput, UserDiceConfigOverrideUncheckedCreateWithoutUserInput> | UserDiceConfigOverrideCreateWithoutUserInput[] | UserDiceConfigOverrideUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: UserDiceConfigOverrideCreateOrConnectWithoutUserInput | UserDiceConfigOverrideCreateOrConnectWithoutUserInput[]
+    createMany?: UserDiceConfigOverrideCreateManyUserInputEnvelope
+    connect?: UserDiceConfigOverrideWhereUniqueInput | UserDiceConfigOverrideWhereUniqueInput[]
   }
 
   export type DateTimeFieldUpdateOperationsInput = {
@@ -59919,6 +63110,30 @@ export namespace Prisma {
     deleteMany?: UserCharacterScalarWhereInput | UserCharacterScalarWhereInput[]
   }
 
+  export type UserDiceConfigOverrideUpdateManyWithoutUserNestedInput = {
+    create?: XOR<UserDiceConfigOverrideCreateWithoutUserInput, UserDiceConfigOverrideUncheckedCreateWithoutUserInput> | UserDiceConfigOverrideCreateWithoutUserInput[] | UserDiceConfigOverrideUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: UserDiceConfigOverrideCreateOrConnectWithoutUserInput | UserDiceConfigOverrideCreateOrConnectWithoutUserInput[]
+    upsert?: UserDiceConfigOverrideUpsertWithWhereUniqueWithoutUserInput | UserDiceConfigOverrideUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: UserDiceConfigOverrideCreateManyUserInputEnvelope
+    set?: UserDiceConfigOverrideWhereUniqueInput | UserDiceConfigOverrideWhereUniqueInput[]
+    disconnect?: UserDiceConfigOverrideWhereUniqueInput | UserDiceConfigOverrideWhereUniqueInput[]
+    delete?: UserDiceConfigOverrideWhereUniqueInput | UserDiceConfigOverrideWhereUniqueInput[]
+    connect?: UserDiceConfigOverrideWhereUniqueInput | UserDiceConfigOverrideWhereUniqueInput[]
+    update?: UserDiceConfigOverrideUpdateWithWhereUniqueWithoutUserInput | UserDiceConfigOverrideUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: UserDiceConfigOverrideUpdateManyWithWhereWithoutUserInput | UserDiceConfigOverrideUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: UserDiceConfigOverrideScalarWhereInput | UserDiceConfigOverrideScalarWhereInput[]
+  }
+
+  export type DiceBoxAdminConfigUpdateOneWithoutUsersNestedInput = {
+    create?: XOR<DiceBoxAdminConfigCreateWithoutUsersInput, DiceBoxAdminConfigUncheckedCreateWithoutUsersInput>
+    connectOrCreate?: DiceBoxAdminConfigCreateOrConnectWithoutUsersInput
+    upsert?: DiceBoxAdminConfigUpsertWithoutUsersInput
+    disconnect?: DiceBoxAdminConfigWhereInput | boolean
+    delete?: DiceBoxAdminConfigWhereInput | boolean
+    connect?: DiceBoxAdminConfigWhereUniqueInput
+    update?: XOR<XOR<DiceBoxAdminConfigUpdateToOneWithWhereWithoutUsersInput, DiceBoxAdminConfigUpdateWithoutUsersInput>, DiceBoxAdminConfigUncheckedUpdateWithoutUsersInput>
+  }
+
   export type UserCharacterUncheckedUpdateManyWithoutUserNestedInput = {
     create?: XOR<UserCharacterCreateWithoutUserInput, UserCharacterUncheckedCreateWithoutUserInput> | UserCharacterCreateWithoutUserInput[] | UserCharacterUncheckedCreateWithoutUserInput[]
     connectOrCreate?: UserCharacterCreateOrConnectWithoutUserInput | UserCharacterCreateOrConnectWithoutUserInput[]
@@ -59931,6 +63146,84 @@ export namespace Prisma {
     update?: UserCharacterUpdateWithWhereUniqueWithoutUserInput | UserCharacterUpdateWithWhereUniqueWithoutUserInput[]
     updateMany?: UserCharacterUpdateManyWithWhereWithoutUserInput | UserCharacterUpdateManyWithWhereWithoutUserInput[]
     deleteMany?: UserCharacterScalarWhereInput | UserCharacterScalarWhereInput[]
+  }
+
+  export type UserDiceConfigOverrideUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<UserDiceConfigOverrideCreateWithoutUserInput, UserDiceConfigOverrideUncheckedCreateWithoutUserInput> | UserDiceConfigOverrideCreateWithoutUserInput[] | UserDiceConfigOverrideUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: UserDiceConfigOverrideCreateOrConnectWithoutUserInput | UserDiceConfigOverrideCreateOrConnectWithoutUserInput[]
+    upsert?: UserDiceConfigOverrideUpsertWithWhereUniqueWithoutUserInput | UserDiceConfigOverrideUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: UserDiceConfigOverrideCreateManyUserInputEnvelope
+    set?: UserDiceConfigOverrideWhereUniqueInput | UserDiceConfigOverrideWhereUniqueInput[]
+    disconnect?: UserDiceConfigOverrideWhereUniqueInput | UserDiceConfigOverrideWhereUniqueInput[]
+    delete?: UserDiceConfigOverrideWhereUniqueInput | UserDiceConfigOverrideWhereUniqueInput[]
+    connect?: UserDiceConfigOverrideWhereUniqueInput | UserDiceConfigOverrideWhereUniqueInput[]
+    update?: UserDiceConfigOverrideUpdateWithWhereUniqueWithoutUserInput | UserDiceConfigOverrideUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: UserDiceConfigOverrideUpdateManyWithWhereWithoutUserInput | UserDiceConfigOverrideUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: UserDiceConfigOverrideScalarWhereInput | UserDiceConfigOverrideScalarWhereInput[]
+  }
+
+  export type UserCreateNestedManyWithoutDiceConfigBaseRefInput = {
+    create?: XOR<UserCreateWithoutDiceConfigBaseRefInput, UserUncheckedCreateWithoutDiceConfigBaseRefInput> | UserCreateWithoutDiceConfigBaseRefInput[] | UserUncheckedCreateWithoutDiceConfigBaseRefInput[]
+    connectOrCreate?: UserCreateOrConnectWithoutDiceConfigBaseRefInput | UserCreateOrConnectWithoutDiceConfigBaseRefInput[]
+    createMany?: UserCreateManyDiceConfigBaseRefInputEnvelope
+    connect?: UserWhereUniqueInput | UserWhereUniqueInput[]
+  }
+
+  export type UserUncheckedCreateNestedManyWithoutDiceConfigBaseRefInput = {
+    create?: XOR<UserCreateWithoutDiceConfigBaseRefInput, UserUncheckedCreateWithoutDiceConfigBaseRefInput> | UserCreateWithoutDiceConfigBaseRefInput[] | UserUncheckedCreateWithoutDiceConfigBaseRefInput[]
+    connectOrCreate?: UserCreateOrConnectWithoutDiceConfigBaseRefInput | UserCreateOrConnectWithoutDiceConfigBaseRefInput[]
+    createMany?: UserCreateManyDiceConfigBaseRefInputEnvelope
+    connect?: UserWhereUniqueInput | UserWhereUniqueInput[]
+  }
+
+  export type FloatFieldUpdateOperationsInput = {
+    set?: number
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
+  export type UserUpdateManyWithoutDiceConfigBaseRefNestedInput = {
+    create?: XOR<UserCreateWithoutDiceConfigBaseRefInput, UserUncheckedCreateWithoutDiceConfigBaseRefInput> | UserCreateWithoutDiceConfigBaseRefInput[] | UserUncheckedCreateWithoutDiceConfigBaseRefInput[]
+    connectOrCreate?: UserCreateOrConnectWithoutDiceConfigBaseRefInput | UserCreateOrConnectWithoutDiceConfigBaseRefInput[]
+    upsert?: UserUpsertWithWhereUniqueWithoutDiceConfigBaseRefInput | UserUpsertWithWhereUniqueWithoutDiceConfigBaseRefInput[]
+    createMany?: UserCreateManyDiceConfigBaseRefInputEnvelope
+    set?: UserWhereUniqueInput | UserWhereUniqueInput[]
+    disconnect?: UserWhereUniqueInput | UserWhereUniqueInput[]
+    delete?: UserWhereUniqueInput | UserWhereUniqueInput[]
+    connect?: UserWhereUniqueInput | UserWhereUniqueInput[]
+    update?: UserUpdateWithWhereUniqueWithoutDiceConfigBaseRefInput | UserUpdateWithWhereUniqueWithoutDiceConfigBaseRefInput[]
+    updateMany?: UserUpdateManyWithWhereWithoutDiceConfigBaseRefInput | UserUpdateManyWithWhereWithoutDiceConfigBaseRefInput[]
+    deleteMany?: UserScalarWhereInput | UserScalarWhereInput[]
+  }
+
+  export type UserUncheckedUpdateManyWithoutDiceConfigBaseRefNestedInput = {
+    create?: XOR<UserCreateWithoutDiceConfigBaseRefInput, UserUncheckedCreateWithoutDiceConfigBaseRefInput> | UserCreateWithoutDiceConfigBaseRefInput[] | UserUncheckedCreateWithoutDiceConfigBaseRefInput[]
+    connectOrCreate?: UserCreateOrConnectWithoutDiceConfigBaseRefInput | UserCreateOrConnectWithoutDiceConfigBaseRefInput[]
+    upsert?: UserUpsertWithWhereUniqueWithoutDiceConfigBaseRefInput | UserUpsertWithWhereUniqueWithoutDiceConfigBaseRefInput[]
+    createMany?: UserCreateManyDiceConfigBaseRefInputEnvelope
+    set?: UserWhereUniqueInput | UserWhereUniqueInput[]
+    disconnect?: UserWhereUniqueInput | UserWhereUniqueInput[]
+    delete?: UserWhereUniqueInput | UserWhereUniqueInput[]
+    connect?: UserWhereUniqueInput | UserWhereUniqueInput[]
+    update?: UserUpdateWithWhereUniqueWithoutDiceConfigBaseRefInput | UserUpdateWithWhereUniqueWithoutDiceConfigBaseRefInput[]
+    updateMany?: UserUpdateManyWithWhereWithoutDiceConfigBaseRefInput | UserUpdateManyWithWhereWithoutDiceConfigBaseRefInput[]
+    deleteMany?: UserScalarWhereInput | UserScalarWhereInput[]
+  }
+
+  export type UserCreateNestedOneWithoutDiceConfigOverridesInput = {
+    create?: XOR<UserCreateWithoutDiceConfigOverridesInput, UserUncheckedCreateWithoutDiceConfigOverridesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutDiceConfigOverridesInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type UserUpdateOneRequiredWithoutDiceConfigOverridesNestedInput = {
+    create?: XOR<UserCreateWithoutDiceConfigOverridesInput, UserUncheckedCreateWithoutDiceConfigOverridesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutDiceConfigOverridesInput
+    upsert?: UserUpsertWithoutDiceConfigOverridesInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutDiceConfigOverridesInput, UserUpdateWithoutDiceConfigOverridesInput>, UserUncheckedUpdateWithoutDiceConfigOverridesInput>
   }
 
   export type NestedIntFilter<$PrismaModel = never> = {
@@ -60243,6 +63536,22 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedDateTimeFilter<$PrismaModel>
     _max?: NestedDateTimeFilter<$PrismaModel>
+  }
+
+  export type NestedFloatWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[]
+    notIn?: number[]
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedFloatFilter<$PrismaModel>
+    _min?: NestedFloatFilter<$PrismaModel>
+    _max?: NestedFloatFilter<$PrismaModel>
   }
 
   export type ClassFeatureMapCreateWithoutClassInput = {
@@ -65785,6 +69094,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     preferredEditionId?: number | null
+    diceConfigOverrides?: UserDiceConfigOverrideCreateNestedManyWithoutUserInput
+    diceConfigBaseRef?: DiceBoxAdminConfigCreateNestedOneWithoutUsersInput
   }
 
   export type UserUncheckedCreateWithoutCharactersInput = {
@@ -65796,6 +69107,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     preferredEditionId?: number | null
+    diceConfigBase?: number | null
+    diceConfigOverrides?: UserDiceConfigOverrideUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutCharactersInput = {
@@ -65904,6 +69217,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     preferredEditionId?: NullableIntFieldUpdateOperationsInput | number | null
+    diceConfigOverrides?: UserDiceConfigOverrideUpdateManyWithoutUserNestedInput
+    diceConfigBaseRef?: DiceBoxAdminConfigUpdateOneWithoutUsersNestedInput
   }
 
   export type UserUncheckedUpdateWithoutCharactersInput = {
@@ -65915,6 +69230,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     preferredEditionId?: NullableIntFieldUpdateOperationsInput | number | null
+    diceConfigBase?: NullableIntFieldUpdateOperationsInput | number | null
+    diceConfigOverrides?: UserDiceConfigOverrideUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCharacterCreateWithoutAttributesInput = {
@@ -66036,6 +69353,81 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type UserDiceConfigOverrideCreateWithoutUserInput = {
+    propertyName: string
+    propertyValue: string
+  }
+
+  export type UserDiceConfigOverrideUncheckedCreateWithoutUserInput = {
+    id?: number
+    propertyName: string
+    propertyValue: string
+  }
+
+  export type UserDiceConfigOverrideCreateOrConnectWithoutUserInput = {
+    where: UserDiceConfigOverrideWhereUniqueInput
+    create: XOR<UserDiceConfigOverrideCreateWithoutUserInput, UserDiceConfigOverrideUncheckedCreateWithoutUserInput>
+  }
+
+  export type UserDiceConfigOverrideCreateManyUserInputEnvelope = {
+    data: UserDiceConfigOverrideCreateManyUserInput | UserDiceConfigOverrideCreateManyUserInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type DiceBoxAdminConfigCreateWithoutUsersInput = {
+    name?: string
+    isDefault?: boolean
+    gravity?: number
+    mass?: number
+    friction?: number
+    restitution?: number
+    angularDamping?: number
+    linearDamping?: number
+    spinForce?: number
+    throwForce?: number
+    startingHeight?: number
+    settleTimeout?: number
+    lightIntensity?: number
+    enableShadows?: boolean
+    shadowTransparency?: number
+    theme?: number
+    themeColor?: string
+    iconColor?: string | null
+    scale?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type DiceBoxAdminConfigUncheckedCreateWithoutUsersInput = {
+    id?: number
+    name?: string
+    isDefault?: boolean
+    gravity?: number
+    mass?: number
+    friction?: number
+    restitution?: number
+    angularDamping?: number
+    linearDamping?: number
+    spinForce?: number
+    throwForce?: number
+    startingHeight?: number
+    settleTimeout?: number
+    lightIntensity?: number
+    enableShadows?: boolean
+    shadowTransparency?: number
+    theme?: number
+    themeColor?: string
+    iconColor?: string | null
+    scale?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type DiceBoxAdminConfigCreateOrConnectWithoutUsersInput = {
+    where: DiceBoxAdminConfigWhereUniqueInput
+    create: XOR<DiceBoxAdminConfigCreateWithoutUsersInput, DiceBoxAdminConfigUncheckedCreateWithoutUsersInput>
+  }
+
   export type UserCharacterUpsertWithWhereUniqueWithoutUserInput = {
     where: UserCharacterWhereUniqueInput
     update: XOR<UserCharacterUpdateWithoutUserInput, UserCharacterUncheckedUpdateWithoutUserInput>
@@ -66050,6 +69442,224 @@ export namespace Prisma {
   export type UserCharacterUpdateManyWithWhereWithoutUserInput = {
     where: UserCharacterScalarWhereInput
     data: XOR<UserCharacterUpdateManyMutationInput, UserCharacterUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type UserDiceConfigOverrideUpsertWithWhereUniqueWithoutUserInput = {
+    where: UserDiceConfigOverrideWhereUniqueInput
+    update: XOR<UserDiceConfigOverrideUpdateWithoutUserInput, UserDiceConfigOverrideUncheckedUpdateWithoutUserInput>
+    create: XOR<UserDiceConfigOverrideCreateWithoutUserInput, UserDiceConfigOverrideUncheckedCreateWithoutUserInput>
+  }
+
+  export type UserDiceConfigOverrideUpdateWithWhereUniqueWithoutUserInput = {
+    where: UserDiceConfigOverrideWhereUniqueInput
+    data: XOR<UserDiceConfigOverrideUpdateWithoutUserInput, UserDiceConfigOverrideUncheckedUpdateWithoutUserInput>
+  }
+
+  export type UserDiceConfigOverrideUpdateManyWithWhereWithoutUserInput = {
+    where: UserDiceConfigOverrideScalarWhereInput
+    data: XOR<UserDiceConfigOverrideUpdateManyMutationInput, UserDiceConfigOverrideUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type UserDiceConfigOverrideScalarWhereInput = {
+    AND?: UserDiceConfigOverrideScalarWhereInput | UserDiceConfigOverrideScalarWhereInput[]
+    OR?: UserDiceConfigOverrideScalarWhereInput[]
+    NOT?: UserDiceConfigOverrideScalarWhereInput | UserDiceConfigOverrideScalarWhereInput[]
+    id?: IntFilter<"UserDiceConfigOverride"> | number
+    userId?: IntFilter<"UserDiceConfigOverride"> | number
+    propertyName?: StringFilter<"UserDiceConfigOverride"> | string
+    propertyValue?: StringFilter<"UserDiceConfigOverride"> | string
+  }
+
+  export type DiceBoxAdminConfigUpsertWithoutUsersInput = {
+    update: XOR<DiceBoxAdminConfigUpdateWithoutUsersInput, DiceBoxAdminConfigUncheckedUpdateWithoutUsersInput>
+    create: XOR<DiceBoxAdminConfigCreateWithoutUsersInput, DiceBoxAdminConfigUncheckedCreateWithoutUsersInput>
+    where?: DiceBoxAdminConfigWhereInput
+  }
+
+  export type DiceBoxAdminConfigUpdateToOneWithWhereWithoutUsersInput = {
+    where?: DiceBoxAdminConfigWhereInput
+    data: XOR<DiceBoxAdminConfigUpdateWithoutUsersInput, DiceBoxAdminConfigUncheckedUpdateWithoutUsersInput>
+  }
+
+  export type DiceBoxAdminConfigUpdateWithoutUsersInput = {
+    name?: StringFieldUpdateOperationsInput | string
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    gravity?: FloatFieldUpdateOperationsInput | number
+    mass?: FloatFieldUpdateOperationsInput | number
+    friction?: FloatFieldUpdateOperationsInput | number
+    restitution?: FloatFieldUpdateOperationsInput | number
+    angularDamping?: FloatFieldUpdateOperationsInput | number
+    linearDamping?: FloatFieldUpdateOperationsInput | number
+    spinForce?: FloatFieldUpdateOperationsInput | number
+    throwForce?: FloatFieldUpdateOperationsInput | number
+    startingHeight?: IntFieldUpdateOperationsInput | number
+    settleTimeout?: IntFieldUpdateOperationsInput | number
+    lightIntensity?: FloatFieldUpdateOperationsInput | number
+    enableShadows?: BoolFieldUpdateOperationsInput | boolean
+    shadowTransparency?: FloatFieldUpdateOperationsInput | number
+    theme?: IntFieldUpdateOperationsInput | number
+    themeColor?: StringFieldUpdateOperationsInput | string
+    iconColor?: NullableStringFieldUpdateOperationsInput | string | null
+    scale?: FloatFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DiceBoxAdminConfigUncheckedUpdateWithoutUsersInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    name?: StringFieldUpdateOperationsInput | string
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    gravity?: FloatFieldUpdateOperationsInput | number
+    mass?: FloatFieldUpdateOperationsInput | number
+    friction?: FloatFieldUpdateOperationsInput | number
+    restitution?: FloatFieldUpdateOperationsInput | number
+    angularDamping?: FloatFieldUpdateOperationsInput | number
+    linearDamping?: FloatFieldUpdateOperationsInput | number
+    spinForce?: FloatFieldUpdateOperationsInput | number
+    throwForce?: FloatFieldUpdateOperationsInput | number
+    startingHeight?: IntFieldUpdateOperationsInput | number
+    settleTimeout?: IntFieldUpdateOperationsInput | number
+    lightIntensity?: FloatFieldUpdateOperationsInput | number
+    enableShadows?: BoolFieldUpdateOperationsInput | boolean
+    shadowTransparency?: FloatFieldUpdateOperationsInput | number
+    theme?: IntFieldUpdateOperationsInput | number
+    themeColor?: StringFieldUpdateOperationsInput | string
+    iconColor?: NullableStringFieldUpdateOperationsInput | string | null
+    scale?: FloatFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type UserCreateWithoutDiceConfigBaseRefInput = {
+    username: string
+    email: string
+    password: string
+    isAdmin?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    preferredEditionId?: number | null
+    characters?: UserCharacterCreateNestedManyWithoutUserInput
+    diceConfigOverrides?: UserDiceConfigOverrideCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutDiceConfigBaseRefInput = {
+    id?: number
+    username: string
+    email: string
+    password: string
+    isAdmin?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    preferredEditionId?: number | null
+    characters?: UserCharacterUncheckedCreateNestedManyWithoutUserInput
+    diceConfigOverrides?: UserDiceConfigOverrideUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutDiceConfigBaseRefInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutDiceConfigBaseRefInput, UserUncheckedCreateWithoutDiceConfigBaseRefInput>
+  }
+
+  export type UserCreateManyDiceConfigBaseRefInputEnvelope = {
+    data: UserCreateManyDiceConfigBaseRefInput | UserCreateManyDiceConfigBaseRefInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type UserUpsertWithWhereUniqueWithoutDiceConfigBaseRefInput = {
+    where: UserWhereUniqueInput
+    update: XOR<UserUpdateWithoutDiceConfigBaseRefInput, UserUncheckedUpdateWithoutDiceConfigBaseRefInput>
+    create: XOR<UserCreateWithoutDiceConfigBaseRefInput, UserUncheckedCreateWithoutDiceConfigBaseRefInput>
+  }
+
+  export type UserUpdateWithWhereUniqueWithoutDiceConfigBaseRefInput = {
+    where: UserWhereUniqueInput
+    data: XOR<UserUpdateWithoutDiceConfigBaseRefInput, UserUncheckedUpdateWithoutDiceConfigBaseRefInput>
+  }
+
+  export type UserUpdateManyWithWhereWithoutDiceConfigBaseRefInput = {
+    where: UserScalarWhereInput
+    data: XOR<UserUpdateManyMutationInput, UserUncheckedUpdateManyWithoutDiceConfigBaseRefInput>
+  }
+
+  export type UserScalarWhereInput = {
+    AND?: UserScalarWhereInput | UserScalarWhereInput[]
+    OR?: UserScalarWhereInput[]
+    NOT?: UserScalarWhereInput | UserScalarWhereInput[]
+    id?: IntFilter<"User"> | number
+    username?: StringFilter<"User"> | string
+    email?: StringFilter<"User"> | string
+    password?: StringFilter<"User"> | string
+    isAdmin?: BoolFilter<"User"> | boolean
+    createdAt?: DateTimeFilter<"User"> | Date | string
+    updatedAt?: DateTimeFilter<"User"> | Date | string
+    preferredEditionId?: IntNullableFilter<"User"> | number | null
+    diceConfigBase?: IntNullableFilter<"User"> | number | null
+  }
+
+  export type UserCreateWithoutDiceConfigOverridesInput = {
+    username: string
+    email: string
+    password: string
+    isAdmin?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    preferredEditionId?: number | null
+    characters?: UserCharacterCreateNestedManyWithoutUserInput
+    diceConfigBaseRef?: DiceBoxAdminConfigCreateNestedOneWithoutUsersInput
+  }
+
+  export type UserUncheckedCreateWithoutDiceConfigOverridesInput = {
+    id?: number
+    username: string
+    email: string
+    password: string
+    isAdmin?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    preferredEditionId?: number | null
+    diceConfigBase?: number | null
+    characters?: UserCharacterUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutDiceConfigOverridesInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutDiceConfigOverridesInput, UserUncheckedCreateWithoutDiceConfigOverridesInput>
+  }
+
+  export type UserUpsertWithoutDiceConfigOverridesInput = {
+    update: XOR<UserUpdateWithoutDiceConfigOverridesInput, UserUncheckedUpdateWithoutDiceConfigOverridesInput>
+    create: XOR<UserCreateWithoutDiceConfigOverridesInput, UserUncheckedCreateWithoutDiceConfigOverridesInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutDiceConfigOverridesInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutDiceConfigOverridesInput, UserUncheckedUpdateWithoutDiceConfigOverridesInput>
+  }
+
+  export type UserUpdateWithoutDiceConfigOverridesInput = {
+    username?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
+    isAdmin?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    preferredEditionId?: NullableIntFieldUpdateOperationsInput | number | null
+    characters?: UserCharacterUpdateManyWithoutUserNestedInput
+    diceConfigBaseRef?: DiceBoxAdminConfigUpdateOneWithoutUsersNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutDiceConfigOverridesInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    username?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
+    isAdmin?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    preferredEditionId?: NullableIntFieldUpdateOperationsInput | number | null
+    diceConfigBase?: NullableIntFieldUpdateOperationsInput | number | null
+    characters?: UserCharacterUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type ClassFeatureMapCreateManyClassInput = {
@@ -67115,6 +70725,12 @@ export namespace Prisma {
     notes?: string | null
   }
 
+  export type UserDiceConfigOverrideCreateManyUserInput = {
+    id?: number
+    propertyName: string
+    propertyValue: string
+  }
+
   export type UserCharacterUpdateWithoutUserInput = {
     name?: StringFieldUpdateOperationsInput | string
     alignmentId?: IntFieldUpdateOperationsInput | number
@@ -67158,6 +70774,70 @@ export namespace Prisma {
     hair?: NullableStringFieldUpdateOperationsInput | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type UserDiceConfigOverrideUpdateWithoutUserInput = {
+    propertyName?: StringFieldUpdateOperationsInput | string
+    propertyValue?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type UserDiceConfigOverrideUncheckedUpdateWithoutUserInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    propertyName?: StringFieldUpdateOperationsInput | string
+    propertyValue?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type UserDiceConfigOverrideUncheckedUpdateManyWithoutUserInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    propertyName?: StringFieldUpdateOperationsInput | string
+    propertyValue?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type UserCreateManyDiceConfigBaseRefInput = {
+    id?: number
+    username: string
+    email: string
+    password: string
+    isAdmin?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    preferredEditionId?: number | null
+  }
+
+  export type UserUpdateWithoutDiceConfigBaseRefInput = {
+    username?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
+    isAdmin?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    preferredEditionId?: NullableIntFieldUpdateOperationsInput | number | null
+    characters?: UserCharacterUpdateManyWithoutUserNestedInput
+    diceConfigOverrides?: UserDiceConfigOverrideUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutDiceConfigBaseRefInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    username?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
+    isAdmin?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    preferredEditionId?: NullableIntFieldUpdateOperationsInput | number | null
+    characters?: UserCharacterUncheckedUpdateManyWithoutUserNestedInput
+    diceConfigOverrides?: UserDiceConfigOverrideUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateManyWithoutDiceConfigBaseRefInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    username?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
+    isAdmin?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    preferredEditionId?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
 

@@ -9,7 +9,7 @@ import { typedApi } from './Api';
 const USER_PROFILE_API_BASE_URL = '/user/profile';
 
 export const UserProfileService = {
-    getUserProfile: typedApi<undefined, typeof UserProfileResponseSchema>({
+    getUserProfile: typedApi({
         path: USER_PROFILE_API_BASE_URL,
         method: 'GET',
         responseSchema: UserProfileResponseSchema,

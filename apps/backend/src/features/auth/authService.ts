@@ -2,17 +2,45 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 import { PrismaClient } from '@shared/prisma-client';
-import { AuthServiceResult, JwtPayload, LoginUserRequest, RegisterUserRequest } from '@shared/schema';
+import { AuthServiceResult, JwtPayload, LoginUserRequest, RegisterUserRequest, UserProfile } from '@shared/schema';
 
 import type { AuthService } from './types';
 import { config } from '../../config';
 
 const prisma = new PrismaClient();
 
+// UPDATED: Transform user data to include dice config (for profile responses)
+function transformUserWithDiceConfig(user: any): UserProfile {
+    return {
+        id: user.id,
+        username: user.username,
+        isAdmin: user.isAdmin,
+        email: user.email,
+        preferredEditionId: user.preferredEditionId,
+        diceConfig: user.diceConfigBaseRef ? {
+            baseConfigId: user.diceConfigBaseRef.id,
+            baseConfigName: user.diceConfigBaseRef.name,
+            overrides: user.diceConfigOverrides?.reduce((acc: any, override: any) => {
+                acc[override.propertyName] = override.propertyValue;
+                return acc;
+            }, {}) || {}
+        } : null
+    };
+}
+
+// Helper function to transform user data for JWT (minimal authentication data only)
+function transformUserForJwt(user: any): Omit<JwtPayload, 'iat' | 'exp'> {
+    return {
+        id: user.id,
+        username: user.username,
+        isAdmin: user.isAdmin
+    };
+}
+
 export const authService: AuthService = {
     async registerUser(data: RegisterUserRequest): Promise<AuthServiceResult> {
         try {
-            // Check for existing user
+            // Check if user already exists
             const existingUser = await prisma.user.findFirst({
                 where: {
                     OR: [
@@ -26,18 +54,41 @@ export const authService: AuthService = {
                 return { success: false, error: 'Username or email already exists', token: null, user: null };
             }
 
-            const hash = await bcrypt.hash(data.password, 12);
+            // Hash password
+            const hashedPassword = await bcrypt.hash(data.password, 10);
 
-            // Create new user
-            await prisma.user.create({
+            // Create user
+            const user = await prisma.user.create({
                 data: {
                     username: data.username,
                     email: data.email,
-                    password: hash
+                    password: hashedPassword,
+                    isAdmin: false
+                },
+                include: {
+                    diceConfigBaseRef: true,
+                    diceConfigOverrides: true
                 }
             });
 
-            return { success: true, error: null, token: null, user: null };
+            // Transform Prisma fields to expected schema format
+            const userWithDiceConfig = transformUserWithDiceConfig(user);
+            const userForJwt = transformUserForJwt(user);
+
+            const token = jwt.sign(
+                {
+                    ...userForJwt
+                },
+                config.jwt.secret,
+                { expiresIn: config.jwt.expiresIn }
+            );
+
+            return {
+                success: true,
+                error: null,
+                token,
+                user: userWithDiceConfig
+            };
         } catch (err) {
             console.error('Registration error:', err);
             return { success: false, error: 'Server error', token: null, user: null };
@@ -48,12 +99,9 @@ export const authService: AuthService = {
         try {
             const user = await prisma.user.findFirst({
                 where: { username: data.username },
-                select: {
-                    id: true,
-                    username: true,
-                    password: true,
-                    isAdmin: true,
-                    preferredEditionId: true
+                include: {
+                    diceConfigBaseRef: true,
+                    diceConfigOverrides: true
                 }
             });
             if (!user) {
@@ -65,9 +113,13 @@ export const authService: AuthService = {
                 return { success: false, error: 'Invalid credentials', token: null, user: null };
             }
 
+            // Transform Prisma fields to expected schema format
+            const userWithDiceConfig = transformUserWithDiceConfig(user);
+            const userForJwt = transformUserForJwt(user);
+
             const token = jwt.sign(
                 {
-                    ...user
+                    ...userForJwt
                 },
                 config.jwt.secret,
                 { expiresIn: config.jwt.expiresIn }
@@ -77,7 +129,7 @@ export const authService: AuthService = {
                 success: true,
                 error: null,
                 token,
-                user: user
+                user: userWithDiceConfig
             };
         } catch (err) {
             console.error('Login error:', err);
@@ -95,8 +147,11 @@ export const authService: AuthService = {
                 select: {
                     id: true,
                     username: true,
+                    email: true, // ADD: Include email field
                     isAdmin: true,
-                    preferredEditionId: true
+                    preferredEditionId: true,
+                    diceConfigBaseRef: true,
+                    diceConfigOverrides: true
                 }
             });
 
@@ -104,11 +159,14 @@ export const authService: AuthService = {
                 return { success: false, error: 'User not found', token: null, user: null };
             }
 
+            // Transform Prisma fields to expected schema format
+            const userWithDiceConfig = transformUserWithDiceConfig(user);
+
             return {
                 success: true,
                 error: null,
                 token: null,
-                user: user
+                user: userWithDiceConfig
             };
         } catch (err) {
             console.error('Token verification error:', err);
@@ -126,8 +184,11 @@ export const authService: AuthService = {
                 select: {
                     id: true,
                     username: true,
+                    email: true, // ADD: Include email field
                     isAdmin: true,
-                    preferredEditionId: true
+                    preferredEditionId: true,
+                    diceConfigBaseRef: true,
+                    diceConfigOverrides: true
                 }
             });
 
@@ -135,16 +196,20 @@ export const authService: AuthService = {
                 return { success: false, error: 'User not found for token refresh', token: null, user: null };
             }
 
+            // Transform Prisma fields to expected schema format
+            const userWithDiceConfig = transformUserWithDiceConfig(user);
+            const userForJwt = transformUserForJwt(user);
+
             // Generate a new token with a refreshed expiration and updated preferred_edition_id
             const newToken = jwt.sign(
                 {
-                    ...user
+                    ...userForJwt
                 },
                 config.jwt.secret,
                 { expiresIn: config.jwt.expiresIn }
             );
 
-            return { success: true, error: null, token: newToken, user: user };
+            return { success: true, error: null, token: newToken, user: userWithDiceConfig };
         } catch (err) {
             console.error('Token refresh error:', err);
             return { success: false, error: 'Invalid or expired token', token: null, user: null };

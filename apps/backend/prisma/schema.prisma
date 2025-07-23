@@ -606,6 +606,70 @@ model User {
     createdAt          DateTime @default(now())
     updatedAt          DateTime @updatedAt
     preferredEditionId Int?
+    
+    // NEW: Reference to admin dice config (replaces old dice fields)
+    diceConfigBase     Int?     // References DiceBoxAdminConfig.id
+    
+    // REMOVE: Old dice fields
+    // diceTheme          String?  @default("rock")
+    // diceThemeColor     String?  @default("#3937b8")
+    // diceScale          Int?     @default(3)
 
     characters UserCharacter[]
+    diceConfigOverrides UserDiceConfigOverride[] // NEW: One-to-many relationship
+    
+    // NEW: Relation to base config
+    diceConfigBaseRef DiceBoxAdminConfig? @relation("UserDiceConfigBase", fields: [diceConfigBase], references: [id])
+}
+
+// =================
+// DiceBox Admin Configuration
+// =================
+
+model DiceBoxAdminConfig {
+    id         Int      @id @default(autoincrement())
+    name       String   @default("Default Configuration")
+    
+    // NEW: Default flag (only one can be true)
+    isDefault  Boolean  @default(false)
+    
+    // Physics properties
+    gravity    Float    @default(1)
+    mass       Float    @default(1)
+    friction   Float    @default(0.8)
+    restitution Float  @default(0)
+    angularDamping Float @default(0.4)
+    linearDamping Float @default(0.4)
+    spinForce  Float    @default(4)
+    throwForce Float    @default(5)
+    startingHeight Int  @default(8)
+    settleTimeout Int   @default(5000)
+    
+    // Visual properties
+    lightIntensity Float @default(1)
+    enableShadows Boolean @default(true)
+    shadowTransparency Float @default(0.8)
+    theme       Int     @default(1) // 3D dice theme ID (references DiceTheme enum)
+    themeColor  String  @default("#2e8555")
+    iconColor   String? // NEW: Separate color for DiceButton icons
+    scale       Float   @default(6)
+    
+    // Metadata
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+    
+    // NEW: Relationships
+    users User[] @relation("UserDiceConfigBase") // Users who use this as their base config
+}
+
+// NEW: User dice configuration overrides
+model UserDiceConfigOverride {
+    id           Int      @id @default(autoincrement())
+    userId       Int
+    propertyName String   // e.g., "theme", "themeColor", "scale", "gravity", etc.
+    propertyValue String  // Stored as string, converted as needed
+    
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    
+    @@unique([userId, propertyName]) // One override per property per user
 }

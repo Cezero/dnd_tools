@@ -1,6 +1,6 @@
 import React from 'react';
 
-import type { AuthUser } from '@shared/schema';
+import type { AuthUser, DiceBoxAdminConfigResponse } from '@shared/schema';
 
 // Auth context interface
 export interface AuthContextType {
@@ -9,6 +9,15 @@ export interface AuthContextType {
     Logout: () => void;
     isLoading: boolean;
     UpdatePreferredEdition: (editionId: number) => Promise<boolean>;
+    UpdateUserProfile: (data: any) => Promise<boolean>;
+    userDiceConfig: DiceBoxAdminConfigResponse | null;
+    isLoadingDiceConfig: boolean;
+    refreshDiceConfig: () => Promise<void>;
+    diceThemeConfig: {
+        theme: string;
+        themeColor: string;
+        scale: number;
+    };
 }
 
 // Auth provider props

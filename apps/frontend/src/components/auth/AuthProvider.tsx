@@ -1,11 +1,14 @@
-import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo } from 'react';
 
 import { AuthService } from '@/services/AuthService';
 import { UserProfileService } from '@/services/UserProfileService';
+import { DiceBoxService } from '@/services/DiceBoxService';
+import { getSystemNameById } from '@shared/static-data';
 import {
     LoginUserSchema,
     JwtPayloadSchema,
     type AuthUser,
+    type DiceBoxAdminConfig,
 } from '@shared/schema';
 
 import type {
@@ -20,6 +23,15 @@ const defaultAuthContext: AuthContextType = {
     Logout: () => { },
     isLoading: true,
     UpdatePreferredEdition: async () => false,
+    UpdateUserProfile: async () => false,
+    userDiceConfig: null,
+    isLoadingDiceConfig: true,
+    refreshDiceConfig: async () => { },
+    diceThemeConfig: {
+        theme: 'rock',
+        themeColor: '#3937b8',
+        scale: 3
+    },
 };
 
 const authContext = createContext<AuthContextType>(defaultAuthContext);
@@ -32,8 +44,40 @@ export function UseAuth(): AuthContextType {
 export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [userDiceConfig, setUserDiceConfig] = useState<DiceBoxAdminConfig | null>(null);
+    const [isLoadingDiceConfig, setIsLoadingDiceConfig] = useState<boolean>(true);
     const refreshTokenTimeoutRef = useRef<number | null>(null);
     const refreshTokenRef = useRef<(() => Promise<void>) | undefined>(undefined);
+
+    // Load user's merged dice configuration
+    const loadUserDiceConfig = useCallback(async (): Promise<void> => {
+        if (!user) {
+            setUserDiceConfig(null);
+            setIsLoadingDiceConfig(false);
+            return;
+        }
+
+        try {
+            setIsLoadingDiceConfig(true);
+            const config = await DiceBoxService.getUserDiceConfig();
+            setUserDiceConfig(config);
+        } catch (error) {
+            console.error('Failed to load user dice configuration:', error);
+            setUserDiceConfig(null);
+        } finally {
+            setIsLoadingDiceConfig(false);
+        }
+    }, [user]);
+
+    // Refresh dice configuration
+    const refreshDiceConfig = useCallback(async (): Promise<void> => {
+        await loadUserDiceConfig();
+    }, [loadUserDiceConfig]);
+
+    // Load dice config when user changes
+    useEffect(() => {
+        loadUserDiceConfig();
+    }, [loadUserDiceConfig]);
 
     const GetJwtExpiration = (token: string): number | null => {
         try {
@@ -55,6 +99,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
     const Logout = (): void => {
         localStorage.removeItem('token');
         setUser(null);
+        setUserDiceConfig(null);
         if (refreshTokenTimeoutRef.current) {
             clearTimeout(refreshTokenTimeoutRef.current);
         }
@@ -90,6 +135,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         const token = localStorage.getItem('token');
         if (!token) {
             setUser(null);
+            setUserDiceConfig(null);
             return;
         }
 
@@ -118,6 +164,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
                 .catch(error => {
                     console.warn('Could not fetch user info from token:', error);
                     setUser(null);
+                    setUserDiceConfig(null);
                     localStorage.removeItem('token');
                 })
                 .finally(() => {
@@ -173,12 +220,77 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         }
     };
 
+    const UpdateUserProfile = async (data: any): Promise<boolean> => {
+        try {
+            const responseData = await UserProfileService.updateUserProfile(data);
+            const token = responseData.token;
+            const user = responseData.user;
+
+            if (token) {
+                localStorage.setItem('token', token);
+                setUser(user);
+                ScheduleRefreshToken(token);
+
+                // If dice configuration was updated, refresh the dice config
+                if (data.diceConfig) {
+                    await refreshDiceConfig();
+                }
+
+                return true;
+            } else {
+                console.error('No token received after updating user profile.', responseData);
+                Logout();
+                return false;
+            }
+        } catch (error) {
+            console.error('Error updating user profile:', error);
+            return false;
+        }
+    };
+
+    const diceThemeConfig = useMemo(() => {
+        if (isLoadingDiceConfig) {
+            // Return default config while loading
+            return {
+                theme: 'rock',
+                themeColor: '#3937b8',
+                scale: 3
+            };
+        }
+
+        if (userDiceConfig) {
+            // Use user's merged configuration
+            // Convert numeric theme ID to system name for DiceBox
+            const themeSystemName = typeof userDiceConfig.theme === 'number'
+                ? getSystemNameById(userDiceConfig.theme)
+                : userDiceConfig.theme;
+
+            return {
+                theme: themeSystemName,
+                themeColor: userDiceConfig.themeColor,
+                scale: userDiceConfig.scale
+            };
+        }
+
+        // Fall back to default config
+        return {
+            theme: 'rock',
+            themeColor: '#3937b8',
+            scale: 3
+        };
+    }, [userDiceConfig, isLoadingDiceConfig]);
+
     const contextValue: AuthContextType = {
         user,
         Login,
         Logout,
         isLoading,
         UpdatePreferredEdition,
+        UpdateUserProfile,
+        userDiceConfig,
+        isLoadingDiceConfig,
+        refreshDiceConfig,
+        diceThemeConfig,
     };
 
     return (

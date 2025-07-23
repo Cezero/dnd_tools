@@ -51,6 +51,18 @@ export const createSlugDeleteServiceFunction = (
     return createDeleteServiceFunction(serviceMethod, 'slug');
 };
 
+// Generic function types for actions
+export type DetailFunction<T> = (item: T) => void;
+export type EditFunction<T> = (item: T) => void;
+export type DeleteFunction<T> = (item: T) => Promise<void>;
+
+// Functions object for GenericList
+export interface GenericListFunctions<T> {
+    detail?: DetailFunction<T>;
+    edit?: EditFunction<T>;
+    delete?: DeleteFunction<T>;
+}
+
 export interface GenericListProps<T> {
     storageKey?: string;
     columns: ColumnDef<T, any>[];
@@ -58,6 +70,7 @@ export interface GenericListProps<T> {
     itemDesc?: string;
     initialLimit?: number;
     routes?: RouteConfig[];
+    functions?: GenericListFunctions<T>; // NEW: Callback functions for actions
     deleteServiceFunction?: DeleteServiceFunction;
     basePath?: string; // Optional base path prefix for navigation links (e.g., '/admin')
 

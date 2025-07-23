@@ -26,8 +26,16 @@ export const CharacterSchema = BaseCharacterSchema.extend({
     id: z.number().int().positive('Character ID must be a positive integer'),
 });
 
+// Schema for character with race information
+export const CharacterWithRaceSchema = CharacterSchema.extend({
+    race: z.object({
+        id: z.number().int().positive('Race ID must be a positive integer'),
+        name: z.string().min(1, 'Race name is required'),
+    }),
+});
+
 export const GetAllCharactersResponseSchema = QueryResponseSchema.extend({
-    results: z.array(CharacterSchema),
+    results: z.array(CharacterWithRaceSchema),
 });
 
 export const UpdateCharacterSchema = BaseCharacterSchema.partial();
@@ -36,6 +44,7 @@ export const CreateCharacterSchema = BaseCharacterSchema;
 
 export type CharacterIdParamRequest = z.infer<typeof CharacterIdParamSchema>;
 export type CreateCharacterRequest = z.infer<typeof CreateCharacterSchema>;
-export type UpdateCharacterRequest = z.infer<typeof UpdateCharacterSchema>; 
+export type UpdateCharacterRequest = z.infer<typeof UpdateCharacterSchema>;
 export type CharacterResponse = z.infer<typeof CharacterSchema>;
+export type CharacterWithRaceResponse = z.infer<typeof CharacterWithRaceSchema>;
 export type GetAllCharactersResponse = z.infer<typeof GetAllCharactersResponseSchema>;

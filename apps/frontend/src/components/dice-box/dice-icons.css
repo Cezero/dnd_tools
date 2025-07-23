@@ -1,0 +1,18 @@
+/* Dice Icon Custom Properties */
+/* These defaults are now generated from the base color #292c94 */
+.die_color {
+    fill: var(--die-color-fill, #292c94);
+}
+
+.die_edges {
+    stroke: var(--die-edges-stroke-color, #ffffff);
+    fill: var(--die-edges-stroke, #0f1138);
+    stroke-width: var(--die-edges-stroke-width, 2px);
+    stroke-miterlimit: 10;
+}
+
+.die_numbers {
+    fill: var(--die-numbers-fill, #ffffff);
+    stroke: var(--die-numbers-stroke, #ffffff);
+    stroke-width: var(--die-numbers-stroke-width, 2px);
+}
