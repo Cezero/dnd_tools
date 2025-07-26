@@ -19,6 +19,9 @@ export function ColorPicker({
     placeholder = '#000000',
     showLabel = true
 }: ColorPickerProps): React.JSX.Element {
+    // Handle empty/null values by using placeholder
+    const displayValue = value || placeholder;
+
     return (
         <div className={`space-y-2 ${className}`}>
             {showLabel && (
@@ -29,14 +32,14 @@ export function ColorPicker({
             <div className="flex items-center space-x-3">
                 <input
                     type="color"
-                    value={value}
+                    value={displayValue}
                     onChange={(e) => onChange(e.target.value)}
                     disabled={disabled}
                     className="w-12 h-10 border border-gray-300 dark:border-gray-600 rounded-md cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                 />
                 <input
                     type="text"
-                    value={value}
+                    value={value || ''}
                     onChange={(e) => onChange(e.target.value)}
                     disabled={disabled}
                     placeholder={placeholder}

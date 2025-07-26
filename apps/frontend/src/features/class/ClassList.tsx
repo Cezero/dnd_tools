@@ -18,11 +18,11 @@ export default function ClassList(): React.JSX.Element {
     const { isLoading: isAuthLoading, isAdmin } = useAuthAuto();
 
     const HandleNewClassClick = (): void => {
-        navigate('/admin/classes/new/edit', { state: { fromListParams: location.search } });
+        navigate('/classes/new/edit', { state: { fromListParams: location.search } });
     };
 
     const HandleNewClassFeatureClick = (): void => {
-        navigate('/admin/classes/features/new/edit', { state: { fromListParams: location.search } });
+        navigate('/classes/features/new/edit', { state: { fromListParams: location.search } });
     };
 
 
@@ -52,7 +52,6 @@ export default function ClassList(): React.JSX.Element {
                     itemDesc="class"
                     routes={routes}
                     deleteServiceFunction={createIdDeleteServiceFunction(ClassService.deleteClass)}
-                    basePath="/admin"
                 />
             </div>
 
@@ -75,7 +74,6 @@ export default function ClassList(): React.JSX.Element {
                             itemDesc="class feature"
                             routes={classFeatureRoutes}
                             deleteServiceFunction={createSlugDeleteServiceFunction(ClassFeatureService.deleteClassFeature)}
-                            basePath="/admin"
                         />
                     </div>
                 </>

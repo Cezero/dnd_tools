@@ -1,6 +1,6 @@
 import React from 'react';
 import { icons, type DiceType } from '@/assets/icons';
-import { useDiceBox } from './useDiceBox';
+import { useDiceBox } from './DiceBoxProvider';
 import { UseAuth } from '@/components/auth/AuthProvider';
 import type { DiceColor } from './types';
 import { DEFAULT_DICE_COLORS, HOVER_DICE_COLORS, DISABLED_DICE_COLORS } from './constants';
@@ -9,6 +9,7 @@ import './dice-icons.css';
 
 interface DiceButtonProps {
     diceType: DiceType;
+    rollNotation?: string;
     className?: string;
     disabled?: boolean;
     onClick?: () => void;
@@ -17,6 +18,7 @@ interface DiceButtonProps {
 
 export function DiceButton({
     diceType,
+    rollNotation,
     className = '',
     disabled = false,
     onClick,
@@ -27,6 +29,10 @@ export function DiceButton({
     const DiceIcon = icons[diceType];
     const [isHovered, setIsHovered] = React.useState(false);
 
+    if (rollNotation === undefined) {
+        rollNotation = `1${diceType}`;
+    }
+
     const handleClick = () => {
         if (onClick) {
             onClick();
@@ -34,7 +40,7 @@ export function DiceButton({
         }
         if (!isReady) { return; }
         if (isRolling) { return; }
-        rollDice(`1${diceType}`, 'dice-button');
+        rollDice(rollNotation, 'dice-button');
     };
 
     const isDisabled = disabled || !isReady || isRolling;
@@ -105,13 +111,13 @@ export function DiceButton({
             onClick={handleClick}
             disabled={isDisabled}
             className={buttonClasses}
-            aria-label={`Roll ${diceType.toUpperCase()}`}
+            aria-label={`Roll ${rollNotation}`}
+            title={`Roll ${rollNotation}`}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
             <DiceIcon
                 className="w-full h-full"
-                aria-label={diceType}
                 style={iconStyle}
             />
         </button>

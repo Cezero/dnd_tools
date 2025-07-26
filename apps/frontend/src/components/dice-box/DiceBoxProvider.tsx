@@ -48,7 +48,7 @@ export function DiceBoxProvider({ children, themeConfig }: DiceBoxProviderProps)
 
     // Initialize DiceBox
     const initializeDiceBox = useCallback(async (config?: DiceBoxThemeConfig): Promise<void> => {
-        const currentConfig = config || themeConfig;
+        const currentConfig = config || currentThemeConfigRef.current || themeConfig;
 
         const waitForContainer = async (): Promise<void> => {
             for (let i = 0; i < 20; i++) {
@@ -86,6 +86,8 @@ export function DiceBoxProvider({ children, themeConfig }: DiceBoxProviderProps)
 
                         // Set up roll complete handler
                         diceBox.onRollComplete = (results: any) => {
+                            console.log('Dice roll complete:', results);
+
                             if (!mountedRef.current) return;
 
                             try {
@@ -115,6 +117,7 @@ export function DiceBoxProvider({ children, themeConfig }: DiceBoxProviderProps)
                                 }
 
                                 if (diceResult) {
+                                    console.log('Parsed dice result:', diceResult);
                                     setLastResult(diceResult);
                                     setIsRolling(false);
                                     setPendingRoll(null);
@@ -260,12 +263,16 @@ export function DiceBoxProvider({ children, themeConfig }: DiceBoxProviderProps)
 
     // Roll dice function
     const rollDice = useCallback((notation: string, group?: string) => {
+        console.log('Rolling dice:', { notation, group, isReady, hasDiceBox: !!diceBoxRef.current });
+
         if (!diceBoxRef.current || !isReady) {
+            console.log('Cannot roll - DiceBox not ready or not available');
             return;
         }
 
         // Additional check: verify DiceBox methods are available
         if (!diceBoxRef.current.show || !diceBoxRef.current.roll) {
+            console.log('Cannot roll - DiceBox methods not available');
             return;
         }
 
@@ -281,9 +288,11 @@ export function DiceBoxProvider({ children, themeConfig }: DiceBoxProviderProps)
                 canvas.style.visibility = 'visible';
             }
 
+            console.log('Starting dice roll...');
             const showResult = diceBoxRef.current.show();
             showResult.roll(notation);
         } catch (error) {
+            console.error('Error during dice roll:', error);
             setIsRolling(false);
             setPendingRoll(null);
             currentPendingRollRef.current = null;
@@ -318,34 +327,61 @@ export function DiceBoxProvider({ children, themeConfig }: DiceBoxProviderProps)
 
     // Re-initialize with custom config
     const reinitializeWithConfig = useCallback(async (config: DiceBoxThemeConfig) => {
+        // Don't reinitialize if DiceBox is currently rolling
+        if (isRolling) {
+            console.log('Skipping reinitialization - DiceBox is currently rolling');
+            return;
+        }
+
+        // Update the current theme config ref to track the latest configuration
+        currentThemeConfigRef.current = config;
+
         // Check if config actually changed
         const configChanged = JSON.stringify(previousThemeConfigRef.current) !== JSON.stringify(config);
 
         if (configChanged && diceBoxRef.current && isReady) {
-            // Create updates object with only the changed properties
-            const updates: Partial<DiceBoxThemeConfig> = {};
             const previous = previousThemeConfigRef.current;
 
-            if (previous?.theme !== config.theme) {
-                updates.theme = config.theme;
-            }
-            if (previous?.themeColor !== config.themeColor) {
-                updates.themeColor = config.themeColor;
-            }
-            if (previous?.scale !== config.scale) {
-                updates.scale = config.scale;
-            }
+            // Properties that can be updated via updateConfig() without full reinitialization
+            const updateableProps = [
+                'theme', 'themeColor', 'scale', 'lightIntensity', 'enableShadows', 'shadowTransparency',
+                'gravity', 'mass', 'friction', 'restitution', 'angularDamping', 'linearDamping',
+                'spinForce', 'throwForce', 'startingHeight', 'settleTimeout'
+            ];
 
-            try {
-                diceBoxRef.current.updateConfig(updates);
-                previousThemeConfigRef.current = config;
-            } catch (error) {
-                console.error('Failed to update DiceBox config:', error);
+            const hasUpdateableChanges = updateableProps.some(prop =>
+                previous?.[prop as keyof DiceBoxThemeConfig] !== config[prop as keyof DiceBoxThemeConfig]
+            );
+
+            if (hasUpdateableChanges) {
+                // For updateable changes, use updateConfig
+                const updates: Partial<DiceBoxThemeConfig> = {};
+
+                updateableProps.forEach(prop => {
+                    const key = prop as keyof DiceBoxThemeConfig;
+                    if (previous?.[key] !== config[key]) {
+                        (updates as any)[key] = config[key];
+                    }
+                });
+
+                try {
+                    console.log('Updating DiceBox config:', updates);
+                    diceBoxRef.current.updateConfig(updates);
+                    previousThemeConfigRef.current = config;
+                } catch (error) {
+                    console.error('Failed to update DiceBox config:', error);
+                    // Fallback to full reinitialization
+                    await reinitialize();
+                }
+            } else {
+                // For non-updateable changes, reinitialize the entire DiceBox
+                console.log('Reinitializing DiceBox for non-updateable changes');
+                await reinitialize();
             }
         } else if (!diceBoxRef.current) {
             await initializeDiceBox(config);
         }
-    }, [initializeDiceBox, isReady]);
+    }, [initializeDiceBox, isReady, isRolling, reinitialize]);
 
     // Get current config
     const getCurrentConfig = useCallback(() => {

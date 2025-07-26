@@ -196,7 +196,7 @@ export function RaceEdit() {
             if (id === 'new') {
                 const newRace = await RaceService.createRace(race as z.infer<typeof GetRaceResponseSchema>);
                 setMessage('Race created successfully!');
-                setTimeout(() => navigate(`/admin/races/${newRace.id}`, { state: { fromListParams: fromListParams, refresh: true } }), 1500);
+                setTimeout(() => navigate(`/races/${newRace.id}`, { state: { fromListParams: fromListParams, refresh: true } }), 1500);
             } else {
                 await RaceService.updateRace(race as z.infer<typeof UpdateRaceSchema>, { id: parseInt(id) });
                 setMessage('Race updated successfully!');
@@ -217,7 +217,7 @@ export function RaceEdit() {
             <div className="flex flex-col items-center justify-center h-64">
                 <p className="text-red-500 mb-4">{error}</p>
                 <button
-                    onClick={() => navigate('/admin/races')}
+                    onClick={() => navigate('/races')}
                     className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                 >
                     Back to Races
@@ -531,7 +531,7 @@ export function RaceEdit() {
                 <div className="flex justify-end space-x-4 mt-8">
                     <button
                         type="button"
-                        onClick={() => navigate('/admin/races')}
+                        onClick={() => navigate('/races')}
                         className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                         disabled={isLoading}
                     >

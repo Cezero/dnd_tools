@@ -60,7 +60,7 @@ export function RaceTraitAssoc({ isOpen, onClose, onSave, initialSelectedTraitId
             }}
             storageKey="raceTraitSelectionList"
             itemDesc="trait"
-            createNewRoute="/admin/races/traits/new/edit"
+            createNewRoute="/races/traits/new/edit"
             transformSelectedItems={transformSelectedTraits}
             getMarkdownId={getMarkdownId}
             dialogTitle="Select Race Trait(s)"

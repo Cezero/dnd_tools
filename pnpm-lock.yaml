@@ -247,6 +247,9 @@ importers:
       eslint-plugin-import:
         specifier: ^2.32.0
         version: 2.32.0(@typescript-eslint/parser@8.35.0(eslint@9.30.0(jiti@2.4.2))(typescript@5.8.3))(eslint-import-resolver-typescript@4.4.4(eslint-plugin-import@2.32.0)(eslint@9.30.0(jiti@2.4.2)))(eslint@9.30.0(jiti@2.4.2))
+      hast-util-to-jsx-runtime:
+        specifier: ^2.3.6
+        version: 2.3.6
       hastscript:
         specifier: ^9.0.1
         version: 9.0.1
@@ -277,6 +280,9 @@ importers:
       rehype-raw:
         specifier: ^7.0.0
         version: 7.0.0
+      rehype-react:
+        specifier: ^8.0.0
+        version: 8.0.0
       rehype-stringify:
         specifier: ^10.0.1
         version: 10.0.1
@@ -4198,6 +4204,9 @@ packages:
 
   rehype-raw@7.0.0:
     resolution: {integrity: sha512-/aE8hCfKlQeA8LmyeyQvQF3eBiLRGNlfBJEvWH7ivp9sBqs7TNqBL5X3v157rM4IFETqDnIOO+z5M/biZbo9Ww==}
+
+  rehype-react@8.0.0:
+    resolution: {integrity: sha512-vzo0YxYbB2HE+36+9HWXVdxNoNDubx63r5LBzpxBGVWM8s9mdnMdbmuJBAX6TTyuGdZjZix6qU3GcSuKCIWivw==}
 
   rehype-recma@1.0.0:
     resolution: {integrity: sha512-lqA4rGUf1JmacCNWWZx0Wv1dHqMwxzsDWYMTowuplHF3xH0N/MmrZ/G3BDZnzAkRmxDadujCjaKM2hqYdCBOGw==}
@@ -9468,6 +9477,14 @@ snapshots:
       '@types/hast': 3.0.4
       hast-util-raw: 9.1.0
       vfile: 6.0.3
+
+  rehype-react@8.0.0:
+    dependencies:
+      '@types/hast': 3.0.4
+      hast-util-to-jsx-runtime: 2.3.6
+      unified: 11.0.5
+    transitivePeerDependencies:
+      - supports-color
 
   rehype-recma@1.0.0:
     dependencies:

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useDiceBox } from './useDiceBox';
+import { useDiceBox } from './DiceBoxProvider';
 
 export function DiceBoxExample(): React.JSX.Element {
     const { rollDice, isReady, isRolling, pendingRoll, lastResult, clearResults } = useDiceBox();

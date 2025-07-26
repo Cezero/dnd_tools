@@ -7,9 +7,3 @@ export interface MarkdownEditorProps {
     name?: string;
     userVars?: Record<string, string | number>;
 }
-
-export interface ProcessMarkdownProps {
-    markdown: string;
-    id: string;
-    userVars?: Record<string, string | number>;
-} 

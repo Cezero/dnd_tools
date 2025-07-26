@@ -226,11 +226,11 @@ export function ItemEdit() {
             if (id === 'new') {
                 const newItem = await ItemService.createItem(submitData as unknown as z.infer<typeof CreateItemSchema>);
                 setMessage('Item created successfully!');
-                setTimeout(() => navigate(`/admin/items/${newItem.id}`, { state: { fromListParams: fromListParams, refresh: true } }), 150);
+                setTimeout(() => navigate(`/items/${newItem.id}`, { state: { fromListParams: fromListParams, refresh: true } }), 150);
             } else {
                 await ItemService.updateItem(submitData as unknown as z.infer<typeof UpdateItemSchema>, { id: parseInt(id) });
                 setMessage('Item updated successfully!');
-                navigate(`/admin/items/${id}`, { state: { fromListParams: fromListParams, refresh: true } });
+                navigate(`/items/${id}`, { state: { fromListParams: fromListParams, refresh: true } });
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to save item');
@@ -337,7 +337,7 @@ export function ItemEdit() {
             <div className="flex flex-col items-center justify-center h-64">
                 <p className="text-red-500 mb-4">{error}</p>
                 <button
-                    onClick={() => navigate('/admin/items')}
+                    onClick={() => navigate('/items')}
                     className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                 >
                     Back to Items
@@ -687,7 +687,7 @@ export function ItemEdit() {
                 <div className="flex justify-end space-x-4 mt-8">
                     <button
                         type="button"
-                        onClick={() => navigate(`/admin/items${fromListParams ? `?${fromListParams}` : ''}`)}
+                        onClick={() => navigate(`/items${fromListParams ? `?${fromListParams}` : ''}`)}
                         className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                         disabled={isLoading}
                     >

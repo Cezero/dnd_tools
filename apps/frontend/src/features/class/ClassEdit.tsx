@@ -478,11 +478,11 @@ export default function ClassEdit() {
             if (id === 'new') {
                 const newClass = await ClassService.createClass(formData as z.infer<typeof CreateClassSchema>);
                 setMessage('Class created successfully!');
-                setTimeout(() => navigate(`/admin/classes/${newClass.id}`), 1500);
+                setTimeout(() => navigate(`/classes/${newClass.id}`), 1500);
             } else {
                 await ClassService.updateClass(formData as z.infer<typeof UpdateClassSchema>, { id: parseInt(id) });
                 setMessage('Class updated successfully!');
-                navigate(`/admin/classes/${id}`, { state: { fromListParams: location.state?.fromListParams, refresh: true } });
+                navigate(`/classes/${id}`, { state: { fromListParams: location.state?.fromListParams, refresh: true } });
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to save class');
@@ -500,7 +500,7 @@ export default function ClassEdit() {
             <div className="flex flex-col items-center justify-center h-64">
                 <p className="text-red-500 mb-4">{error}</p>
                 <button
-                    onClick={() => navigate('/admin/classes')}
+                    onClick={() => navigate('/classes')}
                     className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                 >
                     Back to Classes
@@ -924,7 +924,7 @@ export default function ClassEdit() {
                 <div className="flex justify-end space-x-4 mt-8">
                     <button
                         type="button"
-                        onClick={() => navigate('/admin/classes')}
+                        onClick={() => navigate('/classes')}
                         className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                         disabled={isLoading}
                     >

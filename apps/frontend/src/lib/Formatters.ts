@@ -127,3 +127,8 @@ export function formatProgression(progression: ClassFeatureProgressionDetailInQu
     };
 }
 
+export function formatDiceDisplay(expr: string): string {
+    return expr
+        .replace('/level', ' per level')
+        .replace(/,max(\d+d?\d*)/, ' (max $1)');
+}

@@ -15,7 +15,7 @@ export function SkillList(): React.JSX.Element {
     const { isLoading: isAuthLoading, isAdmin } = useAuthAuto();
 
     const HandleNewSkillClick = (): void => {
-        navigate('/admin/skills/new/edit', { state: { fromListParams: location.search } });
+        navigate('/skills/new/edit', { state: { fromListParams: location.search } });
     };
 
     if (isAuthLoading) {
@@ -42,7 +42,6 @@ export function SkillList(): React.JSX.Element {
                 itemDesc="skill"
                 routes={routes}
                 deleteServiceFunction={createIdDeleteServiceFunction(SkillService.deleteSkill)}
-                basePath="/admin"
             />
         </div>
     );

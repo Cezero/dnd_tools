@@ -1,9 +1,11 @@
 import { typedApi } from "@/services/Api";
-import { ReferenceTableDataResponse, ReferenceTableDataResponseSchema, ReferenceTableSlugParamRequest, ReferenceTableSlugParamSchema } from "@shared/schema";
+import { ReferenceTableDataResponseSchema, ReferenceTableSlugParamRequest, ReferenceTableSlugParamSchema } from "@shared/schema";
+import { RenderStructuredTable } from "@/plugins/RenderStructuredTable";
+import { Element as HastElement } from "hast";
+import { MarkdownComponentProps } from "@/plugins/types";
 
-type Timeout = ReturnType<typeof setTimeout>;
+const preRenderedTableCache = new Map<string, Map<string, HastElement>>();
 
-// Get class by ID with path parameter
 const getReferenceTableBySlug = typedApi<undefined, typeof ReferenceTableDataResponseSchema, typeof ReferenceTableSlugParamSchema>({
     path: '/referencetables/:slug',
     method: 'GET',
@@ -11,86 +13,37 @@ const getReferenceTableBySlug = typedApi<undefined, typeof ReferenceTableDataRes
     responseSchema: ReferenceTableDataResponseSchema,
 });
 
-// Instance-specific state
-const instanceStates = new Map<string, {
-    unresolvedSlugs: Set<ReferenceTableSlugParamRequest['slug']>;
-    resolvedTables: Map<ReferenceTableSlugParamRequest['slug'], ReferenceTableDataResponse>;
-    pendingResolvers: { slug: ReferenceTableSlugParamRequest['slug']; resolve: (value: ReferenceTableDataResponse) => void }[];
-    timeout: Timeout | null;
-    resolveTimeoutPromise: (() => void) | null;
-    allRequestedSlugsInCurrentFlush: Set<ReferenceTableSlugParamRequest['slug']>;
-}>();
+const TABLE_REGEX = /[\[{]table:\s([\w-]+)[\]}]/gi;
 
-function getInstanceState(id: string) {
-    if (!instanceStates.has(id)) {
-        instanceStates.set(id, {
-            unresolvedSlugs: new Set(),
-            resolvedTables: new Map(),
-            pendingResolvers: [],
-            timeout: null,
-            resolveTimeoutPromise: null,
-            allRequestedSlugsInCurrentFlush: new Set(),
-        });
+export async function preloadTablesFromMarkdown(props: MarkdownComponentProps): Promise<void> {
+    const matches = [...props.markdown.matchAll(TABLE_REGEX)];
+    const slugs = Array.from(new Set(matches.map(m => m[1])));
+
+    if (!slugs.length) return;
+
+    const cache = new Map<ReferenceTableSlugParamRequest['slug'], HastElement>();
+    for (const slug of slugs) {
+        try {
+            const data = await getReferenceTableBySlug(undefined, { slug });
+            const newProps = {
+                ...props,
+                tableClass: props.tableClass ?? 'md-table',
+            };
+            const rendered = RenderStructuredTable(data, newProps);
+            cache.set(slug, rendered);
+        } catch (err) {
+            // You may choose to cache missing results as null or leave it out
+            console.warn(`Failed to fetch reference table for slug "${slug}":`, err);
+        }
     }
-    return instanceStates.get(id)!;
+
+    preRenderedTableCache.set(props.id, cache);
 }
 
-export function queueTableResolution(slug: ReferenceTableSlugParamRequest['slug'], id: string): Promise<ReferenceTableDataResponse> {
-    const state = getInstanceState(id);
-    state.allRequestedSlugsInCurrentFlush.add(slug);
-
-    return new Promise((resolve) => {
-        if (state.resolvedTables.has(slug)) {
-            return resolve(state.resolvedTables.get(slug)!);
-        }
-
-        state.pendingResolvers.push({ slug, resolve });
-        state.unresolvedSlugs.add(slug);
-
-        if (!state.timeout) {
-            state.timeout = setTimeout(async () => {
-                // Resolve all queued slugs for this instance
-                for (const queuedSlug of state.unresolvedSlugs) {
-                    const response: ReferenceTableDataResponse = await getReferenceTableBySlug(undefined, { slug: queuedSlug });
-                    state.resolvedTables.set(queuedSlug, response);
-                }
-
-                // Resolve all pending promises for this instance
-                for (const { slug, resolve } of state.pendingResolvers) {
-                    resolve(state.resolvedTables.get(slug)!);
-                }
-
-                state.pendingResolvers = [];
-                state.unresolvedSlugs.clear();
-                state.timeout = null;
-                if (state.resolveTimeoutPromise) {
-                    state.resolveTimeoutPromise();
-                    state.resolveTimeoutPromise = null;
-                }
-            }, 50);
-        }
-    });
-}
-
-export async function flushTableResolutionQueue(id: string): Promise<Record<ReferenceTableSlugParamRequest['slug'], ReferenceTableDataResponse>> {
-    const state = getInstanceState(id);
-
-    if (state.timeout) {
-        await new Promise<void>((resolve) => {
-            state.resolveTimeoutPromise = resolve;
-        });
+export function getPreRenderedTable(slug: string, id: string): HastElement {
+    const instanceCache = preRenderedTableCache.get(id);
+    if (!instanceCache || !instanceCache.has(slug)) {
+        throw new Error(`Reference table "${slug}" not preloaded for markdown ID "${id}".`);
     }
-
-    const result: Record<ReferenceTableSlugParamRequest['slug'], ReferenceTableDataResponse> = {};
-    const slugsToReturn = Array.from(state.allRequestedSlugsInCurrentFlush);
-    state.allRequestedSlugsInCurrentFlush.clear();
-
-    for (const slug of slugsToReturn) {
-        result[slug] = state.resolvedTables.get(slug)!;
-    }
-
-    // Clear the resolved tables for this instance so they get re-fetched on next request
-    state.resolvedTables.clear();
-
-    return result;
+    return instanceCache.get(slug)!;
 }

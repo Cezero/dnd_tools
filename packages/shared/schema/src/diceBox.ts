@@ -85,5 +85,3 @@ export type GetAllDiceConfigsResponse = z.infer<typeof GetAllDiceConfigsResponse
 export type CreateDiceBoxAdminConfigRequest = z.infer<typeof CreateDiceBoxAdminConfigRequestSchema>;
 export type UpdateDiceBoxAdminConfigRequest = z.infer<typeof UpdateDiceBoxAdminConfigRequestSchema>;
 export type DiceBoxAdminConfigInQueryResponse = z.infer<typeof DiceBoxAdminConfigSchema>;
-
-

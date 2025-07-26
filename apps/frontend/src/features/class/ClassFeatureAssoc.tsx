@@ -59,7 +59,7 @@ export function ClassFeatureAssoc({ isOpen, onClose, onSave, initialSelectedFeat
             }}
             storageKey="classFeatureSelectionList"
             itemDesc="feature"
-            createNewRoute="/admin/classes/features/new/edit"
+            createNewRoute="/classes/features/new/edit"
             transformSelectedItems={transformSelectedFeatures}
             getMarkdownId={getMarkdownId}
             dialogTitle="Select Class Feature(s)"

@@ -51,7 +51,7 @@ export function ItemDetail(): React.JSX.Element {
             <div className="p-4">
                 <div className="text-red-500 mb-4">{error}</div>
                 <button
-                    onClick={() => navigate('/admin/items')}
+                    onClick={() => navigate('/items')}
                     className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                 >
                     Back to Items
@@ -65,7 +65,7 @@ export function ItemDetail(): React.JSX.Element {
             <div className="p-4">
                 <div>Item not found</div>
                 <button
-                    onClick={() => navigate('/admin/items')}
+                    onClick={() => navigate('/items')}
                     className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                 >
                     Back to Items
@@ -158,14 +158,14 @@ export function ItemDetail(): React.JSX.Element {
                     <div className="mt-8 text-right">
                         <button
                             type="button"
-                            onClick={() => navigate(`/admin/items${fromListParams ? `?${fromListParams}` : ''}`)}
+                            onClick={() => navigate(`/items${fromListParams ? `?${fromListParams}` : ''}`)}
                             className="inline-block px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 border dark:border-gray-500"
                         >
                             Back to List
                         </button>
                         {isAdmin && (
                             <Link
-                                to={`/admin/items/${id}/edit`}
+                                to={`/items/${id}/edit`}
                                 state={{ fromListParams: fromListParams }}
                                 className="ml-4 inline-block px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 border dark:border-gray-500"
                             >

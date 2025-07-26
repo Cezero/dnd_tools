@@ -15,7 +15,7 @@ export function FeatList(): React.JSX.Element {
     const { isLoading: isAuthLoading, isAdmin } = useAuthAuto();
 
     const HandleNewFeatClick = (): void => {
-        navigate('/admin/feats/new/edit', { state: { fromListParams: location.search } });
+        navigate('/feats/new/edit', { state: { fromListParams: location.search } });
     };
 
     if (isAuthLoading) {
@@ -42,7 +42,6 @@ export function FeatList(): React.JSX.Element {
                 itemDesc="feat"
                 routes={routes}
                 deleteServiceFunction={createIdDeleteServiceFunction(FeatService.deleteFeat)}
-                basePath="/admin"
             />
         </div>
     );

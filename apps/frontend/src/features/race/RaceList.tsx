@@ -19,11 +19,11 @@ export function RaceList(): React.JSX.Element {
     const { isLoading: isAuthLoading, isAdmin } = useAuthAuto();
 
     const HandleNewRaceClick = (): void => {
-        navigate('/admin/races/new/edit', { state: { fromListParams: location.search } });
+        navigate('/races/new/edit', { state: { fromListParams: location.search } });
     };
 
     const HandleNewRaceTraitClick = (): void => {
-        navigate('/admin/races/traits/new/edit', { state: { fromListParams: location.search } });
+        navigate('/races/traits/new/edit', { state: { fromListParams: location.search } });
     };
 
 
@@ -52,7 +52,6 @@ export function RaceList(): React.JSX.Element {
                 itemDesc="race"
                 routes={routes}
                 deleteServiceFunction={createIdDeleteServiceFunction(RaceService.deleteRace)}
-                basePath="/admin"
             />
 
             {isAdmin && (
@@ -73,7 +72,6 @@ export function RaceList(): React.JSX.Element {
                         itemDesc="race trait"
                         routes={raceTraitRoutes}
                         deleteServiceFunction={createSlugDeleteServiceFunction(RaceTraitService.deleteRaceTrait)}
-                        basePath="/admin"
                     />
                 </>
             )}

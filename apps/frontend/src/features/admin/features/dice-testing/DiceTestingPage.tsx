@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { DiceSvgTest, DiceColorDemo } from '@/components/dice-box';
+import { DiceSvgTest } from '@/components/dice-box/DiceSvgTest';
+import { DiceColorDemo } from '@/components/dice-box/DiceColorDemo';
 
 export function DiceTestingPage(): React.JSX.Element {
     const [showSvgTest, setShowSvgTest] = useState(false);

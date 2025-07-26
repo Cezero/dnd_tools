@@ -103,11 +103,11 @@ export function SkillEdit() {
             if (id === 'new') {
                 const newSkill = await SkillService.createSkill(formData as z.infer<typeof CreateSkillSchema>);
                 setMessage('Skill created successfully!');
-                setTimeout(() => navigate(`/admin/skills/${newSkill.id}`, { state: { fromListParams: fromListParams, refresh: true } }), 1500);
+                setTimeout(() => navigate(`/skills/${newSkill.id}`, { state: { fromListParams: fromListParams, refresh: true } }), 1500);
             } else {
                 await SkillService.updateSkill(formData as z.infer<typeof UpdateSkillSchema>, { id: parseInt(id) });
                 setMessage('Skill updated successfully!');
-                navigate(`/admin/skills/${id}`, { state: { fromListParams: fromListParams, refresh: true } });
+                navigate(`/skills/${id}`, { state: { fromListParams: fromListParams, refresh: true } });
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to save skill');
@@ -125,7 +125,7 @@ export function SkillEdit() {
             <div className="flex flex-col items-center justify-center h-64">
                 <p className="text-red-500 mb-4">{error}</p>
                 <button
-                    onClick={() => navigate('/admin/skills')}
+                    onClick={() => navigate('/skills')}
                     className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                 >
                     Back to Skills
@@ -301,7 +301,7 @@ export function SkillEdit() {
                 <div className="flex justify-end space-x-4 mt-8">
                     <button
                         type="button"
-                        onClick={() => navigate(`/admin/skills${fromListParams ? `?${fromListParams}` : ''}`)}
+                        onClick={() => navigate(`/skills${fromListParams ? `?${fromListParams}` : ''}`)}
                         className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                         disabled={isLoading}
                     >

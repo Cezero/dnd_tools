@@ -249,7 +249,7 @@ export function MainSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }
 
                             <NavigationMenu.Portal>
                                 <NavigationMenu.Positioner
-                                    align="end"
+                                    align="start"
                                     side="right"
                                     sideOffset={5}
                                     className="border rounded-md shadow-lg py-1 bg-content border-content"

@@ -15,7 +15,7 @@ export function ItemList(): React.JSX.Element {
     const { isLoading: isAuthLoading, isAdmin } = useAuthAuto();
 
     const HandleNewItemClick = (): void => {
-        navigate('/admin/items/new/edit', { state: { fromListParams: location.search } });
+        navigate('/items/new/edit', { state: { fromListParams: location.search } });
     };
 
     if (isAuthLoading) {
@@ -42,7 +42,6 @@ export function ItemList(): React.JSX.Element {
                 itemDesc="item"
                 routes={routes}
                 deleteServiceFunction={createIdDeleteServiceFunction(ItemService.deleteItem)}
-                basePath="/admin"
             />
         </div>
     );

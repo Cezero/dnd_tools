@@ -74,6 +74,8 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         await loadUserDiceConfig();
     }, [loadUserDiceConfig]);
 
+
+
     // Load dice config when user changes
     useEffect(() => {
         loadUserDiceConfig();

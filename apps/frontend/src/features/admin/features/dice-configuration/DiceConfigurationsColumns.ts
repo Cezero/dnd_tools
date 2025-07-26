@@ -1,14 +1,12 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { FilterType } from '@/components/generic-list/types';
 import { getDiceThemeById, DICE_THEME_SELECT_LIST } from '@shared/static-data';
-import type { AvailableDiceConfigs } from '@shared/schema';
 import { createContainsFilter, createEqualsFilter } from '@/components/generic-list/filterFunctions';
 import { formatColorWithSwatch } from '@/lib/ColorFormatters';
+import { DiceBoxAdminConfigInQueryResponse } from '@shared/schema';
 
-// Type for the config items in the list (from AvailableDiceConfigs)
-export type ConfigListItem = AvailableDiceConfigs['configs'][0];
 
-export const DICE_CONFIGURATION_COLUMNS: ColumnDef<ConfigListItem, unknown>[] = [
+export const DICE_CONFIGURATION_COLUMNS: ColumnDef<DiceBoxAdminConfigInQueryResponse, unknown>[] = [
     {
         accessorKey: 'name',
         header: 'Configuration Name',

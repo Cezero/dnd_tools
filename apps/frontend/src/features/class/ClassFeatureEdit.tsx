@@ -85,14 +85,14 @@ export function ClassFeatureEdit() {
                 const newFeature = await ClassFeatureService.createClassFeature(formData as z.infer<typeof CreateClassFeatureSchema>);
                 setMessage('Class feature created successfully!');
                 if (location.state?.from === 'ClassFeatureAssoc' && location.state?.classId) {
-                    navigate(`/admin/classes/${location.state.classId}/edit`, { state: { newFeature: newFeature } });
+                    navigate(`/classes/${location.state.classId}/edit`, { state: { newFeature: newFeature } });
                 } else {
-                    navigate('/admin/classes');
+                    navigate('/classes');
                 }
             } else {
                 await ClassFeatureService.updateClassFeature(formData as z.infer<typeof UpdateClassFeatureSchema>, { slug });
                 setMessage('Class feature updated successfully!');
-                navigate('/admin/classes');
+                navigate('/classes');
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to save class feature');
@@ -110,7 +110,7 @@ export function ClassFeatureEdit() {
             <div className="flex flex-col items-center justify-center h-64">
                 <p className="text-red-500 mb-4">{error}</p>
                 <button
-                    onClick={() => navigate('/admin/classes')}
+                    onClick={() => navigate('/classes')}
                     className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                 >
                     Back to Classes
@@ -194,7 +194,7 @@ export function ClassFeatureEdit() {
                 <div className="flex justify-end space-x-4 mt-8">
                     <button
                         type="button"
-                        onClick={() => navigate('/admin/classes')}
+                        onClick={() => navigate('/classes')}
                         className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                         disabled={isLoading}
                     >
