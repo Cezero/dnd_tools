@@ -4,6 +4,7 @@ import { DiceBoxManager, type DiceResult } from './DiceBoxManager';
 import { DiceResultParser } from './DiceResultParser';
 import { createDiceResultToastData } from './DiceResultToast';
 import { useToast } from '@/hooks/useToast';
+import { useLogPanel } from '@/components/log-panel';
 import type { DiceBoxAdminConfig, UserDiceConfig } from '@shared/schema';
 
 // Types
@@ -144,6 +145,9 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
     // Use the app-wide toast system - store in ref to prevent re-renders
     const toastManager = useToast();
 
+    // Use the log panel system
+    const logPanel = useLogPanel();
+
     // Update toast manager ref when it changes
     useEffect(() => {
         toastManagerRef.current = toastManager;
@@ -178,6 +182,19 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
                                     } catch (error) {
                                         console.error('Failed to show dice result toast:', error);
                                     }
+                                }
+
+                                // Add log entry using the same parsed result format as toast
+                                try {
+                                    const parsedResult = DiceResultParser.parseResult(result);
+                                    logPanel.addLogEntry({
+                                        message: parsedResult.title,
+                                        type: parsedResult.hasSpecialResults ? 'success' : 'info',
+                                        source: 'dice-box',
+                                        data: parsedResult
+                                    });
+                                } catch (error) {
+                                    console.error('Failed to add dice result to log:', error);
                                 }
                             }
                         });
