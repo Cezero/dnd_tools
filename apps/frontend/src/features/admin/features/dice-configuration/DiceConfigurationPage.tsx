@@ -499,7 +499,7 @@ export function DiceConfigurationPage(): React.JSX.Element {
                                                 <SliderControl
                                                     label="Scale"
                                                     value={config.scale}
-                                                    min={2}
+                                                    min={0.1}
                                                     max={9}
                                                     step={0.1}
                                                     onChange={(value) => handleConfigChange({ scale: value })}
@@ -659,7 +659,7 @@ export function DiceConfigurationPage(): React.JSX.Element {
                                                 value={config.settleTimeout}
                                                 min={1000}
                                                 max={10000}
-                                                step={1000}
+                                                step={10}
                                                 onChange={(value) => handleConfigChange({ settleTimeout: value })}
                                             />
                                         </div>

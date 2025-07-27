@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { DiceBoxManager, type DiceResult } from './DiceBoxManager';
+import { DiceResultParser } from './DiceResultParser';
+import { createDiceResultToastData } from './DiceResultToast';
+import { useToast } from '@/hooks/useToast';
 import type { DiceBoxAdminConfig, UserDiceConfig } from '@shared/schema';
 
 // Types
@@ -26,6 +29,97 @@ export interface DiceBoxContextType {
 // Create context
 const DiceBoxContext = createContext<DiceBoxContextType | null>(null);
 
+// Global DiceBox singleton class
+class DiceBoxSingleton {
+    private static instance: DiceBoxSingleton | null = null;
+    private manager: DiceBoxManager | null = null;
+    private isInitialized = false;
+    private initializationPromise: Promise<void> | null = null;
+    private toastCallbackRegistered = false;
+
+    private constructor() { }
+
+    static getInstance(): DiceBoxSingleton {
+        if (!DiceBoxSingleton.instance) {
+            DiceBoxSingleton.instance = new DiceBoxSingleton();
+        }
+        return DiceBoxSingleton.instance;
+    }
+
+    async initialize(userConfig?: UserDiceConfig): Promise<void> {
+        // If already initialized, return existing promise or resolved promise
+        if (this.isInitialized) {
+            return Promise.resolve();
+        }
+
+        // If initialization is in progress, return the existing promise
+        if (this.initializationPromise) {
+            return this.initializationPromise;
+        }
+
+        // Create new initialization promise
+        this.initializationPromise = this.performInitialization(userConfig);
+
+        try {
+            await this.initializationPromise;
+            this.isInitialized = true;
+        } catch (error) {
+            this.isInitialized = false;
+            this.initializationPromise = null;
+            throw error;
+        }
+
+        return this.initializationPromise;
+    }
+
+    private async performInitialization(userConfig?: UserDiceConfig): Promise<void> {
+        // Clean up any existing canvas first
+        this.cleanupCanvas();
+
+        // Create new manager instance
+        this.manager = new DiceBoxManager();
+
+        if (userConfig) {
+            await this.manager.initializeWithUserConfig(userConfig);
+        } else {
+            await this.manager.initialize();
+        }
+    }
+
+    private cleanupCanvas(): void {
+        const existingCanvas = document.getElementById('dice-canvas');
+        if (existingCanvas) {
+            existingCanvas.remove();
+        }
+    }
+
+    getManager(): DiceBoxManager | null {
+        return this.manager;
+    }
+
+    isReady(): boolean {
+        return this.isInitialized && this.manager !== null;
+    }
+
+    isToastCallbackRegistered(): boolean {
+        return this.toastCallbackRegistered;
+    }
+
+    setToastCallbackRegistered(registered: boolean): void {
+        this.toastCallbackRegistered = registered;
+    }
+
+    destroy(): void {
+        if (this.manager) {
+            this.manager.destroy();
+            this.manager = null;
+        }
+        this.isInitialized = false;
+        this.initializationPromise = null;
+        this.toastCallbackRegistered = false;
+    }
+}
+
 // Provider props
 interface DiceBoxProviderProps {
     children: React.ReactNode;
@@ -38,55 +132,75 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
     const [isRolling, setIsRolling] = useState(false);
     const [lastResult, setLastResult] = useState<DiceResult | null>(null);
     const [isTestingMode, setIsTestingMode] = useState(false);
-    const managerRef = useRef<DiceBoxManager>(new DiceBoxManager());
     const mountedRef = useRef(true);
     const currentUserConfigRef = useRef<UserDiceConfig | null>(userDiceConfig || null);
     const adminTestFlagRef = useRef(false);
     const previousLocationRef = useRef(location.pathname);
+    const toastManagerRef = useRef<any>(null);
 
-    // Initialize DiceBox with user config
-    const initializeDiceBox = useCallback(async (userConfig?: UserDiceConfig): Promise<void> => {
-        if (!mountedRef.current) return;
+    // Get the singleton instance
+    const diceBoxSingleton = DiceBoxSingleton.getInstance();
 
-        try {
-            if (!managerRef.current) {
-                managerRef.current = new DiceBoxManager();
-            }
+    // Use the app-wide toast system - store in ref to prevent re-renders
+    const toastManager = useToast();
 
-            if (userConfig) {
-                await managerRef.current.initializeWithUserConfig(userConfig);
-            } else {
-                // Initialize with default config if no user config provided
-                await managerRef.current.initialize();
-            }
+    // Update toast manager ref when it changes
+    useEffect(() => {
+        toastManagerRef.current = toastManager;
+    }, [toastManager]);
 
-            if (mountedRef.current) {
-                setIsReady(true);
-            }
-        } catch (error) {
-            console.error('Failed to initialize DiceBox:', error);
-            if (mountedRef.current) {
-                setIsReady(false);
-            }
-        }
-    }, []);
-
-    // Initialize on mount
+    // Initialize on mount - only run once globally
     useEffect(() => {
         mountedRef.current = true;
         currentUserConfigRef.current = userDiceConfig || null;
 
-        initializeDiceBox(userDiceConfig || undefined);
+        // Initialize the singleton
+        diceBoxSingleton.initialize(userDiceConfig || undefined)
+            .then(() => {
+                if (mountedRef.current) {
+                    setIsReady(true);
+
+                    // Register toast callback for roll completions (only once globally)
+                    const manager = diceBoxSingleton.getManager();
+                    if (manager && !diceBoxSingleton.isToastCallbackRegistered()) {
+                        diceBoxSingleton.setToastCallbackRegistered(true);
+
+                        manager.onRollComplete((result) => {
+                            if (mountedRef.current) {
+                                setLastResult(result);
+
+                                // Show toast notification using the app-wide toast system
+                                if (toastManagerRef.current) {
+                                    try {
+                                        const parsedResult = DiceResultParser.parseResult(result);
+                                        const toastData = createDiceResultToastData(parsedResult);
+                                        toastManagerRef.current.add(toastData);
+                                    } catch (error) {
+                                        console.error('Failed to show dice result toast:', error);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            })
+            .catch((error) => {
+                console.error('[DiceBoxProvider] Failed to initialize DiceBox:', error);
+                if (mountedRef.current) {
+                    setIsReady(false);
+                }
+            });
 
         return () => {
             mountedRef.current = false;
             // Don't destroy the DiceBox - keep it alive across route changes
         };
-    }, []); // Remove userDiceConfig and initializeDiceBox dependencies
+    }, []); // Empty dependency array - only run once
 
     // Handle user config changes after initialization
     useEffect(() => {
-        if (managerRef.current && isReady && userDiceConfig && !isTestingMode) {
+        const manager = diceBoxSingleton.getManager();
+        if (manager && isReady && userDiceConfig && !isTestingMode) {
             const previousConfig = currentUserConfigRef.current;
             currentUserConfigRef.current = userDiceConfig;
 
@@ -96,7 +210,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
             const hasChanged = previousString !== currentString;
 
             if (hasChanged) {
-                managerRef.current.updateConfigWithUserConfig(userDiceConfig);
+                manager.updateConfigWithUserConfig(userDiceConfig);
             }
         }
     }, [userDiceConfig, isReady, isTestingMode]);
@@ -114,10 +228,10 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
         previousLocationRef.current = location.pathname;
     }, [location.pathname]);
 
-
     // Roll dice function
     const rollDice = useCallback((notation: string, group?: string) => {
-        if (!managerRef.current || !isReady) {
+        const manager = diceBoxSingleton.getManager();
+        if (!manager || !isReady) {
             console.log('Cannot roll - DiceBox not ready');
             return;
         }
@@ -126,7 +240,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
         setLastResult(null);
 
         try {
-            managerRef.current.roll(notation);
+            manager.roll(notation);
 
             // Simple timeout to reset rolling state
             setTimeout(() => {
@@ -144,18 +258,19 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
 
     // Register roll complete callback
     const onRollComplete = useCallback((callback: (result: DiceResult) => void) => {
-        if (!managerRef.current) {
+        const manager = diceBoxSingleton.getManager();
+        if (!manager) {
             console.warn('DiceBox manager not available');
             return () => { };
         }
 
-        return managerRef.current.onRollComplete((result) => {
+        return manager.onRollComplete((result) => {
             if (mountedRef.current) {
                 setLastResult(result);
                 callback(result);
             }
         });
-    }, []);
+    }, []); // Remove toastManager dependency to prevent re-renders
 
     // Clear results
     const clearResults = useCallback(() => {
@@ -165,12 +280,14 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
     // Force re-initialization
     const reinitialize = useCallback(async () => {
         setIsReady(false);
-        if (managerRef.current) {
-            managerRef.current.destroy();
-            managerRef.current = undefined;
+
+        diceBoxSingleton.destroy();
+        await diceBoxSingleton.initialize(currentUserConfigRef.current || undefined);
+
+        if (mountedRef.current) {
+            setIsReady(true);
         }
-        await initializeDiceBox(currentUserConfigRef.current || undefined);
-    }, [initializeDiceBox]);
+    }, []);
 
     // Re-initialize with user config
     const reinitializeWithUserConfig = useCallback(async (userConfig: UserDiceConfig) => {
@@ -180,34 +297,54 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
 
         currentUserConfigRef.current = userConfig;
         await reinitialize();
-    }, [isRolling, reinitialize]);
+    }, [reinitialize, isRolling]);
 
-    // Re-initialize with admin config (for admin testing)
+    // Re-initialize with admin config
     const reinitializeWithAdminConfig = useCallback(async (adminConfig: DiceBoxAdminConfig) => {
         if (isRolling) {
             return;
         }
 
-        if (managerRef.current) {
-            await managerRef.current.initializeWithAdminConfig(adminConfig);
+        setIsTestingMode(true);
+        adminTestFlagRef.current = true;
+
+        setIsReady(false);
+        diceBoxSingleton.destroy();
+
+        try {
+            const manager = new DiceBoxManager();
+            await manager.initializeWithAdminConfig(adminConfig);
+
+            // Replace the singleton's manager
+            (diceBoxSingleton as any).manager = manager;
+            (diceBoxSingleton as any).isInitialized = true;
+
+            if (mountedRef.current) {
+                setIsReady(true);
+            }
+        } catch (error) {
+            console.error('Failed to initialize DiceBox with admin config:', error);
+            if (mountedRef.current) {
+                setIsReady(false);
+            }
         }
     }, [isRolling]);
 
     // Update config with user config
     const updateConfigWithUserConfig = useCallback(async (userConfig: UserDiceConfig) => {
-        if (managerRef.current && isReady) {
-            await managerRef.current.updateConfigWithUserConfig(userConfig);
+        const manager = diceBoxSingleton.getManager();
+        if (manager) {
+            await manager.updateConfigWithUserConfig(userConfig);
         }
-    }, [isReady]);
+    }, []);
 
-    // Update config with admin config (for admin testing)
+    // Update config with admin config
     const updateConfigWithAdminConfig = useCallback((adminConfig: Partial<DiceBoxAdminConfig>) => {
-        if (managerRef.current && isReady) {
-            // Set the admin test flag to indicate admin testing has occurred
-            adminTestFlagRef.current = true;
-            managerRef.current.updateConfigWithAdminConfig(adminConfig);
+        const manager = diceBoxSingleton.getManager();
+        if (manager) {
+            manager.updateConfigWithAdminConfig(adminConfig);
         }
-    }, [isReady]);
+    }, []);
 
     // Get current config
     const getCurrentConfig = useCallback(() => {
@@ -216,8 +353,9 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
 
     // Get current icon color
     const getCurrentIconColor = useCallback(() => {
-        if (managerRef.current) {
-            return managerRef.current.getCurrentIconColor();
+        const manager = diceBoxSingleton.getManager();
+        if (manager) {
+            return manager.getCurrentIconColor();
         }
         return '#3937b8'; // Default fallback
     }, []);
@@ -226,9 +364,10 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
     const clearAdminTestFlag = useCallback(async () => {
         if (adminTestFlagRef.current) {
             // Refresh the admin config cache from backend
-            if (managerRef.current) {
+            const manager = diceBoxSingleton.getManager();
+            if (manager) {
                 try {
-                    await managerRef.current.refreshCache();
+                    await manager.refreshCache();
                 } catch (error) {
                     console.error('[DiceBoxProvider] Failed to refresh admin config cache:', error);
                 }
@@ -241,6 +380,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
 
             // Clear the admin test flag
             adminTestFlagRef.current = false;
+            setIsTestingMode(false);
         }
     }, [updateConfigWithUserConfig]);
 
