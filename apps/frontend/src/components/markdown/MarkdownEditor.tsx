@@ -1,5 +1,5 @@
 import MDEditor from '@uiw/react-md-editor';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 import { RenderMarkdown } from '@/plugins/RenderMarkdown';
 
@@ -15,20 +15,33 @@ export function MarkdownEditor({
     name,
     userVars = {}
 }: MarkdownEditorProps): React.JSX.Element {
-    const [renderedHtml, setRenderedHtml] = useState<string>('');
+    const [debouncedValue, setDebouncedValue] = useState(value);
 
+    // Debounce the value to prevent preview updates while typing
     useEffect(() => {
-        const ProcessMarkdown = async (): Promise<void> => {
-            if (value) {
-                const html = await RenderMarkdown({ markdown: value, id, userVars });
-                setRenderedHtml(html);
-            } else {
-                setRenderedHtml('');
-            }
-        };
+        const timer = setTimeout(() => {
+            setDebouncedValue(value);
+        }, 300); // 300ms delay
 
-        ProcessMarkdown();
-    }, [value, userVars]);
+        return () => clearTimeout(timer);
+    }, [value]);
+
+    // Memoize the markdown component to prevent unnecessary re-renders
+    const markdownPreview = useMemo(() => {
+        if (!debouncedValue) {
+            return <div className="text-gray-400 italic">No content to preview</div>;
+        }
+
+        return (
+            <div className="prose dark:prose-invert">
+                <RenderMarkdown
+                    markdown={debouncedValue}
+                    id={id || 'markdown-editor'}
+                    userVars={userVars}
+                />
+            </div>
+        );
+    }, [debouncedValue, id, userVars]);
 
     return (
         <div className={`w-full ${className}`}>
@@ -44,10 +57,9 @@ export function MarkdownEditor({
                 preview="live"
                 components={{
                     preview: () => (
-                        <div
-                            className="wmde-markdown-parsed"
-                            dangerouslySetInnerHTML={{ __html: renderedHtml }}
-                        />
+                        <div className="wmde-markdown-parsed">
+                            {markdownPreview}
+                        </div>
                     ),
                 }}
             />
