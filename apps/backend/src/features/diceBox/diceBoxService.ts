@@ -1,10 +1,10 @@
 import { PrismaClient } from '@shared/prisma-client/client';
-import { DICE_THEME_NAMES } from '@shared/static-data';
 import type {
     DiceBoxAdminConfig,
     CreateDiceBoxAdminConfigRequest,
     UpdateDiceBoxAdminConfigRequest,
-    GetAllDiceConfigsResponse
+    GetAllDiceConfigsResponse,
+    UserDiceConfig
 } from '@shared/schema';
 
 const prisma = new PrismaClient();
@@ -16,35 +16,11 @@ export class DiceBoxService {
             orderBy: [{ isDefault: 'desc' }, { name: 'asc' }]
         });
 
-        return {
-            total: configs.length,
-            results: configs.map(config => ({
-                id: config.id,
-                name: config.name,
-                isDefault: config.isDefault,
-                gravity: config.gravity,
-                mass: config.mass,
-                friction: config.friction,
-                restitution: config.restitution,
-                angularDamping: config.angularDamping,
-                linearDamping: config.linearDamping,
-                spinForce: config.spinForce,
-                throwForce: config.throwForce,
-                startingHeight: config.startingHeight,
-                settleTimeout: config.settleTimeout,
-                lightIntensity: config.lightIntensity,
-                enableShadows: config.enableShadows,
-                shadowTransparency: config.shadowTransparency,
-                theme: config.theme,
-                themeColor: config.themeColor,
-                iconColor: config.iconColor,
-                scale: config.scale
-            }))
-        };
+        return { total: configs.length, results: configs };
     }
 
-    // Get user's complete dice configuration (base + overrides)
-    static async getUserDiceConfig(userId: number): Promise<DiceBoxAdminConfig> {
+    // Get user's dice configuration (baseConfigId + overrides)
+    static async getUserDiceConfig(userId: number): Promise<UserDiceConfig> {
         const user = await prisma.user.findUnique({
             where: { id: userId },
             include: {
@@ -65,49 +41,15 @@ export class DiceBoxService {
                     throw new Error('No dice configuration available');
                 }
                 return {
-                    id: mostRecentConfig.id,
-                    name: mostRecentConfig.name,
-                    isDefault: mostRecentConfig.isDefault,
-                    gravity: mostRecentConfig.gravity,
-                    mass: mostRecentConfig.mass,
-                    friction: mostRecentConfig.friction,
-                    restitution: mostRecentConfig.restitution,
-                    angularDamping: mostRecentConfig.angularDamping,
-                    linearDamping: mostRecentConfig.linearDamping,
-                    spinForce: mostRecentConfig.spinForce,
-                    throwForce: mostRecentConfig.throwForce,
-                    startingHeight: mostRecentConfig.startingHeight,
-                    settleTimeout: mostRecentConfig.settleTimeout,
-                    lightIntensity: mostRecentConfig.lightIntensity,
-                    enableShadows: mostRecentConfig.enableShadows,
-                    shadowTransparency: mostRecentConfig.shadowTransparency,
-                    theme: mostRecentConfig.theme,
-                    themeColor: mostRecentConfig.themeColor,
-                    iconColor: mostRecentConfig.iconColor,
-                    scale: mostRecentConfig.scale
+                    baseConfigId: mostRecentConfig.id,
+                    baseConfigName: mostRecentConfig.name,
+                    overrides: {}
                 };
             }
             return {
-                id: defaultConfig.id,
-                name: defaultConfig.name,
-                isDefault: defaultConfig.isDefault,
-                gravity: defaultConfig.gravity,
-                mass: defaultConfig.mass,
-                friction: defaultConfig.friction,
-                restitution: defaultConfig.restitution,
-                angularDamping: defaultConfig.angularDamping,
-                linearDamping: defaultConfig.linearDamping,
-                spinForce: defaultConfig.spinForce,
-                throwForce: defaultConfig.throwForce,
-                startingHeight: defaultConfig.startingHeight,
-                settleTimeout: defaultConfig.settleTimeout,
-                lightIntensity: defaultConfig.lightIntensity,
-                enableShadows: defaultConfig.enableShadows,
-                shadowTransparency: defaultConfig.shadowTransparency,
-                theme: defaultConfig.theme,
-                themeColor: defaultConfig.themeColor,
-                iconColor: defaultConfig.iconColor,
-                scale: defaultConfig.scale
+                baseConfigId: defaultConfig.id,
+                baseConfigName: defaultConfig.name,
+                overrides: {}
             };
         }
 
@@ -119,48 +61,24 @@ export class DiceBoxService {
             throw new Error('No dice configuration available');
         }
 
-        // Start with base config
-        const mergedConfig: DiceBoxAdminConfig = {
-            id: baseConfig.id,
-            name: baseConfig.name,
-            isDefault: baseConfig.isDefault,
-            gravity: baseConfig.gravity,
-            mass: baseConfig.mass,
-            friction: baseConfig.friction,
-            restitution: baseConfig.restitution,
-            angularDamping: baseConfig.angularDamping,
-            linearDamping: baseConfig.linearDamping,
-            spinForce: baseConfig.spinForce,
-            throwForce: baseConfig.throwForce,
-            startingHeight: baseConfig.startingHeight,
-            settleTimeout: baseConfig.settleTimeout,
-            lightIntensity: baseConfig.lightIntensity,
-            enableShadows: baseConfig.enableShadows,
-            shadowTransparency: baseConfig.shadowTransparency,
-            theme: baseConfig.theme,
-            themeColor: baseConfig.themeColor,
-            iconColor: baseConfig.iconColor,
-            scale: baseConfig.scale
-        };
-
-        // Apply user overrides
+        // Convert overrides to record format
+        const overrides: Record<string, string> = {};
         user.diceConfigOverrides.forEach(override => {
-            const key = override.propertyName as keyof DiceBoxAdminConfig;
-            if (key in mergedConfig) {
-                // Convert string value to appropriate type
-                const value = this.convertPropertyValue(override.propertyValue, typeof mergedConfig[key]);
-                (mergedConfig as any)[key] = value;
-            }
+            overrides[override.propertyName] = override.propertyValue;
         });
 
-        return mergedConfig;
+        return {
+            baseConfigId: baseConfig.id,
+            baseConfigName: baseConfig.name,
+            overrides
+        };
     }
 
     // Update user's dice configuration
-    static async updateUserDiceConfig(userId: number, userConfig: DiceBoxAdminConfig): Promise<void> {
+    static async updateUserDiceConfig(userId: number, baseConfigId: number, overrides: Record<string, string>): Promise<void> {
         // Verify base config exists
         const baseConfig = await prisma.diceBoxAdminConfig.findUnique({
-            where: { id: userConfig.id }
+            where: { id: baseConfigId }
         });
         if (!baseConfig) {
             throw new Error('Base dice configuration not found');
@@ -169,7 +87,7 @@ export class DiceBoxService {
         // Update user's base config reference
         await prisma.user.update({
             where: { id: userId },
-            data: { diceConfigBase: userConfig.id }
+            data: { diceConfigBase: baseConfigId }
         });
 
         // Clear existing overrides
@@ -177,50 +95,15 @@ export class DiceBoxService {
             where: { userId }
         });
 
-        // Find properties that differ from the base config
-        const overrides: Array<{ propertyName: string; propertyValue: string }> = [];
-        
-        const propertiesToCheck: (keyof DiceBoxAdminConfig)[] = [
-            'gravity', 'mass', 'friction', 'restitution', 'angularDamping', 'linearDamping',
-            'spinForce', 'throwForce', 'startingHeight', 'settleTimeout', 'lightIntensity',
-            'enableShadows', 'shadowTransparency', 'theme', 'themeColor', 'iconColor', 'scale'
-        ];
-
-        propertiesToCheck.forEach(property => {
-            const baseValue = baseConfig[property];
-            const userValue = userConfig[property];
-            
-            if (baseValue !== userValue) {
-                overrides.push({
-                    propertyName: property,
-                    propertyValue: String(userValue)
-                });
-            }
-        });
-
         // Create new overrides if any exist
-        if (overrides.length > 0) {
+        if (Object.keys(overrides).length > 0) {
             await prisma.userDiceConfigOverride.createMany({
-                data: overrides.map(override => ({
+                data: Object.entries(overrides).map(([propertyName, propertyValue]) => ({
                     userId,
-                    propertyName: override.propertyName,
-                    propertyValue: override.propertyValue
+                    propertyName,
+                    propertyValue
                 }))
             });
-        }
-    }
-
-
-
-    // Helper: Convert string property value to appropriate type
-    private static convertPropertyValue(value: string, targetType: string): any {
-        switch (targetType) {
-            case 'number':
-                return parseFloat(value);
-            case 'boolean':
-                return value === 'true';
-            default:
-                return value;
         }
     }
 
@@ -241,32 +124,11 @@ export class DiceBoxService {
 
         if (!config) return null;
 
-        return {
-            id: config.id,
-            name: config.name,
-            isDefault: config.isDefault,
-            gravity: config.gravity,
-            mass: config.mass,
-            friction: config.friction,
-            restitution: config.restitution,
-            angularDamping: config.angularDamping,
-            linearDamping: config.linearDamping,
-            spinForce: config.spinForce,
-            throwForce: config.throwForce,
-            startingHeight: config.startingHeight,
-            settleTimeout: config.settleTimeout,
-            lightIntensity: config.lightIntensity,
-            enableShadows: config.enableShadows,
-            shadowTransparency: config.shadowTransparency,
-            theme: config.theme, // 3D dice theme
-            themeColor: config.themeColor,
-            iconColor: config.iconColor,
-            scale: config.scale
-        };
+        return config;
     }
 
-    // Create or update the DiceBox admin configuration
-    static async createOrUpdateAdminConfig(data: CreateDiceBoxAdminConfigRequest): Promise<DiceBoxAdminConfig> {
+    // Create a new DiceBox admin configuration
+    static async createAdminConfig(data: CreateDiceBoxAdminConfigRequest): Promise<DiceBoxAdminConfig> {
         // If this config is being set as default, unset any existing defaults
         if (data.config.isDefault) {
             await prisma.diceBoxAdminConfig.updateMany({
@@ -275,125 +137,34 @@ export class DiceBoxService {
             });
         }
 
-        let config;
+        const config = await prisma.diceBoxAdminConfig.create({
+            data: data.config
+        });
 
-        if (data.id) {
-            // Update existing config
-            config = await prisma.diceBoxAdminConfig.update({
-                where: { id: data.id },
-                data: {
-                    name: data.config.name ?? 'Default Configuration',
-                    isDefault: data.config.isDefault ?? false,
-                    gravity: data.config.gravity ?? 1,
-                    mass: data.config.mass ?? 1,
-                    friction: data.config.friction ?? 0.8,
-                    restitution: data.config.restitution ?? 0,
-                    angularDamping: data.config.angularDamping ?? 0.4,
-                    linearDamping: data.config.linearDamping ?? 0.4,
-                    spinForce: data.config.spinForce ?? 4,
-                    throwForce: data.config.throwForce ?? 5,
-                    startingHeight: data.config.startingHeight ?? 8,
-                    settleTimeout: data.config.settleTimeout ?? 5000,
-                    lightIntensity: data.config.lightIntensity ?? 1,
-                    enableShadows: data.config.enableShadows ?? true,
-                    shadowTransparency: data.config.shadowTransparency ?? 0.8,
-                    theme: data.config.theme ?? 1, // 3D dice theme ID
-                    themeColor: data.config.themeColor ?? '#2e8555',
-                    iconColor: data.config.iconColor,
-                    scale: data.config.scale ?? 6
-                }
-            });
-        } else {
-            // Create new config
-            config = await prisma.diceBoxAdminConfig.create({
-                data: {
-                    name: data.config.name ?? 'Default Configuration',
-                    isDefault: data.config.isDefault ?? false,
-                    gravity: data.config.gravity ?? 1,
-                    mass: data.config.mass ?? 1,
-                    friction: data.config.friction ?? 0.8,
-                    restitution: data.config.restitution ?? 0,
-                    angularDamping: data.config.angularDamping ?? 0.4,
-                    linearDamping: data.config.linearDamping ?? 0.4,
-                    spinForce: data.config.spinForce ?? 4,
-                    throwForce: data.config.throwForce ?? 5,
-                    startingHeight: data.config.startingHeight ?? 8,
-                    settleTimeout: data.config.settleTimeout ?? 5000,
-                    lightIntensity: data.config.lightIntensity ?? 1,
-                    enableShadows: data.config.enableShadows ?? true,
-                    shadowTransparency: data.config.shadowTransparency ?? 0.8,
-                    theme: data.config.theme ?? 1, // 3D dice theme ID
-                    themeColor: data.config.themeColor ?? '#2e8555',
-                    iconColor: data.config.iconColor,
-                    scale: data.config.scale ?? 6
-                }
+        return config;
+    }
+
+    // Update an existing DiceBox admin configuration
+    static async updateAdminConfig(configId: number, data: UpdateDiceBoxAdminConfigRequest): Promise<DiceBoxAdminConfig> {
+        // If this config is being set as default, unset any existing defaults
+        if (data.config.isDefault) {
+            await prisma.diceBoxAdminConfig.updateMany({
+                where: { isDefault: true },
+                data: { isDefault: false }
             });
         }
 
-        return {
-            id: config.id,
-            name: config.name,
-            isDefault: config.isDefault,
-            gravity: config.gravity,
-            mass: config.mass,
-            friction: config.friction,
-            restitution: config.restitution,
-            angularDamping: config.angularDamping,
-            linearDamping: config.linearDamping,
-            spinForce: config.spinForce,
-            throwForce: config.throwForce,
-            startingHeight: config.startingHeight,
-            settleTimeout: config.settleTimeout,
-            lightIntensity: config.lightIntensity,
-            enableShadows: config.enableShadows,
-            shadowTransparency: config.shadowTransparency,
-            theme: config.theme, // 3D dice theme
-            themeColor: config.themeColor,
-            iconColor: config.iconColor,
-            scale: config.scale
-        };
+        const config = await prisma.diceBoxAdminConfig.update({
+            where: { id: configId },
+            data: data.config
+        });
+
+        return config;
     }
 
-    // Get the full DiceBox configuration for use in the frontend
-    static async getFullConfig(): Promise<DiceBoxConfig | null> {
-        const adminConfig = await this.getAdminConfig();
-
-        if (!adminConfig) return null;
-
-        // Convert numeric theme ID to system name for DiceBox
-        const themeData = Object.values(DICE_THEMES).find(theme => theme.id === adminConfig.theme);
-        const themeSystemName = themeData?.systemName || 'default';
-
-        // Convert admin config to full config with defaults
-        const fullConfig: DiceBoxConfig = {
-            id: 'dice-canvas',
-            assetPath: '/assets/dice-box/',
-            container: '[data-dice-box]',
-            gravity: adminConfig.gravity,
-            mass: adminConfig.mass,
-            friction: adminConfig.friction,
-            restitution: adminConfig.restitution,
-            angularDamping: adminConfig.angularDamping,
-            linearDamping: adminConfig.linearDamping,
-            spinForce: adminConfig.spinForce,
-            throwForce: adminConfig.throwForce,
-            startingHeight: adminConfig.startingHeight,
-            settleTimeout: adminConfig.settleTimeout,
-            offscreen: true,
-            delay: 10,
-            lightIntensity: adminConfig.lightIntensity,
-            enableShadows: adminConfig.enableShadows,
-            shadowTransparency: adminConfig.shadowTransparency,
-            theme: themeSystemName, // Convert ID to system name for DiceBox
-            preloadThemes: [],
-            externalThemes: {},
-            themeColor: adminConfig.themeColor,
-            scale: adminConfig.scale,
-            suspendSimulation: false,
-            origin: typeof window !== 'undefined' ? window.location.origin : undefined
-        };
-
-        return fullConfig;
+    // Get the current DiceBox admin configuration
+    static async getFullConfig(): Promise<DiceBoxAdminConfig | null> {
+        return await this.getAdminConfig();
     }
 
     // Delete a DiceBox admin configuration
@@ -421,6 +192,4 @@ export class DiceBoxService {
             where: { id: configId }
         });
     }
-
-
 } 

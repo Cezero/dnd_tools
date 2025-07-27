@@ -3,15 +3,16 @@ import type {
     CreateDiceBoxAdminConfigRequest,
     UpdateDiceBoxAdminConfigRequest,
     GetAllDiceConfigsResponse,
-    DiceBoxConfig
+    DiceBoxConfig,
+    UserDiceConfig
 } from '@shared/schema';
 
 export interface DiceBoxService {
     getAvailableConfigs(): Promise<GetAllDiceConfigsResponse>;
-    getUserDiceConfig(userId: number): Promise<DiceBoxAdminConfig>;
-    updateUserDiceConfig(userId: number, userConfig: DiceBoxAdminConfig): Promise<void>;
+    getUserDiceConfig(userId: number): Promise<UserDiceConfig>;
+    updateUserDiceConfig(userId: number, baseConfigId: number, overrides: Record<string, string>): Promise<void>;
     getAdminConfig(): Promise<DiceBoxAdminConfig | null>;
-    createOrUpdateAdminConfig(data: CreateDiceBoxAdminConfigRequest): Promise<DiceBoxAdminConfig>;
-    getFullConfig(): Promise<DiceBoxConfig | null>;
+    createOrUpdateAdminConfig(data: CreateDiceBoxAdminConfigRequest | (UpdateDiceBoxAdminConfigRequest & { id?: number })): Promise<DiceBoxAdminConfig>;
+    getFullConfig(): Promise<DiceBoxAdminConfig | null>;
     deleteAdminConfig(configId: number): Promise<void>;
 } 

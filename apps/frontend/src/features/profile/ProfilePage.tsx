@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { UserProfileService } from '@/services/UserProfileService';
 import { DiceBoxService } from '@/services/DiceBoxService';
 import { DICE_THEME_SELECT_LIST, doesThemeIgnoreColor, getSystemNameById } from '@shared/static-data';
-import type { UserProfileResponse, UpdateUserProfileRequest, DiceBoxAdminConfig, GetAllDiceConfigsResponse } from '@shared/schema';
+import type { UserProfileResponse, UpdateUserProfileRequest, GetAllDiceConfigsResponse, UserDiceConfig } from '@shared/schema';
+
 import { UserIcon, Cog6ToothIcon, CubeIcon } from '@heroicons/react/24/outline';
 import { withAuthContext } from '@/components/auth/withAuth';
 import { CustomSelect } from '@/components/forms/FormComponents';
@@ -11,6 +12,7 @@ import { ColorPicker } from '@/components/widgets';
 import { DiceButton, useDiceBox } from '@/components/dice-box';
 import { generateDiceColorScheme } from '@/utils/color-scheme';
 import type { AuthContextType } from '@/components/auth/types';
+import type { DiceBoxAdminConfig } from '@shared/schema';
 
 interface ProfilePageProps {
     auth: AuthContextType;
@@ -275,8 +277,10 @@ function DiceConfigTab({ profile, onUpdate }: { profile: UserProfileResponse | n
     const [overrides, setOverrides] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingConfigs, setIsLoadingConfigs] = useState(true);
-    const { isReady, reinitializeWithConfig } = useDiceBox();
-    const isInitializedRef = useRef<boolean>(false);
+    const { isReady, updateConfigWithUserConfig, setTestingMode } = useDiceBox();
+    const overridesRef = useRef<Record<string, string>>({});
+    const updateTimeoutRef = useRef<number | null>(null);
+    const lastConfigRef = useRef<string>('');
 
     // Helper function to get current value (override or base config)
     const getCurrentValue = (propertyName: string, defaultValue: any) => {
@@ -290,6 +294,8 @@ function DiceConfigTab({ profile, onUpdate }: { profile: UserProfileResponse | n
             }
             return overrideValue;
         }
+
+        // Return value from selected config or default
         return selectedConfig?.[propertyName as keyof DiceBoxAdminConfig] ?? defaultValue;
     };
 
@@ -348,6 +354,64 @@ function DiceConfigTab({ profile, onUpdate }: { profile: UserProfileResponse | n
         loadAvailableConfigs();
     }, []);
 
+
+
+    // Update overridesRef when overrides change
+    useEffect(() => {
+        overridesRef.current = overrides;
+    }, [overrides]);
+
+    // Track if this is the initial load
+    const isInitialLoadRef = useRef(true);
+
+    // Update DiceBox configuration when form values change
+    useEffect(() => {
+        if (isReady && selectedConfigId && selectedConfig) {
+            // Enable testing mode to prevent AuthProvider from interfering
+            setTestingMode(true);
+
+            // Create UserDiceConfig with current baseConfigId and overrides
+            const userConfig: UserDiceConfig = {
+                baseConfigId: selectedConfigId,
+                baseConfigName: selectedConfig.name,
+                overrides: overridesRef.current
+            };
+
+            // Check if config has actually changed
+            const configString = JSON.stringify(userConfig);
+            if (configString === lastConfigRef.current) {
+                return; // Config hasn't changed, don't reinitialize
+            }
+            lastConfigRef.current = configString;
+
+            // Skip update on initial load - the AuthProvider has already set the correct config
+            if (isInitialLoadRef.current) {
+                isInitialLoadRef.current = false;
+                return;
+            }
+
+            // Clear existing timeout
+            if (updateTimeoutRef.current) {
+                clearTimeout(updateTimeoutRef.current);
+            }
+
+            // Use a longer delay to avoid excessive updates during rapid form changes
+            updateTimeoutRef.current = setTimeout(async () => {
+                // Pass UserDiceConfig to DiceBoxManager for merging
+                await updateConfigWithUserConfig(userConfig);
+                // Disable testing mode after update is complete
+                setTestingMode(false);
+            }, 500);
+
+        }
+
+        return () => {
+            if (updateTimeoutRef.current) {
+                clearTimeout(updateTimeoutRef.current);
+            }
+        };
+    }, [isReady, selectedConfigId, selectedConfig, overrides, updateConfigWithUserConfig]);
+
     // Initialize with user's current dice configuration
     useEffect(() => {
         if (profile?.diceConfig) {
@@ -356,156 +420,27 @@ function DiceConfigTab({ profile, onUpdate }: { profile: UserProfileResponse | n
         }
     }, [profile]);
 
-    // Initialize DiceBox when everything is ready
+    // Reset initial load flag when component unmounts
     useEffect(() => {
-        // Wait for all required data to be loaded
-        if (isReady && selectedConfig && profile?.diceConfig && !isInitializedRef.current) {
-            try {
-
-                // Get only the properties that DiceBox.updateConfig() supports (from DiceBoxConfig type)
-                const theme = getCurrentValue('theme', 1);
-                const themeColor = getCurrentValue('themeColor', '#2e8555');
-                const scale = getCurrentValue('scale', 6);
-                const lightIntensity = getCurrentValue('lightIntensity', 1);
-                const enableShadows = getCurrentValue('enableShadows', true);
-                const shadowTransparency = getCurrentValue('shadowTransparency', 0.8);
-                const gravity = getCurrentValue('gravity', 1);
-                const mass = getCurrentValue('mass', 1);
-                const friction = getCurrentValue('friction', 0.8);
-                const restitution = getCurrentValue('restitution', 0);
-                const angularDamping = getCurrentValue('angularDamping', 0.4);
-                const linearDamping = getCurrentValue('linearDamping', 0.4);
-                const spinForce = getCurrentValue('spinForce', 4);
-                const throwForce = getCurrentValue('throwForce', 5);
-                const startingHeight = getCurrentValue('startingHeight', 8);
-                const settleTimeout = getCurrentValue('settleTimeout', 5000);
-
-                // Convert numeric theme ID to system name for DiceBox
-                const themeSystemName = typeof theme === 'number'
-                    ? getSystemNameById(theme)
-                    : theme;
-
-                const configToApply = {
-                    theme: themeSystemName,
-                    themeColor: themeColor,
-                    scale: scale,
-                    lightIntensity: lightIntensity,
-                    enableShadows: enableShadows,
-                    shadowTransparency: shadowTransparency,
-                    gravity: gravity,
-                    mass: mass,
-                    friction: friction,
-                    restitution: restitution,
-                    angularDamping: angularDamping,
-                    linearDamping: linearDamping,
-                    spinForce: spinForce,
-                    throwForce: throwForce,
-                    startingHeight: startingHeight,
-                    settleTimeout: settleTimeout
-                };
-
-                // Only pass properties that DiceBox.updateConfig() supports (from DiceBoxConfig type)
-                reinitializeWithConfig(configToApply);
-
-                // Mark as initialized
-                isInitializedRef.current = true;
-            } catch (error) {
-                console.error('Failed to update DiceBox with user config:', error);
-            }
-        } else if (isReady && selectedConfig && !isInitializedRef.current) {
-            // Fallback: Initialize with selected config even if user profile isn't loaded yet
-            try {
-
-                const configToApply = {
-                    theme: typeof selectedConfig.theme === 'number'
-                        ? getSystemNameById(selectedConfig.theme)
-                        : selectedConfig.theme,
-                    themeColor: selectedConfig.themeColor,
-                    scale: selectedConfig.scale,
-                    lightIntensity: selectedConfig.lightIntensity,
-                    enableShadows: selectedConfig.enableShadows,
-                    shadowTransparency: selectedConfig.shadowTransparency,
-                    gravity: selectedConfig.gravity,
-                    mass: selectedConfig.mass,
-                    friction: selectedConfig.friction,
-                    restitution: selectedConfig.restitution,
-                    angularDamping: selectedConfig.angularDamping,
-                    linearDamping: selectedConfig.linearDamping,
-                    spinForce: selectedConfig.spinForce,
-                    throwForce: selectedConfig.throwForce,
-                    startingHeight: selectedConfig.startingHeight,
-                    settleTimeout: selectedConfig.settleTimeout
-                };
-
-                reinitializeWithConfig(configToApply);
-                isInitializedRef.current = true;
-            } catch (error) {
-                console.error('Failed to update DiceBox with fallback config:', error);
-            }
-        } else if (isReady && selectedConfig && profile?.diceConfig && isInitializedRef.current) {
-            // Re-initialize if user profile is loaded after initial initialization
-            try {
-
-                // Get only the properties that DiceBox.updateConfig() supports (from DiceBoxConfig type)
-                const theme = getCurrentValue('theme', 1);
-                const themeColor = getCurrentValue('themeColor', '#2e8555');
-                const scale = getCurrentValue('scale', 6);
-                const lightIntensity = getCurrentValue('lightIntensity', 1);
-                const enableShadows = getCurrentValue('enableShadows', true);
-                const shadowTransparency = getCurrentValue('shadowTransparency', 0.8);
-                const gravity = getCurrentValue('gravity', 1);
-                const mass = getCurrentValue('mass', 1);
-                const friction = getCurrentValue('friction', 0.8);
-                const restitution = getCurrentValue('restitution', 0);
-                const angularDamping = getCurrentValue('angularDamping', 0.4);
-                const linearDamping = getCurrentValue('linearDamping', 0.4);
-                const spinForce = getCurrentValue('spinForce', 4);
-                const throwForce = getCurrentValue('throwForce', 5);
-                const startingHeight = getCurrentValue('startingHeight', 8);
-                const settleTimeout = getCurrentValue('settleTimeout', 5000);
-
-                // Convert numeric theme ID to system name for DiceBox
-                const themeSystemName = typeof theme === 'number'
-                    ? getSystemNameById(theme)
-                    : theme;
-
-                const configToApply = {
-                    theme: themeSystemName,
-                    themeColor: themeColor,
-                    scale: scale,
-                    lightIntensity: lightIntensity,
-                    enableShadows: enableShadows,
-                    shadowTransparency: shadowTransparency,
-                    gravity: gravity,
-                    mass: mass,
-                    friction: friction,
-                    restitution: restitution,
-                    angularDamping: angularDamping,
-                    linearDamping: linearDamping,
-                    spinForce: spinForce,
-                    throwForce: throwForce,
-                    startingHeight: startingHeight,
-                    settleTimeout: settleTimeout
-                };
-
-                reinitializeWithConfig(configToApply);
-            } catch (error) {
-                console.error('Failed to re-update DiceBox with user config:', error);
-            }
-        }
-    }, [isReady, selectedConfig, profile?.diceConfig, overrides]);
+        return () => {
+            isInitialLoadRef.current = true;
+        };
+    }, []);
 
     const handleSave = async () => {
         if (!selectedConfigId) return;
 
         try {
             setIsLoading(true);
-            await onUpdate({
+
+            const saveData = {
                 diceConfig: {
                     baseConfigId: selectedConfigId,
                     overrides
                 }
-            });
+            };
+
+            await onUpdate(saveData);
         } catch (error) {
             console.error('Failed to update dice configuration:', error);
         } finally {
@@ -522,125 +457,6 @@ function DiceConfigTab({ profile, onUpdate }: { profile: UserProfileResponse | n
             return newOverrides;
         });
     };
-
-    // Debounced DiceBox update
-    const debouncedUpdateDiceBox = useCallback(() => {
-        if (!isReady) {
-            return;
-        }
-
-        // Don't update if we don't have a selected config yet
-        if (!selectedConfig) {
-            return;
-        }
-
-        try {
-            // Get only the properties that DiceBox.updateConfig() supports (from DiceBoxConfig type)
-            const theme = getCurrentValue('theme', 1);
-            const themeColor = getCurrentValue('themeColor', '#2e8555');
-            const scale = getCurrentValue('scale', 6);
-            const lightIntensity = getCurrentValue('lightIntensity', 1);
-            const enableShadows = getCurrentValue('enableShadows', true);
-            const shadowTransparency = getCurrentValue('shadowTransparency', 0.8);
-            const gravity = getCurrentValue('gravity', 1);
-            const mass = getCurrentValue('mass', 1);
-            const friction = getCurrentValue('friction', 0.8);
-            const restitution = getCurrentValue('restitution', 0);
-            const angularDamping = getCurrentValue('angularDamping', 0.4);
-            const linearDamping = getCurrentValue('linearDamping', 0.4);
-            const spinForce = getCurrentValue('spinForce', 4);
-            const throwForce = getCurrentValue('throwForce', 5);
-            const startingHeight = getCurrentValue('startingHeight', 8);
-            const settleTimeout = getCurrentValue('settleTimeout', 5000);
-
-            // Convert numeric theme ID to system name for DiceBox
-            const themeSystemName = typeof theme === 'number'
-                ? getSystemNameById(theme)
-                : theme;
-
-            const configToApply = {
-                theme: themeSystemName,
-                themeColor: themeColor,
-                scale: scale,
-                lightIntensity: lightIntensity,
-                enableShadows: enableShadows,
-                shadowTransparency: shadowTransparency,
-                gravity: gravity,
-                mass: mass,
-                friction: friction,
-                restitution: restitution,
-                angularDamping: angularDamping,
-                linearDamping: linearDamping,
-                spinForce: spinForce,
-                throwForce: throwForce,
-                startingHeight: startingHeight,
-                settleTimeout: settleTimeout
-            };
-
-            // Only pass properties that DiceBox.updateConfig() supports (from DiceBoxConfig type)
-            reinitializeWithConfig(configToApply);
-        } catch (error) {
-            console.error('Failed to update DiceBox configuration:', error);
-        }
-    }, [isReady, reinitializeWithConfig, selectedConfig, overrides]);
-
-    // Debounce timer ref
-    const debounceTimerRef = useRef<number | null>(null);
-
-    // Track previous overrides to detect actual changes
-    const previousOverridesRef = useRef<Record<string, string>>({});
-
-    // Update DiceBox when properties change (debounced)
-    useEffect(() => {
-        // Only trigger if overrides actually changed
-        const overridesChanged = JSON.stringify(previousOverridesRef.current) !== JSON.stringify(overrides);
-
-        if (!overridesChanged) {
-            return;
-        }
-
-        // Trigger on any property changes that affect DiceBox behavior
-        const diceBoxProps = [
-            'theme', 'themeColor', 'scale', 'lightIntensity', 'enableShadows', 'shadowTransparency',
-            'gravity', 'mass', 'friction', 'restitution', 'angularDamping', 'linearDamping',
-            'spinForce', 'throwForce', 'startingHeight', 'settleTimeout'
-        ];
-        const hasDiceBoxChanges = diceBoxProps.some(prop => prop in overrides);
-
-        if (hasDiceBoxChanges && isReady && isInitializedRef.current) {
-            // Don't trigger debounced updates during initial user config load
-            if (profile?.diceConfig && Object.keys(overrides).length === 0) {
-                return;
-            }
-
-            // Clear existing timer
-            if (debounceTimerRef.current) {
-                clearTimeout(debounceTimerRef.current);
-            }
-
-            // Set new timer
-            debounceTimerRef.current = setTimeout(() => {
-                debouncedUpdateDiceBox();
-            }, 500);
-        }
-
-        // Update the previous overrides ref
-        previousOverridesRef.current = overrides;
-
-        // Mark as initialized after first load
-        if (isReady && !isInitializedRef.current) {
-            isInitializedRef.current = true;
-        }
-
-        // Cleanup timer on unmount
-        return () => {
-            if (debounceTimerRef.current) {
-                clearTimeout(debounceTimerRef.current);
-            }
-        };
-    }, [overrides, isReady, debouncedUpdateDiceBox]);
-
-
 
     return (
         <div className="p-6">

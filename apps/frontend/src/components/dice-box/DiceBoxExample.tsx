@@ -1,8 +1,8 @@
 import React from 'react';
-import { useDiceBox } from './DiceBoxProvider';
+import { useDiceBox } from './index';
 
 export function DiceBoxExample(): React.JSX.Element {
-    const { rollDice, isReady, isRolling, pendingRoll, lastResult, clearResults } = useDiceBox();
+    const { rollDice, isReady, isRolling, lastResult, clearResults } = useDiceBox();
 
     const rollTypes = [
         { notation: '3d6', label: '3d6 (Standard)', group: 'standard' },
@@ -30,7 +30,7 @@ export function DiceBoxExample(): React.JSX.Element {
                         disabled={!isReady || isRolling}
                         className="px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                     >
-                        {isRolling && pendingRoll === group ? 'Rolling...' : label}
+                        {isRolling ? 'Rolling...' : label}
                     </button>
                 ))}
             </div>

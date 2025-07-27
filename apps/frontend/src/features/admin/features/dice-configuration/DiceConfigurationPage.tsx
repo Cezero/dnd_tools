@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { DiceConfigurationService } from './DiceConfigurationService';
 import { useDiceBox } from '@/components/dice-box';
 import { GenericList } from '@/components/generic-list';
-import { getSystemNameById, getDiceThemeById, DICE_THEME_SELECT_LIST } from '@shared/static-data';
+import { getDiceThemeById, DICE_THEME_SELECT_LIST } from '@shared/static-data';
 import { DICE_CONFIGURATION_COLUMNS } from './DiceConfigurationsColumns';
 import { SliderControl } from '@/components/forms';
 import { ColorPicker } from '@/components/widgets';
@@ -11,7 +11,7 @@ import { generateDiceColorScheme } from '@/utils/color-scheme';
 import { doesThemeIgnoreColor } from '@shared/static-data';
 import { CustomSelect } from '@/components/forms/FormComponents';
 import type { DiceBoxAdminConfig } from '@shared/schema';
-import { destroyDiceBox } from '@/components/dice-box/DiceBox';
+
 
 export function DiceConfigurationPage(): React.JSX.Element {
     const [config, setConfig] = useState<DiceBoxAdminConfig & { id?: number }>(DiceConfigurationService.getDefaultConfig());
@@ -20,9 +20,13 @@ export function DiceConfigurationPage(): React.JSX.Element {
     const [isSaving, setIsSaving] = useState(false);
     const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
     const [listKey, setListKey] = useState(0); // For refreshing the list
-    const { isReady, reinitialize, reinitializeWithConfig, rollDice } = useDiceBox();
+    const { isReady, reinitialize, updateConfigWithAdminConfig, clearAdminTestFlag, rollDice } = useDiceBox();
     const debounceTimeoutRef = useRef<number | null>(null);
     const isInitializedRef = useRef<boolean>(false);
+    const isSavingRef = useRef<boolean>(false);
+    const isUnmountingRef = useRef<boolean>(false);
+
+
 
     // Debug function to completely reset DiceBox
     const handleForceReset = async () => {
@@ -34,19 +38,7 @@ export function DiceConfigurationPage(): React.JSX.Element {
         console.log('Initial state - Container:', !!container, 'Canvas:', !!canvas);
 
         try {
-            // Force destroy the DiceBox
-            console.log('Destroying DiceBox...');
-            destroyDiceBox();
-            console.log('DiceBox destroyed');
-
-            // Check state after destroy
-            const canvasAfterDestroy = document.getElementById('dice-canvas');
-            console.log('After destroy - Canvas:', !!canvasAfterDestroy);
-
-            // Wait a moment for cleanup
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // Force reinitialize
+            // Force reinitialize the DiceBox
             console.log('Reinitializing DiceBox...');
             await reinitialize();
 
@@ -86,61 +78,60 @@ export function DiceConfigurationPage(): React.JSX.Element {
         loadDefaultConfig();
     }, []);
 
+    // Apply configuration to DiceBox when it becomes ready
+    useEffect(() => {
+        if (isReady && config && !configAppliedRef.current) {
+            updateConfigWithAdminConfig(config);
+            configAppliedRef.current = true;
+        }
+    }, [isReady, config, updateConfigWithAdminConfig]);
+
     // Track previous config to detect actual changes
     const previousConfigRef = useRef<{ theme: number; themeColor: string; scale: number } | null>(null);
+    const configAppliedRef = useRef<boolean>(false);
 
-    // Debounced re-initialization function
-    const debouncedReinitialize = useCallback(() => {
+    // Debounced update function
+    const debouncedUpdate = useCallback(() => {
         if (debounceTimeoutRef.current) {
             clearTimeout(debounceTimeoutRef.current);
         }
 
-        debounceTimeoutRef.current = setTimeout(async () => {
+        debounceTimeoutRef.current = setTimeout(() => {
             if (isReady && config) {
                 try {
-                    // Pass complete configuration to avoid falling back to defaults
-                    await reinitializeWithConfig({
-                        theme: getSystemNameById(config.theme),
-                        themeColor: config.themeColor,
-                        scale: config.scale,
-                        lightIntensity: config.lightIntensity,
-                        enableShadows: config.enableShadows,
-                        shadowTransparency: config.shadowTransparency,
-                        gravity: config.gravity,
-                        mass: config.mass,
-                        friction: config.friction,
-                        restitution: config.restitution,
-                        angularDamping: config.angularDamping,
-                        linearDamping: config.linearDamping,
-                        spinForce: config.spinForce,
-                        throwForce: config.throwForce,
-                        startingHeight: config.startingHeight,
-                        settleTimeout: config.settleTimeout
-                    });
+                    updateConfigWithAdminConfig(config);
                 } catch (error) {
                     console.error('Failed to update DiceBox config:', error);
                 }
             }
         }, 300); // 300ms debounce delay
-    }, [isReady, reinitializeWithConfig, config]);
+    }, [isReady, updateConfigWithAdminConfig, config]);
 
     // Update DiceBox when config changes and DiceBox is ready (with debouncing)
     useEffect(() => {
-        // Check if config actually changed
-        const currentConfig = { theme: config.theme, themeColor: config.themeColor, scale: config.scale };
+        // Check if config actually changed - include all DiceBox properties
+        const currentConfig = {
+            theme: config.theme,
+            themeColor: config.themeColor,
+            scale: config.scale,
+            gravity: config.gravity,
+            mass: config.mass,
+            friction: config.friction,
+            restitution: config.restitution,
+            angularDamping: config.angularDamping,
+            linearDamping: config.linearDamping,
+            spinForce: config.spinForce,
+            throwForce: config.throwForce,
+            startingHeight: config.startingHeight,
+            settleTimeout: config.settleTimeout,
+            lightIntensity: config.lightIntensity,
+            enableShadows: config.enableShadows,
+            shadowTransparency: config.shadowTransparency
+        };
         const configChanged = JSON.stringify(previousConfigRef.current) !== JSON.stringify(currentConfig);
 
-        console.log('Admin config change check:', {
-            currentConfig,
-            previousConfig: previousConfigRef.current,
-            configChanged,
-            isReady,
-            isInitialized: isInitializedRef.current
-        });
-
-        if (isReady && config && isInitializedRef.current && configChanged) {
-            console.log('Admin config changed, triggering debounced update');
-            debouncedReinitialize();
+        if (isReady && config && isInitializedRef.current && configChanged && !isSavingRef.current) {
+            debouncedUpdate();
         }
 
         // Update the previous config ref
@@ -157,7 +148,14 @@ export function DiceConfigurationPage(): React.JSX.Element {
                 clearTimeout(debounceTimeoutRef.current);
             }
         };
-    }, [config.theme, config.themeColor, config.scale, isReady, debouncedReinitialize]);
+    }, [
+        config.theme, config.themeColor, config.scale,
+        config.gravity, config.mass, config.friction, config.restitution,
+        config.angularDamping, config.linearDamping, config.spinForce, config.throwForce,
+        config.startingHeight, config.settleTimeout, config.lightIntensity,
+        config.enableShadows, config.shadowTransparency,
+        isReady, debouncedUpdate
+    ]);
 
     const loadDefaultConfig = async () => {
         try {
@@ -166,7 +164,6 @@ export function DiceConfigurationPage(): React.JSX.Element {
             if (response) {
                 setConfig(response);
                 setSelectedConfigId(response.id);
-                // Don't automatically update DiceBox - let the user control when to apply changes
             } else {
                 // No config exists, start with a new one
                 setConfig({
@@ -176,6 +173,8 @@ export function DiceConfigurationPage(): React.JSX.Element {
                 });
                 setSelectedConfigId(null);
             }
+            // Reset the applied flag so the loaded config gets applied
+            configAppliedRef.current = false;
         } catch (error) {
             console.error('Failed to load dice configuration:', error);
         } finally {
@@ -188,6 +187,8 @@ export function DiceConfigurationPage(): React.JSX.Element {
             // selectedConfig is now a full DiceBoxAdminConfig object
             setConfig(selectedConfig);
             setSelectedConfigId(selectedConfig.id);
+            // Reset the applied flag so the new config gets applied
+            configAppliedRef.current = false;
         } catch (error) {
             console.error('Failed to load selected configuration:', error);
         }
@@ -226,11 +227,14 @@ export function DiceConfigurationPage(): React.JSX.Element {
             isDefault: false
         });
         setSelectedConfigId(null);
+        // Reset the applied flag so the new config gets applied
+        configAppliedRef.current = false;
     };
 
     const handleSave = async () => {
         try {
             setIsSaving(true);
+            isSavingRef.current = true;
             setSaveStatus('idle');
 
             if (config.id) {
@@ -243,6 +247,9 @@ export function DiceConfigurationPage(): React.JSX.Element {
 
             setSaveStatus('success');
             setTimeout(() => setSaveStatus('idle'), 3000);
+
+            // Clear admin test flag to restore user config and refresh cache
+            await clearAdminTestFlag();
 
             // Refresh the list
             setListKey(prev => prev + 1);
@@ -257,6 +264,10 @@ export function DiceConfigurationPage(): React.JSX.Element {
             setTimeout(() => setSaveStatus('idle'), 3000);
         } finally {
             setIsSaving(false);
+            // Delay clearing the saving flag to prevent immediate reinitialization
+            setTimeout(() => {
+                isSavingRef.current = false;
+            }, 1000);
         }
     };
 
@@ -277,6 +288,8 @@ export function DiceConfigurationPage(): React.JSX.Element {
     const handleConfigChange = (updates: Partial<DiceBoxAdminConfig>) => {
         setConfig({ ...config, ...updates });
     };
+
+
 
     // Check if the current theme ignores the theme color
     const themeIgnoresColor = React.useMemo(() => {

@@ -17,9 +17,7 @@ function LayoutComponent({ auth }: LayoutProps): React.JSX.Element {
     const [sidebarHidden, setSidebarHidden] = useState<boolean>(false);
 
     return (
-        <DiceBoxProvider
-            themeConfig={auth.diceThemeConfig}
-        >
+        <DiceBoxProvider userDiceConfig={auth.userDiceConfig}>
             <div className="h-screen flex flex-col">
                 <NavBar />
                 <div>

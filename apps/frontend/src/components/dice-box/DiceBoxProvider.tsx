@@ -1,26 +1,26 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
-import { getDiceBox, destroyDiceBox, type DiceBoxThemeConfig } from './DiceBox';
+import { DiceBoxManager, type DiceResult } from './DiceBoxManager';
+import type { DiceBoxAdminConfig, UserDiceConfig } from '@shared/schema';
 
 // Types
-export interface DiceResult {
-    notation: string;
-    results: number[];
-    total: number;
-    group?: string;
-}
-
 export interface DiceBoxContextType {
     rollDice: (notation: string, group?: string) => void;
     isReady: boolean;
     isRolling: boolean;
-    pendingRoll: string | null;
     lastResult: DiceResult | null;
     onRollComplete: (callback: (result: DiceResult) => void) => void;
     clearResults: () => void;
     reinitialize: () => Promise<void>;
-    reinitializeWithConfig: (config: DiceBoxThemeConfig) => Promise<void>;
-    getCurrentConfig: () => DiceBoxThemeConfig | undefined;
+    reinitializeWithUserConfig: (userConfig: UserDiceConfig) => Promise<void>;
+    reinitializeWithAdminConfig: (adminConfig: DiceBoxAdminConfig) => Promise<void>;
+    updateConfigWithUserConfig: (userConfig: UserDiceConfig) => Promise<void>;
+    updateConfigWithAdminConfig: (adminConfig: Partial<DiceBoxAdminConfig>) => void;
+    clearAdminTestFlag: () => Promise<void>;
+
+    getCurrentConfig: () => UserDiceConfig | null;
+    getCurrentIconColor: () => string;
+    setTestingMode: (isTesting: boolean) => void;
 }
 
 // Create context
@@ -29,376 +29,237 @@ const DiceBoxContext = createContext<DiceBoxContextType | null>(null);
 // Provider props
 interface DiceBoxProviderProps {
     children: React.ReactNode;
-    themeConfig?: DiceBoxThemeConfig;
+    userDiceConfig?: UserDiceConfig | null;
 }
 
-export function DiceBoxProvider({ children, themeConfig }: DiceBoxProviderProps): React.JSX.Element {
+export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderProps): React.JSX.Element {
+    const location = useLocation();
     const [isReady, setIsReady] = useState(false);
     const [isRolling, setIsRolling] = useState(false);
-    const [pendingRoll, setPendingRoll] = useState<string | null>(null);
     const [lastResult, setLastResult] = useState<DiceResult | null>(null);
-    const diceBoxRef = useRef<ReturnType<typeof getDiceBox> | null>(null);
-    const rollCompleteCallbacksRef = useRef<((result: DiceResult) => void)[]>([]);
+    const [isTestingMode, setIsTestingMode] = useState(false);
+    const managerRef = useRef<DiceBoxManager>(new DiceBoxManager());
     const mountedRef = useRef(true);
-    const currentPendingRollRef = useRef<string | null>(null);
-    const previousThemeConfigRef = useRef<DiceBoxThemeConfig | undefined>(themeConfig);
-    const hasInitializedRef = useRef(false);
-    const currentThemeConfigRef = useRef<DiceBoxThemeConfig | undefined>(themeConfig);
-    const location = useLocation();
+    const currentUserConfigRef = useRef<UserDiceConfig | null>(userDiceConfig || null);
+    const adminTestFlagRef = useRef(false);
+    const previousLocationRef = useRef(location.pathname);
 
-    // Initialize DiceBox
-    const initializeDiceBox = useCallback(async (config?: DiceBoxThemeConfig): Promise<void> => {
-        const currentConfig = config || currentThemeConfigRef.current || themeConfig;
+    // Initialize DiceBox with user config
+    const initializeDiceBox = useCallback(async (userConfig?: UserDiceConfig): Promise<void> => {
+        if (!mountedRef.current) return;
 
-        const waitForContainer = async (): Promise<void> => {
-            for (let i = 0; i < 20; i++) {
-                const el = document.querySelector('[data-dice-box]');
-                if (el) {
-                    // Additional check to ensure container is fully rendered
-                    const containerRect = el.getBoundingClientRect();
-
-                    if (containerRect.width === 0 || containerRect.height === 0) {
-                        await new Promise((resolve) => {
-                            setTimeout(resolve, 100);
-                        });
-                        continue;
-                    }
-
-                    // Get or create DiceBox instance (updateConfig will be called if needed)
-                    const diceBox = getDiceBox(currentConfig);
-
-                    // Only initialize if not already initialized
-                    if (!diceBoxRef.current) {
-                        // Check if canvas exists before init
-                        let canvas = document.getElementById('dice-canvas');
-
-                        // Try to initialize DiceBox
-                        try {
-                            await diceBox.init();
-                        } catch (error) {
-                            console.error('Error during diceBox.init():', error);
-                        }
-
-                        if (!mountedRef.current) return;
-
-                        diceBoxRef.current = diceBox;
-                        setIsReady(true);
-
-                        // Set up roll complete handler
-                        diceBox.onRollComplete = (results: any) => {
-                            console.log('Dice roll complete:', results);
-
-                            if (!mountedRef.current) return;
-
-                            try {
-                                let diceResult: DiceResult | null = null;
-
-                                // Use the ref to get the current pending roll
-                                const currentGroup = currentPendingRollRef.current;
-
-                                // Handle the actual DiceBox format: array of roll objects
-                                if (Array.isArray(results) && results.length > 0) {
-                                    const firstRoll = results[0];
-                                    const rolls = firstRoll.rolls || [];
-                                    const total = firstRoll.value || 0;
-
-                                    // Extract individual die values
-                                    const dieValues = rolls.map((roll: any) => roll.value);
-
-                                    // Create notation from roll data
-                                    const notation = `${firstRoll.qty}d${firstRoll.sides}`;
-
-                                    diceResult = {
-                                        notation,
-                                        results: dieValues,
-                                        total,
-                                        group: currentGroup || undefined
-                                    };
-                                }
-
-                                if (diceResult) {
-                                    console.log('Parsed dice result:', diceResult);
-                                    setLastResult(diceResult);
-                                    setIsRolling(false);
-                                    setPendingRoll(null);
-                                    currentPendingRollRef.current = null;
-
-                                    // Call all registered callbacks
-                                    rollCompleteCallbacksRef.current.forEach(callback => {
-                                        callback(diceResult!);
-                                    });
-                                } else {
-                                    console.warn('Could not parse dice results:', results);
-                                    setIsRolling(false);
-                                    setPendingRoll(null);
-                                    currentPendingRollRef.current = null;
-                                }
-                            } catch (error) {
-                                console.error('Error parsing dice results:', error);
-                                console.error('Results that caused error:', results);
-                                setIsRolling(false);
-                                setPendingRoll(null);
-                                currentPendingRollRef.current = null;
-                            }
-                        };
-
-                        // Set up click handler to hide dice
-                        const handleMouseDown = () => {
-                            const diceBoxCanvas = document.getElementById('dice-canvas');
-                            if (diceBoxCanvas && window.getComputedStyle(diceBoxCanvas).display !== "none") {
-                                diceBox.hide().clear();
-                            }
-                        };
-
-                        document.addEventListener('mousedown', handleMouseDown);
-                    }
-
-                    return;
-                }
-
-                await new Promise((resolve) => {
-                    setTimeout(resolve, 100);
-                });
+        try {
+            if (!managerRef.current) {
+                managerRef.current = new DiceBoxManager();
             }
 
-            console.error('Failed to find [data-dice-box] container after waiting');
-        };
+            if (userConfig) {
+                await managerRef.current.initializeWithUserConfig(userConfig);
+            } else {
+                // Initialize with default config if no user config provided
+                await managerRef.current.initialize();
+            }
 
-        await waitForContainer();
-    }, [themeConfig]); // Include themeConfig to re-initialize when it changes
+            if (mountedRef.current) {
+                setIsReady(true);
+            }
+        } catch (error) {
+            console.error('Failed to initialize DiceBox:', error);
+            if (mountedRef.current) {
+                setIsReady(false);
+            }
+        }
+    }, []);
 
-    // Initialize on mount and when theme config changes
+    // Initialize on mount
     useEffect(() => {
-        // Update the current theme config ref
-        currentThemeConfigRef.current = themeConfig;
-
-        // Check if theme config actually changed
-        const themeChanged = JSON.stringify(previousThemeConfigRef.current) !== JSON.stringify(themeConfig);
-
-        if (themeChanged) {
-            previousThemeConfigRef.current = themeConfig;
-        }
-
         mountedRef.current = true;
+        currentUserConfigRef.current = userDiceConfig || null;
 
-        // Only initialize if this is the first time or if config changed
-        if (!hasInitializedRef.current) {
-            hasInitializedRef.current = true;
-            // Wait for the container to have actual content (not just loading state)
-            const waitForReadyContainer = () => {
-                const container = document.querySelector('[data-dice-box]');
-                if (container && container.children.length > 0) {
-                    const containerText = container.textContent || '';
-
-                    // Check if we're past the loading state
-                    if (containerText.includes('Loading')) {
-                        setTimeout(waitForReadyContainer, 100);
-                        return;
-                    }
-
-                    // Check for actual page content (not just the ScrollArea wrapper)
-                    const hasActualContent = container.querySelector('h1, h2, .container, [role="main"], .bg-gray-50, .bg-gray-900');
-
-                    // Additional checks for content detection
-                    const hasDiceConfigContent = container.querySelector('.bg-gray-50, .bg-gray-900, [data-dice-box] > div');
-
-                    // Wait a bit longer to ensure the container is fully rendered
-                    if (hasActualContent || hasDiceConfigContent) {
-                        setTimeout(() => {
-                            if (mountedRef.current) {
-                                initializeDiceBox();
-                            }
-                        }, 200); // Wait 200ms for full render
-                    } else {
-                        setTimeout(waitForReadyContainer, 100);
-                    }
-                } else {
-                    setTimeout(waitForReadyContainer, 50);
-                }
-            };
-            waitForReadyContainer();
-        } else if (themeChanged) {
-            initializeDiceBox();
-        }
+        initializeDiceBox(userDiceConfig || undefined);
 
         return () => {
             mountedRef.current = false;
-            destroyDiceBox();
+            // Don't destroy the DiceBox - keep it alive across route changes
         };
-    }, [themeConfig, initializeDiceBox]);
+    }, []); // Remove userDiceConfig and initializeDiceBox dependencies
 
-    // Track previous pathname to detect actual route changes
-    const previousPathnameRef = useRef<string>(location.pathname);
-
-    // Re-initialize DiceBox when route changes (to handle cases where canvas attachment failed)
+    // Handle user config changes after initialization
     useEffect(() => {
-        const currentPathname = location.pathname;
-        const previousPathname = previousPathnameRef.current;
+        if (managerRef.current && isReady && userDiceConfig && !isTestingMode) {
+            const previousConfig = currentUserConfigRef.current;
+            currentUserConfigRef.current = userDiceConfig;
 
-        // Only proceed if the pathname actually changed
-        if (currentPathname !== previousPathname) {
-            // Update the previous pathname
-            previousPathnameRef.current = currentPathname;
+            // Only update if config actually changed
+            const previousString = JSON.stringify(previousConfig);
+            const currentString = JSON.stringify(userDiceConfig);
+            const hasChanged = previousString !== currentString;
 
-            // Clear any stuck rolling state when route changes
-            if (isRolling) {
-                setIsRolling(false);
-                setPendingRoll(null);
-                currentPendingRollRef.current = null;
-            }
-
-            // Only re-initialize if we already have a DiceBox instance but it's not ready
-            if (diceBoxRef.current && !isReady) {
-                // Wait a bit for the new page to render, then try to re-initialize
-                const timeoutId = setTimeout(() => {
-                    if (mountedRef.current) {
-                        initializeDiceBox();
-                    }
-                }, 100);
-
-                return () => clearTimeout(timeoutId);
+            if (hasChanged) {
+                managerRef.current.updateConfigWithUserConfig(userDiceConfig);
             }
         }
-    }, [location.pathname, isReady, isRolling, initializeDiceBox]);
+    }, [userDiceConfig, isReady, isTestingMode]);
+
+    // Clear admin test flag when navigating away from admin page
+    useEffect(() => {
+        const isAdminPage = location.pathname.includes('/admin/dice-configuration');
+        const wasAdminPage = previousLocationRef.current.includes('/admin/dice-configuration');
+
+        // If we were on admin page and now we're not, clear the admin test flag
+        if (wasAdminPage && !isAdminPage && adminTestFlagRef.current) {
+            clearAdminTestFlag();
+        }
+
+        previousLocationRef.current = location.pathname;
+    }, [location.pathname]);
+
 
     // Roll dice function
     const rollDice = useCallback((notation: string, group?: string) => {
-        console.log('Rolling dice:', { notation, group, isReady, hasDiceBox: !!diceBoxRef.current });
-
-        if (!diceBoxRef.current || !isReady) {
-            console.log('Cannot roll - DiceBox not ready or not available');
-            return;
-        }
-
-        // Additional check: verify DiceBox methods are available
-        if (!diceBoxRef.current.show || !diceBoxRef.current.roll) {
-            console.log('Cannot roll - DiceBox methods not available');
+        if (!managerRef.current || !isReady) {
+            console.log('Cannot roll - DiceBox not ready');
             return;
         }
 
         setIsRolling(true);
-        setPendingRoll(group || null);
-        currentPendingRollRef.current = group || null;
+        setLastResult(null);
 
         try {
-            // Check if canvas exists and show it
-            const canvas = document.getElementById('dice-canvas');
-            if (canvas) {
-                canvas.style.display = 'block';
-                canvas.style.visibility = 'visible';
-            }
+            managerRef.current.roll(notation);
 
-            console.log('Starting dice roll...');
-            const showResult = diceBoxRef.current.show();
-            showResult.roll(notation);
+            // Simple timeout to reset rolling state
+            setTimeout(() => {
+                if (mountedRef.current) {
+                    setIsRolling(false);
+                }
+            }, 2000);
         } catch (error) {
             console.error('Error during dice roll:', error);
-            setIsRolling(false);
-            setPendingRoll(null);
-            currentPendingRollRef.current = null;
+            if (mountedRef.current) {
+                setIsRolling(false);
+            }
         }
     }, [isReady]);
 
     // Register roll complete callback
     const onRollComplete = useCallback((callback: (result: DiceResult) => void) => {
-        rollCompleteCallbacksRef.current.push(callback);
+        if (!managerRef.current) {
+            console.warn('DiceBox manager not available');
+            return () => { };
+        }
 
-        // Return cleanup function
-        return () => {
-            const index = rollCompleteCallbacksRef.current.indexOf(callback);
-            if (index > -1) {
-                rollCompleteCallbacksRef.current.splice(index, 1);
+        return managerRef.current.onRollComplete((result) => {
+            if (mountedRef.current) {
+                setLastResult(result);
+                callback(result);
             }
-        };
+        });
     }, []);
 
     // Clear results
     const clearResults = useCallback(() => {
         setLastResult(null);
-        setPendingRoll(null);
     }, []);
 
     // Force re-initialization
     const reinitialize = useCallback(async () => {
         setIsReady(false);
-        destroyDiceBox();
-        await initializeDiceBox();
+        if (managerRef.current) {
+            managerRef.current.destroy();
+            managerRef.current = undefined;
+        }
+        await initializeDiceBox(currentUserConfigRef.current || undefined);
     }, [initializeDiceBox]);
 
-    // Re-initialize with custom config
-    const reinitializeWithConfig = useCallback(async (config: DiceBoxThemeConfig) => {
-        // Don't reinitialize if DiceBox is currently rolling
+    // Re-initialize with user config
+    const reinitializeWithUserConfig = useCallback(async (userConfig: UserDiceConfig) => {
         if (isRolling) {
-            console.log('Skipping reinitialization - DiceBox is currently rolling');
             return;
         }
 
-        // Update the current theme config ref to track the latest configuration
-        currentThemeConfigRef.current = config;
+        currentUserConfigRef.current = userConfig;
+        await reinitialize();
+    }, [isRolling, reinitialize]);
 
-        // Check if config actually changed
-        const configChanged = JSON.stringify(previousThemeConfigRef.current) !== JSON.stringify(config);
-
-        if (configChanged && diceBoxRef.current && isReady) {
-            const previous = previousThemeConfigRef.current;
-
-            // Properties that can be updated via updateConfig() without full reinitialization
-            const updateableProps = [
-                'theme', 'themeColor', 'scale', 'lightIntensity', 'enableShadows', 'shadowTransparency',
-                'gravity', 'mass', 'friction', 'restitution', 'angularDamping', 'linearDamping',
-                'spinForce', 'throwForce', 'startingHeight', 'settleTimeout'
-            ];
-
-            const hasUpdateableChanges = updateableProps.some(prop =>
-                previous?.[prop as keyof DiceBoxThemeConfig] !== config[prop as keyof DiceBoxThemeConfig]
-            );
-
-            if (hasUpdateableChanges) {
-                // For updateable changes, use updateConfig
-                const updates: Partial<DiceBoxThemeConfig> = {};
-
-                updateableProps.forEach(prop => {
-                    const key = prop as keyof DiceBoxThemeConfig;
-                    if (previous?.[key] !== config[key]) {
-                        (updates as any)[key] = config[key];
-                    }
-                });
-
-                try {
-                    console.log('Updating DiceBox config:', updates);
-                    diceBoxRef.current.updateConfig(updates);
-                    previousThemeConfigRef.current = config;
-                } catch (error) {
-                    console.error('Failed to update DiceBox config:', error);
-                    // Fallback to full reinitialization
-                    await reinitialize();
-                }
-            } else {
-                // For non-updateable changes, reinitialize the entire DiceBox
-                console.log('Reinitializing DiceBox for non-updateable changes');
-                await reinitialize();
-            }
-        } else if (!diceBoxRef.current) {
-            await initializeDiceBox(config);
+    // Re-initialize with admin config (for admin testing)
+    const reinitializeWithAdminConfig = useCallback(async (adminConfig: DiceBoxAdminConfig) => {
+        if (isRolling) {
+            return;
         }
-    }, [initializeDiceBox, isReady, isRolling, reinitialize]);
+
+        if (managerRef.current) {
+            await managerRef.current.initializeWithAdminConfig(adminConfig);
+        }
+    }, [isRolling]);
+
+    // Update config with user config
+    const updateConfigWithUserConfig = useCallback(async (userConfig: UserDiceConfig) => {
+        if (managerRef.current && isReady) {
+            await managerRef.current.updateConfigWithUserConfig(userConfig);
+        }
+    }, [isReady]);
+
+    // Update config with admin config (for admin testing)
+    const updateConfigWithAdminConfig = useCallback((adminConfig: Partial<DiceBoxAdminConfig>) => {
+        if (managerRef.current && isReady) {
+            // Set the admin test flag to indicate admin testing has occurred
+            adminTestFlagRef.current = true;
+            managerRef.current.updateConfigWithAdminConfig(adminConfig);
+        }
+    }, [isReady]);
 
     // Get current config
     const getCurrentConfig = useCallback(() => {
-        return currentThemeConfigRef.current;
+        return currentUserConfigRef.current;
     }, []);
+
+    // Get current icon color
+    const getCurrentIconColor = useCallback(() => {
+        if (managerRef.current) {
+            return managerRef.current.getCurrentIconColor();
+        }
+        return '#3937b8'; // Default fallback
+    }, []);
+
+    // Clear admin test flag and restore user config if needed
+    const clearAdminTestFlag = useCallback(async () => {
+        if (adminTestFlagRef.current) {
+            // Refresh the admin config cache from backend
+            if (managerRef.current) {
+                try {
+                    await managerRef.current.refreshCache();
+                } catch (error) {
+                    console.error('[DiceBoxProvider] Failed to refresh admin config cache:', error);
+                }
+            }
+
+            // Restore user config if available
+            if (currentUserConfigRef.current) {
+                await updateConfigWithUserConfig(currentUserConfigRef.current);
+            }
+
+            // Clear the admin test flag
+            adminTestFlagRef.current = false;
+        }
+    }, [updateConfigWithUserConfig]);
 
     const contextValue: DiceBoxContextType = {
         rollDice,
         isReady,
         isRolling,
-        pendingRoll,
         lastResult,
         onRollComplete,
         clearResults,
         reinitialize,
-        reinitializeWithConfig,
-        getCurrentConfig
+        reinitializeWithUserConfig,
+        reinitializeWithAdminConfig,
+        updateConfigWithUserConfig,
+        updateConfigWithAdminConfig,
+        clearAdminTestFlag,
+        getCurrentConfig,
+        getCurrentIconColor,
+        setTestingMode: setIsTestingMode
     };
 
     return (

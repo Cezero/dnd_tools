@@ -83,6 +83,10 @@ export const userProfileService: UserProfileService = {
         // Get updated user with dice config
         const userWithDiceConfig = await this.getUserProfile(userId);
 
+        if (!userWithDiceConfig) {
+            throw new Error('Failed to retrieve updated user profile');
+        }
+
         // Create JWT token
         const userForJwt = {
             id: updatedUser.id,

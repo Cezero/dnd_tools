@@ -3,7 +3,7 @@ import React, { createContext, useContext, useEffect, useState, useRef, useCallb
 import { AuthService } from '@/services/AuthService';
 import { UserProfileService } from '@/services/UserProfileService';
 import { DiceBoxService } from '@/services/DiceBoxService';
-import { getSystemNameById } from '@shared/static-data';
+import type { UserDiceConfig } from '@shared/schema';
 import {
     LoginUserSchema,
     JwtPayloadSchema,
@@ -27,11 +27,6 @@ const defaultAuthContext: AuthContextType = {
     userDiceConfig: null,
     isLoadingDiceConfig: true,
     refreshDiceConfig: async () => { },
-    diceThemeConfig: {
-        theme: 'rock',
-        themeColor: '#3937b8',
-        scale: 3
-    },
 };
 
 const authContext = createContext<AuthContextType>(defaultAuthContext);
@@ -44,12 +39,12 @@ export function UseAuth(): AuthContextType {
 export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [userDiceConfig, setUserDiceConfig] = useState<DiceBoxAdminConfig | null>(null);
+    const [userDiceConfig, setUserDiceConfig] = useState<UserDiceConfig | null>(null);
     const [isLoadingDiceConfig, setIsLoadingDiceConfig] = useState<boolean>(true);
     const refreshTokenTimeoutRef = useRef<number | null>(null);
     const refreshTokenRef = useRef<(() => Promise<void>) | undefined>(undefined);
 
-    // Load user's merged dice configuration
+    // Load user's dice configuration
     const loadUserDiceConfig = useCallback(async (): Promise<void> => {
         if (!user) {
             setUserDiceConfig(null);
@@ -59,8 +54,8 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
 
         try {
             setIsLoadingDiceConfig(true);
-            const config = await DiceBoxService.getUserDiceConfig();
-            setUserDiceConfig(config);
+            const userConfig = await DiceBoxService.getUserDiceConfig();
+            setUserDiceConfig(userConfig);
         } catch (error) {
             console.error('Failed to load user dice configuration:', error);
             setUserDiceConfig(null);
@@ -73,8 +68,6 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
     const refreshDiceConfig = useCallback(async (): Promise<void> => {
         await loadUserDiceConfig();
     }, [loadUserDiceConfig]);
-
-
 
     // Load dice config when user changes
     useEffect(() => {
@@ -250,38 +243,6 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         }
     };
 
-    const diceThemeConfig = useMemo(() => {
-        if (isLoadingDiceConfig) {
-            // Return default config while loading
-            return {
-                theme: 'rock',
-                themeColor: '#3937b8',
-                scale: 3
-            };
-        }
-
-        if (userDiceConfig) {
-            // Use user's merged configuration
-            // Convert numeric theme ID to system name for DiceBox
-            const themeSystemName = typeof userDiceConfig.theme === 'number'
-                ? getSystemNameById(userDiceConfig.theme)
-                : userDiceConfig.theme;
-
-            return {
-                theme: themeSystemName,
-                themeColor: userDiceConfig.themeColor,
-                scale: userDiceConfig.scale
-            };
-        }
-
-        // Fall back to default config
-        return {
-            theme: 'rock',
-            themeColor: '#3937b8',
-            scale: 3
-        };
-    }, [userDiceConfig, isLoadingDiceConfig]);
-
     const contextValue: AuthContextType = {
         user,
         Login,
@@ -292,7 +253,6 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         userDiceConfig,
         isLoadingDiceConfig,
         refreshDiceConfig,
-        diceThemeConfig,
     };
 
     return (

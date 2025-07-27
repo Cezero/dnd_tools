@@ -28,8 +28,8 @@ export class DiceBoxController {
     static async updateUserDiceConfig(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const userId = (req.user as any).id;
-            const userConfig = req.body;
-            await DiceBoxService.updateUserDiceConfig(userId, userConfig);
+            const { baseConfigId, overrides } = req.body;
+            await DiceBoxService.updateUserDiceConfig(userId, baseConfigId, overrides || {});
             res.json({ message: 'User dice configuration updated successfully' });
         } catch (error) {
             next(error);
@@ -46,11 +46,22 @@ export class DiceBoxController {
         }
     }
 
-    // Create or update the DiceBox admin configuration
-    static async createOrUpdateAdminConfig(req: Request, res: Response, next: NextFunction): Promise<void> {
+    // Create a new DiceBox admin configuration
+    static async createAdminConfig(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const config = await DiceBoxService.createOrUpdateAdminConfig(req.body);
-            res.json(config);
+            const config = await DiceBoxService.createAdminConfig(req.body);
+            res.json({ message: 'Dice configuration created successfully' });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    // Update an existing DiceBox admin configuration
+    static async updateAdminConfig(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const configId = parseInt(req.params.id);
+            const config = await DiceBoxService.updateAdminConfig(configId, req.body);
+            res.json({ message: 'Dice configuration updated successfully' });
         } catch (error) {
             next(error);
         }

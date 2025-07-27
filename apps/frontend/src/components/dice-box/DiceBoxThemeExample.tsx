@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useDiceBox } from './DiceBoxProvider';
+import { useDiceBox } from './index';
 import { DICE_THEME_SELECT_LIST } from '@shared/static-data';
 import type { DiceBoxThemeConfig } from './DiceBox';
 

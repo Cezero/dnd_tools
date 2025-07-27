@@ -3,7 +3,8 @@ import type {
     DiceBoxAdminConfig,
     CreateDiceBoxAdminConfigRequest,
     UpdateDiceBoxAdminConfigRequest,
-    GetAllDiceConfigsResponse
+    GetAllDiceConfigsResponse,
+    UserDiceConfig
 } from '@shared/schema';
 
 import {
@@ -12,7 +13,8 @@ import {
     UpdateDiceBoxAdminConfigRequestSchema,
     GetAllDiceConfigsResponseSchema,
     UpdateResponseSchema,
-    DiceBoxConfigIdParamSchema
+    DiceBoxConfigIdParamSchema,
+    UserDiceConfigSchema
 } from '@shared/schema';
 
 import { typedApi } from './Api';
@@ -28,13 +30,13 @@ const getAvailableConfigsApi = typedApi({
 const getUserDiceConfigApi = typedApi({
     path: '/dicebox/config/user',
     method: 'GET',
-    responseSchema: DiceBoxAdminConfigSchema
+    responseSchema: UserDiceConfigSchema
 });
 
-const updateUserDiceConfigApi = typedApi<typeof DiceBoxAdminConfigSchema, typeof UpdateResponseSchema>({
+const updateUserDiceConfigApi = typedApi<typeof UserDiceConfigSchema, typeof UpdateResponseSchema>({
     path: '/dicebox/config/user',
     method: 'PUT',
-    requestSchema: DiceBoxAdminConfigSchema,
+    requestSchema: UserDiceConfigSchema,
     responseSchema: UpdateResponseSchema
 });
 
@@ -51,17 +53,18 @@ const getAdminConfigApi = typedApi({
     responseSchema: DiceBoxAdminConfigSchema.nullable()
 });
 
-const createOrUpdateAdminConfigApi = typedApi<typeof CreateDiceBoxAdminConfigRequestSchema, typeof UpdateResponseSchema>({
+const createAdminConfigApi = typedApi<typeof CreateDiceBoxAdminConfigRequestSchema, typeof UpdateResponseSchema>({
     path: '/dicebox/admin/config',
     method: 'POST',
     requestSchema: CreateDiceBoxAdminConfigRequestSchema,
     responseSchema: UpdateResponseSchema
 });
 
-const updateAdminConfigApi = typedApi<typeof UpdateDiceBoxAdminConfigRequestSchema, typeof UpdateResponseSchema>({
-    path: '/dicebox/admin/config',
+const updateAdminConfigApi = typedApi<typeof UpdateDiceBoxAdminConfigRequestSchema, typeof UpdateResponseSchema, typeof DiceBoxConfigIdParamSchema>({
+    path: '/dicebox/admin/config/:id',
     method: 'PUT',
     requestSchema: UpdateDiceBoxAdminConfigRequestSchema,
+    paramsSchema: DiceBoxConfigIdParamSchema,
     responseSchema: UpdateResponseSchema
 });
 
@@ -79,12 +82,12 @@ export class DiceBoxService {
     }
 
     // Get user's dice configuration
-    static async getUserDiceConfig(): Promise<DiceBoxAdminConfig> {
+    static async getUserDiceConfig(): Promise<UserDiceConfig> {
         return getUserDiceConfigApi(undefined);
     }
 
     // Update user's dice configuration
-    static async updateUserDiceConfig(userConfig: DiceBoxAdminConfig): Promise<{ message: string }> {
+    static async updateUserDiceConfig(userConfig: UserDiceConfig): Promise<{ message: string }> {
         return updateUserDiceConfigApi(userConfig);
     }
 
@@ -114,12 +117,22 @@ export class DiceBoxService {
 
     // Create a new admin configuration (admin only)
     static async createAdminConfig(data: CreateDiceBoxAdminConfigRequest): Promise<{ message: string }> {
-        return createOrUpdateAdminConfigApi(data);
+        return createAdminConfigApi(data);
     }
 
     // Update an existing admin configuration (admin only)
     static async updateAdminConfig(data: UpdateDiceBoxAdminConfigRequest): Promise<{ message: string }> {
-        return updateAdminConfigApi(data);
+        // Extract the config ID from the config object for the URL parameter
+        const configId = (data.config as any).id;
+        if (!configId) {
+            throw new Error('Config ID is required for update operations');
+        }
+
+        // Remove the ID from the config data since it's now in the URL
+        const { id, ...configData } = data.config as any;
+        const updateData = { config: configData };
+
+        return updateAdminConfigApi(updateData, { id: configId });
     }
 
     // Delete a DiceBox admin configuration (admin only)

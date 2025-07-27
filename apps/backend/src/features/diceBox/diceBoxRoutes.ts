@@ -19,8 +19,8 @@ put('/config/user', requireAuth, {}, DiceBoxController.updateUserDiceConfig);
 
 // Admin routes (require authentication and admin privileges)
 get('/admin/config', requireAuth, requireAdmin, {}, DiceBoxController.getAdminConfig);
-post('/admin/config', requireAuth, requireAdmin, { body: CreateDiceBoxAdminConfigRequestSchema }, DiceBoxController.createOrUpdateAdminConfig);
-put('/admin/config', requireAuth, requireAdmin, { body: UpdateDiceBoxAdminConfigRequestSchema }, DiceBoxController.createOrUpdateAdminConfig);
+post('/admin/config', requireAuth, requireAdmin, { body: CreateDiceBoxAdminConfigRequestSchema }, DiceBoxController.createAdminConfig);
+put('/admin/config/:id', requireAuth, requireAdmin, { body: UpdateDiceBoxAdminConfigRequestSchema, params: DiceBoxConfigIdParamSchema }, DiceBoxController.updateAdminConfig);
 deleteRoute('/admin/config/:id', requireAuth, requireAdmin, { params: DiceBoxConfigIdParamSchema }, DiceBoxController.deleteAdminConfig);
 
 export { DiceBoxRouter }; 
