@@ -1,12 +1,10 @@
 export { DiceBoxProvider, useDiceBox } from './DiceBoxProvider';
-export { DiceButton } from './DiceButton';
 export { DiceBoxManager } from './DiceBoxManager';
-export { DiceResultParser } from './DiceResultParser';
-export { DiceResultToast, createDiceResultToastData } from './DiceResultToast';
-export { DiceBoxToastTest } from './DiceBoxToastTest';
+export { DiceResultRenderer } from './DiceResultRenderer';
+export { DiceButton } from './DiceButton';
+export { DiceBoxExample } from './DiceBoxExample';
 export type { DiceResult } from './DiceBoxManager';
 export type { DiceBoxContextType } from './DiceBoxProvider';
-export type { ParsedDiceResult } from './DiceResultParser';
 export type { DiceColor } from './types';
 
 export {

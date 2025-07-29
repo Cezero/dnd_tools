@@ -1,19 +1,19 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { DiceBoxManager, type DiceResult } from './DiceBoxManager';
-import { DiceResultParser } from './DiceResultParser';
-import { createDiceResultToastData } from './DiceResultToast';
+import { DiceResultRenderer } from './DiceResultRenderer';
 import { useToast } from '@/hooks/useToast';
 import { useLogPanel } from '@/components/log-panel';
 import type { DiceBoxAdminConfig, UserDiceConfig } from '@shared/schema';
 
 // Types
 export interface DiceBoxContextType {
-    rollDice: (notation: string, group?: string) => void;
+    rollDice: (notation: string, group?: string, critHighlight?: boolean) => void;
+    rollDiceGroups: (notations: string[], groups?: string[], critHighlight?: boolean) => void;
     isReady: boolean;
     isRolling: boolean;
-    lastResult: DiceResult | null;
-    onRollComplete: (callback: (result: DiceResult) => void) => void;
+    lastResult: any | null;
+    onRollComplete: (callback: (result: any | any[]) => void) => void;
     clearResults: () => void;
     reinitialize: () => Promise<void>;
     reinitializeWithUserConfig: (userConfig: UserDiceConfig) => Promise<void>;
@@ -131,13 +131,18 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
     const location = useLocation();
     const [isReady, setIsReady] = useState(false);
     const [isRolling, setIsRolling] = useState(false);
-    const [lastResult, setLastResult] = useState<DiceResult | null>(null);
+    const [lastResult, setLastResult] = useState<any | null>(null);
     const [isTestingMode, setIsTestingMode] = useState(false);
     const mountedRef = useRef(true);
     const currentUserConfigRef = useRef<UserDiceConfig | null>(userDiceConfig || null);
     const adminTestFlagRef = useRef(false);
     const previousLocationRef = useRef(location.pathname);
     const toastManagerRef = useRef<any>(null);
+    const groupNameMappingRef = useRef<Map<string, string>>(new Map());
+    const pendingResultsRef = useRef<any[]>([]);
+    const batchTimeoutRef = useRef<number | null>(null);
+    const currentCritHighlightRef = useRef<boolean>(false);
+    const batchCallbacksRef = useRef<Set<(results: any[]) => void>>(new Set());
 
     // Get the singleton instance
     const diceBoxSingleton = DiceBoxSingleton.getInstance();
@@ -169,32 +174,81 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
                     if (manager && !diceBoxSingleton.isToastCallbackRegistered()) {
                         diceBoxSingleton.setToastCallbackRegistered(true);
 
-                        manager.onRollComplete((result) => {
+                        manager.onRollComplete((parsedResult) => {
                             if (mountedRef.current) {
-                                setLastResult(result);
+                                console.log('parsedResult', parsedResult);
 
-                                // Show toast notification using the app-wide toast system
-                                if (toastManagerRef.current) {
-                                    try {
-                                        const parsedResult = DiceResultParser.parseResult(result);
-                                        const toastData = createDiceResultToastData(parsedResult);
-                                        toastManagerRef.current.add(toastData);
-                                    } catch (error) {
-                                        console.error('Failed to show dice result toast:', error);
+                                // Reset rolling state
+                                setIsRolling(false);
+
+                                if (parsedResult) {
+                                    // Map the group back to original name if available
+                                    const originalGroup = groupNameMappingRef.current.get(parsedResult.group || '') || parsedResult.group;
+                                    const resultWithOriginalGroup = { ...parsedResult, group: originalGroup };
+
+                                    setLastResult(resultWithOriginalGroup);
+
+                                    // Add to pending results for batching
+                                    pendingResultsRef.current.push(resultWithOriginalGroup);
+
+                                    // Clear any existing timeout
+                                    if (batchTimeoutRef.current) {
+                                        clearTimeout(batchTimeoutRef.current);
                                     }
-                                }
 
-                                // Add log entry using the same parsed result format as toast
-                                try {
-                                    const parsedResult = DiceResultParser.parseResult(result);
-                                    logPanel.addLogEntry({
-                                        message: parsedResult.title,
-                                        type: parsedResult.hasSpecialResults ? 'success' : 'info',
-                                        source: 'dice-box',
-                                        data: parsedResult
-                                    });
-                                } catch (error) {
-                                    console.error('Failed to add dice result to log:', error);
+                                    // Set a timeout to process batched results
+                                    batchTimeoutRef.current = window.setTimeout(() => {
+                                        if (mountedRef.current && pendingResultsRef.current.length > 0) {
+                                            const results = [...pendingResultsRef.current];
+                                            pendingResultsRef.current = [];
+
+                                            // Call batch callbacks
+                                            batchCallbacksRef.current.forEach(callback => {
+                                                try {
+                                                    // If only one result, pass it as a single result, otherwise pass the array
+                                                    const resultToPass = results.length === 1 ? results[0] : results;
+                                                    callback(resultToPass);
+                                                } catch (error) {
+                                                    console.error('Error in batch callback:', error);
+                                                }
+                                            });
+
+                                            // Format the results using DiceResultRenderer
+                                            const formattedContent = (
+                                                <DiceResultRenderer
+                                                    results={results}
+                                                    critHighlight={currentCritHighlightRef.current}
+                                                />
+                                            );
+
+                                            // Show toast notification with pre-formatted content
+                                            if (toastManagerRef.current) {
+                                                try {
+                                                    const toastData = {
+                                                        title: results.length === 1 ? generateTitle(results[0].originalNotation || 'Unknown', results[0].group) : `Multiple Rolls: ${results.length} results`,
+                                                        description: formattedContent,
+                                                        type: 'default',
+                                                    };
+                                                    toastManagerRef.current.add(toastData);
+                                                } catch (error) {
+                                                    console.error('Failed to show dice result toast:', error);
+                                                }
+                                            }
+
+                                            // Add log entry with pre-formatted content
+                                            try {
+                                                const logData = {
+                                                    message: results.length === 1 ? generateTitle(results[0].originalNotation || 'Unknown', results[0].group) : `Multiple Rolls: ${results.length} results`,
+                                                    type: 'info' as 'info',
+                                                    source: 'dice-box',
+                                                    data: { formattedContent, results }
+                                                };
+                                                logPanel.addLogEntry(logData);
+                                            } catch (error) {
+                                                console.error('Failed to add dice result to log:', error);
+                                            }
+                                        }
+                                    }, 100); // Small delay to batch results
                                 }
                             }
                         });
@@ -210,6 +264,10 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
 
         return () => {
             mountedRef.current = false;
+            // Clear any pending batch timeout
+            if (batchTimeoutRef.current) {
+                clearTimeout(batchTimeoutRef.current);
+            }
             // Don't destroy the DiceBox - keep it alive across route changes
         };
     }, []); // Empty dependency array - only run once
@@ -246,7 +304,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
     }, [location.pathname]);
 
     // Roll dice function
-    const rollDice = useCallback((notation: string, group?: string) => {
+    const rollDice = useCallback((notation: string, group?: string, critHighlight?: boolean) => {
         const manager = diceBoxSingleton.getManager();
         if (!manager || !isReady) {
             console.log('Cannot roll - DiceBox not ready');
@@ -255,16 +313,48 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
 
         setIsRolling(true);
         setLastResult(null);
+        currentCritHighlightRef.current = critHighlight || false;
 
         try {
-            manager.roll(notation);
+            if (group) {
+                // Store the original group name for later mapping
+                groupNameMappingRef.current.set(group, group);
+                // Use rollGroups when a group is provided
+                manager.rollGroups([notation], [group], critHighlight);
+            } else {
+                // Use roll for single notation without group
+                manager.roll(notation, critHighlight);
+            }
+        } catch (error) {
+            console.error('Error during dice roll:', error);
+            if (mountedRef.current) {
+                setIsRolling(false);
+            }
+        }
+    }, [isReady]);
 
-            // Simple timeout to reset rolling state
-            setTimeout(() => {
-                if (mountedRef.current) {
-                    setIsRolling(false);
-                }
-            }, 2000);
+    // Roll dice groups function
+    const rollDiceGroups = useCallback((notations: string[], groups?: string[], critHighlight?: boolean) => {
+        const manager = diceBoxSingleton.getManager();
+        if (!manager || !isReady) {
+            console.log('Cannot roll - DiceBox not ready');
+            return;
+        }
+
+        setIsRolling(true);
+        setLastResult(null);
+        currentCritHighlightRef.current = critHighlight || false;
+
+        try {
+            // Store the original group names for later mapping
+            if (groups) {
+                groups.forEach((group, index) => {
+                    groupNameMappingRef.current.set(group, group);
+                });
+            }
+
+            // Use rollGroups
+            manager.rollGroups(notations, groups, critHighlight);
         } catch (error) {
             console.error('Error during dice roll:', error);
             if (mountedRef.current) {
@@ -274,20 +364,20 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
     }, [isReady]);
 
     // Register roll complete callback
-    const onRollComplete = useCallback((callback: (result: DiceResult) => void) => {
+    const onRollComplete = useCallback((callback: (result: DiceResult | DiceResult[]) => void) => {
         const manager = diceBoxSingleton.getManager();
         if (!manager) {
             console.warn('DiceBox manager not available');
             return () => { };
         }
 
-        return manager.onRollComplete((result) => {
-            if (mountedRef.current) {
-                setLastResult(result);
-                callback(result);
-            }
-        });
-    }, []); // Remove toastManager dependency to prevent re-renders
+        // Add callback to batch callbacks set
+        batchCallbacksRef.current.add(callback);
+
+        return () => {
+            batchCallbacksRef.current.delete(callback);
+        };
+    }, []);
 
     // Clear results
     const clearResults = useCallback(() => {
@@ -403,6 +493,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
 
     const contextValue: DiceBoxContextType = {
         rollDice,
+        rollDiceGroups,
         isReady,
         isRolling,
         lastResult,
@@ -424,6 +515,13 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
             {children}
         </DiceBoxContext.Provider>
     );
+}
+
+function generateTitle(notation: string, group?: string): string {
+    if (group) {
+        return `${group} Roll: ${notation}`;
+    }
+    return `Dice Roll: ${notation}`;
 }
 
 // Hook to use DiceBox context

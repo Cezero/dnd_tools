@@ -1,7 +1,7 @@
 // Components
 export { CharacterList } from './CharacterList';
 export { CharactersPage } from './CharacterPage';
-export { CharacterCreate } from './CharacterCreate';
+export { CharacterEdit } from './CharacterEdit';
 
 // Services
 export { CharacterService } from './CharacterService';

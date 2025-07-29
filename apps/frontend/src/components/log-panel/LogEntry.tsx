@@ -29,40 +29,9 @@ export function LogEntryComponent({ entry }: LogEntryProps): React.JSX.Element {
     };
 
     const renderMessage = () => {
-        // If this is a dice result with structured data, render it specially
-        if (entry.source === 'dice-box' && entry.data?.individualRolls) {
-            return (
-                <div className="flex items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-300">
-                        {entry.data.title}:{' '}
-                        <span className="font-mono">
-                            {entry.data.individualRolls.map((roll: string, index: number) => {
-                                // Extract the class and value from the roll string
-                                const parts = roll.split(' ');
-                                const className = parts[0];
-                                const value = parts[1] || roll;
-
-                                let rollClasses = "inline-block px-2 py-1 mx-1 rounded text-xs font-semibold min-w-[20px] text-center bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600";
-
-                                if (className === 'crit-success') {
-                                    rollClasses = "inline-block px-2 py-1 mx-1 rounded text-xs font-semibold min-w-[20px] text-center bg-gradient-to-br from-green-500 to-green-600 text-white shadow-sm";
-                                } else if (className === 'crit-failure') {
-                                    rollClasses = "inline-block px-2 py-1 mx-1 rounded text-xs font-semibold min-w-[20px] text-center bg-gradient-to-br from-red-500 to-red-600 text-white shadow-sm";
-                                }
-
-                                return (
-                                    <span key={index} className={rollClasses}>
-                                        {value}
-                                    </span>
-                                );
-                            })}
-                            <span className="ml-2 font-bold text-base text-gray-900 dark:text-white">
-                                = {entry.data.total}
-                            </span>
-                        </span>
-                    </span>
-                </div>
-            );
+        // If pre-formatted content is provided, use it
+        if (entry.data?.formattedContent) {
+            return entry.data.formattedContent;
         }
 
         // Default message rendering

@@ -1,12 +1,10 @@
-import type { ParsedDiceResult } from '../dice-box/DiceResultParser';
-
 export interface LogEntry {
     id: string;
     timestamp: Date;
     message: string;
     type?: 'info' | 'success' | 'warning' | 'error';
     source?: string; // e.g., 'dice-box', 'system', etc.
-    data?: ParsedDiceResult | any; // Additional structured data
+    data?: any; // Additional structured data
 }
 
 export interface LogPanelContextType {

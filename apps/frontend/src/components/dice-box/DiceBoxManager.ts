@@ -1,4 +1,5 @@
 import DiceBox from '@3d-dice/dice-box';
+import DiceParser from '@3d-dice/dice-parser-interface';
 import type { DiceBoxAdminConfig, UserDiceConfig } from '@shared/schema';
 import { getSystemNameById } from '@shared/static-data';
 import { DiceBoxService } from '@/services/DiceBoxService';
@@ -14,13 +15,20 @@ export interface DiceResult {
 export class DiceBoxManager {
     private instance: InstanceType<typeof DiceBox> | null = null;
     private isInitialized = false;
-    private onRollCompleteCallbacks: ((result: DiceResult) => void)[] = [];
+    private onRollCompleteCallbacks: ((result: any) => void)[] = [];
+    private diceParser: DiceParser;
+    private currentCritHighlight = false;
+    private isRolling = false; // Add rolling state tracking
 
-    // Admin config caching
+    // Admin config cache for performance
     private adminConfigsCache: Map<number, DiceBoxAdminConfig> = new Map();
     private cacheInitialized = false;
     private currentIconColor: string | null = null;
     private currentMergedConfig: DiceBoxAdminConfig | null = null;
+
+    constructor() {
+        this.diceParser = new DiceParser();
+    }
 
     // Initialize with UserDiceConfig (for normal user usage)
     async initializeWithUserConfig(userConfig: UserDiceConfig): Promise<void> {
@@ -75,6 +83,11 @@ export class DiceBoxManager {
 
         // Set up click handler to hide dice
         const handleMouseDown = () => {
+            // Don't hide dice if they are currently rolling
+            if (this.isRolling) {
+                return;
+            }
+
             const diceBoxCanvas = document.getElementById('dice-canvas');
             if (diceBoxCanvas && window.getComputedStyle(diceBoxCanvas).display !== "none") {
                 this.instance?.hide().clear();
@@ -175,43 +188,64 @@ export class DiceBoxManager {
 
     private handleRollComplete(results: any): void {
         try {
-            let diceResult: DiceResult | null = null;
+            console.log('results', results);
 
-            // Handle the actual DiceBox format: array of roll objects
-            if (Array.isArray(results) && results.length > 0) {
-                const firstRoll = results[0];
-                const rolls = firstRoll.rolls || [];
-                const total = firstRoll.value || 0;
+            // Handle each group result individually
+            if (Array.isArray(results)) {
+                results.forEach((groupResult) => {
+                    // Parse each individual group result using dice-parser-interface
+                    const parsedResult = this.diceParser.parseFinalResults(groupResult);
+                    console.log('parsedResult', parsedResult);
 
-                // Extract individual die values
-                const dieValues = rolls.map((roll: any) => roll.value);
+                    // Preserve the original notation and group from the group result
+                    if (parsedResult) {
+                        parsedResult.originalNotation = groupResult.originalNotation;
+                        parsedResult.group = groupResult.group;
+                        parsedResult.critHighlight = this.currentCritHighlight;
+                    }
 
-                // Create notation from roll data
-                const notation = `${firstRoll.qty}d${firstRoll.sides}`;
+                    // Pass the parsed result to callbacks
+                    this.onRollCompleteCallbacks.forEach(callback => {
+                        callback(parsedResult);
+                    });
+                });
+            } else {
+                // Handle single result
+                const parsedResult = this.diceParser.parseFinalResults(results);
+                console.log('parsedResult', parsedResult);
 
-                diceResult = {
-                    notation,
-                    results: dieValues,
-                    total
-                };
-            }
+                // Preserve the original notation and group from the result
+                if (parsedResult) {
+                    parsedResult.originalNotation = results.originalNotation;
+                    parsedResult.group = results.group;
+                    parsedResult.critHighlight = this.currentCritHighlight;
+                }
 
-            if (diceResult) {
-                // Call all registered callbacks
+                // Pass the parsed result to callbacks
                 this.onRollCompleteCallbacks.forEach(callback => {
-                    callback(diceResult!);
+                    callback(parsedResult);
                 });
             }
         } catch (error) {
-            console.error('Error parsing dice results:', error);
+            console.error('Error handling roll complete:', error);
+        } finally {
+            this.isRolling = false; // Reset rolling state after completion
         }
     }
 
-    roll(notation: string): void {
+    roll(notation: string, critHighlight?: boolean): void {
+        this.currentCritHighlight = critHighlight || false;
+        this.rollGroups([notation]);
+    }
+
+    rollGroups(notations: string[], groups?: string[], critHighlight?: boolean): void {
         if (!this.instance || !this.isInitialized) {
             console.warn('DiceBox not initialized');
             return;
         }
+
+        this.currentCritHighlight = critHighlight || false;
+        this.isRolling = true; // Set rolling state to true
 
         try {
             // Check if canvas exists and show it
@@ -221,13 +255,27 @@ export class DiceBoxManager {
                 canvas.style.visibility = 'visible';
             }
 
-            this.instance.show().roll(notation);
+            // Parse each notation using dice-parser-interface
+            const dieGroups = notations.map((notation, index) => {
+                const parsed = this.diceParser.parseNotation(notation);
+                // Add group information if provided
+                if (groups && groups[index]) {
+                    parsed.forEach(group => {
+                        group.group = groups[index];
+                        group.originalNotation = notation; // Store original notation
+                    });
+                }
+                return parsed;
+            }).flat();
+
+            this.instance.roll(dieGroups);
         } catch (error) {
             console.error('Error during dice roll:', error);
+            this.isRolling = false; // Reset rolling state on error
         }
     }
 
-    onRollComplete(callback: (result: DiceResult) => void): () => void {
+    onRollComplete(callback: (result: any) => void): () => void {
         this.onRollCompleteCallbacks.push(callback);
 
         // Return cleanup function
@@ -301,6 +349,7 @@ export class DiceBoxManager {
             this.instance = null;
             this.isInitialized = false;
             this.onRollCompleteCallbacks = [];
+            this.isRolling = false; // Reset rolling state
         }
 
         // Clear cache on destroy
@@ -308,8 +357,17 @@ export class DiceBoxManager {
         this.cacheInitialized = false;
     }
 
+    // Method to manually reset rolling state if needed
+    resetRollingState(): void {
+        this.isRolling = false;
+    }
+
     get isReady(): boolean {
         return this.isInitialized && this.instance !== null;
+    }
+
+    get isCurrentlyRolling(): boolean {
+        return this.isRolling;
     }
 
     getCurrentIconColor(): string {

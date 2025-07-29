@@ -204,7 +204,7 @@ export function CustomSelect<T = string | number>({
                 items={options}
                 disabled={disabled}
             >
-                <Select.Trigger className={triggerExtraClassName + " flex items-center gap-1 pl-2 pr-1 py-2 cursor-default rounded-md bg-white shadow-sm ring-1 ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:ring-gray-600"}>
+                <Select.Trigger className={triggerExtraClassName + " flex items-center justify-between gap-1 pl-2 pr-1 py-2 cursor-default rounded-md bg-white shadow-sm ring-1 ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:ring-gray-600"}>
                     <Select.Value>
                         {(value) => renderDisplayValue(value)}
                     </Select.Value>
