@@ -11,6 +11,8 @@ import { FeatPrerequisiteMapSchema } from '@shared/schema';
 import { ABILITY_SELECT_LIST, FEAT_PREREQUISITE_TYPE_SELECT_LIST, FeatPrerequisiteType, SelectOption, SKILL_SELECT_LIST } from '@shared/static-data';
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { FeatService } from './FeatService';
+import { PrereqOptions } from './FeatUtil';
+import { ClassFeatureService } from '../class/ClassFeatureService';
 
 // Type definitions for the form state
 type FeatPrerequisiteFormData = z.infer<typeof FeatPrerequisiteMapSchema>;
@@ -28,6 +30,7 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [featOptions, setFeatOptions] = useState<SelectOption[]>([]);
+    const [classFeatureOptions, setClassFeatureOptions] = useState<SelectOption[]>([]);
 
     // Initialize form data with default values
     const initialFormData: FeatPrerequisiteFormData = {
@@ -36,6 +39,7 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
         typeId: null,
         referenceId: null,
         amount: null,
+        featureSlug: null,
     };
 
     const [formData, setFormData] = useState<FeatPrerequisiteFormData>(initialFormData);
@@ -60,7 +64,12 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
             const response = await FeatService.getFeats(undefined, undefined);
             setFeatOptions(response.results.map(feat => ({ value: feat.id, label: feat.name })));
         }
+        const fetchClassFeatures = async () => {
+            const response = await ClassFeatureService.getClassFeatures(undefined, undefined);
+            setClassFeatureOptions(response.results.map(feature => ({ value: feature.slug, label: feature.name || feature.slug })));
+        }
         fetchFeats();
+        fetchClassFeatures();
         if (initialPrereqData) {
             setFormData({
                 ...initialPrereqData,
@@ -68,6 +77,7 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
                 typeId: initialPrereqData.typeId || null,
                 referenceId: initialPrereqData.referenceId || null,
                 amount: initialPrereqData.amount || null,
+                featureSlug: initialPrereqData.featureSlug || null,
             });
         }
     }, [initialPrereqData]);
@@ -238,6 +248,41 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
                                             inputExtraClassName='w-20'
                                         />
                                     </>
+                                ) || formData.typeId === FeatPrerequisiteType.CLASSLEVEL && (
+                                    <>
+                                        <CustomSelect
+                                            label="Reference"
+                                            required
+                                            value={formData.referenceId}
+                                            componentExtraClassName='flex items-center gap-2'
+                                            labelExtraClassName='w-32'
+                                            itemTextExtraClassName='w-34'
+                                            onValueChange={(value) => setFormData(prev => ({ ...prev, referenceId: value as number | null }))}
+                                            options={PrereqOptions(FeatPrerequisiteType.CLASSLEVEL)}
+                                        />
+                                        <ValidatedInput
+                                            field="amount"
+                                            label="Level"
+                                            type="number"
+                                            min={1}
+                                            step={1}
+                                            placeholder="Minimum required level"
+                                            componentExtraClassName='flex items-center gap-2'
+                                            labelExtraClassName='w-32'
+                                            inputExtraClassName='w-20'
+                                        />
+                                    </>
+                                ) || formData.typeId === FeatPrerequisiteType.CLASSFEATURE && (
+                                    <CustomSelect
+                                        label="Reference"
+                                        required
+                                        value={formData.featureSlug}
+                                        componentExtraClassName='flex items-center gap-2'
+                                        labelExtraClassName='w-32'
+                                        itemTextExtraClassName='w-34'
+                                        onValueChange={(value) => setFormData(prev => ({ ...prev, featureSlug: value as string | null }))}
+                                        options={classFeatureOptions}
+                                    />
                                 )}
 
                             </div>

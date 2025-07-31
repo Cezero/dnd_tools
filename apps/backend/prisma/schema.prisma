@@ -255,6 +255,7 @@ model FeatPrerequisiteMap {
     typeId      Int
     referenceId Int?
     amount      Int?
+    featureSlug String?
     index       Int
 
     feat Feat @relation(fields: [featId], references: [id])

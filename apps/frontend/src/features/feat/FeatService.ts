@@ -74,4 +74,6 @@ export const FeatService = {
         requestSchema: FeatQuerySchema,
         responseSchema: FeatQueryResponseSchema,
     }),
+
+
 };

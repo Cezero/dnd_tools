@@ -22,6 +22,8 @@ export async function GetAllFeats(req: ValidatedNoInput<GetAllFeatsResponse>, re
     res.json(feats);
 }
 
+
+
 export async function GetFeatQuery(req: ValidatedQueryT<FeatQueryRequest, FeatQueryResponse>, res: Response) {
     const feats = await featService.featQuery(req.query);
     res.json(feats);
@@ -34,7 +36,7 @@ export async function GetFeatById(req: ValidatedParamsT<FeatIdParamRequest, GetF
     const feat = await featService.getFeatById(req.params);
 
     if (!feat) {
-        res.status(404).json({error: 'Feat not found'});
+        res.status(404).json({ error: 'Feat not found' });
         return;
     }
 

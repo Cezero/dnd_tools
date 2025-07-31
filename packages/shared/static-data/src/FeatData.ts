@@ -40,6 +40,9 @@ export const enum FeatPrerequisiteType {
     BAB = 4,
     SPELLCASTING = 5,
     SPECIAL = 6,
+    CLASSLEVEL = 7,
+    PROFICIENCY = 8,
+    CLASSFEATURE = 9,
 }
 
 export const FEAT_PREREQUISITE_TYPES: BaseMap<CoreComponent> = {
@@ -48,8 +51,11 @@ export const FEAT_PREREQUISITE_TYPES: BaseMap<CoreComponent> = {
     [FeatPrerequisiteType.FEAT]: { id: FeatPrerequisiteType.FEAT, name: 'Feat' },
     [FeatPrerequisiteType.BAB]: { id: FeatPrerequisiteType.BAB, name: 'Base Attack Bonus' },
     [FeatPrerequisiteType.SPELLCASTING]: { id: FeatPrerequisiteType.SPELLCASTING, name: 'Caster Level' },
+    [FeatPrerequisiteType.CLASSLEVEL]: { id: FeatPrerequisiteType.CLASSLEVEL, name: 'Class Level' },
     [FeatPrerequisiteType.SPECIAL]: { id: FeatPrerequisiteType.SPECIAL, name: 'Special' },
-}
+    [FeatPrerequisiteType.PROFICIENCY]: { id: FeatPrerequisiteType.PROFICIENCY, name: 'Proficiency' },
+    [FeatPrerequisiteType.CLASSFEATURE]: { id: FeatPrerequisiteType.CLASSFEATURE, name: 'Class Feature' },
+};
 
 export const FEAT_PREREQ_BY_ID: IdToNameMap = ObjectIdToNameMap(FEAT_PREREQUISITE_TYPES);
 export const FEAT_PREREQUISITE_TYPE_LIST = Object.values(FEAT_PREREQUISITE_TYPES);

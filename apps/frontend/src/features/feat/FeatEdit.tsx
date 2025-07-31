@@ -136,10 +136,18 @@ export function FeatEdit() {
 
     const HandleDeleteBenefit = useCallback(async (benefitIndex: number) => {
         if (window.confirm('Are you sure you want to remove this benefit from the feat?')) {
-            setFormData(prev => ({
-                ...prev,
-                benefits: prev.benefits?.filter((_, index) => index !== benefitIndex) || []
-            }));
+            setFormData(prev => {
+                const filteredBenefits = prev.benefits?.filter((_, index) => index !== benefitIndex) || [];
+                // Re-index the remaining benefits
+                const reindexedBenefits = filteredBenefits.map((benefit, newIndex) => ({
+                    ...benefit,
+                    index: newIndex
+                }));
+                return {
+                    ...prev,
+                    benefits: reindexedBenefits
+                };
+            });
         }
     }, []);
 
@@ -170,10 +178,18 @@ export function FeatEdit() {
 
     const HandleDeletePrereq = useCallback(async (prereqIndex: number) => {
         if (window.confirm('Are you sure you want to remove this prerequisite from the feat?')) {
-            setFormData(prev => ({
-                ...prev,
-                prereqs: prev.prereqs?.filter((_, index) => index !== prereqIndex) || []
-            }));
+            setFormData(prev => {
+                const filteredPrereqs = prev.prereqs?.filter((_, index) => index !== prereqIndex) || [];
+                // Re-index the remaining prerequisites
+                const reindexedPrereqs = filteredPrereqs.map((prereq, newIndex) => ({
+                    ...prereq,
+                    index: newIndex
+                }));
+                return {
+                    ...prev,
+                    prereqs: reindexedPrereqs
+                };
+            });
         }
     }, []);
 

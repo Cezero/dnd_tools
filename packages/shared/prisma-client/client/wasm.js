@@ -274,6 +274,7 @@ exports.Prisma.FeatPrerequisiteMapScalarFieldEnum = {
   typeId: 'typeId',
   referenceId: 'referenceId',
   amount: 'amount',
+  featureSlug: 'featureSlug',
   index: 'index'
 };
 
@@ -581,6 +582,10 @@ exports.Prisma.FeatOrderByRelevanceFieldEnum = {
   normalEffect: 'normalEffect',
   specialEffect: 'specialEffect',
   prerequisites: 'prerequisites'
+};
+
+exports.Prisma.FeatPrerequisiteMapOrderByRelevanceFieldEnum = {
+  featureSlug: 'featureSlug'
 };
 
 exports.Prisma.RaceOrderByRelevanceFieldEnum = {

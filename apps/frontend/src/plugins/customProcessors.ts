@@ -47,11 +47,21 @@ export function createTable(rawValue: string, props: MarkdownComponentProps, opt
         return { type: 'text', value: `[table: ${rawValue}]` };
     }
 
-    const hastTable = getPreRenderedTable(rawValue, props.id);
-    if (hastTable) {
-        return hastTable;
-    } else {
-        return h('div', { className: 'reference-table-error' }, `[Missing table: ${rawValue}]`);
+    try {
+        const hastTable = getPreRenderedTable(rawValue, props.id);
+        if (hastTable) {
+            return hastTable;
+        } else {
+            return h('div', { className: 'reference-table-error' }, `[Missing table: ${rawValue}]`);
+        }
+    } catch (error) {
+        // If the error indicates preloading is still in progress, show a loading state
+        if (error instanceof Error && error.message.includes('preloading still in progress')) {
+            return h('div', { className: 'reference-table-loading' }, `[Loading table: ${rawValue}]`);
+        }
+
+        // For other errors, show the error message
+        return h('div', { className: 'reference-table-error' }, `[Error loading table: ${rawValue}]`);
     }
 }
 

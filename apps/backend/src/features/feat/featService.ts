@@ -31,6 +31,8 @@ export const featService: FeatService = {
         };
     },
 
+
+
     async featQuery(query: FeatQueryRequest): Promise<FeatQueryResponse> {
         let whereClause: Prisma.FeatWhereInput = {};
         if (query.queryType === 'proficiency') {
@@ -42,6 +44,7 @@ export const featService: FeatService = {
                 }
             }
         }
+        // For 'all' query type, no where clause is needed - get all feats
         const [feats] = await Promise.all([
             prisma.feat.findMany({
                 where: whereClause,
@@ -49,6 +52,7 @@ export const featService: FeatService = {
                     benefits: true,
                     prereqs: true,
                 },
+                orderBy: { name: 'asc' },
             }),
             prisma.feat.count({
                 where: whereClause,

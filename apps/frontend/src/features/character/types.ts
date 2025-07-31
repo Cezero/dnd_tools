@@ -18,7 +18,8 @@ export interface CharacterData {
     armorClass: number;
 
     // Skills
-    skills: Record<string, number>;
+    skills: Record<number, number>; // skillId -> ranks (for regular skills)
+    skillSubtypes: Record<number, { ranks: number; subtype: string }[]>; // skillId -> array of subtypes with ranks
     skillPoints: number;
 
     // Feats

@@ -7,13 +7,17 @@ import supersub from 'remark-supersub';
 import { unified } from 'unified';
 
 import { RehypeCustomMarkdown } from '@/plugins/RehypeCustomMarkdown';
+import { preloadTablesFromMarkdown } from '@/lib/TableResolution';
 
 import { MarkdownComponentProps } from './types';
 
-export function compileMarkdownToHast(props: MarkdownComponentProps): Promise<Root> {
+export async function compileMarkdownToHast(props: MarkdownComponentProps): Promise<Root> {
     if (!props.id) {
         props.id = `hast-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     }
+
+    // Preload tables BEFORE starting markdown compilation
+    await preloadTablesFromMarkdown(props);
 
     const processor = unified()
         .use(remarkParse)

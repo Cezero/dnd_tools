@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { QueryResponseSchema } from './query.js';
 
 export const FeatQuerySchema = z.object({
-    queryType: z.enum(['proficiency']),
+    queryType: z.enum(['proficiency', 'all']),
 });
 
 export const FeatIdParamSchema = z.object({
@@ -20,7 +20,8 @@ export const FeatPrerequisiteMapSchema = z.object({
     index: z.number().int().min(0, 'Prerequisite index must be non-negative'),
     typeId: z.number().int().positive('Prerequisite type must be a positive integer'),
     amount: z.number().int().min(0, 'Prerequisite amount must be non-negative').nullable(),
-    referenceId: z.number().int().positive('Reference ID must be a positive integer').nullable(),
+    referenceId: z.number().int('Reference ID must be an integer').nullable(),
+    featureSlug: z.string().max(200, 'Feature slug must be less than 200 characters').nullable(),
 });
 
 export const BaseFeatSchema = z.object({
