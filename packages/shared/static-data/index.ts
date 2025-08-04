@@ -9,7 +9,9 @@ export * from './src/ClassData';
 export * from './src/SourceData';
 export * from './src/SpellData';
 export * from './src/FeatData';
-export * from './src/ItemData';
+export * from './src/ItemData'; 
+export * from './src/FeatureData';
+
 // Export DiceData with explicit names to avoid conflicts
 export {
     DiceTheme,
@@ -34,6 +36,7 @@ export * as SpellData from './src/SpellData';
 export * as FeatData from './src/FeatData';
 export * as ItemData from './src/ItemData';
 export * as DiceData from './src/DiceData';
+export * as FeatureData from './src/FeatureData';
 
 // Default export for backward compatibility
 import * as AbilityDataModule from './src/AbilityData';
@@ -45,6 +48,7 @@ import * as SpellDataModule from './src/SpellData';
 import * as FeatDataModule from './src/FeatData';
 import * as ItemDataModule from './src/ItemData';
 import * as DiceDataModule from './src/DiceData';
+import * as FeatureDataModule from './src/FeatureData';
 
 const staticData = {
     AbilityData: AbilityDataModule,
@@ -56,6 +60,7 @@ const staticData = {
     FeatData: FeatDataModule,
     ItemData: ItemDataModule,
     DiceData: DiceDataModule,
+    FeatureData: FeatureDataModule,
 };
 
 export default staticData; 

@@ -25,3 +25,6 @@ export * from './skill.js';
 export * from './spell.js';
 export * from './sourcebook.js';
 export * from './item.js';
+export * from './userProfile.js';
+export * from './feature.js';
+export * from './spellcasting.js';

@@ -6,12 +6,11 @@ import {
     CLASS_MAP,
     GetBaseClassesByEdition
 } from '@shared/static-data';
-import type { GetClassResponse } from '@shared/schema';
-import type { CharacterData } from '../types';
+import type { GetClassResponse, CharacterWithAllDetailsResponse } from '@shared/schema';
 
 interface ClassTabProps {
-    character: CharacterData;
-    onUpdate: (data: Partial<CharacterData>) => void;
+    character: CharacterWithAllDetailsResponse;
+    onUpdate: (data: Partial<CharacterWithAllDetailsResponse>) => void;
     selectedClassDetails?: GetClassResponse | null;
     onClassDetailsChange: (classDetails: GetClassResponse | null) => void;
 }
@@ -24,10 +23,20 @@ export function ClassTab({
 }: ClassTabProps): React.JSX.Element {
     const [isLoadingClass, setIsLoadingClass] = useState(false);
 
+    // Get the current class from the first advancement
+    const currentClassId = character.advancements[0]?.classId || null;
+
     const handleClassChange = async (classId: number | null) => {
         if (classId === null) {
+            // Clear class from advancement
             onUpdate({
-                class: null,
+                advancements: [
+                    {
+                        ...character.advancements[0],
+                        classId: 0,
+                        features: []
+                    }
+                ]
             });
             onClassDetailsChange(null);
             return;
@@ -42,15 +51,29 @@ export function ClassTab({
             const classDetails = await ClassService.getClassById(undefined, { id: classId });
             onClassDetailsChange(classDetails);
 
-            // Update class and related properties
+            // Update the first advancement entry
             onUpdate({
-                class: classId,
+                advancements: [
+                    {
+                        ...character.advancements[0],
+                        classId: classId,
+                        // Keep existing features, they'll be populated when class features are loaded
+                        features: character.advancements[0].features
+                    }
+                ]
             });
         } catch (error) {
             console.error('Failed to fetch class details:', error);
 
+            // Still update the class even if details fetch fails
             onUpdate({
-                class: classId,
+                advancements: [
+                    {
+                        ...character.advancements[0],
+                        classId: classId,
+                        features: character.advancements[0].features
+                    }
+                ]
             });
         } finally {
             setIsLoadingClass(false);
@@ -69,7 +92,7 @@ export function ClassTab({
             {/* Class Selection */}
             <div className="bg-white dark:bg-gray-800 p-4">
                 <CustomSelect
-                    value={character.class}
+                    value={currentClassId}
                     onValueChange={handleClassChange}
                     label="Class:"
                     labelExtraClassName="text-xl font-semibold"

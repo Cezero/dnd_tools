@@ -82,6 +82,23 @@ export const UpdateDiceBoxAdminConfigRequestSchema = z.object({
 export type DiceBoxConfigIdParamRequest = z.infer<typeof DiceBoxConfigIdParamSchema>;
 export type DiceBoxAdminConfig = z.infer<typeof DiceBoxAdminConfigSchema>;
 export type GetAllDiceConfigsResponse = z.infer<typeof GetAllDiceConfigsResponseSchema>;
+// User dice config override schema
+export const UserDiceConfigOverrideSchema = z.object({
+    id: z.number().int().positive('Override ID must be a positive integer'),
+    userId: z.number().int().positive('User ID must be a positive integer'),
+    propertyName: z.string().min(1, 'Property name is required').max(50, 'Property name must be less than 50 characters').trim(),
+    propertyValue: z.string().min(1, 'Property value is required').max(100, 'Property value must be less than 100 characters').trim(),
+});
+
+// Request/response schemas for user dice config overrides
+export const CreateUserDiceConfigOverrideSchema = UserDiceConfigOverrideSchema.omit({ id: true });
+export const UpdateUserDiceConfigOverrideSchema = UserDiceConfigOverrideSchema.partial().omit({ id: true });
+
 export type CreateDiceBoxAdminConfigRequest = z.infer<typeof CreateDiceBoxAdminConfigRequestSchema>;
 export type UpdateDiceBoxAdminConfigRequest = z.infer<typeof UpdateDiceBoxAdminConfigRequestSchema>;
 export type DiceBoxAdminConfigInQueryResponse = z.infer<typeof DiceBoxAdminConfigSchema>;
+
+// User dice config override types
+export type UserDiceConfigOverride = z.infer<typeof UserDiceConfigOverrideSchema>;
+export type CreateUserDiceConfigOverrideRequest = z.infer<typeof CreateUserDiceConfigOverrideSchema>;
+export type UpdateUserDiceConfigOverrideRequest = z.infer<typeof UpdateUserDiceConfigOverrideSchema>;

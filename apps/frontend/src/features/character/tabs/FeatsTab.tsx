@@ -1,32 +1,23 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { GenericList } from '@/components/generic-list';
 import { FeatService } from '@/features/feat/FeatService';
-import { getBABProgression, ProgressionType } from '@shared/static-data';
-import { FeatPrerequisiteType } from '@shared/static-data';
-import type { RaceInQueryResponse, GetRaceResponse, FeatInQueryResponse, GetClassResponse } from '@shared/schema';
-import type { CharacterData } from '../types';
+import { meetsPrerequisites, type FeatWithPrerequisites } from '@/lib';
+import type {
+    RaceInQueryResponse,
+    GetRaceResponse,
+    GetClassResponse,
+    CharacterWithAllDetailsResponse,
+    CharacterAdvancementWithDetailsResponse
+} from '@shared/schema';
 
 interface FeatsTabProps {
-    character: CharacterData;
-    onUpdate: (data: Partial<CharacterData>) => void;
+    character: CharacterWithAllDetailsResponse;
+    onUpdate: (data: Partial<CharacterWithAllDetailsResponse>) => void;
     races?: RaceInQueryResponse[];
     selectedRaceDetails?: GetRaceResponse | null;
     selectedClassDetails?: GetClassResponse | null;
-}
-
-interface FeatWithPrerequisites extends FeatInQueryResponse {
-    prereqs: Array<{
-        typeId: number;
-        referenceId: number | null;
-        amount: number | null;
-        index: number;
-    }>;
-    benefits: Array<{
-        typeId: number;
-        referenceId: number | null;
-        amount: number | null;
-        index: number;
-    }>;
+    targetAdvancement?: CharacterAdvancementWithDetailsResponse;
+    onAdvancementUpdate?: (advancement: CharacterAdvancementWithDetailsResponse) => void;
 }
 
 export function FeatsTab({
@@ -34,10 +25,16 @@ export function FeatsTab({
     onUpdate,
     races = [],
     selectedRaceDetails,
-    selectedClassDetails
+    selectedClassDetails,
+    targetAdvancement,
+    onAdvancementUpdate
 }: FeatsTabProps): React.JSX.Element {
     const [allFeats, setAllFeats] = useState<FeatWithPrerequisites[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+
+    // Use target advancement if provided, otherwise use the first advancement (for new characters)
+    const advancement = targetAdvancement || character.advancements[0];
+    const isNewCharacter = !targetAdvancement; // If no target advancement, we're creating a new character
 
     // Load all feats from backend
     useEffect(() => {
@@ -55,73 +52,6 @@ export function FeatsTab({
 
         loadFeats();
     }, []);
-
-    // Calculate character's BAB based on class and level
-    const getCharacterBAB = (): number => {
-        if (!character.class || !character.level || !selectedClassDetails) return 0;
-
-        // Use actual class BAB progression
-        const babProgression = selectedClassDetails.babProgression;
-        const bab = getBABProgression(character.level, babProgression);
-
-        // Extract the first BAB value (e.g., "+6" -> 6)
-        const babMatch = bab.match(/\+(\d+)/);
-        return babMatch ? parseInt(babMatch[1]) : 0;
-    };
-
-    // Get ability score with racial modifiers
-    const getAbilityScore = (abilityId: number): number => {
-        const baseScore = character.abilities[abilityId] || 0;
-        if (!selectedRaceDetails?.abilityAdjustments) return baseScore;
-
-        const racialMod = selectedRaceDetails.abilityAdjustments.find(adj => adj.abilityId === abilityId);
-        return baseScore + (racialMod?.value || 0);
-    };
-
-    // Get skill ranks
-    const getSkillRanks = (skillId: number): number => {
-        return character.skills[skillId] || 0;
-    };
-
-    // Check if character meets feat prerequisites
-    const meetsPrerequisites = (feat: FeatWithPrerequisites): boolean => {
-        if (!feat.prereqs || feat.prereqs.length === 0) return true;
-
-        return feat.prereqs.every(prereq => {
-            switch (prereq.typeId) {
-                case FeatPrerequisiteType.ABILITY:
-                    if (!prereq.referenceId || !prereq.amount) return true;
-                    return getAbilityScore(prereq.referenceId) >= prereq.amount;
-
-                case FeatPrerequisiteType.SKILL:
-                    if (!prereq.referenceId || !prereq.amount) return true;
-                    return getSkillRanks(prereq.referenceId) >= prereq.amount;
-
-                case FeatPrerequisiteType.FEAT:
-                    if (!prereq.referenceId) return true;
-                    // Check if character has the required feat
-                    const requiredFeat = allFeats.find(f => f.id === prereq.referenceId);
-                    if (!requiredFeat) return false;
-                    return character.feats.includes(requiredFeat.name);
-
-                case FeatPrerequisiteType.BAB:
-                    if (!prereq.amount) return true;
-                    return getCharacterBAB() >= prereq.amount;
-
-                case FeatPrerequisiteType.SPELLCASTING:
-                    // Check if character's class can cast spells
-                    if (!selectedClassDetails) return false;
-                    return selectedClassDetails.canCastSpells || selectedClassDetails.spellProgression !== null;
-
-                case FeatPrerequisiteType.SPECIAL:
-                    // Special prerequisites would need custom logic
-                    return true;
-
-                default:
-                    return true;
-            }
-        });
-    };
 
     // Get feats that the class grants as proficiencies (to exclude from selection)
     const getClassGrantedFeats = (): Set<number> => {
@@ -147,35 +77,65 @@ export function FeatsTab({
         const classGrantedFeats = getClassGrantedFeats();
 
         return allFeats.filter(feat =>
-            meetsPrerequisites(feat) &&
+            meetsPrerequisites(feat, character, selectedClassDetails, selectedRaceDetails, allFeats) &&
             !classGrantedFeats.has(feat.id)
         );
     }, [allFeats, character, selectedRaceDetails, selectedClassDetails]);
 
-    // Calculate how many feats character can select
+    // Calculate how many feats character can select for this advancement
     const getAvailableFeatSlots = (): number => {
         let slots = 0;
 
-        // Level 1 characters get 1 feat
-        if (character.level >= 1) slots += 1;
+        if (isNewCharacter) {
+            // Level 1 characters get 1 feat
+            if (character.advancements.length >= 1) slots += 1;
 
-        // Additional feats at levels 3, 6, 9, 12, 15, 18
-        const bonusLevels = [3, 6, 9, 12, 15, 18];
-        bonusLevels.forEach(level => {
-            if (character.level >= level) slots += 1;
-        });
+            // Additional feats at levels 3, 6, 9, 12, 15, 18
+            const bonusLevels = [3, 6, 9, 12, 15, 18];
+            bonusLevels.forEach(level => {
+                if (character.advancements.length >= level) slots += 1;
+            });
 
-        // Human bonus feat
-        if (selectedRaceDetails?.name?.toLowerCase().includes('human')) {
-            slots += 1;
+            // Human bonus feat
+            if (selectedRaceDetails?.name?.toLowerCase().includes('human')) {
+                slots += 1;
+            }
+        } else {
+            // For leveling up, check if this level grants a feat
+            const level = advancement?.level || 1;
+
+            // Standard feat levels: 1, 3, 6, 9, 12, 15, 18
+            const featLevels = [1, 3, 6, 9, 12, 15, 18];
+            if (featLevels.includes(level)) {
+                slots += 1;
+            }
+
+            // Human bonus feat (every level)
+            if (selectedRaceDetails?.name?.toLowerCase().includes('human')) {
+                slots += 1;
+            }
+
+            // Fighter bonus feats (every even level)
+            if (selectedClassDetails?.name?.toLowerCase().includes('fighter') && level % 2 === 0) {
+                slots += 1;
+            }
         }
 
         return slots;
     };
 
     const availableSlots = getAvailableFeatSlots();
-    const selectedCount = character.feats.length;
+    const selectedCount = advancement?.feats?.length || 0;
     const canSelectMore = selectedCount < availableSlots;
+
+    // Get selected feat names from advancement
+    const getSelectedFeatNames = (): string[] => {
+        if (!advancement?.feats) return [];
+        return advancement.feats.map(featEntry => {
+            const feat = allFeats.find(f => f.id === featEntry.featId);
+            return feat?.name || '';
+        }).filter(Boolean);
+    };
 
     // Handle feat selection changes
     const handleSelectedIdsChange = (selectedIds: (string | number)[]) => {
@@ -185,19 +145,40 @@ export function FeatsTab({
             selectedIds = selectedIds.slice(0, availableSlots);
         }
 
-        const selectedFeatNames = selectedIds.map(id => {
+        // Convert selected IDs to feat entries
+        const selectedFeatEntries = selectedIds.map(id => {
             const feat = allFeats.find(f => f.id === id);
-            return feat?.name || '';
+            if (!feat || !advancement) return null;
+
+            return {
+                advancementId: advancement.id,
+                featId: feat.id
+            };
         }).filter(Boolean);
 
-        onUpdate({ feats: selectedFeatNames });
+        // Update the advancement
+        const updatedAdvancement = {
+            ...advancement,
+            feats: selectedFeatEntries
+        };
+
+        if (onAdvancementUpdate) {
+            // For leveling up, use the callback
+            onAdvancementUpdate(updatedAdvancement);
+        } else {
+            // For new character creation, update the character
+            onUpdate({
+                advancements: [
+                    updatedAdvancement
+                ]
+            });
+        }
     };
 
     // Get currently selected feat IDs
     const getSelectedFeatIds = (): (string | number)[] => {
-        return allFeats
-            .filter(feat => character.feats.includes(feat.name))
-            .map(feat => feat.id);
+        if (!advancement?.feats) return [];
+        return advancement.feats.map(featEntry => featEntry.featId);
     };
 
     // GenericList columns configuration
@@ -243,21 +224,23 @@ export function FeatsTab({
         );
     }
 
+    const selectedFeatNames = getSelectedFeatNames();
+
     return (
         <div className="p-6">
             <div className="mb-6">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                    Feats
+                    Feats {!isNewCharacter && `(Level ${advancement?.level})`}
                 </h2>
 
                 {/* Selected Feats */}
-                {character.feats.length > 0 && (
+                {selectedFeatNames.length > 0 && (
                     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-4 mb-6">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                            Selected Feats ({character.feats.length})
+                            Selected Feats ({selectedFeatNames.length})
                         </h3>
                         <div className="space-y-3">
-                            {character.feats.map((featName, index) => {
+                            {selectedFeatNames.map((featName, index) => {
                                 const feat = allFeats.find(f => f.name === featName);
                                 return (
                                     <div key={index} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
@@ -284,8 +267,25 @@ export function FeatsTab({
                                             </div>
                                             <button
                                                 onClick={() => {
-                                                    const newFeats = character.feats.filter(f => f !== featName);
-                                                    onUpdate({ feats: newFeats });
+                                                    const newFeatEntries = advancement?.feats?.filter(f => {
+                                                        const feat = allFeats.find(feat => feat.id === f.featId);
+                                                        return feat?.name !== featName;
+                                                    }) || [];
+
+                                                    const updatedAdvancement = {
+                                                        ...advancement,
+                                                        feats: newFeatEntries
+                                                    };
+
+                                                    if (onAdvancementUpdate) {
+                                                        onAdvancementUpdate(updatedAdvancement);
+                                                    } else {
+                                                        onUpdate({
+                                                            advancements: [
+                                                                updatedAdvancement
+                                                            ]
+                                                        });
+                                                    }
                                                 }}
                                                 className="ml-3 text-red-500 hover:text-red-700 text-sm font-medium"
                                             >
@@ -295,25 +295,6 @@ export function FeatsTab({
                                     </div>
                                 );
                             })}
-                        </div>
-                    </div>
-                )}
-
-
-
-                {/* Bonus Feats */}
-                {character.bonusFeats.length > 0 && (
-                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-4 mb-6">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                            Bonus Feats (Class)
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                            {character.bonusFeats.map((featName, index) => (
-                                <div key={index} className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
-                                    <span className="text-sm text-blue-700 dark:text-blue-300">{featName}</span>
-                                    <span className="text-xs text-blue-500 dark:text-blue-400">Class Bonus</span>
-                                </div>
-                            ))}
                         </div>
                     </div>
                 )}
@@ -327,7 +308,7 @@ export function FeatsTab({
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         Showing feats you qualify for based on your character's abilities, skills, and level.
-                        {character.class && !selectedClassDetails && (
+                        {advancement?.classId && !selectedClassDetails && (
                             <span className="text-yellow-600 dark:text-yellow-400 ml-2">
                                 (Loading class details...)
                             </span>
@@ -336,7 +317,7 @@ export function FeatsTab({
                 </div>
 
                 <GenericList
-                    storageKey="character-feats"
+                    storageKey={`character-feats-${advancement?.level || 1}`}
                     columns={columns}
                     serviceFunction={async () => ({
                         results: availableFeats,
@@ -345,9 +326,7 @@ export function FeatsTab({
                     itemDesc="feats"
                     initialLimit={20}
                     isOptionSelector={true}
-                    selectedIds={allFeats
-                        .filter(feat => character.feats.includes(feat.name))
-                        .map(feat => feat.id)}
+                    selectedIds={getSelectedFeatIds()}
                     onSelectedIdsChange={handleSelectedIdsChange}
                 />
             </div>

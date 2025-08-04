@@ -5,12 +5,11 @@ import {
     CLASS_MAP,
     SIZE_MAP
 } from '@shared/static-data';
-import type { RaceInQueryResponse, GetRaceResponse } from '@shared/schema';
-import type { CharacterData } from '../types';
+import type { RaceInQueryResponse, GetRaceResponse, CharacterWithAllDetailsResponse } from '@shared/schema';
 
 interface DescriptionTabProps {
-    character: CharacterData;
-    onUpdate: (data: Partial<CharacterData>) => void;
+    character: CharacterWithAllDetailsResponse;
+    onUpdate: (data: Partial<CharacterWithAllDetailsResponse>) => void;
     races?: RaceInQueryResponse[];
     selectedRaceDetails?: GetRaceResponse | null;
 }
@@ -75,7 +74,7 @@ export function DescriptionTab({
                             <p><strong>Race:</strong> {selectedRaceDetails?.name || 'Not selected'}</p>
                             <p><strong>Size:</strong> {getSizeForRace()}</p>
                             <p><strong>Class:</strong> {character.class ? CLASS_MAP[character.class]?.name : 'Not selected'}</p>
-                            <p><strong>Level:</strong> {character.level}</p>
+                            <p><strong>Level:</strong> {character.advancements.length}</p>
                         </div>
                     </div>
                 </div>

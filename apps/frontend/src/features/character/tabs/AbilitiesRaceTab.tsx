@@ -15,12 +15,11 @@ import {
     EDITION_MAP,
     CLASS_MAP
 } from '@shared/static-data';
-import type { RaceInQueryResponse, GetRaceResponse } from '@shared/schema';
-import type { CharacterData } from '../types';
+import type { RaceInQueryResponse, GetRaceResponse, CharacterWithAllDetailsResponse } from '@shared/schema';
 
 interface AbilitiesRaceTabProps {
-    character: CharacterData;
-    onUpdate: (data: Partial<CharacterData>) => void;
+    character: CharacterWithAllDetailsResponse;
+    onUpdate: (data: Partial<CharacterWithAllDetailsResponse>) => void;
     races?: RaceInQueryResponse[];
     selectedRaceDetails?: GetRaceResponse | null;
 }
@@ -50,21 +49,34 @@ export function AbilitiesRaceTab({
 
             if (generationMethod === 'roll-3d6-order') {
                 // Handle 3d6 order - assign all results at once
-                const newAbilities = { ...character.abilities };
+                const newAttributes = [...character.attributes];
                 let allAssigned = true;
 
                 results.forEach(result => {
                     const ability = ABILITY_LIST.find(ability => ability.name === result.group);
                     if (ability) {
                         console.log('Assigning', result.value, 'to', ability.name);
-                        newAbilities[ability.id] = result.value;
+                        const existingIndex = newAttributes.findIndex(attr => attr.attributeId === ability.id);
+                        if (existingIndex >= 0) {
+                            newAttributes[existingIndex] = {
+                                ...newAttributes[existingIndex],
+                                value: result.value
+                            };
+                        } else {
+                            newAttributes.push({
+                                id: 0,
+                                characterId: character.id,
+                                attributeId: ability.id,
+                                value: result.value
+                            });
+                        }
                     } else {
                         allAssigned = false;
                     }
                 });
 
                 if (allAssigned) {
-                    onUpdate({ abilities: newAbilities });
+                    onUpdate({ attributes: newAttributes });
                     setIsRollingAbilitySet(false);
                 }
             } else if (generationMethod === 'roll-3d6-arrange' || generationMethod === 'roll-4d6-drop') {
@@ -98,7 +110,35 @@ export function AbilitiesRaceTab({
         });
 
         return unsubscribe;
-    }, [onRollComplete, generationMethod, character.abilities, rolledValues, onUpdate]);
+    }, [onRollComplete, generationMethod, character.attributes, rolledValues, onUpdate]);
+
+    // Get ability score from attributes
+    const getAbilityScore = (abilityId: number): number | null => {
+        const attribute = character.attributes.find(attr => attr.attributeId === abilityId);
+        return attribute?.value ?? null;
+    };
+
+    // Set ability score in attributes
+    const setAbilityScore = (abilityId: number, value: number) => {
+        const updatedAttributes = [...character.attributes];
+        const existingIndex = updatedAttributes.findIndex(attr => attr.attributeId === abilityId);
+
+        if (existingIndex >= 0) {
+            updatedAttributes[existingIndex] = {
+                ...updatedAttributes[existingIndex],
+                value: value
+            };
+        } else {
+            updatedAttributes.push({
+                id: 0,
+                characterId: character.id,
+                attributeId: abilityId,
+                value: value
+            });
+        }
+
+        onUpdate({ attributes: updatedAttributes });
+    };
 
     const handleRollAbility = (abilityId: number) => {
         const abilityName = ABILITY_MAP[abilityId]?.name || `Ability ${abilityId}`;
@@ -111,8 +151,8 @@ export function AbilitiesRaceTab({
             value = Math.max(8, Math.min(18, value));
 
             // Check if this would increase the ability score
-            const currentValue = character.abilities[abilityId] || 8;
-            if (value > currentValue) {
+            const currentValue = getAbilityScore(abilityId);
+            if (currentValue !== null && value > currentValue) {
                 // Calculate the additional cost
                 const additionalCost = GetPointBuyCost(value) - GetPointBuyCost(currentValue);
                 const remainingPoints = getRemainingPoints();
@@ -124,18 +164,13 @@ export function AbilitiesRaceTab({
             }
         }
 
-        const newAbilities = { ...character.abilities, [abilityId]: value };
-
-        onUpdate({
-            abilities: newAbilities
-        });
+        setAbilityScore(abilityId, value);
     };
 
     const handleRaceChange = (raceId: number | null) => {
         onUpdate({
-            race: raceId,
-            languages: [],
-            bonusLanguages: []
+            raceId: raceId || 0,
+            race: raceId ? { id: raceId, name: '' } : { id: 0, name: '' }
         });
     };
 
@@ -148,13 +183,15 @@ export function AbilitiesRaceTab({
 
         // Auto-populate abilities to 8 when switching to Point Buy if all are undefined
         if (method === 'point-buy') {
-            const allUndefined = ABILITY_LIST.every(ability => character.abilities[ability.id] === undefined);
+            const allUndefined = ABILITY_LIST.every(ability => getAbilityScore(ability.id) === null);
             if (allUndefined) {
-                const newAbilities: { [key: number]: number } = {};
-                ABILITY_LIST.forEach(ability => {
-                    newAbilities[ability.id] = 8;
-                });
-                onUpdate({ abilities: newAbilities });
+                const newAttributes = ABILITY_LIST.map(ability => ({
+                    id: 0,
+                    characterId: character.id,
+                    attributeId: ability.id,
+                    value: 8
+                }));
+                onUpdate({ attributes: newAttributes });
             }
         }
     };
@@ -165,11 +202,7 @@ export function AbilitiesRaceTab({
         setAssignedAbilitiesForOrder(new Set());
 
         // Clear all assigned abilities when rolling new values
-        const resetAbilities: { [key: number]: number | undefined } = {};
-        ABILITY_LIST.forEach(ability => {
-            resetAbilities[ability.id] = undefined;
-        });
-        onUpdate({ abilities: resetAbilities });
+        onUpdate({ attributes: [] });
 
         const diceFormula = generationMethod === 'roll-4d6-drop' ? '4d6dl1' : '3d6';
         const numRolls = 6;
@@ -212,8 +245,8 @@ export function AbilitiesRaceTab({
 
         if (source === 'pool' && targetAbilityId !== undefined) {
             // Moving from pool to ability
-            const existingValue = character.abilities[targetAbilityId];
-            const newAbilities = { ...character.abilities, [targetAbilityId]: value };
+            const existingValue = getAbilityScore(targetAbilityId);
+            setAbilityScore(targetAbilityId, value);
             let newRolledValues = [...rolledValues];
 
             // Remove the specific value by index, not by filtering
@@ -225,41 +258,44 @@ export function AbilitiesRaceTab({
             }
 
             // If the target ability already had a value, add it back to the pool
-            if (existingValue !== undefined) {
+            if (existingValue !== null && existingValue !== 0) {
                 newRolledValues = [...newRolledValues, existingValue];
             }
 
-            onUpdate({ abilities: newAbilities });
             setRolledValues(newRolledValues);
         } else if (source === 'ability' && targetAbilityId !== undefined) {
             // Moving from one ability to another ability
-            const sourceAbilityId = Object.keys(character.abilities).find(key => character.abilities[parseInt(key)] === value);
-            if (sourceAbilityId) {
-                const existingValue = character.abilities[targetAbilityId];
-                const newAbilities = { ...character.abilities };
-                delete newAbilities[parseInt(sourceAbilityId)];
-                newAbilities[targetAbilityId] = value;
+            const sourceAttribute = character.attributes.find(attr => attr.value === value);
+            if (sourceAttribute) {
+                const existingValue = getAbilityScore(targetAbilityId);
+
+                // Remove the source ability
+                const updatedAttributes = character.attributes.filter(attr => attr.attributeId !== sourceAttribute.attributeId);
+
+                // Add the target ability
+                if (targetAbilityId !== sourceAttribute.attributeId) {
+                    updatedAttributes.push({
+                        id: 0,
+                        characterId: character.id,
+                        attributeId: targetAbilityId,
+                        value: value
+                    });
+                }
 
                 let newRolledValues = [...rolledValues];
 
                 // If the target ability already had a value, add it back to the pool
-                if (existingValue !== undefined) {
+                if (existingValue !== null && existingValue !== 0) {
                     newRolledValues = [...newRolledValues, existingValue];
                 }
 
-                onUpdate({ abilities: newAbilities });
+                onUpdate({ attributes: updatedAttributes });
                 setRolledValues(newRolledValues);
             }
         } else if (source === 'ability' && targetAbilityId === undefined) {
             // Moving from ability back to pool
-            const newAbilities = { ...character.abilities };
-            // Find the ability that has this value and remove it
-            const abilityToRemove = Object.keys(newAbilities).find(key => newAbilities[parseInt(key)] === value);
-            if (abilityToRemove) {
-                delete newAbilities[parseInt(abilityToRemove)];
-            }
-
-            onUpdate({ abilities: newAbilities });
+            const updatedAttributes = character.attributes.filter(attr => attr.value !== value);
+            onUpdate({ attributes: updatedAttributes });
             setRolledValues([...rolledValues, value]);
         }
     };
@@ -353,8 +389,9 @@ export function AbilitiesRaceTab({
         return adjustment?.value || 0;
     };
 
-    const getAdjustedAbilityValue = (abilityId: number): number => {
-        const baseValue = character.abilities[abilityId] || 0;
+    const getAdjustedAbilityValue = (abilityId: number): number | null => {
+        const baseValue = getAbilityScore(abilityId);
+        if (baseValue === null) return null;
         const racialModifier = getRacialModifier(abilityId);
         return baseValue + racialModifier;
     };
@@ -381,8 +418,8 @@ export function AbilitiesRaceTab({
 
     const getTotalPointsSpent = (): number => {
         return ABILITY_LIST.reduce((total, ability) => {
-            const score = character.abilities[ability.id] || 8;
-            return total + GetPointBuyCost(score);
+            const score = getAbilityScore(ability.id);
+            return total + (score !== null ? GetPointBuyCost(score) : 0);
         }, 0);
     };
 
@@ -502,25 +539,25 @@ export function AbilitiesRaceTab({
                                             {showChevrons ? (
                                                 <input
                                                     type="number"
-                                                    value={character.abilities[ability.id] || ''}
+                                                    value={getAbilityScore(ability.id) || ''}
                                                     onChange={(e) => handleAbilityChange(ability.id, parseInt(e.target.value) || 0)}
                                                     className="w-12 py-1 border border-gray-300 dark:border-gray-600 rounded text-center bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                     min="1"
                                                     max="20"
-                                                    draggable={character.abilities[ability.id] !== undefined}
-                                                    onDragStart={(e) => character.abilities[ability.id] !== undefined && handleDragStart(e, character.abilities[ability.id]!, 'ability')}
+                                                    draggable={getAbilityScore(ability.id) !== undefined}
+                                                    onDragStart={(e) => getAbilityScore(ability.id) !== undefined && handleDragStart(e, getAbilityScore(ability.id)!, 'ability')}
                                                     onDragOver={handleDragOver}
                                                     onDrop={(e) => handleDrop(e, ability.id)}
                                                 />
                                             ) : (
                                                 <div
                                                     className="w-12 py-1 border border-gray-300 dark:border-gray-600 rounded text-center bg-gray-100 dark:bg-gray-600 cursor-move min-h-[28px] flex items-center justify-center"
-                                                    draggable={character.abilities[ability.id] !== undefined}
-                                                    onDragStart={(e) => character.abilities[ability.id] !== undefined && handleDragStart(e, character.abilities[ability.id]!, 'ability')}
+                                                    draggable={getAbilityScore(ability.id) !== undefined}
+                                                    onDragStart={(e) => getAbilityScore(ability.id) !== undefined && handleDragStart(e, getAbilityScore(ability.id)!, 'ability')}
                                                     onDragOver={handleDragOver}
                                                     onDrop={(e) => handleDrop(e, ability.id)}
                                                 >
-                                                    {character.abilities[ability.id] || ''}
+                                                    {getAbilityScore(ability.id) || ''}
                                                 </div>
                                             )}
 
@@ -531,7 +568,7 @@ export function AbilitiesRaceTab({
                                                         disabled={generationMethod === 'point-buy' && getRemainingPoints() <= 0}
                                                         className="w-4 h-3 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:text-white text-xs flex items-center justify-center rounded-t disabled:opacity-50 disabled:cursor-not-allowed"
                                                         onClick={() => {
-                                                            const currentValue = character.abilities[ability.id] || 0;
+                                                            const currentValue = getAbilityScore(ability.id);
                                                             if (currentValue < 20) {
                                                                 handleAbilityChange(ability.id, currentValue + 1);
                                                             }
@@ -543,7 +580,7 @@ export function AbilitiesRaceTab({
                                                         type="button"
                                                         className="w-4 h-3 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:text-white text-xs flex items-center justify-center rounded-b"
                                                         onClick={() => {
-                                                            const currentValue = character.abilities[ability.id] || 0;
+                                                            const currentValue = getAbilityScore(ability.id);
                                                             if (currentValue > 1) {
                                                                 handleAbilityChange(ability.id, currentValue - 1);
                                                             }
@@ -567,15 +604,15 @@ export function AbilitiesRaceTab({
                                         <div>
                                             <div className="text-sm text-gray-500 w-12 text-center">Score</div>
                                             <div className="w-12 py-1 border border-gray-300 dark:border-gray-600 rounded text-center bg-gray-100 dark:bg-gray-600 min-h-[28px] flex items-center justify-center">
-                                                {character.abilities[ability.id] !== undefined ? getAdjustedAbilityValue(ability.id) : ''}
+                                                {getAdjustedAbilityValue(ability.id) !== null ? getAdjustedAbilityValue(ability.id) : ''}
                                             </div>
                                         </div>
 
                                         {/* Modifier */}
                                         <div>
                                             <div className="text-sm text-gray-500 w-12 text-center">Mod</div>
-                                            <div className={`w-12 py-1 border border-gray-300 dark:border-gray-600 rounded text-center bg-gray-100 dark:bg-gray-600 font-medium min-h-[28px] flex items-center justify-center ${character.abilities[ability.id] !== undefined ? getModifierTextColor(GetAbilityModifier(getAdjustedAbilityValue(ability.id))) : 'text-gray-500 dark:text-gray-400'}`}>
-                                                {character.abilities[ability.id] !== undefined ? GetAbilityModifierString(getAdjustedAbilityValue(ability.id)) : ''}
+                                            <div className={`w-12 py-1 border border-gray-300 dark:border-gray-600 rounded text-center bg-gray-100 dark:bg-gray-600 font-medium min-h-[28px] flex items-center justify-center ${getAdjustedAbilityValue(ability.id) !== null ? getModifierTextColor(GetAbilityModifier(getAdjustedAbilityValue(ability.id)!)) : 'text-gray-500 dark:text-gray-400'}`}>
+                                                {getAdjustedAbilityValue(ability.id) !== null ? GetAbilityModifierString(getAdjustedAbilityValue(ability.id)!) : ''}
                                             </div>
                                         </div>
 
@@ -584,7 +621,7 @@ export function AbilitiesRaceTab({
                                             <div>
                                                 <div className="text-sm text-gray-500 w-8 text-center">Cost</div>
                                                 <div className="w-8 py-1 text-center">
-                                                    {character.abilities[ability.id] !== undefined ? GetPointBuyCost(character.abilities[ability.id]!) : 0}
+                                                    {getAbilityScore(ability.id) !== null ? GetPointBuyCost(getAbilityScore(ability.id)!) : 0}
                                                 </div>
                                             </div>
                                         )}
@@ -709,9 +746,8 @@ export function AbilitiesRaceTab({
                                 onClick={() => {
                                     const resetAbilities: { [key: number]: number } = {};
                                     ABILITY_LIST.forEach(ability => {
-                                        resetAbilities[ability.id] = 8;
+                                        setAbilityScore(ability.id, 8);
                                     });
-                                    onUpdate({ abilities: resetAbilities });
                                 }}
                                 className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-xs"
                             >
@@ -726,7 +762,7 @@ export function AbilitiesRaceTab({
                     {/* Race Selection */}
                     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-6">
                         <CustomSelect<number>
-                            value={character.race}
+                            value={character.raceId}
                             onValueChange={handleRaceChange}
                             options={raceOptions}
                             label="Race"
@@ -738,13 +774,13 @@ export function AbilitiesRaceTab({
                         />
 
                         {/* Race Details Panel */}
-                        {character.race && selectedRaceDetails && (
+                        {character.raceId > 0 && selectedRaceDetails && (
                             <>
 
                                 {/* Key Attributes */}
                                 <div className="grid grid-cols-2 gap-4 mb-4">
                                     <div className="space-y-2 text-sm">
-                                        <p><strong>Size:</strong> {getSizeForRace(character.race)}</p>
+                                        <p><strong>Size:</strong> {getSizeForRace(character.raceId)}</p>
                                         <p><strong>Speed:</strong> {selectedRaceDetails.speed} ft.</p>
                                         <p><strong>Favored Class:</strong> {getFavoredClass()}</p>
                                     </div>

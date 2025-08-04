@@ -2,10 +2,7 @@ import { buildValidatedRouter } from '@/lib/buildValidatedRouter.js';
 import {
     ClassIdParamSchema,
     CreateClassSchema,
-    UpdateClassSchema,
-    ClassFeatureSlugParamSchema,
-    CreateClassFeatureSchema,
-    UpdateClassFeatureSchema
+    UpdateClassSchema
 } from '@shared/schema';
 
 import {
@@ -14,11 +11,6 @@ import {
     CreateClass,
     UpdateClass,
     DeleteClass,
-    GetAllClassFeatures,
-    GetClassFeatureBySlug,
-    CreateClassFeature,
-    UpdateClassFeature,
-    DeleteClassFeature,
 } from './classController.js';
 import { requireAdmin } from '../../middleware/authMiddleware.js';
 
@@ -27,22 +19,11 @@ const { router: ClassRouter, get, post, put, delete: deleteRoute } = buildValida
 
 // Class Read Routes
 get('/', {}, GetAllClasses);
-
-// Class Feature Read Routes
-get('/features', {}, GetAllClassFeatures);
-get('/features/:slug', { params: ClassFeatureSlugParamSchema }, GetClassFeatureBySlug);
-
-// this has to be last because it conflicts with the class feature routes
 get('/:id', { params: ClassIdParamSchema }, GetClassById);
 
 // Class Write Routes
 post('/', requireAdmin, { body: CreateClassSchema }, CreateClass);
 put('/:id', requireAdmin, { params: ClassIdParamSchema, body: UpdateClassSchema }, UpdateClass);
 deleteRoute('/:id', requireAdmin, { params: ClassIdParamSchema }, DeleteClass);
-
-// Class Feature Write Routes
-post('/features', requireAdmin, { body: CreateClassFeatureSchema }, CreateClassFeature);
-put('/features/:slug', requireAdmin, { params: ClassFeatureSlugParamSchema, body: UpdateClassFeatureSchema }, UpdateClassFeature);
-deleteRoute('/features/:slug', requireAdmin, { params: ClassFeatureSlugParamSchema }, DeleteClassFeature);
 
 export { ClassRouter };

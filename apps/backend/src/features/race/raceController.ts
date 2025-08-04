@@ -7,18 +7,13 @@ import {
     ValidatedNoInput
 } from '@/util/validated-types'
 import {
-    GetRaceTraitResponse,
     GetRaceResponse,
     RaceIdParamRequest,
-    RaceTraitSlugParamRequest,
     CreateRaceRequest,
-    CreateRaceTraitRequest,
     UpdateRaceRequest,
-    UpdateRaceTraitRequest,
     GetAllRacesResponse,
     UpdateResponse,
     CreateResponse,
-    GetAllRaceTraitsResponse,
 } from '@shared/schema';
 
 import { raceService } from './raceService';
@@ -68,45 +63,4 @@ export async function DeleteRace(req: ValidatedParamsT<RaceIdParamRequest, Updat
     res.json(result);
 }
 
-export async function GetAllRaceTraits(req: ValidatedNoInput<GetAllRaceTraitsResponse>, res: Response) {
-    const traits = await raceService.getRaceTraits();
-    res.json(traits);
-}
 
-/**
- * Fetches a single race trait by its slug.
- */
-export async function GetRaceTraitBySlug(req: ValidatedParamsT<RaceTraitSlugParamRequest, GetRaceTraitResponse>, res: Response) {
-    const trait = await raceService.getRaceTraitBySlug(req.params);
-
-    if (!trait) {
-        res.status(404).json({ error: 'Race trait not found' });
-        return;
-    }
-
-    res.json(trait);
-}
-
-/**
- * Creates a new race trait.
- */
-export async function CreateRaceTrait(req: ValidatedBodyT<CreateRaceTraitRequest, CreateResponse>, res: Response) {
-    const result = await raceService.createRaceTrait(req.body);
-    res.status(201).json(result);
-}
-
-/**
- * Updates an existing race trait.
- */
-export async function UpdateRaceTrait(req: ValidatedParamsBodyT<RaceTraitSlugParamRequest, UpdateRaceTraitRequest, UpdateResponse>, res: Response) {
-    const result = await raceService.updateRaceTrait(req.params, req.body);
-    res.json(result);
-}
-
-/**
- * Deletes a race trait.
- */
-export async function DeleteRaceTrait(req: ValidatedParamsT<RaceTraitSlugParamRequest, UpdateResponse>, res: Response) {
-    const result = await raceService.deleteRaceTrait(req.params);
-    res.json(result);
-} 

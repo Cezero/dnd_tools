@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { QueryResponseSchema } from './query.js';
 
+// Enum schemas
+export const TextAlignmentEnumSchema = z.enum(['left', 'center', 'right']);
+
 // Schema for reference table slug - path parameter
 export const ReferenceTableSlugParamSchema = z.object({
     slug: z.string().min(1, 'Table slug is required')
@@ -32,7 +35,7 @@ export const TableColumnSchema = z.object({
         .max(100, 'Header must be less than 100 characters')
         .trim(),
     span: z.number().int().min(1, 'Span must be at least 1').max(10, 'Span must be at most 10').optional().nullable(),
-    alignment: z.enum(['left', 'center', 'right']).nullable().default('left'),
+    alignment: TextAlignmentEnumSchema.nullable().default('left'),
 });
 
 // Schema for table cell (matches Prisma ReferenceTableCell)
@@ -88,6 +91,9 @@ export type GetAllReferenceTablesResponse = z.infer<typeof GetAllReferenceTables
 export type ReferenceTableSummary = z.infer<typeof ReferenceTableSummarySchema>;
 export type ReferenceTable = z.infer<typeof ReferenceTableSchema>;
 export type ReferenceTableUpdate = z.infer<typeof ReferenceTableUpdateSchema>;
+
+// Enum type exports
+export type TextAlignment = z.infer<typeof TextAlignmentEnumSchema>;
 
 export type ReferenceTableColumn = z.infer<typeof TableColumnSchema>;
 export type ReferenceTableRow = z.infer<typeof TableRowSchema>;

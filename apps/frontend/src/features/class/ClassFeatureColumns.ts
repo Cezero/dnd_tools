@@ -6,6 +6,20 @@ import { z } from 'zod';
 
 export const CLASS_FEATURE_COLUMNS: ColumnDef<z.infer<typeof ClassFeatureSchema>, unknown>[] = [
     {
+        accessorKey: 'id',
+        header: 'ID',
+        enableSorting: true,
+        enableColumnFilter: true,
+        enableResizing: true,
+        size: 80,
+        filterFn: createContainsFilter(),
+        meta: {
+            required: true,
+            filterType: FilterType.TEXT_INPUT,
+            placeholder: 'Filter by ID...'
+        },
+    },
+    {
         accessorKey: 'slug',
         header: 'Feature Slug',
         enableSorting: true,

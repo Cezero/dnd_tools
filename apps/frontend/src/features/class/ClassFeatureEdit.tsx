@@ -9,33 +9,38 @@ import {
 } from '@/components/forms';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { ClassFeatureService } from './ClassFeatureService';
-import { CreateClassFeatureSchema, UpdateClassFeatureSchema } from '@shared/schema';
+import {
+    CreateClassFeatureSchema,
+    UpdateClassFeatureSchema,
+    ClassFeatureWithRelationsSchema
+} from '@shared/schema';
+import { ClassFeatureModifiersSection } from './ClassFeatureModifiersSection';
+import { ClassFeatureEffectsSection } from './ClassFeatureEffectsSection';
+import { ClassFeatureChoicesSection } from './ClassFeatureChoicesSection';
 
 type ClassFeatureFormData = z.infer<typeof CreateClassFeatureSchema> | z.infer<typeof UpdateClassFeatureSchema>;
 
 export function ClassFeatureEdit() {
-    const { slug } = useParams<{ slug: string }>();
+    const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation();
     const [feature, setFeature] = useState<ClassFeatureFormData | null>(null);
+    const [featureWithRelations, setFeatureWithRelations] = useState<z.infer<typeof ClassFeatureWithRelationsSchema> | null>(null);
     const [message, setMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Determine which schema to use based on whether we're creating or editing
-    const schema = slug === 'new' ? CreateClassFeatureSchema : UpdateClassFeatureSchema;
+    const isNew = id === 'new';
+    const schema = isNew ? CreateClassFeatureSchema : UpdateClassFeatureSchema;
 
-    // Initialize form data with default values
     const initialFormData: ClassFeatureFormData = {
         slug: '',
         name: '',
         description: '',
-        ...(slug !== 'new' && { slug: slug })
     };
 
     const [formData, setFormData] = useState<ClassFeatureFormData>(initialFormData);
 
-    // Use the validated form hook
     const form = useValidatedForm(
         schema,
         formData,
@@ -49,16 +54,25 @@ export function ClassFeatureEdit() {
 
     useEffect(() => {
         const fetchFeature = async () => {
-            if (slug === 'new') {
+            if (isNew) {
                 setFeature(initialFormData);
                 return;
             }
 
             try {
                 setIsLoading(true);
-                const fetchedFeature = await ClassFeatureService.getClassFeatureBySlug(undefined, { slug });
+                const fetchedFeature = await ClassFeatureService.getClassFeatureById(undefined, { id: parseInt(id!) });
                 setFeature(fetchedFeature);
                 setFormData(fetchedFeature);
+
+                // Fetch rich data with relationships
+                try {
+                    const richFeature = await ClassFeatureService.getClassFeatureWithRelations(undefined, { id: parseInt(id!) });
+                    setFeatureWithRelations(richFeature);
+                } catch (relationError) {
+                    console.warn('Failed to fetch feature relationships:', relationError);
+                    // Continue without relationships for now
+                }
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to fetch class feature');
             } finally {
@@ -67,21 +81,20 @@ export function ClassFeatureEdit() {
         };
 
         fetchFeature();
-    }, [slug]);
+    }, [id, isNew, initialFormData]);
 
-    const HandleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setMessage('');
         setError(null);
 
-        // Validate the entire form
         if (!form.validation.validateForm(formData)) {
             return;
         }
 
         try {
             setIsLoading(true);
-            if (slug === 'new') {
+            if (isNew) {
                 const newFeature = await ClassFeatureService.createClassFeature(formData as z.infer<typeof CreateClassFeatureSchema>);
                 setMessage('Class feature created successfully!');
                 if (location.state?.from === 'ClassFeatureAssoc' && location.state?.classId) {
@@ -90,7 +103,7 @@ export function ClassFeatureEdit() {
                     navigate('/classes');
                 }
             } else {
-                await ClassFeatureService.updateClassFeature(formData as z.infer<typeof UpdateClassFeatureSchema>, { slug });
+                await ClassFeatureService.updateClassFeature(formData as z.infer<typeof UpdateClassFeatureSchema>, { id: parseInt(id!) });
                 setMessage('Class feature updated successfully!');
                 navigate('/classes');
             }
@@ -124,10 +137,10 @@ export function ClassFeatureEdit() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto p-6">
+        <div className="max-w-6xl mx-auto p-6">
             <div className="mb-6">
                 <h1 className="text-3xl font-bold">
-                    {slug === 'new' ? 'Create New Class Feature' : 'Edit Class Feature'}
+                    {isNew ? 'Create New Class Feature' : 'Edit Class Feature'}
                 </h1>
             </div>
 
@@ -144,50 +157,100 @@ export function ClassFeatureEdit() {
             )}
 
             <ValidatedForm
-                onSubmit={HandleSubmit}
+                onSubmit={handleSubmit}
                 validationState={form.validation.validationState}
                 isLoading={isLoading}
                 formData={formData}
                 setFormData={setFormData}
                 validation={form.validation}
             >
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between gap-2">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Basic Information */}
+                    <div className="space-y-4">
+                        <h2 className="text-xl font-semibold">Basic Information</h2>
+
                         <ValidatedInput
                             field="slug"
                             label="Feature Slug"
                             type="text"
-                            componentExtraClassName="flex items-center gap-2"
-                            labelExtraClassName="w-20"
-                            inputExtraClassName="w-auto"
                             required
                             placeholder="e.g., spellcasting, weapon-proficiency"
-                            disabled={slug !== 'new'}
+                            disabled={!isNew}
                         />
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
+
                         <ValidatedInput
                             field="name"
                             label="Feature Name"
                             type="text"
-                            componentExtraClassName="flex items-center gap-2"
-                            labelExtraClassName="w-20"
-                            inputExtraClassName="w-auto"
                             required
                             placeholder="e.g., Spellcasting, Weapon Proficiency"
-                            data-1p-ignore
                         />
+
+                        <div className="space-y-2">
+                            <label className="block font-medium">Description</label>
+                            <MarkdownEditor
+                                id="description"
+                                value={formData.description || ''}
+                                onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
+                            />
+                            {form.validation.getError('description') && (
+                                <span className="text-red-500 text-sm">{form.validation.getError('description')}</span>
+                            )}
+                        </div>
                     </div>
-                    <div className="space-y-2">
-                        <MarkdownEditor
-                            id="description"
-                            value={formData.description || ''}
-                            onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
-                        />
-                        {form.validation.getError('description') && (
-                            <span className="text-red-500 text-sm">{form.validation.getError('description')}</span>
-                        )}
-                    </div>
+
+                    {/* Relationships Management */}
+                    {!isNew && featureWithRelations && (
+                        <div className="space-y-6">
+                            <h2 className="text-xl font-semibold">Feature Details</h2>
+
+                            <ClassFeatureModifiersSection
+                                featureId={parseInt(id!)}
+                                modifiers={featureWithRelations.modifiers || []}
+                                onModifiersChange={(modifiers) => {
+                                    setFeatureWithRelations(prev => prev ? { ...prev, modifiers } : null);
+                                }}
+                            />
+
+                            <ClassFeatureEffectsSection
+                                featureId={parseInt(id!)}
+                                effects={featureWithRelations.progressions?.[0]?.effects || []}
+                                onEffectsChange={(effects) => {
+                                    setFeatureWithRelations(prev => {
+                                        if (!prev || !prev.progressions?.[0]) return prev;
+                                        return {
+                                            ...prev,
+                                            progressions: [
+                                                {
+                                                    ...prev.progressions[0],
+                                                    effects
+                                                }
+                                            ]
+                                        };
+                                    });
+                                }}
+                            />
+
+                            <ClassFeatureChoicesSection
+                                featureId={parseInt(id!)}
+                                choices={featureWithRelations.progressions?.[0]?.choices || []}
+                                onChoicesChange={(choices) => {
+                                    setFeatureWithRelations(prev => {
+                                        if (!prev || !prev.progressions?.[0]) return prev;
+                                        return {
+                                            ...prev,
+                                            progressions: [
+                                                {
+                                                    ...prev.progressions[0],
+                                                    choices
+                                                }
+                                            ]
+                                        };
+                                    });
+                                }}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* Action Buttons */}
@@ -205,7 +268,7 @@ export function ClassFeatureEdit() {
                         className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={isLoading || form.validation.validationState.hasErrors}
                     >
-                        {isLoading ? 'Saving...' : slug === 'new' ? 'Create Feature' : 'Update Feature'}
+                        {isLoading ? 'Saving...' : isNew ? 'Create Feature' : 'Update Feature'}
                     </button>
                 </div>
             </ValidatedForm>

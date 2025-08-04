@@ -7,20 +7,22 @@ import { RaceService } from '@/features/race/RaceService';
 import {
     AbilitiesRaceTab, ClassTab, SkillsTab, FeatsTab, DescriptionTab, EquipmentTab
 } from './tabs'; // Using barrel export
-import type { CharacterData } from './types';
-import type { RaceInQueryResponse, GetRaceResponse, GetClassResponse } from '@shared/schema';
+import type { RaceInQueryResponse, GetRaceResponse, GetClassResponse, CharacterWithAllDetailsResponse } from '@shared/schema';
+import type { CharacterAdvancementWithDetailsResponse } from '@shared/schema';
 
 interface TabConfig {
     id: string;
     label: string;
     icon: React.ComponentType<{ className?: string }>;
     component: React.ComponentType<{
-        character: CharacterData;
-        onUpdate: (data: Partial<CharacterData>) => void;
+        character: CharacterWithAllDetailsResponse;
+        onUpdate: (data: Partial<CharacterWithAllDetailsResponse>) => void;
         races?: RaceInQueryResponse[];
         selectedRaceDetails?: GetRaceResponse | null;
         selectedClassDetails?: GetClassResponse | null;
         onClassDetailsChange?: (classDetails: GetClassResponse | null) => void;
+        targetAdvancement?: CharacterAdvancementWithDetailsResponse;
+        onAdvancementUpdate?: (advancement: CharacterAdvancementWithDetailsResponse) => void;
     }>;
 }
 
@@ -36,13 +38,44 @@ export function CharacterEdit(): React.JSX.Element {
     // Class data state
     const [selectedClassDetails, setSelectedClassDetails] = useState<GetClassResponse | null>(null);
 
-    const [character, setCharacter] = useState<CharacterData>({
-        name: '', level: 1, experience: 0, alignment: null, race: null,
-        abilities: {},
-        class: null, classFeatures: [], hitPoints: 0, armorClass: 10, skills: {}, skillPoints: 0,
-        feats: [], bonusFeats: [], description: '', background: '', appearance: '', equipment: [],
-        money: { 1: 0, 2: 0, 3: 0, 4: 0 },
-        languages: [], bonusLanguages: []
+    const [character, setCharacter] = useState<CharacterWithAllDetailsResponse>({
+        id: 0,
+        userId: 0,
+        name: '',
+        raceId: 0,
+        alignmentId: 0,
+        age: null,
+        height: null,
+        weight: null,
+        eyes: null,
+        hair: null,
+        gender: null,
+        notes: null,
+        xp: 0,
+        race: {
+            id: 0,
+            name: ''
+        },
+        attributes: [],
+        advancements: [
+            {
+                id: 0,
+                characterId: 0,
+                level: 1,
+                version: 1,
+                classId: 0,
+                secondaryClassId: null,
+                hitPoints: 0,
+                attributeId: null,
+                notes: null,
+                createdAt: new Date(),
+                skills: [],
+                feats: [],
+                spellsKnown: [],
+                features: []
+            }
+        ],
+        preparedSpells: []
     });
 
     // Fetch races on component mount
@@ -65,29 +98,23 @@ export function CharacterEdit(): React.JSX.Element {
     // Fetch race details when race is selected
     useEffect(() => {
         const fetchRaceDetails = async () => {
-            if (!character.race) {
+            if (!character.raceId) {
                 setSelectedRaceDetails(null);
                 return;
             }
 
             try {
-                const raceDetails = await RaceService.getRaceById(undefined, { id: character.race });
+                const raceDetails = await RaceService.getRaceById(undefined, { id: character.raceId });
                 setSelectedRaceDetails(raceDetails);
 
-                // Update languages based on race details
+                // Update race name in character
                 if (raceDetails) {
-                    const automaticLanguages = raceDetails.languages
-                        ?.filter(lang => lang.isAutomatic)
-                        .map(lang => lang.languageId) || [];
-
-                    const bonusLanguages = raceDetails.languages
-                        ?.filter(lang => !lang.isAutomatic)
-                        .map(lang => lang.languageId) || [];
-
                     setCharacter(prev => ({
                         ...prev,
-                        languages: automaticLanguages,
-                        bonusLanguages: bonusLanguages
+                        race: {
+                            id: raceDetails.id,
+                            name: raceDetails.name
+                        }
                     }));
                 }
             } catch (error) {
@@ -97,9 +124,9 @@ export function CharacterEdit(): React.JSX.Element {
         };
 
         fetchRaceDetails();
-    }, [character.race]);
+    }, [character.raceId]);
 
-    const handleUpdate = (data: Partial<CharacterData>) => {
+    const handleUpdate = (data: Partial<CharacterWithAllDetailsResponse>) => {
         setCharacter(prev => ({ ...prev, ...data }));
     };
 
@@ -166,6 +193,12 @@ export function CharacterEdit(): React.JSX.Element {
                             selectedRaceDetails={selectedRaceDetails}
                             selectedClassDetails={selectedClassDetails}
                             onClassDetailsChange={handleClassDetailsChange}
+                            targetAdvancement={character.advancements[0]}
+                            onAdvancementUpdate={(updatedAdvancement) => {
+                                handleUpdate({
+                                    advancements: [updatedAdvancement]
+                                });
+                            }}
                         />
                     )}
                 </div>

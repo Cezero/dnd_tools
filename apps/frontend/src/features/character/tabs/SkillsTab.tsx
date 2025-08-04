@@ -8,19 +8,20 @@ import {
     GetAbilityModifier,
     GetAbilityModifierString
 } from '@shared/static-data';
-import type { RaceInQueryResponse, GetRaceResponse, GetClassResponse } from '@shared/schema';
-import type { CharacterData } from '../types';
+import type { RaceInQueryResponse, GetRaceResponse, GetClassResponse, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse } from '@shared/schema';
 
 interface SkillRowProps {
     skillId: number;
 }
 
 interface SkillsTabProps {
-    character: CharacterData;
-    onUpdate: (data: Partial<CharacterData>) => void;
+    character: CharacterWithAllDetailsResponse;
+    onUpdate: (data: Partial<CharacterWithAllDetailsResponse>) => void;
     races?: RaceInQueryResponse[];
     selectedRaceDetails?: GetRaceResponse | null;
     selectedClassDetails?: GetClassResponse | null;
+    targetAdvancement?: CharacterAdvancementWithDetailsResponse;
+    onAdvancementUpdate?: (advancement: CharacterAdvancementWithDetailsResponse) => void;
 }
 
 export function SkillsTab({
@@ -28,12 +29,18 @@ export function SkillsTab({
     onUpdate,
     races = [],
     selectedRaceDetails,
-    selectedClassDetails
+    selectedClassDetails,
+    targetAdvancement,
+    onAdvancementUpdate
 }: SkillsTabProps): React.JSX.Element {
+
+    // Use target advancement if provided, otherwise use the first advancement (for new characters)
+    const advancement = targetAdvancement || character.advancements[0];
+    const isNewCharacter = !targetAdvancement; // If no target advancement, we're creating a new character
 
     // Check if a skill is a class skill
     const isSkillClassSkill = (skillId: number): boolean => {
-        if (!character.class || !selectedClassDetails) return false;
+        if (!advancement?.classId || !selectedClassDetails) return false;
 
         // Check if the skill is in the class's skill list
         return selectedClassDetails.skills?.some(classSkill => classSkill.skillId === skillId) || false;
@@ -49,60 +56,77 @@ export function SkillsTab({
         return skillId === 34; // Speak Language skill ID
     };
 
+    // Get ability score from attributes
+    const getAbilityScore = (abilityId: number): number => {
+        const attribute = character.attributes.find(attr => attr.attributeId === abilityId);
+        return attribute?.value ?? 10; // Default to 10 if not set
+    };
+
+    // Get skill ranks from advancement
+    const getSkillRanks = (skillId: number): number => {
+        const skillEntry = advancement?.skills.find(skill => skill.skillId === skillId);
+        return skillEntry?.pointsSpent || 0;
+    };
+
     // Calculate skill points available
     const skillPointsAvailable = useMemo(() => {
-        if (!character.class || character.level !== 1 || !selectedClassDetails) return 0;
+        if (!advancement?.classId || !selectedClassDetails) return 0;
 
         // Get intelligence modifier - default to 10 if not set
-        const intelligenceScore = character.abilities[4] ?? 10; // Intelligence is ability ID 4
+        const intelligenceScore = getAbilityScore(4); // Intelligence is ability ID 4
         const intModifier = GetAbilityModifier(intelligenceScore);
 
-        // Base calculation: (class skill points + int modifier) * 4
-        let basePoints = (selectedClassDetails.skillPoints + intModifier) * 4;
+        // For new characters (level 1), use the standard formula
+        if (isNewCharacter) {
+            // Base calculation: (class skill points + int modifier) * 4
+            let basePoints = (selectedClassDetails.skillPoints + intModifier) * 4;
 
-        // Minimum of 4 skill points even with negative intelligence
-        basePoints = Math.max(4, basePoints);
+            // Minimum of 4 skill points even with negative intelligence
+            basePoints = Math.max(4, basePoints);
 
-        // Human bonus: +4 skill points at first level
-        if (character.race && selectedRaceDetails?.name?.toLowerCase() === 'human') {
-            basePoints += 4;
+            // Human bonus: +4 skill points at first level
+            if (character.raceId && selectedRaceDetails?.name?.toLowerCase() === 'human') {
+                basePoints += 4;
+            }
+
+            return basePoints;
+        } else {
+            // For leveling up, use the standard formula: (class skill points + int modifier)
+            let basePoints = selectedClassDetails.skillPoints + intModifier;
+
+            // Minimum of 1 skill point even with negative intelligence
+            basePoints = Math.max(1, basePoints);
+
+            // Human bonus: +1 skill point per level
+            if (character.raceId && selectedRaceDetails?.name?.toLowerCase() === 'human') {
+                basePoints += 1;
+            }
+
+            return basePoints;
         }
-
-        return basePoints;
-    }, [character.class, character.level, character.abilities, character.race, selectedRaceDetails, selectedClassDetails]);
+    }, [advancement?.classId, selectedClassDetails, character.attributes, character.raceId, selectedRaceDetails, isNewCharacter]);
 
     // Calculate skill points spent
     const skillPointsSpent = useMemo(() => {
+        if (!advancement?.skills) return 0;
+
         let totalSpent = 0;
 
-        SKILL_LIST.forEach(skill => {
-            const isClassSkill = isSkillClassSkill(skill.id);
+        advancement.skills.forEach(skillEntry => {
+            const isClassSkill = isSkillClassSkill(skillEntry.skillId);
+            const pointsSpent = skillEntry.pointsSpent;
 
-            if (isSpecialSkill(skill.id)) {
-                // Handle special skills with subtypes
-                const subtypes = character.skillSubtypes?.[skill.id] || [];
-                subtypes.forEach(subtype => {
-                    if (isClassSkill) {
-                        totalSpent += subtype.ranks;
-                    } else {
-                        totalSpent += subtype.ranks * 2;
-                    }
-                });
+            if (isClassSkill) {
+                // Class skills cost 1 point per rank
+                totalSpent += pointsSpent;
             } else {
-                // Handle regular skills
-                const ranks = character.skills[skill.id] || 0;
-                if (isClassSkill) {
-                    // Class skills cost 1 point per rank
-                    totalSpent += ranks;
-                } else {
-                    // Cross-class skills cost 2 points per rank
-                    totalSpent += ranks * 2;
-                }
+                // Cross-class skills cost 2 points per rank
+                totalSpent += pointsSpent * 2;
             }
         });
 
         return totalSpent;
-    }, [character.skills, character.skillSubtypes, character.class, selectedClassDetails]);
+    }, [advancement?.skills, selectedClassDetails]);
 
     // Calculate remaining skill points
     const skillPointsRemaining = useMemo(() => {
@@ -117,17 +141,19 @@ export function SkillsTab({
         }
 
         const isClassSkill = isSkillClassSkill(skillId);
+        const characterLevel = character.advancements.length;
+
         if (isClassSkill) {
-            return character.level + 3;
+            return characterLevel + 3;
         } else {
-            return Math.floor((character.level + 3) / 2);
+            return Math.floor((characterLevel + 3) / 2);
         }
     };
 
     // Handle skill rank change
-    const handleSkillChange = (skillId: number, newRanks: number, subtypeIndex?: number) => {
+    const handleSkillChange = (skillId: number, newRanks: number) => {
         const skill = SKILL_LIST.find(s => s.id === skillId);
-        if (!skill) return;
+        if (!skill || !advancement) return;
 
         const maxRanks = getMaxRanks(skillId);
 
@@ -141,53 +167,64 @@ export function SkillsTab({
             newRanks = 0;
         }
 
-        if (isSpecialSkill(skillId)) {
-            // Handle special skills with subtypes
-            const subtypes = character.skillSubtypes?.[skillId] || [];
+        // Calculate points needed
+        const isClassSkill = isSkillClassSkill(skillId);
+        const pointsNeeded = isClassSkill ? newRanks : newRanks * 2;
 
-            if (subtypeIndex !== undefined) {
-                // Update existing subtype
-                const currentSubtype = subtypes[subtypeIndex];
-                if (!currentSubtype) return;
+        // Check if we have enough skill points
+        const currentPoints = getSkillRanks(skillId);
+        const currentCost = isClassSkill ? currentPoints : currentPoints * 2;
+        const costDifference = pointsNeeded - currentCost;
 
-                const isClassSkill = isSkillClassSkill(skillId);
-                const currentCost = isClassSkill ? currentSubtype.ranks : currentSubtype.ranks * 2;
-                const newCost = isClassSkill ? newRanks : newRanks * 2;
-                const costDifference = newCost - currentCost;
+        if (costDifference > skillPointsRemaining) {
+            return; // Don't update if not enough points
+        }
 
-                // Check if we have enough skill points
-                const remainingPoints = skillPointsAvailable - skillPointsSpent;
-                if (costDifference > remainingPoints) {
-                    return; // Don't update if not enough points
-                }
+        // Update the advancement's skills
+        const updatedSkills = [...(advancement.skills || [])];
+        const existingIndex = updatedSkills.findIndex(s => s.skillId === skillId);
 
-                const newSubtypes = [...subtypes];
-                newSubtypes[subtypeIndex] = { ...currentSubtype, ranks: newRanks };
-
-                const newSkillSubtypes = { ...character.skillSubtypes, [skillId]: newSubtypes };
-                onUpdate({ skillSubtypes: newSkillSubtypes });
+        if (existingIndex >= 0) {
+            if (newRanks === 0) {
+                // Remove skill if ranks are 0
+                updatedSkills.splice(existingIndex, 1);
+            } else {
+                // Update existing skill
+                updatedSkills[existingIndex] = {
+                    ...updatedSkills[existingIndex],
+                    pointsSpent: newRanks
+                };
             }
+        } else if (newRanks > 0) {
+            // Add new skill
+            updatedSkills.push({
+                advancementId: advancement.id,
+                skillId: skillId,
+                pointsSpent: newRanks
+            });
+        }
+
+        // Update the advancement
+        const updatedAdvancement = {
+            ...advancement,
+            skills: updatedSkills
+        };
+
+        if (onAdvancementUpdate) {
+            // For leveling up, use the callback
+            onAdvancementUpdate(updatedAdvancement);
         } else {
-            // Handle regular skills
-            const currentRanks = character.skills[skillId] || 0;
-            const isClassSkill = isSkillClassSkill(skillId);
-            const currentCost = isClassSkill ? currentRanks : currentRanks * 2;
-            const newCost = isClassSkill ? newRanks : newRanks * 2;
-            const costDifference = newCost - currentCost;
-
-            // Check if we have enough skill points
-            const remainingPoints = skillPointsAvailable - skillPointsSpent;
-            if (costDifference > remainingPoints) {
-                return; // Don't update if not enough points
-            }
-
-            const newSkills = { ...character.skills, [skillId]: newRanks };
-            onUpdate({ skills: newSkills });
+            // For new character creation, update the character
+            onUpdate({
+                advancements: [
+                    updatedAdvancement
+                ]
+            });
         }
     };
 
     // Handle skill increment/decrement
-    const handleSkillIncrement = (skillId: number, increment: boolean, subtypeIndex?: number) => {
+    const handleSkillIncrement = (skillId: number, increment: boolean) => {
         const skill = SKILL_LIST.find(s => s.id === skillId);
         if (!skill) return;
 
@@ -195,78 +232,12 @@ export function SkillsTab({
         const maxRanks = getMaxRanks(skillId);
         const step = isClassSkill ? 1.0 : 0.5;
 
-        if (isSpecialSkill(skillId)) {
-            // Handle special skills with subtypes
-            const subtypes = character.skillSubtypes?.[skillId] || [];
+        const currentValue = getSkillRanks(skillId);
+        const newValue = increment
+            ? Math.min(maxRanks, currentValue + step)
+            : Math.max(0, currentValue - step);
 
-            if (subtypeIndex !== undefined) {
-                const currentSubtype = subtypes[subtypeIndex];
-                if (!currentSubtype) return;
-
-                const currentValue = currentSubtype.ranks;
-                const newValue = increment
-                    ? Math.min(maxRanks, currentValue + step)
-                    : Math.max(0, currentValue - step);
-
-                handleSkillChange(skillId, newValue, subtypeIndex);
-            }
-        } else {
-            // Handle regular skills
-            const currentValue = character.skills[skillId] || 0;
-            const newValue = increment
-                ? Math.min(maxRanks, currentValue + step)
-                : Math.max(0, currentValue - step);
-
-            handleSkillChange(skillId, newValue);
-        }
-    };
-
-    // Add new subtype for special skills
-    const addSubtype = (skillId: number) => {
-        const subtypes = character.skillSubtypes?.[skillId] || [];
-        const newSubtypes = [...subtypes, { ranks: 0, subtype: '' }];
-        const newSkillSubtypes = { ...character.skillSubtypes, [skillId]: newSubtypes };
-        onUpdate({ skillSubtypes: newSkillSubtypes });
-    };
-
-    // Remove subtype for special skills
-    const removeSubtype = (skillId: number, subtypeIndex: number) => {
-        const subtypes = character.skillSubtypes?.[skillId] || [];
-        const newSubtypes = subtypes.filter((_, index) => index !== subtypeIndex);
-        const newSkillSubtypes = { ...character.skillSubtypes, [skillId]: newSubtypes };
-        onUpdate({ skillSubtypes: newSkillSubtypes });
-    };
-
-    // Update subtype name
-    const updateSubtypeName = (skillId: number, subtypeIndex: number, newName: string) => {
-        const currentSubtypes = character.skillSubtypes?.[skillId] || [];
-
-        if (subtypeIndex >= currentSubtypes.length) {
-            // Adding a new subtype
-            const newSubtypes = [...currentSubtypes, { ranks: 0, subtype: newName }];
-            const newSkillSubtypes = { ...character.skillSubtypes, [skillId]: newSubtypes };
-            onUpdate({ skillSubtypes: newSkillSubtypes });
-        } else {
-            // Updating existing subtype
-            const newSubtypes = [...currentSubtypes];
-            newSubtypes[subtypeIndex] = { ...newSubtypes[subtypeIndex], subtype: newName };
-
-            // Remove empty subtypes (ranks = 0 and empty name)
-            const filteredSubtypes = newSubtypes.filter(subtype => subtype.ranks > 0 || subtype.subtype !== '');
-
-            const newSkillSubtypes = { ...character.skillSubtypes, [skillId]: filteredSubtypes };
-            onUpdate({ skillSubtypes: newSkillSubtypes });
-        }
-    };
-
-    // Get special skill name
-    const getSpecialSkillName = (skillId: number): string => {
-        switch (skillId) {
-            case 6: return 'Craft';
-            case 32: return 'Perform';
-            case 33: return 'Profession';
-            default: return '';
-        }
+        handleSkillChange(skillId, newValue);
     };
 
     // Get ability modifier for a skill
@@ -277,28 +248,16 @@ export function SkillsTab({
         // Special case: skills with abilityId 0 (like Speak Language) have no ability modifier
         if (skill.abilityId === 0) return null;
 
-        const abilityScore = character.abilities[skill.abilityId] ?? 10;
+        const abilityScore = getAbilityScore(skill.abilityId);
         return GetAbilityModifier(abilityScore);
     };
 
     // Get total skill bonus (ranks + ability modifier)
-    const getSkillTotal = (skillId: number, subtypeIndex?: number): number | null => {
+    const getSkillTotal = (skillId: number): number | null => {
         const skill = SKILL_LIST.find(s => s.id === skillId);
         if (!skill) return 0;
 
-        let ranks = 0;
-        if (isSpecialSkill(skillId)) {
-            // Handle special skills with subtypes
-            const subtypes = character.skillSubtypes?.[skillId] || [];
-            if (subtypeIndex !== undefined) {
-                const subtype = subtypes[subtypeIndex];
-                ranks = subtype?.ranks || 0;
-            }
-        } else {
-            // Handle regular skills
-            ranks = character.skills[skillId] || 0;
-        }
-
+        const ranks = getSkillRanks(skillId);
         const abilityModifier = getSkillAbilityModifier(skillId);
 
         // Special case: skills with abilityId 0 (like Speak Language) have no total
@@ -315,331 +274,96 @@ export function SkillsTab({
         return ranks.toFixed(1);
     };
 
-    // Calculate total skill points spent across all skills and subtypes
-    const calculateTotalSkillPointsSpent = (): number => {
-        let totalSpent = 0;
-
-        // Add points from regular skills
-        Object.entries(character.skills).forEach(([skillIdStr, ranks]) => {
-            const skillId = parseInt(skillIdStr);
-            if (isSpeakLanguage(skillId)) {
-                // Speak Language always costs 1 point per rank
-                totalSpent += ranks;
-            } else {
-                const isClassSkill = isSkillClassSkill(skillId);
-                const costPerRank = isClassSkill ? 1 : 2;
-                totalSpent += ranks * costPerRank;
-            }
-        });
-
-        // Add points from skill subtypes
-        Object.entries(character.skillSubtypes || {}).forEach(([skillIdStr, subtypes]) => {
-            const skillId = parseInt(skillIdStr);
-            const isClassSkill = isSkillClassSkill(skillId);
-            const costPerRank = isClassSkill ? 1 : 2;
-
-            subtypes.forEach(subtype => {
-                totalSpent += subtype.ranks * costPerRank;
-            });
-        });
-
-        return totalSpent;
-    };
-
     // Generate the formula display for skill points calculation
     const getSkillPointsFormula = (): string => {
-        if (!character.class || !selectedClassDetails) return '';
+        if (!advancement?.classId || !selectedClassDetails) return '';
 
-        const intelligenceScore = character.abilities[4] ?? 10; // Intelligence is ability ID 4
+        const intelligenceScore = getAbilityScore(4); // Intelligence is ability ID 4
         const intModifier = GetAbilityModifier(intelligenceScore);
         const classSkillPoints = selectedClassDetails.skillPoints;
-        const isHuman = character.race && selectedRaceDetails?.name?.toLowerCase() === 'human';
+        const isHuman = character.raceId && selectedRaceDetails?.name?.toLowerCase() === 'human';
         const className = selectedClassDetails.name;
 
-        const raceStr = !isHuman ? '' : character.level === 1 ? 'Human: 4 + (' : 'Human: 1 + ';
-        const multiplierStr = character.level === 1 ? '× 4' : '';
-        const closeParenthesis = character.level === 1 && isHuman ? ')' : '';
-        return `${raceStr}(${className}: ${classSkillPoints} ${intModifier < 0 ? '-' : '+'} INT: ${intModifier}) ${multiplierStr}${closeParenthesis}`;
+        if (isNewCharacter) {
+            const raceStr = !isHuman ? '' : 'Human: 4 + (';
+            const multiplierStr = '× 4';
+            const closeParenthesis = isHuman ? ')' : '';
+            return `${raceStr}(${className}: ${classSkillPoints} ${intModifier < 0 ? '-' : '+'} INT: ${intModifier}) ${multiplierStr}${closeParenthesis}`;
+        } else {
+            const raceStr = !isHuman ? '' : 'Human: 1 + ';
+            return `${raceStr}(${className}: ${classSkillPoints} ${intModifier < 0 ? '-' : '+'} INT: ${intModifier})`;
+        }
     };
 
-    // SkillRow component - takes skillId and optional subtype index for special skills
-    const SkillRow = ({ skillId, subTypeIndex }: {
-        skillId: number;
-        subTypeIndex?: number;
-    }) => {
+    // SkillRow component
+    const SkillRow = ({ skillId }: { skillId: number }) => {
         const skill = SKILL_LIST.find(s => s.id === skillId);
         if (!skill) return <></>;
 
         const isClassSkill = isSkillClassSkill(skillId);
         const maxRanks = getMaxRanks(skillId);
-        const isSpecial = isSpecialSkill(skillId);
-
-        // For special skills, get the subtypes and current subtype data
-        const subtypes = character.skillSubtypes?.[skillId] || [];
-        const currentSubtype = subTypeIndex !== undefined ? subtypes[subTypeIndex] : null;
-        const ranks = currentSubtype ? currentSubtype.ranks : (character.skills[skillId] || 0);
-        const total = getSkillTotal(skillId, subTypeIndex);
-
-        const [editingSubtype, setEditingSubtype] = React.useState(false);
-        const [editValue, setEditValue] = React.useState('');
-        const [inputPosition, setInputPosition] = React.useState({ x: 0, y: 0, width: 0 });
-        const inputRef = React.useRef<HTMLInputElement>(null);
-        const skillNameRef = React.useRef<HTMLDivElement>(null);
-
-        // For special skills, show the base name with subtype if provided
-        const getSkillName = () => {
-            if (!isSpecial) return skill.name;
-
-            // Show base skill name with subtype if provided
-            if (currentSubtype) {
-                return `${skill.name} (${currentSubtype.subtype || 'unnamed'})`;
-            }
-
-            return skill.name;
-        };
-
-        const skillName = getSkillName();
-
-        const handleSubtypeClick = () => {
-            if (!isSpecial || !skillNameRef.current) return;
-
-            // Calculate position of the skill name element
-            const rect = skillNameRef.current.getBoundingClientRect();
-            setInputPosition({
-                x: rect.left,
-                y: rect.top,
-                width: rect.width
-            });
-
-            setEditingSubtype(true);
-            setEditValue(currentSubtype?.subtype || ''); // Pre-fill with existing subtype name if editing
-        };
-
-        const handleSubtypeSave = () => {
-            if (!isSpecial) return;
-
-            const currentSubtypes = character.skillSubtypes?.[skillId] || [];
-
-            if (subTypeIndex !== undefined) {
-                // Updating existing subtype
-                const newSubtypes = [...currentSubtypes];
-                newSubtypes[subTypeIndex] = { ...newSubtypes[subTypeIndex], subtype: editValue };
-
-                // Remove subtypes with empty names and 0 ranks
-                const filteredSubtypes = newSubtypes.filter(subtype =>
-                    subtype.subtype !== '' || subtype.ranks > 0
-                );
-
-                const newSkillSubtypes = { ...character.skillSubtypes, [skillId]: filteredSubtypes };
-                onUpdate({ skillSubtypes: newSkillSubtypes });
-            } else {
-                // Adding new subtype - only add if name is not empty
-                if (editValue.trim() !== '') {
-                    const newSubtypes = [...currentSubtypes, { ranks: 0, subtype: editValue }];
-                    const newSkillSubtypes = { ...character.skillSubtypes, [skillId]: newSubtypes };
-                    onUpdate({ skillSubtypes: newSkillSubtypes });
-                }
-            }
-
-            setEditingSubtype(false);
-            setEditValue('');
-        };
-
-        const handleSubtypeCancel = () => {
-            setEditingSubtype(false);
-            setEditValue('');
-        };
-
-        const handleSkillChange = (newRanks: number) => {
-            // Constrain to max ranks for this skill
-            const constrainedRanks = Math.min(Math.max(0, newRanks), maxRanks);
-
-            // Calculate current total skill points spent
-            const currentSkillPointsSpent = calculateTotalSkillPointsSpent();
-
-            // Calculate skill points for this change
-            const currentRanks = subTypeIndex !== undefined
-                ? (character.skillSubtypes?.[skillId]?.[subTypeIndex]?.ranks || 0)
-                : (character.skills[skillId] || 0);
-
-            const rankDifference = constrainedRanks - currentRanks;
-            const skillPointsForChange = isSpeakLanguage(skillId)
-                ? rankDifference
-                : rankDifference * (isClassSkill ? 1 : 2);
-
-            // Check if this change would exceed available skill points
-            if (currentSkillPointsSpent + skillPointsForChange > skillPointsAvailable) {
-                return; // Don't allow the change
-            }
-
-            if (subTypeIndex !== undefined) {
-                // Update subtype ranks
-                const currentSubtypes = character.skillSubtypes?.[skillId] || [];
-                const newSubtypes = [...currentSubtypes];
-                newSubtypes[subTypeIndex] = { ...newSubtypes[subTypeIndex], ranks: constrainedRanks };
-
-                // Remove subtypes with empty names and 0 ranks
-                const filteredSubtypes = newSubtypes.filter(subtype =>
-                    subtype.subtype !== '' || subtype.ranks > 0
-                );
-
-                const newSkillSubtypes = { ...character.skillSubtypes, [skillId]: filteredSubtypes };
-                onUpdate({ skillSubtypes: newSkillSubtypes });
-            } else if (isSpecial) {
-                // For special skills, adding ranks to base skill creates a new subtype
-                const currentSubtypes = character.skillSubtypes?.[skillId] || [];
-                const newSubtypes = [...currentSubtypes, { ranks: constrainedRanks, subtype: 'unnamed' }];
-                const newSkillSubtypes = { ...character.skillSubtypes, [skillId]: newSubtypes };
-                onUpdate({ skillSubtypes: newSkillSubtypes });
-            } else {
-                // Update base skill ranks for regular skills
-                onUpdate({
-                    skills: {
-                        ...character.skills,
-                        [skillId]: constrainedRanks
-                    }
-                });
-            }
-        };
-
-        const handleSkillIncrement = (increment: boolean) => {
-            const incrementAmount = isClassSkill ? 1.0 : 0.5;
-            const newRanks = increment ? ranks + incrementAmount : ranks - incrementAmount;
-            handleSkillChange(Math.max(0, newRanks));
-        };
-
-        React.useEffect(() => {
-            if (editingSubtype && inputRef.current) {
-                inputRef.current.focus();
-            }
-        }, [editingSubtype]);
+        const ranks = getSkillRanks(skillId);
+        const total = getSkillTotal(skillId);
 
         return (
-            <>
-                <div
-                    className={`grid grid-cols-[2fr_1fr_1fr_1fr] gap-2 px-3 py-2 items-center border-b border-gray-200 dark:border-gray-700 ${isClassSkill
-                        ? 'bg-blue-100 dark:bg-blue-900/30'
-                        : 'hover:bg-gray-50 dark:hover:bg-gray-700'
-                        }`}
-                >
-                    <div className="flex items-center">
-                        <div
-                            ref={skillNameRef}
-                            onClick={isSpecial ? handleSubtypeClick : undefined}
-                            className={`text-sm font-medium ${isSpecial ? 'hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer' : ''}`}
-                            title={isSpecial ? 'Click to modify subtype' : undefined}
+            <div
+                className={`grid grid-cols-[2fr_1fr_1fr_1fr] gap-2 px-3 py-2 items-center border-b border-gray-200 dark:border-gray-700 ${isClassSkill
+                    ? 'bg-blue-100 dark:bg-blue-900/30'
+                    : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+            >
+                <div className="flex items-center">
+                    <div className="text-sm font-medium">
+                        {skill.name}
+                    </div>
+                    {isClassSkill && (
+                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200">
+                            C
+                        </span>
+                    )}
+                </div>
+                <div className="grid grid-cols-[48px_16px]">
+                    <input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        max={maxRanks}
+                        value={ranks}
+                        onChange={(e) => handleSkillChange(skillId, parseFloat(e.target.value) || 0)}
+                        className={`w-12 py-1 text-sm border rounded text-center bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${isClassSkill
+                            ? 'border-blue-300 dark:border-blue-600'
+                            : 'border-gray-300 dark:border-gray-600'
+                            }`}
+                    />
+                    <div className="flex flex-col justify-center gap-1.5">
+                        <button
+                            type="button"
+                            className="w-4 h-3 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:text-white text-xs flex items-center justify-center rounded-t"
+                            onClick={() => handleSkillIncrement(skillId, true)}
                         >
-                            {skillName}
-                        </div>
-                        {isClassSkill && (
-                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200">
-                                C
-                            </span>
-                        )}
-                    </div>
-                    <div className="grid grid-cols-[48px_16px]">
-                        <input
-                            type="number"
-                            step="0.5"
-                            min="0"
-                            max={maxRanks}
-                            value={ranks}
-                            onChange={(e) => handleSkillChange(parseFloat(e.target.value) || 0)}
-                            className={`w-12 py-1 text-sm border rounded text-center bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${isClassSkill
-                                ? 'border-blue-300 dark:border-blue-600'
-                                : 'border-gray-300 dark:border-gray-600'
-                                }`}
-                        />
-                        <div className="flex flex-col justify-center gap-1.5">
-                            <button
-                                type="button"
-                                className="w-4 h-3 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:text-white text-xs flex items-center justify-center rounded-t"
-                                onClick={() => handleSkillIncrement(true)}
-                            >
-                                <ChevronUpIcon className="h-3 w-3" />
-                            </button>
-                            <button
-                                type="button"
-                                className="w-4 h-3 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:text-white text-xs flex items-center justify-center rounded-b"
-                                onClick={() => handleSkillIncrement(false)}
-                            >
-                                <ChevronDownIcon className="h-3 w-3" />
-                            </button>
-                        </div>
-                    </div>
-                    <div className="text-sm">
-                        {skill.abilityId === 0 ? '' : `${ABILITY_MAP[skill.abilityId]?.abbreviation} ${GetAbilityModifierString(character.abilities[skill.abilityId] ?? 10)}`}
-                    </div>
-                    <div className={`w-12 text-sm font-medium rounded px-2 py-1 text-center ${total === null ? '' : 'border border-gray-300 dark:border-gray-600'}`}>
-                        {total === null ? '' : (
-                            <span className={total > 0 ? 'text-green-600 dark:text-green-400' : total < 0 ? 'text-red-600 dark:text-red-400' : ''}>
-                                {total >= 0 ? `+${total}` : total.toString()}
-                            </span>
-                        )}
+                            <ChevronUpIcon className="h-3 w-3" />
+                        </button>
+                        <button
+                            type="button"
+                            className="w-4 h-3 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:text-white text-xs flex items-center justify-center rounded-b"
+                            onClick={() => handleSkillIncrement(skillId, false)}
+                        >
+                            <ChevronDownIcon className="h-3 w-3" />
+                        </button>
                     </div>
                 </div>
-
-                {/* Floating input for subtype editing */}
-                {editingSubtype && (
-                    <div
-                        className="fixed z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg"
-                        style={{
-                            left: inputPosition.x,
-                            top: inputPosition.y,
-                            width: inputPosition.width,
-                            minWidth: '200px'
-                        }}
-                    >
-                        <div className="flex items-center relative p-2">
-                            <input
-                                ref={inputRef}
-                                type="text"
-                                value={editValue}
-                                onChange={(e) => setEditValue(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        handleSubtypeSave();
-                                    } else if (e.key === 'Escape') {
-                                        handleSubtypeCancel();
-                                    }
-                                }}
-                                onBlur={handleSubtypeSave}
-                                placeholder="Enter subtype name..."
-                                className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-                    </div>
-                )}
-            </>
+                <div className="text-sm">
+                    {skill.abilityId === 0 ? '' : `${ABILITY_MAP[skill.abilityId]?.abbreviation} ${GetAbilityModifierString(getAbilityScore(skill.abilityId))}`}
+                </div>
+                <div className={`w-12 text-sm font-medium rounded px-2 py-1 text-center ${total === null ? '' : 'border border-gray-300 dark:border-gray-600'}`}>
+                    {total === null ? '' : (
+                        <span className={total > 0 ? 'text-green-600 dark:text-green-400' : total < 0 ? 'text-red-600 dark:text-red-400' : ''}>
+                            {total >= 0 ? `+${total}` : total.toString()}
+                        </span>
+                    )}
+                </div>
+            </div>
         );
-    };
-
-    // Generate skill rows for a given skill
-    const generateSkillRows = (skill: typeof SKILL_LIST[0]) => {
-        const isSpecial = isSpecialSkill(skill.id);
-
-        if (isSpecial) {
-            const subtypes = character.skillSubtypes?.[skill.id] || [];
-            const rows = [];
-
-            // Add existing subtypes as separate rows
-            subtypes.forEach((subtype, index) => {
-                rows.push(
-                    <SkillRow key={`${skill.id}-${index}`} skillId={skill.id} subTypeIndex={index} />
-                );
-            });
-
-            // Add base skill row (always shown for special skills)
-            rows.push(
-                <SkillRow key={`${skill.id}-base`} skillId={skill.id} />
-            );
-
-            return rows;
-        } else {
-            return [
-                <SkillRow key={skill.id} skillId={skill.id} />
-            ];
-        }
     };
 
     // Generate column headers
@@ -660,15 +384,13 @@ export function SkillsTab({
         </div>
     );
 
-
-
     // Check if prerequisites are met
-    const hasPrerequisites = character.race && character.class && character.level === 1 && selectedClassDetails;
+    const hasPrerequisites = character.raceId && advancement?.classId && selectedClassDetails;
 
     return (
         <div className="p-6">
             <h2 className="text-xl font-semibold mb-4">
-                Skills
+                Skills {!isNewCharacter && `(Level ${advancement?.level})`}
             </h2>
 
             {/* Prerequisites Check */}
@@ -686,10 +408,9 @@ export function SkillsTab({
                             </h3>
                             <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
                                 <ul className="list-disc list-inside space-y-1">
-                                    {!character.race && <li>Select a race</li>}
-                                    {!character.class && <li>Select a class</li>}
-                                    {character.level !== 1 && <li>Character must be level 1</li>}
-                                    {character.class && !selectedClassDetails && <li>Loading class details...</li>}
+                                    {!character.raceId && <li>Select a race</li>}
+                                    {!advancement?.classId && <li>Select a class</li>}
+                                    {advancement?.classId && !selectedClassDetails && <li>Loading class details...</li>}
                                 </ul>
                             </div>
                         </div>
@@ -739,7 +460,7 @@ export function SkillsTab({
                                     <div className="flex items-center gap-2">
                                         <span className="font-medium">Class Skills Max Ranks:</span>
                                         <div className="px-3 py-1 border border-blue-300 dark:border-blue-600 rounded bg-white dark:bg-gray-700 font-medium">
-                                            {character.level + 3}
+                                            {character.advancements.length + 3}
                                         </div>
                                         <span className="text-xs text-gray-500 dark:text-gray-400">(1 pt./rank)</span>
                                     </div>
@@ -747,7 +468,7 @@ export function SkillsTab({
                                     <div className="flex items-center gap-2">
                                         <span className="font-medium">Cross-class Skills Max Ranks:</span>
                                         <div className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 font-medium">
-                                            {Math.floor((character.level + 3) / 2)}
+                                            {Math.floor((character.advancements.length + 3) / 2)}
                                         </div>
                                         <span className="text-xs text-gray-500 dark:text-gray-400">(2 pts./rank, half-ranks allowed)</span>
                                     </div>
@@ -761,7 +482,9 @@ export function SkillsTab({
                             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                                 {generateColumnHeaders()}
                                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                                    {SKILL_LIST.slice(0, Math.ceil(SKILL_LIST.length / 3)).flatMap(skill => generateSkillRows(skill))}
+                                    {SKILL_LIST.slice(0, Math.ceil(SKILL_LIST.length / 3)).map(skill => (
+                                        <SkillRow key={skill.id} skillId={skill.id} />
+                                    ))}
                                 </div>
                             </div>
 
@@ -769,7 +492,9 @@ export function SkillsTab({
                             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                                 {generateColumnHeaders()}
                                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                                    {SKILL_LIST.slice(Math.ceil(SKILL_LIST.length / 3), Math.ceil(SKILL_LIST.length * 2 / 3)).flatMap(skill => generateSkillRows(skill))}
+                                    {SKILL_LIST.slice(Math.ceil(SKILL_LIST.length / 3), Math.ceil(SKILL_LIST.length * 2 / 3)).map(skill => (
+                                        <SkillRow key={skill.id} skillId={skill.id} />
+                                    ))}
                                 </div>
                             </div>
 
@@ -777,7 +502,9 @@ export function SkillsTab({
                             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden md:col-span-2 xl:col-span-1">
                                 {generateColumnHeaders()}
                                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                                    {SKILL_LIST.slice(Math.ceil(SKILL_LIST.length * 2 / 3)).flatMap(skill => generateSkillRows(skill))}
+                                    {SKILL_LIST.slice(Math.ceil(SKILL_LIST.length * 2 / 3)).map(skill => (
+                                        <SkillRow key={skill.id} skillId={skill.id} />
+                                    ))}
                                 </div>
                             </div>
                         </div>

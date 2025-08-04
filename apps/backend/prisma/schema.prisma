@@ -12,87 +12,66 @@ datasource db {
 // Class related
 // =================
 
+enum CastingTypeEnum {
+    Prepared
+    Spontaneous
+}
+
 model Class {
-    id               Int     @id @default(autoincrement())
+    id               Int              @id @default(autoincrement())
     name             String
     abbreviation     String
     editionId        Int?
-    isPrestige       Boolean @default(false)
-    isVisible        Boolean @default(true)
-    canCastSpells    Boolean @default(false)
-    hitDie           Int     @default(1)
-    description      String? @db.Text
+    isPrestige       Boolean          @default(false)
+    isVisible        Boolean          @default(true)
+    canCastSpells    Boolean          @default(false)
+    hitDie           Int              @default(1)
+    description      String?          @db.Text
     skillPoints      Int
     castingAbilityId Int?
-    spellProgression Int?
-    spellsKnown      Int?
+    castingType      CastingTypeEnum?
     babProgression   Int
     fortProgression  Int
     refProgression   Int
     willProgression  Int
 
-    features            ClassFeatureMap[]
-    featureProgression  ClassFeatureProgression[]
-    skills              ClassSkillMap[]
-    sourceBookInfo      ClassSourceMap[]
-    spellLevels         SpellLevelMap[]
-    proficiencies       ClassProficiencies[]
+    features                FeatureProgression[]
+    sourceBookInfo          ClassSourceMap[]
+    spellLevels             SpellLevelMap[]
+    charAdvancements        CharacterAdvancement[]
+    charAdvSecondary        CharacterAdvancement[]      @relation("SecondaryClass")
+    charSpellPrep           CharacterSpellPreparation[]
+    spellcastingProgression SpellcastingProgression[]
 }
 
-model ClassFeature {
-    slug        String  @id
-    name        String  @default("")
-    description String  @db.Text
-
-    classes ClassFeatureMap[]
-    progressions ClassFeatureProgression[]
-}
-
-model ClassProficiencies {
+model SpellcastingProgression {
+    id          Int @id @default(autoincrement())
     classId     Int
-    featId      Int
-    itemId      Int  // -1 means "all items"
+    casterLevel Int
 
-    class  Class  @relation(fields: [classId], references: [id])
-    feat   Feat   @relation(fields: [featId], references: [id])
-    item   Item   @relation(fields: [itemId], references: [id])
-
-    @@id([classId, featId, itemId])
+    class            Class              @relation(fields: [classId], references: [id])
+    slots            SpellcastingSlot[]
+    spellcastingLink SpellcastingLink[]
 }
 
-model ClassFeatureMap {
-    classId     Int
-    featureSlug String
-    level       Int
+model SpellcastingSlot {
+    id            Int @id @default(autoincrement())
+    progressionId Int
+    spellLevel    Int
+    slotsPerDay   Int
 
-    class   Class        @relation(fields: [classId], references: [id])
-    feature ClassFeature @relation(fields: [featureSlug], references: [slug])
-
-    @@id([classId, featureSlug])
+    progression SpellcastingProgression @relation(fields: [progressionId], references: [id])
 }
 
-model ClassFeatureProgression {
-    featureSlug  String
-    classId      Int
-    level        Int
-    aspect       String   // e.g. "usesPerDay", "damageDie", "bonus", "size", etc.
-    valueInt     Int?     // For numeric values
-    valueString  String?  // For dice, named sizes, etc.
-    note         String?  // Clarifying or descriptive text
+model SpellcastingLink {
+    id                   Int     @id @default(autoincrement())
+    featureProgressionId Int     @unique
+    progressionId        Int
+    inheritedFrom        String?
+    levelOffset          Int?
 
-   feature      ClassFeature @relation(fields: [featureSlug], references: [slug])
-   class        Class        @relation(fields: [classId], references: [id])
-
-   @@id([featureSlug, classId, level, aspect])
-}
-
-model ClassSkillMap {
-    classId Int
-    skillId Int
-    Class   Class @relation(fields: [classId], references: [id])
-    Skill   Skill @relation(fields: [skillId], references: [id])
-
-    @@id([classId, skillId])
+    feature      FeatureProgression      @relation(fields: [featureProgressionId], references: [id])
+    progression  SpellcastingProgression @relation(fields: [progressionId], references: [id])
 }
 
 model ClassSourceMap {
@@ -100,9 +79,9 @@ model ClassSourceMap {
     pageNumber   Int?
     sourceBookId Int
 
-    class        Class       @relation(fields: [classId], references: [id])
-    SourceBook   SourceBook? @relation(fields: [sourceBookId], references: [id])
-    
+    class      Class       @relation(fields: [classId], references: [id])
+    sourceBook SourceBook? @relation(fields: [sourceBookId], references: [id])
+
     @@id([classId, sourceBookId])
 }
 
@@ -116,6 +95,92 @@ model SpellLevelMap {
     class Class @relation(fields: [classId], references: [id])
 
     @@id([spellId, classId])
+}
+
+// =================
+// Feature related
+// =================
+
+model Feature {
+    id          Int     @id @default(autoincrement())
+    slug        String  @unique
+    name        String
+    description String  @db.Text
+
+    progressions  FeatureProgression[]
+    featureChoice FeatureChoice[]
+}
+
+model FeatureProgression {
+    id            Int @id @default(autoincrement())
+    sourceType    Int
+    level         Int
+    featureId     Int
+    appliesToType Int?
+    appliesTo     Int?
+
+    classId Int?
+    raceId  Int?
+
+    class Class? @relation(fields: [classId], references: [id])
+    race  Race?  @relation(fields: [raceId], references: [id])
+
+    feature      Feature         @relation(fields: [featureId], references: [id])
+    choices      FeatureChoice[]
+    spellcasting SpellcastingLink?
+    effects      FeatureSpecialEffect[]
+    modifiers    FeatureModifier[]
+    characterFeatureChoice  CharacterFeatureChoice[]
+}
+
+model FeatureModifier {
+    id           Int     @id @default(autoincrement())
+    featureProgressionId    Int
+    modifierType Int
+    value        Int
+
+    appliesIfChoiceKey   String?
+    appliesIfChoiceValue String?
+
+    featureProgression FeatureProgression @relation(fields: [featureProgressionId], references: [id])
+}
+
+model FeatureSpecialEffect {
+    id            Int     @id @default(autoincrement())
+    progressionId Int
+    effectType    Int
+    key           String?
+    value         String?
+    numericValue  Int?
+
+    featureProgression FeatureProgression @relation(fields: [progressionId], references: [id])
+}
+
+enum ChoiceType {
+    Feat
+    Feature
+}
+
+enum ChoiceBehavior {
+  Single
+  Multiple
+  Allocation
+}
+
+model FeatureChoice {
+    id              Int        @id @default(autoincrement())
+    progressionId   Int
+    label           String?
+    pickCount       Int?
+    choiceType      ChoiceType
+    choiceBehavior  ChoiceBehavior
+    featId          Int?
+    chosenFeatureId Int?
+
+    featureProgression     FeatureProgression @relation(fields: [progressionId], references: [id])
+    feat                   Feat?                   @relation(fields: [featId], references: [id])
+    feature                Feature?           @relation(fields: [chosenFeatureId], references: [id])
+    characterFeatureChoice CharacterFeatureChoice[]
 }
 
 // =================
@@ -146,12 +211,14 @@ model Spell {
     sourceBookInfo SpellSourceMap[]
     subSchoolIds   SpellSubschoolMap[]
     componentIds   SpellComponentMap[]
+    advSpells      AdvancementSpell[]
+    charSpellPrep  CharacterSpellPreparation[]
 }
 
 model SpellDescriptorMap {
     spellId      Int
     descriptorId Int
-    Spell        Spell @relation(fields: [spellId], references: [id])
+    spell        Spell @relation(fields: [spellId], references: [id])
 
     @@id([spellId, descriptorId])
 }
@@ -159,27 +226,27 @@ model SpellDescriptorMap {
 model SpellSchoolMap {
     spellId  Int
     schoolId Int
-    Spell    Spell @relation(fields: [spellId], references: [id])
+    spell    Spell @relation(fields: [spellId], references: [id])
 
     @@id([spellId, schoolId])
 }
 
 model SpellSourceMap {
-    spellId       Int
-    sourceBookId  Int
-    pageNumber    Int?
+    spellId      Int
+    sourceBookId Int
+    pageNumber   Int?
 
-    Spell         Spell       @relation(fields: [spellId], references: [id])
-    SourceBook    SourceBook @relation(fields: [sourceBookId], references: [id])
+    spell      Spell      @relation(fields: [spellId], references: [id])
+    sourceBook SourceBook @relation(fields: [sourceBookId], references: [id])
 
     @@id([spellId, sourceBookId])
 }
 
 model SpellSubschoolMap {
-    spellId  Int
+    spellId     Int
     subSchoolId Int
 
-    Spell    Spell @relation(fields: [spellId], references: [id])
+    spell Spell @relation(fields: [spellId], references: [id])
 
     @@id([spellId, subSchoolId])
 }
@@ -188,7 +255,7 @@ model SpellComponentMap {
     spellId     Int
     componentId Int
 
-    Spell   Spell @relation(fields: [spellId], references: [id])
+    spell Spell @relation(fields: [spellId], references: [id])
 
     @@id([spellId, componentId])
 }
@@ -213,7 +280,7 @@ model Skill {
     restrictionNotes  String?  @db.Text
     trainedOnly       Boolean?
 
-    classes ClassSkillMap[]
+    advSkills AdvancementSkill[]
 }
 
 // =================
@@ -232,10 +299,12 @@ model Feat {
     repeatable    Boolean?
     fighterBonus  Boolean?
 
-    benefits   FeatBenefitMap[]
-    prereqs    FeatPrerequisiteMap[]
+    benefits FeatBenefitMap[]
+    prereqs  FeatPrerequisiteMap[]
+    advFeat  AdvancementFeat[]
 
-    classProficiencies  ClassProficiencies[]
+    spellPrepMetamagic SpellPreparationMetamagic[]
+    featureChoice FeatureChoice[]
 }
 
 model FeatBenefitMap {
@@ -277,60 +346,18 @@ model Race {
     speed          Int     @default(30)
     favoredClassId Int     @default(0)
 
-    abilityAdjustments RaceAbilityAdjustment[]
-    languages          RaceLanguageMap[]
     sources            RaceSourceMap[]
-    traits             RaceTraitMap[]
-    UserCharacter      UserCharacter[]
-}
-
-model RaceTrait {
-    slug        String  @id
-    name        String?
-    description String? @db.Text
-    hasValue    Boolean @default(false)
-
-    raceLinks RaceTraitMap[]
-}
-
-model RaceTraitMap {
-    raceId    Int
-    traitSlug String
-    value     Int?
-
-    race  Race      @relation(fields: [raceId], references: [id])
-    trait RaceTrait @relation(fields: [traitSlug], references: [slug])
-
-    @@id([raceId, traitSlug])
-}
-
-model RaceAbilityAdjustment {
-    raceId    Int
-    abilityId Int
-    value     Int
-
-    race Race @relation(fields: [raceId], references: [id])
-
-    @@id([raceId, abilityId])
-}
-
-model RaceLanguageMap {
-    raceId      Int
-    languageId  Int
-    isAutomatic Boolean @default(false)
-
-    race Race @relation(fields: [raceId], references: [id])
-
-    @@id([raceId, languageId])
+    userCharacter      UserCharacter[]
+    featureProgression FeatureProgression[]
 }
 
 model RaceSourceMap {
-    raceId        Int
-    sourceBookId  Int
-    pageNumber    Int?
+    raceId       Int
+    sourceBookId Int
+    pageNumber   Int?
 
-    Race         Race        @relation(fields: [raceId], references: [id])
-    SourceBook   SourceBook? @relation(fields: [sourceBookId], references: [id])
+    race       Race        @relation(fields: [raceId], references: [id])
+    sourceBook SourceBook? @relation(fields: [sourceBookId], references: [id])
 
     @@id([raceId, sourceBookId])
 }
@@ -340,34 +367,32 @@ model RaceSourceMap {
 // =================
 
 model Item {
-    id                 Int     @id @default(autoincrement())
-    name               String  @db.VarChar(100)
-    description        String? @db.Text
-    typeId             Int @default(1)
-    cost               Decimal? @db.Decimal(10,2)
-    weight             Decimal? @db.Decimal(5,2)
-    quantity           Int?
+    id          Int      @id @default(autoincrement())
+    name        String   @db.VarChar(100)
+    description String?  @db.Text
+    typeId      Int      @default(1)
+    cost        Decimal? @db.Decimal(10, 2)
+    weight      Decimal? @db.Decimal(5, 2)
+    quantity    Int?
 
-    armor Armor?
+    armor  Armor?
     weapon Weapon?
 
-    ItemType   ItemType @relation(fields: [typeId], references: [id])
+    itemType ItemType @relation(fields: [typeId], references: [id])
 
     characterItems     CharacterItem[]
     itemTemplate       ItemTemplate[]
-    classProficiencies ClassProficiencies[]
-
 }
 
 model ItemType {
-    id      Int @id @default(autoincrement())
-    name    String  @db.VarChar(100)
+    id   Int    @id @default(autoincrement())
+    name String @db.VarChar(100)
 
     itemLinks Item[]
 }
 
 model Armor {
-    id                 Int      @id
+    id                 Int  @id
     category           Int
     bonus              Int?
     dexterityCap       Int?
@@ -376,11 +401,11 @@ model Armor {
     speedCapThirty     Int?
     speedCapTwenty     Int?
 
-    item         Item @relation(fields: [id], references: [id], onDelete: Cascade)
+    item Item @relation(fields: [id], references: [id], onDelete: Cascade)
 }
 
 model Weapon {
-    id           Int   @id
+    id           Int     @id
     category     Int
     type         Int
     attackBonus  Int?
@@ -393,95 +418,95 @@ model Weapon {
     double       Boolean @default(false)
     nonlethal    Boolean @default(false)
 
-    item         Item @relation(fields: [id], references: [id], onDelete: Cascade)
+    item Item @relation(fields: [id], references: [id], onDelete: Cascade)
 }
 
 model ItemProperty {
-  id                       Int     @id @default(autoincrement())
-  name                     String  @db.VarChar(100) // e.g. "Vorpal", "+2 Enhancement"
-  type                     ItemPropertyType
-  flatCostModifier         Int?    // in copper
-  costMultiplier           Float?  // e.g. 2.0 for Barding
-  costFormula              String? // optional expression string
-  enhancementBonusValue    Int?    // e.g. 2 for "+2"
-  bonusEquivalentModifier  Int?    // e.g. 5 for Vorpal
-  exclusiveMaterial        Boolean @default(false)
+    id                      Int              @id @default(autoincrement())
+    name                    String           @db.VarChar(100) // e.g. "Vorpal", "+2 Enhancement"
+    type                    ItemPropertyType
+    flatCostModifier        Int? // in copper
+    costMultiplier          Float? // e.g. 2.0 for Barding
+    costFormula             String? // optional expression string
+    enhancementBonusValue   Int? // e.g. 2 for "+2"
+    bonusEquivalentModifier Int? // e.g. 5 for Vorpal
+    exclusiveMaterial       Boolean          @default(false)
 
-  appliesTo                ItemPropertyAppliesTo[]
-  incompatibilitiesA       ItemPropertyIncompatibility[] @relation("IncompatibilityA")
-  incompatibilitiesB       ItemPropertyIncompatibility[] @relation("IncompatibilityB")
-  templateProperties       ItemTemplateProperty[]
-  characterItemProperties  CharacterItemProperty[]
+    appliesTo               ItemPropertyAppliesTo[]
+    incompatibilitiesA      ItemPropertyIncompatibility[] @relation("IncompatibilityA")
+    incompatibilitiesB      ItemPropertyIncompatibility[] @relation("IncompatibilityB")
+    templateProperties      ItemTemplateProperty[]
+    characterItemProperties CharacterItemProperty[]
 }
 
 enum ItemPropertyType {
-  Material
-  Enhancement
-  SpecialAbility
-  Structural
+    Material
+    Enhancement
+    SpecialAbility
+    Structural
 }
 
 model ItemPropertyAppliesTo {
-  id           Int                  @id @default(autoincrement())
-  property     ItemProperty         @relation(fields: [propertyId], references: [id])
-  propertyId   Int
-  itemType     ItemApplicableTypeEnum
+    id         Int                    @id @default(autoincrement())
+    property   ItemProperty           @relation(fields: [propertyId], references: [id])
+    propertyId Int
+    itemType   ItemApplicableTypeEnum
 }
 
 enum ItemApplicableTypeEnum {
-  Weapon
-  Armor
-  Shield
-  MountArmor
-  Ammunition
+    Weapon
+    Armor
+    Shield
+    MountArmor
+    Ammunition
 }
 
 model ItemPropertyIncompatibility {
-  id            Int           @id @default(autoincrement())
-  propertyA     ItemProperty  @relation("IncompatibilityA", fields: [propertyAId], references: [id])
-  propertyAId   Int
-  propertyB     ItemProperty  @relation("IncompatibilityB", fields: [propertyBId], references: [id])
-  propertyBId   Int
+    id          Int          @id @default(autoincrement())
+    propertyA   ItemProperty @relation("IncompatibilityA", fields: [propertyAId], references: [id])
+    propertyAId Int
+    propertyB   ItemProperty @relation("IncompatibilityB", fields: [propertyBId], references: [id])
+    propertyBId Int
 }
 
 model ItemTemplate {
-  id           Int     @id @default(autoincrement())
-  name         String  @db.VarChar(100)
-  itemId       Int
+    id     Int    @id @default(autoincrement())
+    name   String @db.VarChar(100)
+    itemId Int
 
-  item         Item    @relation(fields: [itemId], references: [id])
-  
-  templateProperties ItemTemplateProperty[]
+    item Item @relation(fields: [itemId], references: [id])
+
+    templateProperties ItemTemplateProperty[]
 }
 
 model ItemTemplateProperty {
-  id          Int          @id @default(autoincrement())
-  templateId  Int
-  propertyId  Int
+    id         Int @id @default(autoincrement())
+    templateId Int
+    propertyId Int
 
-  template    ItemTemplate  @relation(fields: [templateId], references: [id])
-  property    ItemProperty  @relation(fields: [propertyId], references: [id])
+    template ItemTemplate @relation(fields: [templateId], references: [id])
+    property ItemProperty @relation(fields: [propertyId], references: [id])
 }
 
 model CharacterItem {
-  id              Int                  @id @default(autoincrement())
-  name            String               // e.g. "Vorpal Dragonbane Longsword"
-  quantity        Int?
-  characterId     Int
-  baseItemId      Int
+    id          Int    @id @default(autoincrement())
+    name        String // e.g. "Vorpal Dragonbane Longsword"
+    quantity    Int?
+    characterId Int
+    baseItemId  Int
 
-  character       UserCharacter            @relation(fields: [characterId], references: [id])
-  baseItem        Item                 @relation(fields: [baseItemId], references: [id])
-  
-  characterItemProperties CharacterItemProperty[]
+    character UserCharacter @relation(fields: [characterId], references: [id])
+    baseItem  Item          @relation(fields: [baseItemId], references: [id])
+
+    characterItemProperties CharacterItemProperty[]
 }
 
 model CharacterItemProperty {
-  id               Int               @id @default(autoincrement())
-  characterItemId  Int
-  propertyId       Int
-  characterItem    CharacterItem     @relation(fields: [characterItemId], references: [id])
-  property         ItemProperty      @relation(fields: [propertyId], references: [id])
+    id              Int           @id @default(autoincrement())
+    characterItemId Int
+    propertyId      Int
+    characterItem   CharacterItem @relation(fields: [characterItemId], references: [id])
+    property        ItemProperty  @relation(fields: [propertyId], references: [id])
 }
 
 // =================
@@ -523,11 +548,11 @@ model ReferenceTable {
 }
 
 model ReferenceTableColumn {
-    tableSlug   String
-    index       Int
-    header      String
-    span        Int?
-    alignment   TextAlignment?
+    tableSlug String
+    index     Int
+    header    String
+    span      Int?
+    alignment TextAlignment?
 
     cells ReferenceTableCell[]
     table ReferenceTable       @relation(fields: [tableSlug], references: [slug])
@@ -537,7 +562,7 @@ model ReferenceTableColumn {
 
 model ReferenceTableRow {
     tableSlug String
-    index  Int
+    index     Int
 
     cells ReferenceTableCell[]
     table ReferenceTable       @relation(fields: [tableSlug], references: [slug])
@@ -570,6 +595,7 @@ model UserCharacter {
     name        String
     raceId      Int
     alignmentId Int
+    xp          Int     @default(0)
     age         Int?
     height      Int?
     weight      Int?
@@ -580,9 +606,11 @@ model UserCharacter {
 
     attributes     UserCharacterAttribute[]
     characterItems CharacterItem[]
+    advancements   CharacterAdvancement[]
+    preparedSpells CharacterSpellPreparation[]
 
-    race       Race                     @relation(fields: [raceId], references: [id])
-    user       User                     @relation(fields: [userId], references: [id])
+    race Race @relation(fields: [raceId], references: [id])
+    user User @relation(fields: [userId], references: [id])
 }
 
 model UserCharacterAttribute {
@@ -592,6 +620,107 @@ model UserCharacterAttribute {
     value       Int
 
     character UserCharacter @relation(fields: [characterId], references: [id])
+}
+
+model CharacterAdvancement {
+    id               Int      @id @default(autoincrement())
+    characterId      Int
+    level            Int
+    version          Int // Incrementing number per (characterId, level)
+    classId          Int
+    secondaryClassId Int? // for gestalt/variant multiclassing
+    hitPoints        Int
+    attributeId      Int?
+    notes            String?  @db.Text
+    createdAt        DateTime @default(now())
+
+    character      UserCharacter @relation(fields: [characterId], references: [id])
+    class          Class         @relation(fields: [classId], references: [id])
+    secondaryClass Class?        @relation("SecondaryClass", fields: [secondaryClassId], references: [id])
+
+    skills      AdvancementSkill[]
+    feats       AdvancementFeat[]
+    spellsKnown AdvancementSpell[]
+    featureChoices CharacterFeatureChoice[]
+
+    @@unique([characterId, level, version])
+}
+
+model AdvancementSkill {
+    advancementId Int
+    skillId       Int
+    pointsSpent   Int
+
+    advancement CharacterAdvancement @relation(fields: [advancementId], references: [id])
+    skill       Skill                @relation(fields: [skillId], references: [id])
+
+    @@id([advancementId, skillId])
+}
+
+model AdvancementFeat {
+    advancementId Int
+    featId        Int
+
+    advancement CharacterAdvancement @relation(fields: [advancementId], references: [id])
+    feat        Feat                 @relation(fields: [featId], references: [id])
+
+    @@id([advancementId, featId])
+}
+
+model AdvancementSpell {
+    advancementId Int
+    spellId       Int
+
+    advancement CharacterAdvancement @relation(fields: [advancementId], references: [id])
+    spell       Spell                @relation(fields: [spellId], references: [id])
+
+    @@id([advancementId, spellId])
+}
+
+
+model CharacterFeatureChoice {
+    id                    Int    @id @default(autoincrement())
+    characterId           Int
+    featureChoiceId       Int
+    progressionId         Int
+    advancementId         Int
+    key                   String?
+    value                 String
+    choiceIndex           Int?
+
+    featureProgression FeatureProgression   @relation(fields: [progressionId], references: [id])
+    featureChoice      FeatureChoice        @relation(fields: [featureChoiceId], references: [id])
+    advancement        CharacterAdvancement @relation(fields: [advancementId], references: [id])
+    
+    @@unique([advancementId, progressionId, key])
+}
+
+model CharacterSpellPreparation {
+    characterId Int
+    classId     Int // The class whose slot was used
+    spellId     Int
+    spellLevel  Int // Actual slot level used (post-metamagic)
+    quantity    Int
+    prepKey     String // Unique identifier for this exact combination
+    slotType    Int    @default(1)
+
+    character  UserCharacter               @relation(fields: [characterId], references: [id])
+    class      Class                       @relation(fields: [classId], references: [id])
+    spell      Spell                       @relation(fields: [spellId], references: [id])
+    metamagics SpellPreparationMetamagic[]
+
+    @@id([characterId, prepKey])
+}
+
+model SpellPreparationMetamagic {
+    characterId Int
+    prepKey     String
+    featId      Int
+
+    feat        Feat                      @relation(fields: [featId], references: [id])
+    preparation CharacterSpellPreparation @relation(fields: [characterId, prepKey], references: [characterId, prepKey])
+
+    @@id([characterId, prepKey, featId])
 }
 
 // =================
@@ -607,18 +736,18 @@ model User {
     createdAt          DateTime @default(now())
     updatedAt          DateTime @updatedAt
     preferredEditionId Int?
-    
+
     // NEW: Reference to admin dice config (replaces old dice fields)
-    diceConfigBase     Int?     // References DiceBoxAdminConfig.id
-    
+    diceConfigBase Int? // References DiceBoxAdminConfig.id
+
     // REMOVE: Old dice fields
     // diceTheme          String?  @default("rock")
     // diceThemeColor     String?  @default("#3937b8")
     // diceScale          Int?     @default(3)
 
-    characters UserCharacter[]
+    characters          UserCharacter[]
     diceConfigOverrides UserDiceConfigOverride[] // NEW: One-to-many relationship
-    
+
     // NEW: Relation to base config
     diceConfigBaseRef DiceBoxAdminConfig? @relation("UserDiceConfigBase", fields: [diceConfigBase], references: [id])
 }
@@ -628,49 +757,49 @@ model User {
 // =================
 
 model DiceBoxAdminConfig {
-    id         Int      @id @default(autoincrement())
-    name       String   @default("Default Configuration")
-    
+    id   Int    @id @default(autoincrement())
+    name String @default("Default Configuration")
+
     // NEW: Default flag (only one can be true)
-    isDefault  Boolean  @default(false)
-    
+    isDefault Boolean @default(false)
+
     // Physics properties
-    gravity    Float    @default(1)
-    mass       Float    @default(1)
-    friction   Float    @default(0.8)
-    restitution Float  @default(0)
+    gravity        Float @default(1)
+    mass           Float @default(1)
+    friction       Float @default(0.8)
+    restitution    Float @default(0)
     angularDamping Float @default(0.4)
-    linearDamping Float @default(0.4)
-    spinForce  Float    @default(4)
-    throwForce Float    @default(5)
-    startingHeight Int  @default(8)
-    settleTimeout Int   @default(5000)
-    
+    linearDamping  Float @default(0.4)
+    spinForce      Float @default(4)
+    throwForce     Float @default(5)
+    startingHeight Int   @default(8)
+    settleTimeout  Int   @default(5000)
+
     // Visual properties
-    lightIntensity Float @default(1)
-    enableShadows Boolean @default(true)
-    shadowTransparency Float @default(0.8)
-    theme       Int     @default(1) // 3D dice theme ID (references DiceTheme enum)
-    themeColor  String  @default("#2e8555")
-    iconColor   String? // NEW: Separate color for DiceButton icons
-    scale       Float   @default(6)
-    
+    lightIntensity     Float   @default(1)
+    enableShadows      Boolean @default(true)
+    shadowTransparency Float   @default(0.8)
+    theme              Int     @default(1) // 3D dice theme ID (references DiceTheme enum)
+    themeColor         String  @default("#2e8555")
+    iconColor          String? // NEW: Separate color for DiceButton icons
+    scale              Float   @default(6)
+
     // Metadata
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
-    
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
     // NEW: Relationships
     users User[] @relation("UserDiceConfigBase") // Users who use this as their base config
 }
 
 // NEW: User dice configuration overrides
 model UserDiceConfigOverride {
-    id           Int      @id @default(autoincrement())
-    userId       Int
-    propertyName String   // e.g., "theme", "themeColor", "scale", "gravity", etc.
-    propertyValue String  // Stored as string, converted as needed
-    
+    id            Int    @id @default(autoincrement())
+    userId        Int
+    propertyName  String // e.g., "theme", "themeColor", "scale", "gravity", etc.
+    propertyValue String // Stored as string, converted as needed
+
     user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-    
+
     @@unique([userId, propertyName]) // One override per property per user
 }

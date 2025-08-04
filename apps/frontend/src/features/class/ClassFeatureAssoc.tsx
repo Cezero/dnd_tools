@@ -1,30 +1,24 @@
-import { z } from 'zod';
-
+import React, { useState, useMemo } from 'react';
 import { ItemAssoc } from '@/lib/ItemAssoc';
 import { ClassFeatureService } from './ClassFeatureService';
 import { ClassFeatureSchema } from '@shared/schema';
+import { z } from 'zod';
 
-// Type for class feature items
 type ClassFeatureItem = z.infer<typeof ClassFeatureSchema>;
 
-// Type for the selected feature data
-type SelectedFeatureData = {
+interface SelectedFeatureData {
+    featureId: number;
     slug: string;
+    name: string;
     description: string;
     level: number;
-};
+}
 
-// Props interface for ClassFeatureAssoc component
 interface ClassFeatureAssocProps {
-    /** Whether the dialog is open */
     isOpen: boolean;
-    /** Function to call when the dialog is closed */
     onClose: () => void;
-    /** Function to call with the selected feature data when a feature is chosen */
-    onSave: (features: SelectedFeatureData[]) => void;
-    /** Array of feature slugs already associated with the class */
-    initialSelectedFeatureIds: string[];
-    /** The ID of the class currently being edited, used for returning to the correct ClassEdit page */
+    onSave: (selectedFeatures: SelectedFeatureData[]) => void;
+    initialSelectedFeatureIds?: number[];
     classId?: number;
 }
 
@@ -34,9 +28,22 @@ interface ClassFeatureAssocProps {
  * selected features' information is passed to the `onSave` handler.
  */
 export function ClassFeatureAssoc({ isOpen, onClose, onSave, initialSelectedFeatureIds = [], classId }: ClassFeatureAssocProps) {
+    const [availableFeatures, setAvailableFeatures] = useState<ClassFeatureItem[]>([]);
+
+    // Transform feature IDs to slugs for ItemAssoc
+    const initialSelectedSlugs = useMemo(() => {
+        if (initialSelectedFeatureIds.length === 0) return [];
+
+        return availableFeatures
+            .filter(feature => initialSelectedFeatureIds.includes(feature.id))
+            .map(feature => feature.slug);
+    }, [initialSelectedFeatureIds, availableFeatures]);
+
     const transformSelectedFeatures = (features: ClassFeatureItem[]): SelectedFeatureData[] => {
         return features.map(feature => ({
+            featureId: feature.id,
             slug: feature.slug,
+            name: feature.name,
             description: feature.description,
             level: 1, // Default level, will be editable in the class edit form
         }));
@@ -51,10 +58,11 @@ export function ClassFeatureAssoc({ isOpen, onClose, onSave, initialSelectedFeat
             isOpen={isOpen}
             onClose={onClose}
             onSave={onSave}
-            initialSelectedIds={initialSelectedFeatureIds}
+            initialSelectedIds={initialSelectedSlugs}
             parentId={classId}
             serviceFunction={async () => {
                 const response = await ClassFeatureService.getClassFeatures({});
+                setAvailableFeatures(response.results);
                 return response;
             }}
             storageKey="classFeatureSelectionList"

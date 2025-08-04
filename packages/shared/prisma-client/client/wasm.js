@@ -132,45 +132,32 @@ exports.Prisma.ClassScalarFieldEnum = {
   description: 'description',
   skillPoints: 'skillPoints',
   castingAbilityId: 'castingAbilityId',
-  spellProgression: 'spellProgression',
-  spellsKnown: 'spellsKnown',
+  castingType: 'castingType',
   babProgression: 'babProgression',
   fortProgression: 'fortProgression',
   refProgression: 'refProgression',
   willProgression: 'willProgression'
 };
 
-exports.Prisma.ClassFeatureScalarFieldEnum = {
-  slug: 'slug',
-  name: 'name',
-  description: 'description'
+exports.Prisma.SpellcastingProgressionScalarFieldEnum = {
+  id: 'id',
+  classId: 'classId',
+  casterLevel: 'casterLevel'
 };
 
-exports.Prisma.ClassProficienciesScalarFieldEnum = {
-  classId: 'classId',
-  featId: 'featId',
-  itemId: 'itemId'
+exports.Prisma.SpellcastingSlotScalarFieldEnum = {
+  id: 'id',
+  progressionId: 'progressionId',
+  spellLevel: 'spellLevel',
+  slotsPerDay: 'slotsPerDay'
 };
 
-exports.Prisma.ClassFeatureMapScalarFieldEnum = {
-  classId: 'classId',
-  featureSlug: 'featureSlug',
-  level: 'level'
-};
-
-exports.Prisma.ClassFeatureProgressionScalarFieldEnum = {
-  featureSlug: 'featureSlug',
-  classId: 'classId',
-  level: 'level',
-  aspect: 'aspect',
-  valueInt: 'valueInt',
-  valueString: 'valueString',
-  note: 'note'
-};
-
-exports.Prisma.ClassSkillMapScalarFieldEnum = {
-  classId: 'classId',
-  skillId: 'skillId'
+exports.Prisma.SpellcastingLinkScalarFieldEnum = {
+  id: 'id',
+  featureProgressionId: 'featureProgressionId',
+  progressionId: 'progressionId',
+  inheritedFrom: 'inheritedFrom',
+  levelOffset: 'levelOffset'
 };
 
 exports.Prisma.ClassSourceMapScalarFieldEnum = {
@@ -184,6 +171,53 @@ exports.Prisma.SpellLevelMapScalarFieldEnum = {
   spellId: 'spellId',
   level: 'level',
   isVisible: 'isVisible'
+};
+
+exports.Prisma.FeatureScalarFieldEnum = {
+  id: 'id',
+  slug: 'slug',
+  name: 'name',
+  description: 'description'
+};
+
+exports.Prisma.FeatureProgressionScalarFieldEnum = {
+  id: 'id',
+  sourceType: 'sourceType',
+  level: 'level',
+  featureId: 'featureId',
+  appliesToType: 'appliesToType',
+  appliesTo: 'appliesTo',
+  classId: 'classId',
+  raceId: 'raceId'
+};
+
+exports.Prisma.FeatureModifierScalarFieldEnum = {
+  id: 'id',
+  featureProgressionId: 'featureProgressionId',
+  modifierType: 'modifierType',
+  value: 'value',
+  appliesIfChoiceKey: 'appliesIfChoiceKey',
+  appliesIfChoiceValue: 'appliesIfChoiceValue'
+};
+
+exports.Prisma.FeatureSpecialEffectScalarFieldEnum = {
+  id: 'id',
+  progressionId: 'progressionId',
+  effectType: 'effectType',
+  key: 'key',
+  value: 'value',
+  numericValue: 'numericValue'
+};
+
+exports.Prisma.FeatureChoiceScalarFieldEnum = {
+  id: 'id',
+  progressionId: 'progressionId',
+  label: 'label',
+  pickCount: 'pickCount',
+  choiceType: 'choiceType',
+  choiceBehavior: 'choiceBehavior',
+  featId: 'featId',
+  chosenFeatureId: 'chosenFeatureId'
 };
 
 exports.Prisma.SpellScalarFieldEnum = {
@@ -287,31 +321,6 @@ exports.Prisma.RaceScalarFieldEnum = {
   sizeId: 'sizeId',
   speed: 'speed',
   favoredClassId: 'favoredClassId'
-};
-
-exports.Prisma.RaceTraitScalarFieldEnum = {
-  slug: 'slug',
-  name: 'name',
-  description: 'description',
-  hasValue: 'hasValue'
-};
-
-exports.Prisma.RaceTraitMapScalarFieldEnum = {
-  raceId: 'raceId',
-  traitSlug: 'traitSlug',
-  value: 'value'
-};
-
-exports.Prisma.RaceAbilityAdjustmentScalarFieldEnum = {
-  raceId: 'raceId',
-  abilityId: 'abilityId',
-  value: 'value'
-};
-
-exports.Prisma.RaceLanguageMapScalarFieldEnum = {
-  raceId: 'raceId',
-  languageId: 'languageId',
-  isAutomatic: 'isAutomatic'
 };
 
 exports.Prisma.RaceSourceMapScalarFieldEnum = {
@@ -455,6 +464,7 @@ exports.Prisma.UserCharacterScalarFieldEnum = {
   name: 'name',
   raceId: 'raceId',
   alignmentId: 'alignmentId',
+  xp: 'xp',
   age: 'age',
   height: 'height',
   weight: 'weight',
@@ -469,6 +479,62 @@ exports.Prisma.UserCharacterAttributeScalarFieldEnum = {
   characterId: 'characterId',
   attributeId: 'attributeId',
   value: 'value'
+};
+
+exports.Prisma.CharacterAdvancementScalarFieldEnum = {
+  id: 'id',
+  characterId: 'characterId',
+  level: 'level',
+  version: 'version',
+  classId: 'classId',
+  secondaryClassId: 'secondaryClassId',
+  hitPoints: 'hitPoints',
+  attributeId: 'attributeId',
+  notes: 'notes',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.AdvancementSkillScalarFieldEnum = {
+  advancementId: 'advancementId',
+  skillId: 'skillId',
+  pointsSpent: 'pointsSpent'
+};
+
+exports.Prisma.AdvancementFeatScalarFieldEnum = {
+  advancementId: 'advancementId',
+  featId: 'featId'
+};
+
+exports.Prisma.AdvancementSpellScalarFieldEnum = {
+  advancementId: 'advancementId',
+  spellId: 'spellId'
+};
+
+exports.Prisma.CharacterFeatureChoiceScalarFieldEnum = {
+  id: 'id',
+  characterId: 'characterId',
+  featureChoiceId: 'featureChoiceId',
+  progressionId: 'progressionId',
+  advancementId: 'advancementId',
+  key: 'key',
+  value: 'value',
+  choiceIndex: 'choiceIndex'
+};
+
+exports.Prisma.CharacterSpellPreparationScalarFieldEnum = {
+  characterId: 'characterId',
+  classId: 'classId',
+  spellId: 'spellId',
+  spellLevel: 'spellLevel',
+  quantity: 'quantity',
+  prepKey: 'prepKey',
+  slotType: 'slotType'
+};
+
+exports.Prisma.SpellPreparationMetamagicScalarFieldEnum = {
+  characterId: 'characterId',
+  prepKey: 'prepKey',
+  featId: 'featId'
 };
 
 exports.Prisma.UserScalarFieldEnum = {
@@ -531,21 +597,28 @@ exports.Prisma.ClassOrderByRelevanceFieldEnum = {
   description: 'description'
 };
 
-exports.Prisma.ClassFeatureOrderByRelevanceFieldEnum = {
+exports.Prisma.SpellcastingLinkOrderByRelevanceFieldEnum = {
+  inheritedFrom: 'inheritedFrom'
+};
+
+exports.Prisma.FeatureOrderByRelevanceFieldEnum = {
   slug: 'slug',
   name: 'name',
   description: 'description'
 };
 
-exports.Prisma.ClassFeatureMapOrderByRelevanceFieldEnum = {
-  featureSlug: 'featureSlug'
+exports.Prisma.FeatureModifierOrderByRelevanceFieldEnum = {
+  appliesIfChoiceKey: 'appliesIfChoiceKey',
+  appliesIfChoiceValue: 'appliesIfChoiceValue'
 };
 
-exports.Prisma.ClassFeatureProgressionOrderByRelevanceFieldEnum = {
-  featureSlug: 'featureSlug',
-  aspect: 'aspect',
-  valueString: 'valueString',
-  note: 'note'
+exports.Prisma.FeatureSpecialEffectOrderByRelevanceFieldEnum = {
+  key: 'key',
+  value: 'value'
+};
+
+exports.Prisma.FeatureChoiceOrderByRelevanceFieldEnum = {
+  label: 'label'
 };
 
 exports.Prisma.SpellOrderByRelevanceFieldEnum = {
@@ -591,16 +664,6 @@ exports.Prisma.FeatPrerequisiteMapOrderByRelevanceFieldEnum = {
 exports.Prisma.RaceOrderByRelevanceFieldEnum = {
   name: 'name',
   description: 'description'
-};
-
-exports.Prisma.RaceTraitOrderByRelevanceFieldEnum = {
-  slug: 'slug',
-  name: 'name',
-  description: 'description'
-};
-
-exports.Prisma.RaceTraitMapOrderByRelevanceFieldEnum = {
-  traitSlug: 'traitSlug'
 };
 
 exports.Prisma.ItemOrderByRelevanceFieldEnum = {
@@ -667,6 +730,23 @@ exports.Prisma.UserCharacterOrderByRelevanceFieldEnum = {
   notes: 'notes'
 };
 
+exports.Prisma.CharacterAdvancementOrderByRelevanceFieldEnum = {
+  notes: 'notes'
+};
+
+exports.Prisma.CharacterFeatureChoiceOrderByRelevanceFieldEnum = {
+  key: 'key',
+  value: 'value'
+};
+
+exports.Prisma.CharacterSpellPreparationOrderByRelevanceFieldEnum = {
+  prepKey: 'prepKey'
+};
+
+exports.Prisma.SpellPreparationMetamagicOrderByRelevanceFieldEnum = {
+  prepKey: 'prepKey'
+};
+
 exports.Prisma.UserOrderByRelevanceFieldEnum = {
   username: 'username',
   email: 'email',
@@ -683,6 +763,22 @@ exports.Prisma.UserDiceConfigOverrideOrderByRelevanceFieldEnum = {
   propertyName: 'propertyName',
   propertyValue: 'propertyValue'
 };
+exports.CastingTypeEnum = exports.$Enums.CastingTypeEnum = {
+  Prepared: 'Prepared',
+  Spontaneous: 'Spontaneous'
+};
+
+exports.ChoiceType = exports.$Enums.ChoiceType = {
+  Feat: 'Feat',
+  Feature: 'Feature'
+};
+
+exports.ChoiceBehavior = exports.$Enums.ChoiceBehavior = {
+  Single: 'Single',
+  Multiple: 'Multiple',
+  Allocation: 'Allocation'
+};
+
 exports.ItemPropertyType = exports.$Enums.ItemPropertyType = {
   Material: 'Material',
   Enhancement: 'Enhancement',
@@ -706,13 +802,16 @@ exports.TextAlignment = exports.$Enums.TextAlignment = {
 
 exports.Prisma.ModelName = {
   Class: 'Class',
-  ClassFeature: 'ClassFeature',
-  ClassProficiencies: 'ClassProficiencies',
-  ClassFeatureMap: 'ClassFeatureMap',
-  ClassFeatureProgression: 'ClassFeatureProgression',
-  ClassSkillMap: 'ClassSkillMap',
+  SpellcastingProgression: 'SpellcastingProgression',
+  SpellcastingSlot: 'SpellcastingSlot',
+  SpellcastingLink: 'SpellcastingLink',
   ClassSourceMap: 'ClassSourceMap',
   SpellLevelMap: 'SpellLevelMap',
+  Feature: 'Feature',
+  FeatureProgression: 'FeatureProgression',
+  FeatureModifier: 'FeatureModifier',
+  FeatureSpecialEffect: 'FeatureSpecialEffect',
+  FeatureChoice: 'FeatureChoice',
   Spell: 'Spell',
   SpellDescriptorMap: 'SpellDescriptorMap',
   SpellSchoolMap: 'SpellSchoolMap',
@@ -724,10 +823,6 @@ exports.Prisma.ModelName = {
   FeatBenefitMap: 'FeatBenefitMap',
   FeatPrerequisiteMap: 'FeatPrerequisiteMap',
   Race: 'Race',
-  RaceTrait: 'RaceTrait',
-  RaceTraitMap: 'RaceTraitMap',
-  RaceAbilityAdjustment: 'RaceAbilityAdjustment',
-  RaceLanguageMap: 'RaceLanguageMap',
   RaceSourceMap: 'RaceSourceMap',
   Item: 'Item',
   ItemType: 'ItemType',
@@ -747,6 +842,13 @@ exports.Prisma.ModelName = {
   ReferenceTableCell: 'ReferenceTableCell',
   UserCharacter: 'UserCharacter',
   UserCharacterAttribute: 'UserCharacterAttribute',
+  CharacterAdvancement: 'CharacterAdvancement',
+  AdvancementSkill: 'AdvancementSkill',
+  AdvancementFeat: 'AdvancementFeat',
+  AdvancementSpell: 'AdvancementSpell',
+  CharacterFeatureChoice: 'CharacterFeatureChoice',
+  CharacterSpellPreparation: 'CharacterSpellPreparation',
+  SpellPreparationMetamagic: 'SpellPreparationMetamagic',
   User: 'User',
   DiceBoxAdminConfig: 'DiceBoxAdminConfig',
   UserDiceConfigOverride: 'UserDiceConfigOverride'

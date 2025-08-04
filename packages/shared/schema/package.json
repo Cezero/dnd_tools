@@ -63,6 +63,26 @@
         "./sourcebook": {
             "types": "./dist/sourcebook.d.ts",
             "import": "./dist/sourcebook.js"
+        },
+        "./feature": {
+            "types": "./dist/feature.d.ts",
+            "import": "./dist/feature.js"
+        },
+        "./spellcasting": {
+            "types": "./dist/spellcasting.d.ts",
+            "import": "./dist/spellcasting.js"
+        },
+        "./userProfile": {
+            "types": "./dist/userProfile.d.ts",
+            "import": "./dist/userProfile.js"
+        },
+        "./item": {
+            "types": "./dist/item.d.ts",
+            "import": "./dist/item.js"
+        },
+        "./diceBox": {
+            "types": "./dist/diceBox.d.ts",
+            "import": "./dist/diceBox.js"
         }
     }
 }

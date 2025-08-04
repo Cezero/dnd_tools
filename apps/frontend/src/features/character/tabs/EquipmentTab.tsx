@@ -1,11 +1,10 @@
 import React from 'react';
 import { CURRENCY_LIST } from '@shared/static-data';
-import type { RaceInQueryResponse, GetRaceResponse } from '@shared/schema';
-import type { CharacterData } from '../types';
+import type { RaceInQueryResponse, GetRaceResponse, CharacterWithAllDetailsResponse } from '@shared/schema';
 
 interface EquipmentTabProps {
-    character: CharacterData;
-    onUpdate: (data: Partial<CharacterData>) => void;
+    character: CharacterWithAllDetailsResponse;
+    onUpdate: (data: Partial<CharacterWithAllDetailsResponse>) => void;
     races?: RaceInQueryResponse[];
     selectedRaceDetails?: GetRaceResponse | null;
 }
