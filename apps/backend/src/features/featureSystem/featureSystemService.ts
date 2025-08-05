@@ -11,6 +11,7 @@ import {
     GetFeatureProgressionsResponse,
     CreateFeatureProgressionRequest,
     UpdateFeatureProgressionRequest,
+    CreateFeatureProgressionWithRelationsRequest,
     GetFeatureModifiersResponse,
     CreateFeatureModifierRequest,
     UpdateFeatureModifierRequest,
@@ -28,12 +29,28 @@ const prisma = new PrismaClient();
 
 export const featureSystemService: FeatureSystemService = {
     // Core Feature CRUD operations
-    async getAllFeatures(): Promise<GetAllFeaturesResponse> {
+    async getAllFeatures(sourceType?: number): Promise<GetAllFeaturesResponse> {
+        let whereClause = {};
+
+        if (sourceType !== undefined) {
+            // Filter features that have progressions with the specified source type
+            whereClause = {
+                progressions: {
+                    some: {
+                        sourceType: sourceType
+                    }
+                }
+            };
+        }
+
         const [features] = await Promise.all([
             prisma.feature.findMany({
+                where: whereClause,
                 orderBy: { slug: 'asc' },
             }),
-            prisma.feature.count(),
+            prisma.feature.count({
+                where: whereClause,
+            }),
         ]);
 
         return {
@@ -142,6 +159,51 @@ export const featureSystemService: FeatureSystemService = {
         });
 
         return { id: result.id.toString(), message: 'Feature progression created successfully' };
+    },
+
+    async createFeatureProgressionWithRelations(data: CreateFeatureProgressionWithRelationsRequest): Promise<CreateResponse> {
+        const { modifiers, choices, effects, feature, ...progressionData } = data;
+
+        const result = await prisma.$transaction(async (tx) => {
+            // Create the feature progression first
+            const progression = await tx.featureProgression.create({
+                data: progressionData,
+            });
+
+            // Create related modifiers if provided
+            if (modifiers && modifiers.length > 0) {
+                await tx.featureModifier.createMany({
+                    data: modifiers.map(modifier => ({
+                        ...modifier,
+                        featureProgressionId: progression.id,
+                    })),
+                });
+            }
+
+            // Create related choices if provided
+            if (choices && choices.length > 0) {
+                await tx.featureChoice.createMany({
+                    data: choices.map(choice => ({
+                        ...choice,
+                        progressionId: progression.id,
+                    })),
+                });
+            }
+
+            // Create related effects if provided
+            if (effects && effects.length > 0) {
+                await tx.featureSpecialEffect.createMany({
+                    data: effects.map(effect => ({
+                        ...effect,
+                        progressionId: progression.id,
+                    })),
+                });
+            }
+
+            return progression;
+        });
+
+        return { id: result.id.toString(), message: 'Feature progression with relations created successfully' };
     },
 
     async updateFeatureProgression(id: number, data: UpdateFeatureProgressionRequest): Promise<UpdateResponse> {

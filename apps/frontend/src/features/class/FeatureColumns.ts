@@ -4,7 +4,7 @@ import { FeatureSchema } from '@shared/schema';
 import { createContainsFilter } from '@/components/generic-list/filterFunctions';
 import { z } from 'zod';
 
-export const CLASS_FEATURE_COLUMNS: ColumnDef<z.infer<typeof FeatureSchema>, unknown>[] = [
+export const FEATURE_COLUMNS: ColumnDef<z.infer<typeof FeatureSchema>, unknown>[] = [
     {
         accessorKey: 'id',
         header: 'ID',

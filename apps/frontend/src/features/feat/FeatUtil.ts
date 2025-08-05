@@ -2,7 +2,7 @@ import ordinal from 'ordinal';
 
 import { SAVING_THROW_SELECT_LIST, PROFICIENCY_TYPE_SELECT_LIST, SKILL_SELECT_LIST, FeatBenefitType, SelectOption, FeatPrerequisiteType, ABILITY_SELECT_LIST, FEAT_PREREQ_BY_ID, GetBaseClassesByEdition } from '@shared/static-data';
 import { FeatService } from './FeatService';
-import { ClassFeatureService } from '../class/ClassFeatureService';
+import { FeatureSystemService } from '@/services/FeatureSystemService';
 
 export const FeatOptions = (benefitType: number): SelectOption[] => {
     switch (benefitType) {
@@ -86,7 +86,7 @@ export const getPrereqDisplayText = async (prereq: { typeId: number; referenceId
             const featureSlug = (prereq as any).featureSlug || prereq.referenceId;
             if (featureSlug) {
                 try {
-                    const feature = await ClassFeatureService.getClassFeatureBySlug(undefined, { slug: featureSlug.toString() });
+                    const feature = await FeatureSystemService.getFeatureBySlug(undefined, { slug: featureSlug.toString() });
                     const featureName = feature?.name || feature?.slug || `Feature ${featureSlug}`;
                     return `${typeName}: ${featureName}`;
                 } catch (_error) {

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { QueryResponseSchema } from './query.js';
 import { SourceMapSchema } from './sourcebook.js';
 import { ProgressionType } from '@shared/static-data';
-import { FeatureSchema } from './feature.js';
+import { FeatureSchema, FeatureProgressionWithRelationsSchema } from './feature.js';
 import { SpellcastingProgressionSchema } from './spellcasting.js';
 
 // Enum schemas
@@ -33,7 +33,7 @@ export const BaseClassSchema = z.object({
     willProgression: z.nativeEnum(ProgressionType),
     description: z.string().max(10000, 'Description must be less than 10000 characters').nullable(),
     sourceBookInfo: z.array(SourceMapSchema).nullable(),
-    features: z.array(FeatureSchema).nullable(),
+    features: z.array(FeatureProgressionWithRelationsSchema).nullable(),
     spellcastingProgression: z.array(SpellcastingProgressionSchema).nullable(),
 });
 

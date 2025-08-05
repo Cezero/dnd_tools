@@ -2,6 +2,5 @@ export {
     meetsPrerequisites,
     getCharacterBAB,
     getAbilityScore,
-    getSkillRanks,
-    type FeatWithPrerequisites
+    getSkillRanks
 } from './characterUtils'; 

@@ -6,7 +6,8 @@ import { routes as spellRoutes } from '@/features/spell/SpellConfig';
 import { routes as classRoutes } from '@/features/class/ClassConfig';
 import { routes as raceRoutes } from '@/features/race/RaceConfig';
 import { routes as itemRoutes } from '@/features/item/ItemConfig';
-import { routes as profileRoutes } from '@/features/profile/ProfileConfig';
+import { routes as profileRoutes } from '@/components/profile/ProfileConfig';
+import { routes as featureSystemRoutes } from '@/components/feature-system/FeatureConfig';
 import { RouteConfig } from '@/types';
 
 export const FeatureRoutes: RouteConfig[] = [
@@ -19,4 +20,5 @@ export const FeatureRoutes: RouteConfig[] = [
     ...raceRoutes,
     ...itemRoutes,
     ...profileRoutes,
+    ...featureSystemRoutes,
 ]; 

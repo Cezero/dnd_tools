@@ -37,7 +37,7 @@ export function createCellRenderer<T>(
     meta: GenericListColumnMeta | undefined,
     getMarkdownId?: (row: T) => string
 ) {
-    return ({ row, getValue }: { row: { original: T }; getValue: () => any }) => {
+    return ({ row, getValue }: { row: { original: T }; getValue: () => T }) => {
         const value = getValue();
         const markdownId = getMarkdownId ? getMarkdownId(row.original) : undefined;
         return renderCellValue(value, meta, markdownId);

@@ -2,18 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { CustomSelect } from '@/components/forms';
 import {
-    ClassFeatureProgressionWithRelations,
-    ClassFeatureModifierSchema,
-    ClassFeatureSpecialEffectSchema,
-    ClassFeatureChoiceSchema
+    FeatureProgressionWithRelationsSchema,
+    FeatureModifierSchema,
+    FeatureSpecialEffectSchema,
+    FeatureChoiceSchema
 } from '@shared/schema';
-import { ModifierType, SpecialEffectType } from '@shared/static-data';
+import { FeatureModifierType, FeatureSpecialEffectType } from '@shared/static-data';
 
 interface ProgressionDetailFormProps {
-    progression: ClassFeatureProgressionWithRelations | null;
+    progression: z.infer<typeof FeatureProgressionWithRelationsSchema> | null;
     availableFeatures: Array<{ id: number; name: string; description: string; slug: string }>;
     preSelectedFeature?: string;
-    onSave: (progression: ClassFeatureProgressionWithRelations) => void;
+    onSave: (progression: z.infer<typeof FeatureProgressionWithRelationsSchema>) => void;
     onCancel: () => void;
 }
 
@@ -26,17 +26,16 @@ export function ProgressionDetailForm({
     onSave,
     onCancel
 }: ProgressionDetailFormProps) {
-    const [formData, setFormData] = useState<ClassFeatureProgressionWithRelations>({
+    const [formData, setFormData] = useState<z.infer<typeof FeatureProgressionWithRelationsSchema>>({
         id: progression?.id || 0,
+        sourceType: progression?.sourceType || 1, // 1 for Class
         classId: progression?.classId || 0,
         level: progression?.level || 1,
         featureId: progression?.featureId || 0,
         feature: progression?.feature,
-        class: progression?.class,
+        modifiers: progression?.modifiers || [],
         choices: progression?.choices || [],
         effects: progression?.effects || [],
-        modifiers: progression?.modifiers || [],
-        spellcasting: progression?.spellcasting,
     });
 
     const [detailType, setDetailType] = useState<DetailType>(() => {
@@ -59,7 +58,7 @@ export function ProgressionDetailForm({
         e.preventDefault();
 
         // Create the updated progression with the detail data
-        const updatedProgression: ClassFeatureProgressionWithRelations = {
+        const updatedProgression: z.infer<typeof FeatureProgressionWithRelationsSchema> = {
             ...formData,
             modifiers: detailType === 'modifier' ? [detailData] : [],
             effects: detailType === 'effect' ? [detailData] : [],
@@ -217,7 +216,7 @@ interface ModifierDetailFormProps {
 }
 
 function ModifierDetailForm({ data, onChange }: ModifierDetailFormProps) {
-    const modifierTypeOptions = Object.entries(ModifierType).map(([key, value]) => ({
+    const modifierTypeOptions = Object.entries(FeatureModifierType).map(([key, value]) => ({
         value: value.toString(),
         label: key
     }));
@@ -291,7 +290,7 @@ interface EffectDetailFormProps {
 }
 
 function EffectDetailForm({ data, onChange }: EffectDetailFormProps) {
-    const effectTypeOptions = Object.entries(SpecialEffectType).map(([key, value]) => ({
+    const effectTypeOptions = Object.entries(FeatureSpecialEffectType).map(([key, value]) => ({
         value: value.toString(),
         label: key
     }));

@@ -60,10 +60,11 @@ export const raceService: RaceService = {
     },
 
     async createRace(data: CreateRaceRequest): Promise<CreateResponse> {
+        const { featureProgression, ...raceData } = data;
         // Use Prisma input type directly - it handles nested relationships
         const result = await prisma.race.create({
             data: {
-                ...data,
+                ...raceData,
                 sources: {
                     create: data.sources?.map(source => ({
                         sourceBookId: source.sourceBookId,
@@ -77,6 +78,7 @@ export const raceService: RaceService = {
     },
 
     async updateRace(id: RaceIdParamRequest, data: UpdateRaceRequest): Promise<UpdateResponse> {
+        const { featureProgression, ...raceData } = data;
         // Use Prisma input type directly - it handles nested relationships
         await prisma.$transaction(async (tx) => {
             await tx.raceSourceMap.deleteMany({ where: { raceId: id.id } });
@@ -84,7 +86,7 @@ export const raceService: RaceService = {
             await tx.race.update({
                 where: { id: id.id },
                 data: {
-                    ...data,
+                    ...raceData,
                     sources: {
                         create: data.sources?.map(source => ({
                             sourceBookId: source.sourceBookId,

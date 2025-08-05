@@ -216,5 +216,6 @@ export const CLASS_COLUMNS: ColumnDef<ClassInQueryResponse, unknown>[] = [
             filterType: FilterType.MULTI_SELECT,
             options: getSourceBookOptionsForEdition,
         },
-    }
+    },
+
 ]; 

@@ -1,3 +1,10 @@
+export const SpecialFeatureId = {
+    ClassSkill: 1,
+    ClassProficiency: 2,
+} as const;
+
+export type SpecialFeatureId = typeof SpecialFeatureId[keyof typeof SpecialFeatureId];
+
 export const FeatureSourceType = {
     Race: 0,
     Class: 1,
@@ -20,6 +27,7 @@ export const FeatureModifierType = {
     SpellDC: 10,
     UsesPerDay: 11,
     Other: 12,
+    ClassSkill: 13,
 } as const;
 
 export type FeatureModifierType = typeof FeatureModifierType[keyof typeof FeatureModifierType];

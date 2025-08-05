@@ -25,43 +25,14 @@ export const classService: ClassService = {
                             pageNumber: true
                         }
                     },
-                    features: {
-                        include: {
-                            feature: {
-                                select: {
-                                    slug: true,
-                                    name: true,
-                                    description: true
-                                }
-                            },
-                            modifiers: true,
-                            choices: true,
-                            effects: true
-                        }
-                    },
                 }
             }),
             prisma.class.count(),
         ]);
 
-        // Transform FeatureProgression data into the expected format
-        const transformedClasses = classes.map(cls => ({
-            ...cls,
-            features: cls.features.map(fp => ({
-                id: fp.id,
-                name: fp.feature.name,
-                description: fp.feature.description,
-                slug: fp.feature.slug,
-                level: fp.level,
-                modifiers: fp.modifiers,
-                choices: fp.choices,
-                effects: fp.effects
-            }))
-        }));
-
         return {
             total: classes.length,
-            results: transformedClasses as GetAllClassesResponse['results'],
+            results: classes as GetAllClassesResponse['results'],
         };
     },
 
@@ -79,6 +50,7 @@ export const classService: ClassService = {
                     include: {
                         feature: {
                             select: {
+                                id: true,
                                 slug: true,
                                 name: true,
                                 description: true
@@ -93,21 +65,8 @@ export const classService: ClassService = {
             },
         });
 
-        // Transform FeatureProgression data into the expected format
-        const transformedFeatures = classData?.features.map(fp => ({
-            id: fp.id,
-            name: fp.feature.name,
-            description: fp.feature.description,
-            slug: fp.feature.slug,
-            level: fp.level,
-            modifiers: fp.modifiers,
-            choices: fp.choices,
-            effects: fp.effects
-        })) ?? [];
-
         return {
             ...classData,
-            features: transformedFeatures,
             spellcastingProgression: classData?.spellcastingProgression ?? null,
         } as GetClassResponse;
     },

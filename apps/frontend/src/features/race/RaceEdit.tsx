@@ -11,9 +11,9 @@ import {
 } from '@/components/forms';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { RaceService } from './RaceService';
-import { RaceTraitAssoc } from './RaceTraitAssoc';
-import { UpdateRaceSchema, GetRaceResponseSchema } from '@shared/schema';
-import { LANGUAGE_MAP, GetBaseClassesByEdition, ABILITY_LIST, EDITION_SELECT_LIST_FULL, SIZE_SELECT_LIST, LANGUAGE_SELECT_LIST } from '@shared/static-data';
+import { RaceFeatureAssoc } from './RaceFeatureAssoc';
+import { UpdateRaceSchema, GetRaceResponseSchema, FeatureProgressionWithRelationsSchema } from '@shared/schema';
+import { EDITION_SELECT_LIST_FULL, SIZE_SELECT_LIST, ABILITY_LIST, LANGUAGE_SELECT_LIST, FeatureModifierType, FeatureAppliesToType } from '@shared/static-data';
 import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 
@@ -30,7 +30,7 @@ export function RaceEdit() {
     const [message, setMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [isAddTraitModalOpen, setIsAddTraitModalOpen] = useState(false);
+    const [isAddFeatureModalOpen, setIsAddFeatureModalOpen] = useState(false);
     const [focusedAbilityId, setFocusedAbilityId] = useState<number | null>(null);
     const [editingAbilityValue, setEditingAbilityValue] = useState('');
     const fromListParams = location.state?.fromListParams || '';
@@ -47,9 +47,7 @@ export function RaceEdit() {
         sizeId: 5, // Default to Medium
         speed: 30, // Default to 30
         favoredClassId: -1,
-        languages: [],
-        abilityAdjustments: ABILITY_LIST.map(attr => ({ abilityId: attr.id, value: 0 })),
-        traits: [],
+        featureProgression: [],
     };
 
     const [formData, setFormData] = useState<RaceFormData>(initialFormData);
@@ -89,97 +87,182 @@ export function RaceEdit() {
     }, [id]);
 
     /**
-     * Handles adding a language to the race, distinguishing between automatic and bonus languages.
+     * Handles adding or updating race features.
      */
-    const handleAddLanguage = useCallback((languageId: number, isAutomatic: boolean) => {
+    const handleAddOrUpdateFeature = useCallback((selectedFeatureObjects: Array<{ featureId: number; slug: string; name: string; description: string; level: number }>) => {
         setRace(prev => {
-            const newLanguageEntry = { languageId, isAutomatic };
-            const existingIndex = prev.languages?.findIndex(lang => lang.languageId === languageId) ?? -1;
+            // Create a map of existing features for quick lookup by slug
+            const existingFeaturesMap = new Map(prev.featureProgression?.map(f => [f.feature?.slug, f]) || []);
 
-            if (existingIndex !== -1) {
-                const updatedLanguages = [...(prev.languages || [])];
-                updatedLanguages[existingIndex] = newLanguageEntry;
-                return { ...prev, languages: updatedLanguages };
-            } else {
-                return { ...prev, languages: [...(prev.languages || []), newLanguageEntry] };
-            }
+            const updatedFeatures = selectedFeatureObjects.map(selectedFeature => {
+                const existingFeature = existingFeaturesMap.get(selectedFeature.slug);
+                return {
+                    id: existingFeature?.id || 0, // Will be set by backend
+                    featureId: selectedFeature.featureId,
+                    sourceType: 0, // 0 for Race
+                    sourceId: parseInt(id || '0'),
+                    level: selectedFeature.level,
+                    feature: {
+                        id: selectedFeature.featureId,
+                        slug: selectedFeature.slug,
+                        name: selectedFeature.name,
+                        description: selectedFeature.description,
+                    },
+                    modifiers: existingFeature?.modifiers || [],
+                    choices: existingFeature?.choices || [],
+                    effects: existingFeature?.effects || [],
+                };
+            });
+            return { ...prev, featureProgression: updatedFeatures };
         });
+        setIsAddFeatureModalOpen(false);
+    }, [id]);
+
+    useEffect(() => {
+        if (location.state?.newFeature) {
+            handleAddOrUpdateFeature([location.state.newFeature]);
+            setIsAddFeatureModalOpen(true);
+        }
+    }, [location.state, handleAddOrUpdateFeature]);
+
+    /**
+     * Handles the deletion of a race feature from the current race.
+     */
+    const handleDeleteFeature = useCallback(async (featureSlug: string) => {
+        if (window.confirm('Are you sure you want to remove this feature from the race?')) {
+            setRace(prev => ({
+                ...prev,
+                featureProgression: prev.featureProgression?.filter(feature => feature.feature?.slug !== featureSlug) || []
+            }));
+            setMessage('Feature removed successfully from race!');
+        }
     }, []);
 
     /**
-     * Handles the removal of a language from the race's language list.
+     * Handles adding a language to the race via the feature system.
+     */
+    const handleAddLanguage = useCallback((languageId: number, isAutomatic: boolean) => {
+        setRace(prev => {
+            // Create a new feature progression for the language
+            const newLanguageFeature = {
+                id: 0, // Will be set by backend
+                featureId: 0, // Will be set by backend when feature is created
+                sourceType: 0, // 0 for Race
+                sourceId: parseInt(id || '0'),
+                level: isAutomatic ? 1 : 2, // Level 1 for automatic, Level 2 for bonus
+                feature: {
+                    id: 0,
+                    slug: `language-${languageId}`,
+                    name: `Language ${languageId}`,
+                    description: `Language feature for ${languageId}`,
+                },
+                modifiers: [],
+                choices: [{
+                    id: 0,
+                    featureProgressionId: 0,
+                    choiceType: 0, // TODO: Define appropriate choice type
+                    label: `Language ${languageId}`,
+                    pickCount: 1,
+                    appliesToType: FeatureAppliesToType.Language,
+                    appliesTo: languageId,
+                }],
+                effects: [],
+            };
+
+            // Check if language already exists
+            const existingLanguage = prev.featureProgression?.find(fp =>
+                fp.choices?.some(c => c.appliesToType === FeatureAppliesToType.Language && c.appliesTo === languageId)
+            );
+
+            if (existingLanguage) {
+                // Update existing language feature
+                const updatedFeatures = prev.featureProgression?.map(fp =>
+                    fp.choices?.some(c => c.appliesToType === FeatureAppliesToType.Language && c.appliesTo === languageId)
+                        ? { ...fp, level: isAutomatic ? 1 : 2 }
+                        : fp
+                ) || [];
+                return { ...prev, featureProgression: updatedFeatures };
+            } else {
+                // Add new language feature
+                return {
+                    ...prev,
+                    featureProgression: [...(prev.featureProgression || []), newLanguageFeature]
+                };
+            }
+        });
+    }, [id]);
+
+    /**
+     * Handles the removal of a language from the race.
      */
     const handleRemoveLanguage = useCallback((languageId: number) => {
         setRace(prev => ({
             ...prev,
-            languages: prev.languages?.filter(lang => lang.languageId !== languageId) || []
+            featureProgression: prev.featureProgression?.filter(fp =>
+                !fp.choices?.some(c => c.appliesToType === FeatureAppliesToType.Language && c.appliesTo === languageId)
+            ) || []
         }));
     }, []);
 
     /**
-     * Handles changes to an ability adjustment for the race.
+     * Handles changes to an ability adjustment for the race via the feature system.
      */
     const handleAbilityChange = useCallback((abilityId: number, parsedValue: number) => {
         setRace(prev => {
-            const existingIndex = prev.abilityAdjustments?.findIndex(adj => adj.abilityId === abilityId) ?? -1;
-            const newAdjustment = { abilityId, value: parsedValue };
+            // Find existing ability adjustment feature
+            const existingAbilityFeature = prev.featureProgression?.find(fp =>
+                fp.modifiers?.some(m => m.modifierType === FeatureModifierType.FlatBonus && m.appliesTo === abilityId)
+            );
 
-            if (existingIndex !== -1) {
-                const updatedAdjustments = [...(prev.abilityAdjustments || [])];
-                updatedAdjustments[existingIndex] = newAdjustment;
-                return { ...prev, abilityAdjustments: updatedAdjustments };
-            } else {
-                return { ...prev, abilityAdjustments: [...(prev.abilityAdjustments || []), newAdjustment] };
-            }
-        });
-    }, []);
-
-    /**
-     * Handles adding or updating race traits.
-     */
-    const handleAddOrUpdateTrait = useCallback((selectedTraitObjects: Array<{ slug: string; name: string; description: string; hasValue: boolean; value: string }>) => {
-        setRace(prev => {
-            // Create a map of existing traits for quick lookup by slug
-            const existingTraitsMap = new Map(prev.traits?.map(t => [t.traitSlug, t]) || []);
-
-            const updatedTraits = selectedTraitObjects.map(selectedTrait => {
-                const existingTrait = existingTraitsMap.get(selectedTrait.slug);
-                return {
-                    traitSlug: selectedTrait.slug,
-                    trait: {
-                        slug: selectedTrait.slug,
-                        name: selectedTrait.name,
-                        description: selectedTrait.description,
-                        hasValue: selectedTrait.hasValue,
+            if (existingAbilityFeature) {
+                // Update existing ability adjustment
+                const updatedFeatures = prev.featureProgression?.map(fp =>
+                    fp.modifiers?.some(m => m.modifierType === FeatureModifierType.FlatBonus && m.appliesTo === abilityId)
+                        ? {
+                            ...fp,
+                            modifiers: fp.modifiers?.map(m =>
+                                m.modifierType === FeatureModifierType.FlatBonus && m.appliesTo === abilityId
+                                    ? { ...m, value: parsedValue }
+                                    : m
+                            ) || []
+                        }
+                        : fp
+                ) || [];
+                return { ...prev, featureProgression: updatedFeatures };
+            } else if (parsedValue !== 0) {
+                // Create new ability adjustment feature
+                const newAbilityFeature = {
+                    id: 0,
+                    featureId: 0,
+                    sourceType: 0, // 0 for Race
+                    sourceId: parseInt(id || '0'),
+                    level: 1,
+                    feature: {
+                        id: 0,
+                        slug: `ability-adjustment-${abilityId}`,
+                        name: `Ability Adjustment ${abilityId}`,
+                        description: `Ability adjustment feature for ${abilityId}`,
                     },
-                    // Preserve value if it was previously set for this trait and hasValue is true
-                    value: existingTrait && existingTrait.trait?.hasValue ? existingTrait.value : (selectedTrait.hasValue ? 0 : 0),
+                    modifiers: [{
+                        id: 0,
+                        featureProgressionId: 0,
+                        modifierType: FeatureModifierType.FlatBonus,
+                        value: parsedValue,
+                        appliesTo: abilityId,
+                        appliesIfChoiceKey: null,
+                        appliesIfChoiceValue: null,
+                    }],
+                    choices: [],
+                    effects: [],
                 };
-            });
-            return { ...prev, traits: updatedTraits };
+                return {
+                    ...prev,
+                    featureProgression: [...(prev.featureProgression || []), newAbilityFeature]
+                };
+            }
+            return prev;
         });
-        setIsAddTraitModalOpen(false);
-    }, []);
-
-    useEffect(() => {
-        if (location.state?.newTrait) {
-            handleAddOrUpdateTrait([location.state.newTrait]);
-            setIsAddTraitModalOpen(true);
-        }
-    }, [location.state, handleAddOrUpdateTrait]);
-
-    /**
-     * Handles the deletion of a race trait from the current race.
-     */
-    const handleDeleteTrait = useCallback(async (traitId: string) => {
-        if (window.confirm('Are you sure you want to remove this trait from the race?')) {
-            setRace(prev => ({
-                ...prev,
-                traits: prev.traits?.filter(trait => trait.traitSlug !== traitId) || []
-            }));
-            setMessage('Trait removed successfully from race!');
-        }
-    }, []);
+    }, [id]);
 
     const HandleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -230,8 +313,40 @@ export function RaceEdit() {
         return <div>No race data available</div>;
     }
 
-    const automaticLanguages = formData.languages?.filter(lang => lang.isAutomatic) || [];
-    const bonusLanguages = formData.languages?.filter(lang => !lang.isAutomatic) || [];
+    // Helper functions to extract languages and ability adjustments from feature progression
+    const getLanguages = () => {
+        const languageFeatures = formData.featureProgression?.filter(fp =>
+            fp.choices?.some(c => c.appliesToType === FeatureAppliesToType.Language)
+        ) || [];
+
+        return languageFeatures.map(fp => {
+            const languageChoice = fp.choices?.find(c => c.appliesToType === FeatureAppliesToType.Language);
+            return {
+                languageId: languageChoice?.appliesTo || 0,
+                isAutomatic: fp.level === 1 // Level 1 features are automatic languages
+            };
+        });
+    };
+
+    const getAbilityAdjustments = () => {
+        const abilityFeatures = formData.featureProgression?.filter(fp =>
+            fp.modifiers?.some(m => m.modifierType === FeatureModifierType.FlatBonus)
+        ) || [];
+
+        return ABILITY_LIST.map(ability => {
+            const abilityFeature = abilityFeatures.find(fp =>
+                fp.modifiers?.some(m => m.modifierType === FeatureModifierType.FlatBonus && m.appliesTo === ability.id)
+            );
+            const abilityModifier = abilityFeature?.modifiers?.find(m => m.modifierType === FeatureModifierType.FlatBonus && m.appliesTo === ability.id);
+            return {
+                abilityId: ability.id,
+                value: abilityModifier?.value || 0
+            };
+        });
+    };
+
+    const automaticLanguages = getLanguages().filter(lang => lang.isAutomatic);
+    const bonusLanguages = getLanguages().filter(lang => !lang.isAutomatic);
 
     return (
         <div className="max-w-6xl mx-auto p-6">
@@ -350,6 +465,8 @@ export function RaceEdit() {
                         )}
                     </div>
                 </div>
+
+                {/* Ability Adjustments and Languages */}
                 <div className="mt-4 grid grid-cols-2 gap-4">
                     <div>
                         <h3 className="text-lg font-semibold mb-2">Ability Adjustments</h3>
@@ -363,13 +480,13 @@ export function RaceEdit() {
                                         type="text"
                                         id={`ability-${ability.id}`}
                                         value={focusedAbilityId === ability.id ? editingAbilityValue : (() => {
-                                            const adjustment = formData.abilityAdjustments?.find(adj => adj.abilityId === ability.id)?.value || 0;
+                                            const adjustment = getAbilityAdjustments().find(adj => adj.abilityId === ability.id)?.value || 0;
                                             return adjustment > 0 ? `+${adjustment}` : adjustment;
                                         })()}
                                         onChange={(e) => setEditingAbilityValue(e.target.value)}
                                         onFocus={() => {
                                             setFocusedAbilityId(ability.id);
-                                            const currentAdjustment = formData.abilityAdjustments?.find(adj => adj.abilityId === ability.id)?.value || 0;
+                                            const currentAdjustment = getAbilityAdjustments().find(adj => adj.abilityId === ability.id)?.value || 0;
                                             setEditingAbilityValue(String(currentAdjustment));
                                         }}
                                         onBlur={() => {
@@ -391,7 +508,7 @@ export function RaceEdit() {
                                 {automaticLanguages.length === 0 && <span className="text-gray-500 dark:text-gray-400">No automatic languages added.</span>}
                                 {automaticLanguages.map((lang, index) => (
                                     <span key={lang.languageId} className="group relative text-sm pt-1 pb-1 pl-0 pr-0 cursor-pointer">
-                                        {LANGUAGE_MAP[lang.languageId]?.name || 'Unknown Language'}
+                                        {LANGUAGE_SELECT_LIST.find(l => l.value === lang.languageId)?.label || 'Unknown Language'}
                                         {index < automaticLanguages.length - 1 && ','}
                                         <button
                                             type="button"
@@ -415,7 +532,7 @@ export function RaceEdit() {
                                         }
                                     }}
                                     options={LANGUAGE_SELECT_LIST
-                                        .filter(lang => !formData.languages?.some(rl => rl.languageId === lang.value))}
+                                        .filter(lang => !getLanguages().some(rl => rl.languageId === lang.value))}
                                     placeholder="Add"
                                 />
                             </div>
@@ -428,7 +545,7 @@ export function RaceEdit() {
                                 {bonusLanguages.length === 0 && <span className="text-gray-500 dark:text-gray-400">No bonus languages added.</span>}
                                 {bonusLanguages.map((lang, index) => (
                                     <span key={lang.languageId} className="group relative text-sm pt-1 pb-1 pl-0 pr-0 cursor-pointer">
-                                        {LANGUAGE_MAP[lang.languageId]?.name || 'Unknown Language'}
+                                        {LANGUAGE_SELECT_LIST.find(l => l.value === lang.languageId)?.label || 'Unknown Language'}
                                         {index < bonusLanguages.length - 1 && ','}
                                         <button
                                             type="button"
@@ -452,7 +569,7 @@ export function RaceEdit() {
                                         }
                                     }}
                                     options={LANGUAGE_SELECT_LIST
-                                        .filter(lang => !formData.languages?.some(rl => rl.languageId === lang.value))}
+                                        .filter(lang => !getLanguages().some(rl => rl.languageId === lang.value))}
                                     placeholder="Add"
                                 />
                             </div>
@@ -460,52 +577,33 @@ export function RaceEdit() {
                     </div>
                 </div>
 
-                {/* Race Traits */}
+                {/* Race Features */}
                 <div className="mt-4">
-                    <h2 className="text-xl font-semibold mb-2">Traits</h2>
-                    {formData.traits && formData.traits.length > 0 ? (
+                    <h2 className="text-xl font-semibold mb-2">Features</h2>
+                    {formData.featureProgression && formData.featureProgression.length > 0 ? (
                         <div className="space-y-2 border p-2 rounded dark:border-gray-600 mb-2">
-                            {formData.traits.map((trait, index) => (
+                            {formData.featureProgression.map((featureProg, index) => (
                                 <div key={index} className="rounded border p-2 dark:border-gray-700 grid grid-cols-[130px_1fr_auto] gap-2 items-center">
                                     <div>
-                                        <h3 className="text-lg font-medium mb-2">{trait.trait?.slug}</h3>
+                                        <h3 className="text-lg font-medium mb-2">{featureProg.feature?.name || featureProg.feature?.slug}</h3>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">Level: {featureProg.level}</p>
                                     </div>
                                     <div className="w-full">
                                         <ProcessMarkdown
-                                            markdown={trait.trait?.description || ''}
-                                            id={`trait-${trait.traitSlug}-description`}
+                                            markdown={featureProg.feature?.description || ''}
+                                            id={`feature-${featureProg.feature?.slug}-description`}
                                             userVars={{
                                                 racename: formData.name,
                                                 racenamelower: formData.name.toLowerCase(),
                                                 raceplural: pluralize(formData.name),
                                                 raceplurallower: pluralize(formData.name).toLowerCase(),
-                                                value: trait.value
                                             }}
                                         />
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        {trait.trait?.hasValue && (
-                                            <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 text-sm">
-                                                <span>Value:</span>
-                                                <input
-                                                    type="text"
-                                                    value={trait.value || ''}
-                                                    onChange={(e) => {
-                                                        const newValue = e.target.value;
-                                                        setFormData(prev => ({
-                                                            ...prev,
-                                                            traits: prev.traits?.map(t =>
-                                                                t.traitSlug === trait.traitSlug ? { ...t, value: parseInt(newValue) } : t
-                                                            ) || []
-                                                        }));
-                                                    }}
-                                                    className="w-20 p-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                                                />
-                                            </div>
-                                        )}
                                         <button
                                             type="button"
-                                            onClick={() => handleDeleteTrait(trait.traitSlug)}
+                                            onClick={() => handleDeleteFeature(featureProg.feature?.slug || '')}
                                             className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600"
                                         >
                                             <TrashIcon className="h-5 w-5" />
@@ -515,15 +613,15 @@ export function RaceEdit() {
                             ))}
                         </div>
                     ) : (
-                        <div className="text-gray-500 dark:text-gray-400 mb-4">No traits added yet.</div>
+                        <div className="text-gray-500 dark:text-gray-400 mb-4">No features added yet.</div>
                     )}
 
                     <button
                         type="button"
-                        onClick={() => setIsAddTraitModalOpen(true)}
+                        onClick={() => setIsAddFeatureModalOpen(true)}
                         className="px-4 py-2 bg-green-600 rounded hover:bg-green-700 text-white"
                     >
-                        Add Trait
+                        Add Feature
                     </button>
                 </div>
 
@@ -547,13 +645,13 @@ export function RaceEdit() {
                 </div>
             </ValidatedForm>
 
-            <RaceTraitAssoc
-                isOpen={isAddTraitModalOpen}
+            <RaceFeatureAssoc
+                isOpen={isAddFeatureModalOpen}
                 onClose={() => {
-                    setIsAddTraitModalOpen(false);
+                    setIsAddFeatureModalOpen(false);
                 }}
-                onSave={handleAddOrUpdateTrait}
-                initialSelectedTraitIds={formData.traits?.map(t => t.traitSlug) || []}
+                onSave={handleAddOrUpdateFeature}
+                initialSelectedFeatureIds={formData.featureProgression?.map(f => f.feature?.slug || '') || []}
                 raceId={parseInt(id)}
             />
         </div>

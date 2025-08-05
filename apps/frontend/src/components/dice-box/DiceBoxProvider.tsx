@@ -12,8 +12,8 @@ export interface DiceBoxContextType {
     rollDiceGroups: (notations: string[], groups?: string[], critHighlight?: boolean) => void;
     isReady: boolean;
     isRolling: boolean;
-    lastResult: any | null;
-    onRollComplete: (callback: (result: any | any[]) => void) => void;
+    lastResult: DiceResult | null;
+    onRollComplete: (callback: (result: DiceResult | DiceResult[]) => void) => void;
     clearResults: () => void;
     reinitialize: () => Promise<void>;
     reinitializeWithUserConfig: (userConfig: UserDiceConfig) => Promise<void>;

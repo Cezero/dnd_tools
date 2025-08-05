@@ -1,7 +1,8 @@
-import { ClassProficiencyInQueryResponse, ClassFeatureProgressionDetailInQueryResponse } from "@shared/schema";
+import { z } from "zod";
+import { FeatureProgressionWithRelationsSchema } from "@shared/schema";
 import { ASPECT_FORMATTERS } from "@shared/static-data";
 
-export function formatClassProficiencies(proficiencies: ClassProficiencyInQueryResponse[]): string {
+export function formatClassProficiencies(proficiencies: Array<{ featId: number; itemId: number; featName: string; itemName?: string }>): string {
     const proficiencyNameMap = {
         "Armor Proficiency (Light)": { display: "light armor", sort: 4 },
         "Armor Proficiency (Medium)": { display: "medium armor", sort: 5 },
@@ -46,7 +47,7 @@ export function formatClassProficiencies(proficiencies: ClassProficiencyInQueryR
 
 // Types for progression formatting
 export interface ProgressionFormatter {
-    label?: (progression: ClassFeatureProgressionDetailInQueryResponse) => string;
+    label?: (progression: z.infer<typeof FeatureProgressionWithRelationsSchema>) => string;
     value: (valueInt: number | null, valueString: string | null) => string;
 }
 
@@ -103,7 +104,7 @@ export function formatProgressionValue(aspect: string, valueInt: number | null, 
 }
 
 // New function to format complete progression display
-export function formatProgression(progression: ClassFeatureProgressionDetailInQueryResponse): { label: string; value: string; note?: string } {
+export function formatProgression(progression: z.infer<typeof FeatureProgressionWithRelationsSchema>): { label: string; value: string; note?: string } {
     const formatter = PROGRESSION_FORMATTERS[progression.aspect];
 
     if (formatter) {

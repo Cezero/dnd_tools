@@ -6,11 +6,12 @@ import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
 import { createIdDeleteServiceFunction, createSlugDeleteServiceFunction } from '@/components/generic-list/types';
 import { CLASS_COLUMNS } from './ClassColumns';
-import { CLASS_FEATURE_COLUMNS } from './ClassFeatureColumns';
+import { FEATURE_COLUMNS } from './FeatureColumns';
 import { ClassService } from './ClassService';
-import { ClassFeatureService } from './ClassFeatureService';
-import { ClassInQueryResponse, ClassFeatureSchema } from '@shared/schema';
-import { routes, classFeatureRoutes } from './ClassConfig';
+import { FeatureSystemService } from '@/services/FeatureSystemService';
+import { ClassInQueryResponse, FeatureSchema } from '@shared/schema';
+import { routes } from './ClassConfig';
+import { FeatureDetail, FeatureEdit } from '@/components/feature-system';
 
 export default function ClassList(): React.JSX.Element {
     const navigate = useNavigate();
@@ -21,8 +22,13 @@ export default function ClassList(): React.JSX.Element {
         navigate('/classes/new/edit', { state: { fromListParams: location.search } });
     };
 
-    const HandleNewClassFeatureClick = (): void => {
-        navigate('/classes/features/new/edit', { state: { fromListParams: location.search } });
+    const HandleNewFeatureClick = (): void => {
+        navigate('/features/new/edit', {
+            state: {
+                fromListParams: location.search,
+                fromPage: 'classes'
+            }
+        });
     };
 
 
@@ -57,23 +63,26 @@ export default function ClassList(): React.JSX.Element {
 
             {isAdmin && (
                 <>
-                    <h2 className="text-xl font-bold mb-4 mt-8">Class Feature Definitions</h2>
+                    <h2 className="text-xl font-bold mb-4 mt-8">Feature Definitions</h2>
                     <div className="mb-4 flex justify-end">
                         <button
-                            onClick={HandleNewClassFeatureClick}
+                            onClick={HandleNewFeatureClick}
                             className="bg-blue-500 hover:bg-blue-700 font-bold py-2 px-4 rounded"
                         >
-                            New Class Feature
+                            New Feature
                         </button>
                     </div>
-                    <div id="class-features-list-container">
-                        <GenericList<z.infer<typeof ClassFeatureSchema>>
-                            storageKey="class-features-list"
-                            columns={CLASS_FEATURE_COLUMNS}
-                            serviceFunction={() => ClassFeatureService.getClassFeatures({})}
-                            itemDesc="class feature"
-                            routes={classFeatureRoutes}
-                            deleteServiceFunction={createSlugDeleteServiceFunction(ClassFeatureService.deleteClassFeature)}
+                    <div id="features-list-container">
+                        <GenericList<z.infer<typeof FeatureSchema>>
+                            storageKey="features-list"
+                            columns={FEATURE_COLUMNS}
+                            serviceFunction={() => FeatureSystemService.getFeatures({ sourceType: 1 })}
+                            itemDesc="feature"
+                            routes={[
+                                { path: 'features/:slug', component: FeatureDetail, exact: true, requireAuth: true, requireAdmin: true, routeType: 'detail' },
+                                { path: 'features/:slug/edit', component: FeatureEdit, exact: true, requireAuth: true, requireAdmin: true, routeType: 'edit' },
+                            ]}
+                            deleteServiceFunction={createSlugDeleteServiceFunction(FeatureSystemService.deleteFeature)}
                         />
                     </div>
                 </>

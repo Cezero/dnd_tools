@@ -1,13 +1,27 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { FilterType } from '@/components/generic-list/types';
-import { RaceTraitSchema } from '@shared/schema';
+import { FeatureSchema } from '@shared/schema';
 import { createContainsFilter, createEqualsFilter } from '@/components/generic-list/filterFunctions';
 import { z } from 'zod';
 
-export const RACE_TRAIT_COLUMNS: ColumnDef<z.infer<typeof RaceTraitSchema>, unknown>[] = [
+export const RACE_TRAIT_COLUMNS: ColumnDef<z.infer<typeof FeatureSchema>, unknown>[] = [
+    {
+        accessorKey: 'id',
+        header: 'ID',
+        enableSorting: true,
+        enableColumnFilter: true,
+        enableResizing: true,
+        size: 80,
+        filterFn: createContainsFilter(),
+        meta: {
+            required: true,
+            filterType: FilterType.TEXT_INPUT,
+            placeholder: 'Filter by ID...'
+        },
+    },
     {
         accessorKey: 'slug',
-        header: 'Slug',
+        header: 'Feature Slug',
         enableSorting: true,
         enableColumnFilter: true,
         enableResizing: true,
@@ -16,8 +30,17 @@ export const RACE_TRAIT_COLUMNS: ColumnDef<z.infer<typeof RaceTraitSchema>, unkn
         meta: {
             required: true,
             filterType: FilterType.TEXT_INPUT,
-            placeholder: 'Filter by name...'
+            placeholder: 'Filter by slug...'
         },
+    },
+    {
+        accessorKey: 'name',
+        header: 'Name',
+        enableSorting: true,
+        enableColumnFilter: true,
+        enableResizing: true,
+        size: 200,
+        filterFn: createContainsFilter(),
     },
     {
         accessorKey: 'description',
@@ -27,26 +50,6 @@ export const RACE_TRAIT_COLUMNS: ColumnDef<z.infer<typeof RaceTraitSchema>, unkn
         meta: {
             truncate: 200,
             isMarkdown: true,
-        },
-    },
-    {
-        accessorKey: 'hasValue',
-        header: 'Has Value',
-        enableSorting: true,
-        enableColumnFilter: true,
-        enableResizing: true,
-        size: 100,
-        filterFn: createEqualsFilter(),
-        cell: info => {
-            const hasValue = info.getValue() as boolean;
-            return hasValue ? 'Yes' : 'No';
-        },
-        meta: {
-            filterType: FilterType.SINGLE_SELECT,
-            options: [
-                { value: true, label: 'Yes' },
-                { value: false, label: 'No' }
-            ]
         },
     }
 ]; 

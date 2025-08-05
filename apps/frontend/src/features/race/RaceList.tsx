@@ -6,11 +6,12 @@ import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
 import { createIdDeleteServiceFunction, createSlugDeleteServiceFunction } from '@/components/generic-list/types';
 import { RACE_COLUMNS } from './RaceColumns';
-import { RACE_TRAIT_COLUMNS } from './RaceTraitColumns';
+import { FEATURE_COLUMNS } from '../class/FeatureColumns';
 import { RaceService } from './RaceService';
-import { RaceTraitService } from './RaceTraitService';
-import { RaceInQueryResponse, RaceTraitSchema } from '@shared/schema';
-import { routes, raceTraitRoutes } from './RaceConfig';
+import { FeatureSystemService } from '@/services/FeatureSystemService';
+import { RaceInQueryResponse, FeatureSchema } from '@shared/schema';
+import { routes } from './RaceConfig';
+import { FeatureDetail, FeatureEdit } from '@/components/feature-system';
 
 
 export function RaceList(): React.JSX.Element {
@@ -22,8 +23,13 @@ export function RaceList(): React.JSX.Element {
         navigate('/races/new/edit', { state: { fromListParams: location.search } });
     };
 
-    const HandleNewRaceTraitClick = (): void => {
-        navigate('/races/traits/new/edit', { state: { fromListParams: location.search } });
+    const HandleNewFeatureClick = (): void => {
+        navigate('/features/new/edit', {
+            state: {
+                fromListParams: location.search,
+                fromPage: 'races'
+            }
+        });
     };
 
 
@@ -56,23 +62,28 @@ export function RaceList(): React.JSX.Element {
 
             {isAdmin && (
                 <>
-                    <h2 className="text-xl font-bold mb-4 mt-8">Race Trait Definitions</h2>
+                    <h2 className="text-xl font-bold mb-4 mt-8">Feature Definitions</h2>
                     <div className="mb-4 flex justify-end">
                         <button
-                            onClick={HandleNewRaceTraitClick}
+                            onClick={HandleNewFeatureClick}
                             className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded ml-2"
                         >
-                            New Race Trait Definition
+                            New Feature
                         </button>
                     </div>
-                    <GenericList<z.infer<typeof RaceTraitSchema>>
-                        storageKey="race-traits-list"
-                        columns={RACE_TRAIT_COLUMNS}
-                        serviceFunction={() => RaceTraitService.getRaceTraits({})}
-                        itemDesc="race trait"
-                        routes={raceTraitRoutes}
-                        deleteServiceFunction={createSlugDeleteServiceFunction(RaceTraitService.deleteRaceTrait)}
-                    />
+                    <div id="features-list-container">
+                        <GenericList<z.infer<typeof FeatureSchema>>
+                            storageKey="features-list"
+                            columns={FEATURE_COLUMNS}
+                            serviceFunction={() => FeatureSystemService.getFeatures({ sourceType: 0 })}
+                            itemDesc="feature"
+                            routes={[
+                                { path: 'features/:slug', component: FeatureDetail, exact: true, requireAuth: true, requireAdmin: true, routeType: 'detail' },
+                                { path: 'features/:slug/edit', component: FeatureEdit, exact: true, requireAuth: true, requireAdmin: true, routeType: 'edit' },
+                            ]}
+                            deleteServiceFunction={createSlugDeleteServiceFunction(FeatureSystemService.deleteFeature)}
+                        />
+                    </div>
                 </>
             )}
         </div>

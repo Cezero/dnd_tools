@@ -3,7 +3,7 @@ import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { ClassProgressionTable } from '@/lib/ClassProgressionTable';
 import { generateClassProgression } from '@/lib/ClassProgression';
 import { GetClassResponse } from '@shared/schema';
-import { RPG_DICE, EDITION_MAP, ABILITY_MAP, _SKILL_MAP } from '@shared/static-data';
+import { RPG_DICE, EDITION_MAP, ABILITY_MAP, _SKILL_MAP, FeatureModifierType, FeatureAppliesToType } from '@shared/static-data';
 import { formatClassProficiencies, formatProgression } from '@/lib/Formatters';
 
 interface ClassDisplayProps {
@@ -58,8 +58,7 @@ export function ClassDisplay({
                                 fortProgression: cls.fortProgression,
                                 refProgression: cls.refProgression,
                                 willProgression: cls.willProgression,
-                                spellProgression: cls.spellProgression !== null ? cls.spellProgression : undefined,
-                                spellsKnown: cls.spellsKnown !== null ? cls.spellsKnown : undefined,
+                                spellcastingProgression: cls.spellcastingProgression !== null ? cls.spellcastingProgression : undefined,
                             };
                             const progression = generateClassProgression(progressionConfig);
                             return (
@@ -72,103 +71,126 @@ export function ClassDisplay({
                     </div>
 
                     {/* Class Skills Section */}
-                    {cls.skills && cls.skills.length > 0 && (
-                        <div className="mt-4">
-                            <h3 className="text-lg font-semibold mb-2">Class Skills</h3>
-                            <div className="flex flex-wrap gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md">
-                                {cls.skills.map((skill, index) => (
-                                    <span key={skill.skillId} className="text-sm">
-                                        {_SKILL_MAP[skill.skillId]?.name || 'Unknown Skill'}
-                                        {index < cls.skills!.length - 1 && ','}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                    {(() => {
+                        const classSkills = cls.features?.flatMap(progression =>
+                            progression.modifiers?.filter(modifier =>
+                                modifier.modifierType === FeatureModifierType.ClassSkill
+                            ).map(modifier => ({
+                                skillId: progression.appliesTo,
+                                modifier: modifier
+                            })) || []
+                        ) || [];
+
+                        if (classSkills.length > 0) {
+                            return (
+                                <div className="mt-4">
+                                    <h3 className="text-lg font-semibold mb-2">Class Skills</h3>
+                                    <div className="flex flex-wrap gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md">
+                                        {classSkills.map((skill, index) => (
+                                            <span key={skill.skillId} className="text-sm">
+                                                {_SKILL_MAP[skill.skillId]?.name || 'Unknown Skill'}
+                                                {index < classSkills.length - 1 && ','}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        }
+                        return null;
+                    })()}
 
                     {/* Class Proficiencies Section */}
-                    {cls.proficiencies && cls.proficiencies.length > 0 && (
-                        <div className="mt-4">
-                            <h3 className="text-lg font-semibold mb-2">Class Proficiencies</h3>
-                            <div className="flex flex-wrap gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md">
-                                {formatClassProficiencies(cls.proficiencies)}
-                            </div>
-                        </div>
-                    )}
+                    {(() => {
+                        const classProficiencies = cls.features?.flatMap(progression =>
+                            progression.choices?.filter(choice =>
+                                choice.choiceType === 'Feat' && progression.appliesToType === FeatureAppliesToType.Item
+                            ).map(choice => ({
+                                itemId: progression.appliesTo,
+                                choice: choice
+                            })) || []
+                        ) || [];
+
+                        if (classProficiencies.length > 0) {
+                            return (
+                                <div className="mt-4">
+                                    <h3 className="text-lg font-semibold mb-2">Class Proficiencies</h3>
+                                    <div className="flex flex-wrap gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md">
+                                        {classProficiencies.map((prof, index) => (
+                                            <span key={prof.itemId} className="text-sm">
+                                                {prof.itemId === -1 ? 'All Items' : `Item ${prof.itemId}`}
+                                                {index < classProficiencies.length - 1 && ','}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        }
+                        return null;
+                    })()}
 
                     {/* Class Features Section */}
-                    {cls.features && cls.features.length > 0 && (
-                        <div className="mt-4">
-                            <h3 className="text-lg font-semibold mb-2">Class Features</h3>
-                            <div className="space-y-4">
-                                {(() => {
-                                    // Group features by level
-                                    const groupedFeatures = cls.features.reduce((acc, feature) => {
-                                        const level = feature.level;
-                                        if (!acc[level]) {
-                                            acc[level] = { features: [], progressions: [] };
-                                        }
-                                        acc[level].features.push(feature);
-                                        return acc;
-                                    }, {} as Record<number, { features: typeof cls.features, progressions: any[] }>);
+                    {(() => {
+                        // Filter out progressions that contain skills and proficiencies
+                        const actualFeatures = cls.features?.filter(progression => {
+                            // Check if this progression contains class skills
+                            const hasClassSkills = progression.modifiers?.some(modifier =>
+                                modifier.modifierType === FeatureModifierType.ClassSkill
+                            );
 
-                                    // Add progressions to their respective levels, but suppress if feature is first granted at same level
-                                    if (cls.featureProgression && cls.featureProgression.length > 0) {
-                                        cls.featureProgression.forEach(progression => {
-                                            const level = progression.level;
-                                            if (!groupedFeatures[level]) {
-                                                groupedFeatures[level] = { features: [], progressions: [] };
-                                            }
+                            // Check if this progression contains proficiencies
+                            const hasProficiencies = progression.choices?.some(choice =>
+                                choice.choiceType === 'Feat' && progression.appliesToType === FeatureAppliesToType.Item
+                            );
 
-                                            // Check if this feature is first granted at this level
-                                            const featureFirstGrantedAtLevel = cls.features?.some(feature =>
-                                                feature.featureSlug === progression.featureSlug && feature.level === level
-                                            );
+                            // Exclude progressions with skills or proficiencies
+                            return !hasClassSkills && !hasProficiencies;
+                        }) || [];
 
-                                            // Only add progression if feature is not first granted at this level
-                                            if (!featureFirstGrantedAtLevel) {
-                                                groupedFeatures[level].progressions.push(progression);
-                                            }
-                                        });
-                                    }
+                        if (actualFeatures.length > 0) {
+                            return (
+                                <div className="mt-4">
+                                    <h3 className="text-lg font-semibold mb-2">Class Features</h3>
+                                    <div className="space-y-4">
+                                        {(() => {
+                                            // Group features by level
+                                            const groupedFeatures = actualFeatures.reduce((acc, feature) => {
+                                                const level = feature.level;
+                                                if (!acc[level]) {
+                                                    acc[level] = { features: [] };
+                                                }
+                                                acc[level].features.push(feature);
+                                                return acc;
+                                            }, {} as Record<number, { features: typeof actualFeatures }>);
 
-                                    // Sort levels and render each group
-                                    return Object.keys(groupedFeatures)
-                                        .sort((a, b) => parseInt(a) - parseInt(b))
-                                        .map(level => (
-                                            <div key={level} className="border border-gray-200 dark:border-gray-600 rounded-md p-3">
-                                                <h4 className="text-md font-medium mb-2">Level {level}</h4>
-                                                <div className="space-y-2">
-                                                    {/* Features */}
-                                                    {groupedFeatures[parseInt(level)].features.map((feature, index) => (
-                                                        <div key={`feature-${index}`} className="p-2">
-                                                            <ProcessMarkdown
-                                                                markdown={feature.description}
-                                                                id={`${cls.name.toLowerCase()}-feature-${level}-${index}`}
-                                                                userVars={{
-                                                                    classname: cls.name.toLowerCase()
-                                                                }}
-                                                            />
+                                            // Sort levels and render each group
+                                            return Object.keys(groupedFeatures)
+                                                .sort((a, b) => parseInt(a) - parseInt(b))
+                                                .map(level => (
+                                                    <div key={level} className="border border-gray-200 dark:border-gray-600 rounded-md p-3">
+                                                        <h4 className="text-md font-medium mb-2">Level {level}</h4>
+                                                        <div className="space-y-2">
+                                                            {/* Features */}
+                                                            {groupedFeatures[parseInt(level)].features.map((feature, index) => (
+                                                                <div key={`feature-${index}`} className="p-2">
+                                                                    <ProcessMarkdown
+                                                                        markdown={feature.feature?.description || ''}
+                                                                        id={`${cls.name.toLowerCase()}-feature-${level}-${index}`}
+                                                                        userVars={{
+                                                                            classname: cls.name.toLowerCase()
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                    ))}
-                                                    {/* Progressions */}
-                                                    {groupedFeatures[parseInt(level)].progressions.map((progression, index) => {
-                                                        const formatted = formatProgression(progression);
-                                                        return (
-                                                            <div key={`progression-${index}`} className="p-2">
-                                                                <span className="font-semibold">{formatted.label}</span>
-                                                                {formatted.value && ` ${formatted.value}`}
-                                                                {formatted.note && ` (${formatted.note})`}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        ));
-                                })()}
-                            </div>
-                        </div>
-                    )}
+                                                    </div>
+                                                ));
+                                        })()}
+                                    </div>
+                                </div>
+                            );
+                        }
+                        return null;
+                    })()}
 
                     {/* Actions */}
                     {showActions && (

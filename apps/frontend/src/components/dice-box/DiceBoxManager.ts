@@ -15,7 +15,7 @@ export interface DiceResult {
 export class DiceBoxManager {
     private instance: InstanceType<typeof DiceBox> | null = null;
     private isInitialized = false;
-    private onRollCompleteCallbacks: ((result: any) => void)[] = [];
+    private onRollCompleteCallbacks: ((result: DiceResult) => void)[] = [];
     private diceParser: DiceParser;
     private currentCritHighlight = false;
     private isRolling = false; // Add rolling state tracking

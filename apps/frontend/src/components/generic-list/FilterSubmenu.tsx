@@ -5,13 +5,14 @@ import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { FilterType } from './types';
 import { ContextMenuSingleSelect } from './ContextMenuSingleSelect';
 import { ContextMenuMultiSelect } from './ContextMenuMultiSelect';
+import { FilterConfig, FilterValue } from './types';
 
 interface FilterSubmenuProps {
     columnId: string;
-    filterConfig: any; // Column meta containing filterType and options
-    currentFilter: any; // Current filter value from columnFilters
-    onFilterChange: (value: any) => void;
-    columnFilters?: any[]; // All current column filters for dynamic options
+    filterConfig: FilterConfig; // Column meta containing filterType and options
+    currentFilter: FilterValue; // Current filter value from columnFilters
+    onFilterChange: (value: FilterValue) => void;
+    columnFilters?: FilterValue[]; // All current column filters for dynamic options
 }
 
 export const FilterSubmenu: React.FC<FilterSubmenuProps> = ({

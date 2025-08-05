@@ -13,6 +13,7 @@ import {
     GetFeatureProgressionsResponse,
     CreateFeatureProgressionRequest,
     UpdateFeatureProgressionRequest,
+    CreateFeatureProgressionWithRelationsRequest,
     GetFeatureModifiersResponse,
     CreateFeatureModifierRequest,
     UpdateFeatureModifierRequest,
@@ -29,8 +30,9 @@ import { featureSystemService } from './featureSystemService.js';
 /**
  * Fetches all features from the database.
  */
-export async function GetAllFeatures(req: ValidatedNoInput<GetAllFeaturesResponse>, res: Response) {
-    const features = await featureSystemService.getAllFeatures();
+export async function GetAllFeatures(req: ValidatedQueryT<{ sourceType?: string }, GetAllFeaturesResponse>, res: Response) {
+    const sourceType = req.query.sourceType ? Number(req.query.sourceType) : undefined;
+    const features = await featureSystemService.getAllFeatures(sourceType);
     res.json(features);
 }
 
@@ -86,6 +88,14 @@ export async function GetFeatureProgressions(req: ValidatedQueryT<{ sourceType: 
  */
 export async function CreateFeatureProgression(req: ValidatedBodyT<CreateFeatureProgressionRequest, CreateResponse>, res: Response) {
     const result = await featureSystemService.createFeatureProgression(req.body);
+    res.status(201).json(result);
+}
+
+/**
+ * Creates a new feature progression with related entities (modifiers, choices, effects).
+ */
+export async function CreateFeatureProgressionWithRelations(req: ValidatedBodyT<CreateFeatureProgressionWithRelationsRequest, CreateResponse>, res: Response) {
+    const result = await featureSystemService.createFeatureProgressionWithRelations(req.body);
     res.status(201).json(result);
 }
 

@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { ItemAssoc } from '@/lib/ItemAssoc';
-import { ClassFeatureService } from './ClassFeatureService';
-import { ClassFeatureSchema } from '@shared/schema';
+import { FeatureSystemService } from '@/services/FeatureSystemService';
+import { FeatureSchema } from '@shared/schema';
 import { z } from 'zod';
 
-type ClassFeatureItem = z.infer<typeof ClassFeatureSchema>;
+type ClassFeatureItem = z.infer<typeof FeatureSchema>;
 
 interface SelectedFeatureData {
     featureId: number;
@@ -61,13 +61,13 @@ export function ClassFeatureAssoc({ isOpen, onClose, onSave, initialSelectedFeat
             initialSelectedIds={initialSelectedSlugs}
             parentId={classId}
             serviceFunction={async () => {
-                const response = await ClassFeatureService.getClassFeatures({});
+                const response = await FeatureSystemService.getFeatures({});
                 setAvailableFeatures(response.results);
                 return response;
             }}
             storageKey="classFeatureSelectionList"
             itemDesc="feature"
-            createNewRoute="/classes/features/new/edit"
+            createNewRoute="/features/new/edit"
             transformSelectedItems={transformSelectedFeatures}
             getMarkdownId={getMarkdownId}
             dialogTitle="Select Class Feature(s)"

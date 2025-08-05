@@ -12,7 +12,7 @@ import { ABILITY_SELECT_LIST, FEAT_PREREQUISITE_TYPE_SELECT_LIST, FeatPrerequisi
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { FeatService } from './FeatService';
 import { PrereqOptions } from './FeatUtil';
-import { ClassFeatureService } from '../class/ClassFeatureService';
+import { FeatureSystemService } from '@/services/FeatureSystemService';
 
 // Type definitions for the form state
 type FeatPrerequisiteFormData = z.infer<typeof FeatPrerequisiteMapSchema>;
@@ -65,8 +65,8 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
             setFeatOptions(response.results.map(feat => ({ value: feat.id, label: feat.name })));
         }
         const fetchClassFeatures = async () => {
-            const response = await ClassFeatureService.getClassFeatures(undefined, undefined);
-            setClassFeatureOptions(response.results.map(feature => ({ value: feature.slug, label: feature.name || feature.slug })));
+            const response = await FeatureSystemService.getFeatures(undefined, undefined);
+            setClassFeatureOptions(response.results.map(feature => ({ value: feature.id, label: feature.name || feature.slug })));
         }
         fetchFeats();
         fetchClassFeatures();
@@ -276,11 +276,11 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
                                     <CustomSelect
                                         label="Reference"
                                         required
-                                        value={formData.featureSlug}
+                                        value={formData.referenceId}
                                         componentExtraClassName='flex items-center gap-2'
                                         labelExtraClassName='w-32'
                                         itemTextExtraClassName='w-34'
-                                        onValueChange={(value) => setFormData(prev => ({ ...prev, featureSlug: value as string | null }))}
+                                        onValueChange={(value) => setFormData(prev => ({ ...prev, referenceId: value as number | null }))}
                                         options={classFeatureOptions}
                                     />
                                 )}

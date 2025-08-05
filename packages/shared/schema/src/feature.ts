@@ -1,7 +1,9 @@
 import z from "zod";
-import { FeatureModifierType, FeatureSpecialEffectType } from "@shared/static-data";
+import { FeatureModifierType, FeatureSpecialEffectType, FeatureSourceType } from "@shared/static-data";
 import { SpellcastingLinkSchema } from "./spellcasting";
 import { QueryResponseSchema } from "./query";
+
+
 
 // Enum schemas
 export const ChoiceTypeEnumSchema = z.enum(['Feat', 'Feature']);
@@ -19,10 +21,10 @@ export const FeatureProgressionSchema = z.object({
     sourceType: z.number().int().min(0, 'Source type must be at least 0').max(1, 'Source type must be at most 1'),
     level: z.number().int().min(1, 'Level must be at least 1').max(20, 'Level must be at most 20'),
     featureId: z.number().int().positive('Feature ID must be a positive integer'),
-    appliesToType: z.number().int().optional(),
-    appliesTo: z.number().int().optional(),
-    classId: z.number().int().optional(),
-    raceId: z.number().int().optional(),
+    appliesToType: z.number().int().nullable(),
+    appliesTo: z.number().int().nullable(),
+    classId: z.number().int().nullable(),
+    raceId: z.number().int().nullable(),
 });
 
 export const FeatureModifierSchema = z.object({
@@ -30,17 +32,17 @@ export const FeatureModifierSchema = z.object({
     featureProgressionId: z.number().int().positive('Feature progression ID must be a positive integer'),
     modifierType: z.number().int(),
     value: z.number().int(),
-    appliesIfChoiceKey: z.string().optional(),
-    appliesIfChoiceValue: z.string().optional(),
+    appliesIfChoiceKey: z.string().nullable(),
+    appliesIfChoiceValue: z.string().nullable(),
 });
 
 export const FeatureSpecialEffectSchema = z.object({
     id: z.number().int().positive('Special effect ID must be a positive integer'),
     progressionId: z.number().int().positive('Progression ID must be a positive integer'),
     effectType: z.number().int(),
-    key: z.string().optional(),
-    value: z.string().optional(),
-    numericValue: z.number().int().optional(),
+    key: z.string().nullable(),
+    value: z.string().nullable(),
+    numericValue: z.number().int().nullable(),
 });
 
 export const FeatureChoiceSchema = z.object({
@@ -60,6 +62,10 @@ export const FeatureIdParamSchema = z.object({
 
 export const FeatureSlugParamSchema = z.object({
     slug: z.string().min(1, 'Feature slug is required').max(100, 'Feature slug must be less than 100 characters').trim(),
+});
+
+export const FeatureQuerySchema = z.object({
+    sourceType: z.nativeEnum(FeatureSourceType).optional(),
 });
 
 // Request schemas for managing relationships
@@ -95,6 +101,31 @@ export const UpdateFeatureChoiceSchema = FeatureChoiceSchema.partial().omit({
     id: true,
 });
 
+// Bulk creation schemas for creating progressions with related entities
+export const CreateFeatureModifierForBulkSchema = FeatureModifierSchema.omit({
+    id: true,
+    featureProgressionId: true, // Will be set by backend
+});
+
+export const CreateFeatureChoiceForBulkSchema = FeatureChoiceSchema.omit({
+    id: true,
+    progressionId: true, // Will be set by backend
+});
+
+export const CreateFeatureSpecialEffectForBulkSchema = FeatureSpecialEffectSchema.omit({
+    id: true,
+    progressionId: true, // Will be set by backend
+});
+
+export const CreateFeatureProgressionWithRelationsSchema = FeatureProgressionSchema.omit({
+    id: true,
+}).extend({
+    feature: FeatureSchema.optional(),
+    modifiers: z.array(CreateFeatureModifierForBulkSchema).optional(),
+    choices: z.array(CreateFeatureChoiceForBulkSchema).optional(),
+    effects: z.array(CreateFeatureSpecialEffectForBulkSchema).optional(),
+});
+
 // Rich response schemas with relationships (defined after base schemas to avoid circular dependency)
 export const FeatureProgressionWithRelationsSchema = FeatureProgressionSchema.extend({
     feature: FeatureSchema.optional(),
@@ -121,7 +152,9 @@ export const GetFeatureResponseSchema = FeatureSchema;
 
 export const UpdateFeatureSchema = FeatureSchema.partial();
 
-export const CreateFeatureSchema = FeatureSchema;
+export const CreateFeatureSchema = FeatureSchema.omit({
+    id: true,
+});
 
 // New type exports for rich data and relationships
 export type FeatureInQueryResponse = z.infer<typeof FeatureSchema>;
@@ -141,6 +174,12 @@ export type CreateFeatureSpecialEffectRequest = z.infer<typeof CreateFeatureSpec
 export type UpdateFeatureSpecialEffectRequest = z.infer<typeof UpdateFeatureSpecialEffectSchema>;
 export type CreateFeatureChoiceRequest = z.infer<typeof CreateFeatureChoiceSchema>;
 export type UpdateFeatureChoiceRequest = z.infer<typeof UpdateFeatureChoiceSchema>;
+
+// Bulk creation type exports
+export type CreateFeatureModifierForBulkRequest = z.infer<typeof CreateFeatureModifierForBulkSchema>;
+export type CreateFeatureChoiceForBulkRequest = z.infer<typeof CreateFeatureChoiceForBulkSchema>;
+export type CreateFeatureSpecialEffectForBulkRequest = z.infer<typeof CreateFeatureSpecialEffectForBulkSchema>;
+export type CreateFeatureProgressionWithRelationsRequest = z.infer<typeof CreateFeatureProgressionWithRelationsSchema>;
 
 // Enum type exports
 export type ChoiceType = z.infer<typeof ChoiceTypeEnumSchema>;

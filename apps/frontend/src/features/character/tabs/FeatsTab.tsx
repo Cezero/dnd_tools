@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { GenericList } from '@/components/generic-list';
 import { FeatService } from '@/features/feat/FeatService';
-import { meetsPrerequisites, type FeatWithPrerequisites } from '@/lib';
+import { meetsPrerequisites } from '@/lib';
+import type { FeatSchema } from '@shared/schema';
+import { z } from 'zod';
 import type {
     RaceInQueryResponse,
     GetRaceResponse,
@@ -29,7 +31,7 @@ export function FeatsTab({
     targetAdvancement,
     onAdvancementUpdate
 }: FeatsTabProps): React.JSX.Element {
-    const [allFeats, setAllFeats] = useState<FeatWithPrerequisites[]>([]);
+    const [allFeats, setAllFeats] = useState<z.infer<typeof FeatSchema>[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     // Use target advancement if provided, otherwise use the first advancement (for new characters)
@@ -42,7 +44,7 @@ export function FeatsTab({
             try {
                 setIsLoading(true);
                 const featResponse = await FeatService.featQuery({ queryType: 'all' });
-                setAllFeats(featResponse.results as FeatWithPrerequisites[]);
+                setAllFeats(featResponse.results);
             } catch (error) {
                 console.error('Failed to load feats:', error);
             } finally {
@@ -55,19 +57,21 @@ export function FeatsTab({
 
     // Get feats that the class grants as proficiencies (to exclude from selection)
     const getClassGrantedFeats = (): Set<number> => {
-        if (!selectedClassDetails?.proficiencies) return new Set();
+        if (!selectedClassDetails?.features) return new Set();
 
         const excludedFeatIds = new Set<number>();
 
-        selectedClassDetails.proficiencies.forEach(prof => {
-            // If itemId is -1, the class grants proficiency with all items of that type
-            // So exclude this feat entirely
-            if (prof.itemId === -1) {
-                excludedFeatIds.add(prof.featId);
-            }
-            // If itemId is positive, the class only grants proficiency with specific items
-            // So we don't exclude the feat (player might want to take it for other items)
-        });
+        // Extract proficiencies from feature progressions
+        selectedClassDetails.features
+            .filter(prog => prog.appliesToType === 1) // FeatureAppliesToType.Item
+            .forEach(prog => {
+                // If appliesTo is -1, the class grants proficiency with all items of that type
+                if (prog.appliesTo === -1) {
+                    excludedFeatIds.add(prog.featureId);
+                }
+                // If appliesTo is positive, the class only grants proficiency with specific items
+                // So we don't exclude the feat (player might want to take it for other items)
+            });
 
         return excludedFeatIds;
     };
@@ -77,7 +81,7 @@ export function FeatsTab({
         const classGrantedFeats = getClassGrantedFeats();
 
         return allFeats.filter(feat =>
-            meetsPrerequisites(feat, character, selectedClassDetails, selectedRaceDetails, allFeats) &&
+            meetsPrerequisites(feat, character, selectedClassDetails, selectedRaceDetails, { total: allFeats.length, results: allFeats }) &&
             !classGrantedFeats.has(feat.id)
         );
     }, [allFeats, character, selectedRaceDetails, selectedClassDetails]);

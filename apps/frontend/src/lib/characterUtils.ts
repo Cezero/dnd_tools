@@ -3,20 +3,18 @@ import type {
     CharacterWithAllDetailsResponse,
     GetClassResponse,
     GetRaceResponse,
-    FeatSchema
+    GetFeatResponse,
+    GetAllFeatsResponse
 } from '@shared/schema';
 
-export interface FeatWithPrerequisites extends FeatSchema {
-    prereqs: NonNullable<FeatSchema['prereqs']>;
-    benefits: NonNullable<FeatSchema['benefits']>;
-}
+
 
 export function meetsPrerequisites(
-    feat: FeatWithPrerequisites,
+    feat: GetFeatResponse,
     character: CharacterWithAllDetailsResponse,
     selectedClassDetails: GetClassResponse | null,
     selectedRaceDetails: GetRaceResponse | null,
-    allFeats: FeatWithPrerequisites[]
+    allFeats: GetAllFeatsResponse
 ): boolean {
     if (!feat.prereqs || feat.prereqs.length === 0) {
         return true;

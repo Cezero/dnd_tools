@@ -6,6 +6,7 @@ import {
     UpdateFeatureSchema,
     CreateFeatureProgressionSchema,
     UpdateFeatureProgressionSchema,
+    CreateFeatureProgressionWithRelationsSchema,
     CreateFeatureModifierSchema,
     UpdateFeatureModifierSchema,
     CreateFeatureChoiceSchema,
@@ -22,6 +23,7 @@ import {
     DeleteFeature,
     GetFeatureProgressions,
     CreateFeatureProgression,
+    CreateFeatureProgressionWithRelations,
     UpdateFeatureProgression,
     DeleteFeatureProgression,
     GetFeatureModifiers,
@@ -52,6 +54,7 @@ deleteRoute('/:slug', requireAdmin, { params: FeatureSlugParamSchema }, DeleteFe
 // Feature Progression Routes
 get('/progressions', {}, GetFeatureProgressions);
 post('/progressions', requireAdmin, { body: CreateFeatureProgressionSchema }, CreateFeatureProgression);
+post('/progressions/bulk', requireAdmin, { body: CreateFeatureProgressionWithRelationsSchema }, CreateFeatureProgressionWithRelations);
 put('/progressions/:id', requireAdmin, { params: FeatureIdParamSchema, body: UpdateFeatureProgressionSchema }, UpdateFeatureProgression);
 deleteRoute('/progressions/:id', requireAdmin, { params: FeatureIdParamSchema }, DeleteFeatureProgression);
 

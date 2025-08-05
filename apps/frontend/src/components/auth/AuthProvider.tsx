@@ -9,6 +9,7 @@ import {
     JwtPayloadSchema,
     type AuthUser,
     type DiceBoxAdminConfig,
+    UpdateUserProfileRequest,
 } from '@shared/schema';
 
 import type {
@@ -215,7 +216,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         }
     };
 
-    const UpdateUserProfile = async (data: any): Promise<boolean> => {
+    const UpdateUserProfile = async (data: UpdateUserProfileRequest): Promise<boolean> => {
         try {
             const responseData = await UserProfileService.updateUserProfile(data);
             const token = responseData.token;

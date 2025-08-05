@@ -10,6 +10,7 @@ import {
     GetFeatureProgressionsResponse,
     CreateFeatureProgressionRequest,
     UpdateFeatureProgressionRequest,
+    CreateFeatureProgressionWithRelationsRequest,
     GetFeatureModifiersResponse,
     CreateFeatureModifierRequest,
     UpdateFeatureModifierRequest,
@@ -24,7 +25,7 @@ import {
 // Service interface
 export interface FeatureSystemService {
     // Core Feature CRUD operations
-    getAllFeatures: () => Promise<GetAllFeaturesResponse>;
+    getAllFeatures: (sourceType?: number) => Promise<GetAllFeaturesResponse>;
     getFeatureById: (query: FeatureIdParamRequest) => Promise<GetFeatureResponse | null>;
     getFeatureBySlug: (query: FeatureSlugParamRequest) => Promise<GetFeatureResponse | null>;
     createFeature: (data: CreateFeatureRequest) => Promise<CreateResponse>;
@@ -34,6 +35,7 @@ export interface FeatureSystemService {
     // Feature Progression management (the actual linkage)
     getFeatureProgressions: (sourceType: number, sourceId: number) => Promise<GetFeatureProgressionsResponse>;
     createFeatureProgression: (data: CreateFeatureProgressionRequest) => Promise<CreateResponse>;
+    createFeatureProgressionWithRelations: (data: CreateFeatureProgressionWithRelationsRequest) => Promise<CreateResponse>;
     updateFeatureProgression: (id: number, data: UpdateFeatureProgressionRequest) => Promise<UpdateResponse>;
     deleteFeatureProgression: (id: number) => Promise<UpdateResponse>;
 
