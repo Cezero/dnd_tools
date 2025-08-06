@@ -1,3 +1,6 @@
+import { BaseMap, CoreComponent } from "./types";
+import { NameSelectOptionList } from "./Util";
+
 export const SpecialFeatureId = {
     ClassSkill: 1,
     ClassProficiency: 2,
@@ -31,6 +34,26 @@ export const FeatureModifierType = {
 } as const;
 
 export type FeatureModifierType = typeof FeatureModifierType[keyof typeof FeatureModifierType];
+
+export const FEATURE_MODIFIER_TYPES: BaseMap<CoreComponent> = {
+    [FeatureModifierType.FlatBonus]: { id: FeatureModifierType.FlatBonus, name: 'Flat Bonus' },
+    [FeatureModifierType.DamageDice]: { id: FeatureModifierType.DamageDice, name: 'Damage Dice' },
+    [FeatureModifierType.MovementSpeed]: { id: FeatureModifierType.MovementSpeed, name: 'Movement Speed' },
+    [FeatureModifierType.Distance]: { id: FeatureModifierType.Distance, name: 'Distance' },
+    [FeatureModifierType.EnergyResistance]: { id: FeatureModifierType.EnergyResistance, name: 'Energy Resistance' },
+    [FeatureModifierType.AC]: { id: FeatureModifierType.AC, name: 'AC' },
+    [FeatureModifierType.DR]: { id: FeatureModifierType.DR, name: 'DR' },
+    [FeatureModifierType.SaveBonus]: { id: FeatureModifierType.SaveBonus, name: 'Save Bonus' },
+    [FeatureModifierType.SkillBonus]: { id: FeatureModifierType.SkillBonus, name: 'Skill Bonus' },
+    [FeatureModifierType.AttackBonus]: { id: FeatureModifierType.AttackBonus, name: 'Attack Bonus' },
+    [FeatureModifierType.SpellDC]: { id: FeatureModifierType.SpellDC, name: 'Spell DC' },
+    [FeatureModifierType.UsesPerDay]: { id: FeatureModifierType.UsesPerDay, name: 'Uses Per Day' },
+    [FeatureModifierType.Other]: { id: FeatureModifierType.Other, name: 'Other' },
+    [FeatureModifierType.ClassSkill]: { id: FeatureModifierType.ClassSkill, name: 'Class Skill' },
+}
+
+export const FEATURE_MODIFIER_LIST = Object.values(FEATURE_MODIFIER_TYPES);
+export const FEATURE_MODIFIER_SELECT_LIST = NameSelectOptionList(FEATURE_MODIFIER_LIST);
 
 export const FeatureSpecialEffectType = {
     FavoredEnemy: 0,

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { z } from 'zod';
 import { TrashIcon } from '@heroicons/react/24/outline';
+import { Dialog } from '@base-ui-components/react/dialog';
+import { ScrollArea } from '@base-ui-components/react/scroll-area';
 
 import {
     ValidatedForm,
@@ -13,18 +14,20 @@ import {
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { ClassService } from './ClassService';
 import { ClassFeatureAssoc } from './ClassFeatureAssoc';
-import { ClassProficiencyService, type ProficiencyFeat, type ProficiencyItem } from './ClassProficiencyService';
-import { ProgressionDetailForm } from './ProgressionDetailForm';
+import { formatClassProficiencies } from '@/lib/Formatters';
+import { FeatureProgressionDetailEdit, FeatureProficiencyDialog } from '@/components/feature-system';
 import {
     CreateClassSchema,
     UpdateClassSchema,
-    FeatureProgressionWithRelations,
-    CreateFeatureProgressionWithRelationsRequest
+    CreateClassRequest,
+    UpdateClassRequest,
+    FeatureProgressionWithRelations
 } from '@shared/schema';
+
 import { RPG_DICE_SELECT_LIST, ABILITY_SELECT_LIST, EDITION_SELECT_LIST_FULL, SKILL_SELECT_LIST, BAB_PROGRESSION_SELECT_LIST, SAVE_PROGRESSION_SELECT_LIST, SPELL_PROGRESSION_SELECT_LIST, SPELLS_KNOWN_SELECT_LIST, SpellsKnownType, FeatureModifierType, FeatureSpecialEffectType, FeatureAppliesToType, _SKILL_MAP, SpecialFeatureId } from '@shared/static-data';
 
 // Type definitions for the form state
-type ClassFormData = z.infer<typeof CreateClassSchema> | z.infer<typeof UpdateClassSchema>;
+type ClassFormData = CreateClassRequest | UpdateClassRequest;
 
 // Helper functions to format progression details
 function formatModifier(modifier: any): string {
@@ -44,14 +47,22 @@ function formatChoice(choice: any): string {
 function formatProgressionDetails(progression: FeatureProgressionWithRelations): string {
     const details: string[] = [];
 
-    if (progression.modifiers?.[0]) {
-        details.push(formatModifier(progression.modifiers[0]));
+    // Show all modifiers
+    if (progression.modifiers && progression.modifiers.length > 0) {
+        const modifierDetails = progression.modifiers.map(modifier => formatModifier(modifier));
+        details.push(...modifierDetails);
     }
-    if (progression.effects?.[0]) {
-        details.push(formatEffect(progression.effects[0]));
+
+    // Show all effects
+    if (progression.effects && progression.effects.length > 0) {
+        const effectDetails = progression.effects.map(effect => formatEffect(effect));
+        details.push(...effectDetails);
     }
-    if (progression.choices?.[0]) {
-        details.push(formatChoice(progression.choices[0]));
+
+    // Show all choices
+    if (progression.choices && progression.choices.length > 0) {
+        const choiceDetails = progression.choices.map(choice => formatChoice(choice));
+        details.push(...choiceDetails);
     }
 
     return details.length > 0 ? ` (${details.join(', ')})` : '';
@@ -65,15 +76,32 @@ function getClassSkills(progressions: FeatureProgressionWithRelations[]): number
         .filter(id => id > 0);
 }
 
-function getClassProficiencies(progressions: FeatureProgressionWithRelations[]): Array<{ featId: number; itemId: number; featName: string; itemName: string }> {
+function getClassProficiencies(
+    progressions: FeatureProgressionWithRelations[]
+): Array<{ featId: number; itemId: number; featName: string; itemName?: string }> {
     return progressions
         .filter(prog => prog.featureId === SpecialFeatureId.ClassProficiency && prog.appliesToType === FeatureAppliesToType.Item)
-        .map(prog => ({
-            featId: prog.appliesTo || 0,
-            itemId: prog.appliesTo || 0,
-            featName: 'Class Proficiency', // Use the feature name from the special feature
-            itemName: `Item ${prog.appliesTo}` // For now, just show the item ID
-        }))
+        .flatMap(prog => {
+            // Get featId from the choices array
+            const featChoices = prog.choices?.filter(c => c.choiceType === 'Feat') || [];
+            return featChoices.map(choice => {
+                const featId = choice.featId || 0;
+                const itemId = prog.appliesTo || 0;
+
+                // Get feat name from the choice
+                const featName = choice.feat?.name || `Feat ${featId}`;
+
+                // For itemId -1, we don't need an item name as it represents "All Items"
+                const itemName = itemId === -1 ? undefined : `Item ${itemId}`;
+
+                return {
+                    featId,
+                    itemId,
+                    featName,
+                    itemName
+                };
+            });
+        })
         .filter(prof => prof.featId > 0);
 }
 
@@ -89,14 +117,10 @@ export default function ClassEdit() {
     const [isLoading, setIsLoading] = useState(false);
     const [isFeatureAssocOpen, setIsFeatureAssocOpen] = useState(false);
     const [isProficiencyDialogOpen, setIsProficiencyDialogOpen] = useState(false);
-    const [proficiencyFeats, setProficiencyFeats] = useState<ProficiencyFeat[]>([]);
-    const [selectedProficiencyFeat, setSelectedProficiencyFeat] = useState<ProficiencyFeat | null>(null);
-    const [proficiencyItems, setProficiencyItems] = useState<ProficiencyItem[]>([]);
-    const [selectedProficiencyItem, setSelectedProficiencyItem] = useState<number | null>(null);
     const [featureProgressions, setFeatureProgressions] = useState<FeatureProgressionWithRelations[]>([]);
     const [isProgressionDialogOpen, setIsProgressionDialogOpen] = useState(false);
     const [editingProgression, setEditingProgression] = useState<FeatureProgressionWithRelations | null>(null);
-    const [preSelectedFeature, setPreSelectedFeature] = useState<string | undefined>(undefined);
+    const [preSelectedFeature, setPreSelectedFeature] = useState<{ id: number; name: string; description: string; slug: string } | undefined>(undefined);
 
     // Determine which schema to use based on whether we're creating or editing
     const schema = id === 'new' ? CreateClassSchema : UpdateClassSchema;
@@ -161,13 +185,19 @@ export default function ClassEdit() {
      * Handles adding a proficiency via the feature system.
      */
     const handleAddProficiency = useCallback(async (featId: number, itemId: number) => {
+        console.log('handleAddProficiency called with:', { featId, itemId });
         setFeatureProgressions(prev => {
-            // Check if proficiency already exists
+            console.log('Current feature progressions:', prev.length);
+
+            // Check if proficiency already exists (only check for new special proficiency features)
             const existingProficiency = prev.find(fp =>
-                fp.choices?.some(c => c.choiceType === 'Feat' && fp.appliesTo === itemId)
+                fp.featureId === SpecialFeatureId.ClassProficiency &&
+                fp.appliesTo === itemId &&
+                fp.choices?.some(c => c.choiceType === 'Feat' && c.featId === featId)
             );
 
             if (existingProficiency) {
+                console.log('Proficiency already exists, skipping. Found:', existingProficiency);
                 // Proficiency already exists, don't add duplicate
                 return prev;
             }
@@ -198,10 +228,13 @@ export default function ClassEdit() {
                     choiceBehavior: 'Single',
                     featId: featId,
                     chosenFeatureId: null,
+                    feat: { id: featId, name: `Proficiency ${featId}` },
+                    feature: null,
                 }],
                 effects: [],
             };
 
+            console.log('Adding new proficiency progression:', newProficiencyProgression);
             return [...prev, newProficiencyProgression];
         });
     }, [id]);
@@ -215,58 +248,7 @@ export default function ClassEdit() {
         );
     }, []);
 
-    /**
-     * Opens the proficiency dialog and loads proficiency feats
-     */
-    const handleOpenProficiencyDialog = useCallback(async () => {
-        try {
-            const feats = await ClassProficiencyService.getProficiencyFeats();
-            setProficiencyFeats(feats);
-            setSelectedProficiencyFeat(null);
-            setSelectedProficiencyItem(null);
-            setProficiencyItems([]);
-            setIsProficiencyDialogOpen(true);
-        } catch (error) {
-            console.error('Failed to load proficiency feats:', error);
-        }
-    }, []);
 
-    /**
-     * Handles feat selection in the proficiency dialog
-     */
-    const handleFeatSelection = useCallback(async (featId: number) => {
-        const feat = proficiencyFeats.find(f => f.id === featId);
-        if (feat) {
-            setSelectedProficiencyFeat(feat);
-            setSelectedProficiencyItem(null);
-
-            // Load items for this proficiency type
-            try {
-                const items = await ClassProficiencyService.getItemsByProficiencyType(feat.proficiencyTypeId);
-                setProficiencyItems(items);
-            } catch (error) {
-                console.error('Failed to load items for proficiency type:', error);
-                setProficiencyItems([]);
-            }
-        }
-    }, [proficiencyFeats]);
-
-    /**
-     * Handles item selection in the proficiency dialog
-     */
-    const handleItemSelection = useCallback((itemId: number) => {
-        setSelectedProficiencyItem(itemId);
-    }, []);
-
-    /**
-     * Handles adding the selected proficiency
-     */
-    const handleAddSelectedProficiency = useCallback(() => {
-        if (selectedProficiencyFeat && selectedProficiencyItem !== null) {
-            handleAddProficiency(selectedProficiencyFeat.id, selectedProficiencyItem);
-            setIsProficiencyDialogOpen(false);
-        }
-    }, [selectedProficiencyFeat, selectedProficiencyItem, handleAddProficiency]);
 
     // Initialize form data with default values
     const initialFormData: ClassFormData = {
@@ -295,21 +277,21 @@ export default function ClassEdit() {
      */
     const handleAddProgression = useCallback((progression: FeatureProgressionWithRelations) => {
         setFeatureProgressions(prev => {
-            const existingIndex = prev.findIndex(p =>
-                p.featureId === progression.featureId &&
-                p.level === progression.level
-            );
+            // Ensure the progression has feature information for display
+            const progressionWithFeature = {
+                ...progression,
+                feature: progression.feature || {
+                    id: progression.featureId,
+                    name: preSelectedFeature?.name || `Feature ${progression.featureId}`,
+                    description: preSelectedFeature?.description || '',
+                    slug: preSelectedFeature?.slug || `feature-${progression.featureId}`,
+                }
+            };
 
-            if (existingIndex !== -1) {
-                // Progression already exists, update it
-                const updated = [...prev];
-                updated[existingIndex] = progression;
-                return updated;
-            } else {
-                return [...prev, progression];
-            }
+            // Always add as a new progression - allow multiple progressions per feature/level
+            return [...prev, progressionWithFeature];
         });
-    }, []);
+    }, [preSelectedFeature]);
 
     /**
      * Handles the removal of a feature progression from the class.
@@ -424,6 +406,8 @@ export default function ClassEdit() {
         }
     }, [location.state, id, navigate]);
 
+
+
     const HandleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setMessage('');
@@ -440,28 +424,33 @@ export default function ClassEdit() {
             // Prepare the complete class data including feature progressions
             const classData = {
                 ...formData,
-                featureProgressions: featureProgressions.map(prog => ({
-                    id: prog.id,
-                    classId: prog.classId,
-                    raceId: prog.raceId,
-                    level: prog.level,
-                    featureId: prog.featureId,
-                    sourceType: prog.sourceType,
-                    appliesToType: prog.appliesToType,
-                    appliesTo: prog.appliesTo,
-                    // Include related data for backend processing
-                    modifiers: prog.modifiers || [],
-                    effects: prog.effects || [],
-                    choices: prog.choices || [],
-                }))
+                features: featureProgressions.map(prog => {
+                    const { id: _, ...progressionData } = prog;
+                    return {
+                        ...progressionData,
+                        // Remove temporary IDs from related entities
+                        modifiers: prog.modifiers?.map(mod => {
+                            const { id: _, featureProgressionId: __, ...modData } = mod;
+                            return modData;
+                        }) || [],
+                        choices: prog.choices?.map(choice => {
+                            const { id: _, progressionId: __, ...choiceData } = choice;
+                            return choiceData;
+                        }) || [],
+                        effects: prog.effects?.map(effect => {
+                            const { id: _, progressionId: __, ...effectData } = effect;
+                            return effectData;
+                        }) || [],
+                    };
+                })
             };
 
             if (id === 'new') {
-                const newClass = await ClassService.createClass(classData as z.infer<typeof CreateClassSchema>);
+                const newClass = await ClassService.createClass(classData as CreateClassRequest);
                 setMessage('Class created successfully!');
                 setTimeout(() => navigate(`/classes/${newClass.id}`), 1500);
             } else {
-                await ClassService.updateClass(classData as z.infer<typeof UpdateClassSchema>, { id: parseInt(id) });
+                await ClassService.updateClass(classData as UpdateClassRequest, { id: parseInt(id) });
                 setMessage('Class updated successfully!');
                 navigate(`/classes/${id}`, { state: { fromListParams: location.state?.fromListParams, refresh: true } });
             }
@@ -747,27 +736,31 @@ export default function ClassEdit() {
                         {(() => {
                             const classProficiencies = getClassProficiencies(featureProgressions);
                             return classProficiencies.length > 0 ? (
-                                classProficiencies.map((proficiency, index) => (
-                                    <span key={`${proficiency.featId}-${proficiency.itemId}`} className="group relative text-sm pt-1 pb-1 pl-0 pr-0 cursor-pointer">
-                                        {proficiency.itemName} ({proficiency.featName})
-                                        {index < classProficiencies.length - 1 && ','}
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveProficiency(proficiency.featId, proficiency.itemId)}
-                                            className="absolute inset-0 flex items-center justify-center text-red-600 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                                            title="Remove Proficiency"
-                                        >
-                                            <TrashIcon className="h-5 w-5" />
-                                        </button>
-                                    </span>
-                                ))
+                                classProficiencies.map((proficiency, index) => {
+                                    // Use the formatter to get the proper display name
+                                    const formattedName = formatClassProficiencies([proficiency]);
+                                    return (
+                                        <span key={`${proficiency.featId}-${proficiency.itemId}`} className="group relative text-sm pt-1 pb-1 pl-0 pr-0 cursor-pointer">
+                                            {formattedName}
+                                            {index < classProficiencies.length - 1 && ','}
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveProficiency(proficiency.featId, proficiency.itemId)}
+                                                className="absolute inset-0 flex items-center justify-center text-red-600 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                                title="Remove Proficiency"
+                                            >
+                                                <TrashIcon className="h-5 w-5" />
+                                            </button>
+                                        </span>
+                                    );
+                                })
                             ) : (
                                 <span className="text-gray-500 dark:text-gray-400">No proficiencies added.</span>
                             );
                         })()}
                         <button
                             type="button"
-                            onClick={handleOpenProficiencyDialog}
+                            onClick={() => setIsProficiencyDialogOpen(true)}
                             className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
                         >
                             Add
@@ -811,10 +804,10 @@ export default function ClassEdit() {
                         return Object.keys(progressionsByFeature).length > 0 ? (
                             <div className="space-y-4">
                                 {Object.values(progressionsByFeature).map(({ feature, progressions }) => (
-                                    <div key={feature.id} className="border border-gray-200 rounded-md dark:border-gray-600">
+                                    <div key={feature?.id || 'unknown'} className="border border-gray-200 rounded-md dark:border-gray-600">
                                         <div className="p-3 bg-gray-50 dark:bg-gray-700">
-                                            <div className="font-medium">{feature.name}</div>
-                                            <div className="text-sm text-gray-600 dark:text-gray-400">{feature.slug}</div>
+                                            <div className="font-medium">{feature?.name || `Feature ${feature?.id || 'Unknown'}`}</div>
+                                            <div className="text-sm text-gray-600 dark:text-gray-400">{feature?.slug || `feature-${feature?.id || 'unknown'}`}</div>
                                         </div>
 
                                         {/* Feature Progressions */}
@@ -844,7 +837,7 @@ export default function ClassEdit() {
                                                     type="button"
                                                     onClick={() => {
                                                         setEditingProgression(null);
-                                                        setPreSelectedFeature(feature.slug);
+                                                        setPreSelectedFeature(feature);
                                                         setIsProgressionDialogOpen(true);
                                                     }}
                                                     className="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -923,104 +916,34 @@ export default function ClassEdit() {
                 classId={id !== 'new' ? parseInt(id) : undefined}
             />
 
-            {/* Class Proficiency Dialog */}
-            {isProficiencyDialogOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-25 z-40 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-                        <h3 className="text-lg font-semibold mb-4">Add Class Proficiency</h3>
-
-                        <div className="space-y-4">
-                            {/* Feat Selection */}
-                            <div>
-                                <CustomSelect
-                                    label="Select Proficiency Feat"
-                                    popupExtraClassName='w-60'
-                                    triggerExtraClassName="w-60"
-                                    itemExtraClassName="w-68"
-                                    itemTextExtraClassName="w-60"
-                                    value={selectedProficiencyFeat?.id || null}
-                                    onValueChange={(value) => handleFeatSelection(value as number)}
-                                    options={proficiencyFeats.map(feat => ({ value: feat.id, label: feat.name }))}
-                                    placeholder="Choose a proficiency feat"
-                                />
-                            </div>
-
-                            {/* Item Selection - only show if feat is selected */}
-                            {selectedProficiencyFeat && (
-                                <div>
-                                    <CustomSelect
-                                        label="Select Items"
-                                        popupExtraClassName='w-60'
-                                        triggerExtraClassName="w-60"
-                                        itemExtraClassName="w-68"
-                                        itemTextExtraClassName="w-60"
-                                        value={selectedProficiencyItem}
-                                        onValueChange={(value) => handleItemSelection(value as number)}
-                                        options={[
-                                            { value: -1, label: 'All Items' },
-                                            ...proficiencyItems
-                                                .filter(item => !getClassProficiencies(featureProgressions).some(prof =>
-                                                    prof.featId === selectedProficiencyFeat.id && prof.itemId === item.id
-                                                ))
-                                                .sort((a, b) => a.name.localeCompare(b.name))
-                                                .map(item => ({ value: item.id, label: item.name }))
-                                        ]}
-                                        placeholder="Choose items or 'All Items'"
-                                    />
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="flex justify-end space-x-2 mt-6">
-                            <button
-                                type="button"
-                                onClick={() => setIsProficiencyDialogOpen(false)}
-                                className="px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleAddSelectedProficiency}
-                                disabled={!selectedProficiencyFeat || selectedProficiencyItem === null}
-                                className="px-4 py-2 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                Add Proficiency
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Feature Proficiency Dialog */}
+            <FeatureProficiencyDialog
+                isOpen={isProficiencyDialogOpen}
+                onClose={() => setIsProficiencyDialogOpen(false)}
+                onAddProficiency={handleAddProficiency}
+                existingProficiencies={getClassProficiencies(featureProgressions)}
+                title="Add Class Proficiency"
+            />
 
             {/* Feature Progression Dialog */}
-            {isProgressionDialogOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-25 z-40 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-                        <h3 className="text-lg font-semibold mb-4">
-                            {editingProgression ? 'Edit Feature Progression' : 'Add Feature Progression'}
-                        </h3>
-
-                        <ProgressionDetailForm
-                            progression={editingProgression}
-                            availableFeatures={Object.values(progressionsByFeature).map(({ feature }) => feature)}
-                            preSelectedFeature={preSelectedFeature}
-                            onSave={(progression) => {
-                                if (editingProgression) {
-                                    handleUpdateProgression(editingProgression, progression);
-                                } else {
-                                    handleAddProgression(progression);
-                                }
-                                setIsProgressionDialogOpen(false);
-                                setPreSelectedFeature(undefined);
-                            }}
-                            onCancel={() => {
-                                setIsProgressionDialogOpen(false);
-                                setPreSelectedFeature(undefined);
-                            }}
-                        />
-                    </div>
-                </div>
-            )}
+            <FeatureProgressionDetailEdit
+                isOpen={isProgressionDialogOpen}
+                onClose={() => {
+                    setIsProgressionDialogOpen(false);
+                    setPreSelectedFeature(undefined);
+                }}
+                progression={editingProgression}
+                onSave={(progression) => {
+                    if (editingProgression) {
+                        handleUpdateProgression(editingProgression, progression);
+                    } else {
+                        handleAddProgression(progression);
+                    }
+                    setIsProgressionDialogOpen(false);
+                    setPreSelectedFeature(undefined);
+                }}
+                preSelectedFeature={preSelectedFeature}
+            />
         </div>
     );
 }

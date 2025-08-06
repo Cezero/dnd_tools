@@ -56,6 +56,19 @@ export const FeatureChoiceSchema = z.object({
     chosenFeatureId: z.number().int().positive('Chosen feature ID must be a positive integer').nullable(),
 });
 
+// Schema for FeatureChoice with feat and feature relations included
+export const FeatureChoiceWithFeatSchema = FeatureChoiceSchema.extend({
+    feat: z.object({
+        id: z.number().int().positive('Feat ID must be a positive integer'),
+        name: z.string().min(1, 'Feat name is required'),
+    }).nullable(),
+    feature: z.object({
+        id: z.number().int().positive('Feature ID must be a positive integer'),
+        name: z.string().min(1, 'Feature name is required'),
+        slug: z.string().min(1, 'Feature slug is required'),
+    }).nullable(),
+});
+
 export const FeatureIdParamSchema = z.object({
     id: z.number().int().positive('Feature ID must be a positive integer'),
 });
@@ -134,7 +147,7 @@ export const FeatureProgressionWithRelationsSchema = FeatureProgressionSchema.ex
         abbreviation: z.string(),
     }).optional(),
     modifiers: z.array(FeatureModifierSchema).optional(),
-    choices: z.array(FeatureChoiceSchema).optional(),
+    choices: z.array(FeatureChoiceWithFeatSchema).optional(),
     effects: z.array(FeatureSpecialEffectSchema).optional(),
     spellcasting: SpellcastingLinkSchema.optional(),
 });

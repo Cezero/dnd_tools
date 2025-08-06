@@ -57,7 +57,23 @@ export const classService: ClassService = {
                             }
                         },
                         modifiers: true,
-                        choices: true,
+                        choices: {
+                            include: {
+                                feat: {
+                                    select: {
+                                        id: true,
+                                        name: true
+                                    }
+                                },
+                                feature: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        slug: true
+                                    }
+                                }
+                            }
+                        },
                         effects: true
                     }
                 },
@@ -73,16 +89,77 @@ export const classService: ClassService = {
 
     async createClass(data: CreateClassRequest): Promise<CreateResponse> {
         const { features, spellcastingProgression, ...classData } = data;
-        const result = await prisma.class.create({
-            data: {
-                ...classData,
-                sourceBookInfo: {
-                    create: data.sourceBookInfo?.map(sourceBookInfo => ({
-                        sourceBookId: sourceBookInfo.sourceBookId,
-                        pageNumber: sourceBookInfo.pageNumber
-                    })) || [],
+
+        const result = await prisma.$transaction(async (tx) => {
+            // Create the class first
+            const classResult = await tx.class.create({
+                data: {
+                    ...classData,
+                    sourceBookInfo: {
+                        create: data.sourceBookInfo?.map(sourceBookInfo => ({
+                            sourceBookId: sourceBookInfo.sourceBookId,
+                            pageNumber: sourceBookInfo.pageNumber
+                        })) || [],
+                    },
                 },
-            },
+            });
+
+            // Create feature progressions with their related entities
+            if (features && features.length > 0) {
+                for (const progression of features) {
+                    const { modifiers, choices, effects, feature, class: classRelation, spellcasting, ...progressionData } = progression;
+
+                    // Create the feature progression
+                    const featureProgression = await tx.featureProgression.create({
+                        data: {
+                            ...progressionData,
+                            classId: classResult.id,
+                        },
+                    });
+
+                    // Create related modifiers
+                    if (modifiers && modifiers.length > 0) {
+                        await tx.featureModifier.createMany({
+                            data: modifiers.map(modifier => ({
+                                ...modifier,
+                                featureProgressionId: featureProgression.id,
+                            })),
+                        });
+                    }
+
+                    // Create related choices
+                    if (choices && choices.length > 0) {
+                        await tx.featureChoice.createMany({
+                            data: choices.map(choice => ({
+                                ...choice,
+                                progressionId: featureProgression.id,
+                            })),
+                        });
+                    }
+
+                    // Create related effects
+                    if (effects && effects.length > 0) {
+                        await tx.featureSpecialEffect.createMany({
+                            data: effects.map(effect => ({
+                                ...effect,
+                                progressionId: featureProgression.id,
+                            })),
+                        });
+                    }
+                }
+            }
+
+            // Create spellcasting progression
+            if (spellcastingProgression && spellcastingProgression.length > 0) {
+                await tx.spellcastingProgression.createMany({
+                    data: spellcastingProgression.map(prog => ({
+                        ...prog,
+                        classId: classResult.id,
+                    })),
+                });
+            }
+
+            return classResult;
         });
 
         return { id: result.id.toString(), message: 'Class created successfully' };
@@ -90,9 +167,43 @@ export const classService: ClassService = {
 
     async updateClass(query: ClassIdParamRequest, data: UpdateClassRequest) {
         await prisma.$transaction(async (tx) => {
+            // Delete existing source book mappings
             await tx.classSourceMap.deleteMany({ where: { classId: query.id } });
 
+            // Delete existing feature progressions and their related entities
+            const existingProgressions = await tx.featureProgression.findMany({
+                where: { classId: query.id },
+                select: { id: true }
+            });
+
+            if (existingProgressions.length > 0) {
+                const progressionIds = existingProgressions.map(p => p.id);
+
+                // Delete related entities first
+                await tx.featureModifier.deleteMany({
+                    where: { featureProgressionId: { in: progressionIds } }
+                });
+                await tx.featureChoice.deleteMany({
+                    where: { progressionId: { in: progressionIds } }
+                });
+                await tx.featureSpecialEffect.deleteMany({
+                    where: { progressionId: { in: progressionIds } }
+                });
+
+                // Delete the progressions
+                await tx.featureProgression.deleteMany({
+                    where: { classId: query.id }
+                });
+            }
+
+            // Delete existing spellcasting progression
+            await tx.spellcastingProgression.deleteMany({
+                where: { classId: query.id }
+            });
+
             const { features, spellcastingProgression, ...classData } = data;
+
+            // Update the class
             await tx.class.update({
                 where: { id: query.id },
                 data: {
@@ -105,6 +216,61 @@ export const classService: ClassService = {
                     },
                 },
             });
+
+            // Create new feature progressions with their related entities
+            if (features && features.length > 0) {
+                for (const progression of features) {
+                    const { modifiers, choices, effects, feature, class: classRelation, spellcasting, ...progressionData } = progression;
+
+                    // Create the feature progression
+                    const featureProgression = await tx.featureProgression.create({
+                        data: {
+                            ...progressionData,
+                            classId: query.id,
+                        },
+                    });
+
+                    // Create related modifiers
+                    if (modifiers && modifiers.length > 0) {
+                        await tx.featureModifier.createMany({
+                            data: modifiers.map(modifier => ({
+                                ...modifier,
+                                featureProgressionId: featureProgression.id,
+                            })),
+                        });
+                    }
+
+                    // Create related choices
+                    if (choices && choices.length > 0) {
+                        await tx.featureChoice.createMany({
+                            data: choices.map(choice => ({
+                                ...choice,
+                                progressionId: featureProgression.id,
+                            })),
+                        });
+                    }
+
+                    // Create related effects
+                    if (effects && effects.length > 0) {
+                        await tx.featureSpecialEffect.createMany({
+                            data: effects.map(effect => ({
+                                ...effect,
+                                progressionId: featureProgression.id,
+                            })),
+                        });
+                    }
+                }
+            }
+
+            // Create new spellcasting progression
+            if (spellcastingProgression && spellcastingProgression.length > 0) {
+                await tx.spellcastingProgression.createMany({
+                    data: spellcastingProgression.map(prog => ({
+                        ...prog,
+                        classId: query.id,
+                    })),
+                });
+            }
         });
 
         return { message: 'Class updated successfully' };

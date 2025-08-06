@@ -8,6 +8,7 @@ import { RegisterPage } from '@/components/auth/RegisterPage';
 import { Layout } from '@/components/Layout';
 import { FeatureRoutes } from '@/features/FeatureRoutes';
 import { RouteConfig } from '@/types';
+import { SelectDialogIssueDemo } from '@/components/debug/SelectDialogIssueDemo';
 
 export function App(): React.JSX.Element {
   return (
@@ -17,6 +18,7 @@ export function App(): React.JSX.Element {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/debug/select-dialog-issue" element={<SelectDialogIssueDemo />} />
             <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               {FeatureRoutes.map((route: RouteConfig, index: number) => (
                 <Route

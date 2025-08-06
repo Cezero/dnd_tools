@@ -101,26 +101,27 @@ export function ClassDisplay({
 
                     {/* Class Proficiencies Section */}
                     {(() => {
+                        // Extract proficiencies in the same format as ClassEdit.tsx
                         const classProficiencies = cls.features?.flatMap(progression =>
                             progression.choices?.filter(choice =>
                                 choice.choiceType === 'Feat' && progression.appliesToType === FeatureAppliesToType.Item
                             ).map(choice => ({
-                                itemId: progression.appliesTo,
-                                choice: choice
+                                featId: choice.featId || 0,
+                                itemId: progression.appliesTo || 0,
+                                featName: choice.feat?.name || `Feat ${choice.featId}`, // Use actual feat name if available
+                                itemName: undefined // We don't have item names in display mode
                             })) || []
                         ) || [];
 
                         if (classProficiencies.length > 0) {
+                            const formattedProficiencies = formatClassProficiencies(classProficiencies);
                             return (
                                 <div className="mt-4">
                                     <h3 className="text-lg font-semibold mb-2">Class Proficiencies</h3>
                                     <div className="flex flex-wrap gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md">
-                                        {classProficiencies.map((prof, index) => (
-                                            <span key={prof.itemId} className="text-sm">
-                                                {prof.itemId === -1 ? 'All Items' : `Item ${prof.itemId}`}
-                                                {index < classProficiencies.length - 1 && ','}
-                                            </span>
-                                        ))}
+                                        <span className="text-sm">
+                                            {formattedProficiencies}
+                                        </span>
                                     </div>
                                 </div>
                             );
@@ -152,35 +153,72 @@ export function ClassDisplay({
                                     <h3 className="text-lg font-semibold mb-2">Class Features</h3>
                                     <div className="space-y-4">
                                         {(() => {
-                                            // Group features by level
-                                            const groupedFeatures = actualFeatures.reduce((acc, feature) => {
-                                                const level = feature.level;
+                                            // Group features by level first
+                                            const groupedByLevel = actualFeatures.reduce((acc, progression) => {
+                                                const level = progression.level;
                                                 if (!acc[level]) {
-                                                    acc[level] = { features: [] };
+                                                    acc[level] = [];
                                                 }
-                                                acc[level].features.push(feature);
+                                                acc[level].push(progression);
                                                 return acc;
-                                            }, {} as Record<number, { features: typeof actualFeatures }>);
+                                            }, {} as Record<number, typeof actualFeatures>);
+
+                                            // Track which features we've already shown descriptions for
+                                            const shownFeatureDescriptions = new Set<number>();
 
                                             // Sort levels and render each group
-                                            return Object.keys(groupedFeatures)
+                                            return Object.keys(groupedByLevel)
                                                 .sort((a, b) => parseInt(a) - parseInt(b))
                                                 .map(level => (
                                                     <div key={level} className="border border-gray-200 dark:border-gray-600 rounded-md p-3">
                                                         <h4 className="text-md font-medium mb-2">Level {level}</h4>
                                                         <div className="space-y-2">
                                                             {/* Features */}
-                                                            {groupedFeatures[parseInt(level)].features.map((feature, index) => (
-                                                                <div key={`feature-${index}`} className="p-2">
-                                                                    <ProcessMarkdown
-                                                                        markdown={feature.feature?.description || ''}
-                                                                        id={`${cls.name.toLowerCase()}-feature-${level}-${index}`}
-                                                                        userVars={{
-                                                                            classname: cls.name.toLowerCase()
-                                                                        }}
-                                                                    />
-                                                                </div>
-                                                            ))}
+                                                            {groupedByLevel[parseInt(level)].map((progression, index) => {
+                                                                const feature = progression.feature;
+                                                                const isFirstOccurrence = !shownFeatureDescriptions.has(feature?.id || 0);
+
+                                                                // Mark this feature as shown if it's the first occurrence
+                                                                if (isFirstOccurrence && feature?.id) {
+                                                                    shownFeatureDescriptions.add(feature.id);
+                                                                }
+
+                                                                return (
+                                                                    <div key={`feature-${index}`} className="p-2">
+                                                                        {/* Show feature description only on first occurrence */}
+                                                                        {isFirstOccurrence && feature?.description && (
+                                                                            <ProcessMarkdown
+                                                                                markdown={feature.description}
+                                                                                id={`${cls.name.toLowerCase()}-feature-${feature.id}`}
+                                                                                userVars={{
+                                                                                    classname: cls.name.toLowerCase()
+                                                                                }}
+                                                                            />
+                                                                        )}
+
+                                                                        {/* Show progression details only if there are modifiers, effects, or choices */}
+                                                                        {(() => {
+                                                                            const hasDetails = (progression.modifiers && progression.modifiers.length > 0) ||
+                                                                                (progression.effects && progression.effects.length > 0) ||
+                                                                                (progression.choices && progression.choices.length > 0);
+
+                                                                            if (hasDetails) {
+                                                                                const formatted = formatProgression(progression);
+                                                                                return (
+                                                                                    <div className="mt-2 space-y-1">
+                                                                                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                                            <span className="font-medium">{formatted.label}</span>
+                                                                                            {formatted.value && <span> {formatted.value}</span>}
+                                                                                            {formatted.note && <span> ({formatted.note})</span>}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                );
+                                                                            }
+                                                                            return null;
+                                                                        })()}
+                                                                    </div>
+                                                                );
+                                                            })}
                                                         </div>
                                                     </div>
                                                 ));

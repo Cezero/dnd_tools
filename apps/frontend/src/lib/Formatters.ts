@@ -1,6 +1,5 @@
-import { z } from "zod";
-import { FeatureProgressionWithRelationsSchema } from "@shared/schema";
-import { ASPECT_FORMATTERS } from "@shared/static-data";
+import { FeatureProgressionWithRelations } from "@shared/schema";
+import { ASPECT_FORMATTERS, FeatureModifierType } from "@shared/static-data";
 
 export function formatClassProficiencies(proficiencies: Array<{ featId: number; itemId: number; featName: string; itemName?: string }>): string {
     const proficiencyNameMap = {
@@ -47,30 +46,15 @@ export function formatClassProficiencies(proficiencies: Array<{ featId: number; 
 
 // Types for progression formatting
 export interface ProgressionFormatter {
-    label?: (progression: z.infer<typeof FeatureProgressionWithRelationsSchema>) => string;
-    value: (valueInt: number | null, valueString: string | null) => string;
-}
-
-export interface ProgressionFormatConfig {
-    [aspect: string]: ProgressionFormatter;
+    value: (valueInt: number | null) => string;
 }
 
 // Default progression formatters
-export const PROGRESSION_FORMATTERS: ProgressionFormatConfig = {
-    bonusFeat: {
-        label: () => 'Bonus Feat',
-        value: () => ''
-    },
-    usesPerDay: {
+export const PROGRESSION_FORMATTERS: Record<FeatureModifierType, ProgressionFormatter> = {
+    [FeatureModifierType.UsesPerDay]: {
         value: (valueInt) => valueInt ? `${valueInt}/day` : ''
     },
-    secondaryUsesPerDay: {
-        value: (valueInt) => valueInt ? `${valueInt}/day` : ''
-    },
-    usesPerWeek: {
-        value: (valueInt) => valueInt ? `${valueInt}/week` : ''
-    },
-    bonus: {
+    [FeatureModifierType.FlatBonus]: {
         value: (valueInt) => {
             if (valueInt !== null) {
                 return valueInt > 0 ? `+${valueInt}` : `${valueInt}`;
@@ -78,53 +62,67 @@ export const PROGRESSION_FORMATTERS: ProgressionFormatConfig = {
             return '';
         }
     },
-    damageReduction: {
+    [FeatureModifierType.DR]: {
         value: (valueInt) => valueInt ? `${valueInt}/—` : ''
     },
-    distance: {
-        value: (valueInt, valueString) => valueInt ? `${valueInt} ft.` : valueString ? `${valueString} distance` : ''
+    [FeatureModifierType.Distance]: {
+        value: (valueInt) => valueInt ? `${valueInt} ft.` : ''
+    },
+    [FeatureModifierType.EnergyResistance]: {
+        value: (valueInt) => valueInt ? `${valueInt}/` : ''
+    },
+    [FeatureModifierType.AC]: {
+        value: (valueInt) => valueInt ? `${valueInt} AC` : ''
+    },
+    [FeatureModifierType.SaveBonus]: {
+        value: (valueInt) => valueInt ? `${valueInt} save bonus` : ''
+    },
+    [FeatureModifierType.SkillBonus]: {
+        value: (valueInt) => valueInt ? `${valueInt} skill bonus` : ''
+    },
+    [FeatureModifierType.AttackBonus]: {
+        value: (valueInt) => valueInt ? `${valueInt} attack bonus` : ''
+    },
+    [FeatureModifierType.SpellDC]: {
+        value: (valueInt) => valueInt ? `${valueInt} spell DC` : ''
+    },
+    [FeatureModifierType.ClassSkill]: {
+        value: (valueInt) => valueInt ? `${valueInt} class skill` : ''
+    },
+    [FeatureModifierType.DamageDice]: {
+        value: (valueInt) => valueInt ? `${valueInt} damage dice` : ''
+    },
+    [FeatureModifierType.MovementSpeed]: {
+        value: (valueInt) => valueInt ? `${valueInt} movement speed` : ''
+    },
+    [FeatureModifierType.Other]: {
+        value: (valueInt) => valueInt ? `${valueInt}` : ''
     }
 };
 
-// Helper function to format progression values (legacy function for backward compatibility)
-export function formatProgressionValue(aspect: string, valueInt: number | null, valueString: string | null): string {
-    const formatter = ASPECT_FORMATTERS[aspect];
-    if (formatter) {
-        return formatter(valueInt, valueString);
+export function formatProgression(progression: FeatureProgressionWithRelations): { label: string; value: string; note?: string } {
+    const featureName = progression.feature?.name || `Feature ${progression.featureId}`;
+    const label = `${featureName}:`;
+
+    // Extract value from modifiers if available
+    let value = '';
+    for (const modifier of progression.modifiers) {
+        const formatter = PROGRESSION_FORMATTERS[modifier.modifierType];
+        value += formatter.value(modifier.value);
     }
 
-    // For aspects without defined formatters, return the raw value
-    if (valueInt !== null) {
-        return valueInt > 0 ? `+${valueInt}` : `${valueInt}`;
+    // Extract note from effects if available
+    let note: string | undefined;
+    for (const effect of progression.effects) {
+        if (effect.value) {
+            note = effect.value;
+        }
     }
-    if (valueString) {
-        return valueString;
-    }
-    return '';
-}
-
-// New function to format complete progression display
-export function formatProgression(progression: z.infer<typeof FeatureProgressionWithRelationsSchema>): { label: string; value: string; note?: string } {
-    const formatter = PROGRESSION_FORMATTERS[progression.aspect];
-
-    if (formatter) {
-        const label = formatter.label ? formatter.label(progression) : `${progression.featureName || progression.featureSlug}:`;
-        const value = formatter.value(progression.valueInt, progression.valueString);
-
-        return {
-            label,
-            value,
-            note: progression.note || undefined
-        };
-    }
-
-    // Default formatting for aspects without custom formatters
-    const value = formatProgressionValue(progression.aspect, progression.valueInt, progression.valueString);
 
     return {
-        label: `${progression.featureName || progression.featureSlug}:`,
+        label,
         value,
-        note: progression.note || undefined
+        note
     };
 }
 
