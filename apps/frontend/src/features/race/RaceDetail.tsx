@@ -4,9 +4,10 @@ import { z } from 'zod';
 
 import { useAuthAuto } from '@/components/auth';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { RaceService } from './RaceService';
 import { GetRaceResponseSchema } from '@shared/schema';
 import { SIZE_MAP, LANGUAGE_MAP, EDITION_MAP, ABILITY_MAP, CLASS_MAP } from '@shared/static-data';
+
+import { RaceService } from './RaceService';
 
 
 type RaceWithTraitsResponse = z.infer<typeof GetRaceResponseSchema>;
@@ -83,7 +84,7 @@ export function RaceDetail() {
                             <p><strong>Ability Adjustments:</strong> {race.abilityAdjustments && race.abilityAdjustments.length > 0 ? race.abilityAdjustments.map(adj => `${ABILITY_MAP[adj.abilityId]?.abbreviation} ${adj.value > 0 ? '+' : ''}${adj.value}`).join(', ') : 'None'}</p>
                         </div>
                     </div>
-                    <div className="mt-3 p-2 w-full prose dark:prose-invert">
+                    <div className="mt-3 p-2 w-full prose-custom">
                         <ProcessMarkdown id='description' markdown={race.description || ''} />
                     </div>
                     {race.traits && race.traits.length > 0 && (
@@ -92,7 +93,7 @@ export function RaceDetail() {
                             <div className="space-y-2">
                                 {race.traits.map(trait => (
                                     <div key={trait.traitSlug} className="gap-2 items-start">
-                                        <div className="w-full prose dark:prose-invert">
+                                        <div className="w-full prose-custom">
                                             <ProcessMarkdown id={`trait-${trait.traitSlug}-description`} markdown={trait.trait?.description || ''} userVars={{
                                                 racename: race.name,
                                                 racenamelower: race.name.toLowerCase(),

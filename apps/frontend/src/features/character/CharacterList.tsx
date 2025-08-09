@@ -7,6 +7,7 @@ import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { CHARACTER_COLUMNS } from '@/features/character/CharacterColumns';
 import { CharacterService } from '@/features/character/CharacterService';
 import { CharacterWithRaceResponse } from '@shared/schema';
+
 import { routes } from './CharacterConfig';
 
 export function CharacterList(): React.JSX.Element {

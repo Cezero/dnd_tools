@@ -74,7 +74,13 @@ export const classService: ClassService = {
                                 }
                             }
                         },
-                        effects: true
+                        effects: {
+                            include: {
+                                feat: true,
+                                item: true
+                            }
+                        },
+                        prerequisites: true
                     }
                 },
                 spellcastingProgression: true,
@@ -107,7 +113,7 @@ export const classService: ClassService = {
             // Create feature progressions with their related entities
             if (features && features.length > 0) {
                 for (const progression of features) {
-                    const { modifiers, choices, effects, feature, class: classRelation, spellcasting, ...progressionData } = progression;
+                    const { modifiers, choices, effects, prerequisites, feature, class: classRelation, spellcasting, ...progressionData } = progression;
 
                     // Create the feature progression
                     const featureProgression = await tx.featureProgression.create({
@@ -143,6 +149,18 @@ export const classService: ClassService = {
                             data: effects.map(effect => ({
                                 ...effect,
                                 progressionId: featureProgression.id,
+                                featId: effect.featId || null,
+                                itemId: effect.itemId || null,
+                            })),
+                        });
+                    }
+
+                    // Create related prerequisites
+                    if (prerequisites && prerequisites.length > 0) {
+                        await tx.featurePrerequisite.createMany({
+                            data: prerequisites.map(prereq => ({
+                                ...prereq,
+                                featureProgressionId: featureProgression.id,
                             })),
                         });
                     }
@@ -189,6 +207,9 @@ export const classService: ClassService = {
                 await tx.featureSpecialEffect.deleteMany({
                     where: { progressionId: { in: progressionIds } }
                 });
+                await tx.featurePrerequisite.deleteMany({
+                    where: { featureProgressionId: { in: progressionIds } }
+                });
 
                 // Delete the progressions
                 await tx.featureProgression.deleteMany({
@@ -220,7 +241,7 @@ export const classService: ClassService = {
             // Create new feature progressions with their related entities
             if (features && features.length > 0) {
                 for (const progression of features) {
-                    const { modifiers, choices, effects, feature, class: classRelation, spellcasting, ...progressionData } = progression;
+                    const { modifiers, choices, effects, prerequisites, feature, class: classRelation, spellcasting, ...progressionData } = progression;
 
                     // Create the feature progression
                     const featureProgression = await tx.featureProgression.create({
@@ -256,6 +277,18 @@ export const classService: ClassService = {
                             data: effects.map(effect => ({
                                 ...effect,
                                 progressionId: featureProgression.id,
+                                featId: effect.featId || null,
+                                itemId: effect.itemId || null,
+                            })),
+                        });
+                    }
+
+                    // Create related prerequisites
+                    if (prerequisites && prerequisites.length > 0) {
+                        await tx.featurePrerequisite.createMany({
+                            data: prerequisites.map(prereq => ({
+                                ...prereq,
+                                featureProgressionId: featureProgression.id,
                             })),
                         });
                     }

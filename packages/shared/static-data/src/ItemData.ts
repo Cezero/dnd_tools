@@ -36,15 +36,33 @@ export const WEAPON_TYPE_LIST = Object.values(WEAPON_TYPES);
 export const WEAPON_TYPE_SELECT_LIST = NameSelectOptionList(WEAPON_TYPE_LIST);
 
 export const DAMAGE_TYPE_ENUM = {
+    ALL: 0,
     BLUDGEONING: 1,
     PIERCING: 2,
-    SLASHING: 3
+    SLASHING: 3,
+    FIRE: 4,
+    COLD: 5,
+    ACID: 6,
+    LIGHTNING: 7,
+    NECROTIC: 8,
+    POISON: 9,
+    RADIANT: 10,
+    FORCE: 11,
 };
 
 export const DAMAGE_TYPES: BaseMap<CoreComponent> = {
+    [DAMAGE_TYPE_ENUM.ALL]: { id: DAMAGE_TYPE_ENUM.ALL, name: '-' },
     [DAMAGE_TYPE_ENUM.BLUDGEONING]: { id: DAMAGE_TYPE_ENUM.BLUDGEONING, name: 'Bludgeoning' },
     [DAMAGE_TYPE_ENUM.PIERCING]: { id: DAMAGE_TYPE_ENUM.PIERCING, name: 'Piercing' },
-    [DAMAGE_TYPE_ENUM.SLASHING]: { id: DAMAGE_TYPE_ENUM.SLASHING, name: 'Slashing' }
+    [DAMAGE_TYPE_ENUM.SLASHING]: { id: DAMAGE_TYPE_ENUM.SLASHING, name: 'Slashing' },
+    [DAMAGE_TYPE_ENUM.FIRE]: { id: DAMAGE_TYPE_ENUM.FIRE, name: 'Fire' },
+    [DAMAGE_TYPE_ENUM.COLD]: { id: DAMAGE_TYPE_ENUM.COLD, name: 'Cold' },
+    [DAMAGE_TYPE_ENUM.ACID]: { id: DAMAGE_TYPE_ENUM.ACID, name: 'Acid' },
+    [DAMAGE_TYPE_ENUM.LIGHTNING]: { id: DAMAGE_TYPE_ENUM.LIGHTNING, name: 'Lightning' },
+    [DAMAGE_TYPE_ENUM.NECROTIC]: { id: DAMAGE_TYPE_ENUM.NECROTIC, name: 'Necrotic' },
+    [DAMAGE_TYPE_ENUM.POISON]: { id: DAMAGE_TYPE_ENUM.POISON, name: 'Poison' },
+    [DAMAGE_TYPE_ENUM.RADIANT]: { id: DAMAGE_TYPE_ENUM.RADIANT, name: 'Radiant' },
+    [DAMAGE_TYPE_ENUM.FORCE]: { id: DAMAGE_TYPE_ENUM.FORCE, name: 'Force' },
 };
 
 export const DAMAGE_TYPE_LIST = Object.values(DAMAGE_TYPES);
@@ -147,8 +165,6 @@ export const PROFICIENCY_TYPES: ProficiencyMap = {
 
 export const PROFICIENCY_TYPE_LIST = Object.values(PROFICIENCY_TYPES);
 export const PROFICIENCY_TYPE_SELECT_LIST = NameSelectOptionList(PROFICIENCY_TYPE_LIST);
-
-
 
 export const ITEM_TYPES: BaseMap<CoreComponent> = {
     [ITEM_TYPE_ENUM.ARMOR]: { id: ITEM_TYPE_ENUM.ARMOR, name: 'Armor' },

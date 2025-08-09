@@ -5,10 +5,10 @@ import { AuthProvider } from '@/components/auth/AuthProvider';
 import { LoginPage } from '@/components/auth/LoginPage';
 import { ProtectedRoute, AdminRoute } from '@/components/auth/ProtectedRoute';
 import { RegisterPage } from '@/components/auth/RegisterPage';
+import { SelectDialogIssueDemo } from '@/components/debug/SelectDialogIssueDemo';
 import { Layout } from '@/components/Layout';
 import { FeatureRoutes } from '@/features/FeatureRoutes';
 import { RouteConfig } from '@/types';
-import { SelectDialogIssueDemo } from '@/components/debug/SelectDialogIssueDemo';
 
 export function App(): React.JSX.Element {
   return (

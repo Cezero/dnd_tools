@@ -6,6 +6,7 @@ import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { FeatService } from '@/features/feat/FeatService';
 import { GetFeatResponse } from '@shared/schema';
 import { FEAT_TYPES, FEAT_BENEFIT_TYPE_BY_ID, FEAT_PREREQ_BY_ID, FeatBenefitType } from '@shared/static-data';
+
 import { FeatOptions, getPrereqDisplayText } from './FeatUtil';
 
 export function FeatDetail() {

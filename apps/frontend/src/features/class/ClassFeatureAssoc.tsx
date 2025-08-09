@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
+import { z } from 'zod';
+
 import { ItemAssoc } from '@/lib/ItemAssoc';
 import { FeatureSystemService } from '@/services/FeatureSystemService';
 import { FeatureSchema } from '@shared/schema';
-import { z } from 'zod';
 
 type ClassFeatureItem = z.infer<typeof FeatureSchema>;
 
@@ -30,15 +31,6 @@ interface ClassFeatureAssocProps {
 export function ClassFeatureAssoc({ isOpen, onClose, onSave, initialSelectedFeatureIds = [], classId }: ClassFeatureAssocProps) {
     const [availableFeatures, setAvailableFeatures] = useState<ClassFeatureItem[]>([]);
 
-    // Transform feature IDs to slugs for ItemAssoc
-    const initialSelectedSlugs = useMemo(() => {
-        if (initialSelectedFeatureIds.length === 0) return [];
-
-        return availableFeatures
-            .filter(feature => initialSelectedFeatureIds.includes(feature.id))
-            .map(feature => feature.slug);
-    }, [initialSelectedFeatureIds, availableFeatures]);
-
     const transformSelectedFeatures = (features: ClassFeatureItem[]): SelectedFeatureData[] => {
         return features.map(feature => ({
             featureId: feature.id,
@@ -58,7 +50,7 @@ export function ClassFeatureAssoc({ isOpen, onClose, onSave, initialSelectedFeat
             isOpen={isOpen}
             onClose={onClose}
             onSave={onSave}
-            initialSelectedIds={initialSelectedSlugs}
+            initialSelectedIds={initialSelectedFeatureIds}
             parentId={classId}
             serviceFunction={async () => {
                 const response = await FeatureSystemService.getFeatures({});

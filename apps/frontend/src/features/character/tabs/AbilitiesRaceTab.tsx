@@ -1,8 +1,10 @@
+import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import React, { useState, useEffect } from 'react';
+
 import { useDiceBox } from '@/components/dice-box';
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import type { RaceInQueryResponse, GetRaceResponse, CharacterWithAllDetailsResponse } from '@shared/schema';
 import {
     ABILITY_LIST,
     ABILITY_MAP,
@@ -15,7 +17,6 @@ import {
     EDITION_MAP,
     CLASS_MAP
 } from '@shared/static-data';
-import type { RaceInQueryResponse, GetRaceResponse, CharacterWithAllDetailsResponse } from '@shared/schema';
 
 interface AbilitiesRaceTabProps {
     character: CharacterWithAllDetailsResponse;
@@ -795,7 +796,7 @@ export function AbilitiesRaceTab({
                                 {selectedRaceDetails.description && (
                                     <div className="mt-4">
                                         <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-2">Description</h4>
-                                        <div className="prose dark:prose-invert max-w-none text-sm">
+                                        <div className="prose-custom max-w-none text-sm">
                                             <ProcessMarkdown
                                                 id={`race-${selectedRaceDetails.name}-description`}
                                                 markdown={truncateDescription(selectedRaceDetails.description)}
@@ -813,7 +814,7 @@ export function AbilitiesRaceTab({
                                         <div className="space-y-2">
                                             {selectedRaceDetails.traits.map(trait => (
                                                 <div key={trait.traitSlug} className="text-sm">
-                                                    <div className="prose dark:prose-invert max-w-none">
+                                                    <div className="prose-custom max-w-none">
                                                         <ProcessMarkdown
                                                             id={`trait-${trait.traitSlug}-description`}
                                                             markdown={trait.trait?.description || ''}

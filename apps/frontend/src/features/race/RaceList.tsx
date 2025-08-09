@@ -3,15 +3,16 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 
 import { useAuthAuto } from '@/components/auth';
+import { FeatureDetail, FeatureEdit } from '@/components/feature-system';
 import { GenericList } from '@/components/generic-list/GenericList';
 import { createIdDeleteServiceFunction, createSlugDeleteServiceFunction } from '@/components/generic-list/types';
-import { RACE_COLUMNS } from './RaceColumns';
-import { FEATURE_COLUMNS } from '../class/FeatureColumns';
-import { RaceService } from './RaceService';
 import { FeatureSystemService } from '@/services/FeatureSystemService';
 import { RaceInQueryResponse, FeatureSchema } from '@shared/schema';
+
+import { RACE_COLUMNS } from './RaceColumns';
 import { routes } from './RaceConfig';
-import { FeatureDetail, FeatureEdit } from '@/components/feature-system';
+import { RaceService } from './RaceService';
+import { FEATURE_COLUMNS } from '../class/FeatureColumns';
 
 
 export function RaceList(): React.JSX.Element {

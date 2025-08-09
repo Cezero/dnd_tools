@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { useLogPanel } from './LogPanelProvider';
 
 export function LogPanelTest(): React.JSX.Element {

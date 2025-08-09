@@ -1,6 +1,8 @@
-import React, { useMemo } from 'react';
-import { ValidatedInput } from '@/components/forms/ValidatedForm';
 import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import React, { useMemo } from 'react';
+
+import { ValidatedInput } from '@/components/forms/ValidatedForm';
+import type { RaceInQueryResponse, GetRaceResponse, GetClassResponse, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse } from '@shared/schema';
 import {
     SKILL_LIST,
     CLASS_MAP,
@@ -8,7 +10,6 @@ import {
     GetAbilityModifier,
     GetAbilityModifierString
 } from '@shared/static-data';
-import type { RaceInQueryResponse, GetRaceResponse, GetClassResponse, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse } from '@shared/schema';
 
 interface SkillRowProps {
     skillId: number;

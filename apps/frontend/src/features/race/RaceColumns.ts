@@ -1,4 +1,6 @@
 import { ColumnDef } from '@tanstack/react-table';
+
+import { createContainsFilter, createEqualsFilter, createArrayIdFilter } from '@/components/generic-list/filterFunctions';
 import { FilterType } from '@/components/generic-list/types';
 import { RaceInQueryResponse } from '@shared/schema';
 import {
@@ -9,7 +11,6 @@ import {
     CLASS_MAP,
     SIZE_MAP
 } from '@shared/static-data';
-import { createContainsFilter, createEqualsFilter, createArrayIdFilter } from '@/components/generic-list/filterFunctions';
 
 export const RACE_COLUMNS: ColumnDef<RaceInQueryResponse, unknown>[] = [
     {

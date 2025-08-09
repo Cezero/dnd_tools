@@ -1,7 +1,7 @@
+import { NavigationMenu } from '@base-ui-components/react/navigation-menu';
 import { ChevronRightIcon, ChevronLeftIcon, UserGroupIcon, SparklesIcon, TableCellsIcon, BookOpenIcon, ChevronDownIcon, AcademicCapIcon, UserIcon, WrenchScrewdriverIcon, StarIcon, CubeIcon, ChartBarIcon, TableCellsIcon as TableCellsIcon2, Cog6ToothIcon, CubeTransparentIcon, BeakerIcon } from '@heroicons/react/24/outline';
 import React, { useRef, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { NavigationMenu } from '@base-ui-components/react/navigation-menu';
 
 // Custom Link component for NavigationMenu.Link to enable client-side routing
 function CustomLink(props: NavigationMenu.Link.Props) {

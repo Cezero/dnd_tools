@@ -6,6 +6,7 @@ import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { SPELL_COLUMNS } from '@/features/spell/SpellColumns';
 import { SpellService } from '@/features/spell/SpellService';
 import { SpellInQueryResponse } from '@shared/schema';
+
 import { routes } from './SpellConfig';
 
 export function SpellList(): React.JSX.Element {

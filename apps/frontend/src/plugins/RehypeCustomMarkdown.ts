@@ -1,8 +1,9 @@
 import type { Root, Text, Element, ElementContent } from 'hast';
 import { visit } from 'unist-util-visit';
 
-import { directiveProcessors } from './customProcessors';
 import { MarkdownComponentProps, MarkdownProcessingOptions } from '@/plugins/types';
+
+import { directiveProcessors } from './customProcessors';
 
 // Regex: [entityType:value] or {directiveType:value}
 // eslint-disable-next-line no-useless-escape

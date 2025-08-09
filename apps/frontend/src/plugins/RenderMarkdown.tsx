@@ -1,6 +1,7 @@
 import type { MarkdownComponentProps } from '@/plugins/types';
-import { RenderHastToReact } from './RenderHastToReact';
+
 import { useMarkdownHast } from './markdownCache';
+import { RenderHastToReact } from './RenderHastToReact';
 
 export function RenderMarkdown(props: MarkdownComponentProps): React.JSX.Element {
     const hast = useMarkdownHast(props);

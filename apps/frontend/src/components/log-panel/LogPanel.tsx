@@ -1,6 +1,7 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { ChevronUpIcon, ChevronDownIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { ScrollArea } from '@base-ui-components/react/scroll-area';
+import { ChevronUpIcon, ChevronDownIcon, TrashIcon } from '@heroicons/react/24/outline';
+import React, { useRef, useEffect, useState } from 'react';
+
 import { LogEntryComponent } from './LogEntry';
 import { useLogPanel } from './LogPanelProvider';
 

@@ -1,6 +1,6 @@
-import React from 'react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
 import { Toast } from '@base-ui-components/react/toast';
+import { XMarkIcon } from '@heroicons/react/24/outline';
+import React from 'react';
 
 interface GenericToastProps {
     toast: Toast.Root.ToastObject<any>;

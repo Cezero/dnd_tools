@@ -1,4 +1,6 @@
 import { ColumnDef } from '@tanstack/react-table';
+
+import { createArrayIdFilter, createEqualsFilter, createContainsFilter } from '@/components/generic-list/filterFunctions';
 import { FilterType } from '@/components/generic-list/types';
 import { SpellInQueryResponse } from '@shared/schema/spell';
 import {
@@ -12,8 +14,8 @@ import {
     SpellComponentAbbrList,
     GetSourceDisplay,
 } from '@shared/static-data';
+
 import { GetClassDisplay } from './spellUtil';
-import { createArrayIdFilter, createEqualsFilter, createContainsFilter } from '@/components/generic-list/filterFunctions';
 
 export const SPELL_COLUMNS: ColumnDef<SpellInQueryResponse, unknown>[] = [
     {

@@ -1,8 +1,11 @@
 import React from 'react';
+
 import { icons, type DiceType } from '@/assets/icons';
-import { useDiceBox } from './index';
-import type { DiceColor } from './types';
 import { generateDiceColorScheme } from '@/utils/color-scheme';
+
+import type { DiceColor } from './types';
+
+import { useDiceBox } from './index';
 import './dice-icons.css';
 
 // Cache for generated color schemes to avoid recalculation

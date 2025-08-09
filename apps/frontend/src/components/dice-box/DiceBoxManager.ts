@@ -1,8 +1,10 @@
 import DiceBox from '@3d-dice/dice-box';
 import DiceParser from '@3d-dice/dice-parser-interface';
+
+import { DiceBoxService } from '@/services/DiceBoxService';
 import type { DiceBoxAdminConfig, UserDiceConfig } from '@shared/schema';
 import { getSystemNameById } from '@shared/static-data';
-import { DiceBoxService } from '@/services/DiceBoxService';
+
 import type { DiceBoxConfig } from './DiceBox';
 
 export interface DiceResult {

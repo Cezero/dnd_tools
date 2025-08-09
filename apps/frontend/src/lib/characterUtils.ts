@@ -1,4 +1,3 @@
-import { FeatPrerequisiteType, getBABProgression, ProgressionType } from '@shared/static-data';
 import type {
     CharacterWithAllDetailsResponse,
     GetClassResponse,
@@ -6,6 +5,7 @@ import type {
     GetFeatResponse,
     GetAllFeatsResponse
 } from '@shared/schema';
+import { FeatPrerequisiteType, getBABProgression, ProgressionType } from '@shared/static-data';
 
 
 

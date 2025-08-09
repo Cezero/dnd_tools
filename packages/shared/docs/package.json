@@ -1,0 +1,19 @@
+{
+    "name": "@shared/docs",
+    "version": "1.0.0",
+    "description": "Shared documentation for D&D Tools feature system and database schema",
+    "type": "module",
+    "scripts": {
+        "dev": "echo 'Documentation package - no build required'",
+        "build": "echo 'Documentation package - no build required'"
+    },
+    "keywords": [
+        "documentation",
+        "dnd",
+        "features",
+        "database",
+        "schema"
+    ],
+    "author": "",
+    "license": "ISC"
+}

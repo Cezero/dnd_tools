@@ -1,4 +1,0 @@
--- AlterTable
-ALTER TABLE `User` ADD COLUMN `diceScale` INTEGER NULL DEFAULT 3,
-    ADD COLUMN `diceTheme` VARCHAR(191) NULL DEFAULT 'rock',
-    ADD COLUMN `diceThemeColor` VARCHAR(191) NULL DEFAULT '#3937b8';

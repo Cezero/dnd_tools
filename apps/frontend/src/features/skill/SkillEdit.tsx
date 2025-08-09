@@ -1,20 +1,21 @@
+import { Checkbox } from '@base-ui-components/react/checkbox';
+import { Select } from '@base-ui-components/react/select';
+import { ChevronUpDownIcon } from '@heroicons/react/24/solid';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 
-import { Select } from '@base-ui-components/react/select';
-import { Checkbox } from '@base-ui-components/react/checkbox';
-import { ChevronUpDownIcon } from '@heroicons/react/24/solid';
+
 import {
     ValidatedForm,
     ValidatedInput,
     useValidatedForm
 } from '@/components/forms';
+import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { SkillService } from '@/features/skill/SkillService';
 import { CreateSkillSchema, UpdateSkillSchema } from '@shared/schema';
 import { ABILITY_MAP, ABILITY_SELECT_LIST, SKILL_RETRY_TYPE_MAP } from '@shared/static-data';
-import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
 
 
 // Type definitions for the form state

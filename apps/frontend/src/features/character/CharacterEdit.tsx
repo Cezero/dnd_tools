@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { useAuthAuto } from '@/components/auth';
 import {
     UserIcon, ShieldCheckIcon, AcademicCapIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon
 } from '@heroicons/react/24/outline';
+import React, { useState, useEffect } from 'react';
+
+import { useAuthAuto } from '@/components/auth';
 import { RaceService } from '@/features/race/RaceService';
+import type { RaceInQueryResponse, GetRaceResponse, GetClassResponse, CharacterWithAllDetailsResponse , CharacterAdvancementWithDetailsResponse } from '@shared/schema';
+
 import {
     AbilitiesRaceTab, ClassTab, SkillsTab, FeatsTab, DescriptionTab, EquipmentTab
 } from './tabs'; // Using barrel export
-import type { RaceInQueryResponse, GetRaceResponse, GetClassResponse, CharacterWithAllDetailsResponse } from '@shared/schema';
-import type { CharacterAdvancementWithDetailsResponse } from '@shared/schema';
 
 interface TabConfig {
     id: string;

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useRef, useCallback } from 'react';
+
 import type { LogEntry, LogPanelContextType } from './types';
 
 // Create context

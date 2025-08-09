@@ -91,7 +91,7 @@ export function SpellDetail(): React.JSX.Element {
                         </div>
                     )}
 
-                    <div className="mt-3 p-2 w-full prose dark:prose-invert">
+                    <div className="mt-3 p-2 w-full prose-custom">
                         <ProcessMarkdown id='description' markdown={spell.description || ''} />
                     </div>
                     <div className="mt-4 text-right">

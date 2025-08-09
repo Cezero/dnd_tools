@@ -1,8 +1,10 @@
+import { Element as HastElement } from "hast";
+
+import { RenderStructuredTable } from "@/plugins/RenderStructuredTable";
+import { MarkdownComponentProps } from "@/plugins/types";
 import { typedApi } from "@/services/Api";
 import { ReferenceTableDataResponseSchema, ReferenceTableSlugParamRequest, ReferenceTableSlugParamSchema } from "@shared/schema";
-import { RenderStructuredTable } from "@/plugins/RenderStructuredTable";
-import { Element as HastElement } from "hast";
-import { MarkdownComponentProps } from "@/plugins/types";
+
 
 const preRenderedTableCache = new Map<string, Map<string, HastElement>>();
 const preloadingPromises = new Map<string, Promise<void>>();

@@ -1,6 +1,7 @@
 import React from 'react';
-import { CURRENCY_LIST } from '@shared/static-data';
+
 import type { RaceInQueryResponse, GetRaceResponse, CharacterWithAllDetailsResponse } from '@shared/schema';
+import { CURRENCY_LIST } from '@shared/static-data';
 
 interface EquipmentTabProps {
     character: CharacterWithAllDetailsResponse;

@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { DiceConfigurationService } from './DiceConfigurationService';
-import { useDiceBox } from '@/components/dice-box';
-import { GenericList } from '@/components/generic-list';
-import { getDiceThemeById, DICE_THEME_SELECT_LIST } from '@shared/static-data';
-import { DICE_CONFIGURATION_COLUMNS } from './DiceConfigurationsColumns';
+
+import { useDiceBox , DiceButton } from '@/components/dice-box';
 import { SliderControl } from '@/components/forms';
-import { ColorPicker } from '@/components/widgets';
-import { DiceButton } from '@/components/dice-box';
-import { generateDiceColorScheme } from '@/utils/color-scheme';
-import { doesThemeIgnoreColor } from '@shared/static-data';
 import { CustomSelect } from '@/components/forms/FormComponents';
+import { GenericList } from '@/components/generic-list';
+import { ColorPicker } from '@/components/widgets';
+import { generateDiceColorScheme } from '@/utils/color-scheme';
 import type { DiceBoxAdminConfig } from '@shared/schema';
+import { doesThemeIgnoreColor , getDiceThemeById, DICE_THEME_SELECT_LIST } from '@shared/static-data';
+
+import { DICE_CONFIGURATION_COLUMNS } from './DiceConfigurationsColumns';
+import { DiceConfigurationService } from './DiceConfigurationService';
 
 
 export function DiceConfigurationPage(): React.JSX.Element {

@@ -1,5 +1,6 @@
-import React from 'react';
 import { Toast } from '@base-ui-components/react/toast';
+import React from 'react';
+
 import { GenericToast } from './GenericToast';
 
 interface ToastProviderProps {

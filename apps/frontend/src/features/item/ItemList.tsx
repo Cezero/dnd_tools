@@ -4,10 +4,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
-import { ITEM_COLUMNS } from './ItemColumns';
-import { ItemService } from './ItemService';
 import { ItemWithDetails } from '@shared/schema';
+
+import { ITEM_COLUMNS } from './ItemColumns';
 import { routes } from './ItemConfig';
+import { ItemService } from './ItemService';
 
 export function ItemList(): React.JSX.Element {
     const navigate = useNavigate();

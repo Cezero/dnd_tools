@@ -1,5 +1,6 @@
-import React from 'react';
 import { Root, RootContent } from 'hast';
+import React from 'react';
+
 import { customComponents } from './RenderHastToReactComponents';
 
 type Props = {

@@ -1,8 +1,9 @@
 import ordinal from 'ordinal';
 
-import { SAVING_THROW_SELECT_LIST, PROFICIENCY_TYPE_SELECT_LIST, SKILL_SELECT_LIST, FeatBenefitType, SelectOption, FeatPrerequisiteType, ABILITY_SELECT_LIST, FEAT_PREREQ_BY_ID, GetBaseClassesByEdition } from '@shared/static-data';
-import { FeatService } from './FeatService';
 import { FeatureSystemService } from '@/services/FeatureSystemService';
+import { SAVING_THROW_SELECT_LIST, PROFICIENCY_TYPE_SELECT_LIST, SKILL_SELECT_LIST, FeatBenefitType, SelectOption, FeatPrerequisiteType, ABILITY_SELECT_LIST, FEAT_PREREQ_BY_ID, GetBaseClassesByEdition } from '@shared/static-data';
+
+import { FeatService } from './FeatService';
 
 export const FeatOptions = (benefitType: number): SelectOption[] => {
     switch (benefitType) {

@@ -1,4 +1,5 @@
 import { RouteConfig } from '@/types';
+
 import ClassDetail from './ClassDetail';
 import ClassEdit from './ClassEdit';
 import ClassList from './ClassList';

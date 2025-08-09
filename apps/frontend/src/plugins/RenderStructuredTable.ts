@@ -1,7 +1,8 @@
-import { h } from 'hastscript';
 import type { Properties, Element as HastElement } from 'hast';
+import { h } from 'hastscript';
 
 import { ReferenceTableColumn, ReferenceTableDataResponse, ReferenceTableRow } from '@shared/schema';
+
 import { compileMarkdownToHastNoTables } from './compileMarkdownToHastNoTables';
 import { MarkdownComponentProps } from './types';
 

@@ -1,6 +1,6 @@
-import React from 'react';
 import { ContextMenu } from '@base-ui-components/react/context-menu';
 import { CheckIcon } from '@heroicons/react/24/outline';
+import React from 'react';
 
 interface ContextMenuMultiSelectProps {
     options: Array<{ value: number | string; label: string }>;

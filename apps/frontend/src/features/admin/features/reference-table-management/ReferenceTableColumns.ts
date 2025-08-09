@@ -1,7 +1,8 @@
 import { ColumnDef } from '@tanstack/react-table';
+
+import { createContainsFilter } from '@/components/generic-list/filterFunctions';
 import { FilterType } from '@/components/generic-list/types';
 import { ReferenceTableSummary } from '@shared/schema';
-import { createContainsFilter } from '@/components/generic-list/filterFunctions';
 
 export const REFERENCE_TABLE_COLUMNS: ColumnDef<ReferenceTableSummary, unknown>[] = [
     {

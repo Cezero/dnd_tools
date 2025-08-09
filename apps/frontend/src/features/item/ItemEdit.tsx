@@ -3,15 +3,14 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 
 import { AxeSword, ArmorVest } from '@/assets/icons';
-
 import {
     ValidatedForm,
     ValidatedInput,
     CustomCheckbox,
     useValidatedForm
 } from '@/components/forms';
+import { CustomSelect, CustomSelectMulti } from '@/components/forms/FormComponents';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
-import { ItemService } from './ItemService';
 import { CreateItemSchema, UpdateItemSchema } from '@shared/schema';
 import {
     WEAPON_CATEGORY_SELECT_LIST,
@@ -20,7 +19,8 @@ import {
     ARMOR_CATEGORY_SELECT_LIST,
     ITEM_TYPE_SELECT_LIST
 } from '@shared/static-data';
-import { CustomSelect, CustomSelectMulti } from '@/components/forms/FormComponents';
+
+import { ItemService } from './ItemService';
 import { formatCostAsCurrency, parseCurrencyInput, parseWeightInput } from './utils';
 
 // Type definitions for the form state

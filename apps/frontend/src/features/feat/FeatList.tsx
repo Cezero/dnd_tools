@@ -7,6 +7,7 @@ import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { FEAT_COLUMNS } from '@/features/feat/FeatColumns';
 import { FeatService } from '@/features/feat/FeatService';
 import { FeatInQueryResponse } from '@shared/schema';
+
 import { routes } from './FeatConfig';
 
 export function FeatList(): React.JSX.Element {

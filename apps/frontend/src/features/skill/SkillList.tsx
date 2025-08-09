@@ -7,6 +7,7 @@ import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { SKILL_COLUMNS } from '@/features/skill/SkillColumns';
 import { SkillService } from '@/features/skill/SkillService';
 import { SkillInQueryResponse } from '@shared/schema';
+
 import { routes } from './SkillConfig';
 
 export function SkillList(): React.JSX.Element {

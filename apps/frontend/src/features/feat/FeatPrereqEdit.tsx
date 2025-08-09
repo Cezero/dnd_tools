@@ -7,12 +7,14 @@ import {
     ValidatedInput,
     useValidatedForm
 } from '@/components/forms';
+import { CustomSelect } from '@/components/forms/FormComponents';
+import { FeatureSystemService } from '@/services/FeatureSystemService';
 import { FeatPrerequisiteMapSchema } from '@shared/schema';
 import { ABILITY_SELECT_LIST, FEAT_PREREQUISITE_TYPE_SELECT_LIST, FeatPrerequisiteType, SelectOption, SKILL_SELECT_LIST } from '@shared/static-data';
-import { CustomSelect } from '@/components/forms/FormComponents';
+
 import { FeatService } from './FeatService';
 import { PrereqOptions } from './FeatUtil';
-import { FeatureSystemService } from '@/services/FeatureSystemService';
+
 
 // Type definitions for the form state
 type FeatPrerequisiteFormData = z.infer<typeof FeatPrerequisiteMapSchema>;

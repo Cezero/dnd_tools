@@ -6,8 +6,8 @@ import remarkRehype from 'remark-rehype';
 import supersub from 'remark-supersub';
 import { unified } from 'unified';
 
-import { RehypeCustomMarkdown } from '@/plugins/RehypeCustomMarkdown';
 import { preloadTablesFromMarkdown } from '@/lib/TableResolution';
+import { RehypeCustomMarkdown } from '@/plugins/RehypeCustomMarkdown';
 
 import { MarkdownComponentProps } from './types';
 

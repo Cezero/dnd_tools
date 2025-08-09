@@ -23,6 +23,12 @@ import {
     GetFeatureSpecialEffectsResponse,
     CreateFeatureSpecialEffectRequest,
     UpdateFeatureSpecialEffectRequest,
+    GetFeaturePrerequisitesResponse,
+    CreateFeaturePrerequisiteRequest,
+    UpdateFeaturePrerequisiteRequest,
+    GetFeatureModifierConditionsResponse,
+    CreateFeatureModifierConditionRequest,
+    UpdateFeatureModifierConditionRequest,
 } from '@shared/schema';
 
 import { featureSystemService } from './featureSystemService.js';
@@ -211,5 +217,38 @@ export async function UpdateFeatureSpecialEffect(req: ValidatedParamsBodyT<Featu
  */
 export async function DeleteFeatureSpecialEffect(req: ValidatedParamsT<FeatureIdParamRequest, UpdateResponse>, res: Response) {
     const result = await featureSystemService.deleteFeatureSpecialEffect(req.params.id);
+    res.status(200).json(result);
+}
+
+/**
+ * Fetches feature modifier conditions for a given modifier ID.
+ */
+export async function GetFeatureModifierConditions(req: ValidatedParamsT<{ modifierId: string }, GetFeatureModifierConditionsResponse>, res: Response) {
+    const result = await featureSystemService.getFeatureModifierConditions(Number(req.params.modifierId));
+    res.json(result);
+}
+
+/**
+ * Creates a new feature modifier condition.
+ */
+export async function CreateFeatureModifierCondition(req: ValidatedParamsBodyT<{ modifierId: string }, CreateFeatureModifierConditionRequest, CreateResponse>, res: Response) {
+    const data = { ...req.body, featureModifierId: Number(req.params.modifierId) };
+    const result = await featureSystemService.createFeatureModifierCondition(data);
+    res.status(201).json(result);
+}
+
+/**
+ * Updates an existing feature modifier condition.
+ */
+export async function UpdateFeatureModifierCondition(req: ValidatedParamsBodyT<FeatureIdParamRequest, UpdateFeatureModifierConditionRequest, UpdateResponse>, res: Response) {
+    const result = await featureSystemService.updateFeatureModifierCondition(req.params.id, req.body);
+    res.status(200).json(result);
+}
+
+/**
+ * Deletes a feature modifier condition by its ID.
+ */
+export async function DeleteFeatureModifierCondition(req: ValidatedParamsT<FeatureIdParamRequest, UpdateResponse>, res: Response) {
+    const result = await featureSystemService.deleteFeatureModifierCondition(req.params.id);
     res.status(200).json(result);
 } 

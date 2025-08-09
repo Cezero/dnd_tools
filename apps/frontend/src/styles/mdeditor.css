@@ -27,7 +27,7 @@
         text-indent: 1rem;
     }
 
-    @apply m-1 p-3 rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert border dark:border-gray-500 max-w-full;
+    @apply m-1 p-3 rounded bg-gray-50 dark:bg-gray-700 prose-custom border dark:border-gray-500 max-w-full;
 }
 
 .wmde-markdown {

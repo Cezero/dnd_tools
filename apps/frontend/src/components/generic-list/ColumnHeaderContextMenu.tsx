@@ -1,10 +1,10 @@
-import React, { useState, useRef } from 'react';
 import { ContextMenu } from '@base-ui-components/react/context-menu';
 import { Tooltip } from '@base-ui-components/react/tooltip';
 import { CheckIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { ChevronDoubleUpIcon, ChevronDoubleDownIcon } from '@heroicons/react/24/solid';
-import { FunnelIcon as FunnelIconSolid } from '@heroicons/react/24/solid';
+import { ChevronDoubleUpIcon, ChevronDoubleDownIcon , FunnelIcon as FunnelIconSolid } from '@heroicons/react/24/solid';
 import { flexRender, type Header } from '@tanstack/react-table';
+import React, { useState, useRef } from 'react';
+
 import { FilterSubmenu } from './FilterSubmenu';
 import { formatFilterTooltip } from './filterTooltipUtils';
 import { FilterType } from './types';

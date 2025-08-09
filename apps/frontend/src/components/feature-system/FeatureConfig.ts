@@ -1,4 +1,5 @@
 import { RouteConfig } from '@/types';
+
 import { FeatureDetail } from './FeatureDetail';
 import { FeatureEdit } from './FeatureEdit';
 

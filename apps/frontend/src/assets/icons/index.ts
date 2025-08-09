@@ -1,15 +1,15 @@
 // Import all SVG icons as React components
-import { ReactComponent as AxeSword } from './axe-sword.svg';
 import { ReactComponent as ArmorVest } from './armor-vest.svg';
+import { ReactComponent as AxeSword } from './axe-sword.svg';
 
 // Import individual dice SVGs
-import { ReactComponent as D4Die } from './d4_die.svg';
-import { ReactComponent as D6Die } from './d6_die.svg';
-import { ReactComponent as D8Die } from './d8_die.svg';
+import { ReactComponent as D100Die } from './d100_die.svg';
 import { ReactComponent as D10Die } from './d10_die.svg';
 import { ReactComponent as D12Die } from './d12_die.svg';
 import { ReactComponent as D20Die } from './d20_die.svg';
-import { ReactComponent as D100Die } from './d100_die.svg';
+import { ReactComponent as D4Die } from './d4_die.svg';
+import { ReactComponent as D6Die } from './d6_die.svg';
+import { ReactComponent as D8Die } from './d8_die.svg';
 
 // Re-export all icons
 export { AxeSword, ArmorVest, D4Die, D6Die, D8Die, D10Die, D12Die, D20Die, D100Die };

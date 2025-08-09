@@ -9,13 +9,14 @@ import {
     ValidatedInput,
     useValidatedForm
 } from '@/components/forms';
+import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
-import { RaceService } from './RaceService';
-import { RaceFeatureAssoc } from './RaceFeatureAssoc';
+import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { UpdateRaceSchema, GetRaceResponseSchema, FeatureProgressionWithRelationsSchema } from '@shared/schema';
 import { EDITION_SELECT_LIST_FULL, SIZE_SELECT_LIST, ABILITY_LIST, LANGUAGE_SELECT_LIST, FeatureModifierType, FeatureAppliesToType } from '@shared/static-data';
-import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
-import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
+
+import { RaceFeatureAssoc } from './RaceFeatureAssoc';
+import { RaceService } from './RaceService';
 
 // Type definitions for the form state
 type CreateRaceFormData = z.infer<typeof GetRaceResponseSchema>;

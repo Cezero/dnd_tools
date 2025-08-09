@@ -13,11 +13,7 @@ import {
     horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
-import pluralize from 'pluralize';
-import { useAuthAuto } from '@/components/auth';
 import {
     useReactTable,
     getCoreRowModel,
@@ -28,12 +24,19 @@ import {
     type ColumnDef,
     type PaginationState,
 } from '@tanstack/react-table';
+import pluralize from 'pluralize';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+import { useAuthAuto } from '@/components/auth';
+
+
+import { ColumnHeaderContextMenu } from './ColumnHeaderContextMenu';
+import { createCellRenderer } from './columnUtils';
+import { FloatingTextInput } from './FloatingTextInput';
 import type { GenericListProps } from './types';
 import { PAGE_LIMITS } from './types';
 import { usePersistentTableState } from './usePersistantTableState';
-import { ColumnHeaderContextMenu } from './ColumnHeaderContextMenu';
-import { FloatingTextInput } from './FloatingTextInput';
-import { createCellRenderer } from './columnUtils';
 
 function SortableHeaderCell({ header, allColumns, onToggleVisibility, onSort, columnFilters, handleFilterChange, handleClearFilter, onRestoreHiddenColumn }) {
     const { attributes, listeners, setNodeRef, transition, transform } =

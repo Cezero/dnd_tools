@@ -4,8 +4,8 @@ import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthAuto } from '@/components/auth';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { ReferenceTableService } from '@/features/admin/features/reference-table-management/ReferenceTableService';
-import { ReferenceTableDataResponse, ReferenceTableSummary } from '@shared/schema';
 import { RenderStructuredTable } from '@/plugins/RenderStructuredTable';
+import { ReferenceTableDataResponse, ReferenceTableSummary } from '@shared/schema';
 
 export function ReferenceTableViewer() {
     const { slug } = useParams();
@@ -41,7 +41,7 @@ export function ReferenceTableViewer() {
                     </div>
 
                     {tableSummary?.description && (
-                        <div className="mt-3 p-2 w-full rounded bg-gray-50 dark:bg-gray-700 prose dark:prose-invert">
+                        <div className="mt-3 p-2 w-full rounded bg-gray-50 dark:bg-gray-700 prose-custom">
                             <h3 className="text-lg font-bold">Description:</h3>
                             <ProcessMarkdown id='description' markdown={tableSummary.description} />
                         </div>

@@ -1,14 +1,14 @@
+import { ScrollArea } from '@base-ui-components/react/scroll-area';
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 
+import type { AuthContextType } from '@/components/auth/types';
+import { withAuthContext } from '@/components/auth/withAuth';
+import { DiceBoxProvider } from '@/components/dice-box';
+import { LogPanelProvider, LogPanel } from '@/components/log-panel';
 import { NavBar } from '@/components/navbar';
 import { MainSidebar } from '@/components/sidebar';
-import { ScrollArea } from '@base-ui-components/react/scroll-area';
-import { DiceBoxProvider } from '@/components/dice-box';
 import { ToastProvider } from '@/components/toast';
-import { LogPanelProvider, LogPanel } from '@/components/log-panel';
-import { withAuthContext } from '@/components/auth/withAuth';
-import type { AuthContextType } from '@/components/auth/types';
 
 interface LayoutProps {
     auth: AuthContextType;

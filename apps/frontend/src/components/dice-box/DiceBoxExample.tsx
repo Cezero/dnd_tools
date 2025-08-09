@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { useDiceBox } from './index';
 
 export function DiceBoxExample(): React.JSX.Element {

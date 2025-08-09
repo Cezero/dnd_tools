@@ -131,18 +131,31 @@ model FeatureProgression {
   effects                FeatureSpecialEffect[]
   modifiers              FeatureModifier[]
   characterFeatureChoice CharacterFeatureChoice[]
+  prerequisites          FeaturePrerequisite[]
 }
 
 model FeatureModifier {
-  id                   Int @id @default(autoincrement())
+  id                   Int     @id @default(autoincrement())
   featureProgressionId Int
-  modifierType         Int
+  type                 Int
   value                Int
-
+  bonusType            Int? // dodge, enhancement, etc.
+  appliesTo            Int?
+  appliesToId          Int?
   appliesIfChoiceKey   String?
   appliesIfChoiceValue String?
 
-  featureProgression FeatureProgression @relation(fields: [featureProgressionId], references: [id])
+  featureProgression FeatureProgression         @relation(fields: [featureProgressionId], references: [id])
+  conditions         FeatureModifierCondition[]
+}
+
+model FeatureModifierCondition {
+  id                Int     @id @default(autoincrement())
+  featureModifierId Int
+  conditionType     Int
+  conditionValue    String?
+
+  featureModifier FeatureModifier @relation(fields: [featureModifierId], references: [id])
 }
 
 model FeatureSpecialEffect {
@@ -153,7 +166,12 @@ model FeatureSpecialEffect {
   value         String?
   numericValue  Int?
 
+  featId Int?
+  itemId Int?
+
   featureProgression FeatureProgression @relation(fields: [progressionId], references: [id])
+  feat               Feat?              @relation(fields: [featId], references: [id])
+  item               Item?              @relation(fields: [itemId], references: [id])
 }
 
 enum ChoiceType {
@@ -181,6 +199,17 @@ model FeatureChoice {
   feat                   Feat?                    @relation(fields: [featId], references: [id])
   feature                Feature?                 @relation(fields: [chosenFeatureId], references: [id])
   characterFeatureChoice CharacterFeatureChoice[]
+}
+
+model FeaturePrerequisite {
+  id                   Int  @id @default(autoincrement())
+  featureProgressionId Int
+  type                 Int
+  skillId              Int?
+  minValue             Int
+
+  featureProgression FeatureProgression @relation(fields: [featureProgressionId], references: [id])
+  skill              Skill?             @relation(fields: [skillId], references: [id])
 }
 
 // =================
@@ -280,7 +309,8 @@ model Skill {
   restrictionNotes  String?  @db.Text
   trainedOnly       Boolean?
 
-  advSkills AdvancementSkill[]
+  advSkills           AdvancementSkill[]
+  featurePrerequisite FeaturePrerequisite[]
 }
 
 // =================
@@ -303,8 +333,9 @@ model Feat {
   prereqs  FeatPrerequisiteMap[]
   advFeat  AdvancementFeat[]
 
-  spellPrepMetamagic SpellPreparationMetamagic[]
-  featureChoice      FeatureChoice[]
+  spellPrepMetamagic   SpellPreparationMetamagic[]
+  featureChoice        FeatureChoice[]
+  featureSpecialEffect FeatureSpecialEffect[]
 }
 
 model FeatBenefitMap {
@@ -380,8 +411,9 @@ model Item {
 
   itemType ItemType @relation(fields: [typeId], references: [id])
 
-  characterItems CharacterItem[]
-  itemTemplate   ItemTemplate[]
+  characterItems       CharacterItem[]
+  itemTemplate         ItemTemplate[]
+  featureSpecialEffect FeatureSpecialEffect[]
 }
 
 model ItemType {

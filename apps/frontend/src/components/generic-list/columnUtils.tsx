@@ -1,5 +1,7 @@
 import React from 'react';
+
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
+
 import { GenericListColumnMeta } from './types';
 
 /**

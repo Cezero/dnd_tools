@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { z } from 'zod';
+
 import { GenericList } from '@/components/generic-list';
 import { FeatService } from '@/features/feat/FeatService';
 import { meetsPrerequisites } from '@/lib';
-import type { FeatSchema } from '@shared/schema';
-import { z } from 'zod';
-import type {
+import type { FeatSchema ,
     RaceInQueryResponse,
     GetRaceResponse,
     GetClassResponse,

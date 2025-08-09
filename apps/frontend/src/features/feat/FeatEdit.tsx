@@ -8,14 +8,15 @@ import {
     ValidatedInput,
     useValidatedForm
 } from '@/components/forms';
+import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
+import { CreateFeatSchema, FeatBenefitMapSchema, FeatPrerequisiteMapSchema, UpdateFeatSchema, GetFeatResponseSchema } from '@shared/schema';
+import { FEAT_PREREQUISITE_TYPES, FEAT_BENEFIT_TYPE_BY_ID, FEAT_TYPE_SELECT_LIST, FeatBenefitType } from '@shared/static-data';
+
 import { FeatBenefitEdit } from './FeatBenefitEdit';
 import { FeatPrereqEdit } from './FeatPrereqEdit';
 import { FeatService } from './FeatService';
 import { FeatOptions, getPrereqDisplayText } from './FeatUtil';
-import { CreateFeatSchema, FeatBenefitMapSchema, FeatPrerequisiteMapSchema, UpdateFeatSchema, GetFeatResponseSchema } from '@shared/schema';
-import { FEAT_PREREQUISITE_TYPES, FEAT_BENEFIT_TYPE_BY_ID, FEAT_TYPE_SELECT_LIST, FeatBenefitType } from '@shared/static-data';
-import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
 
 // Type definitions for the form state
 type FeatFormData = z.infer<typeof CreateFeatSchema> | z.infer<typeof UpdateFeatSchema>;

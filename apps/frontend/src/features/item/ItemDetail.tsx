@@ -3,7 +3,6 @@ import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { ItemService } from './ItemService';
 import { ItemWithDetails } from '@shared/schema';
 import {
     WEAPON_CATEGORIES,
@@ -12,6 +11,8 @@ import {
     ARMOR_CATEGORIES,
     ITEM_TYPES
 } from '@shared/static-data';
+
+import { ItemService } from './ItemService';
 import { formatCostAsCurrency } from './utils';
 
 export function ItemDetail(): React.JSX.Element {

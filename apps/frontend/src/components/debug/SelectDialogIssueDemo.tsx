@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
 import { Dialog } from '@base-ui-components/react/dialog';
 import { Select } from '@base-ui-components/react/select';
+import React, { useState } from 'react';
 
 const options = [
     { value: 'option1', label: 'Option 1' },
@@ -92,7 +92,7 @@ export function SelectDialogIssueDemo(): React.JSX.Element {
                                                                 </svg>
                                                             </Select.Icon>
                                                         </Select.Trigger>
-                                                        <Select.Portal>
+                                                        
                                                             <Select.Positioner>
                                                                 <Select.Popup className="absolute z-60 pt-1 pb-1 pr-1 max-h-60 overflow-auto rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800">
                                                                     {options.map((option) => (
@@ -113,7 +113,7 @@ export function SelectDialogIssueDemo(): React.JSX.Element {
                                                                     ))}
                                                                 </Select.Popup>
                                                             </Select.Positioner>
-                                                        </Select.Portal>
+                                                        
                                                     </Select.Root>
                                                 </div>
 

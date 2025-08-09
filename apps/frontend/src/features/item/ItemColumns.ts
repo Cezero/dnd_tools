@@ -1,8 +1,10 @@
 import { ColumnDef } from '@tanstack/react-table';
+
+import { createContainsFilter, createEqualsFilter } from '@/components/generic-list/filterFunctions';
 import { FilterType } from '@/components/generic-list/types';
 import { ItemWithDetails } from '@shared/schema';
 import { ITEM_TYPE_SELECT_LIST, ITEM_TYPES } from '@shared/static-data';
-import { createContainsFilter, createEqualsFilter } from '@/components/generic-list/filterFunctions';
+
 import { formatCostAsCurrency } from './utils';
 
 export const ITEM_COLUMNS: ColumnDef<ItemWithDetails, unknown>[] = [

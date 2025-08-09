@@ -3,15 +3,16 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 
 import { useAuthAuto } from '@/components/auth';
+import { FeatureDetail, FeatureEdit } from '@/components/feature-system';
 import { GenericList } from '@/components/generic-list/GenericList';
 import { createIdDeleteServiceFunction, createSlugDeleteServiceFunction } from '@/components/generic-list/types';
-import { CLASS_COLUMNS } from './ClassColumns';
-import { FEATURE_COLUMNS } from './FeatureColumns';
-import { ClassService } from './ClassService';
 import { FeatureSystemService } from '@/services/FeatureSystemService';
 import { ClassInQueryResponse, FeatureSchema } from '@shared/schema';
+
+import { CLASS_COLUMNS } from './ClassColumns';
 import { routes } from './ClassConfig';
-import { FeatureDetail, FeatureEdit } from '@/components/feature-system';
+import { ClassService } from './ClassService';
+import { FEATURE_COLUMNS } from './FeatureColumns';
 
 export default function ClassList(): React.JSX.Element {
     const navigate = useNavigate();

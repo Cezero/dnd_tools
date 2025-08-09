@@ -1,5 +1,6 @@
-import { DiceConfigurationPage } from './DiceConfigurationPage';
 import { RouteConfig } from '@/types';
+
+import { DiceConfigurationPage } from './DiceConfigurationPage';
 
 export const routes: RouteConfig[] = [
     {

@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
+
 import { CustomSelect } from '@/components/forms/FormComponents';
-import { ClassService } from '@/features/class/ClassService';
 import { ClassDisplay } from '@/features/class/ClassDisplay';
+import { ClassService } from '@/features/class/ClassService';
+import type { GetClassResponse, CharacterWithAllDetailsResponse } from '@shared/schema';
 import {
     CLASS_MAP,
     GetBaseClassesByEdition
 } from '@shared/static-data';
-import type { GetClassResponse, CharacterWithAllDetailsResponse } from '@shared/schema';
 
 interface ClassTabProps {
     character: CharacterWithAllDetailsResponse;

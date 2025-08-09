@@ -1,14 +1,17 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo } from 'react';
 
 import { AuthService } from '@/services/AuthService';
-import { UserProfileService } from '@/services/UserProfileService';
 import { DiceBoxService } from '@/services/DiceBoxService';
-import type { UserDiceConfig } from '@shared/schema';
+import { UserProfileService } from '@/services/UserProfileService';
 import {
     LoginUserSchema,
     JwtPayloadSchema,
-    type AuthUser,
-    type DiceBoxAdminConfig,
+} from '@shared/schema';
+
+import type {
+    UserDiceConfig,
+    AuthUser,
+    DiceBoxAdminConfig,
     UpdateUserProfileRequest,
 } from '@shared/schema';
 

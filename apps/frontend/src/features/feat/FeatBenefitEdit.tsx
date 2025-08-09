@@ -7,10 +7,10 @@ import {
     ValidatedInput,
     useValidatedForm
 } from '@/components/forms';
+import { CustomSelect } from '@/components/forms/FormComponents';
 import { FeatOptions } from '@/features/feat/FeatUtil';
 import { FeatBenefitMapSchema } from '@shared/schema';
 import { FEAT_BENEFIT_TYPE_BY_ID, FEAT_BENEFIT_TYPE_SELECT_LIST, FeatBenefitType } from '@shared/static-data';
-import { CustomSelect } from '@/components/forms/FormComponents';
 
 type FeatBenefitFormData = z.infer<typeof FeatBenefitMapSchema>;
 

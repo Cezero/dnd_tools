@@ -1,7 +1,9 @@
 import React from 'react';
-import { DiceButton } from './DiceButton';
-import { generateDiceColorScheme } from '@/utils/color-scheme';
+
 import type { DiceType } from '@/assets/icons';
+import { generateDiceColorScheme } from '@/utils/color-scheme';
+
+import { DiceButton } from './DiceButton';
 
 interface DiceColorDemoProps {
     className?: string;

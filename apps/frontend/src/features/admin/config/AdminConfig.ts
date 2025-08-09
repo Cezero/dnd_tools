@@ -1,6 +1,6 @@
-import { routes as referenceTableRoutes } from '@/features/admin/features/reference-table-management/ReferenceTableConfig';
 import { routes as diceConfigurationRoutes } from '@/features/admin/features/dice-configuration/DiceConfigurationConfig';
 import { routes as diceTestingRoutes } from '@/features/admin/features/dice-testing/DiceTestingConfig';
+import { routes as referenceTableRoutes } from '@/features/admin/features/reference-table-management/ReferenceTableConfig';
 import { AdminDashboardContent } from '@/features/admin/pages/AdminDashboardContent';
 import { AdminDashboardPage } from '@/features/admin/pages/AdminDashboardPage';
 import { RouteConfig, NavigationItem } from '@/types';

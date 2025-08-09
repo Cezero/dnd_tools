@@ -33,7 +33,7 @@ export function MarkdownEditor({
         }
 
         return (
-            <div className="prose dark:prose-invert">
+            <div className="prose-custom">
                 <RenderMarkdown
                     markdown={debouncedValue}
                     id={id || 'markdown-editor'}

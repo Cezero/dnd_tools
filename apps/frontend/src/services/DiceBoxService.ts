@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import type {
     DiceBoxConfig,
     DiceBoxAdminConfig,
@@ -6,7 +8,6 @@ import type {
     GetAllDiceConfigsResponse,
     UserDiceConfig
 } from '@shared/schema';
-
 import {
     DiceBoxAdminConfigSchema,
     CreateDiceBoxAdminConfigRequestSchema,
@@ -18,7 +19,6 @@ import {
 } from '@shared/schema';
 
 import { typedApi } from './Api';
-import { z } from 'zod';
 
 // API functions for user dice configuration
 const getAvailableConfigsApi = typedApi({

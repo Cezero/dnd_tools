@@ -1,5 +1,6 @@
-import type { DiceColor } from './types';
 import { generateDiceColorScheme } from '@/utils/color-scheme';
+
+import type { DiceColor } from './types';
 
 /**
  * Base color for dice - this is the single source of truth

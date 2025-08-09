@@ -57,6 +57,57 @@
     .border-secondary {
         border-color: var(--color-border-secondary);
     }
+
+    /* Custom prose classes that use our color variables */
+    .prose-custom {
+        @apply prose max-w-full;
+        color: var(--color-text);
+    }
+
+    .prose-custom p {
+        text-indent: 0;
+        margin-top: 0;
+        line-height: 18px;
+        font-size: 14px;
+    }
+
+    .prose-custom p+p {
+        text-indent: 1rem;
+        line-height: 18px;
+        font-size: 14px;
+    }
+
+    .prose-custom strong,
+    .prose-custom b {
+        color: var(--color-text);
+        font-weight: bold;
+    }
+
+    .prose-custom h1,
+    .prose-custom h2,
+    .prose-custom h3,
+    .prose-custom h4,
+    .prose-custom h5,
+    .prose-custom h6 {
+        color: var(--color-text);
+    }
+
+    .prose-custom a {
+        color: var(--color-text);
+    }
+
+    .prose-custom code {
+        color: var(--color-text);
+        background-color: var(--color-bg-secondary);
+    }
+
+    .prose-custom pre {
+        background-color: var(--color-bg-secondary);
+    }
+
+    .prose-custom pre code {
+        background-color: transparent;
+    }
 }
 
 .Scrollbar {
@@ -88,6 +139,10 @@
     width: 100%;
     border-radius: inherit;
     background-color: var(--color-gray-400);
+}
+
+.root {
+    isolation: isolate;
 }
 
 :root {

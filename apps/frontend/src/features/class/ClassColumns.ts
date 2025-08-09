@@ -1,4 +1,6 @@
 import { ColumnDef } from '@tanstack/react-table';
+
+import { createContainsFilter, createEqualsFilter, createArrayIdFilter } from '@/components/generic-list/filterFunctions';
 import { FilterType } from '@/components/generic-list/types';
 import { ClassInQueryResponse } from '@shared/schema';
 import {
@@ -12,7 +14,6 @@ import {
     ABILITY_MAP,
     GetSourceDisplay
 } from '@shared/static-data';
-import { createContainsFilter, createEqualsFilter, createArrayIdFilter } from '@/components/generic-list/filterFunctions';
 
 // Function to get source book options filtered by current edition selection
 const getSourceBookOptionsForEdition = (currentFilters: any[]) => {

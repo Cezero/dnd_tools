@@ -1,4 +1,5 @@
 import ordinal from 'ordinal';
+
 import { ProgressionRow } from '@/lib/ClassProgression';
 
 function getMaxSpellLevel(spells: { [spellLevel: number]: number }): number {

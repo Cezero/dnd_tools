@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { TrashIcon } from '@heroicons/react/24/outline';
 import { Dialog } from '@base-ui-components/react/dialog';
 import { ScrollArea } from '@base-ui-components/react/scroll-area';
+import { TrashIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
+import { FeatureProgressionDetailEdit, FeatureProficiencyDialog } from '@/components/feature-system';
 import {
     ValidatedForm,
     ValidatedInput,
@@ -12,10 +13,7 @@ import {
     CustomCheckbox
 } from '@/components/forms';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
-import { ClassService } from './ClassService';
-import { ClassFeatureAssoc } from './ClassFeatureAssoc';
-import { formatClassProficiencies } from '@/lib/Formatters';
-import { FeatureProgressionDetailEdit, FeatureProficiencyDialog } from '@/components/feature-system';
+import { formatClassProficiencies, formatProgression } from '@/lib/Formatters';
 import {
     CreateClassSchema,
     UpdateClassSchema,
@@ -23,56 +21,38 @@ import {
     UpdateClassRequest,
     FeatureProgressionWithRelations
 } from '@shared/schema';
+import {
+    RPG_DICE_SELECT_LIST,
+    ABILITY_SELECT_LIST,
+    EDITION_SELECT_LIST_FULL,
+    BAB_PROGRESSION_SELECT_LIST,
+    SAVE_PROGRESSION_SELECT_LIST,
+    FeatureModifierType,
+    FeatureSpecialEffectType,
+    FeatureAppliesToType,
+    SpecialFeatureId,
+    SKILL_MAP,
+    SKILL_SELECT_LIST,
+} from '@shared/static-data';
 
-import { RPG_DICE_SELECT_LIST, ABILITY_SELECT_LIST, EDITION_SELECT_LIST_FULL, SKILL_SELECT_LIST, BAB_PROGRESSION_SELECT_LIST, SAVE_PROGRESSION_SELECT_LIST, SPELL_PROGRESSION_SELECT_LIST, SPELLS_KNOWN_SELECT_LIST, SpellsKnownType, FeatureModifierType, FeatureSpecialEffectType, FeatureAppliesToType, _SKILL_MAP, SpecialFeatureId } from '@shared/static-data';
+import { ClassFeatureAssoc } from './ClassFeatureAssoc';
+import { ClassService } from './ClassService';
+import { ClassProficiencyService } from './ClassProficiencyService';
 
 // Type definitions for the form state
 type ClassFormData = CreateClassRequest | UpdateClassRequest;
 
-// Helper functions to format progression details
-function formatModifier(modifier: any): string {
-    const typeName = Object.keys(FeatureModifierType)[modifier.modifierType] || 'Unknown';
-    return `${typeName}: ${modifier.value}`;
-}
 
-function formatEffect(effect: any): string {
-    const typeName = Object.keys(FeatureSpecialEffectType)[effect.effectType] || 'Unknown';
-    return `${typeName}: ${effect.key}${effect.value ? ` = ${effect.value}` : ''}`;
-}
-
-function formatChoice(choice: any): string {
-    return `${choice.choiceType}: ${choice.label} (${choice.pickCount})`;
-}
-
-function formatProgressionDetails(progression: FeatureProgressionWithRelations): string {
-    const details: string[] = [];
-
-    // Show all modifiers
-    if (progression.modifiers && progression.modifiers.length > 0) {
-        const modifierDetails = progression.modifiers.map(modifier => formatModifier(modifier));
-        details.push(...modifierDetails);
-    }
-
-    // Show all effects
-    if (progression.effects && progression.effects.length > 0) {
-        const effectDetails = progression.effects.map(effect => formatEffect(effect));
-        details.push(...effectDetails);
-    }
-
-    // Show all choices
-    if (progression.choices && progression.choices.length > 0) {
-        const choiceDetails = progression.choices.map(choice => formatChoice(choice));
-        details.push(...choiceDetails);
-    }
-
-    return details.length > 0 ? ` (${details.join(', ')})` : '';
-}
 
 // Helper functions to extract skills and proficiencies from feature progressions
 function getClassSkills(progressions: FeatureProgressionWithRelations[]): number[] {
     return progressions
         .filter(prog => prog.featureId === SpecialFeatureId.ClassSkill && prog.appliesToType === FeatureAppliesToType.Skill)
-        .map(prog => prog.appliesTo || 0)
+        .flatMap(prog =>
+            prog.modifiers
+                ?.filter(mod => mod.modifierType === FeatureModifierType.Skill && mod.appliesTo)
+                .map(mod => mod.appliesTo as number) || []
+        )
         .filter(id => id > 0);
 }
 
@@ -80,32 +60,19 @@ function getClassProficiencies(
     progressions: FeatureProgressionWithRelations[]
 ): Array<{ featId: number; itemId: number; featName: string; itemName?: string }> {
     return progressions
-        .filter(prog => prog.featureId === SpecialFeatureId.ClassProficiency && prog.appliesToType === FeatureAppliesToType.Item)
-        .flatMap(prog => {
-            // Get featId from the choices array
-            const featChoices = prog.choices?.filter(c => c.choiceType === 'Feat') || [];
-            return featChoices.map(choice => {
-                const featId = choice.featId || 0;
-                const itemId = prog.appliesTo || 0;
-
-                // Get feat name from the choice
-                const featName = choice.feat?.name || `Feat ${featId}`;
-
-                // For itemId -1, we don't need an item name as it represents "All Items"
-                const itemName = itemId === -1 ? undefined : `Item ${itemId}`;
-
-                return {
-                    featId,
-                    itemId,
-                    featName,
-                    itemName
-                };
-            });
-        })
+        .filter(prog => prog.featureId === SpecialFeatureId.ClassProficiency)
+        .flatMap(prog =>
+            prog.effects
+                ?.filter(effect => effect.effectType === FeatureSpecialEffectType.Proficiency)
+                .map(effect => ({
+                    featId: effect.featId || 0,
+                    itemId: effect.itemId || -1,
+                    featName: effect.feat?.name || `Feat ${effect.featId}`,
+                    itemName: effect.itemId === -1 ? undefined : (effect.item?.name || `Item ${effect.itemId}`)
+                })) || []
+        )
         .filter(prof => prof.featId > 0);
 }
-
-
 
 export default function ClassEdit() {
     const { id } = useParams<{ id: string }>();
@@ -130,45 +97,67 @@ export default function ClassEdit() {
      */
     const handleAddSkill = useCallback((skillId: number) => {
         setFeatureProgressions(prev => {
-            // Check if skill already exists
-            const existingSkill = prev.find(fp =>
-                fp.modifiers?.some(m => m.modifierType === FeatureModifierType.ClassSkill && fp.appliesTo === skillId)
+            // Check if class skills progression already exists
+            let classSkillsProgression = prev.find(fp =>
+                fp.featureId === SpecialFeatureId.ClassSkill && fp.appliesToType === FeatureAppliesToType.Skill
             );
 
-            if (existingSkill) {
+            if (!classSkillsProgression) {
+                // Create the main class skills progression if it doesn't exist
+                classSkillsProgression = {
+                    id: Date.now() + Math.random(), // Temporary ID for frontend state
+                    featureId: SpecialFeatureId.ClassSkill,
+                    sourceType: 1, // 1 for Class
+                    classId: parseInt(id || '0'),
+                    raceId: null,
+                    level: 1, // Class skills are level 1 features
+                    appliesToType: FeatureAppliesToType.Skill,
+                    appliesTo: null, // No specific skill, this is the container progression
+                    feature: {
+                        id: SpecialFeatureId.ClassSkill,
+                        slug: 'class-skill',
+                        name: 'Class Skill',
+                        description: 'Class skill feature',
+                    },
+                    modifiers: [],
+                    choices: [],
+                    effects: [],
+                };
+                prev = [...prev, classSkillsProgression];
+            }
+
+            // Check if this specific skill is already added
+            const existingSkillModifier = classSkillsProgression.modifiers?.find(m =>
+                m.modifierType === FeatureModifierType.Skill && m.appliesTo === skillId
+            );
+
+            if (existingSkillModifier) {
                 // Skill already exists, don't add duplicate
                 return prev;
             }
 
-            // Create a new feature progression for the class skill
-            const newSkillProgression: FeatureProgressionWithRelations = {
-                id: Date.now() + Math.random(), // Temporary ID for frontend state
-                featureId: SpecialFeatureId.ClassSkill, // Use the special class-skill feature
-                sourceType: 1, // 1 for Class
-                classId: parseInt(id || '0'),
-                raceId: null,
-                level: 1, // Class skills are level 1 features
-                appliesToType: FeatureAppliesToType.Skill,
+            // Add the skill as a modifier to the existing progression
+            const newModifier = {
+                id: Date.now() + Math.random(), // Temporary ID
+                featureProgressionId: classSkillsProgression.id,
+                modifierType: FeatureModifierType.Skill,
+                value: 1, // Class skill modifier value
+                bonusType: null, // Optional bonus type
                 appliesTo: skillId,
-                feature: {
-                    id: SpecialFeatureId.ClassSkill,
-                    slug: 'class-skill',
-                    name: 'Class Skill',
-                    description: 'Class skill feature',
-                },
-                modifiers: [{
-                    id: Date.now() + Math.random(), // Temporary ID
-                    featureProgressionId: Date.now() + Math.random(), // Temporary ID
-                    modifierType: FeatureModifierType.ClassSkill,
-                    value: 1, // Class skill modifier value
-                    appliesIfChoiceKey: null,
-                    appliesIfChoiceValue: null,
-                }],
-                choices: [],
-                effects: [],
+                appliesIfChoiceKey: null,
+                appliesIfChoiceValue: null,
             };
 
-            return [...prev, newSkillProgression];
+            // Create a new array with the updated progression
+            return prev.map(p => {
+                if (p.id === classSkillsProgression.id) {
+                    return {
+                        ...p,
+                        modifiers: [...(p.modifiers || []), newModifier]
+                    };
+                }
+                return p;
+            });
         });
     }, [id]);
 
@@ -176,76 +165,157 @@ export default function ClassEdit() {
      * Handles removing a class skill via the feature system.
      */
     const handleRemoveSkill = useCallback((skillId: number) => {
-        setFeatureProgressions(prev =>
-            prev.filter(fp => !(fp.featureId === SpecialFeatureId.ClassSkill && fp.appliesTo === skillId))
-        );
+        setFeatureProgressions(prev => {
+            const updatedProgressions = prev.map(prog => {
+                if (prog.featureId === SpecialFeatureId.ClassSkill && prog.appliesToType === FeatureAppliesToType.Skill) {
+                    // Remove the specific skill modifier
+                    const updatedModifiers = prog.modifiers?.filter(mod =>
+                        !(mod.modifierType === FeatureModifierType.Skill && mod.appliesTo === skillId)
+                    ) || [];
+
+                    return {
+                        ...prog,
+                        modifiers: updatedModifiers
+                    };
+                }
+                return prog;
+            });
+
+            // Remove the progression entirely if it has no modifiers left
+            return updatedProgressions.filter(prog =>
+                !(prog.featureId === SpecialFeatureId.ClassSkill && prog.appliesToType === FeatureAppliesToType.Skill) ||
+                (prog.modifiers && prog.modifiers.length > 0)
+            );
+        });
     }, []);
 
     /**
      * Handles adding a proficiency via the feature system.
      */
     const handleAddProficiency = useCallback(async (featId: number, itemId: number) => {
-        console.log('handleAddProficiency called with:', { featId, itemId });
-        setFeatureProgressions(prev => {
-            console.log('Current feature progressions:', prev.length);
+        try {
+            // Get the proficiency display info to get proper names
+            const profInfo = await ClassProficiencyService.getProficiencyDisplay([{ featId, itemId }]);
+            const { featName, itemName } = profInfo[0];
 
-            // Check if proficiency already exists (only check for new special proficiency features)
-            const existingProficiency = prev.find(fp =>
-                fp.featureId === SpecialFeatureId.ClassProficiency &&
-                fp.appliesTo === itemId &&
-                fp.choices?.some(c => c.choiceType === 'Feat' && c.featId === featId)
-            );
+            setFeatureProgressions(prev => {
+                // Check if class proficiency progression already exists
+                let classProficiencyProgression = prev.find(fp =>
+                    fp.featureId === SpecialFeatureId.ClassProficiency
+                );
 
-            if (existingProficiency) {
-                console.log('Proficiency already exists, skipping. Found:', existingProficiency);
-                // Proficiency already exists, don't add duplicate
-                return prev;
-            }
+                if (!classProficiencyProgression) {
+                    // Create the main class proficiency progression if it doesn't exist
+                    classProficiencyProgression = {
+                        id: Date.now() + Math.random(),
+                        featureId: SpecialFeatureId.ClassProficiency,
+                        sourceType: 1, // 1 for Class
+                        classId: parseInt(id || '0'),
+                        raceId: null,
+                        level: 1,
+                        appliesToType: null,
+                        appliesTo: null,
+                        feature: {
+                            id: SpecialFeatureId.ClassProficiency,
+                            slug: 'class-proficiency',
+                            name: 'Class Proficiency',
+                            description: 'Class proficiency feature',
+                        },
+                        modifiers: [],
+                        choices: [],
+                        effects: [],
+                    };
+                    prev = [...prev, classProficiencyProgression];
+                }
 
-            // Create a new feature progression for the proficiency
-            const newProficiencyProgression: FeatureProgressionWithRelations = {
-                id: Date.now() + Math.random(), // Temporary ID for frontend state
-                featureId: SpecialFeatureId.ClassProficiency, // Use the special class-proficiency feature
-                sourceType: 1, // 1 for Class
-                classId: parseInt(id || '0'),
-                raceId: null,
-                level: 1, // Proficiencies are level 1 features
-                appliesToType: FeatureAppliesToType.Item,
-                appliesTo: itemId,
-                feature: {
-                    id: SpecialFeatureId.ClassProficiency,
-                    slug: 'class-proficiency',
-                    name: 'Class Proficiency',
-                    description: 'Class proficiency feature',
-                },
-                modifiers: [],
-                choices: [{
-                    id: Date.now() + Math.random(), // Temporary ID
-                    progressionId: Date.now() + Math.random(), // Temporary ID
-                    choiceType: 'Feat',
-                    label: `Proficiency ${featId}`,
-                    pickCount: 1,
-                    choiceBehavior: 'Single',
+                // Check if this specific proficiency already exists
+                const existingProficiency = classProficiencyProgression.effects?.find(e =>
+                    e.effectType === FeatureSpecialEffectType.Proficiency &&
+                    e.featId === featId &&
+                    e.itemId === itemId
+                );
+
+                if (existingProficiency) {
+                    return prev;
+                }
+
+                // Add the proficiency as a special effect
+                const newEffect = {
+                    id: Date.now() + Math.random(),
+                    progressionId: classProficiencyProgression.id,
+                    effectType: FeatureSpecialEffectType.Proficiency,
+                    key: null,
+                    value: null,
+                    numericValue: null,
                     featId: featId,
-                    chosenFeatureId: null,
-                    feat: { id: featId, name: `Proficiency ${featId}` },
-                    feature: null,
-                }],
-                effects: [],
-            };
+                    itemId: itemId,
+                    feat: {
+                        id: featId,
+                        name: featName,
+                        description: null,
+                        typeId: 1,
+                        benefit: null,
+                        normalEffect: null,
+                        specialEffect: null,
+                        prerequisites: null,
+                        repeatable: null,
+                        fighterBonus: null
+                    },
+                    item: itemId !== -1 ? {
+                        id: itemId,
+                        name: itemName,
+                        description: null,
+                        typeId: 1,
+                        cost: null,
+                        weight: null,
+                        quantity: null
+                    } : null
+                };
 
-            console.log('Adding new proficiency progression:', newProficiencyProgression);
-            return [...prev, newProficiencyProgression];
-        });
+                // Create a new array with the updated progression
+                return prev.map(p => {
+                    if (p.id === classProficiencyProgression.id) {
+                        return {
+                            ...p,
+                            effects: [...(p.effects || []), newEffect]
+                        };
+                    }
+                    return p;
+                });
+            });
+        } catch (error) {
+            console.error('Failed to add proficiency:', error);
+        }
     }, [id]);
 
     /**
      * Handles removing a proficiency via the feature system.
      */
     const handleRemoveProficiency = useCallback((featId: number, itemId: number) => {
-        setFeatureProgressions(prev =>
-            prev.filter(fp => !(fp.featureId === SpecialFeatureId.ClassProficiency && fp.appliesTo === itemId))
-        );
+        setFeatureProgressions(prev => {
+            const updatedProgressions = prev.map(prog => {
+                if (prog.featureId === SpecialFeatureId.ClassProficiency) {
+                    // Remove the specific proficiency effect
+                    const updatedEffects = prog.effects?.filter(effect =>
+                        !(effect.effectType === FeatureSpecialEffectType.Proficiency &&
+                            effect.featId === featId &&
+                            effect.itemId === itemId)
+                    ) || [];
+
+                    return {
+                        ...prog,
+                        effects: updatedEffects
+                    };
+                }
+                return prog;
+            });
+
+            // Remove the progression entirely if it has no effects left
+            return updatedProgressions.filter(prog =>
+                !(prog.featureId === SpecialFeatureId.ClassProficiency) ||
+                (prog.effects && prog.effects.length > 0)
+            );
+        });
     }, []);
 
 
@@ -276,6 +346,7 @@ export default function ClassEdit() {
      * Handles adding a feature progression to the class.
      */
     const handleAddProgression = useCallback((progression: FeatureProgressionWithRelations) => {
+        console.log('handleAddProgression called with:', progression);
         setFeatureProgressions(prev => {
             // Ensure the progression has feature information for display
             const progressionWithFeature = {
@@ -288,6 +359,7 @@ export default function ClassEdit() {
                 }
             };
 
+            console.log('Adding progression with feature:', progressionWithFeature);
             // Always add as a new progression - allow multiple progressions per feature/level
             return [...prev, progressionWithFeature];
         });
@@ -694,7 +766,7 @@ export default function ClassEdit() {
                             return classSkills.length > 0 ? (
                                 classSkills.map((skillId, index) => (
                                     <span key={skillId} className="group relative text-sm pt-1 pb-1 pl-0 pr-0 cursor-pointer">
-                                        {_SKILL_MAP[skillId]?.name || 'Unknown Skill'}
+                                        {SKILL_MAP[skillId]?.name || 'Unknown Skill'}
                                         {index < classSkills.length - 1 && ','}
                                         <button
                                             type="button"
@@ -711,7 +783,7 @@ export default function ClassEdit() {
                             );
                         })()}
                         <CustomSelect
-                            key={`skill-select-${getClassSkills(featureProgressions).length}`}
+                            key={`skill-select-${Date.now()}`}
                             label=""
                             value={null}
                             componentExtraClassName="flex items-center gap-1 text-sm"
@@ -821,7 +893,13 @@ export default function ClassEdit() {
                                                             className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
                                                             title="Edit progression details"
                                                         >
-                                                            Level {progression.level}{formatProgressionDetails(progression)}
+                                                            Level {progression.level}{(() => {
+                                                                const formatted = formatProgression(progression);
+                                                                const details = [];
+                                                                if (formatted.value) details.push(formatted.value);
+                                                                if (formatted.note) details.push(formatted.note);
+                                                                return details.length > 0 ? ` (${details.join(', ')})` : '';
+                                                            })()}
                                                         </button>
                                                         <button
                                                             type="button"
@@ -884,35 +962,65 @@ export default function ClassEdit() {
                 onClose={() => setIsFeatureAssocOpen(false)}
                 onSave={(selectedFeatures) => {
                     console.log('[ClassEdit] selectedFeatures received', selectedFeatures);
-                    // Create progressions for each selected feature
-                    const newProgressions: FeatureProgressionWithRelations[] = selectedFeatures.map(feature => ({
-                        id: Date.now() + Math.random(), // Temporary ID for frontend
-                        sourceType: 1, // 1 for Class
-                        classId: parseInt(id),
-                        raceId: null,
-                        level: feature.level,
-                        featureId: feature.featureId,
-                        appliesToType: null,
-                        appliesTo: null,
-                        feature: {
-                            id: feature.featureId,
-                            name: feature.name,
-                            description: feature.description,
-                            slug: feature.slug,
-                        },
-                        modifiers: [],
-                        choices: [],
-                        effects: [],
-                    }));
 
                     setFeatureProgressions(prev => {
-                        // Remove existing progressions for these features and add new ones
-                        const filtered = prev.filter(p => !selectedFeatures.some(sf => sf.featureId === p.featureId));
-                        return [...filtered, ...newProgressions];
+                        // Get current non-special feature IDs
+                        const currentFeatureIds = prev
+                            .filter(p => p.featureId !== SpecialFeatureId.ClassSkill && p.featureId !== SpecialFeatureId.ClassProficiency)
+                            .map(p => p.featureId);
+
+                        // Get selected feature IDs
+                        const selectedFeatureIds = selectedFeatures.map(sf => sf.featureId);
+
+                        // Find features to remove (deselected)
+                        const featuresToRemove = currentFeatureIds.filter(id => !selectedFeatureIds.includes(id));
+
+                        // Find features to add (newly selected)
+                        const featuresToAdd = selectedFeatureIds.filter(id => !currentFeatureIds.includes(id));
+
+                        console.log('[ClassEdit] Features to remove:', featuresToRemove);
+                        console.log('[ClassEdit] Features to add:', featuresToAdd);
+
+                        // Remove deselected features (but keep special features)
+                        let updated = prev.filter(p =>
+                            p.featureId === SpecialFeatureId.ClassSkill ||
+                            p.featureId === SpecialFeatureId.ClassProficiency ||
+                            !featuresToRemove.includes(p.featureId)
+                        );
+
+                        // Add newly selected features
+                        const newProgressions: FeatureProgressionWithRelations[] = selectedFeatures
+                            .filter(feature => featuresToAdd.includes(feature.featureId))
+                            .map(feature => ({
+                                id: Date.now() + Math.random(), // Temporary ID for frontend
+                                sourceType: 1, // 1 for Class
+                                classId: parseInt(id),
+                                raceId: null,
+                                level: feature.level,
+                                featureId: feature.featureId,
+                                appliesToType: null,
+                                appliesTo: null,
+                                feature: {
+                                    id: feature.featureId,
+                                    name: feature.name,
+                                    description: feature.description,
+                                    slug: feature.slug,
+                                },
+                                modifiers: [],
+                                choices: [],
+                                effects: [],
+                            }));
+
+                        return [...updated, ...newProgressions];
                     });
                     setIsFeatureAssocOpen(false);
                 }}
-                initialSelectedFeatureIds={Object.keys(progressionsByFeature).map(id => parseInt(id))}
+                initialSelectedFeatureIds={Object.keys(progressionsByFeature)
+                    .map(id => parseInt(id))
+                    .filter(featureId =>
+                        featureId !== SpecialFeatureId.ClassSkill &&
+                        featureId !== SpecialFeatureId.ClassProficiency
+                    )}
                 classId={id !== 'new' ? parseInt(id) : undefined}
             />
 
@@ -934,6 +1042,7 @@ export default function ClassEdit() {
                 }}
                 progression={editingProgression}
                 onSave={(progression) => {
+                    console.log('FeatureProgressionDetailEdit onSave called with:', progression);
                     if (editingProgression) {
                         handleUpdateProgression(editingProgression, progression);
                     } else {

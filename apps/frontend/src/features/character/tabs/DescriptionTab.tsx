@@ -1,11 +1,12 @@
 import React from 'react';
+
 import { CustomSelect } from '@/components/forms/FormComponents';
+import type { RaceInQueryResponse, GetRaceResponse, CharacterWithAllDetailsResponse } from '@shared/schema';
 import {
     ALIGNMENT_LIST,
     CLASS_MAP,
     SIZE_MAP
 } from '@shared/static-data';
-import type { RaceInQueryResponse, GetRaceResponse, CharacterWithAllDetailsResponse } from '@shared/schema';
 
 interface DescriptionTabProps {
     character: CharacterWithAllDetailsResponse;

@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE `Item` MODIFY `type` ENUM('ARMOR', 'WEAPON', 'GEAR', 'AMMO') NOT NULL;

@@ -194,10 +194,20 @@ exports.Prisma.FeatureProgressionScalarFieldEnum = {
 exports.Prisma.FeatureModifierScalarFieldEnum = {
   id: 'id',
   featureProgressionId: 'featureProgressionId',
-  modifierType: 'modifierType',
+  type: 'type',
   value: 'value',
+  bonusType: 'bonusType',
+  appliesTo: 'appliesTo',
+  appliesToId: 'appliesToId',
   appliesIfChoiceKey: 'appliesIfChoiceKey',
   appliesIfChoiceValue: 'appliesIfChoiceValue'
+};
+
+exports.Prisma.FeatureModifierConditionScalarFieldEnum = {
+  id: 'id',
+  featureModifierId: 'featureModifierId',
+  conditionType: 'conditionType',
+  conditionValue: 'conditionValue'
 };
 
 exports.Prisma.FeatureSpecialEffectScalarFieldEnum = {
@@ -206,7 +216,9 @@ exports.Prisma.FeatureSpecialEffectScalarFieldEnum = {
   effectType: 'effectType',
   key: 'key',
   value: 'value',
-  numericValue: 'numericValue'
+  numericValue: 'numericValue',
+  featId: 'featId',
+  itemId: 'itemId'
 };
 
 exports.Prisma.FeatureChoiceScalarFieldEnum = {
@@ -218,6 +230,14 @@ exports.Prisma.FeatureChoiceScalarFieldEnum = {
   choiceBehavior: 'choiceBehavior',
   featId: 'featId',
   chosenFeatureId: 'chosenFeatureId'
+};
+
+exports.Prisma.FeaturePrerequisiteScalarFieldEnum = {
+  id: 'id',
+  featureProgressionId: 'featureProgressionId',
+  type: 'type',
+  skillId: 'skillId',
+  minValue: 'minValue'
 };
 
 exports.Prisma.SpellScalarFieldEnum = {
@@ -612,6 +632,10 @@ exports.Prisma.FeatureModifierOrderByRelevanceFieldEnum = {
   appliesIfChoiceValue: 'appliesIfChoiceValue'
 };
 
+exports.Prisma.FeatureModifierConditionOrderByRelevanceFieldEnum = {
+  conditionValue: 'conditionValue'
+};
+
 exports.Prisma.FeatureSpecialEffectOrderByRelevanceFieldEnum = {
   key: 'key',
   value: 'value'
@@ -810,8 +834,10 @@ exports.Prisma.ModelName = {
   Feature: 'Feature',
   FeatureProgression: 'FeatureProgression',
   FeatureModifier: 'FeatureModifier',
+  FeatureModifierCondition: 'FeatureModifierCondition',
   FeatureSpecialEffect: 'FeatureSpecialEffect',
   FeatureChoice: 'FeatureChoice',
+  FeaturePrerequisite: 'FeaturePrerequisite',
   Spell: 'Spell',
   SpellDescriptorMap: 'SpellDescriptorMap',
   SpellSchoolMap: 'SpellSchoolMap',

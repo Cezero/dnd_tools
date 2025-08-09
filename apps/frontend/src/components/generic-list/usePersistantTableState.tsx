@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
 import type {
     VisibilityState,
     ColumnFiltersState,
     SortingState,
     ColumnSizingState,
 } from '@tanstack/react-table';
+import { useEffect, useState } from 'react';
 
 export type TableConfig = {
     columnVisibility: VisibilityState;

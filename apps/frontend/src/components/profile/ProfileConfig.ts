@@ -1,4 +1,5 @@
 import { RouteConfig } from '@/types';
+
 import { ProfilePage } from './ProfilePage';
 
 export const routes: RouteConfig[] = [

@@ -1,6 +1,8 @@
-import { compileMarkdownToHast } from '@/plugins/compileMarkdownToHast';
-import { CacheEntry, MarkdownComponentProps } from './types';
 import { Root } from 'hast';
+
+import { compileMarkdownToHast } from '@/plugins/compileMarkdownToHast';
+
+import { CacheEntry, MarkdownComponentProps } from './types';
 
 const markdownCache = new Map<string, CacheEntry>();
 

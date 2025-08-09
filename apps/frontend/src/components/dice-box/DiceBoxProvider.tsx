@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
+
+import { useLogPanel } from '@/components/log-panel';
+import { useToast } from '@/hooks/useToast';
+import type { DiceBoxAdminConfig, UserDiceConfig } from '@shared/schema';
+
 import { DiceBoxManager, type DiceResult } from './DiceBoxManager';
 import { DiceResultRenderer } from './DiceResultRenderer';
-import { useToast } from '@/hooks/useToast';
-import { useLogPanel } from '@/components/log-panel';
-import type { DiceBoxAdminConfig, UserDiceConfig } from '@shared/schema';
 
 // Types
 export interface DiceBoxContextType {
@@ -239,7 +241,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
                                             try {
                                                 const logData = {
                                                     message: results.length === 1 ? generateTitle(results[0].originalNotation || 'Unknown', results[0].group) : `Multiple Rolls: ${results.length} results`,
-                                                    type: 'info' as 'info',
+                                                    type: 'info' as const,
                                                     source: 'dice-box',
                                                     data: { formattedContent, results }
                                                 };

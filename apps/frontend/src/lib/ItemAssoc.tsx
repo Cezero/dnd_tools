@@ -1,7 +1,7 @@
 import { Dialog } from '@base-ui-components/react/dialog';
+import { ColumnDef } from '@tanstack/react-table';
 import { useCallback, useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ColumnDef } from '@tanstack/react-table';
 
 import { GenericList } from '@/components/generic-list/GenericList';
 
@@ -27,8 +27,8 @@ interface ItemAssocProps<T extends BaseItem, U extends BaseSelectedItem> {
     onClose: () => void;
     /** Function to call with the selected item data when items are chosen */
     onSave: (items: U[]) => void;
-    /** Array of item slugs already associated */
-    initialSelectedIds: string[];
+    /** Array of item IDs already associated */
+    initialSelectedIds: (string | number)[];
     /** The ID of the parent item currently being edited */
     parentId?: number;
     /** Service function to fetch all items */
@@ -70,7 +70,7 @@ export function ItemAssoc<T extends BaseItem, U extends BaseSelectedItem>({
     createNewButtonText,
 }: ItemAssocProps<T, U>) {
     const navigate = useNavigate();
-    const [currentSelectedIds, setCurrentSelectedIds] = useState<string[]>(initialSelectedIds);
+    const [currentSelectedIds, setCurrentSelectedIds] = useState<(string | number)[]>(initialSelectedIds);
     const [availableItems, setAvailableItems] = useState<T[]>([]);
 
     useEffect(() => {
@@ -111,12 +111,12 @@ export function ItemAssoc<T extends BaseItem, U extends BaseSelectedItem>({
     ], [itemDesc, getMarkdownId]);
 
     const handleSelectedIdsChange = useCallback((selectedIdsFromGenericList: (string | number)[]) => {
-        setCurrentSelectedIds(selectedIdsFromGenericList as string[]);
+        setCurrentSelectedIds(selectedIdsFromGenericList);
     }, []);
 
     const handleAddSelectedItems = useCallback(async () => {
         const selectedItemObjects = currentSelectedIds
-            .map(id => availableItems.find(item => item.slug === id))
+            .map(id => availableItems.find(item => (item as any).id === id || item.slug === id))
             .filter((item): item is T => item !== undefined);
 
         const transformedItems = transformSelectedItems(selectedItemObjects);

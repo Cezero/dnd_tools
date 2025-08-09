@@ -1,11 +1,11 @@
-import React, { useRef, useEffect, useState } from 'react';
 import { ContextMenu } from '@base-ui-components/react/context-menu';
 import { Input } from '@base-ui-components/react/input';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import { FilterType } from './types';
-import { ContextMenuSingleSelect } from './ContextMenuSingleSelect';
+import React, { useRef, useEffect, useState } from 'react';
+
 import { ContextMenuMultiSelect } from './ContextMenuMultiSelect';
-import { FilterConfig, FilterValue } from './types';
+import { ContextMenuSingleSelect } from './ContextMenuSingleSelect';
+import { FilterType , FilterConfig, FilterValue } from './types';
 
 interface FilterSubmenuProps {
     columnId: string;

@@ -1,0 +1,52 @@
+# Two-Weapon Fighting
+
+## Two-Weapon Fighting Penalties
+
+| Circumstances | Primary Hand | Off Hand |
+|---------------|--------------|----------|
+| **Normal penalties** | -6 | -10 |
+| **Off-hand weapon is light** | -4 | -8 |
+| **Two-Weapon Fighting feat** | -4 | -4 |
+| **Off-hand weapon is light AND Two-Weapon Fighting feat** | -2 | -2 |
+
+## Basic Two-Weapon Fighting
+
+If you wield a **second weapon in your off hand**, you can get **one extra attack per round** with that weapon. You suffer a **-6 penalty** with your regular attack or attacks with your **primary hand** and a **-10 penalty** to the attack with your **off hand** when you fight this way. You can reduce these penalties in two ways:
+
+### Reducing Penalties
+
+1. **Light Off-Hand Weapon**: If your off-hand weapon is **light**, the penalties are **reduced by 2 each**. (An **unarmed strike** is always considered light.)
+
+2. **Two-Weapon Fighting Feat**: The **Two-Weapon Fighting feat** lessens the primary hand penalty by **2**, and the off-hand penalty by **6**.
+
+> **Note**: The Two-Weapon Fighting Penalties table above summarizes the interaction of all these factors.
+
+## Special Two-Weapon Cases
+
+### Double Weapons
+
+You can use a **double weapon** to make an extra attack with the **off-hand end** of the weapon as if you were fighting with two weapons. The penalties apply as if the off-hand end of the weapon were a **light weapon**.
+
+### Thrown Weapons
+
+The same rules apply when you **throw a weapon from each hand**. 
+
+#### Weapon Classifications for Throwing
+- Treat a **dart or shuriken** as a **light weapon** when used in this manner
+- Treat a **bolas, javelin, net, or sling** as a **one-handed weapon**
+
+## Shield Bash Attacks
+
+You can bash an opponent with a **light shield or heavy shield**, using it as an **off-hand weapon**. See Table: Weapons for the damage dealt by a shield bash. Used this way, a shield is a **martial bludgeoning weapon**. 
+
+### Shield Bash Rules
+
+- For the purpose of penalties on attack rolls, treat a **heavy shield** as a **one-handed weapon** and a **light shield** as a **light weapon**
+- If you use your shield as a weapon, you **lose its AC bonus** until your next action (usually until the next round)
+- An **enhancement bonus** on a shield does **not** improve the effectiveness of a shield bash made with it, but the shield can be made into a **magic weapon** in its own right
+
+### Shield Spikes
+
+When added to your shield, these spikes turn it into a **martial piercing weapon** that increases the damage dealt by a shield bash as if the shield were designed for a creature **one size category larger** than you. You **can't put spikes** on a **buckler** or a **tower shield**. Otherwise, attacking with a spiked shield is like making a shield bash attack.
+
+An **enhancement bonus** on a spiked shield does **not** improve the effectiveness of a shield bash made with it, but a spiked shield can be made into a **magic weapon** in its own right.

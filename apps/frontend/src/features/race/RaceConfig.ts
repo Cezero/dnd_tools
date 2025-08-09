@@ -1,4 +1,5 @@
 import { RouteConfig } from '@/types';
+
 import { RaceDetail } from './RaceDetail';
 import { RaceEdit } from './RaceEdit';
 import { RaceList } from './RaceList';

@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
-import { ClassService } from './ClassService';
-import { ClassDisplay } from './ClassDisplay';
 import { GetClassResponse } from '@shared/schema';
+
+import { ClassDisplay } from './ClassDisplay';
+import { ClassService } from './ClassService';
 
 export default function ClassDetail() {
     const { id } = useParams();

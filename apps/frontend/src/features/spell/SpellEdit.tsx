@@ -1,9 +1,9 @@
+import { Checkbox } from '@base-ui-components/react/checkbox';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 
-import { Checkbox } from '@base-ui-components/react/checkbox';
 import {
     ValidatedForm,
     ValidatedInput,

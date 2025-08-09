@@ -1,18 +1,18 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { UserProfileService } from '@/services/UserProfileService';
-import { DiceBoxService } from '@/services/DiceBoxService';
-import { DICE_THEME_SELECT_LIST, doesThemeIgnoreColor, getSystemNameById } from '@shared/static-data';
-import type { UserProfileResponse, UpdateUserProfileRequest, GetAllDiceConfigsResponse, UserDiceConfig } from '@shared/schema';
-
 import { UserIcon, Cog6ToothIcon, CubeIcon } from '@heroicons/react/24/outline';
-import { withAuthContext } from '@/components/auth/withAuth';
-import { CustomSelect } from '@/components/forms/FormComponents';
-import { SliderControl } from '@/components/forms';
-import { ColorPicker } from '@/components/widgets';
-import { DiceButton, useDiceBox } from '@/components/dice-box';
-import { generateDiceColorScheme } from '@/utils/color-scheme';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+
 import type { AuthContextType } from '@/components/auth/types';
-import type { DiceBoxAdminConfig } from '@shared/schema';
+import { withAuthContext } from '@/components/auth/withAuth';
+import { DiceButton, useDiceBox } from '@/components/dice-box';
+import { SliderControl } from '@/components/forms';
+import { CustomSelect } from '@/components/forms/FormComponents';
+import { ColorPicker } from '@/components/widgets';
+import { DiceBoxService } from '@/services/DiceBoxService';
+import { UserProfileService } from '@/services/UserProfileService';
+import { generateDiceColorScheme } from '@/utils/color-scheme';
+import type { UserProfileResponse, UpdateUserProfileRequest, GetAllDiceConfigsResponse, UserDiceConfig , DiceBoxAdminConfig } from '@shared/schema';
+import { DICE_THEME_SELECT_LIST, doesThemeIgnoreColor, getSystemNameById } from '@shared/static-data';
+
 
 interface ProfilePageProps {
     auth: AuthContextType;

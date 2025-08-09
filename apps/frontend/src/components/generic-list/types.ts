@@ -1,6 +1,7 @@
-import type { SelectOption } from '@shared/static-data';
 import { ColumnDef } from '@tanstack/react-table';
+
 import type { RouteConfig, RouteType } from '@/types';
+import type { SelectOption } from '@shared/static-data';
 
 export const PAGE_LIMITS: SelectOption[] = [
     { value: 10, label: '10' },

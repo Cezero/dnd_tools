@@ -1,7 +1,7 @@
 import { FeatService } from '@/features/feat/FeatService';
 import { ItemService } from '@/features/item/ItemService';
-import { FeatBenefitType, PROFICIENCY_TYPES } from '@shared/static-data';
 import { ClassProficiencyInQueryResponse } from '@shared/schema';
+import { FeatBenefitType, PROFICIENCY_TYPES } from '@shared/static-data';
 
 export interface ProficiencyFeat {
     id: number;

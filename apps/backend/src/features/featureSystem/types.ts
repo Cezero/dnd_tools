@@ -20,6 +20,12 @@ import {
     GetFeatureSpecialEffectsResponse,
     CreateFeatureSpecialEffectRequest,
     UpdateFeatureSpecialEffectRequest,
+    GetFeaturePrerequisitesResponse,
+    CreateFeaturePrerequisiteRequest,
+    UpdateFeaturePrerequisiteRequest,
+    GetFeatureModifierConditionsResponse,
+    CreateFeatureModifierConditionRequest,
+    UpdateFeatureModifierConditionRequest,
 } from '@shared/schema';
 
 // Service interface
@@ -56,4 +62,16 @@ export interface FeatureSystemService {
     createFeatureSpecialEffect: (data: CreateFeatureSpecialEffectRequest) => Promise<CreateResponse>;
     updateFeatureSpecialEffect: (id: number, data: UpdateFeatureSpecialEffectRequest) => Promise<UpdateResponse>;
     deleteFeatureSpecialEffect: (id: number) => Promise<UpdateResponse>;
+
+    // Feature Prerequisites
+    getFeaturePrerequisites: (progressionId: number) => Promise<GetFeaturePrerequisitesResponse>;
+    createFeaturePrerequisite: (data: CreateFeaturePrerequisiteRequest) => Promise<CreateResponse>;
+    updateFeaturePrerequisite: (id: number, data: UpdateFeaturePrerequisiteRequest) => Promise<UpdateResponse>;
+    deleteFeaturePrerequisite: (id: number) => Promise<UpdateResponse>;
+
+    // Feature Modifier Conditions
+    getFeatureModifierConditions: (modifierId: number) => Promise<GetFeatureModifierConditionsResponse>;
+    createFeatureModifierCondition: (data: CreateFeatureModifierConditionRequest) => Promise<CreateResponse>;
+    updateFeatureModifierCondition: (id: number, data: UpdateFeatureModifierConditionRequest) => Promise<UpdateResponse>;
+    deleteFeatureModifierCondition: (id: number) => Promise<UpdateResponse>;
 } 

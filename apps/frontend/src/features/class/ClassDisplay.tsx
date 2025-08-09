@@ -1,10 +1,11 @@
 import React from 'react';
+
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { ClassProgressionTable } from '@/lib/ClassProgressionTable';
 import { generateClassProgression } from '@/lib/ClassProgression';
-import { GetClassResponse } from '@shared/schema';
-import { RPG_DICE, EDITION_MAP, ABILITY_MAP, _SKILL_MAP, FeatureModifierType, FeatureAppliesToType } from '@shared/static-data';
+import { ClassProgressionTable } from '@/lib/ClassProgressionTable';
 import { formatClassProficiencies, formatProgression } from '@/lib/Formatters';
+import { GetClassResponse } from '@shared/schema';
+import { RPG_DICE, EDITION_MAP, ABILITY_MAP, SKILL_MAP, FeatureBonusType, FeatureAppliesToType, SpecialFeatureId, FeatureModifierType, FeatureSpecialEffectType } from '@shared/static-data';
 
 interface ClassDisplayProps {
     cls: GetClassResponse;
@@ -46,7 +47,7 @@ export function ClassDisplay({
                         </div>
                     )}
 
-                    <div className="mt-3 p-2 w-full prose dark:prose-invert">
+                    <div className="mt-3 p-2 w-full prose-custom">
                         <ProcessMarkdown markdown={cls.description || ''} id={`${cls.name.toLowerCase()}-class-description`} />
                     </div>
 
@@ -72,14 +73,21 @@ export function ClassDisplay({
 
                     {/* Class Skills Section */}
                     {(() => {
-                        const classSkills = cls.features?.flatMap(progression =>
-                            progression.modifiers?.filter(modifier =>
-                                modifier.modifierType === FeatureModifierType.ClassSkill
-                            ).map(modifier => ({
-                                skillId: progression.appliesTo,
-                                modifier: modifier
-                            })) || []
-                        ) || [];
+                        const classSkills = cls.features
+                            ?.filter(progression =>
+                                progression.featureId === SpecialFeatureId.ClassSkill &&
+                                progression.appliesToType === FeatureAppliesToType.Skill
+                            )
+                            .flatMap(progression =>
+                                progression.modifiers
+                                    ?.filter(modifier =>
+                                        modifier.modifierType === FeatureModifierType.Skill && modifier.appliesTo
+                                    )
+                                    .map(modifier => ({
+                                        skillId: modifier.appliesTo as number,
+                                        modifier: modifier
+                                    })) || []
+                            ) || [];
 
                         if (classSkills.length > 0) {
                             return (
@@ -88,7 +96,7 @@ export function ClassDisplay({
                                     <div className="flex flex-wrap gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md">
                                         {classSkills.map((skill, index) => (
                                             <span key={skill.skillId} className="text-sm">
-                                                {_SKILL_MAP[skill.skillId]?.name || 'Unknown Skill'}
+                                                {SKILL_MAP[skill.skillId]?.name || 'Unknown Skill'}
                                                 {index < classSkills.length - 1 && ','}
                                             </span>
                                         ))}
@@ -102,16 +110,20 @@ export function ClassDisplay({
                     {/* Class Proficiencies Section */}
                     {(() => {
                         // Extract proficiencies in the same format as ClassEdit.tsx
-                        const classProficiencies = cls.features?.flatMap(progression =>
-                            progression.choices?.filter(choice =>
-                                choice.choiceType === 'Feat' && progression.appliesToType === FeatureAppliesToType.Item
-                            ).map(choice => ({
-                                featId: choice.featId || 0,
-                                itemId: progression.appliesTo || 0,
-                                featName: choice.feat?.name || `Feat ${choice.featId}`, // Use actual feat name if available
-                                itemName: undefined // We don't have item names in display mode
-                            })) || []
-                        ) || [];
+                        const classProficiencies = cls.features
+                            ?.filter(progression =>
+                                progression.featureId === SpecialFeatureId.ClassProficiency
+                            )
+                            .flatMap(progression =>
+                                progression.effects
+                                    ?.filter(effect => effect.effectType === FeatureSpecialEffectType.Proficiency)
+                                    .map(effect => ({
+                                        featId: effect.featId || 0,
+                                        itemId: effect.itemId || -1,
+                                        featName: effect.feat?.name || `Feat ${effect.featId}`,
+                                        itemName: effect.itemId === -1 ? undefined : (effect.item?.name || `Item ${effect.itemId}`)
+                                    })) || []
+                            ) || [];
 
                         if (classProficiencies.length > 0) {
                             const formattedProficiencies = formatClassProficiencies(classProficiencies);
@@ -134,14 +146,12 @@ export function ClassDisplay({
                         // Filter out progressions that contain skills and proficiencies
                         const actualFeatures = cls.features?.filter(progression => {
                             // Check if this progression contains class skills
-                            const hasClassSkills = progression.modifiers?.some(modifier =>
-                                modifier.modifierType === FeatureModifierType.ClassSkill
-                            );
+                            const hasClassSkills = progression.featureId === SpecialFeatureId.ClassSkill &&
+                                progression.appliesToType === FeatureAppliesToType.Skill;
 
                             // Check if this progression contains proficiencies
-                            const hasProficiencies = progression.choices?.some(choice =>
-                                choice.choiceType === 'Feat' && progression.appliesToType === FeatureAppliesToType.Item
-                            );
+                            const hasProficiencies = progression.featureId === SpecialFeatureId.ClassProficiency &&
+                                progression.appliesToType === FeatureAppliesToType.Item;
 
                             // Exclude progressions with skills or proficiencies
                             return !hasClassSkills && !hasProficiencies;
@@ -153,29 +163,35 @@ export function ClassDisplay({
                                     <h3 className="text-lg font-semibold mb-2">Class Features</h3>
                                     <div className="space-y-4">
                                         {(() => {
-                                            // Group features by level first
-                                            const groupedByLevel = actualFeatures.reduce((acc, progression) => {
+                                            // Group features by level first, then by feature ID
+                                            const groupedByLevelAndFeature = actualFeatures.reduce((acc, progression) => {
                                                 const level = progression.level;
+                                                const featureId = progression.featureId;
+
                                                 if (!acc[level]) {
-                                                    acc[level] = [];
+                                                    acc[level] = {};
                                                 }
-                                                acc[level].push(progression);
+                                                if (!acc[level][featureId]) {
+                                                    acc[level][featureId] = [];
+                                                }
+                                                acc[level][featureId].push(progression);
                                                 return acc;
-                                            }, {} as Record<number, typeof actualFeatures>);
+                                            }, {} as Record<number, Record<number, typeof actualFeatures>>);
 
                                             // Track which features we've already shown descriptions for
                                             const shownFeatureDescriptions = new Set<number>();
 
                                             // Sort levels and render each group
-                                            return Object.keys(groupedByLevel)
+                                            return Object.keys(groupedByLevelAndFeature)
                                                 .sort((a, b) => parseInt(a) - parseInt(b))
                                                 .map(level => (
                                                     <div key={level} className="border border-gray-200 dark:border-gray-600 rounded-md p-3">
                                                         <h4 className="text-md font-medium mb-2">Level {level}</h4>
                                                         <div className="space-y-2">
                                                             {/* Features */}
-                                                            {groupedByLevel[parseInt(level)].map((progression, index) => {
-                                                                const feature = progression.feature;
+                                                            {Object.values(groupedByLevelAndFeature[parseInt(level)]).map((progressions, index) => {
+                                                                const firstProgression = progressions[0];
+                                                                const feature = firstProgression.feature;
                                                                 const isFirstOccurrence = !shownFeatureDescriptions.has(feature?.id || 0);
 
                                                                 // Mark this feature as shown if it's the first occurrence
@@ -196,20 +212,32 @@ export function ClassDisplay({
                                                                             />
                                                                         )}
 
-                                                                        {/* Show progression details only if there are modifiers, effects, or choices */}
+                                                                        {/* Show combined progression details */}
                                                                         {(() => {
-                                                                            const hasDetails = (progression.modifiers && progression.modifiers.length > 0) ||
-                                                                                (progression.effects && progression.effects.length > 0) ||
-                                                                                (progression.choices && progression.choices.length > 0);
+                                                                            // Collect all details from all progressions for this feature at this level
+                                                                            const allDetails: string[] = [];
 
-                                                                            if (hasDetails) {
-                                                                                const formatted = formatProgression(progression);
+                                                                            progressions.forEach(progression => {
+                                                                                const hasDetails = (progression.modifiers && progression.modifiers.length > 0) ||
+                                                                                    (progression.effects && progression.effects.length > 0) ||
+                                                                                    (progression.choices && progression.choices.length > 0);
+
+                                                                                if (hasDetails) {
+                                                                                    const formatted = formatProgression(progression);
+                                                                                    const details = [];
+                                                                                    if (formatted.value) details.push(formatted.value);
+                                                                                    if (formatted.note) details.push(formatted.note);
+                                                                                    if (details.length > 0) {
+                                                                                        allDetails.push(details.join(', '));
+                                                                                    }
+                                                                                }
+                                                                            });
+
+                                                                            if (allDetails.length > 0) {
                                                                                 return (
-                                                                                    <div className="mt-2 space-y-1">
-                                                                                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                                            <span className="font-medium">{formatted.label}</span>
-                                                                                            {formatted.value && <span> {formatted.value}</span>}
-                                                                                            {formatted.note && <span> ({formatted.note})</span>}
+                                                                                    <div className={`mt-2 space-y-1 ${isFirstOccurrence ? 'ml-4' : ''}`}>
+                                                                                        <div className="text-sm">
+                                                                                            {!isFirstOccurrence && <span className="font-medium">{feature?.name || `Feature ${feature?.id}`}:</span>} {allDetails.join(', ')}
                                                                                         </div>
                                                                                     </div>
                                                                                 );

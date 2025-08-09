@@ -1,6 +1,6 @@
 import mdx from '@mdx-js/rollup';
-import react from '@vitejs/plugin-react';
 import svgr from '@svgr/rollup';
+import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
 

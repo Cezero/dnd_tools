@@ -21,6 +21,12 @@ import {
     GetFeatureSpecialEffectsResponse,
     CreateFeatureSpecialEffectRequest,
     UpdateFeatureSpecialEffectRequest,
+    GetFeaturePrerequisitesResponse,
+    CreateFeaturePrerequisiteRequest,
+    UpdateFeaturePrerequisiteRequest,
+    GetFeatureModifierConditionsResponse,
+    CreateFeatureModifierConditionRequest,
+    UpdateFeatureModifierConditionRequest,
 } from '@shared/schema';
 
 import type { FeatureSystemService } from './types';
@@ -117,9 +123,14 @@ export const featureSystemService: FeatureSystemService = {
                 where: whereClause,
                 include: {
                     feature: true,
-                    modifiers: true,
+                    modifiers: {
+                        include: {
+                            conditions: true,
+                        },
+                    },
                     choices: true,
                     effects: true,
+                    prerequisites: true,
                 },
                 orderBy: { level: 'asc' },
             }),
@@ -138,8 +149,12 @@ export const featureSystemService: FeatureSystemService = {
                 appliesTo: progression.appliesTo ?? undefined,
                 modifiers: progression.modifiers?.map(modifier => ({
                     ...modifier,
+                    appliesTo: modifier.appliesTo ?? undefined,
+                    appliesToId: modifier.appliesToId ?? undefined,
                     appliesIfChoiceKey: modifier.appliesIfChoiceKey ?? undefined,
                     appliesIfChoiceValue: modifier.appliesIfChoiceValue ?? undefined,
+                    bonusType: modifier.bonusType ?? undefined,
+                    conditions: modifier.conditions,
                 })),
                 effects: progression.effects?.map(effect => ({
                     ...effect,
@@ -162,7 +177,7 @@ export const featureSystemService: FeatureSystemService = {
     },
 
     async createFeatureProgressionWithRelations(data: CreateFeatureProgressionWithRelationsRequest): Promise<CreateResponse> {
-        const { modifiers, choices, effects, feature, ...progressionData } = data;
+        const { modifiers, choices, effects, prerequisites, feature, ...progressionData } = data;
 
         const result = await prisma.$transaction(async (tx) => {
             // Create the feature progression first
@@ -172,12 +187,26 @@ export const featureSystemService: FeatureSystemService = {
 
             // Create related modifiers if provided
             if (modifiers && modifiers.length > 0) {
-                await tx.featureModifier.createMany({
-                    data: modifiers.map(modifier => ({
-                        ...modifier,
-                        featureProgressionId: progression.id,
-                    })),
-                });
+                for (const modifier of modifiers) {
+                    const { conditions, ...modifierData } = modifier;
+
+                    const createdModifier = await tx.featureModifier.create({
+                        data: {
+                            ...modifierData,
+                            featureProgressionId: progression.id,
+                        },
+                    });
+
+                    // Create conditions for this modifier if provided
+                    if (conditions && conditions.length > 0) {
+                        await tx.featureModifierCondition.createMany({
+                            data: conditions.map(condition => ({
+                                ...condition,
+                                featureModifierId: createdModifier.id,
+                            })),
+                        });
+                    }
+                }
             }
 
             // Create related choices if provided
@@ -196,6 +225,18 @@ export const featureSystemService: FeatureSystemService = {
                     data: effects.map(effect => ({
                         ...effect,
                         progressionId: progression.id,
+                        featId: effect.featId || null,
+                        itemId: effect.itemId || null,
+                    })),
+                });
+            }
+
+            // Create related prerequisites if provided
+            if (prerequisites && prerequisites.length > 0) {
+                await tx.featurePrerequisite.createMany({
+                    data: prerequisites.map(prereq => ({
+                        ...prereq,
+                        featureProgressionId: progression.id,
                     })),
                 });
             }
@@ -230,6 +271,9 @@ export const featureSystemService: FeatureSystemService = {
         const [modifiers] = await Promise.all([
             prisma.featureModifier.findMany({
                 where: { featureProgressionId: progressionId },
+                include: {
+                    conditions: true,
+                },
                 orderBy: { id: 'asc' },
             }),
             prisma.featureModifier.count({
@@ -241,8 +285,12 @@ export const featureSystemService: FeatureSystemService = {
             total: modifiers.length,
             results: modifiers.map(modifier => ({
                 ...modifier,
+                appliesTo: modifier.appliesTo ?? undefined,
+                appliesToId: modifier.appliesToId ?? undefined,
                 appliesIfChoiceKey: modifier.appliesIfChoiceKey ?? undefined,
                 appliesIfChoiceValue: modifier.appliesIfChoiceValue ?? undefined,
+                bonusType: modifier.bonusType ?? undefined,
+                conditions: modifier.conditions,
             })),
         };
     },
@@ -377,5 +425,102 @@ export const featureSystemService: FeatureSystemService = {
         });
 
         return { message: 'Feature special effect deleted successfully' };
+    },
+
+    // Feature Prerequisites
+    async getFeaturePrerequisites(progressionId: number): Promise<GetFeaturePrerequisitesResponse> {
+        const [prerequisites] = await Promise.all([
+            prisma.featurePrerequisite.findMany({
+                where: { featureProgressionId: progressionId },
+                orderBy: { id: 'asc' },
+            }),
+            prisma.featurePrerequisite.count({
+                where: { featureProgressionId: progressionId },
+            }),
+        ]);
+
+        return {
+            total: prerequisites.length,
+            results: prerequisites,
+        };
+    },
+
+    async createFeaturePrerequisite(data: CreateFeaturePrerequisiteRequest): Promise<CreateResponse> {
+        const result = await prisma.featurePrerequisite.create({
+            data: {
+                ...data,
+            },
+        });
+
+        return { id: result.id.toString(), message: 'Feature prerequisite created successfully' };
+    },
+
+    async updateFeaturePrerequisite(id: number, data: UpdateFeaturePrerequisiteRequest): Promise<UpdateResponse> {
+        await prisma.featurePrerequisite.update({
+            where: { id },
+            data: {
+                ...data,
+            },
+        });
+
+        return { message: 'Feature prerequisite updated successfully' };
+    },
+
+    async deleteFeaturePrerequisite(id: number): Promise<UpdateResponse> {
+        await prisma.featurePrerequisite.delete({
+            where: { id },
+        });
+
+        return { message: 'Feature prerequisite deleted successfully' };
+    },
+
+    // Feature Modifier Conditions
+    async getFeatureModifierConditions(modifierId: number): Promise<GetFeatureModifierConditionsResponse> {
+        const [conditions] = await Promise.all([
+            prisma.featureModifierCondition.findMany({
+                where: { featureModifierId: modifierId },
+                orderBy: { id: 'asc' },
+            }),
+            prisma.featureModifierCondition.count({
+                where: { featureModifierId: modifierId },
+            }),
+        ]);
+
+        return {
+            total: conditions.length,
+            results: conditions.map(condition => ({
+                ...condition,
+                conditionValue: condition.conditionValue ?? undefined,
+            })),
+        };
+    },
+
+    async createFeatureModifierCondition(data: CreateFeatureModifierConditionRequest): Promise<CreateResponse> {
+        const result = await prisma.featureModifierCondition.create({
+            data: {
+                ...data,
+            },
+        });
+
+        return { id: result.id.toString(), message: 'Feature modifier condition created successfully' };
+    },
+
+    async updateFeatureModifierCondition(id: number, data: UpdateFeatureModifierConditionRequest): Promise<UpdateResponse> {
+        await prisma.featureModifierCondition.update({
+            where: { id },
+            data: {
+                ...data,
+            },
+        });
+
+        return { message: 'Feature modifier condition updated successfully' };
+    },
+
+    async deleteFeatureModifierCondition(id: number): Promise<UpdateResponse> {
+        await prisma.featureModifierCondition.delete({
+            where: { id },
+        });
+
+        return { message: 'Feature modifier condition deleted successfully' };
     },
 }; 

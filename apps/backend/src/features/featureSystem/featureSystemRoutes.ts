@@ -13,6 +13,10 @@ import {
     UpdateFeatureChoiceSchema,
     CreateFeatureSpecialEffectSchema,
     UpdateFeatureSpecialEffectSchema,
+    CreateFeaturePrerequisiteSchema,
+    UpdateFeaturePrerequisiteSchema,
+    CreateFeatureModifierConditionSchema,
+    UpdateFeatureModifierConditionSchema,
 } from '@shared/schema';
 
 import {
@@ -38,6 +42,10 @@ import {
     CreateFeatureSpecialEffect,
     UpdateFeatureSpecialEffect,
     DeleteFeatureSpecialEffect,
+    GetFeatureModifierConditions,
+    CreateFeatureModifierCondition,
+    UpdateFeatureModifierCondition,
+    DeleteFeatureModifierCondition,
 } from './featureSystemController.js';
 import { requireAdmin } from '../../middleware/authMiddleware.js';
 
@@ -75,5 +83,11 @@ get('/progressions/:progressionId/effects', { params: FeatureIdParamSchema }, Ge
 post('/progressions/:progressionId/effects', requireAdmin, { params: FeatureIdParamSchema, body: CreateFeatureSpecialEffectSchema }, CreateFeatureSpecialEffect);
 put('/effects/:id', requireAdmin, { params: FeatureIdParamSchema, body: UpdateFeatureSpecialEffectSchema }, UpdateFeatureSpecialEffect);
 deleteRoute('/effects/:id', requireAdmin, { params: FeatureIdParamSchema }, DeleteFeatureSpecialEffect);
+
+// Feature Modifier Condition Routes
+get('/modifiers/:modifierId/conditions', { params: FeatureIdParamSchema }, GetFeatureModifierConditions);
+post('/modifiers/:modifierId/conditions', requireAdmin, { params: FeatureIdParamSchema, body: CreateFeatureModifierConditionSchema }, CreateFeatureModifierCondition);
+put('/modifier-conditions/:id', requireAdmin, { params: FeatureIdParamSchema, body: UpdateFeatureModifierConditionSchema }, UpdateFeatureModifierCondition);
+deleteRoute('/modifier-conditions/:id', requireAdmin, { params: FeatureIdParamSchema }, DeleteFeatureModifierCondition);
 
 export { FeatureSystemRouter }; 

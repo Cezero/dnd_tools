@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Select } from '@base-ui-components/react/select';
 import { Checkbox } from '@base-ui-components/react/checkbox';
+import { Select } from '@base-ui-components/react/select';
 import { CheckIcon, ChevronRightIcon, ChevronUpDownIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
 import { PlusCircleIcon as PlusCircleIconSolid } from '@heroicons/react/24/solid';
+import React, { useState, useRef, useEffect } from 'react';
 
 export interface SelectOption<T = string | number> {
     value: T;
@@ -212,7 +212,7 @@ export function CustomSelect<T = string | number>({
                         {icon}
                     </Select.Icon>
                 </Select.Trigger>
-                <Select.Portal>
+                
                     <Select.Positioner>
                         <Select.Popup className={`${popupExtraClassName} absolute z-60 pt-1 pb-1 pr-1 max-h-60 overflow-auto rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800`}>
                             {options.map((option) => (
@@ -231,7 +231,7 @@ export function CustomSelect<T = string | number>({
                             ))}
                         </Select.Popup>
                     </Select.Positioner>
-                </Select.Portal>
+                
             </Select.Root>
         </div>
     );

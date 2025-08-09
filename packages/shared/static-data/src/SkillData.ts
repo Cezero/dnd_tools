@@ -1,7 +1,7 @@
 import type { SkillMap } from './types';
 import { NameSelectOptionList } from './Util';
 
-export const _SKILL_MAP: SkillMap = {
+export const SKILL_MAP: SkillMap = {
     1: { id: 1, name: 'Appraise', abilityId: 4, trainedOnly: false },
     2: { id: 2, name: 'Balance', abilityId: 2, trainedOnly: false },
     3: { id: 3, name: 'Bluff', abilityId: 6, trainedOnly: false },
@@ -49,7 +49,7 @@ export const _SKILL_MAP: SkillMap = {
     45: { id: 45, name: 'Use Rope', abilityId: 2, trainedOnly: false },
 };
 
-export const SKILL_LIST = Object.values(_SKILL_MAP);
+export const SKILL_LIST = Object.values(SKILL_MAP);
 export const SKILL_SELECT_LIST = NameSelectOptionList(SKILL_LIST);
 
 export const SKILL_RETRY_TYPE_MAP: Record<number, string> = {

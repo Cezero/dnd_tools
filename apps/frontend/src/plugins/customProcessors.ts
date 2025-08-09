@@ -1,12 +1,14 @@
 import type { ElementContent } from 'hast';
 import { h } from 'hastscript';
 
-import { getPreRenderedTable } from '@/lib/TableResolution';
-import { SPELL_NAME_MAP, CLASS_NAME_MAP } from '@shared/static-data';
-import { formatDiceDisplay } from '@/lib/Formatters';
-import { embedReactComponent } from './embedReactComponent';
 import { extractDiceType } from '@/lib/DiceUtils';
+import { formatDiceDisplay } from '@/lib/Formatters';
+import { getPreRenderedTable } from '@/lib/TableResolution';
 import { MarkdownComponentProps, MarkdownProcessingOptions } from '@/plugins/types';
+import { SPELL_NAME_MAP, CLASS_NAME_MAP } from '@shared/static-data';
+
+import { embedReactComponent } from './embedReactComponent';
+
 
 const entityTypes = {
     spell: SPELL_NAME_MAP,
