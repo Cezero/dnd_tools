@@ -9,7 +9,7 @@ export function ProtectedRoute({
     requireAuth = true,
     requireAdmin = false,
     redirectTo = '/login',
-    fallback = <div className="p-4 text-black dark:text-white">Loading authentication...</div>
+    fallback = <div className="p-4">Loading authentication...</div>
 }: ProtectedRouteProps): React.JSX.Element {
     const { user, isLoading } = UseAuth();
     const location = useLocation();

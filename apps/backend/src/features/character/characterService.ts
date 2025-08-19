@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma } from '@shared/prisma-client';
+import { PrismaClient } from '@shared/prisma-client';
 import {
     CharacterIdParamRequest,
     CharacterResponse,
@@ -10,18 +10,16 @@ import {
     // New types for advancement and spell preparation
     CreateAdvancementRequest,
     UpdateAdvancementRequest,
-    CharacterAdvancementResponse,
     CharacterAdvancementWithDetailsResponse,
     CreateSpellPreparationRequest,
     UpdateSpellPreparationRequest,
-    CharacterSpellPreparationResponse,
     CharacterSpellPreparationWithMetamagicResponse,
     CreateCharacterAttributeRequest,
     UpdateCharacterAttributeRequest,
     CharacterAttributeResponse,
     CharacterWithAllDetailsResponse,
 } from '@shared/schema';
-import type { AuthUser } from '@shared/schema';
+
 
 import type { CharacterService } from './types';
 
@@ -187,7 +185,7 @@ export const characterService: CharacterService = {
         // Generate a unique prepKey
         const prepKey = `${data.characterId}-${data.classId}-${data.spellId}-${data.spellLevel}-${Date.now()}`;
 
-        const result = await prisma.characterSpellPreparation.create({
+        await prisma.characterSpellPreparation.create({
             data: {
                 ...data,
                 prepKey,

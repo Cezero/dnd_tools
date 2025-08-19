@@ -8,7 +8,7 @@ This section covers creature rules, monster creation, and creature types.
 - **[Monster Introduction](intro.md)** — Basic monster statistics and abilities
 - **[Creature Types](creature-types/core-types.md)** — Basic creature classifications and traits
 - **[Monster Subtypes](subtypes/index.md)** — Detailed subtype mechanics and traits
-- **[Improving Monsters](improving-monsters.md)** — Advancing and modifying creatures
+- **[Monster Advancement](advancement/index.md)** — Methods for improving and modifying creatures
 - **[Monsters as Races](monsters-as-races.md)** — Using monsters as player characters
 
 ## Quick Reference

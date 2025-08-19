@@ -1,6 +1,6 @@
 import { buildValidatedRouter } from '@/lib/buildValidatedRouter';
 import { requireAuth } from '@/middleware/authMiddleware';
-import { UpdateUserProfileSchema, UserProfileIdParamSchema } from '@shared/schema';
+import { UpdateUserProfileSchema } from '@shared/schema';
 
 import { GetUserProfile, UpdateUserProfile } from './userProfileController';
 

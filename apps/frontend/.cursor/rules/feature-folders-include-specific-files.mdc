@@ -1,7 +1,0 @@
----
-description: Organizing a feature folder
-globs: 
-alwaysApply: false
----
-Each feature folder should include related files such as `routes.ts`, `controller.ts`, `service.ts`, and `types.ts` where applicable.
-Be sure to follow the monorepo rule `use-typescript-types` as well

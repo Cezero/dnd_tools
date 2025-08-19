@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 import { PrismaClient } from '@shared/prisma-client';
-import { AuthServiceResult, JwtPayload, LoginUserRequest, RegisterUserRequest, UserProfile } from '@shared/schema';
+import { AuthServiceResult, JwtPayload, LoginUserRequest, RegisterUserRequest, UserProfile, AuthUser, UserWithDiceConfig } from '@shared/schema';
 
 import type { AuthService } from './types';
 import { config } from '../../config';
@@ -10,7 +10,7 @@ import { config } from '../../config';
 const prisma = new PrismaClient();
 
 // UPDATED: Transform user data to include dice config (for profile responses)
-function transformUserWithDiceConfig(user: any): UserProfile {
+function transformUserWithDiceConfig(user: UserWithDiceConfig): UserProfile {
     return {
         id: user.id,
         username: user.username,
@@ -20,16 +20,13 @@ function transformUserWithDiceConfig(user: any): UserProfile {
         diceConfig: user.diceConfigBaseRef ? {
             baseConfigId: user.diceConfigBaseRef.id,
             baseConfigName: user.diceConfigBaseRef.name,
-            overrides: user.diceConfigOverrides?.reduce((acc: any, override: any) => {
-                acc[override.propertyName] = override.propertyValue;
-                return acc;
-            }, {}) || {}
+            overrides: user.diceConfigOverrides
         } : null
     };
 }
 
 // Helper function to transform user data for JWT (minimal authentication data only)
-function transformUserForJwt(user: any): Omit<JwtPayload, 'iat' | 'exp'> {
+function transformUserForJwt(user: AuthUser): Omit<JwtPayload, 'iat' | 'exp'> {
     return {
         id: user.id,
         username: user.username,

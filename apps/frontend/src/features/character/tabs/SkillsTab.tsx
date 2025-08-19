@@ -2,6 +2,7 @@ import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import React, { useMemo } from 'react';
 
 import { ValidatedInput } from '@/components/forms/ValidatedForm';
+import { AnalogSkillService } from '@/features/character/AnalogSkillService';
 import type { RaceInQueryResponse, GetRaceResponse, GetClassResponse, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse } from '@shared/schema';
 import {
     SKILL_LIST,
@@ -258,6 +259,11 @@ export function SkillsTab({
         const skill = SKILL_LIST.find(s => s.id === skillId);
         if (!skill) return 0;
 
+        // Check if this is an analog skill
+        if (AnalogSkillService.isAnalogSkill(skillId)) {
+            return AnalogSkillService.calculateAnalogSkillTotal(character, skillId);
+        }
+
         const ranks = getSkillRanks(skillId);
         const abilityModifier = getSkillAbilityModifier(skillId);
 
@@ -273,6 +279,16 @@ export function SkillsTab({
             return ranks.toString();
         }
         return ranks.toFixed(1);
+    };
+
+    // Get skills that can be allocated points (exclude analog skills)
+    const getAllocatableSkills = () => {
+        return SKILL_LIST.filter(skill => !AnalogSkillService.isAnalogSkill(skill.id));
+    };
+
+    // Get analog skills for display
+    const getAnalogSkills = () => {
+        return AnalogSkillService.getCharacterAnalogSkills(character);
     };
 
     // Generate the formula display for skill points calculation
@@ -301,57 +317,76 @@ export function SkillsTab({
         const skill = SKILL_LIST.find(s => s.id === skillId);
         if (!skill) return <></>;
 
+        const isAnalogSkill = AnalogSkillService.isAnalogSkill(skillId);
         const isClassSkill = isSkillClassSkill(skillId);
         const maxRanks = getMaxRanks(skillId);
         const ranks = getSkillRanks(skillId);
         const total = getSkillTotal(skillId);
 
+        // For analog skills, get additional info
+        const analogSkillInfo = isAnalogSkill ? AnalogSkillService.getAnalogSkillInfo(character, skillId) : null;
+
         return (
             <div
-                className={`grid grid-cols-[2fr_1fr_1fr_1fr] gap-2 px-3 py-2 items-center border-b border-gray-200 dark:border-gray-700 ${isClassSkill
-                    ? 'bg-blue-100 dark:bg-blue-900/30'
-                    : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                className={`grid grid-cols-[2fr_1fr_1fr_1fr] gap-2 px-3 py-2 items-center border-b border-gray-200 dark:border-gray-700 ${isAnalogSkill
+                    ? 'bg-purple-100 dark:bg-purple-900/30'
+                    : isClassSkill
+                        ? 'bg-blue-100 dark:bg-blue-900/30'
+                        : 'hover:bg-gray-50 dark:hover:bg-gray-700'
                     }`}
             >
                 <div className="flex items-center">
                     <div className="text-sm font-medium">
                         {skill.name}
                     </div>
-                    {isClassSkill && (
+                    {isAnalogSkill && (
+                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-200">
+                            A
+                        </span>
+                    )}
+                    {isClassSkill && !isAnalogSkill && (
                         <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200">
                             C
                         </span>
                     )}
                 </div>
                 <div className="grid grid-cols-[48px_16px]">
-                    <input
-                        type="number"
-                        step="0.5"
-                        min="0"
-                        max={maxRanks}
-                        value={ranks}
-                        onChange={(e) => handleSkillChange(skillId, parseFloat(e.target.value) || 0)}
-                        className={`w-12 py-1 text-sm border rounded text-center bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${isClassSkill
-                            ? 'border-blue-300 dark:border-blue-600'
-                            : 'border-gray-300 dark:border-gray-600'
-                            }`}
-                    />
-                    <div className="flex flex-col justify-center gap-1.5">
-                        <button
-                            type="button"
-                            className="w-4 h-3 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:text-white text-xs flex items-center justify-center rounded-t"
-                            onClick={() => handleSkillIncrement(skillId, true)}
-                        >
-                            <ChevronUpIcon className="h-3 w-3" />
-                        </button>
-                        <button
-                            type="button"
-                            className="w-4 h-3 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:text-white text-xs flex items-center justify-center rounded-b"
-                            onClick={() => handleSkillIncrement(skillId, false)}
-                        >
-                            <ChevronDownIcon className="h-3 w-3" />
-                        </button>
-                    </div>
+                    {isAnalogSkill ? (
+                        <div className="w-12 py-1 text-sm border rounded text-center bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400">
+                            -
+                        </div>
+                    ) : (
+                        <>
+                            <input
+                                type="number"
+                                step="0.5"
+                                min="0"
+                                max={maxRanks}
+                                value={ranks}
+                                onChange={(e) => handleSkillChange(skillId, parseFloat(e.target.value) || 0)}
+                                className={`w-12 py-1 text-sm border rounded text-center bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${isClassSkill
+                                    ? 'border-blue-300 dark:border-blue-600'
+                                    : 'border-gray-300 dark:border-gray-600'
+                                    }`}
+                            />
+                            <div className="flex flex-col justify-center gap-1.5">
+                                <button
+                                    type="button"
+                                    className="w-4 h-3 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:text-white text-xs flex items-center justify-center rounded-t"
+                                    onClick={() => handleSkillIncrement(skillId, true)}
+                                >
+                                    <ChevronUpIcon className="h-3 w-3" />
+                                </button>
+                                <button
+                                    type="button"
+                                    className="w-4 h-3 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:text-white text-xs flex items-center justify-center rounded-b"
+                                    onClick={() => handleSkillIncrement(skillId, false)}
+                                >
+                                    <ChevronDownIcon className="h-3 w-3" />
+                                </button>
+                            </div>
+                        </>
+                    )}
                 </div>
                 <div className="text-sm">
                     {skill.abilityId === 0 ? '' : `${ABILITY_MAP[skill.abilityId]?.abbreviation} ${GetAbilityModifierString(getAbilityScore(skill.abilityId))}`}
@@ -483,7 +518,7 @@ export function SkillsTab({
                             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                                 {generateColumnHeaders()}
                                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                                    {SKILL_LIST.slice(0, Math.ceil(SKILL_LIST.length / 3)).map(skill => (
+                                    {getAllocatableSkills().slice(0, Math.ceil(getAllocatableSkills().length / 3)).map(skill => (
                                         <SkillRow key={skill.id} skillId={skill.id} />
                                     ))}
                                 </div>
@@ -493,7 +528,7 @@ export function SkillsTab({
                             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                                 {generateColumnHeaders()}
                                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                                    {SKILL_LIST.slice(Math.ceil(SKILL_LIST.length / 3), Math.ceil(SKILL_LIST.length * 2 / 3)).map(skill => (
+                                    {getAllocatableSkills().slice(Math.ceil(getAllocatableSkills().length / 3), Math.ceil(getAllocatableSkills().length * 2 / 3)).map(skill => (
                                         <SkillRow key={skill.id} skillId={skill.id} />
                                     ))}
                                 </div>
@@ -503,12 +538,29 @@ export function SkillsTab({
                             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden md:col-span-2 xl:col-span-1">
                                 {generateColumnHeaders()}
                                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                                    {SKILL_LIST.slice(Math.ceil(SKILL_LIST.length * 2 / 3)).map(skill => (
+                                    {getAllocatableSkills().slice(Math.ceil(getAllocatableSkills().length * 2 / 3)).map(skill => (
                                         <SkillRow key={skill.id} skillId={skill.id} />
                                     ))}
                                 </div>
                             </div>
                         </div>
+
+                        {/* Analog Skills Section */}
+                        {getAnalogSkills().length > 0 && (
+                            <div className="mt-6">
+                                <h3 className="text-lg font-semibold mb-3 text-purple-800 dark:text-purple-200">
+                                    Feature-Linked Skills
+                                </h3>
+                                <div className="bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-700 rounded-lg overflow-hidden">
+                                    {generateColumnHeaders()}
+                                    <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                                        {getAnalogSkills().map(analogSkill => (
+                                            <SkillRow key={analogSkill.skillId} skillId={analogSkill.skillId} />
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

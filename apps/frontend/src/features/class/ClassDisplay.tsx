@@ -3,9 +3,19 @@ import React from 'react';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { generateClassProgression } from '@/lib/ClassProgression';
 import { ClassProgressionTable } from '@/lib/ClassProgressionTable';
-import { formatClassProficiencies, formatProgression } from '@/lib/Formatters';
+import { formatClassProficiencies, formatProgression, expandFormulaProgressions, formatPrerequisites } from '@/lib/Formatters';
 import { GetClassResponse } from '@shared/schema';
-import { RPG_DICE, EDITION_MAP, ABILITY_MAP, SKILL_MAP, FeatureBonusType, FeatureAppliesToType, SpecialFeatureId, FeatureModifierType, FeatureSpecialEffectType } from '@shared/static-data';
+import {
+    RPG_DICE,
+    EDITION_MAP,
+    ABILITY_MAP,
+    SKILL_MAP,
+    FeatureBonusType,
+    FeatureAppliesToType,
+    SpecialFeatureId,
+    ModifierAppliesToType,
+    FeatureSpecialEffectType
+} from '@shared/static-data';
 
 interface ClassDisplayProps {
     cls: GetClassResponse;
@@ -16,6 +26,8 @@ interface ClassDisplayProps {
     isAdmin?: boolean;
     fromListParams?: string;
 }
+
+
 
 export function ClassDisplay({
     cls,
@@ -37,6 +49,7 @@ export function ClassDisplay({
                                 <p><strong>Hit Die:</strong> {RPG_DICE[cls.hitDie]?.name}</p>
                                 <p><strong>Skill Points:</strong> {cls.skillPoints}</p>
                                 <p><strong>Casting Ability:</strong> {ABILITY_MAP[cls.castingAbilityId]?.name || 'None'}</p>
+                                <p><strong>Casting Type:</strong> {cls.castingType || 'None'}</p>
                             </div>
                             <div className="text-right">
                                 <p><strong>Edition:</strong> {EDITION_MAP[cls.editionId]?.abbreviation}</p>
@@ -60,6 +73,7 @@ export function ClassDisplay({
                                 refProgression: cls.refProgression,
                                 willProgression: cls.willProgression,
                                 spellcastingProgression: cls.spellcastingProgression !== null ? cls.spellcastingProgression : undefined,
+                                spellsKnownProgression: cls.spellsKnownProgression !== null ? cls.spellsKnownProgression : undefined,
                             };
                             const progression = generateClassProgression(progressionConfig);
                             return (
@@ -81,10 +95,10 @@ export function ClassDisplay({
                             .flatMap(progression =>
                                 progression.modifiers
                                     ?.filter(modifier =>
-                                        modifier.modifierType === FeatureModifierType.Skill && modifier.appliesTo
+                                        modifier.appliesTo === ModifierAppliesToType.Skill && modifier.appliesToId
                                     )
                                     .map(modifier => ({
-                                        skillId: modifier.appliesTo as number,
+                                        skillId: modifier.appliesToId,
                                         modifier: modifier
                                     })) || []
                             ) || [];
@@ -150,21 +164,23 @@ export function ClassDisplay({
                                 progression.appliesToType === FeatureAppliesToType.Skill;
 
                             // Check if this progression contains proficiencies
-                            const hasProficiencies = progression.featureId === SpecialFeatureId.ClassProficiency &&
-                                progression.appliesToType === FeatureAppliesToType.Item;
+                            const hasProficiencies = progression.featureId === SpecialFeatureId.ClassProficiency;
 
                             // Exclude progressions with skills or proficiencies
                             return !hasClassSkills && !hasProficiencies;
                         }) || [];
 
-                        if (actualFeatures.length > 0) {
+                        // Expand formula-based progressions into multiple entries
+                        const expandedFeatures = expandFormulaProgressions(actualFeatures);
+
+                        if (expandedFeatures.length > 0) {
                             return (
                                 <div className="mt-4">
                                     <h3 className="text-lg font-semibold mb-2">Class Features</h3>
                                     <div className="space-y-4">
                                         {(() => {
                                             // Group features by level first, then by feature ID
-                                            const groupedByLevelAndFeature = actualFeatures.reduce((acc, progression) => {
+                                            const groupedByLevelAndFeature = expandedFeatures.reduce((acc, progression) => {
                                                 const level = progression.level;
                                                 const featureId = progression.featureId;
 
@@ -176,7 +192,7 @@ export function ClassDisplay({
                                                 }
                                                 acc[level][featureId].push(progression);
                                                 return acc;
-                                            }, {} as Record<number, Record<number, typeof actualFeatures>>);
+                                            }, {} as Record<number, Record<number, typeof expandedFeatures>>);
 
                                             // Track which features we've already shown descriptions for
                                             const shownFeatureDescriptions = new Set<number>();
@@ -203,13 +219,23 @@ export function ClassDisplay({
                                                                     <div key={`feature-${index}`} className="p-2">
                                                                         {/* Show feature description only on first occurrence */}
                                                                         {isFirstOccurrence && feature?.description && (
-                                                                            <ProcessMarkdown
-                                                                                markdown={feature.description}
-                                                                                id={`${cls.name.toLowerCase()}-feature-${feature.id}`}
-                                                                                userVars={{
-                                                                                    classname: cls.name.toLowerCase()
-                                                                                }}
-                                                                            />
+                                                                            <div>
+                                                                                <ProcessMarkdown
+                                                                                    markdown={feature.description}
+                                                                                    id={`${cls.name.toLowerCase()}-feature-${feature.id}`}
+                                                                                    userVars={{
+                                                                                        classname: cls.name.toLowerCase()
+                                                                                    }}
+                                                                                />
+                                                                                {/* Show prerequisites if they exist */}
+                                                                                {(feature as any).prerequisites && (feature as any).prerequisites.length > 0 && (
+                                                                                    <div className="mt-2 inline-block p-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-md">
+                                                                                        <p className="text-xs text-slate-700 dark:text-slate-300">
+                                                                                            <strong>Prerequisites:</strong> {formatPrerequisites((feature as any).prerequisites)}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
                                                                         )}
 
                                                                         {/* Show combined progression details */}

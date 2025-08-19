@@ -3,7 +3,6 @@ import type {
     CreateDiceBoxAdminConfigRequest,
     UpdateDiceBoxAdminConfigRequest,
     GetAllDiceConfigsResponse,
-    DiceBoxConfig,
     UserDiceConfig
 } from '@shared/schema';
 

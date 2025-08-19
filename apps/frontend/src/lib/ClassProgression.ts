@@ -2,11 +2,7 @@ import {
     getBABProgression,
     getGoodSave,
     getPoorSave,
-    ProgressionType,
-    SpellProgressionType,
-    SpellsKnownType,
-    SPELL_TABLE_MAP,
-    SPELLS_KNOWN_TABLE_MAP
+    ProgressionType
 } from '@shared/static-data';
 
 export interface ProgressionRow {
@@ -24,8 +20,20 @@ export interface ClassProgressionConfig {
     fortProgression: ProgressionType;
     refProgression: ProgressionType;
     willProgression: ProgressionType;
-    spellProgression?: SpellProgressionType;
-    spellsKnown?: SpellsKnownType;
+    spellcastingProgression?: Array<{
+        classLevel: number;
+        slots?: Array<{
+            spellLevel: number;
+            slotsPerDay: number;
+        }>;
+    }>;
+    spellsKnownProgression?: Array<{
+        classLevel: number;
+        slots?: Array<{
+            spellLevel: number;
+            slotsPerDay: number;
+        }>;
+    }>;
 }
 
 /**
@@ -43,19 +51,27 @@ export function generateClassProgression(config: ClassProgressionConfig): Progre
             will: config.willProgression === ProgressionType.good ? getGoodSave(level) : getPoorSave(level),
         };
 
-        // Add spell progression if defined
-        if (config.spellProgression !== undefined && config.spellProgression !== null) {
-            const spellTable = SPELL_TABLE_MAP[config.spellProgression];
-            if (spellTable && spellTable[level]) {
-                row.spells = { ...spellTable[level] };
+        // Add spellcasting data if available
+        if (config.spellcastingProgression) {
+            const spellProgression = config.spellcastingProgression.find(p => p.classLevel === level);
+            if (spellProgression && spellProgression.slots) {
+                const spells: { [spellLevel: number]: number } = {};
+                spellProgression.slots.forEach(slot => {
+                    spells[slot.spellLevel] = slot.slotsPerDay;
+                });
+                row.spells = spells;
             }
         }
 
-        // Add spells known progression if defined
-        if (config.spellsKnown !== undefined && config.spellsKnown !== null && config.spellsKnown !== SpellsKnownType.none) {
-            const spellsKnownTable = SPELLS_KNOWN_TABLE_MAP[config.spellsKnown];
-            if (spellsKnownTable && spellsKnownTable[level]) {
-                row.spellsKnown = { ...spellsKnownTable[level] };
+        // Add spells known data if available
+        if (config.spellsKnownProgression) {
+            const spellsKnownProgression = config.spellsKnownProgression.find(p => p.classLevel === level);
+            if (spellsKnownProgression && spellsKnownProgression.slots) {
+                const spellsKnown: { [spellLevel: number]: number } = {};
+                spellsKnownProgression.slots.forEach(slot => {
+                    spellsKnown[slot.spellLevel] = slot.slotsPerDay;
+                });
+                row.spellsKnown = spellsKnown;
             }
         }
 
@@ -64,23 +80,3 @@ export function generateClassProgression(config: ClassProgressionConfig): Progre
 
     return progression;
 }
-
-/**
- * Formats spell progression for display
- */
-export function formatSpellProgression(spells: { [spellLevel: number]: number }): string {
-    const spellLevels = Object.keys(spells)
-        .map(Number)
-        .sort((a, b) => a - b);
-
-    return spellLevels
-        .map(level => `${spells[level]}`)
-        .join('/');
-}
-
-/**
- * Gets the maximum spell level for a progression
- */
-export function getMaxSpellLevel(spells: { [spellLevel: number]: number }): number {
-    return Math.max(...Object.keys(spells).map(Number));
-} 

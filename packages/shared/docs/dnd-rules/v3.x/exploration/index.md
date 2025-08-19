@@ -5,9 +5,13 @@ This section covers movement, carrying capacity, and exploration mechanics outsi
 ## Exploration Documentation
 
 ### Core Exploration Rules
+- **[Vision and Light](vision-light.md)** — Light sources, vision types, and illumination effects
+- **[Object Destruction](object-destruction.md)** — Breaking and smashing objects and equipment
+- **[Equipment Tables](equipment-tables.md)** — Hardness, hit points, and breaking DCs
+
+### Movement and Travel  
 - **[Movement](movement.md)** — Overland travel, movement rates, and forced march
 - **[Carrying Capacity](carrying-capacity.md)** — Weight limits, encumbrance, and lifting
-- **[Exploration](exploration.md)** — Searching, perception, and discovery mechanics
 
 ## Quick Reference
 

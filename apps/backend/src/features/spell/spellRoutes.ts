@@ -7,7 +7,7 @@ import {
 
 import { GetSpellById, UpdateSpell, DeleteSpell, GetAllSpells } from './spellController';
 
-const { router: SpellRouter, get, put, delete: deleteRoute, post } = buildValidatedRouter();
+const { router: SpellRouter, get, put, delete: deleteRoute } = buildValidatedRouter();
 
 
 get('/', {}, GetAllSpells);

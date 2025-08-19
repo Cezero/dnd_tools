@@ -1,32 +1,52 @@
-Reading The Monster Entries
+# Reading The Monster Entries
+
 Each monster description is organized in the same general format, as outlined below.
 
-Statistics Block
+## Statistics Block
+
 This portion of a monster description contains basic game information on the creature.
 
-Name
-This is the name by which the creature is generally known. The descriptive text may provide other names.
+### Name
+This is the **name** by which the creature is generally known. The descriptive text may provide other names.
 
-Size And Type
-This line describes the creature’s size. A size modifier applies to the creature’s Armor Class (AC) and attack bonus, as well as to certain skills. A creature’s size also determines how far it can reach to make a melee attack and how much space it occupies in a fight (see Big and Little Creatures In Combat).
+### Size And Type
+This line describes the creature's **size**. A size modifier applies to the creature's:
+- **Armor Class (AC)** and attack bonus
+- **Certain skills**
+- **Reach** for melee attacks
+- **Space occupied** in a fight (see [Big and Little Creatures In Combat](../combat/))
 
-The size and type line continues with the creature’s type. Type determines how magic affects a creature. Type determines certain features, such as Hit Dice size, base attack bonus, base saving throw bonuses, and skill points.
+The size and type line continues with the creature's **type**. Type determines:
+- **How magic affects** a creature
+- **Hit Dice size**
+- **Base attack bonus**
+- **Base saving throw bonuses**
+- **Skill points**
 
-Hit Dice
-This line gives the creature’s number and type of Hit Dice (the die rolled to generate hit points), and lists any bonus hit points. A parenthetical note gives the average hit points for a creature of the indicated number of Hit Dice. A creature’s Hit Dice total is also treated as its level for determining how spells affect the creature, its rate of natural healing, and its maximum ranks in a skill.
+### Hit Dice
+This line gives the creature's **number and type of Hit Dice** (the die rolled to generate hit points), and lists any bonus hit points. A parenthetical note gives the **average hit points** for a creature of the indicated number of Hit Dice. 
 
-Initiative
-This line gives the creature’s modifier on initiative checks.
+A creature's Hit Dice total is also treated as its **level** for determining:
+- How **spells affect** the creature
+- Its rate of **natural healing**
+- Its **maximum ranks** in a skill
 
-Speed
-This line gives the creature’s tactical speed on land (the amount of distance it can cover in one move action). If the creature wears armor that reduces its speed, the creature’s base land speed follows.
+### Initiative
+This line gives the creature's **modifier on initiative checks**.
 
-If the creature has other modes of movement, these are given after (or in place of) the land speed. Unless noted otherwise, modes of movement are natural (not magical).
+### Speed
+This line gives the creature's **tactical speed on land** (the amount of distance it can cover in one move action). If the creature wears armor that reduces its speed, the creature's **base land speed** follows.
 
-Armor Class
-The Armor Class line gives the creature’s AC for normal combat and includes a parenthetical mention of the modifiers contributing to it (usually size, Dexterity, and natural armor). The creature’s touch and flat-footed ACs follow the combat-ready AC.
+**Other Movement Modes:**
+If the creature has other modes of movement, these are given after (or in place of) the land speed. Unless noted otherwise, modes of movement are **natural (not magical)**.
 
-A creature’s armor proficiencies (if it has any) depend on its type, but in general a creature is automatically proficient with any kind of armor it is described as wearing (light, medium, or heavy), and with all lighter kinds of armor.
+### Armor Class
+The Armor Class line gives the creature's **AC for normal combat** and includes a parenthetical mention of the modifiers contributing to it (usually size, Dexterity, and natural armor). The creature's **touch and flat-footed ACs** follow the combat-ready AC.
+
+**Armor Proficiencies:**
+A creature's armor proficiencies (if it has any) depend on its **type**, but in general a creature is automatically proficient with:
+- Any kind of armor it is described as wearing (light, medium, or heavy)
+- All **lighter kinds** of armor
 
 Base Attack/Grapple
 The number before the slash on this line is the creature’s base attack bonus (before any modifiers are applied). This number won’t often be used, but it can be handy sometimes, especially if the creature has the Power Attack or Combat Expertise feats.
@@ -110,6 +130,15 @@ This line gives the alignment that the creature is most likely to have. Every en
 Advancement
 The monster entry usually describes only the most commonly encountered version of a creature. The advancement line shows how tough a creature can get, in terms of extra Hit Dice. (This is not an absolute limit, but exceptions are extremely rare.) Often, intelligent creatures advance by gaining a level in a character class instead of just gaining a new Hit Die. (See Improving Monsters.)
 
-Level Adjustment
-This line is included in the entries of creatures suitable for use as player characters or as cohorts (usually creatures with Intelligence scores of at least 3 and possessing opposable thumbs). Add this number to the creature’s total Hit Dice, including class levels, to get the creature’s effective character level (ECL). A character’s ECL affects the experience the character earns, the amount of experience the character must have before gaining a new level, and the character’s starting equipment.
+### Level Adjustment
+This line is included in the entries of creatures suitable for use as **player characters** or as **cohorts** (usually creatures with Intelligence scores of at least 3 and possessing opposable thumbs). Add this number to the creature's total Hit Dice, including class levels, to get the creature's **effective character level (ECL)**. 
+
+A character's ECL affects:
+- The **experience the character earns**
+- The **amount of experience** the character must have before gaining a new level
+- The character's **starting equipment**
+
+---
+
+> **📖 Related Sections**: [Monster Types](creature-types/core-types.md), [Improving Monsters](improving-monsters.md), [Monsters as Races](monsters-as-races.md), [Combat](../combat/)
 

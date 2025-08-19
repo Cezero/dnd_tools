@@ -182,3 +182,23 @@ export const ITEM_TYPES: BaseMap<CoreComponent> = {
 
 export const ITEM_TYPE_LIST = Object.values(ITEM_TYPES);
 export const ITEM_TYPE_SELECT_LIST = NameSelectOptionList(ITEM_TYPE_LIST);
+
+// Uses Frequency Types for feature modifiers
+export const USES_FREQUENCY_ENUM = {
+    PER_DAY: 1,
+    PER_WEEK: 2,
+    PER_LEVEL: 3,
+    PER_ENCOUNTER: 4,
+} as const;
+
+export const USES_FREQUENCIES: BaseMap<CoreComponent> = {
+    [USES_FREQUENCY_ENUM.PER_DAY]: { id: USES_FREQUENCY_ENUM.PER_DAY, name: 'day' },
+    [USES_FREQUENCY_ENUM.PER_WEEK]: { id: USES_FREQUENCY_ENUM.PER_WEEK, name: 'week' },
+    [USES_FREQUENCY_ENUM.PER_LEVEL]: { id: USES_FREQUENCY_ENUM.PER_LEVEL, name: 'level' },
+    [USES_FREQUENCY_ENUM.PER_ENCOUNTER]: { id: USES_FREQUENCY_ENUM.PER_ENCOUNTER, name: 'encounter' },
+};
+
+export const USES_FREQUENCY_LIST = Object.values(USES_FREQUENCIES);
+export const USES_FREQUENCY_SELECT_LIST = NameSelectOptionList(USES_FREQUENCY_LIST);
+
+

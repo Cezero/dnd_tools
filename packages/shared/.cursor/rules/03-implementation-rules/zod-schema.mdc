@@ -1,0 +1,7 @@
+---
+description: When building or verifying validation schemas
+globs: ["**/*"]
+priority: 3
+alwaysApply: false
+---
+All Zod schema definitions shoulld be created in the @shared/schema package

@@ -1,0 +1,51 @@
+d20srd.org Crawl Manifest
+==============================
+
+[combat]
+  https://www.d20srd.org/srd/combat/combat.htm
+  https://www.d20srd.org/srd/combat/actionsInCombat.htm
+  https://www.d20srd.org/srd/combat/injuryAndDeath.htm
+  https://www.d20srd.org/srd/combat/specialAttacks.htm
+  https://www.d20srd.org/srd/combat/specialInitiativeActions.htm
+  https://www.d20srd.org/srd/combat/movementPositionAndDistance.htm
+  https://www.d20srd.org/srd/combat/combatModifiers.htm
+  https://www.d20srd.org/srd/combat/combatStatistics.htm
+
+[conditions]
+  https://www.d20srd.org/srd/conditionSummary.htm
+
+[environment]
+  https://www.d20srd.org/srd/environment.htm
+  https://www.d20srd.org/srd/wilderness.htm
+  https://www.d20srd.org/srd/weather.htm
+
+[exploration]
+  https://www.d20srd.org/srd/carryingMovementAndExploration.htm
+  https://www.d20srd.org/srd/exploration.htm
+
+[equipment]
+  https://www.d20srd.org/srd/equipment.htm
+  https://www.d20srd.org/srd/equipmentWeaponsAndArmor.htm
+  https://www.d20srd.org/srd/specialMaterials.htm
+
+[magic]
+  https://www.d20srd.org/srd/magicOverview.htm
+  https://www.d20srd.org/srd/spells.htm
+  https://www.d20srd.org/srd/spellLists.htm
+
+[monsters]
+  https://www.d20srd.org/srd/monsters.htm
+  https://www.d20srd.org/srd/typesSubtypes.htm
+  https://www.d20srd.org/srd/improvingMonsters.htm
+  https://www.d20srd.org/srd/monstersAsRaces.htm
+
+[skills]
+  https://www.d20srd.org/srd/skills.htm
+  https://www.d20srd.org/srd/usingSkills.htm
+
+[special-abilities]
+  https://www.d20srd.org/srd/specialAbilities.htm
+
+[traps]
+  https://www.d20srd.org/srd/traps.htm
+

@@ -1,13 +1,12 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { z } from 'zod';
 
 import { useAuthAuto } from '@/components/auth';
 import { FeatureDetail, FeatureEdit } from '@/components/feature-system';
 import { GenericList } from '@/components/generic-list/GenericList';
 import { createIdDeleteServiceFunction, createSlugDeleteServiceFunction } from '@/components/generic-list/types';
 import { FeatureSystemService } from '@/services/FeatureSystemService';
-import { RaceInQueryResponse, FeatureSchema } from '@shared/schema';
+import { RaceInQueryResponse, FeatureInQueryResponse } from '@shared/schema';
 
 import { RACE_COLUMNS } from './RaceColumns';
 import { routes } from './RaceConfig';
@@ -73,16 +72,26 @@ export function RaceList(): React.JSX.Element {
                         </button>
                     </div>
                     <div id="features-list-container">
-                        <GenericList<z.infer<typeof FeatureSchema>>
+                        <GenericList<FeatureInQueryResponse>
                             storageKey="features-list"
                             columns={FEATURE_COLUMNS}
                             serviceFunction={() => FeatureSystemService.getFeatures({ sourceType: 0 })}
                             itemDesc="feature"
                             routes={[
-                                { path: 'features/:slug', component: FeatureDetail, exact: true, requireAuth: true, requireAdmin: true, routeType: 'detail' },
-                                { path: 'features/:slug/edit', component: FeatureEdit, exact: true, requireAuth: true, requireAdmin: true, routeType: 'edit' },
+                                { path: 'features/:id', component: FeatureDetail, exact: true, requireAuth: true, requireAdmin: true, routeType: 'detail' },
+                                { path: 'features/:id/edit', component: FeatureEdit, exact: true, requireAuth: true, requireAdmin: true, routeType: 'edit' },
                             ]}
-                            deleteServiceFunction={createSlugDeleteServiceFunction(FeatureSystemService.deleteFeature)}
+                            functions={{
+                                edit: (feature) => {
+                                    navigate(`/features/${feature.id}/edit`, {
+                                        state: {
+                                            fromListParams: location.search,
+                                            fromPage: 'races'
+                                        }
+                                    });
+                                }
+                            }}
+                            deleteServiceFunction={createIdDeleteServiceFunction(FeatureSystemService.deleteFeature)}
                         />
                     </div>
                 </>

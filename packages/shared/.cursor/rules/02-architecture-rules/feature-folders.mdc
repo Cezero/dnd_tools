@@ -1,0 +1,78 @@
+---
+description: Feature Folder Organization - Consistent Structure Across Monorepo
+globs: ["**/features/**/*", "**/src/features/**/*"]
+alwaysApply: true
+priority: 2
+---
+
+**CRITICAL**: Feature folders must be organized consistently across the monorepo.
+
+## Feature Folder Organization
+
+### Required Files
+Each feature folder should include related files where applicable:
+
+#### Backend Feature Files
+- `routes.ts` - API route definitions
+- `controller.ts` - Request handling logic
+- `service.ts` - Business logic
+- `types.ts` - TypeScript type definitions
+- `validation.ts` - Request/response validation schemas
+
+#### Frontend Feature Files
+- `index.tsx` - Main component export
+- `Component.tsx` - Primary component
+- `types.ts` - TypeScript type definitions
+- `hooks.ts` - Custom React hooks
+- `utils.ts` - Utility functions
+- `styles.ts` - Styled components or CSS modules
+
+### Organization Principles
+
+#### Co-location
+- Keep related files together in the same folder
+- Use clear, descriptive file names
+- Follow consistent naming conventions
+
+#### Separation of Concerns
+- Separate business logic from presentation
+- Keep validation separate from components
+- Organize by feature, not by file type
+
+#### Import Organization
+- Use index files for clean imports
+- Follow the monorepo `import-order` rule
+- Use relative imports within the feature folder
+
+### File Structure Examples
+
+#### Backend Feature Structure
+```
+features/user-management/
+├── routes.ts
+├── controller.ts
+├── service.ts
+├── types.ts
+├── validation.ts
+└── index.ts
+```
+
+#### Frontend Feature Structure
+```
+features/user-management/
+├── index.tsx
+├── UserManagement.tsx
+├── types.ts
+├── hooks.ts
+├── utils.ts
+└── styles.ts
+```
+
+### Success Criteria
+- [ ] All required files present for the feature type
+- [ ] Files follow consistent naming conventions
+- [ ] Imports are organized according to rules
+- [ ] Feature is self-contained and modular
+- [ ] Types are properly defined and exported
+
+**CRITICAL**: Consistent feature organization enables maintainable and scalable code.

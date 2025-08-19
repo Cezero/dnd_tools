@@ -9,8 +9,9 @@ export * from './src/ClassData';
 export * from './src/SourceData';
 export * from './src/SpellData';
 export * from './src/FeatData';
-export * from './src/ItemData'; 
+export * from './src/ItemData';
 export * from './src/FeatureData';
+export * from './src/FormulaDefinitions';
 
 // Export DiceData with explicit names to avoid conflicts
 export {
@@ -37,6 +38,7 @@ export * as FeatData from './src/FeatData';
 export * as ItemData from './src/ItemData';
 export * as DiceData from './src/DiceData';
 export * as FeatureData from './src/FeatureData';
+export * as FormulaDefinitions from './src/FormulaDefinitions';
 
 // Default export for backward compatibility
 import * as AbilityDataModule from './src/AbilityData';
@@ -49,6 +51,7 @@ import * as FeatDataModule from './src/FeatData';
 import * as ItemDataModule from './src/ItemData';
 import * as DiceDataModule from './src/DiceData';
 import * as FeatureDataModule from './src/FeatureData';
+import * as FormulaDefinitionsModule from './src/FormulaDefinitions';
 
 const staticData = {
     AbilityData: AbilityDataModule,
@@ -61,6 +64,7 @@ const staticData = {
     ItemData: ItemDataModule,
     DiceData: DiceDataModule,
     FeatureData: FeatureDataModule,
+    FormulaDefinitions: FormulaDefinitionsModule,
 };
 
 export default staticData; 

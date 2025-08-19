@@ -5,6 +5,7 @@ import {
     UpdateDiceBoxAdminConfigRequestSchema,
     DiceBoxConfigIdParamSchema
 } from '@shared/schema';
+
 import { DiceBoxController } from './diceBoxController';
 
 const { router: DiceBoxRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();

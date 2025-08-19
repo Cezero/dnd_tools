@@ -58,20 +58,16 @@
         border-color: var(--color-border-secondary);
     }
 
-    /* Custom prose classes that use our color variables */
-    .prose-custom {
-        @apply prose max-w-full;
-        color: var(--color-text);
-    }
-
     .prose-custom p {
+        max-width: 100%;
+        color: var(--color-text);
         text-indent: 0;
-        margin-top: 0;
         line-height: 18px;
         font-size: 14px;
     }
 
     .prose-custom p+p {
+        margin-top: 1rem;
         text-indent: 1rem;
         line-height: 18px;
         font-size: 14px;

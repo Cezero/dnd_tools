@@ -128,6 +128,7 @@ exports.Prisma.ClassScalarFieldEnum = {
   isPrestige: 'isPrestige',
   isVisible: 'isVisible',
   canCastSpells: 'canCastSpells',
+  spellsKnown: 'spellsKnown',
   hitDie: 'hitDie',
   description: 'description',
   skillPoints: 'skillPoints',
@@ -142,7 +143,8 @@ exports.Prisma.ClassScalarFieldEnum = {
 exports.Prisma.SpellcastingProgressionScalarFieldEnum = {
   id: 'id',
   classId: 'classId',
-  casterLevel: 'casterLevel'
+  classLevel: 'classLevel',
+  classSpellsKnownId: 'classSpellsKnownId'
 };
 
 exports.Prisma.SpellcastingSlotScalarFieldEnum = {
@@ -199,8 +201,17 @@ exports.Prisma.FeatureModifierScalarFieldEnum = {
   bonusType: 'bonusType',
   appliesTo: 'appliesTo',
   appliesToId: 'appliesToId',
+  formulaParamsId: 'formulaParamsId',
   appliesIfChoiceKey: 'appliesIfChoiceKey',
   appliesIfChoiceValue: 'appliesIfChoiceValue'
+};
+
+exports.Prisma.FeatureModifierFormulaParamsScalarFieldEnum = {
+  id: 'id',
+  formulaId: 'formulaId',
+  interval: 'interval',
+  formulaStartLevel: 'formulaStartLevel',
+  attributeId: 'attributeId'
 };
 
 exports.Prisma.FeatureModifierConditionScalarFieldEnum = {
@@ -234,7 +245,7 @@ exports.Prisma.FeatureChoiceScalarFieldEnum = {
 
 exports.Prisma.FeaturePrerequisiteScalarFieldEnum = {
   id: 'id',
-  featureProgressionId: 'featureProgressionId',
+  featureId: 'featureId',
   type: 'type',
   skillId: 'skillId',
   minValue: 'minValue'
@@ -299,7 +310,8 @@ exports.Prisma.SkillScalarFieldEnum = {
   affectedByArmor: 'affectedByArmor',
   description: 'description',
   restrictionNotes: 'restrictionNotes',
-  trainedOnly: 'trainedOnly'
+  trainedOnly: 'trainedOnly',
+  isAnalog: 'isAnalog'
 };
 
 exports.Prisma.FeatScalarFieldEnum = {
@@ -834,6 +846,7 @@ exports.Prisma.ModelName = {
   Feature: 'Feature',
   FeatureProgression: 'FeatureProgression',
   FeatureModifier: 'FeatureModifier',
+  FeatureModifierFormulaParams: 'FeatureModifierFormulaParams',
   FeatureModifierCondition: 'FeatureModifierCondition',
   FeatureSpecialEffect: 'FeatureSpecialEffect',
   FeatureChoice: 'FeatureChoice',

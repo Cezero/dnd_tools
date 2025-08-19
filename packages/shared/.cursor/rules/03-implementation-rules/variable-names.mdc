@@ -1,0 +1,8 @@
+---
+description: When naming variables and properties
+globs: ["**/*"]
+priority: 3
+alwaysApply: false
+---
+Use camelCase for all variable and prop names.
+Prefix unused variables with _

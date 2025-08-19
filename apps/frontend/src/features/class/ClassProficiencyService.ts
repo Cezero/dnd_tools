@@ -1,7 +1,7 @@
 import { FeatService } from '@/features/feat/FeatService';
 import { ItemService } from '@/features/item/ItemService';
-import { ClassProficiencyInQueryResponse } from '@shared/schema';
-import { FeatBenefitType, PROFICIENCY_TYPES } from '@shared/static-data';
+import { ClassProficiencyInQueryResponse, FeatureProgressionWithRelations } from '@shared/schema';
+import { FeatBenefitType, PROFICIENCY_TYPES, FeatureSpecialEffectType, SpecialFeatureId } from '@shared/static-data';
 
 export interface ProficiencyFeat {
     id: number;
@@ -127,5 +127,61 @@ export const ClassProficiencyService = {
                 itemName: prof.itemId === -1 ? 'All Items' : `Item ${prof.itemId}`
             }));
         }
+    },
+
+    /**
+     * Extract proficiencies from feature progressions
+     */
+    getClassProficiencies(
+        progressions: FeatureProgressionWithRelations[]
+    ): Array<{ featId: number; itemId: number; featName: string; itemName?: string }> {
+        return progressions
+            .filter(prog => prog.featureId === SpecialFeatureId.ClassProficiency)
+            .flatMap(prog =>
+                prog.effects
+                    ?.filter((effect) => effect.effectType === FeatureSpecialEffectType.Proficiency)
+                    .map((effect) => ({
+                        featId: effect.featId || 0,
+                        itemId: effect.itemId || -1,
+                        featName: effect.feat?.name || `Feat ${effect.featId}`,
+                        itemName: effect.itemId === -1 ? undefined : (effect.item?.name || `Item ${effect.itemId}`)
+                    })) || []
+            )
+            .filter(prof => prof.featId > 0);
+    },
+
+    /**
+     * Remove a proficiency from class proficiencies progression
+     */
+    removeProficiency(
+        featureProgressions: FeatureProgressionWithRelations[],
+        setFeatureProgressions: (progressions: FeatureProgressionWithRelations[]) => void,
+        featId: number,
+        itemId: number
+    ) {
+        const updatedProgressions = featureProgressions.map(prog => {
+            if (prog.featureId === SpecialFeatureId.ClassProficiency) {
+                // Remove the specific proficiency effect
+                const updatedEffects = prog.effects?.filter(effect =>
+                    !(effect.effectType === FeatureSpecialEffectType.Proficiency &&
+                        effect.featId === featId &&
+                        effect.itemId === itemId)
+                ) || [];
+
+                return {
+                    ...prog,
+                    effects: updatedEffects
+                };
+            }
+            return prog;
+        });
+
+        // Remove the progression entirely if it has no effects left
+        const finalProgressions = updatedProgressions.filter(prog =>
+            !(prog.featureId === SpecialFeatureId.ClassProficiency) ||
+            (prog.effects && prog.effects.length > 0)
+        );
+
+        setFeatureProgressions(finalProgressions);
     }
 }; 

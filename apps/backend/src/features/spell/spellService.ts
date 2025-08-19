@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma } from '@shared/prisma-client';
+import { PrismaClient } from '@shared/prisma-client';
 import type { SpellIdParamRequest, UpdateSpellRequest, GetSpellResponse, GetAllSpellsResponse } from '@shared/schema';
 
 import type { SpellService } from './types';

@@ -158,7 +158,7 @@ export function FeatureProficiencyDialog({
         <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <Dialog.Backdrop className="fixed inset-0 bg-black bg-opacity-25 z-40" />
             <Dialog.Portal>
-                <Dialog.Popup className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <Dialog.Popup className="fixed inset-0 flex items-center justify-center p-4">
                     <div className="w-full max-w-md transform overflow-visible rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all">
                         <Dialog.Title className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
                             {title}

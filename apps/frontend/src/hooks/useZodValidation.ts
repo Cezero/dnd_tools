@@ -65,6 +65,7 @@ export function useZodValidation<T extends z.ZodSchema>(
             setErrors({});
             return true;
         } catch (error) {
+            console.log('Validation error:', error);
             if (error instanceof z.ZodError) {
                 const newErrors: Record<string, string> = {};
                 error.errors.forEach(err => {

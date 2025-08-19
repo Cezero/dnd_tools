@@ -1,0 +1,232 @@
+CONTENT AUDIT DETAILED RESULTS
+==================================================
+
+CONTENT GAPS (Potential Summarization):
+
+HTML: final-clean-content/equipment/srd_magicItems_wondrousItems.htm_extracted.html
+MD:   ../dnd-rules/v3.x/abilities/spell-like/creature-spellcasting.md
+Ratio: 97.8x, Score: 0.72
+
+HTML: final-clean-content/general/srd_specialAbilities.htm_extracted.html
+MD:   ../dnd-rules/v3.x/abilities/spell-like/creature-spellcasting.md
+Ratio: 66.5x, Score: 0.90
+
+HTML: final-clean-content/general/srd_specialAbilities_extracted.html
+MD:   ../dnd-rules/v3.x/abilities/spell-like/creature-spellcasting.md
+Ratio: 66.5x, Score: 0.90
+
+HTML: final-clean-content/magic/srd_magicOverview_spellDescriptions.htm_extracted.html
+MD:   ../dnd-rules/v3.x/combat/movement/measuring-distance.md
+Ratio: 52.0x, Score: 0.68
+
+HTML: final-clean-content/feats/srd_feats.htm_extracted.html
+MD:   ../dnd-rules/v3.x/abilities/spell-like/creature-spellcasting.md
+Ratio: 48.0x, Score: 0.75
+
+HTML: final-clean-content/environment/srd_dungeons.htm_extracted.html
+MD:   ../dnd-rules/v3.x/combat/movement/terrain-obstacles.md
+Ratio: 19.1x, Score: 0.65
+
+HTML: final-clean-content/equipment/srd_magicItems_artifacts.htm_extracted.html
+MD:   ../dnd-rules/v3.x/abilities/spell-like/creature-spellcasting.md
+Ratio: 18.9x, Score: 0.57
+
+HTML: final-clean-content/equipment/srd_magicItems_magicArmor.htm_extracted.html
+MD:   ../dnd-rules/v3.x/abilities/spell-like/creature-spellcasting.md
+Ratio: 18.9x, Score: 0.49
+
+HTML: final-clean-content/equipment/srd_magicItems_cursedItems.htm_extracted.html
+MD:   ../dnd-rules/v3.x/abilities/spell-like/creature-spellcasting.md
+Ratio: 18.5x, Score: 0.52
+
+HTML: final-clean-content/equipment/srd_magicItems_creatingMagicItems.htm_extracted.html
+MD:   ../dnd-rules/v3.x/abilities/spell-like/creature-spellcasting.md
+Ratio: 17.8x, Score: 0.54
+
+HTML: final-clean-content/equipment/srd_magicItems_rods.htm_extracted.html
+MD:   ../dnd-rules/v3.x/abilities/spell-like/creature-spellcasting.md
+Ratio: 17.5x, Score: 0.61
+
+HTML: final-clean-content/combat/srd_combat_movementPositionAndDistance_extracted.html
+MD:   ../dnd-rules/v3.x/combat/movement/measuring-distance.md
+Ratio: 15.2x, Score: 0.91
+
+HTML: final-clean-content/combat/srd_combat_movementPositionAndDistance.htm_extracted.html
+MD:   ../dnd-rules/v3.x/combat/movement/measuring-distance.md
+Ratio: 15.2x, Score: 0.91
+
+HTML: final-clean-content/equipment/srd_magicItems_rings.htm_extracted.html
+MD:   ../dnd-rules/v3.x/abilities/spell-like/creature-spellcasting.md
+Ratio: 15.1x, Score: 0.55
+
+HTML: final-clean-content/environment/srd_wilderness_extracted.html
+MD:   ../dnd-rules/v3.x/environments/navigation/getting-lost.md
+Ratio: 14.7x, Score: 0.71
+
+HTML: final-clean-content/environment/srd_wilderness.htm_extracted.html
+MD:   ../dnd-rules/v3.x/environments/navigation/getting-lost.md
+Ratio: 14.7x, Score: 0.71
+
+HTML: final-clean-content/general/srd_spellLists_sorcererWizardSpells.htm_extracted.html
+MD:   ../dnd-rules/v3.x/monsters/subtypes/elemental-subtypes.md
+Ratio: 13.9x, Score: 0.39
+
+HTML: final-clean-content/equipment/srd_magicItems_magicItemBasics.htm_extracted.html
+MD:   ../dnd-rules/v3.x/abilities/spell-like/creature-spellcasting.md
+Ratio: 13.1x, Score: 0.56
+
+HTML: final-clean-content/equipment/srd_magicItems_magicWeapons.htm_extracted.html
+MD:   ../dnd-rules/v3.x/monsters/subtypes/alignment-subtypes.md
+Ratio: 12.9x, Score: 0.60
+
+HTML: final-clean-content/general/srd_skills_handleAnimal.htm_extracted.html
+MD:   ../dnd-rules/v3.x/combat/movement/measuring-distance.md
+Ratio: 12.2x, Score: 0.42
+
+HTML: final-clean-content/general/srd_planes.htm_extracted.html
+MD:   ../dnd-rules/v3.x/monsters/subtypes/alignment-subtypes.md
+Ratio: 11.7x, Score: 0.69
+
+HTML: final-clean-content/general/srd_spellLists_clericDomains.htm_extracted.html
+MD:   ../dnd-rules/v3.x/monsters/subtypes/elemental-subtypes.md
+Ratio: 11.2x, Score: 0.43
+
+HTML: final-clean-content/combat/srd_combat_specialAttacks_extracted.html
+MD:   ../dnd-rules/v3.x/combat/attacks/special-attacks/trip-splash.md
+Ratio: 11.2x, Score: 0.91
+
+HTML: final-clean-content/combat/srd_combat_specialAttacks.htm_extracted.html
+MD:   ../dnd-rules/v3.x/combat/attacks/special-attacks/trip-splash.md
+Ratio: 11.2x, Score: 0.91
+
+HTML: final-clean-content/general/srd_typesSubtypes.htm_extracted.html
+MD:   ../dnd-rules/v3.x/monsters/subtypes/specialized-subtypes.md
+Ratio: 10.5x, Score: 0.79
+
+HTML: final-clean-content/general/srd_typesSubtypes_extracted.html
+MD:   ../dnd-rules/v3.x/monsters/subtypes/specialized-subtypes.md
+Ratio: 10.5x, Score: 0.79
+
+HTML: final-clean-content/equipment/srd_magicItems_staffs.htm_extracted.html
+MD:   ../dnd-rules/v3.x/abilities/spell-like/creature-spellcasting.md
+Ratio: 9.0x, Score: 0.37
+
+HTML: final-clean-content/general/srd_spellLists_clericSpells.htm_extracted.html
+MD:   ../dnd-rules/v3.x/monsters/subtypes/elemental-subtypes.md
+Ratio: 8.5x, Score: 0.35
+
+HTML: final-clean-content/combat/srd_combat_actionsInCombat.htm_extracted.html
+MD:   ../dnd-rules/v3.x/combat/actions/action-types.md
+Ratio: 8.5x, Score: 0.96
+
+HTML: final-clean-content/combat/srd_combat_actionsInCombat_extracted.html
+MD:   ../dnd-rules/v3.x/combat/actions/action-types.md
+Ratio: 8.5x, Score: 0.96
+
+HTML: final-clean-content/equipment/srd_equipment_goodsAndServices.htm_extracted.html
+MD:   ../dnd-rules/v3.x/combat/attacks/special-attacks/mounted-combat.md
+Ratio: 7.8x, Score: 0.60
+
+HTML: final-clean-content/general/srd_races.htm_extracted.html
+MD:   ../dnd-rules/v3.x/abilities/spell-like/creature-spellcasting.md
+Ratio: 7.7x, Score: 0.40
+
+HTML: final-clean-content/general/srd_prestigeClasses_blackguard.htm_extracted.html
+MD:   ../dnd-rules/v3.x/abilities/spell-like/creature-spellcasting.md
+Ratio: 7.0x, Score: 0.45
+
+HTML: final-clean-content/magic/srd_magicOverview_castingSpells.htm_extracted.html
+MD:   ../dnd-rules/v3.x/magic/casting/casting-basics.md
+Ratio: 6.7x, Score: 0.78
+
+HTML: final-clean-content/general/srd_spellLists_druidSpells.htm_extracted.html
+MD:   ../dnd-rules/v3.x/monsters/subtypes/elemental-subtypes.md
+Ratio: 6.3x, Score: 0.37
+
+HTML: final-clean-content/equipment/srd_magicItems_intelligentItems.htm_extracted.html
+MD:   ../dnd-rules/v3.x/abilities/spell-like/creature-spellcasting.md
+Ratio: 6.3x, Score: 0.43
+
+HTML: final-clean-content/exploration/srd_traps.htm_extracted.html
+MD:   ../dnd-rules/v3.x/traps/designing.md
+Ratio: 5.7x, Score: 0.76
+
+HTML: final-clean-content/general/srd_traps_extracted.html
+MD:   ../dnd-rules/v3.x/traps/designing.md
+Ratio: 5.7x, Score: 0.76
+
+HTML: final-clean-content/feats/srd_monsterFeats.htm_extracted.html
+MD:   ../dnd-rules/v3.x/combat/movement/moving-through-squares.md
+Ratio: 5.5x, Score: 0.45
+
+HTML: final-clean-content/equipment/srd_magicItems_scrolls.htm_extracted.html
+MD:   ../dnd-rules/v3.x/abilities/spell-like/creature-spellcasting.md
+Ratio: 5.1x, Score: 0.50
+
+HTML: final-clean-content/general/srd_prestigeClasses_assassin.htm_extracted.html
+MD:   ../dnd-rules/v3.x/abilities/spell-like/creature-spellcasting.md
+Ratio: 4.5x, Score: 0.39
+
+HTML: final-clean-content/general/srd_prestigeClasses_hierophant.htm_extracted.html
+MD:   ../dnd-rules/v3.x/abilities/spell-like/creature-spellcasting.md
+Ratio: 4.3x, Score: 0.44
+
+HTML: final-clean-content/general/srd_spellLists_bardSpells.htm_extracted.html
+MD:   ../dnd-rules/v3.x/combat/movement/terrain-obstacles.md
+Ratio: 4.2x, Score: 0.32
+
+HTML: final-clean-content/general/srd_skills_useMagicDevice.htm_extracted.html
+MD:   ../dnd-rules/v3.x/abilities/spell-like/creature-spellcasting.md
+Ratio: 4.1x, Score: 0.41
+
+HTML: final-clean-content/general/srd_description.htm_extracted.html
+MD:   ../dnd-rules/v3.x/monsters/subtypes/alignment-subtypes.md
+Ratio: 4.1x, Score: 0.45
+
+HTML: final-clean-content/general/srd_prestigeClasses_archmage.htm_extracted.html
+MD:   ../dnd-rules/v3.x/abilities/spell-like/creature-spellcasting.md
+Ratio: 4.0x, Score: 0.44
+
+HTML: final-clean-content/environment/srd_environment_extracted.html
+MD:   ../dnd-rules/v3.x/environments/hazards/elemental-hazards.md
+Ratio: 3.6x, Score: 0.78
+
+HTML: final-clean-content/environment/srd_environment.htm_extracted.html
+MD:   ../dnd-rules/v3.x/environments/hazards/elemental-hazards.md
+Ratio: 3.6x, Score: 0.78
+
+HTML: final-clean-content/general/srd_prestigeClasses_dragonDisciple.htm_extracted.html
+MD:   ../dnd-rules/v3.x/abilities/spell-like/creature-spellcasting.md
+Ratio: 3.5x, Score: 0.39
+
+HTML: final-clean-content/general/srd_improvingMonsters.htm_extracted.html
+MD:   ../dnd-rules/v3.x/monsters/advancement/class-levels.md
+Ratio: 3.4x, Score: 0.91
+
+HTML: final-clean-content/general/srd_improvingMonsters_extracted.html
+MD:   ../dnd-rules/v3.x/monsters/advancement/class-levels.md
+Ratio: 3.4x, Score: 0.91
+
+HTML: final-clean-content/general/srd_prestigeClasses_thaumaturgist.htm_extracted.html
+MD:   ../dnd-rules/v3.x/abilities/spell-like/creature-spellcasting.md
+Ratio: 3.2x, Score: 0.37
+
+HTML: final-clean-content/general/srd_skills_climb.htm_extracted.html
+MD:   ../dnd-rules/v3.x/combat/movement/moving-through-squares.md
+Ratio: 2.8x, Score: 0.40
+
+HTML: final-clean-content/general/srd_prestigeClasses_shadowdancer.htm_extracted.html
+MD:   ../dnd-rules/v3.x/combat/movement/terrain-obstacles.md
+Ratio: 2.5x, Score: 0.35
+
+HTML: final-clean-content/environment/srd_weather.htm_extracted.html
+MD:   ../dnd-rules/v3.x/environments/weather/precipitation.md
+Ratio: 2.5x, Score: 0.66
+
+HTML: final-clean-content/environment/srd_weather_extracted.html
+MD:   ../dnd-rules/v3.x/environments/weather/precipitation.md
+Ratio: 2.5x, Score: 0.66
+
+HTML: final-clean-content/equipment/srd_equipment_weapons.htm_extracted.html
+MD:   ../dnd-rules/v3.x/equipment/weapons.md
+Ratio: 2.3x, Score: 0.79

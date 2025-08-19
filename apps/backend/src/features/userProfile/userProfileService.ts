@@ -2,13 +2,14 @@ import jwt from 'jsonwebtoken';
 
 import { config } from '@/config';
 import { PrismaClient } from '@shared/prisma-client';
+import type { UpdateUserProfileRequest, UserProfileResponse, UserProfileUpdateResponse, UserWithDiceConfig } from '@shared/schema';
+
 import { DiceBoxService } from '../diceBox/diceBoxService';
-import type { UpdateUserProfileRequest, UserProfileResponse, UserProfileUpdateResponse } from '@shared/schema';
 
 const prisma = new PrismaClient();
 
 // UPDATED: Transform user data to include dice config
-function transformUserWithDiceConfig(user: any): UserProfileResponse {
+function transformUserWithDiceConfig(user: UserWithDiceConfig): UserProfileResponse {
     return {
         id: user.id,
         username: user.username,
@@ -18,10 +19,7 @@ function transformUserWithDiceConfig(user: any): UserProfileResponse {
         diceConfig: user.diceConfigBaseRef ? {
             baseConfigId: user.diceConfigBaseRef.id,
             baseConfigName: user.diceConfigBaseRef.name,
-            overrides: user.diceConfigOverrides?.reduce((acc: any, override: any) => {
-                acc[override.propertyName] = override.propertyValue;
-                return acc;
-            }, {}) || {}
+            overrides: user.diceConfigOverrides
         } : null
     };
 }
@@ -56,7 +54,7 @@ export const userProfileService: UserProfileService = {
         const { preferredEditionId, diceConfig } = data;
 
         // Prepare update data
-        const updateData: any = {};
+        const updateData: { preferredEditionId?: number } = {};
         if (preferredEditionId !== undefined) {
             updateData.preferredEditionId = preferredEditionId;
         }

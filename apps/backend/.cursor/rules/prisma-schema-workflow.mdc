@@ -1,0 +1,211 @@
+# CRITICAL CHECKPOINT: Prisma Schema Change Workflow
+
+## TRIGGER
+When editing Prisma schema files in `backend/prisma/schema.prisma`
+
+## ENFORCEMENT
+Must follow this exact order before proceeding with any implementation
+
+## DEPENDENCY ORDER
+When implementing features that require database schema changes, strictly follow this order:
+
+1. **Database Schema (Prisma)** - Update `backend/prisma/schema.prisma`
+2. **Database Migration** - User applies migration
+3. **Zod Schema Updates** - Update `packages/shared/schema/src/*.ts` (in separate step)
+4. **Schema Build** - User builds schema package
+5. **Backend Services** - Update services, controllers, repositories
+6. **Frontend Components** - Update frontend components
+
+**NEVER skip steps or work out of order, as this will lead to type errors and runtime issues.**
+
+## WORKFLOW STEPS
+
+### 1. Prisma Schema Changes
+- Update `backend/prisma/schema.prisma` with new models, fields, or relations
+- Ensure all new models, fields, and relationships are properly defined
+- **STOP and prompt**: "I've updated the Prisma schema. Please run: `cd apps/backend && npx prisma migrate dev --name [descriptive_name]`"
+- **DO NOT proceed to any implementation until migration is applied**
+
+### 2. Migration Verification
+- Wait for user confirmation that migration was successful
+- Check the generated migration SQL in `backend/prisma/migrations/[timestamp]_[name]/migration.sql`
+- Ensure the migration looks correct before proceeding
+- Verify that Prisma client types are regenerated
+
+### 3. Continue Implementation
+- Only after migration is applied and verified
+- Proceed to Zod schema updates (in separate step)
+- Update backend services, controllers, and repositories
+- Update frontend components to use the new schema
+
+## SCHEMA VALIDATION PATTERNS
+
+### Core Principles
+
+#### 1. Model Relationships
+- **One-to-Many**: Use `@relation` with proper field references
+- **Many-to-Many**: Use junction tables or `@relation` with `fields` and `references`
+- **Optional Relations**: Use `?` for nullable foreign keys
+
+#### 2. Field Types
+- **Required fields**: No `?` modifier
+- **Optional fields**: Use `?` modifier
+- **Default values**: Use `@default()` for appropriate fields
+- **Unique constraints**: Use `@unique` for unique fields
+
+#### 3. Indexes and Constraints
+- **Primary keys**: Use `@id` with appropriate strategy
+- **Foreign keys**: Use `@relation` with proper references
+- **Composite keys**: Use `@@id([field1, field2])`
+- **Unique constraints**: Use `@@unique([field1, field2])`
+
+### Common Patterns
+
+#### Model Definition Pattern
+```prisma
+model Example {
+    id        Int      @id @default(autoincrement())
+    name      String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    
+    // Relations
+    relatedItems RelatedItem[]
+    
+    @@map("examples")
+}
+```
+
+#### Relationship Pattern
+```prisma
+model Parent {
+    id     Int      @id @default(autoincrement())
+    name   String
+    children Child[]
+}
+
+model Child {
+    id       Int    @id @default(autoincrement())
+    name     String
+    parentId Int
+    parent   Parent @relation(fields: [parentId], references: [id])
+}
+```
+
+## MIGRATION RESTRICTIONS
+
+### CRITICAL RULE: Do Not Run Migrations
+**NEVER** run migration commands automatically. Always ask the user.
+
+#### THE RULE
+- **NEVER** run `npx prisma migrate dev`
+- **NEVER** run `npx prisma migrate deploy`
+- **NEVER** run `npx prisma db push`
+- **ALWAYS** ask the user to run migrations
+
+#### CORRECT BEHAVIOR
+
+##### ✅ RIGHT - Ask User to Migrate
+```
+I've updated the Prisma schema. Please run: `cd apps/backend && npx prisma migrate dev --name add_user_profile`
+```
+
+##### ❌ WRONG - Run Migration Myself
+```bash
+npx prisma migrate dev  # NEVER do this
+```
+
+#### WHY THIS RULE EXISTS
+- Database migrations affect production data
+- User needs to control when migrations happen
+- Migrations may have side effects or dependencies
+- User may need to handle migration errors
+- User may need to review migration SQL
+
+#### CONSEQUENCES OF VIOLATION
+- **Data loss** if migration is destructive
+- **Production issues** if migration fails
+- **Inconsistent state** across environments
+- **User frustration** from unexpected database changes
+
+## VALIDATION CHECKLIST
+- [ ] Prisma schema updated with all necessary changes
+- [ ] User applied migration
+- [ ] Migration SQL verified
+- [ ] No migration errors
+- [ ] Prisma client types regenerated
+- [ ] No type errors in services
+- [ ] Documentation updated
+- [ ] Required fields are properly defined
+- [ ] Optional fields use `?` modifier
+- [ ] Relationships are properly configured
+- [ ] Indexes and constraints are defined
+- [ ] Type safety is maintained
+
+## CONSEQUENCES
+- **Type errors** if migrations not applied
+- **Runtime errors** if schema not in sync
+- **Data loss** if destructive migrations run unexpectedly
+- **Inconsistent data** if workflow not followed
+- **Broken dependencies** if order not maintained
+- **Validation failures** if patterns not followed
+- **Database compatibility issues** if schemas not aligned
+
+## EXAMPLES
+
+### ❌ WRONG - Running migration myself
+```bash
+npx prisma migrate dev  # I should NOT do this
+```
+
+### ✅ RIGHT - Asking user to migrate
+```
+I've updated the Prisma schema. Please run: `cd apps/backend && npx prisma migrate dev --name add_user_profile`
+```
+
+### ❌ WRONG - Continuing without confirmation
+```typescript
+// I should NOT proceed without user confirming migration was successful
+```
+
+### ✅ RIGHT - Waiting for confirmation
+```
+Please confirm the migration was successful and I'll continue with the implementation.
+```
+
+### ❌ WRONG - Incomplete schema changes
+```prisma
+// I should NOT make partial schema changes and then proceed to implementation
+model User {
+    id Int @id @default(autoincrement())
+    // Missing required fields
+}
+```
+
+### ✅ RIGHT - Complete schema changes
+```prisma
+model User {
+    id        Int      @id @default(autoincrement())
+    email     String   @unique
+    name      String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+```
+
+## IMPORTANT REMINDERS
+- **Never run migrations automatically** - always ask the user
+- **Never modify backend code** that depends on schema changes until the migration has been applied
+- **Always wait for confirmation** before proceeding to the next step
+- **Always verify** that changes are applied correctly before continuing
+- **Follow validation patterns** for consistent and type-safe schemas
+- **Always use descriptive migration names** that explain the change
+
+description: Comprehensive Prisma Schema Change Workflow and Validation Patterns - CRITICAL for Database Schema Modifications
+globs: ["**/prisma/schema.prisma"]
+alwaysApply: true
+priority: 1
+description:
+globs:
+alwaysApply: false
+---

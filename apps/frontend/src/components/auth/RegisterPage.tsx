@@ -38,7 +38,7 @@ export function RegisterPage({ redirectTo = '/' }: RegisterPageProps = {}): Reac
     };
 
     return (
-        <div className="p-4 bg-white text-black dark:bg-gray-900 dark:text-white">
+        <div className="p-4 bg-white dark:bg-gray-900">
             <h1 className="text-2xl font-bold mb-4">Register</h1>
             <form onSubmit={HandleRegister} className="space-y-4">
                 <input

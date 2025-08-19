@@ -7,7 +7,8 @@ import {
     UpdateClassRequest,
     CreateResponse
 } from '@shared/schema';
-import type { SpellProgressionType, ProgressionType, SpellsKnownType } from '@shared/static-data';
+import type { CreateSpellcastingProgressionRequest, CreateSpellcastingSlotRequest } from '@shared/schema';
+
 
 import type { ClassService } from './types';
 
@@ -53,10 +54,16 @@ export const classService: ClassService = {
                                 id: true,
                                 slug: true,
                                 name: true,
-                                description: true
+                                description: true,
+                                prerequisites: true
                             }
                         },
-                        modifiers: true,
+                        modifiers: {
+                            include: {
+                                formulaParams: true,
+                                conditions: true
+                            }
+                        },
                         choices: {
                             include: {
                                 feat: {
@@ -79,22 +86,32 @@ export const classService: ClassService = {
                                 feat: true,
                                 item: true
                             }
-                        },
-                        prerequisites: true
+                        }
+                        // prerequisites removed - now at feature level
                     }
                 },
-                spellcastingProgression: true,
+                spellcastingProgression: {
+                    include: {
+                        slots: true,
+                    },
+                },
+                classSpellsKnown: {
+                    include: {
+                        slots: true,
+                    },
+                },
             },
         });
 
         return {
             ...classData,
             spellcastingProgression: classData?.spellcastingProgression ?? null,
+            spellsKnownProgression: classData?.classSpellsKnown ?? null,
         } as GetClassResponse;
     },
 
     async createClass(data: CreateClassRequest): Promise<CreateResponse> {
-        const { features, spellcastingProgression, ...classData } = data;
+        const { features, spellcastingProgression, spellsKnownProgression, ...classData } = data;
 
         const result = await prisma.$transaction(async (tx) => {
             // Create the class first
@@ -113,7 +130,7 @@ export const classService: ClassService = {
             // Create feature progressions with their related entities
             if (features && features.length > 0) {
                 for (const progression of features) {
-                    const { modifiers, choices, effects, prerequisites, feature, class: classRelation, spellcasting, ...progressionData } = progression;
+                    const { modifiers, choices, effects, ...progressionData } = progression;
 
                     // Create the feature progression
                     const featureProgression = await tx.featureProgression.create({
@@ -125,12 +142,42 @@ export const classService: ClassService = {
 
                     // Create related modifiers
                     if (modifiers && modifiers.length > 0) {
-                        await tx.featureModifier.createMany({
-                            data: modifiers.map(modifier => ({
-                                ...modifier,
-                                featureProgressionId: featureProgression.id,
-                            })),
-                        });
+                        for (const modifier of modifiers) {
+                            const { conditions, formulaParams, ...modifierData } = modifier;
+
+                            // Create formula params first if they exist
+                            let formulaParamsId = null;
+                            if (formulaParams) {
+                                const createdFormulaParams = await tx.featureModifierFormulaParams.create({
+                                    data: {
+                                        formulaId: formulaParams.formulaId,
+                                        interval: formulaParams.interval,
+                                        formulaStartLevel: formulaParams.formulaStartLevel,
+                                        attributeId: formulaParams.attributeId,
+                                    },
+                                });
+                                formulaParamsId = createdFormulaParams.id;
+                            }
+
+                            // Create the modifier with formula params reference
+                            const createdModifier = await tx.featureModifier.create({
+                                data: {
+                                    ...modifierData,
+                                    featureProgressionId: featureProgression.id,
+                                    formulaParamsId: formulaParamsId,
+                                },
+                            });
+
+                            // Create related conditions if any
+                            if (conditions && conditions.length > 0) {
+                                await tx.featureModifierCondition.createMany({
+                                    data: conditions.map(condition => ({
+                                        ...condition,
+                                        featureModifierId: createdModifier.id,
+                                    })),
+                                });
+                            }
+                        }
                     }
 
                     // Create related choices
@@ -155,26 +202,60 @@ export const classService: ClassService = {
                         });
                     }
 
-                    // Create related prerequisites
-                    if (prerequisites && prerequisites.length > 0) {
-                        await tx.featurePrerequisite.createMany({
-                            data: prerequisites.map(prereq => ({
-                                ...prereq,
-                                featureProgressionId: featureProgression.id,
+                    // Prerequisites are now handled at the feature level
+                    // No need to create prerequisites for progressions
+                }
+            }
+
+            // Create spellcasting progression (spell slots)
+            if (spellcastingProgression && spellcastingProgression.length > 0) {
+                for (const progression of spellcastingProgression as CreateSpellcastingProgressionRequest[]) {
+                    const { slots, ...progressionData } = progression;
+
+                    // Create the spellcasting progression
+                    const createdSpellcastingProgression = await tx.spellcastingProgression.create({
+                        data: {
+                            ...progressionData,
+                            classId: classResult.id,
+                        },
+                    });
+
+                    // Create related slots
+                    if (slots && slots.length > 0) {
+                        await tx.spellcastingSlot.createMany({
+                            data: slots.map((slot: CreateSpellcastingSlotRequest) => ({
+                                ...slot,
+                                progressionId: createdSpellcastingProgression.id,
                             })),
                         });
                     }
                 }
             }
 
-            // Create spellcasting progression
-            if (spellcastingProgression && spellcastingProgression.length > 0) {
-                await tx.spellcastingProgression.createMany({
-                    data: spellcastingProgression.map(prog => ({
-                        ...prog,
-                        classId: classResult.id,
-                    })),
-                });
+            // Create spells known progression
+            if (spellsKnownProgression && spellsKnownProgression.length > 0) {
+                for (const progression of spellsKnownProgression as CreateSpellcastingProgressionRequest[]) {
+                    const { slots, ...progressionData } = progression;
+
+                    // Create the spells known progression
+                    const createdSpellsKnownProgression = await tx.spellcastingProgression.create({
+                        data: {
+                            ...progressionData,
+                            classId: classResult.id, // Required field
+                            classSpellsKnownId: classResult.id, // Link to the class via spells known relation
+                        },
+                    });
+
+                    // Create related slots
+                    if (slots && slots.length > 0) {
+                        await tx.spellcastingSlot.createMany({
+                            data: slots.map((slot: CreateSpellcastingSlotRequest) => ({
+                                ...slot,
+                                progressionId: createdSpellsKnownProgression.id,
+                            })),
+                        });
+                    }
+                }
             }
 
             return classResult;
@@ -207,9 +288,8 @@ export const classService: ClassService = {
                 await tx.featureSpecialEffect.deleteMany({
                     where: { progressionId: { in: progressionIds } }
                 });
-                await tx.featurePrerequisite.deleteMany({
-                    where: { featureProgressionId: { in: progressionIds } }
-                });
+                // Prerequisites are now at the feature level, not the progression level
+                // No need to delete prerequisites for progressions
 
                 // Delete the progressions
                 await tx.featureProgression.deleteMany({
@@ -217,12 +297,47 @@ export const classService: ClassService = {
                 });
             }
 
-            // Delete existing spellcasting progression
-            await tx.spellcastingProgression.deleteMany({
-                where: { classId: query.id }
+            // Delete existing spellcasting progression and slots
+            const existingSpellcastingProgressions = await tx.spellcastingProgression.findMany({
+                where: { classId: query.id, classSpellsKnownId: null },
+                select: { id: true }
             });
 
-            const { features, spellcastingProgression, ...classData } = data;
+            if (existingSpellcastingProgressions.length > 0) {
+                const progressionIds = existingSpellcastingProgressions.map(p => p.id);
+
+                // Delete related slots first
+                await tx.spellcastingSlot.deleteMany({
+                    where: { progressionId: { in: progressionIds } }
+                });
+
+                // Delete the progressions
+                await tx.spellcastingProgression.deleteMany({
+                    where: { id: { in: progressionIds } }
+                });
+            }
+
+            // Delete existing spells known progression and slots
+            const existingSpellsKnownProgressions = await tx.spellcastingProgression.findMany({
+                where: { classSpellsKnownId: query.id },
+                select: { id: true }
+            });
+
+            if (existingSpellsKnownProgressions.length > 0) {
+                const progressionIds = existingSpellsKnownProgressions.map(p => p.id);
+
+                // Delete related slots first
+                await tx.spellcastingSlot.deleteMany({
+                    where: { progressionId: { in: progressionIds } }
+                });
+
+                // Delete the progressions
+                await tx.spellcastingProgression.deleteMany({
+                    where: { id: { in: progressionIds } }
+                });
+            }
+
+            const { features, spellcastingProgression, spellsKnownProgression, ...classData } = data;
 
             // Update the class
             await tx.class.update({
@@ -241,7 +356,7 @@ export const classService: ClassService = {
             // Create new feature progressions with their related entities
             if (features && features.length > 0) {
                 for (const progression of features) {
-                    const { modifiers, choices, effects, prerequisites, feature, class: classRelation, spellcasting, ...progressionData } = progression;
+                    const { modifiers, choices, effects, ...progressionData } = progression;
 
                     // Create the feature progression
                     const featureProgression = await tx.featureProgression.create({
@@ -253,12 +368,42 @@ export const classService: ClassService = {
 
                     // Create related modifiers
                     if (modifiers && modifiers.length > 0) {
-                        await tx.featureModifier.createMany({
-                            data: modifiers.map(modifier => ({
-                                ...modifier,
-                                featureProgressionId: featureProgression.id,
-                            })),
-                        });
+                        for (const modifier of modifiers) {
+                            const { conditions, formulaParams, ...modifierData } = modifier;
+
+                            // Create formula params first if they exist
+                            let formulaParamsId = null;
+                            if (formulaParams) {
+                                const createdFormulaParams = await tx.featureModifierFormulaParams.create({
+                                    data: {
+                                        formulaId: formulaParams.formulaId,
+                                        interval: formulaParams.interval,
+                                        formulaStartLevel: formulaParams.formulaStartLevel,
+                                        attributeId: formulaParams.attributeId,
+                                    },
+                                });
+                                formulaParamsId = createdFormulaParams.id;
+                            }
+
+                            // Create the modifier with formula params reference
+                            const createdModifier = await tx.featureModifier.create({
+                                data: {
+                                    ...modifierData,
+                                    featureProgressionId: featureProgression.id,
+                                    formulaParamsId: formulaParamsId,
+                                },
+                            });
+
+                            // Create related conditions if any
+                            if (conditions && conditions.length > 0) {
+                                await tx.featureModifierCondition.createMany({
+                                    data: conditions.map(condition => ({
+                                        ...condition,
+                                        featureModifierId: createdModifier.id,
+                                    })),
+                                });
+                            }
+                        }
                     }
 
                     // Create related choices
@@ -283,26 +428,60 @@ export const classService: ClassService = {
                         });
                     }
 
-                    // Create related prerequisites
-                    if (prerequisites && prerequisites.length > 0) {
-                        await tx.featurePrerequisite.createMany({
-                            data: prerequisites.map(prereq => ({
-                                ...prereq,
-                                featureProgressionId: featureProgression.id,
+                    // Prerequisites are now handled at the feature level
+                    // No need to create prerequisites for progressions
+                }
+            }
+
+            // Create new spellcasting progression (spell slots)
+            if (spellcastingProgression && spellcastingProgression.length > 0) {
+                for (const progression of spellcastingProgression as CreateSpellcastingProgressionRequest[]) {
+                    const { slots, ...progressionData } = progression;
+
+                    // Create the spellcasting progression
+                    const createdSpellcastingProgression = await tx.spellcastingProgression.create({
+                        data: {
+                            ...progressionData,
+                            classId: query.id,
+                        },
+                    });
+
+                    // Create related slots
+                    if (slots && slots.length > 0) {
+                        await tx.spellcastingSlot.createMany({
+                            data: slots.map((slot: CreateSpellcastingSlotRequest) => ({
+                                ...slot,
+                                progressionId: createdSpellcastingProgression.id,
                             })),
                         });
                     }
                 }
             }
 
-            // Create new spellcasting progression
-            if (spellcastingProgression && spellcastingProgression.length > 0) {
-                await tx.spellcastingProgression.createMany({
-                    data: spellcastingProgression.map(prog => ({
-                        ...prog,
-                        classId: query.id,
-                    })),
-                });
+            // Create new spells known progression
+            if (spellsKnownProgression && spellsKnownProgression.length > 0) {
+                for (const progression of spellsKnownProgression as CreateSpellcastingProgressionRequest[]) {
+                    const { slots, ...progressionData } = progression;
+
+                    // Create the spells known progression
+                    const createdSpellsKnownProgression = await tx.spellcastingProgression.create({
+                        data: {
+                            ...progressionData,
+                            classId: query.id, // Required field
+                            classSpellsKnownId: query.id, // Link to the class via spells known relation
+                        },
+                    });
+
+                    // Create related slots
+                    if (slots && slots.length > 0) {
+                        await tx.spellcastingSlot.createMany({
+                            data: slots.map((slot: CreateSpellcastingSlotRequest) => ({
+                                ...slot,
+                                progressionId: createdSpellsKnownProgression.id,
+                            })),
+                        });
+                    }
+                }
             }
         });
 

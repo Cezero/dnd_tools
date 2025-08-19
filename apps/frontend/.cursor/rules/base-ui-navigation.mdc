@@ -1,0 +1,189 @@
+---
+description: Base UI Navigation Components - Usage Patterns and Styling
+alwaysApply: false
+---
+**CRITICAL**: Use Base UI navigation components for consistent navigation patterns.
+
+## Base UI Navigation Components - Usage Patterns and Styling
+
+### Navigation Components (Use Base UI Directly)
+```typescript
+// ✅ CORRECT - Use Base UI directly for navigation
+// Documentation: https://base-ui.com/react/components/navigation-menu.md
+import { NavigationMenu, Tabs, Breadcrumb } from '@base-ui-components/react';
+
+const MainNavigation = () => (
+    <NavigationMenu>
+        <NavigationMenu.Item href="/dashboard">Dashboard</NavigationMenu.Item>
+        <NavigationMenu.Item href="/characters">Characters</NavigationMenu.Item>
+        <NavigationMenu.Item href="/campaigns">Campaigns</NavigationMenu.Item>
+    </NavigationMenu>
+);
+```
+
+### Tab Navigation
+```typescript
+// ✅ CORRECT - Tab implementation with proper structure
+import { Tabs } from '@base-ui-components/react';
+
+const CharacterTabs = () => (
+    <Tabs defaultValue="overview">
+        <Tabs.List>
+            <Tabs.Trigger value="overview">Overview</Tabs.Trigger>
+            <Tabs.Trigger value="stats">Stats</Tabs.Trigger>
+            <Tabs.Trigger value="inventory">Inventory</Tabs.Trigger>
+        </Tabs.List>
+        
+        <Tabs.Content value="overview">
+            <CharacterOverview />
+        </Tabs.Content>
+        
+        <Tabs.Content value="stats">
+            <CharacterStats />
+        </Tabs.Content>
+        
+        <Tabs.Content value="inventory">
+            <CharacterInventory />
+        </Tabs.Content>
+    </Tabs>
+);
+```
+
+### Menu Navigation
+```typescript
+// ✅ CORRECT - Menu implementation
+import { Menu } from '@base-ui-components/react';
+
+const CharacterMenu = () => (
+    <Menu>
+        <Menu.Trigger>
+            <button className="px-4 py-2 bg-blue-500 text-white rounded">
+                Character Actions
+            </button>
+        </Menu.Trigger>
+        
+        <Menu.Content>
+            <Menu.Item onClick={handleEdit}>Edit Character</Menu.Item>
+            <Menu.Item onClick={handleDuplicate}>Duplicate Character</Menu.Item>
+            <Menu.Separator />
+            <Menu.Item onClick={handleDelete} className="text-red-600">
+                Delete Character
+            </Menu.Item>
+        </Menu.Content>
+    </Menu>
+);
+```
+
+### Menubar Navigation
+```typescript
+// ✅ CORRECT - Menubar implementation
+import { Menubar } from '@base-ui-components/react';
+
+const ApplicationMenubar = () => (
+    <Menubar>
+        <Menubar.Menu>
+            <Menubar.Trigger>File</Menubar.Trigger>
+            <Menubar.Content>
+                <Menubar.Item onClick={handleNew}>New Character</Menubar.Item>
+                <Menubar.Item onClick={handleOpen}>Open Character</Menubar.Item>
+                <Menubar.Item onClick={handleSave}>Save Character</Menubar.Item>
+            </Menubar.Content>
+        </Menubar.Menu>
+        
+        <Menubar.Menu>
+            <Menubar.Trigger>Edit</Menubar.Trigger>
+            <Menubar.Content>
+                <Menubar.Item onClick={handleUndo}>Undo</Menubar.Item>
+                <Menubar.Item onClick={handleRedo}>Redo</Menubar.Item>
+            </Menubar.Content>
+        </Menubar.Menu>
+    </Menubar>
+);
+```
+
+### Breadcrumb Navigation
+```typescript
+// ✅ CORRECT - Breadcrumb implementation
+import { Breadcrumb } from '@base-ui-components/react';
+
+const CharacterBreadcrumb = () => (
+    <Breadcrumb className="text-sm text-gray-600">
+        <Breadcrumb.Item href="/characters">Characters</Breadcrumb.Item>
+        <Breadcrumb.Separator />
+        <Breadcrumb.Item href="/characters/123">Gandalf</Breadcrumb.Item>
+        <Breadcrumb.Separator />
+        <Breadcrumb.Item>Edit</Breadcrumb.Item>
+    </Breadcrumb>
+);
+```
+
+### Styling with Tailwind CSS
+
+#### Navigation Styling Patterns
+```typescript
+// ✅ CORRECT - Consistent navigation styling
+const StyledNavigation = () => (
+    <NavigationMenu className="bg-white shadow-sm border-b">
+        <NavigationMenu.Item 
+            href="/dashboard"
+            className="px-4 py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 
+                       transition-colors duration-200"
+        >
+            Dashboard
+        </NavigationMenu.Item>
+    </NavigationMenu>
+);
+```
+
+#### Tab Styling Patterns
+```typescript
+// ✅ CORRECT - Consistent tab styling
+const StyledTabs = () => (
+    <Tabs defaultValue="overview">
+        <Tabs.List className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+            <Tabs.Trigger 
+                value="overview"
+                className="px-3 py-2 rounded-md text-gray-600 hover:text-gray-900
+                           data-[state=active]:bg-white data-[state=active]:text-blue-600
+                           data-[state=active]:shadow-sm transition-all duration-200"
+            >
+                Overview
+            </Tabs.Trigger>
+        </Tabs.List>
+    </Tabs>
+);
+```
+
+### Accessibility Features
+
+#### Automatic Accessibility
+- **Base UI handles ARIA attributes** automatically for navigation
+- **Keyboard navigation** built into all navigation components
+- **Screen reader support** for all navigation elements
+- **Focus management** handled by components
+
+#### Custom Accessibility
+```typescript
+// ✅ CORRECT - Maintain accessibility when customizing
+const AccessibleNavigation = () => (
+    <NavigationMenu aria-label="Main navigation">
+        <NavigationMenu.Item 
+            href="/characters"
+            aria-current={isCurrentPage ? 'page' : undefined}
+        >
+            Characters
+        </NavigationMenu.Item>
+    </NavigationMenu>
+);
+```
+
+### Success Criteria
+- [ ] Base UI navigation components used for all navigation
+- [ ] Official Base UI documentation consulted for component usage
+- [ ] Consistent Tailwind CSS styling applied
+- [ ] Accessibility features maintained
+- [ ] Keyboard navigation works correctly
+- [ ] Screen reader compatibility verified
+- [ ] Proper ARIA attributes applied
+
+**CRITICAL**: Use Base UI navigation components directly for navigation, feedback, layout, and data display components. **ALWAYS** consult the official Base UI documentation for proper component usage.

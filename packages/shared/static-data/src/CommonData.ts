@@ -221,3 +221,9 @@ export const EDITION_SELECT_LIST = EDITION_LIST.map(edition => ({
     value: edition.id,
     label: (edition.id === 4 ? '3E/3.5E Combined' : edition.abbreviation)
 })).filter(e => e.value !== 5);
+
+// Casting Type Options
+export const CASTING_TYPE_SELECT_LIST = [
+    { value: 'Prepared', label: 'Prepared' },
+    { value: 'Spontaneous', label: 'Spontaneous' },
+];

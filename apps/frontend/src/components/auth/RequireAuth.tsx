@@ -4,7 +4,7 @@ import { Navigate } from 'react-router-dom';
 import { UseAuth } from './AuthProvider';
 import type { RequireAuthProps } from './types';
 
-export function RequireAuth({ children, fallback = <div className="p-4 text-black dark:text-white">Loading authentication...</div> }: RequireAuthProps): React.ReactNode {
+export function RequireAuth({ children, fallback = <div className="p-4">Loading authentication...</div> }: RequireAuthProps): React.ReactNode {
     const { user, isLoading } = UseAuth();
 
     if (isLoading) {

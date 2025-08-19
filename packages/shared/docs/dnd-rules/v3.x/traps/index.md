@@ -5,7 +5,7 @@ This section covers trap mechanics, creation, and detection.
 ## Trap Documentation
 
 ### Core Trap Rules
-- **[Traps](traps.md)** — Trap mechanics, detection, and disarming
+- **[Trap Mechanics](mechanics/index.md)** — Core mechanics, detection, and special features
 - **[Designing Traps](designing.md)** — Creating custom traps and calculating DCs
 
 ## Quick Reference

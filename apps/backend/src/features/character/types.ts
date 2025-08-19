@@ -9,11 +9,9 @@ import type {
     // New types for advancement and spell preparation
     CreateAdvancementRequest,
     UpdateAdvancementRequest,
-    CharacterAdvancementResponse,
     CharacterAdvancementWithDetailsResponse,
     CreateSpellPreparationRequest,
     UpdateSpellPreparationRequest,
-    CharacterSpellPreparationResponse,
     CharacterSpellPreparationWithMetamagicResponse,
     CreateCharacterAttributeRequest,
     UpdateCharacterAttributeRequest,

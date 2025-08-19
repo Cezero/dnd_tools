@@ -7,7 +7,7 @@ import { FeatureSystemService } from '@/services/FeatureSystemService';
 import { GetFeatureResponse } from '@shared/schema';
 
 export function FeatureDetail() {
-    const { slug } = useParams();
+    const { id } = useParams();
     const [feature, setFeature] = useState<GetFeatureResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const { isAdmin } = useAuthAuto();
@@ -19,7 +19,8 @@ export function FeatureDetail() {
     useEffect(() => {
         const Initialize = async () => {
             try {
-                const data = await FeatureSystemService.getFeatureBySlug(undefined, { slug: slug! });
+                // Convert to number before passing to API
+                const data = await FeatureSystemService.getFeatureById(undefined, { id: parseInt(id!) });
                 setFeature(data);
                 setIsLoading(false);
             } catch (error) {
@@ -28,7 +29,7 @@ export function FeatureDetail() {
             }
         };
         Initialize();
-    }, [slug, location.state]);
+    }, [id, location.state]);
 
     const innerCellContentClasses = "p-3 bg-content border-content rounded-lg border w-full";
     const outerContainerClasses = "w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-600 rounded-lg shadow-lg p-1";
@@ -40,7 +41,8 @@ export function FeatureDetail() {
             case 'races':
                 return fromListParams ? `/races?${fromListParams}` : '/races';
             default:
-                return fromListParams ? `/features?${fromListParams}` : '/features';
+                // Default to classes if no specific source is provided
+                return '/classes';
         }
     };
 
@@ -51,7 +53,7 @@ export function FeatureDetail() {
             case 'races':
                 return 'Back to Races';
             default:
-                return 'Back to Features';
+                return 'Back to Classes';
         }
     };
 
@@ -90,7 +92,7 @@ export function FeatureDetail() {
                         {isAdmin && (
                             <div className="flex space-x-2">
                                 <button
-                                    onClick={() => navigate(`/features/${feature.slug}/edit`)}
+                                    onClick={() => navigate(`/features/${feature.id}/edit`)}
                                     className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                                 >
                                     Edit

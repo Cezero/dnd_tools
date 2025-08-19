@@ -4,6 +4,9 @@ import { NameSelectOptionList } from "./Util";
 export const SpecialFeatureId = {
     ClassSkill: 1,
     ClassProficiency: 2,
+    AutomaticLanguage: 3,
+    BonusLanguage: 4,
+    AbilityAdjustment: 5,
 } as const;
 
 export type SpecialFeatureId = typeof SpecialFeatureId[keyof typeof SpecialFeatureId];
@@ -17,12 +20,10 @@ export const FeatureSourceType = {
 export type FeatureSourceType = typeof FeatureSourceType[keyof typeof FeatureSourceType];
 
 export const ModifierType = {
-    Bonus: 0,
-    Quantity: 1,
-    Uses: 2,
-    Targets: 3,
-    Distance: 4,
-    Other: 5,
+    Bonus: 0,        // Numeric bonuses/penalties (STR+4, AC+2, etc.)
+    Quantity: 1,     // Counts, amounts, resources (3d6 damage, 2 targets, 30ft speed)
+    Replacement: 2,  // Replace existing values (unarmed damage, base speed)
+    Other: 3,        // Special cases, complex effects
 } as const;
 
 export type ModifierType = typeof ModifierType[keyof typeof ModifierType];
@@ -30,9 +31,7 @@ export type ModifierType = typeof ModifierType[keyof typeof ModifierType];
 export const MODIFIER_TYPES: BaseMap<CoreComponent> = {
     [ModifierType.Bonus]: { id: ModifierType.Bonus, name: 'Bonus' },
     [ModifierType.Quantity]: { id: ModifierType.Quantity, name: 'Quantity' },
-    [ModifierType.Uses]: { id: ModifierType.Uses, name: 'Uses' },
-    [ModifierType.Targets]: { id: ModifierType.Targets, name: 'Targets' },
-    [ModifierType.Distance]: { id: ModifierType.Distance, name: 'Distance' },
+    [ModifierType.Replacement]: { id: ModifierType.Replacement, name: 'Replacement' },
     [ModifierType.Other]: { id: ModifierType.Other, name: 'Other' },
 }
 
@@ -40,35 +39,89 @@ export const MODIFIER_LIST = Object.values(MODIFIER_TYPES);
 export const MODIFIER_SELECT_LIST = NameSelectOptionList(MODIFIER_LIST);
 
 export const ModifierAppliesToType = {
-    Attribute: 0,
-    Skill: 1,
-    SavingThrow: 2,
-    AC: 3,
-    MovementSpeed: 4,
-    HitDice: 5,
-    Attack: 6,
-    Damage: 7,
-    Initiative: 8,
-    Other: 9,
+    // Bonus-compatible types
+    Attribute: 0,        // STR, DEX, CON, etc.
+    Skill: 1,           // Climb, Jump, etc.
+    SavingThrow: 2,     // Fort, Ref, Will
+    AC: 3,              // Armor Class
+    Attack: 4,          // Attack rolls
+    Damage: 5,          // Damage rolls
+    DamageReduction: 6, // DR
+    Initiative: 7,      // Initiative
+
+    // Quantity-compatible types
+    MovementSpeed: 8,   // Speed in feet
+    HitDice: 9,         // Hit dice (temporary HP, etc.)
+    Uses: 10,           // Uses per day/week
+    Targets: 11,        // Number of targets
+    Distance: 12,       // Range, reach, etc.
+
+    // Other
+    Other: 13,          // Special cases
+    BonusLanguage: 14,  // Languages that require INT modifier
+    AutomaticLanguage: 15, // Languages granted automatically
 } as const;
 
 export type ModifierAppliesToType = typeof ModifierAppliesToType[keyof typeof ModifierAppliesToType];
 
 export const MODIFIER_APPLIES_TO_TYPES: BaseMap<CoreComponent> = {
+    // Bonus-compatible types
     [ModifierAppliesToType.Attribute]: { id: ModifierAppliesToType.Attribute, name: 'Attribute' },
     [ModifierAppliesToType.Skill]: { id: ModifierAppliesToType.Skill, name: 'Skill' },
     [ModifierAppliesToType.SavingThrow]: { id: ModifierAppliesToType.SavingThrow, name: 'Saving Throw' },
     [ModifierAppliesToType.AC]: { id: ModifierAppliesToType.AC, name: 'Armor Class' },
-    [ModifierAppliesToType.MovementSpeed]: { id: ModifierAppliesToType.MovementSpeed, name: 'Movement Speed' },
-    [ModifierAppliesToType.HitDice]: { id: ModifierAppliesToType.HitDice, name: 'Hit Dice' },
     [ModifierAppliesToType.Attack]: { id: ModifierAppliesToType.Attack, name: 'Attack' },
     [ModifierAppliesToType.Damage]: { id: ModifierAppliesToType.Damage, name: 'Damage' },
+    [ModifierAppliesToType.DamageReduction]: { id: ModifierAppliesToType.DamageReduction, name: 'DR' },
     [ModifierAppliesToType.Initiative]: { id: ModifierAppliesToType.Initiative, name: 'Initiative' },
+
+    // Quantity-compatible types
+    [ModifierAppliesToType.MovementSpeed]: { id: ModifierAppliesToType.MovementSpeed, name: 'Movement Speed' },
+    [ModifierAppliesToType.HitDice]: { id: ModifierAppliesToType.HitDice, name: 'Hit Dice' },
+    [ModifierAppliesToType.Uses]: { id: ModifierAppliesToType.Uses, name: 'Uses' },
+    [ModifierAppliesToType.Targets]: { id: ModifierAppliesToType.Targets, name: 'Targets' },
+    [ModifierAppliesToType.Distance]: { id: ModifierAppliesToType.Distance, name: 'Distance' },
+
+    // Other
     [ModifierAppliesToType.Other]: { id: ModifierAppliesToType.Other, name: 'Other' },
+    [ModifierAppliesToType.BonusLanguage]: { id: ModifierAppliesToType.BonusLanguage, name: 'Bonus Language' },
+    [ModifierAppliesToType.AutomaticLanguage]: { id: ModifierAppliesToType.AutomaticLanguage, name: 'Automatic Language' },
 }
 
 export const MODIFIER_APPLIES_TO_LIST = Object.values(MODIFIER_APPLIES_TO_TYPES);
 export const MODIFIER_APPLIES_TO_SELECT_LIST = NameSelectOptionList(MODIFIER_APPLIES_TO_LIST);
+
+// Type compatibility matrix - defines which ModifierAppliesToType values are valid for each ModifierType
+export const MODIFIER_TYPE_COMPATIBILITY = {
+    [ModifierType.Bonus]: [
+        ModifierAppliesToType.Attribute,
+        ModifierAppliesToType.Skill,
+        ModifierAppliesToType.SavingThrow,
+        ModifierAppliesToType.AC,
+        ModifierAppliesToType.Attack,
+        ModifierAppliesToType.Damage,
+        ModifierAppliesToType.DamageReduction,
+        ModifierAppliesToType.Initiative,
+    ],
+    [ModifierType.Quantity]: [
+        ModifierAppliesToType.MovementSpeed,
+        ModifierAppliesToType.HitDice,
+        ModifierAppliesToType.Uses,
+        ModifierAppliesToType.Targets,
+        ModifierAppliesToType.Distance,
+        ModifierAppliesToType.Damage, // For dice quantities
+    ],
+    [ModifierType.Replacement]: [
+        ModifierAppliesToType.Damage,
+        ModifierAppliesToType.MovementSpeed,
+        ModifierAppliesToType.Attribute, // For ability score replacement
+    ],
+    [ModifierType.Other]: [
+        ModifierAppliesToType.Other,
+        ModifierAppliesToType.BonusLanguage, // Bonus languages are Other type modifiers
+        ModifierAppliesToType.AutomaticLanguage, // Automatic languages are Other type modifiers
+    ],
+} as const;
 
 export const FeatureBonusType = {
     // Always stacking types
@@ -192,13 +245,21 @@ export const FEATURE_FEAT_CHOICE_FILTER_SELECT_LIST = NameSelectOptionList(FEATU
 
 export const FeaturePrerequisiteType = {
     SkillRanks: 0,
-    Other: 1,
+    AbilityScore: 1,
+    CharacterLevel: 2,
+    ClassLevel: 3,
+    BaseAttackBonus: 4,
+    Other: 5,
 } as const;
 
 export type FeaturePrerequisiteType = typeof FeaturePrerequisiteType[keyof typeof FeaturePrerequisiteType];
 
 export const FEATURE_PRE_REQ_TYPES: BaseMap<CoreComponent> = {
     [FeaturePrerequisiteType.SkillRanks]: { id: FeaturePrerequisiteType.SkillRanks, name: 'Skill Ranks' },
+    [FeaturePrerequisiteType.AbilityScore]: { id: FeaturePrerequisiteType.AbilityScore, name: 'Ability Score' },
+    [FeaturePrerequisiteType.CharacterLevel]: { id: FeaturePrerequisiteType.CharacterLevel, name: 'Character Level' },
+    [FeaturePrerequisiteType.ClassLevel]: { id: FeaturePrerequisiteType.ClassLevel, name: 'Class Level' },
+    [FeaturePrerequisiteType.BaseAttackBonus]: { id: FeaturePrerequisiteType.BaseAttackBonus, name: 'Base Attack Bonus' },
     [FeaturePrerequisiteType.Other]: { id: FeaturePrerequisiteType.Other, name: 'Other' },
 }
 

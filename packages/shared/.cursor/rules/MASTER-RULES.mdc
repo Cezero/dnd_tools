@@ -1,0 +1,152 @@
+---
+description: rule discovery and workspace layout
+globs: ["**/**"]
+alwaysApply: true
+---
+# Master Rules - D&D Tools Monorepo
+
+**CRITICAL**: These rules must be applied before any other rules.
+
+## Rule Discovery Process (CRITICAL)
+
+### 1. Schema File Detection (MANDATORY - CHECK FIRST)
+**BEFORE** any other rule discovery, check if working with schema files:
+- Files containing `schema.prisma`
+- Files ending in `Schema.ts` or `schema.ts`
+- Files in `packages/shared/schema/src/`
+
+If schema files detected:
+1. **STOP** all work immediately
+2. **Follow** schema-specific workflow
+3. **Wait** for user confirmation
+4. **Only then** continue with other rules
+
+### 2. Automatic Rule Discovery (MANDATORY)
+**BEFORE** any other work, automatically discover and load all relevant rules:
+
+#### Multi-Workspace Rule Discovery
+Since this is a monorepo, rules may be in multiple locations:
+- `packages/shared/.cursor/rules/` (shared rules)
+- `apps/backend/.cursor/rules/` (backend-specific rules)
+- `apps/frontend/.cursor/rules/` (frontend-specific rules)
+- `k8s/.cursor/rules/` (k8s-specific rules)
+
+#### Automatic Rule Loading
+**ALWAYS** check these locations in order:
+1. Current workspace `.cursor/rules/`
+2. `../../packages/shared/.cursor/rules/` (from apps) or `.cursor/rules/` (from shared)
+3. `../../apps/*/.cursor/rules/` (from shared)
+4. Parent workspace `.cursor/rules/` (if applicable)
+5. Root workspace `.cursor/rules/` (if applicable)
+
+#### Rule Discovery Verification
+**NEVER** proceed without confirming rule discovery:
+- [ ] Found master rules (MASTER-RULES.mdc)
+- [ ] Found workflow rules (01-workflow-rules/)
+- [ ] Found architecture rules (02-architecture-rules/)
+- [ ] Found implementation rules (03-implementation-rules/)
+- [ ] Found rule index (RULE-INDEX.mdc)
+
+### 3. Rule Application Order
+1. **Check schema file detection first** - If working with schema files, STOP and follow schema workflow
+2. **Check context-specific rules second** (local .cursor/rules in current package)
+3. **Check global rules third** (shared/.cursor/rules/)
+4. **Apply master rules fourth** (priority 0)
+5. **Apply workflow rules fifth** (priority 1)
+6. **Apply architecture rules sixth** (priority 2) 
+7. **Apply implementation rules seventh** (priority 3)
+8. **Verify compliance** with complete rule set before proceeding
+9. **Use RULE-INDEX.mdc** for comprehensive rule discovery
+10. **NEVER skip documentation enforcement** - Always check @documentation-enforcement.mdc
+
+## Schema Change Workflow (CRITICAL - ENFORCED)
+
+**MANDATORY**: This workflow applies to ANY schema file modification.
+
+### Schema File Detection
+When working with ANY file that contains:
+- `schema.prisma` (Prisma schema)
+- `Schema.ts` or `schema.ts` (Zod schema)
+- `packages/shared/schema/src/` (Schema package files)
+
+**IMMEDIATE ACTIONS REQUIRED:**
+1. **STOP** all current work
+2. **IDENTIFY** schema type (Prisma or Zod)
+3. **FOLLOW** the appropriate workflow below
+4. **WAIT** for user confirmation before proceeding
+
+### Prisma Schema Changes
+1. **Update** `backend/prisma/schema.prisma` or `shared/prisma-client/client/schema.prisma`
+2. **STOP** and ask user to apply migration
+3. **WAIT** for confirmation that migration was applied
+4. **Only then** continue with implementation
+
+### Zod Schema Changes  
+1. **Update** any file in `packages/shared/schema/src/`
+2. **STOP** and ask user to build schema package
+3. **WAIT** for confirmation that build was successful
+4. **Only then** continue with implementation
+
+### Enforcement
+- **NEVER** skip this workflow for schema files
+- **NEVER** run build/migration commands myself
+- **ALWAYS** wait for user confirmation
+- **ALWAYS** verify schema changes are applied before continuing
+
+## Comprehensive Analysis Requirements
+
+1. Check cursor rules to ensure compliance
+2. **ALWAYS check project-mgmt documentation first** (`shared/docs/project-mgmt/README.md`)
+3. Search the codebase for similar implementations
+4. Check for any documentation about established patterns
+5. Examine the Prisma client for available types
+6. Look at how other features handle similar operations
+7. Verify that your approach matches existing patterns
+8. **Update project-mgmt docs as you work** - keep them current
+
+## Project Management Documentation (CRITICAL)
+
+- **ALWAYS check project-mgmt docs before making changes**
+- **Update documentation as you work** - don't wait until the end
+- **Documentation accuracy is more important than implementation speed**
+- **When in doubt, update the docs first**
+
+## Monorepo Awareness
+
+- Always consider the impact on other packages
+- Use proper import paths and workspace references
+- Follow established patterns across the monorepo
+
+## Workspace Context Awareness
+
+**CRITICAL**: Always verify workspace context before proceeding:
+- **Current workspace**: Verify you're in the correct project directory
+- **File paths**: Use relative paths that work from current workspace
+- **Rule discovery**: Check multiple workspace locations for rules
+- **Documentation paths**: Use paths relative to shared package
+
+## Rule Loading Verification
+
+**BEFORE** any implementation, verify rule loading:
+- [ ] Master rules loaded and understood
+- [ ] Workflow rules discovered and applicable
+- [ ] Architecture rules identified for current context
+- [ ] Implementation rules found for technology stack
+- [ ] Documentation enforcement rules active
+- [ ] Schema workflows understood (if applicable)
+
+**CRITICAL**: If any rules are missing or unclear, STOP and ask for clarification.
+
+## No Package Installs or Server Management
+
+- Do not ever run npm or pnpm to install packages. Instead ask the user.
+- Do not attempt to run development servers, production servers, or any other server processes
+- Do not use `npm run dev`, `npm start`, `pnpm dev`, or similar commands
+- If server functionality is needed, ask the user to run the appropriate command themselves
+- Focus on code analysis, file editing, and development tasks that don't require running servers
+
+- If server functionality is needed, ask the user to run the appropriate command themselves
+- Focus on code analysis, file editing, and development tasks that don't require running servers
+
+- If server functionality is needed, ask the user to run the appropriate command themselves
+- Focus on code analysis, file editing, and development tasks that don't require running servers

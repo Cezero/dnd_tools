@@ -1,23 +1,35 @@
-Designing A Trap
-Mechanical Traps
-Simply select the elements you want the trap to have and add up the adjustments to the trap’s Challenge Rating that those elements require (see Table: CR Modifiers for Mechanical Traps) to arrive at the trap’s final CR. From the CR you can derive the DC of the Craft (trapmaking) checks a character must make to construct the trap.
+# Designing A Trap
 
-Magic Traps
-As with mechanical traps, you don’t have to do anything other than decide what elements you want and then determine the CR of the resulting trap (see Table: CR Modifiers for Magic Traps). If a player character wants to design and construct a magic trap, he must have the Craft Wondrous Item feat. In addition, he must be able to cast the spell or spells that the trap requires—or, failing that, he must be able to hire an NPC to cast the spells for him.
+## Mechanical Traps
 
-Challenge Rating Of A Trap
-To calculate the Challenge Rating of a trap, add all the CR modifiers (see the tables below) to the base CR for the trap type.
+Simply select the elements you want the trap to have and add up the adjustments to the trap's **Challenge Rating** that those elements require (see **Table: CR Modifiers for Mechanical Traps**) to arrive at the trap's final CR. From the CR you can derive the DC of the **Craft (trapmaking)** checks a character must make to construct the trap.
 
-Mechanical Trap
-The base CR for a mechanical trap is 0. If your final CR is 0 or lower, add features until you get a CR of 1 or higher.
+## Magic Traps
 
-Table: CR Modifiers for Magic Traps
-Feature	CR Modifier
-See the note following Table: CR Modifiers for Mechanical Traps.
-Highest-level spell	+ Spell level OR +1 per 7 points
-of average damage per round1
-Magic Trap
-For a spell trap or magic device trap, the base CR is 1. The highest-level spell used modifies the CR (see Table: CR Modifiers for Magic Traps).
+As with mechanical traps, you don't have to do anything other than decide what elements you want and then determine the CR of the resulting trap (see **Table: CR Modifiers for Magic Traps**). 
+
+**Requirements for Player Characters:**
+- Must have the **Craft Wondrous Item** feat
+- Must be able to **cast the spell or spells** that the trap requires
+- Alternatively, must be able to **hire an NPC** to cast the spells for him
+
+## Challenge Rating Of A Trap
+
+To calculate the **Challenge Rating** of a trap, add all the CR modifiers (see the tables below) to the base CR for the trap type.
+
+### Mechanical Trap
+The **base CR** for a mechanical trap is **0**. If your final CR is 0 or lower, add features until you get a CR of 1 or higher.
+
+### Table: CR Modifiers for Magic Traps
+
+| **Feature** | **CR Modifier** |
+|-------------|------------------|
+| Highest-level spell | + Spell level OR +1 per 7 points of average damage per round |
+
+> **Note**: See the note following Table: CR Modifiers for Mechanical Traps.
+
+### Magic Trap
+For a **spell trap** or **magic device trap**, the base CR is **1**. The highest-level spell used modifies the CR (see **Table: CR Modifiers for Magic Traps**).
 
 Average Damage
 If a trap (either mechanical or magic) does hit point damage, calculate the average damage for a successful hit and round that value to the nearest multiple of 7. Use this value to adjust the Challenge Rating of the trap, as indicated on the tables below. Damage from poisons and pit spikes does not count toward this value, but damage from a high strength rating and extra damage from multiple attacks does.
@@ -175,6 +187,10 @@ Additional Components	Modifier to Craft
 (Trapmaking) DC
 Proximity trigger	+5
 Automatic reset	+5
-Making the Checks
-To determine how much progress a character makes on building a trap each week, that character makes a Craft (trapmaking) check. See the Craft skill description for details on Craft checks and the circumstances that can affect them.
+### Making the Checks
+To determine how much progress a character makes on building a trap each week, that character makes a **Craft (trapmaking)** check. See the **Craft skill description** for details on Craft checks and the circumstances that can affect them.
+
+---
+
+> **📖 Related Sections**: [Traps Overview](traps.md), [Skills](../skills/), [Combat](../combat/), [Magic](../magic/)
 

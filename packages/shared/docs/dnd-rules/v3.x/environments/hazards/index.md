@@ -2,15 +2,15 @@
 
 Natural hazards in wilderness environments can pose significant threats to adventuring parties.
 
-## Fire Hazards
+## Environmental Hazards
 
-### [Forest Fires (CR 6)](forest-fires.md)
-Comprehensive guide to wildfire encounters:
-- **Fire ignition conditions** — Dry weather, strong winds, lightning
-- **Detection and approach** — Spotting distances and heat awareness
-- **Fire mechanics** — Movement speed, advancement patterns
-- **Survival dangers** — Heat damage, catching fire, smoke inhalation
-- **Escape strategies** — Wind direction, firebreaks, protection methods
+### Core Hazard Types
+- **[Elemental Hazards](elemental-hazards.md)** — Acid, cold, fire, lava, and smoke effects
+- **[Physical Hazards](physical-hazards.md)** — Darkness and falling damage
+- **[Survival Hazards](survival-hazards.md)** — Starvation, thirst, suffocation, and drowning
+
+### Specific Hazards
+- **[Forest Fires](forest-fires.md)** — Wildfire mechanics and effects
 
 ## Quick Reference
 

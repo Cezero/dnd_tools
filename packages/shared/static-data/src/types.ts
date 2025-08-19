@@ -36,6 +36,19 @@ export interface Currency extends CoreComponentAbbreviation {
     gpValue: number;
 }
 
+export interface Formula extends CoreComponent {
+    description: string;
+    parameters: FormulaParameter[];
+    calculate: (params: Record<string, number>) => number;
+}
+
+export interface FormulaParameter {
+    name: string;
+    description: string;
+    required: boolean;
+    defaultValue?: number;
+}
+
 export interface Size extends CoreComponentAbbreviation {
     sizeModifier: number;
     grappleModifier: number;
@@ -89,6 +102,7 @@ export interface ClassNameMap {
 export interface Skill extends CoreComponent {
     abilityId: number;
     trainedOnly: boolean;
+    isAnalog: boolean;
 }
 
 export interface SourceBook extends CoreComponentAbbreviation {

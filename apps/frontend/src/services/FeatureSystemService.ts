@@ -6,14 +6,6 @@ import {
     CreateFeatureSchema,
     UpdateFeatureSchema,
     CreateFeatureProgressionSchema,
-    UpdateFeatureProgressionSchema,
-    CreateFeatureProgressionWithRelationsSchema,
-    CreateFeatureModifierSchema,
-    UpdateFeatureModifierSchema,
-    CreateFeatureChoiceSchema,
-    UpdateFeatureChoiceSchema,
-    CreateFeatureSpecialEffectSchema,
-    UpdateFeatureSpecialEffectSchema,
     GetFeatureResponseSchema,
     GetAllFeaturesResponseSchema,
     CreateResponseSchema,
@@ -23,9 +15,11 @@ import {
 /**
  * FeatureSystemService for admin-only feature management operations
  * 
- * This service provides CRUD operations for the unified FeatureSystem,
- * including features, progressions, modifiers, choices, and special effects.
+ * This service provides CRUD operations for the unified FeatureSystem.
  * All operations require admin privileges.
+ * 
+ * Note: Individual modifier/choice/effect CRUD operations are not included
+ * as they are only ever modified as part of bulk class/race operations.
  */
 export const FeatureSystemService = {
     // Core feature CRUD (admin only)
@@ -36,10 +30,10 @@ export const FeatureSystemService = {
         responseSchema: GetAllFeaturesResponseSchema,
     }),
 
-    getFeatureBySlug: typedApi<undefined, typeof GetFeatureResponseSchema, typeof FeatureSlugParamSchema>({
-        path: '/features/:slug',
+    getFeatureById: typedApi<undefined, typeof GetFeatureResponseSchema, typeof FeatureIdParamSchema>({
+        path: '/features/:id',
         method: 'GET',
-        paramsSchema: FeatureSlugParamSchema,
+        paramsSchema: FeatureIdParamSchema,
         responseSchema: GetFeatureResponseSchema,
     }),
 
@@ -50,120 +44,26 @@ export const FeatureSystemService = {
         responseSchema: CreateResponseSchema,
     }),
 
-    updateFeature: typedApi<typeof UpdateFeatureSchema, typeof UpdateResponseSchema, typeof FeatureSlugParamSchema>({
-        path: '/features/:slug',
+    updateFeature: typedApi<typeof UpdateFeatureSchema, typeof UpdateResponseSchema, typeof FeatureIdParamSchema>({
+        path: '/features/:id',
         method: 'PUT',
         requestSchema: UpdateFeatureSchema,
-        paramsSchema: FeatureSlugParamSchema,
+        paramsSchema: FeatureIdParamSchema,
         responseSchema: UpdateResponseSchema,
     }),
 
-    deleteFeature: typedApi<undefined, typeof UpdateResponseSchema, typeof FeatureSlugParamSchema>({
-        path: '/features/:slug',
+    deleteFeature: typedApi<undefined, typeof UpdateResponseSchema, typeof FeatureIdParamSchema>({
+        path: '/features/:id',
         method: 'DELETE',
-        paramsSchema: FeatureSlugParamSchema,
+        paramsSchema: FeatureIdParamSchema,
         responseSchema: UpdateResponseSchema,
     }),
 
-    // Progression management (admin only)
-    createFeatureProgression: typedApi<typeof CreateFeatureProgressionSchema, typeof CreateResponseSchema>({
-        path: '/features/progressions',
+    // Bulk progression management (admin only)
+    createFeatureProgressionWithRelations: typedApi<typeof CreateFeatureProgressionSchema, typeof CreateResponseSchema>({
+        path: '/features/progressions/bulk',
         method: 'POST',
         requestSchema: CreateFeatureProgressionSchema,
         responseSchema: CreateResponseSchema,
-    }),
-
-    createFeatureProgressionWithRelations: typedApi<typeof CreateFeatureProgressionWithRelationsSchema, typeof CreateResponseSchema>({
-        path: '/features/progressions/bulk',
-        method: 'POST',
-        requestSchema: CreateFeatureProgressionWithRelationsSchema,
-        responseSchema: CreateResponseSchema,
-    }),
-
-    updateFeatureProgression: typedApi<typeof UpdateFeatureProgressionSchema, typeof UpdateResponseSchema, typeof FeatureIdParamSchema>({
-        path: '/features/progressions/:id',
-        method: 'PUT',
-        requestSchema: UpdateFeatureProgressionSchema,
-        paramsSchema: FeatureIdParamSchema,
-        responseSchema: UpdateResponseSchema,
-    }),
-
-    deleteFeatureProgression: typedApi<undefined, typeof UpdateResponseSchema, typeof FeatureIdParamSchema>({
-        path: '/features/progressions/:id',
-        method: 'DELETE',
-        paramsSchema: FeatureIdParamSchema,
-        responseSchema: UpdateResponseSchema,
-    }),
-
-    // Modifier management (admin only)
-    createFeatureModifier: typedApi<typeof CreateFeatureModifierSchema, typeof CreateResponseSchema, typeof FeatureIdParamSchema>({
-        path: '/features/progressions/:id/modifiers',
-        method: 'POST',
-        requestSchema: CreateFeatureModifierSchema,
-        paramsSchema: FeatureIdParamSchema,
-        responseSchema: CreateResponseSchema,
-    }),
-
-    updateFeatureModifier: typedApi<typeof UpdateFeatureModifierSchema, typeof UpdateResponseSchema, typeof FeatureIdParamSchema>({
-        path: '/features/modifiers/:id',
-        method: 'PUT',
-        requestSchema: UpdateFeatureModifierSchema,
-        paramsSchema: FeatureIdParamSchema,
-        responseSchema: UpdateResponseSchema,
-    }),
-
-    deleteFeatureModifier: typedApi<undefined, typeof UpdateResponseSchema, typeof FeatureIdParamSchema>({
-        path: '/features/modifiers/:id',
-        method: 'DELETE',
-        paramsSchema: FeatureIdParamSchema,
-        responseSchema: UpdateResponseSchema,
-    }),
-
-    // Choice management (admin only)
-    createFeatureChoice: typedApi<typeof CreateFeatureChoiceSchema, typeof CreateResponseSchema, typeof FeatureIdParamSchema>({
-        path: '/features/progressions/:id/choices',
-        method: 'POST',
-        requestSchema: CreateFeatureChoiceSchema,
-        paramsSchema: FeatureIdParamSchema,
-        responseSchema: CreateResponseSchema,
-    }),
-
-    updateFeatureChoice: typedApi<typeof UpdateFeatureChoiceSchema, typeof UpdateResponseSchema, typeof FeatureIdParamSchema>({
-        path: '/features/choices/:id',
-        method: 'PUT',
-        requestSchema: UpdateFeatureChoiceSchema,
-        paramsSchema: FeatureIdParamSchema,
-        responseSchema: UpdateResponseSchema,
-    }),
-
-    deleteFeatureChoice: typedApi<undefined, typeof UpdateResponseSchema, typeof FeatureIdParamSchema>({
-        path: '/features/choices/:id',
-        method: 'DELETE',
-        paramsSchema: FeatureIdParamSchema,
-        responseSchema: UpdateResponseSchema,
-    }),
-
-    // Special effect management (admin only)
-    createFeatureSpecialEffect: typedApi<typeof CreateFeatureSpecialEffectSchema, typeof CreateResponseSchema, typeof FeatureIdParamSchema>({
-        path: '/features/progressions/:id/effects',
-        method: 'POST',
-        requestSchema: CreateFeatureSpecialEffectSchema,
-        paramsSchema: FeatureIdParamSchema,
-        responseSchema: CreateResponseSchema,
-    }),
-
-    updateFeatureSpecialEffect: typedApi<typeof UpdateFeatureSpecialEffectSchema, typeof UpdateResponseSchema, typeof FeatureIdParamSchema>({
-        path: '/features/effects/:id',
-        method: 'PUT',
-        requestSchema: UpdateFeatureSpecialEffectSchema,
-        paramsSchema: FeatureIdParamSchema,
-        responseSchema: UpdateResponseSchema,
-    }),
-
-    deleteFeatureSpecialEffect: typedApi<undefined, typeof UpdateResponseSchema, typeof FeatureIdParamSchema>({
-        path: '/features/effects/:id',
-        method: 'DELETE',
-        paramsSchema: FeatureIdParamSchema,
-        responseSchema: UpdateResponseSchema,
     }),
 }; 

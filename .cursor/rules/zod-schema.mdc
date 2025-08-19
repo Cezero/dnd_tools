@@ -1,6 +1,0 @@
----
-description: When building or verifying validation schemas
-globs: 
-alwaysApply: false
----
-All Zod schema definitions shoulld be created in the @shared/schema package

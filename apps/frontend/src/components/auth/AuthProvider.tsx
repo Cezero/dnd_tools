@@ -7,7 +7,6 @@ import {
     LoginUserSchema,
     JwtPayloadSchema,
 } from '@shared/schema';
-
 import type {
     UserDiceConfig,
     AuthUser,

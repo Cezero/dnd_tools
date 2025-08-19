@@ -2,13 +2,11 @@ import { z } from 'zod';
 import { QueryResponseSchema } from './query.js';
 import { SourceMapSchema } from './sourcebook.js';
 import { ProgressionType } from '@shared/static-data';
-import { FeatureSchema, FeatureProgressionWithRelationsSchema, CreateFeatureProgressionWithRelationsSchema } from './feature.js';
-import { SpellcastingProgressionSchema } from './spellcasting.js';
+import { CreateFeatureProgressionSchema, FeatureProgressionSchema } from './feature.js';
+import { SpellcastingProgressionSchema, CreateSpellcastingProgressionSchema, SpellcastingProgressionWithSlotsSchema } from './spellcasting.js';
 
 // Enum schemas
 export const CastingTypeEnumSchema = z.enum(['Prepared', 'Spontaneous']);
-
-
 
 export const BaseClassSchema = z.object({
     name: z.string()
@@ -23,6 +21,7 @@ export const BaseClassSchema = z.object({
     isPrestige: z.boolean().default(false),
     isVisible: z.boolean().default(true),
     canCastSpells: z.boolean().default(false),
+    spellsKnown: z.boolean().default(false),
     hitDie: z.number().int().min(0, 'Hit die must be at least 0').max(20, 'Hit die must be at most 20'),
     skillPoints: z.number().int().min(0, 'Skill points must be non-negative').max(100, 'Skill points must be less than 100'),
     castingAbilityId: z.number().int().positive('Casting ability ID must be a positive integer').nullable(),
@@ -33,36 +32,9 @@ export const BaseClassSchema = z.object({
     willProgression: z.nativeEnum(ProgressionType),
     description: z.string().max(10000, 'Description must be less than 10000 characters').nullable(),
     sourceBookInfo: z.array(SourceMapSchema).nullable(),
-    features: z.array(FeatureProgressionWithRelationsSchema).nullable(),
-    spellcastingProgression: z.array(SpellcastingProgressionSchema).nullable(),
-});
-
-// Schema for creating/updating classes with feature progressions
-export const ClassWithFeaturesSchema = z.object({
-    name: z.string()
-        .min(1, 'Class name is required')
-        .max(100, 'Class name must be less than 100 characters')
-        .trim(),
-    abbreviation: z.string()
-        .min(1, 'Class abbreviation is required')
-        .max(10, 'Class abbreviation must be less than 10 characters')
-        .trim(),
-    editionId: z.number().int().positive('Edition ID must be a positive integer').nullable(),
-    isPrestige: z.boolean().default(false),
-    isVisible: z.boolean().default(true),
-    canCastSpells: z.boolean().default(false),
-    hitDie: z.number().int().min(0, 'Hit die must be at least 0').max(20, 'Hit die must be at most 20'),
-    skillPoints: z.number().int().min(0, 'Skill points must be non-negative').max(100, 'Skill points must be less than 100'),
-    castingAbilityId: z.number().int().positive('Casting ability ID must be a positive integer').nullable(),
-    castingType: CastingTypeEnumSchema.nullable(),
-    babProgression: z.nativeEnum(ProgressionType),
-    fortProgression: z.nativeEnum(ProgressionType),
-    refProgression: z.nativeEnum(ProgressionType),
-    willProgression: z.nativeEnum(ProgressionType),
-    description: z.string().max(10000, 'Description must be less than 10000 characters').nullable(),
-    sourceBookInfo: z.array(SourceMapSchema).nullable(),
-    features: z.array(CreateFeatureProgressionWithRelationsSchema).nullable(),
-    spellcastingProgression: z.array(SpellcastingProgressionSchema).nullable(),
+    features: z.array(FeatureProgressionSchema).nullable(),
+    spellcastingProgression: z.array(SpellcastingProgressionWithSlotsSchema).optional().nullable(),
+    spellsKnownProgression: z.array(SpellcastingProgressionWithSlotsSchema).optional().nullable(),
 });
 
 export const ClassIdParamSchema = z.object({
@@ -82,9 +54,25 @@ export const GetAllClassesResponseSchema = QueryResponseSchema.extend({
 
 export const GetClassResponseSchema = BaseClassSchema;
 
-export const UpdateClassSchema = ClassWithFeaturesSchema.partial();
+export const UpdateClassSchema = BaseClassSchema.omit({
+    features: true,
+    spellcastingProgression: true,
+    spellsKnownProgression: true,
+}).extend({
+    features: z.array(CreateFeatureProgressionSchema).nullable(),
+    spellcastingProgression: z.array(CreateSpellcastingProgressionSchema).nullable(),
+    spellsKnownProgression: z.array(CreateSpellcastingProgressionSchema).nullable(),
+}).partial();
 
-export const CreateClassSchema = ClassWithFeaturesSchema;
+export const CreateClassSchema = BaseClassSchema.omit({
+    features: true,
+    spellcastingProgression: true,
+    spellsKnownProgression: true,
+}).extend({
+    features: z.array(CreateFeatureProgressionSchema).nullable(),
+    spellcastingProgression: z.array(CreateSpellcastingProgressionSchema).nullable(),
+    spellsKnownProgression: z.array(CreateSpellcastingProgressionSchema).nullable(),
+});
 
 // Enum type exports
 export type CastingType = z.infer<typeof CastingTypeEnumSchema>;

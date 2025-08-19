@@ -1,4 +1,5 @@
 import { Response } from 'express';
+
 import {
     ValidatedNoInput,
     ValidatedParamsT,
@@ -11,7 +12,6 @@ import {
     UpdateClassRequest,
     GetAllClassesResponse,
     GetClassResponse,
-    CreateResponse,
     UpdateResponse
 } from '@shared/schema';
 

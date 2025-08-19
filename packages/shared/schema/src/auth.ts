@@ -1,10 +1,11 @@
 import { z } from 'zod';
+import { UserDiceConfigOverrideSchema } from './diceBox.js';
 
 // NEW: User dice configuration schema (replaces old dice preferences)
 export const UserDiceConfigSchema = z.object({
     baseConfigId: z.number(),
     baseConfigName: z.string(),
-    overrides: z.record(z.string(), z.string()).default({})
+    overrides: z.array(UserDiceConfigOverrideSchema).default([])
 });
 
 // Schema for user registration

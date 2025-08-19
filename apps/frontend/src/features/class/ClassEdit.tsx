@@ -1,78 +1,45 @@
-import { Dialog } from '@base-ui-components/react/dialog';
-import { ScrollArea } from '@base-ui-components/react/scroll-area';
-import { TrashIcon } from '@heroicons/react/24/outline';
-import React, { useState, useEffect, useCallback } from 'react';
+import {
+    DocumentTextIcon,
+    ShieldCheckIcon,
+    AcademicCapIcon,
+    SparklesIcon,
+    BeakerIcon
+} from '@heroicons/react/24/outline';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
 import { FeatureProgressionDetailEdit, FeatureProficiencyDialog } from '@/components/feature-system';
 import {
     ValidatedForm,
-    ValidatedInput,
     useValidatedForm,
-    CustomSelect,
-    CustomCheckbox
 } from '@/components/forms';
-import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
-import { formatClassProficiencies, formatProgression } from '@/lib/Formatters';
 import {
     CreateClassSchema,
     UpdateClassSchema,
     CreateClassRequest,
     UpdateClassRequest,
-    FeatureProgressionWithRelations
+    FeatureProgressionWithRelations,
+    SpellcastingProgressionWithSlots
 } from '@shared/schema';
 import {
-    RPG_DICE_SELECT_LIST,
-    ABILITY_SELECT_LIST,
-    EDITION_SELECT_LIST_FULL,
-    BAB_PROGRESSION_SELECT_LIST,
-    SAVE_PROGRESSION_SELECT_LIST,
-    FeatureModifierType,
     FeatureSpecialEffectType,
-    FeatureAppliesToType,
     SpecialFeatureId,
-    SKILL_MAP,
-    SKILL_SELECT_LIST,
 } from '@shared/static-data';
 
 import { ClassFeatureAssoc } from './ClassFeatureAssoc';
-import { ClassService } from './ClassService';
 import { ClassProficiencyService } from './ClassProficiencyService';
-
-// Type definitions for the form state
-type ClassFormData = CreateClassRequest | UpdateClassRequest;
-
-
-
-// Helper functions to extract skills and proficiencies from feature progressions
-function getClassSkills(progressions: FeatureProgressionWithRelations[]): number[] {
-    return progressions
-        .filter(prog => prog.featureId === SpecialFeatureId.ClassSkill && prog.appliesToType === FeatureAppliesToType.Skill)
-        .flatMap(prog =>
-            prog.modifiers
-                ?.filter(mod => mod.modifierType === FeatureModifierType.Skill && mod.appliesTo)
-                .map(mod => mod.appliesTo as number) || []
-        )
-        .filter(id => id > 0);
-}
-
-function getClassProficiencies(
-    progressions: FeatureProgressionWithRelations[]
-): Array<{ featId: number; itemId: number; featName: string; itemName?: string }> {
-    return progressions
-        .filter(prog => prog.featureId === SpecialFeatureId.ClassProficiency)
-        .flatMap(prog =>
-            prog.effects
-                ?.filter(effect => effect.effectType === FeatureSpecialEffectType.Proficiency)
-                .map(effect => ({
-                    featId: effect.featId || 0,
-                    itemId: effect.itemId || -1,
-                    featName: effect.feat?.name || `Feat ${effect.featId}`,
-                    itemName: effect.itemId === -1 ? undefined : (effect.item?.name || `Item ${effect.itemId}`)
-                })) || []
-        )
-        .filter(prof => prof.featId > 0);
-}
+import { ClassSkillService } from './ClassSkillService';
+import { ClassService } from './ClassService';
+import {
+    BasicInfoTab,
+    SkillsTab,
+    ProficienciesTab,
+    FeaturesTab,
+    SpellcastingTab,
+    DescriptionTab,
+    type TabConfig,
+    type ClassFormData
+} from './tabs';
 
 export default function ClassEdit() {
     const { id } = useParams<{ id: string }>();
@@ -82,12 +49,25 @@ export default function ClassEdit() {
     const [message, setMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState<string>('basic');
     const [isFeatureAssocOpen, setIsFeatureAssocOpen] = useState(false);
     const [isProficiencyDialogOpen, setIsProficiencyDialogOpen] = useState(false);
     const [featureProgressions, setFeatureProgressions] = useState<FeatureProgressionWithRelations[]>([]);
+    const [spellcastingProgression, setSpellcastingProgression] = useState<SpellcastingProgressionWithSlots[]>([]);
+    const [spellsKnownProgression, setSpellsKnownProgression] = useState<SpellcastingProgressionWithSlots[]>([]);
     const [isProgressionDialogOpen, setIsProgressionDialogOpen] = useState(false);
     const [editingProgression, setEditingProgression] = useState<FeatureProgressionWithRelations | null>(null);
     const [preSelectedFeature, setPreSelectedFeature] = useState<{ id: number; name: string; description: string; slug: string } | undefined>(undefined);
+
+    // Ref to track if we've already processed the newFeature
+    const processedNewFeatureRef = useRef<boolean>(false);
+    // Ref to track current preSelectedFeature
+    const preSelectedFeatureRef = useRef<{ id: number; name: string; description: string; slug: string } | undefined>(undefined);
+
+    // Update ref when preSelectedFeature changes
+    useEffect(() => {
+        preSelectedFeatureRef.current = preSelectedFeature;
+    }, [preSelectedFeature]);
 
     // Determine which schema to use based on whether we're creating or editing
     const schema = id === 'new' ? CreateClassSchema : UpdateClassSchema;
@@ -96,98 +76,15 @@ export default function ClassEdit() {
      * Handles adding a class skill via the feature system.
      */
     const handleAddSkill = useCallback((skillId: number) => {
-        setFeatureProgressions(prev => {
-            // Check if class skills progression already exists
-            let classSkillsProgression = prev.find(fp =>
-                fp.featureId === SpecialFeatureId.ClassSkill && fp.appliesToType === FeatureAppliesToType.Skill
-            );
-
-            if (!classSkillsProgression) {
-                // Create the main class skills progression if it doesn't exist
-                classSkillsProgression = {
-                    id: Date.now() + Math.random(), // Temporary ID for frontend state
-                    featureId: SpecialFeatureId.ClassSkill,
-                    sourceType: 1, // 1 for Class
-                    classId: parseInt(id || '0'),
-                    raceId: null,
-                    level: 1, // Class skills are level 1 features
-                    appliesToType: FeatureAppliesToType.Skill,
-                    appliesTo: null, // No specific skill, this is the container progression
-                    feature: {
-                        id: SpecialFeatureId.ClassSkill,
-                        slug: 'class-skill',
-                        name: 'Class Skill',
-                        description: 'Class skill feature',
-                    },
-                    modifiers: [],
-                    choices: [],
-                    effects: [],
-                };
-                prev = [...prev, classSkillsProgression];
-            }
-
-            // Check if this specific skill is already added
-            const existingSkillModifier = classSkillsProgression.modifiers?.find(m =>
-                m.modifierType === FeatureModifierType.Skill && m.appliesTo === skillId
-            );
-
-            if (existingSkillModifier) {
-                // Skill already exists, don't add duplicate
-                return prev;
-            }
-
-            // Add the skill as a modifier to the existing progression
-            const newModifier = {
-                id: Date.now() + Math.random(), // Temporary ID
-                featureProgressionId: classSkillsProgression.id,
-                modifierType: FeatureModifierType.Skill,
-                value: 1, // Class skill modifier value
-                bonusType: null, // Optional bonus type
-                appliesTo: skillId,
-                appliesIfChoiceKey: null,
-                appliesIfChoiceValue: null,
-            };
-
-            // Create a new array with the updated progression
-            return prev.map(p => {
-                if (p.id === classSkillsProgression.id) {
-                    return {
-                        ...p,
-                        modifiers: [...(p.modifiers || []), newModifier]
-                    };
-                }
-                return p;
-            });
-        });
-    }, [id]);
+        ClassSkillService.addSkill(featureProgressions, setFeatureProgressions, skillId, parseInt(id || '0'));
+    }, [id, featureProgressions, setFeatureProgressions]);
 
     /**
      * Handles removing a class skill via the feature system.
      */
     const handleRemoveSkill = useCallback((skillId: number) => {
-        setFeatureProgressions(prev => {
-            const updatedProgressions = prev.map(prog => {
-                if (prog.featureId === SpecialFeatureId.ClassSkill && prog.appliesToType === FeatureAppliesToType.Skill) {
-                    // Remove the specific skill modifier
-                    const updatedModifiers = prog.modifiers?.filter(mod =>
-                        !(mod.modifierType === FeatureModifierType.Skill && mod.appliesTo === skillId)
-                    ) || [];
-
-                    return {
-                        ...prog,
-                        modifiers: updatedModifiers
-                    };
-                }
-                return prog;
-            });
-
-            // Remove the progression entirely if it has no modifiers left
-            return updatedProgressions.filter(prog =>
-                !(prog.featureId === SpecialFeatureId.ClassSkill && prog.appliesToType === FeatureAppliesToType.Skill) ||
-                (prog.modifiers && prog.modifiers.length > 0)
-            );
-        });
-    }, []);
+        ClassSkillService.removeSkill(featureProgressions, setFeatureProgressions, skillId);
+    }, [featureProgressions, setFeatureProgressions]);
 
     /**
      * Handles adding a proficiency via the feature system.
@@ -292,31 +189,8 @@ export default function ClassEdit() {
      * Handles removing a proficiency via the feature system.
      */
     const handleRemoveProficiency = useCallback((featId: number, itemId: number) => {
-        setFeatureProgressions(prev => {
-            const updatedProgressions = prev.map(prog => {
-                if (prog.featureId === SpecialFeatureId.ClassProficiency) {
-                    // Remove the specific proficiency effect
-                    const updatedEffects = prog.effects?.filter(effect =>
-                        !(effect.effectType === FeatureSpecialEffectType.Proficiency &&
-                            effect.featId === featId &&
-                            effect.itemId === itemId)
-                    ) || [];
-
-                    return {
-                        ...prog,
-                        effects: updatedEffects
-                    };
-                }
-                return prog;
-            });
-
-            // Remove the progression entirely if it has no effects left
-            return updatedProgressions.filter(prog =>
-                !(prog.featureId === SpecialFeatureId.ClassProficiency) ||
-                (prog.effects && prog.effects.length > 0)
-            );
-        });
-    }, []);
+        ClassProficiencyService.removeProficiency(featureProgressions, setFeatureProgressions, featId, itemId);
+    }, [featureProgressions, setFeatureProgressions]);
 
 
 
@@ -342,20 +216,33 @@ export default function ClassEdit() {
 
     const [formData, setFormData] = useState<ClassFormData>(initialFormData);
 
+    // Tab configuration - must be after formData declaration
+    const tabs: TabConfig[] = [
+        { id: 'basic', label: 'Basic Info', icon: DocumentTextIcon, component: BasicInfoTab },
+        ...(formData.canCastSpells ? [{ id: 'spells', label: 'Spellcasting', icon: BeakerIcon, component: SpellcastingTab }] : []),
+        { id: 'skills', label: 'Skills', icon: ShieldCheckIcon, component: SkillsTab },
+        { id: 'proficiencies', label: 'Proficiencies', icon: AcademicCapIcon, component: ProficienciesTab },
+        { id: 'features', label: 'Features', icon: SparklesIcon, component: FeaturesTab },
+        { id: 'description', label: 'Description', icon: DocumentTextIcon, component: DescriptionTab }
+    ];
+
+    const CurrentTabComponent = tabs.find(tab => tab.id === activeTab)?.component;
+
     /**
      * Handles adding a feature progression to the class.
      */
     const handleAddProgression = useCallback((progression: FeatureProgressionWithRelations) => {
         console.log('handleAddProgression called with:', progression);
         setFeatureProgressions(prev => {
-            // Ensure the progression has feature information for display
+            // The progression should now include feature data from FeatureProgressionDetailEdit
+            // But provide fallback in case it doesn't
             const progressionWithFeature = {
                 ...progression,
                 feature: progression.feature || {
                     id: progression.featureId,
-                    name: preSelectedFeature?.name || `Feature ${progression.featureId}`,
-                    description: preSelectedFeature?.description || '',
-                    slug: preSelectedFeature?.slug || `feature-${progression.featureId}`,
+                    name: preSelectedFeatureRef.current?.name || `Feature ${progression.featureId}`,
+                    description: preSelectedFeatureRef.current?.description || '',
+                    slug: preSelectedFeatureRef.current?.slug || `feature-${progression.featureId}`,
                 }
             };
 
@@ -363,7 +250,7 @@ export default function ClassEdit() {
             // Always add as a new progression - allow multiple progressions per feature/level
             return [...prev, progressionWithFeature];
         });
-    }, [preSelectedFeature]);
+    }, []); // Remove preSelectedFeature dependency to prevent infinite re-renders
 
     /**
      * Handles the removal of a feature progression from the class.
@@ -438,6 +325,20 @@ export default function ClassEdit() {
                 } else {
                     setFeatureProgressions([]);
                 }
+
+                // Load spellcasting progression from the class data
+                if (fetchedClass.spellcastingProgression) {
+                    setSpellcastingProgression(fetchedClass.spellcastingProgression);
+                } else {
+                    setSpellcastingProgression([]);
+                }
+
+                // Load spells known progression from the class data
+                if (fetchedClass.spellsKnownProgression) {
+                    setSpellsKnownProgression(fetchedClass.spellsKnownProgression);
+                } else {
+                    setSpellsKnownProgression([]);
+                }
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to fetch class');
             } finally {
@@ -450,8 +351,10 @@ export default function ClassEdit() {
 
     // Handle new feature from association dialog
     useEffect(() => {
-        if (location.state?.newFeature) {
+        if (location.state?.newFeature && !processedNewFeatureRef.current) {
             const newFeature = location.state.newFeature;
+            processedNewFeatureRef.current = true;
+
             // Add the new feature progression to the list
             const newProgression: FeatureProgressionWithRelations = {
                 id: Date.now(), // Temporary ID for frontend
@@ -476,9 +379,7 @@ export default function ClassEdit() {
             // Clear the state
             navigate(location.pathname, { replace: true, state: {} });
         }
-    }, [location.state, id, navigate]);
-
-
+    }, [location.state?.newFeature, id, navigate]);
 
     const HandleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -487,13 +388,15 @@ export default function ClassEdit() {
 
         // Validate the entire form
         if (!form.validation.validateForm(formData)) {
+            setError('Please fix the validation errors before submitting');
+            console.log('Form validation failed:', form.validation.validationState);
             return;
         }
 
         try {
             setIsLoading(true);
 
-            // Prepare the complete class data including feature progressions
+            // Prepare the complete class data including feature progressions and spellcasting progression
             const classData = {
                 ...formData,
                 features: featureProgressions.map(prog => {
@@ -503,6 +406,18 @@ export default function ClassEdit() {
                         // Remove temporary IDs from related entities
                         modifiers: prog.modifiers?.map(mod => {
                             const { id: _, featureProgressionId: __, ...modData } = mod;
+                            // Ensure formulaParams is properly structured for backend
+                            if (modData.formulaParams && modData.formulaParams.formulaId) {
+                                // Keep the formulaParams data but remove any temporary IDs
+                                const formulaParamsData = { ...modData.formulaParams };
+                                delete (formulaParamsData as any).id; // Remove id if it exists
+                                modData.formulaParams = formulaParamsData;
+                                // Remove formulaParamsId as it will be set by the backend
+                                delete modData.formulaParamsId;
+                            } else if (modData.formulaParamsId) {
+                                // If we have formulaParamsId but no formulaParams, this is an error
+                                console.error('Modifier has formulaParamsId but no formulaParams:', modData);
+                            }
                             return modData;
                         }) || [],
                         choices: prog.choices?.map(choice => {
@@ -514,20 +429,64 @@ export default function ClassEdit() {
                             return effectData;
                         }) || [],
                     };
+                }),
+                spellcastingProgression: spellcastingProgression.map(prog => {
+                    const { id: _, classId: __, ...progressionData } = prog;
+                    return {
+                        ...progressionData,
+                        slots: prog.slots?.map(slot => {
+                            const { id: _, progressionId: __, ...slotData } = slot;
+                            return slotData;
+                        }) || []
+                    };
+                }),
+                spellsKnownProgression: spellsKnownProgression.map(prog => {
+                    const { id: _, classId: __, ...progressionData } = prog;
+                    return {
+                        ...progressionData,
+                        slots: prog.slots?.map(slot => {
+                            const { id: _, progressionId: __, ...slotData } = slot;
+                            return slotData;
+                        }) || []
+                    };
                 })
             };
+
+            console.log('Submitting class data:', JSON.stringify(classData, null, 2));
 
             if (id === 'new') {
                 const newClass = await ClassService.createClass(classData as CreateClassRequest);
                 setMessage('Class created successfully!');
                 setTimeout(() => navigate(`/classes/${newClass.id}`), 1500);
             } else {
+                console.log('Updating class:', classData);
                 await ClassService.updateClass(classData as UpdateClassRequest, { id: parseInt(id) });
                 setMessage('Class updated successfully!');
                 navigate(`/classes/${id}`, { state: { fromListParams: location.state?.fromListParams, refresh: true } });
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to save class');
+            console.error('Error saving class:', err);
+            console.error('Error details:', {
+                name: err instanceof Error ? err.name : 'Unknown',
+                message: err instanceof Error ? err.message : 'Unknown error',
+                stack: err instanceof Error ? err.stack : 'No stack trace'
+            });
+
+            // Try to extract more detailed error information
+            let errorMessage = 'Failed to save class';
+            if (err instanceof Error) {
+                errorMessage = err.message;
+            } else if (typeof err === 'object' && err !== null) {
+                // Try to extract error details from response
+                const errorObj = err as any;
+                if (errorObj.response?.data?.error) {
+                    errorMessage = errorObj.response.data.error;
+                } else if (errorObj.message) {
+                    errorMessage = errorObj.message;
+                }
+            }
+
+            setError(errorMessage);
         } finally {
             setIsLoading(false);
         }
@@ -596,345 +555,57 @@ export default function ClassEdit() {
                 setFormData={setFormData}
                 validation={form.validation}
             >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <div className="flex flex-col gap-2">
-                        <ValidatedInput
-                            field="name"
-                            label="Class Name"
-                            type="text"
-                            required
-                            componentExtraClassName="flex items-center gap-2"
-                            labelExtraClassName="w-2/7"
-                            inputExtraClassName="w-5/7"
-                            placeholder="e.g., Wizard, Fighter, Cleric"
-                            data-1p-ignore
-                        />
-                        <ValidatedInput
-                            field="abbreviation"
-                            label="Abbreviation"
-                            type="text"
-                            required
-                            componentExtraClassName="flex items-center gap-2"
-                            labelExtraClassName="w-2/7"
-                            inputExtraClassName="w-5/7"
-                            placeholder="e.g., Wiz, Ftr, Clr"
-                        />
-
-                        <CustomSelect
-                            label="Hit Die"
-                            required
-                            componentExtraClassName="flex items-center gap-2"
-                            labelExtraClassName="w-2/7"
-                            itemExtraClassName="w-24"
-                            itemTextExtraClassName="w-16"
-                            value={formData.hitDie}
-                            onValueChange={(value) => setFormData(prev => ({ ...prev, hitDie: value as number }))}
-                            options={RPG_DICE_SELECT_LIST.map(die => ({ value: die.value, label: die.label }))}
-                            placeholder="Select hit die"
-                        />
-                        <ValidatedInput
-                            field="skillPoints"
-                            label="Skill Point Base"
-                            type="number"
-                            min={0}
-                            max={10}
-                            step={1}
-                            componentExtraClassName="flex items-center gap-2"
-                            labelExtraClassName="w-2/7"
-                        />
+                <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg">
+                    {/* Tab Navigation */}
+                    <div className="border-b border-gray-200 dark:border-gray-700">
+                        <nav className="-mb-px flex space-x-8 px-6">
+                            {tabs.map((tab) => {
+                                const Icon = tab.icon;
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        type="button"
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${activeTab === tab.id
+                                            ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                                            }`}
+                                    >
+                                        <Icon className="h-5 w-5" />
+                                        <span>{tab.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </nav>
                     </div>
-                    <div className="flex justify-end">
-                        <div className="flex flex-col gap-2">
-                            <CustomSelect
-                                label="Edition"
-                                required
-                                componentExtraClassName="flex items-center gap-2"
-                                labelExtraClassName="w-16"
-                                itemExtraClassName="w-24"
-                                itemTextExtraClassName="w-16"
-                                value={formData.editionId}
-                                onValueChange={(value) => setFormData(prev => ({ ...prev, editionId: value as number }))}
-                                options={EDITION_SELECT_LIST_FULL}
-                                placeholder="Select edition"
-                            />
-                            <CustomCheckbox
-                                label="Prestige Class"
-                                checked={formData.isPrestige as boolean}
-                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isPrestige: checked }))}
-                            />
-                            <CustomCheckbox
-                                label="Visible in Lists"
-                                checked={formData.isVisible as boolean}
-                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isVisible: checked }))}
-                            />
-                            <CustomCheckbox
-                                label="Can Cast Spells"
-                                checked={formData.canCastSpells as boolean}
-                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, canCastSpells: checked }))}
-                            />
-                            {formData.canCastSpells && (
-                                <CustomSelect
-                                    label="Casting Ability"
-                                    value={formData.castingAbilityId}
-                                    onValueChange={(value) => setFormData(prev => ({ ...prev, castingAbilityId: value as number | null }))}
-                                    options={ABILITY_SELECT_LIST.map(ability => ({ value: ability.value, label: ability.label }))}
-                                    placeholder="Select casting ability"
-                                />
-                            )}
-                        </div>
-                    </div>
-                </div>
 
-                {/* Progression Types Section */}
-                <div className="mt-6">
-                    <h3 className="text-lg font-semibold mb-4">Progression Types</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-4">
-                            <CustomSelect
-                                label="Base Attack Bonus"
-                                required
-                                componentExtraClassName="flex items-center gap-2"
-                                labelExtraClassName="w-32"
-                                itemExtraClassName="w-24"
-                                itemTextExtraClassName="w-16"
-                                value={formData.babProgression}
-                                onValueChange={(value) => setFormData(prev => ({ ...prev, babProgression: value as 0 | 1 | 2 }))}
-                                options={BAB_PROGRESSION_SELECT_LIST}
-                                placeholder="Select BAB progression"
+                    {/* Tab Content */}
+                    <div className="bg-white dark:bg-gray-800">
+                        {CurrentTabComponent && (
+                            <CurrentTabComponent
+                                formData={formData}
+                                setFormData={setFormData}
+                                validation={form.validation}
+                                isLoading={isLoading}
+                                featureProgressions={featureProgressions}
+                                setFeatureProgressions={setFeatureProgressions}
+                                spellcastingProgression={spellcastingProgression}
+                                setSpellcastingProgression={setSpellcastingProgression}
+                                spellsKnownProgression={spellsKnownProgression}
+                                setSpellsKnownProgression={setSpellsKnownProgression}
+                                isFeatureAssocOpen={isFeatureAssocOpen}
+                                setIsFeatureAssocOpen={setIsFeatureAssocOpen}
+                                isProficiencyDialogOpen={isProficiencyDialogOpen}
+                                setIsProficiencyDialogOpen={setIsProficiencyDialogOpen}
+                                isProgressionDialogOpen={isProgressionDialogOpen}
+                                setIsProgressionDialogOpen={setIsProgressionDialogOpen}
+                                editingProgression={editingProgression}
+                                setEditingProgression={setEditingProgression}
+                                preSelectedFeature={preSelectedFeature}
+                                setPreSelectedFeature={setPreSelectedFeature}
                             />
-                            <CustomSelect
-                                label="Fortitude Save"
-                                required
-                                componentExtraClassName="flex items-center gap-2"
-                                labelExtraClassName="w-32"
-                                itemExtraClassName="w-24"
-                                itemTextExtraClassName="w-16"
-                                value={formData.fortProgression}
-                                onValueChange={(value) => setFormData(prev => ({ ...prev, fortProgression: value as 0 | 2 }))}
-                                options={SAVE_PROGRESSION_SELECT_LIST}
-                                placeholder="Select Fort progression"
-                            />
-                        </div>
-                        <div className="space-y-4">
-                            <CustomSelect
-                                label="Reflex Save"
-                                required
-                                componentExtraClassName="flex items-center gap-2"
-                                labelExtraClassName="w-32"
-                                itemExtraClassName="w-24"
-                                itemTextExtraClassName="w-16"
-                                value={formData.refProgression}
-                                onValueChange={(value) => setFormData(prev => ({ ...prev, refProgression: value as 0 | 2 }))}
-                                options={SAVE_PROGRESSION_SELECT_LIST}
-                                placeholder="Select Ref progression"
-                            />
-                            <CustomSelect
-                                label="Will Save"
-                                required
-                                componentExtraClassName="flex items-center gap-2"
-                                labelExtraClassName="w-32"
-                                itemExtraClassName="w-24"
-                                itemTextExtraClassName="w-16"
-                                value={formData.willProgression}
-                                onValueChange={(value) => setFormData(prev => ({ ...prev, willProgression: value as 0 | 2 }))}
-                                options={SAVE_PROGRESSION_SELECT_LIST}
-                                placeholder="Select Will progression"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="mt-6">
-                    <div className="space-y-2">
-                        <MarkdownEditor
-                            id="description"
-                            value={formData.description || ''}
-                            onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
-                        />
-                        {form.validation.getError('description') && (
-                            <span className="text-red-500 text-sm">{form.validation.getError('description')}</span>
                         )}
                     </div>
-                </div>
-
-                {/* Class Skills Section */}
-                <div className="mt-4">
-                    <h3 className="text-lg font-semibold mb-2">Class Skills</h3>
-                    <div className="flex flex-wrap gap-2 mb-2 p-2 border rounded dark:border-gray-600 min-h-[40px]">
-                        {(() => {
-                            const classSkills = getClassSkills(featureProgressions);
-                            return classSkills.length > 0 ? (
-                                classSkills.map((skillId, index) => (
-                                    <span key={skillId} className="group relative text-sm pt-1 pb-1 pl-0 pr-0 cursor-pointer">
-                                        {SKILL_MAP[skillId]?.name || 'Unknown Skill'}
-                                        {index < classSkills.length - 1 && ','}
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveSkill(skillId)}
-                                            className="absolute inset-0 flex items-center justify-center text-red-600 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                                            title="Remove Skill"
-                                        >
-                                            <TrashIcon className="h-5 w-5" />
-                                        </button>
-                                    </span>
-                                ))
-                            ) : (
-                                <span className="text-gray-500 dark:text-gray-400">No skills added.</span>
-                            );
-                        })()}
-                        <CustomSelect
-                            key={`skill-select-${Date.now()}`}
-                            label=""
-                            value={null}
-                            componentExtraClassName="flex items-center gap-1 text-sm"
-                            itemExtraClassName="w-48 text-sm leading-4 py-0.75"
-                            itemTextExtraClassName="w-48"
-                            onValueChange={(value) => {
-                                if (value) {
-                                    handleAddSkill(value as number);
-                                }
-                            }}
-                            options={SKILL_SELECT_LIST
-                                .filter(skill => !getClassSkills(featureProgressions).includes(skill.value))}
-                            placeholder="Add"
-                        />
-                    </div>
-                </div>
-
-                {/* Class Proficiencies Section */}
-                <div className="mt-4">
-                    <h3 className="text-lg font-semibold mb-2">Class Proficiencies</h3>
-                    <div className="flex flex-wrap gap-2 mb-2 p-2 border rounded dark:border-gray-600 min-h-[40px]">
-                        {(() => {
-                            const classProficiencies = getClassProficiencies(featureProgressions);
-                            return classProficiencies.length > 0 ? (
-                                classProficiencies.map((proficiency, index) => {
-                                    // Use the formatter to get the proper display name
-                                    const formattedName = formatClassProficiencies([proficiency]);
-                                    return (
-                                        <span key={`${proficiency.featId}-${proficiency.itemId}`} className="group relative text-sm pt-1 pb-1 pl-0 pr-0 cursor-pointer">
-                                            {formattedName}
-                                            {index < classProficiencies.length - 1 && ','}
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRemoveProficiency(proficiency.featId, proficiency.itemId)}
-                                                className="absolute inset-0 flex items-center justify-center text-red-600 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                                                title="Remove Proficiency"
-                                            >
-                                                <TrashIcon className="h-5 w-5" />
-                                            </button>
-                                        </span>
-                                    );
-                                })
-                            ) : (
-                                <span className="text-gray-500 dark:text-gray-400">No proficiencies added.</span>
-                            );
-                        })()}
-                        <button
-                            type="button"
-                            onClick={() => setIsProficiencyDialogOpen(true)}
-                            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-                        >
-                            Add
-                        </button>
-                    </div>
-                </div>
-
-                {/* Class Features Section */}
-                <div className="mt-6">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold">Class Features</h3>
-                        <button
-                            type="button"
-                            onClick={() => setIsFeatureAssocOpen(true)}
-                            className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
-                        >
-                            Add Features
-                        </button>
-                    </div>
-
-                    {(() => {
-                        // Filter out special features (class skills and proficiencies) from the features display
-                        const filteredProgressions = featureProgressions.filter(prog =>
-                            prog.featureId !== SpecialFeatureId.ClassSkill &&
-                            prog.featureId !== SpecialFeatureId.ClassProficiency
-                        );
-
-                        // Group filtered progressions by feature for display
-                        const progressionsByFeature = filteredProgressions.reduce((acc, progression) => {
-                            const featureId = progression.featureId;
-                            if (!acc[featureId]) {
-                                acc[featureId] = {
-                                    feature: progression.feature,
-                                    progressions: []
-                                };
-                            }
-                            acc[featureId].progressions.push(progression);
-                            return acc;
-                        }, {} as Record<number, { feature: any; progressions: FeatureProgressionWithRelations[] }>);
-
-                        return Object.keys(progressionsByFeature).length > 0 ? (
-                            <div className="space-y-4">
-                                {Object.values(progressionsByFeature).map(({ feature, progressions }) => (
-                                    <div key={feature?.id || 'unknown'} className="border border-gray-200 rounded-md dark:border-gray-600">
-                                        <div className="p-3 bg-gray-50 dark:bg-gray-700">
-                                            <div className="font-medium">{feature?.name || `Feature ${feature?.id || 'Unknown'}`}</div>
-                                            <div className="text-sm text-gray-600 dark:text-gray-400">{feature?.slug || `feature-${feature?.id || 'unknown'}`}</div>
-                                        </div>
-
-                                        {/* Feature Progressions */}
-                                        <div className="p-3">
-                                            <div className="flex flex-wrap gap-2 items-center mb-2">
-                                                {progressions.map((progression, progIndex) => (
-                                                    <div key={progIndex} className="flex items-center gap-1">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleEditProgression(progression)}
-                                                            className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
-                                                            title="Edit progression details"
-                                                        >
-                                                            Level {progression.level}{(() => {
-                                                                const formatted = formatProgression(progression);
-                                                                const details = [];
-                                                                if (formatted.value) details.push(formatted.value);
-                                                                if (formatted.note) details.push(formatted.note);
-                                                                return details.length > 0 ? ` (${details.join(', ')})` : '';
-                                                            })()}
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleRemoveProgression(progression.id)}
-                                                            className="text-red-500 hover:text-red-700"
-                                                            title="Remove Progression"
-                                                        >
-                                                            <TrashIcon className="h-4 w-4" />
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setEditingProgression(null);
-                                                        setPreSelectedFeature(feature);
-                                                        setIsProgressionDialogOpen(true);
-                                                    }}
-                                                    className="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                                                >
-                                                    Add Progression
-                                                </button>
-                                            </div>
-
-
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="text-gray-500 text-center py-4 border border-dashed border-gray-300 rounded-md dark:border-gray-600">
-                                No features associated with this class
-                            </div>
-                        );
-                    })()}
                 </div>
 
                 <div className="flex justify-end space-x-4 mt-8">
@@ -1029,7 +700,7 @@ export default function ClassEdit() {
                 isOpen={isProficiencyDialogOpen}
                 onClose={() => setIsProficiencyDialogOpen(false)}
                 onAddProficiency={handleAddProficiency}
-                existingProficiencies={getClassProficiencies(featureProgressions)}
+                existingProficiencies={ClassProficiencyService.getClassProficiencies(featureProgressions)}
                 title="Add Class Proficiency"
             />
 

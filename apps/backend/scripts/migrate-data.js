@@ -560,7 +560,7 @@ async function migrateFeatureProgressions(connection) {
                             numericValue: row.valueInt
                         }
                     });
-                } catch (error) {
+                } catch (_error) {
                     console.error(`❌ CRITICAL ERROR: Unmapped aspect '${row.aspect}' encountered during migration.`);
                     console.error(`   Migration aborted to prevent data loss.`);
                     console.error(`   Please update the mapping function and re-run the migration.`);
@@ -576,7 +576,7 @@ async function migrateFeatureProgressions(connection) {
                             value: row.valueInt || 0
                         }
                     });
-                } catch (error) {
+                } catch (_error) {
                     console.error(`❌ CRITICAL ERROR: Unmapped aspect '${row.aspect}' encountered during migration.`);
                     console.error(`   Migration aborted to prevent data loss.`);
                     console.error(`   Please update the mapping function and re-run the migration.`);
@@ -661,7 +661,7 @@ async function migrateFeatureModifiers(connection) {
             }
         }
         console.log(`Migrated ${classFeatureModifiers.length} class feature modifiers`);
-    } catch (error) {
+    } catch (_error) {
         console.log('ClassFeatureModifier table does not exist, skipping...');
     }
 
@@ -746,7 +746,7 @@ async function migrateFeatureSpecialEffects(connection) {
             }
         }
         console.log(`Migrated ${classFeatureSpecialEffects.length} feature special effects`);
-    } catch (error) {
+    } catch (_error) {
         console.log('ClassFeatureSpecialEffect table does not exist, skipping...');
     }
 }
@@ -783,7 +783,7 @@ async function migrateFeatureChoices(connection) {
             }
         }
         console.log(`Migrated ${classFeatureChoices.length} feature choices`);
-    } catch (error) {
+    } catch (_error) {
         console.log('ClassFeatureChoice table does not exist, skipping...');
     }
 }
@@ -1959,7 +1959,7 @@ async function migrateAdvancementSpells(connection) {
     console.log(`Migrated ${rows.length} advancement spells`);
 }
 
-async function migrateCharacterFeatureChoices(connection) {
+async function _migrateCharacterFeatureChoices(connection) {
     console.log('Migrating character feature choices...');
     const [rows] = await connection.execute(`
         SELECT id, characterId, featureId, advancementId, \`key\`, value
@@ -2324,7 +2324,7 @@ function mapAspectToModifierType(aspect) {
         'nth_feature': 12,        // Other
     };
 
-    if (!modifierTypeMap.hasOwnProperty(aspect)) {
+    if (!(aspect in modifierTypeMap)) {
         console.error(`❌ CRITICAL ERROR: Unmapped aspect '${aspect}' encountered during migration.`);
         console.error(`   Migration aborted to prevent data loss.`);
         console.error(`   Please update the mapping function and re-run the migration.`);
@@ -2344,7 +2344,7 @@ function mapAspectToEffectType(aspect) {
         'size': 4,                // WildShapeSize
     };
 
-    if (!effectTypeMap.hasOwnProperty(aspect)) {
+    if (!(aspect in effectTypeMap)) {
         console.error(`❌ CRITICAL ERROR: Unmapped aspect '${aspect}' encountered during migration.`);
         console.error(`   Migration aborted to prevent data loss.`);
         console.error(`   Please update the mapping function and re-run the migration.`);

@@ -25,15 +25,17 @@ model Class {
     isPrestige       Boolean          @default(false)
     isVisible        Boolean          @default(true)
     canCastSpells    Boolean          @default(false)
+    spellsKnown      Boolean          @default(false)
     hitDie           Int              @default(1)
     description      String?          @db.Text
     skillPoints      Int
     castingAbilityId Int?
     castingType      CastingTypeEnum?
-    babProgression   Int
-    fortProgression  Int
-    refProgression   Int
-    willProgression  Int
+
+    babProgression  Int
+    fortProgression Int
+    refProgression  Int
+    willProgression Int
 
     features                FeatureProgression[]
     sourceBookInfo          ClassSourceMap[]
@@ -42,14 +44,17 @@ model Class {
     charAdvSecondary        CharacterAdvancement[]      @relation("SecondaryClass")
     charSpellPrep           CharacterSpellPreparation[]
     spellcastingProgression SpellcastingProgression[]
+    classSpellsKnown        SpellcastingProgression[]   @relation("classSpellsKnown")
 }
 
 model SpellcastingProgression {
-    id          Int @id @default(autoincrement())
-    classId     Int
-    casterLevel Int
+    id                 Int  @id @default(autoincrement())
+    classId            Int
+    classLevel         Int
+    classSpellsKnownId Int?
 
     class            Class              @relation(fields: [classId], references: [id])
+    classSpellsKnown Class?             @relation("classSpellsKnown", fields: [classSpellsKnownId], references: [id])
     slots            SpellcastingSlot[]
     spellcastingLink SpellcastingLink[]
 }
@@ -70,8 +75,8 @@ model SpellcastingLink {
     inheritedFrom        String?
     levelOffset          Int?
 
-    feature      FeatureProgression      @relation(fields: [featureProgressionId], references: [id])
-    progression  SpellcastingProgression @relation(fields: [progressionId], references: [id])
+    feature     FeatureProgression      @relation(fields: [featureProgressionId], references: [id])
+    progression SpellcastingProgression @relation(fields: [progressionId], references: [id])
 }
 
 model ClassSourceMap {
@@ -102,17 +107,18 @@ model SpellLevelMap {
 // =================
 
 model Feature {
-    id          Int     @id @default(autoincrement())
-    slug        String  @unique
+    id          Int    @id @default(autoincrement())
+    slug        String @unique
     name        String
-    description String  @db.Text
+    description String @db.Text
 
     progressions  FeatureProgression[]
     featureChoice FeatureChoice[]
+    prerequisites FeaturePrerequisite[] // NEW: Feature-level prerequisites
 }
 
 model FeatureProgression {
-    id            Int @id @default(autoincrement())
+    id            Int  @id @default(autoincrement())
     sourceType    Int
     level         Int
     featureId     Int
@@ -125,35 +131,48 @@ model FeatureProgression {
     class Class? @relation(fields: [classId], references: [id])
     race  Race?  @relation(fields: [raceId], references: [id])
 
-    feature      Feature         @relation(fields: [featureId], references: [id])
-    choices      FeatureChoice[]
-    spellcasting SpellcastingLink?
-    effects      FeatureSpecialEffect[]
-    modifiers    FeatureModifier[]
-    characterFeatureChoice  CharacterFeatureChoice[]
-    prerequisites FeaturePrerequisite[]
+    feature                Feature                  @relation(fields: [featureId], references: [id])
+    choices                FeatureChoice[]
+    spellcasting           SpellcastingLink?
+    effects                FeatureSpecialEffect[]
+    modifiers              FeatureModifier[]
+    characterFeatureChoice CharacterFeatureChoice[]
+    // REMOVED: prerequisites FeaturePrerequisite[] - moved to Feature level
 }
 
 model FeatureModifier {
-    id                    Int     @id @default(autoincrement())
-    featureProgressionId  Int
-    type                  Int
-    value                 Int
-    bonusType             Int?  // dodge, enhancement, etc.
-    appliesTo             Int?
-    appliesToId           Int?
-    appliesIfChoiceKey    String?
-    appliesIfChoiceValue  String?
+    id                   Int     @id @default(autoincrement())
+    featureProgressionId Int
+    type                 Int
+    value                Int
+    bonusType            Int? // dodge, enhancement, etc.
+    appliesTo            Int?
+    appliesToId          Int?
+    formulaParamsId      Int?
+    appliesIfChoiceKey   String?
+    appliesIfChoiceValue String?
 
-    featureProgression FeatureProgression @relation(fields: [featureProgressionId], references: [id])
+    featureProgression FeatureProgression            @relation(fields: [featureProgressionId], references: [id])
     conditions         FeatureModifierCondition[]
+    formulaParams      FeatureModifierFormulaParams? @relation(fields: [formulaParamsId], references: [id])
+}
+
+model FeatureModifierFormulaParams {
+    id                Int  @id @default(autoincrement())
+    formulaId         Int
+    interval          Int?
+    formulaStartLevel Int?
+    // NEW: Attribute-dependent formula parameters
+    attributeId       Int?
+
+    featureModifier FeatureModifier[]
 }
 
 model FeatureModifierCondition {
-    id                    Int     @id @default(autoincrement())
-    featureModifierId     Int
-    conditionType         Int
-    conditionValue        String?
+    id                Int     @id @default(autoincrement())
+    featureModifierId Int
+    conditionType     Int
+    conditionValue    String?
 
     featureModifier FeatureModifier @relation(fields: [featureModifierId], references: [id])
 }
@@ -166,12 +185,12 @@ model FeatureSpecialEffect {
     value         String?
     numericValue  Int?
 
-    featId        Int?
-    itemId        Int?
+    featId Int?
+    itemId Int?
 
     featureProgression FeatureProgression @relation(fields: [progressionId], references: [id])
-    feat Feat? @relation(fields: [featId], references: [id])
-    item Item? @relation(fields: [itemId], references: [id])
+    feat               Feat?              @relation(fields: [featId], references: [id])
+    item               Item?              @relation(fields: [itemId], references: [id])
 }
 
 enum ChoiceType {
@@ -180,13 +199,13 @@ enum ChoiceType {
 }
 
 enum ChoiceBehavior {
-  Single
-  Multiple
-  Allocation
+    Single
+    Multiple
+    Allocation
 }
 
 model FeatureChoice {
-    id              Int        @id @default(autoincrement())
+    id              Int            @id @default(autoincrement())
     progressionId   Int
     label           String?
     pickCount       Int?
@@ -195,21 +214,21 @@ model FeatureChoice {
     featId          Int?
     chosenFeatureId Int?
 
-    featureProgression     FeatureProgression @relation(fields: [progressionId], references: [id])
-    feat                   Feat?              @relation(fields: [featId], references: [id])
-    feature                Feature?           @relation(fields: [chosenFeatureId], references: [id])
+    featureProgression     FeatureProgression       @relation(fields: [progressionId], references: [id])
+    feat                   Feat?                    @relation(fields: [featId], references: [id])
+    feature                Feature?                 @relation(fields: [chosenFeatureId], references: [id])
     characterFeatureChoice CharacterFeatureChoice[]
 }
 
 model FeaturePrerequisite {
-  id           Int    @id @default(autoincrement())
-  featureProgressionId Int
-  type         Int
-  skillId      Int?
-  minValue     Int
+    id        Int  @id @default(autoincrement())
+    featureId Int // CHANGED: From featureProgressionId to featureId
+    type      Int
+    skillId   Int?
+    minValue  Int
 
-  featureProgression FeatureProgression @relation(fields: [featureProgressionId], references: [id])
-  skill Skill? @relation(fields: [skillId], references: [id])
+    feature Feature @relation(fields: [featureId], references: [id])
+    skill   Skill?  @relation(fields: [skillId], references: [id])
 }
 
 // =================
@@ -308,8 +327,9 @@ model Skill {
     description       String?  @db.Text
     restrictionNotes  String?  @db.Text
     trainedOnly       Boolean?
+    isAnalog          Boolean  @default(false)
 
-    advSkills AdvancementSkill[]
+    advSkills           AdvancementSkill[]
     featurePrerequisite FeaturePrerequisite[]
 }
 
@@ -333,8 +353,8 @@ model Feat {
     prereqs  FeatPrerequisiteMap[]
     advFeat  AdvancementFeat[]
 
-    spellPrepMetamagic SpellPreparationMetamagic[]
-    featureChoice FeatureChoice[]
+    spellPrepMetamagic   SpellPreparationMetamagic[]
+    featureChoice        FeatureChoice[]
     featureSpecialEffect FeatureSpecialEffect[]
 }
 
@@ -411,8 +431,8 @@ model Item {
 
     itemType ItemType @relation(fields: [typeId], references: [id])
 
-    characterItems     CharacterItem[]
-    itemTemplate       ItemTemplate[]
+    characterItems       CharacterItem[]
+    itemTemplate         ItemTemplate[]
     featureSpecialEffect FeatureSpecialEffect[]
 }
 
@@ -670,9 +690,9 @@ model CharacterAdvancement {
     class          Class         @relation(fields: [classId], references: [id])
     secondaryClass Class?        @relation("SecondaryClass", fields: [secondaryClassId], references: [id])
 
-    skills      AdvancementSkill[]
-    feats       AdvancementFeat[]
-    spellsKnown AdvancementSpell[]
+    skills         AdvancementSkill[]
+    feats          AdvancementFeat[]
+    spellsKnown    AdvancementSpell[]
     featureChoices CharacterFeatureChoice[]
 
     @@unique([characterId, level, version])
@@ -709,21 +729,20 @@ model AdvancementSpell {
     @@id([advancementId, spellId])
 }
 
-
 model CharacterFeatureChoice {
-    id                    Int    @id @default(autoincrement())
-    characterId           Int
-    featureChoiceId       Int
-    progressionId         Int
-    advancementId         Int
-    key                   String?
-    value                 String
-    choiceIndex           Int?
+    id              Int     @id @default(autoincrement())
+    characterId     Int
+    featureChoiceId Int
+    progressionId   Int
+    advancementId   Int
+    key             String?
+    value           String
+    choiceIndex     Int?
 
     featureProgression FeatureProgression   @relation(fields: [progressionId], references: [id])
     featureChoice      FeatureChoice        @relation(fields: [featureChoiceId], references: [id])
     advancement        CharacterAdvancement @relation(fields: [advancementId], references: [id])
-    
+
     @@unique([advancementId, progressionId, key])
 }
 

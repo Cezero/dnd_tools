@@ -1,0 +1,71 @@
+---
+description: Path Resolution Strategies - Essential for Monorepo Navigation
+globs: ["**/*"]
+alwaysApply: true
+priority: 1
+---
+
+**CRITICAL**: Path resolution is essential for proper file operations in the monorepo.
+
+## Path Resolution Strategy
+**ALWAYS** use relative paths that work from current workspace:
+
+### From Backend Workspace
+- Local rules: `.cursor/rules/`
+- Shared rules: `../../packages/shared/.cursor/rules/`
+- Documentation: `../../packages/shared/docs/project-mgmt/README.md`
+- Schemas: `../../packages/shared/schema/src/`
+
+### From Frontend Workspace
+- Local rules: `.cursor/rules/`
+- Shared rules: `../../packages/shared/.cursor/rules/`
+- Documentation: `../../packages/shared/docs/project-mgmt/README.md`
+- Schemas: `../../packages/shared/schema/src/`
+
+### From Shared Workspace
+- Local rules: `.cursor/rules/`
+- Backend rules: `../../apps/backend/.cursor/rules/`
+- Frontend rules: `../../apps/frontend/.cursor/rules/`
+- Documentation: `docs/project-mgmt/README.md`
+- Schemas: `schema/src/`
+
+### From K8s Workspace
+- Local rules: `.cursor/rules/` (if exists)
+- Shared rules: `../../packages/shared/.cursor/rules/`
+- Documentation: `../../packages/shared/docs/project-mgmt/README.md`
+
+### Common Path Patterns
+
+#### Rule Discovery Paths
+- **From apps**: `../../packages/shared/.cursor/rules/`
+- **From shared**: `.cursor/rules/`
+- **From k8s**: `../../packages/shared/.cursor/rules/`
+
+#### Documentation Paths
+- **From apps**: `../../packages/shared/docs/project-mgmt/`
+- **From shared**: `docs/project-mgmt/`
+- **From k8s**: `../../packages/shared/docs/project-mgmt/`
+
+#### Schema Paths
+- **From apps**: `../../packages/shared/schema/src/`
+- **From shared**: `schema/src/`
+- **From k8s**: `../../packages/shared/schema/src/`
+
+### Path Verification Checklist
+- [ ] Path works from current workspace
+- [ ] Path points to correct location
+- [ ] Path uses correct relative navigation
+- [ ] Path follows monorepo structure
+
+### Common Path Mistakes
+- **Wrong**: `../apps/backend` (should be `../../apps/backend`)
+- **Wrong**: `../packages/shared` (should be `../../packages/shared`)
+- **Wrong**: `./schema` (should be `schema/src/` from shared)
+
+### Success Criteria
+- [ ] All paths resolve correctly from current workspace
+- [ ] No path resolution errors
+- [ ] Files accessible at resolved paths
+- [ ] Consistent path usage across workspaces
+
+**CRITICAL**: Always verify paths work from the current workspace context.

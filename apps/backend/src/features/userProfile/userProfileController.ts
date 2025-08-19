@@ -1,10 +1,11 @@
 import { Response } from 'express';
 
+import { ValidatedNoInput, ValidatedBodyT } from '@/util/validated-types';
 import type { UpdateUserProfileRequest, UserProfileResponse, UserProfileUpdateResponse } from '@shared/schema';
 
 import { userProfileService } from './userProfileService';
 
-export async function GetUserProfile(req: any, res: Response) {
+export async function GetUserProfile(req: ValidatedNoInput, res: Response) {
     const id = req.user?.id;
     if (!id) {
         res.status(401).json({
@@ -26,7 +27,7 @@ export async function GetUserProfile(req: any, res: Response) {
     res.json(profile);
 }
 
-export async function UpdateUserProfile(req: any, res: Response) {
+export async function UpdateUserProfile(req: ValidatedBodyT<UpdateUserProfileRequest>, res: Response) {
     const id = req.user?.id;
     if (!id) {
         res.status(401).json({
