@@ -11,6 +11,140 @@ The formula system replaces the text-based `valueFormula` approach with a `formu
 - **Performance**: No string evaluation overhead
 - **Clarity**: Clear, documented formulas with parameters
 
+## Formula System Architecture
+
+### **Core Components**
+
+#### **FeatureModifier**
+- Contains the base `value` and `formulaId`
+- Links to `FeatureModifierFormulaParams` via `formulaParamsId`
+- Defines what the modifier applies to (`appliesTo`, `appliesToId`)
+
+#### **FeatureModifierFormulaParams**
+- Stores formula-specific parameters
+- Fields:
+  - `formulaId`: References the formula definition
+  - `interval`: For "every N levels" formulas (e.g., every 2 levels)
+  - `formulaStartLevel`: Starting level for formula calculation
+  - `attributeId`: For attribute-dependent formulas
+
+#### **Formula Definitions**
+- Pre-defined formulas in `shared/static-data/src/FormulaDefinitions.ts`
+- Each formula has a unique ID and parameter requirements
+- Formulas are pure functions that calculate values based on parameters
+
+### **Parameter Mapping**
+
+The system maps formula parameters to data sources:
+
+```typescript
+// Parameter mapping in formulaCalculator.ts
+if (param.name === 'level') {
+    params[param.name] = context.progressionLevel;
+} else if (param.name === 'interval') {
+    // From FeatureModifierFormulaParams.interval
+    params[param.name] = modifier.formulaParams?.interval || modifier.value;
+} else if (param.name === 'formulaStartLevel') {
+    // From FeatureModifierFormulaParams.formulaStartLevel
+    params[param.name] = modifier.formulaParams?.formulaStartLevel;
+} else if (param.name === 'attributeId') {
+    // From FeatureModifierFormulaParams.attributeId
+    params[param.name] = modifier.formulaParams?.attributeId;
+} else if (param.name === 'scalingValue' || param.name === 'baseValue') {
+    // From FeatureModifier.value
+    params[param.name] = modifier.value;
+}
+```
+
+### **Database Relationships**
+
+```sql
+-- FeatureModifier links to FeatureModifierFormulaParams
+FeatureModifier {
+    id: Int
+    formulaParamsId: Int?  -- Foreign key to FeatureModifierFormulaParams
+    formulaId: Int         -- Formula ID (for backward compatibility)
+    value: Int            -- Base value
+    // ... other fields
+}
+
+-- FeatureModifierFormulaParams stores formula parameters
+FeatureModifierFormulaParams {
+    id: Int
+    formulaId: Int        -- Formula ID
+    interval: Int?        -- For "every N levels" formulas
+    formulaStartLevel: Int? -- Starting level for calculation
+    attributeId: Int?     -- For attribute-dependent formulas
+}
+```
+
+### **Implementation Examples**
+
+#### **Fighter Bonus Feats (Every 2 Levels)**
+```typescript
+// FeatureModifier
+{
+    type: ModifierType.Other,
+    appliesTo: ModifierAppliesToType.Choice,
+    appliesToId: 1, // Fighter Bonus Feat
+    value: 1,
+    formulaId: 2, // EVERY_N_LEVELS formula
+    formulaParamsId: 123 // Links to FeatureModifierFormulaParams
+}
+
+// FeatureModifierFormulaParams
+{
+    id: 123,
+    formulaId: 2, // EVERY_N_LEVELS
+    interval: 2,  // Every 2 levels
+    formulaStartLevel: 2, // Start at level 2
+    attributeId: null
+}
+```
+
+#### **Druid Elemental Wild Shape (Every 2 Levels)**
+```typescript
+// FeatureModifier
+{
+    type: ModifierType.Quantity,
+    appliesTo: ModifierAppliesToType.Uses,
+    value: 1,
+    formulaId: 2, // EVERY_N_LEVELS formula
+    formulaParamsId: 456
+}
+
+// FeatureModifierFormulaParams
+{
+    id: 456,
+    formulaId: 2, // EVERY_N_LEVELS
+    interval: 2,  // Every 2 levels
+    formulaStartLevel: 16, // Start at level 16
+    attributeId: null
+}
+```
+
+#### **Attribute-Dependent Formula**
+```typescript
+// FeatureModifier
+{
+    type: ModifierType.Bonus,
+    appliesTo: ModifierAppliesToType.Attribute,
+    appliesToId: 1, // Strength
+    value: 0,
+    formulaId: 15, // Attribute-based formula
+    formulaParamsId: 789
+}
+
+// FeatureModifierFormulaParams
+{
+    id: 789,
+    formulaId: 15,
+    interval: null,
+    formulaStartLevel: null,
+    attributeId: 1 // Strength attribute
+}
+```
+
 ## D&D 3.5 Scaling Patterns Analysis
 
 ### **Barbarian Class Features**
@@ -168,12 +302,24 @@ Level 1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20: +1 bonus feat
 
 ### **Fighter Bonus Feat (Level 1)**
 ```typescript
+// FeatureModifier
 {
-    type: ModifierType.Quantity,
-    appliesTo: ModifierAppliesToType.Feat,
+    type: ModifierType.Other,
+    appliesTo: ModifierAppliesToType.Choice,
+    appliesToId: 1, // 1 = Fighter Bonus Feat
     value: 1, // Base value
-    formulaId: 'fighter_bonus_feats', // Will count total bonus feats
+    formulaId: 2, // EVERY_N_LEVELS formula ID
+    formulaParamsId: 123, // Links to FeatureModifierFormulaParams
     bonusType: FeatureBonusType.Other
+}
+
+// FeatureModifierFormulaParams
+{
+    id: 123,
+    formulaId: 2, // EVERY_N_LEVELS
+    interval: 2,  // Every 2 levels
+    formulaStartLevel: 2, // Start at level 2
+    attributeId: null
 }
 ```
 
@@ -190,6 +336,57 @@ Level 1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20: +1 bonus feat
 ### **Utility**
 - Skills, feats, abilities
 - Examples: `fighter_bonus_feats`
+
+### **Choice**
+- Levels where choices can be made
+- Examples: `fighter_bonus_feats` (using ModifierAppliesToType.Choice)
+
+## Choice Modifier System
+
+### **Purpose**
+The Choice modifier system tracks levels where characters can make specific choices (feats, favored enemies, etc.) and integrates with the formula system to calculate progression patterns.
+
+### **Key Components**
+- **ModifierType.Other + ModifierAppliesToType.Choice**: Identifies levels where choices are available
+- **appliesToId**: Specifies the type of choice (1 = Fighter Bonus Feat, 2 = Favored Enemy, etc.)
+- **formulaId**: Calculates the progression pattern for choice availability
+- **FeatureProgression.appliesToType + appliesTo**: Configures the choice selection interface
+
+### **Implementation Pattern**
+```typescript
+// Progression-level configuration
+{
+    appliesToType: FeatureAppliesToType.Feat,
+    appliesTo: FeatureFeatChoiceFilter.FighterBonus,
+    modifiers: [{
+        type: ModifierType.Other,
+        appliesTo: ModifierAppliesToType.Choice,
+        appliesToId: 1, // Choice type identifier
+        value: 1,
+        formulaId: 2, // EVERY_N_LEVELS formula ID
+        formulaParamsId: 123 // Links to FeatureModifierFormulaParams
+    }],
+    choices: [{
+        choiceType: ChoiceType.Feat,
+        choiceBehavior: ChoiceBehavior.Single,
+        label: "Choose a fighter bonus feat"
+    }]
+}
+
+// FeatureModifierFormulaParams (created separately)
+{
+    id: 123,
+    formulaId: 2, // EVERY_N_LEVELS
+    interval: 2,  // Every 2 levels
+    formulaStartLevel: 2, // Start at level 2
+    attributeId: null
+}
+```
+
+### **Display Behavior**
+- **Formula-based**: Shows progression pattern (e.g., "Level 1 (Bonus Feat), Level 2 (Bonus Feat), etc.")
+- **Individual levels**: Shows feature name without double display
+- **Character editor**: Prompts for choice selection at appropriate levels
 
 ### **Scaling**
 - Level-based progression patterns

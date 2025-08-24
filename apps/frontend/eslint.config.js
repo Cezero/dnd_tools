@@ -52,11 +52,11 @@ export default [
         plugins: {
             prisma: prismaPlugin,
             "@typescript-eslint": typescriptPlugin,
-						local: {
-              rules: {
-                'no-type-of-schema-parse': noTypeofSchemaParse,
-              },
-						},
+            local: {
+                rules: {
+                    'no-type-of-schema-parse': noTypeofSchemaParse,
+                },
+            },
             reactHooks: reactHooks,
             reactRefresh: reactRefresh
         },

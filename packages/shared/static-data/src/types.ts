@@ -39,7 +39,7 @@ export interface Currency extends CoreComponentAbbreviation {
 export interface Formula extends CoreComponent {
     description: string;
     parameters: FormulaParameter[];
-    calculate: (params: Record<string, number>) => number;
+    calculate: (params: Record<string, number>) => number | string;
 }
 
 export interface FormulaParameter {
@@ -126,7 +126,6 @@ export interface DiceTheme extends CoreComponent {
 
 export type SpellTable = { [characterLevel: number]: { [spellLevel: number]: number } };
 
-
 export type AbilityMap = BaseMap<CoreComponentAbbreviation>;
 export type SavingThrowMap = BaseMap<CoreComponentAbbreviation>;
 export type RpgDieMap = BaseMap<RpgDie>;
@@ -149,3 +148,4 @@ export type SkillMap = BaseMap<Skill>;
 export type SourceBookMap = BaseMap<SourceBook>;
 export type ClassMap = BaseMap<Class>;
 export type DiceThemeMap = { [key: string]: DiceTheme };
+export type CastingTypeMap = BaseMap<CoreComponent>;

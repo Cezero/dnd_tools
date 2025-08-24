@@ -1,15 +1,19 @@
 import { PrismaClient } from '@shared/prisma-client';
-import type {
-    RaceIdParamRequest,
+import {
+    GetAllRacesResponse,
+    GetRaceResponse,
     CreateRaceRequest,
     UpdateRaceRequest,
+    RaceIdParamRequest,
     CreateResponse,
-    GetRaceResponse,
     UpdateResponse,
-    GetAllRacesResponse,
 } from '@shared/schema';
 
-import { RaceService } from './types';
+import type { RaceService } from './types';
+import { transformFormulaParamsFromDatabase } from '../../utils/formulaParamTransformers';
+import { featureSystemService } from '../featureSystem/featureSystemService';
+
+
 
 const prisma = new PrismaClient();
 
@@ -49,7 +53,8 @@ export const raceService: RaceService = {
                                             name: true,
                                             slug: true
                                         }
-                                    }
+                                    },
+                                    formulaParams: true
                                 }
                             },
                             effects: {
@@ -71,10 +76,24 @@ export const raceService: RaceService = {
             prisma.race.count(),
         ]);
 
-        // Map featureProgression to features for schema compatibility
+        // Map featureProgression to features for schema compatibility and transform formula parameters
         const racesWithFeatures = races.map(race => ({
             ...race,
-            features: race.featureProgression || null
+            features: race.featureProgression?.map(feature => ({
+                ...feature,
+                modifiers: feature.modifiers?.map(modifier => ({
+                    ...modifier,
+                    formulaParams: modifier.formulaParams
+                        ? transformFormulaParamsFromDatabase(modifier.formulaParams)
+                        : null
+                })),
+                choices: feature.choices?.map(choice => ({
+                    ...choice,
+                    formulaParams: choice.formulaParams
+                        ? transformFormulaParamsFromDatabase(choice.formulaParams)
+                        : null
+                }))
+            })) || null
         }));
 
         return {
@@ -117,7 +136,8 @@ export const raceService: RaceService = {
                                         name: true,
                                         slug: true
                                     }
-                                }
+                                },
+                                formulaParams: true
                             }
                         },
                         effects: {
@@ -136,16 +156,32 @@ export const raceService: RaceService = {
             return null;
         }
 
-        // Map featureProgression to features for schema compatibility
-        return {
+        // Transform formula parameters from strings to arrays for frontend consumption
+        const transformedRace = {
             ...race,
-            features: race.featureProgression || null
-        } as GetRaceResponse;
+            features: race.featureProgression?.map(feature => ({
+                ...feature,
+                modifiers: feature.modifiers?.map(modifier => ({
+                    ...modifier,
+                    formulaParams: modifier.formulaParams
+                        ? transformFormulaParamsFromDatabase(modifier.formulaParams)
+                        : null
+                })),
+                choices: feature.choices?.map(choice => ({
+                    ...choice,
+                    formulaParams: choice.formulaParams
+                        ? transformFormulaParamsFromDatabase(choice.formulaParams)
+                        : null
+                }))
+            })) || null
+        };
+
+        return transformedRace as GetRaceResponse;
     },
 
     async createRace(data: CreateRaceRequest): Promise<CreateResponse> {
         const { features, ...raceData } = data;
-        // Use Prisma input type directly - it handles nested relationships
+
         const result = await prisma.race.create({
             data: {
                 ...raceData,
@@ -158,43 +194,9 @@ export const raceService: RaceService = {
             },
         });
 
-        // Create feature progressions if provided
+        // Create feature progressions using consolidated feature system service
         if (features && features.length > 0) {
-            for (const progression of features) {
-                const { modifiers, choices, effects, ...progressionData } = progression;
-
-                await prisma.featureProgression.create({
-                    data: {
-                        ...progressionData,
-                        raceId: result.id,
-                        modifiers: {
-                            create: modifiers?.map(mod => {
-                                const { conditions, ...modData } = mod;
-                                return {
-                                    ...modData,
-                                    conditions: {
-                                        create: conditions?.map(condition => ({
-                                            ...condition
-                                        })) || []
-                                    }
-                                };
-                            }) || []
-                        },
-                        choices: {
-                            create: choices?.map(choice => ({
-                                ...choice,
-                                feat: null,
-                                feature: null
-                            })) || []
-                        },
-                        effects: {
-                            create: effects?.map(effect => ({
-                                ...effect
-                            })) || []
-                        }
-                    }
-                });
-            }
+            await featureSystemService.createMultipleFeatureProgressions(features, { raceId: result.id });
         }
 
         return { id: result.id.toString(), message: 'Race created successfully' };
@@ -202,45 +204,10 @@ export const raceService: RaceService = {
 
     async updateRace(id: RaceIdParamRequest, data: UpdateRaceRequest): Promise<UpdateResponse> {
         const { features, ...raceData } = data;
-        // Use Prisma input type directly - it handles nested relationships
+
         await prisma.$transaction(async (tx) => {
-            // First, get existing feature progressions to delete related records
-            const existingProgressions = await tx.featureProgression.findMany({
-                where: { raceId: id.id },
-                include: {
-                    modifiers: true,
-                    choices: true,
-                    effects: true
-                }
-            });
-
-            // Delete related records first (in correct order)
-            for (const progression of existingProgressions) {
-                // Delete conditions for each modifier
-                for (const modifier of progression.modifiers) {
-                    await tx.featureModifierCondition.deleteMany({
-                        where: { featureModifierId: modifier.id }
-                    });
-                }
-
-                // Delete modifiers
-                await tx.featureModifier.deleteMany({
-                    where: { featureProgressionId: progression.id }
-                });
-
-                // Delete choices
-                await tx.featureChoice.deleteMany({
-                    where: { progressionId: progression.id }
-                });
-
-                // Delete effects
-                await tx.featureSpecialEffect.deleteMany({
-                    where: { progressionId: progression.id }
-                });
-            }
-
-            // Now delete the feature progressions
-            await tx.featureProgression.deleteMany({ where: { raceId: id.id } });
+            // Delete existing feature progressions using consolidated feature system service
+            await featureSystemService.deleteFeatureProgressionsForContext({ raceId: id.id }, tx);
 
             // Delete existing race source maps
             await tx.raceSourceMap.deleteMany({ where: { raceId: id.id } });
@@ -259,43 +226,9 @@ export const raceService: RaceService = {
                 }
             });
 
-            // Create new feature progressions if provided
+            // Create new feature progressions using consolidated feature system service
             if (features && features.length > 0) {
-                for (const progression of features) {
-                    const { modifiers, choices, effects, ...progressionData } = progression;
-
-                    await tx.featureProgression.create({
-                        data: {
-                            ...progressionData,
-                            raceId: id.id,
-                            modifiers: {
-                                create: modifiers?.map(mod => {
-                                    const { conditions, ...modData } = mod;
-                                    return {
-                                        ...modData,
-                                        conditions: {
-                                            create: conditions?.map(condition => ({
-                                                ...condition
-                                            })) || []
-                                        }
-                                    };
-                                }) || []
-                            },
-                            choices: {
-                                create: choices?.map(choice => ({
-                                    ...choice,
-                                    feat: null,
-                                    feature: null
-                                })) || []
-                            },
-                            effects: {
-                                create: effects?.map(effect => ({
-                                    ...effect
-                                })) || []
-                            }
-                        }
-                    });
-                }
+                await featureSystemService.createMultipleFeatureProgressions(features, { raceId: id.id }, tx);
             }
         });
 

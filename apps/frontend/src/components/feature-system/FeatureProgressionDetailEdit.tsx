@@ -4,9 +4,15 @@ import { TrashIcon } from '@heroicons/react/24/outline';
 import React, { useState, useEffect, useRef } from 'react';
 
 import { ValidatedCustomSelect, ValidatedInput, ValidatedForm, useValidatedForm, useFormContext } from '@/components/forms';
-import { PROGRESSION_FORMATTERS } from '@/lib/Formatters';
+import { FeatService } from '@/features/feat/FeatService';
+import { ItemService } from '@/features/item/ItemService';
+import { FeatureSystemService } from '@/services/FeatureSystemService';
+import { ClassProficiencyService } from '@/features/class/ClassProficiencyService';
+import type { ProficiencyFeat, ProficiencyItem } from '@/components/feature-system/FeatureProficiencyDialog';
+import { PROGRESSION_FORMATTERS, getFormulaProgressionPattern } from '@/lib/Formatters';
 import { FormulaCalculator } from '@/lib/formulaCalculator';
-import { CreateFeatureProgressionRequest, CreateFeatureProgressionSchema, FeatureModifierInQueryResponse, FeatureProgressionWithRelations } from '@shared/schema';
+import { CreateFeatureProgressionRequest, CreateFeatureProgressionSchema, CreateFeatureProgressionFormSchema, FeatureModifierInQueryResponse, FeatureProgressionWithRelations } from '@shared/schema';
+import { ArrayPairEditor } from './ArrayPairEditor';
 import {
     MODIFIER_SELECT_LIST,
     FEATURE_BONUS_SELECT_LIST,
@@ -16,18 +22,29 @@ import {
     FeaturePrerequisiteType,
     FeatureModifierConditionType,
     ABILITY_SELECT_LIST,
-    SKILL_SELECT_LIST,
+    ABILITY_MAP,
+    FULL_SKILL_SELECT_LIST,
     SAVING_THROW_SELECT_LIST,
+    SAVING_THROW_MAP,
     RPG_DICE_SELECT_LIST,
+    RPG_DICE,
     DAMAGE_TYPE_SELECT_LIST,
     USES_FREQUENCY_SELECT_LIST,
     MODIFIER_APPLIES_TO_SELECT_LIST,
     MODIFIER_APPLIES_TO_TYPES,
     MODIFIER_TYPE_COMPATIBILITY,
     FEATURE_MODIFIER_CONDITION_SELECT_LIST,
+    ATTACK_TYPE_SELECT_LIST,
     FORMULA_SELECT_LIST,
     FORMULA_MAP,
-    LANGUAGE_SELECT_LIST
+    LANGUAGE_SELECT_LIST,
+    SIZE_SELECT_LIST,
+    FeatureFeatChoiceFilter,
+    FEATURE_FEAT_CHOICE_FILTER_SELECT_LIST,
+    FEATURE_CHOICE_SELECT_LIST,
+    FEATURE_CHOICE_BEHAVIOR_SELECT_LIST,
+    FeatBenefitType,
+    PROFICIENCY_TYPES,
 } from '@shared/static-data';
 
 interface FeatureProgressionDetailEditProps {
@@ -40,6 +57,7 @@ interface FeatureProgressionDetailEditProps {
 
 // Formula Preview Component
 function FormulaPreview({ modifier, progressionLevel }: { modifier: any; progressionLevel: number }) {
+    const { formData } = useFormContext();
     const formulaId = modifier.formulaParams?.formulaId;
     if (!formulaId) {
         return null;
@@ -50,48 +68,34 @@ function FormulaPreview({ modifier, progressionLevel }: { modifier: any; progres
         return <p className="text-xs text-red-600 dark:text-red-400">Unknown formula</p>;
     }
 
-    const formatter = PROGRESSION_FORMATTERS[modifier.appliesTo];
+    // Handle both modifiers and choices
+    const isChoice = modifier.type !== undefined && modifier.behavior !== undefined &&
+        typeof modifier.type === 'number' && typeof modifier.behavior === 'number';
+    const appliesTo = isChoice ? ModifierAppliesToType.Choice : modifier.appliesTo;
+
+    const formatter = PROGRESSION_FORMATTERS[appliesTo];
     if (!formatter) {
-        return <p className="text-xs text-red-600 dark:text-red-400">No formatter for modifier type</p>;
+        return <p className="text-xs text-red-600 dark:text-red-400">No formatter for type</p>;
     }
 
-    // Generate progression values for levels 1-20
-    const progressionValues: Array<{ level: number; value: number }> = [];
-    for (let level = 1; level <= 20; level++) {
-        const context = { level, progressionLevel };
-        const value = FormulaCalculator.calculateModifierValue(modifier, context);
-        if (value > 0) { // Only include levels where the feature is active
-            progressionValues.push({ level, value });
-        }
+    // Use the centralized getFormulaProgressionPattern function for consistent display
+    // We need to pass the actual progression data to get access to choices
+    const progressionData = {
+        level: progressionLevel,
+        choices: formData.choices || [] // Pass the actual choices from the form
+    };
+
+    const progressionPattern = getFormulaProgressionPattern(modifier, progressionLevel, undefined, progressionData);
+
+    if (!progressionPattern) {
+        return <p className="text-xs text-gray-600 dark:text-gray-400">No progression pattern found</p>;
     }
-
-    // Find transition points where the value changes
-    const transitionPoints: Array<{ level: number; value: number }> = [];
-    let lastValue = 0;
-
-    for (const { level, value } of progressionValues) {
-        if (value !== lastValue) {
-            transitionPoints.push({ level, value });
-            lastValue = value;
-        }
-    }
-
-    if (transitionPoints.length === 0) {
-        return <p className="text-xs text-gray-600 dark:text-gray-400">No progression values found</p>;
-    }
-
-    // Format the progression pattern
-    const patternParts = transitionPoints.map(({ level, value }) => {
-        // Don't pass character context to show formula structure instead of calculated values
-        const formattedValue = formatter.value(value, modifier.appliesToId, modifier.bonusType, undefined, modifier);
-        return `Level ${level} (${formattedValue})`;
-    });
 
     return (
         <div className="text-xs text-gray-600 dark:text-gray-400 mt-2">
             <div className="font-medium mb-1">Formula Preview:</div>
             <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded text-xs">
-                {patternParts.join(', ')}
+                {progressionPattern}
             </div>
         </div>
     );
@@ -112,19 +116,34 @@ export function FeatureProgressionDetailEdit({
         level: progression?.level || 1,
         featureId: progression?.featureId || 0,
 
-        // Determine the type based on existing data
-        progressionType: progression?.modifiers?.length ? 'modifier' :
-            progression?.effects?.length ? 'effect' :
-                progression?.choices?.length ? 'choice' : 'modifier',
-
+        // Multi-section approach - remove progressionType
         modifiers: progression?.modifiers || [],
         choices: progression?.choices || [],
         effects: progression?.effects || [],
         // prerequisites removed - now at feature level
     });
 
-    // Set up validation
-    const form = useValidatedForm(CreateFeatureProgressionSchema, formData, setFormData, {
+    // State for loading feats for direct feat grants
+    const [feats, setFeats] = useState<Array<{ id: number; name: string }>>([]);
+    const [featsLoading, setFeatsLoading] = useState(false);
+
+    // Load feats for direct feat grants
+    const loadFeats = async () => {
+        if (feats.length > 0) return; // Already loaded
+        setFeatsLoading(true);
+        try {
+            const response = await FeatService.getFeats({});
+            setFeats(response.results || []);
+        } catch (error) {
+            console.error('Failed to load feats:', error);
+        } finally {
+            setFeatsLoading(false);
+        }
+    };
+
+    // Set up validation - use form schema for new features (featureId = 0), regular schema for existing features
+    const schema = (formData.featureId === 0 || !formData.featureId) ? CreateFeatureProgressionFormSchema : CreateFeatureProgressionSchema;
+    const form = useValidatedForm(schema, formData, setFormData, {
         validateOnChange: false,
         validateOnBlur: false
     });
@@ -139,12 +158,23 @@ export function FeatureProgressionDetailEdit({
             level: progression?.level || 1,
             featureId: progression?.featureId || preSelectedFeature?.id || 0,
 
-            // Determine the type based on existing data
-            progressionType: progression?.modifiers?.length ? 'modifier' :
-                progression?.effects?.length ? 'effect' :
-                    progression?.choices?.length ? 'choice' : 'modifier',
-
-            modifiers: progression?.modifiers || [],
+            // Multi-section approach - remove progressionType
+            modifiers: (progression?.modifiers || []).map(modifier => ({
+                ...modifier,
+                formulaParams: modifier.formulaParams ? {
+                    ...modifier.formulaParams,
+                    // Only initialize arrays for CONDITIONAL_SCALING formula
+                    thresholds: modifier.formulaParams.formulaId === 3 ? (modifier.formulaParams.thresholds || []) : null,
+                    values: modifier.formulaParams.formulaId === 3 ? (modifier.formulaParams.values || []) : null,
+                } : {
+                    formulaId: null,
+                    interval: 1,
+                    formulaStartLevel: null,
+                    attributeId: null,
+                    thresholds: null,
+                    values: null,
+                }
+            })),
             choices: progression?.choices || [],
             effects: progression?.effects || [],
             // prerequisites removed - now at feature level
@@ -154,6 +184,22 @@ export function FeatureProgressionDetailEdit({
         setFormData(newFormData);
     }, [progression, preSelectedFeature]);
 
+    // Load feats when component mounts or when a feat modifier is added
+    useEffect(() => {
+        const modifiers = formData.modifiers as any[] || [];
+        const hasFeatModifier = modifiers.some(mod => mod.appliesTo === ModifierAppliesToType.Feat);
+        if (hasFeatModifier && feats.length === 0) {
+            loadFeats();
+        }
+    }, [formData.modifiers, feats.length]);
+
+    // Load feats when dialog opens to ensure they're available
+    useEffect(() => {
+        if (isOpen) {
+            loadFeats();
+        }
+    }, [isOpen]);
+
     // Handle form submission
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -161,9 +207,7 @@ export function FeatureProgressionDetailEdit({
         // Create the updated progression with all details
         const updatedProgression: FeatureProgressionWithRelations = {
             ...formData as FeatureProgressionWithRelations,
-            // Ensure required fields are present
-            appliesToType: (formData as FeatureProgressionWithRelations).appliesToType ?? null,
-            appliesTo: (formData as FeatureProgressionWithRelations).appliesTo ?? null,
+            // REMOVED: appliesToType and appliesTo - redundant fields removed from schema
 
             // Include feature data for display
             feature: progression?.feature || preSelectedFeature ? {
@@ -186,9 +230,16 @@ export function FeatureProgressionDetailEdit({
                         interval: modifier.formulaParams.interval || 1,
                         formulaStartLevel: modifier.formulaParams.formulaStartLevel || null,
                         attributeId: modifier.formulaParams.attributeId || null,
+                        // Only include arrays for CONDITIONAL_SCALING formula
+                        thresholds: modifier.formulaParams.formulaId === 3 ? (modifier.formulaParams.thresholds || []) : null,
+                        values: modifier.formulaParams.formulaId === 3 ? (modifier.formulaParams.values || []) : null,
                     };
                     // Set formulaParamsId to indicate this is a formula-based modifier
                     modifier.formulaParamsId = 1; // Temporary ID for frontend state
+                } else {
+                    // Remove formulaParams if no formula is selected
+                    delete modifier.formulaParams;
+                    modifier.formulaParamsId = null;
                 }
 
                 return modifier;
@@ -201,7 +252,29 @@ export function FeatureProgressionDetailEdit({
             choices: (formData.choices as any[] || []).map(choice => {
                 // Remove id and progressionId for bulk creation schema
                 const { id, progressionId, ...cleanChoice } = choice;
-                return cleanChoice;
+
+                // Ensure formulaParams has the correct structure (same logic as modifiers)
+                if (choice.formulaParams && choice.formulaParams.formulaId) {
+                    // Create a proper formulaParams structure
+                    choice.formulaParams = {
+                        id: 1, // Temporary ID for frontend state
+                        formulaId: choice.formulaParams.formulaId,
+                        interval: choice.formulaParams.interval || 1,
+                        formulaStartLevel: choice.formulaParams.formulaStartLevel || null,
+                        attributeId: choice.formulaParams.attributeId || null,
+                        // Only include arrays for CONDITIONAL_SCALING formula
+                        thresholds: choice.formulaParams.formulaId === 3 ? (choice.formulaParams.thresholds || []) : null,
+                        values: choice.formulaParams.formulaId === 3 ? (choice.formulaParams.values || []) : null,
+                    };
+                    // Set formulaParamsId to indicate this is a formula-based choice
+                    choice.formulaParamsId = 1; // Temporary ID for frontend state
+                } else {
+                    // Remove formulaParams if no formula is selected (same as modifiers)
+                    delete choice.formulaParams;
+                    choice.formulaParamsId = null;
+                }
+
+                return choice;
             }),
             // prerequisites removed - now at feature level
         };
@@ -211,7 +284,9 @@ export function FeatureProgressionDetailEdit({
 
         // Validate against the schema directly
         try {
-            const parsed = CreateFeatureProgressionSchema.parse(updatedProgression);
+            // Use appropriate schema based on whether this is a new feature (featureId = 0) or existing feature
+            const validationSchema = (updatedProgression.featureId === 0) ? CreateFeatureProgressionFormSchema : CreateFeatureProgressionSchema;
+            const parsed = validationSchema.parse(updatedProgression);
             console.log('Schema validation passed:', parsed);
             onSave(updatedProgression);
             onClose();
@@ -232,6 +307,14 @@ export function FeatureProgressionDetailEdit({
             appliesIfChoiceKey: null,
             appliesIfChoiceValue: null,
             conditions: [],
+            formulaParams: {
+                formulaId: null,
+                interval: 1,
+                formulaStartLevel: null,
+                attributeId: null,
+                thresholds: null,
+                values: null,
+            },
         };
         setFormData(prev => ({
             ...prev,
@@ -270,10 +353,19 @@ export function FeatureProgressionDetailEdit({
         const newChoice = {
             label: '',
             pickCount: 1,
-            choiceType: 'Feat' as const,
-            choiceBehavior: 'Single' as const,
+            type: 0, // FeatureChoiceType.Feat
+            behavior: 0, // FeatureChoiceBehavior.Single
             featId: null,
-            chosenFeatureId: null,
+            featureId: null,
+            filterType: null,
+            formulaParams: {
+                formulaId: null,
+                interval: 1,
+                formulaStartLevel: null,
+                attributeId: null,
+                thresholds: null,
+                values: null,
+            },
         };
         setFormData(prev => ({
             ...prev,
@@ -297,7 +389,7 @@ export function FeatureProgressionDetailEdit({
 
             switch (prereq.type) {
                 case FeaturePrerequisiteType.SkillRanks:
-                    const skillName = SKILL_SELECT_LIST.find(s => s.value === prereq.skillId)?.label || 'Unknown Skill';
+                    const skillName = FULL_SKILL_SELECT_LIST.find(s => s.value === prereq.skillId)?.label || 'Unknown Skill';
                     text = `${skillName} ${prereq.minValue} ranks`;
                     break;
                 case FeaturePrerequisiteType.AbilityScore:
@@ -342,6 +434,11 @@ export function FeatureProgressionDetailEdit({
         return formula?.description || null;
     };
 
+    // Get current section states
+    const hasModifiers = (formData.modifiers as any[] || []).length > 0;
+    const hasEffects = (formData.effects as any[] || []).length > 0;
+    const hasChoices = (formData.choices as any[] || []).length > 0;
+
     return (
         <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <Dialog.Backdrop className="fixed inset-0 bg-black bg-opacity-25 z-40" />
@@ -354,7 +451,7 @@ export function FeatureProgressionDetailEdit({
                                 {progression ? 'Edit' : 'Add'} {preSelectedFeature?.name || progression?.feature?.name || 'Feature'} Progression
                             </Dialog.Title>
                             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                Level {formData.level as number} - {preSelectedFeature?.name || progression?.feature?.name || 'Feature'}
+                                Level {Number(formData.level) || 1} - {preSelectedFeature?.name || progression?.feature?.name || 'Feature'}
                             </p>
                             {(() => {
                                 const formulaDescription = getSelectedFormulaDescription();
@@ -370,7 +467,7 @@ export function FeatureProgressionDetailEdit({
                                 return (
                                     <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-700/20 rounded-md">
                                         <p className="text-xs text-gray-600 dark:text-gray-400">
-                                            <strong>Formula System:</strong> Select a formula from the dropdown to automatically calculate values based on character level and parameters.
+                                            <strong>Multi-Section Feature Progression:</strong> Select which components this progression provides. A single progression can include modifiers, special effects, and choices simultaneously.
                                         </p>
                                     </div>
                                 );
@@ -407,142 +504,194 @@ export function FeatureProgressionDetailEdit({
                                                     required
                                                     componentExtraClassName="flex items-center gap-2"
                                                 />
-
-                                                <ValidatedCustomSelect
-                                                    field="progressionType"
-                                                    label="Progression Type"
-                                                    required
-                                                    options={[
-                                                        { value: 'modifier', label: 'Modifier' },
-                                                        { value: 'effect', label: 'Special Effect' },
-                                                        { value: 'choice', label: 'Choice' }
-                                                    ]}
-                                                    placeholder="Select progression type"
-                                                    componentExtraClassName="flex items-center gap-2"
-                                                />
                                             </div>
 
-                                            {/* Conditional rendering based on progression type */}
-                                            {(formData.progressionType as string) === 'modifier' && (
-                                                <div className="space-y-4">
-                                                    <div className="flex justify-between items-center">
-                                                        <h3 className="text-lg font-medium">Modifiers</h3>
-                                                        <button
-                                                            type="button"
-                                                            onClick={addModifier}
-                                                            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-                                                        >
-                                                            Add Modifier
-                                                        </button>
+                                            {/* Multi-Section Approach */}
+                                            <div className="space-y-6">
+                                                {/* Section Selection */}
+                                                <div className="border border-gray-200 dark:border-gray-600 rounded-md p-4 bg-gray-50 dark:bg-gray-700/20">
+                                                    <h3 className="text-lg font-medium mb-3">Progression Components</h3>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                                        Select which components this feature progression provides:
+                                                    </p>
+                                                    <div className="flex flex-wrap gap-4">
+                                                        <label className="flex items-center gap-2">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={hasModifiers}
+                                                                onChange={(e) => {
+                                                                    if (e.target.checked && !hasModifiers) {
+                                                                        addModifier();
+                                                                    } else if (!e.target.checked && hasModifiers) {
+                                                                        setFormData(prev => ({ ...prev, modifiers: [] }));
+                                                                    }
+                                                                }}
+                                                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                                            />
+                                                            <span className="text-sm font-medium">Modifiers</span>
+                                                            <span className="text-xs text-gray-500">({(formData.modifiers as any[] || []).length})</span>
+                                                        </label>
+                                                        <label className="flex items-center gap-2">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={hasEffects}
+                                                                onChange={(e) => {
+                                                                    if (e.target.checked && !hasEffects) {
+                                                                        addEffect();
+                                                                    } else if (!e.target.checked && hasEffects) {
+                                                                        setFormData(prev => ({ ...prev, effects: [] }));
+                                                                    }
+                                                                }}
+                                                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                                            />
+                                                            <span className="text-sm font-medium">Special Effects</span>
+                                                            <span className="text-xs text-gray-500">({(formData.effects as any[] || []).length})</span>
+                                                        </label>
+                                                        <label className="flex items-center gap-2">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={hasChoices}
+                                                                onChange={(e) => {
+                                                                    if (e.target.checked && !hasChoices) {
+                                                                        addChoice();
+                                                                    } else if (!e.target.checked && hasChoices) {
+                                                                        setFormData(prev => ({ ...prev, choices: [] }));
+                                                                    }
+                                                                }}
+                                                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                                            />
+                                                            <span className="text-sm font-medium">Choices</span>
+                                                            <span className="text-xs text-gray-500">({(formData.choices as any[] || []).length})</span>
+                                                        </label>
                                                     </div>
+                                                </div>
 
-                                                    {(formData.modifiers as any[] || []).length === 0 ? (
-                                                        <p className="text-gray-500 text-sm">No modifiers added</p>
-                                                    ) : (
-                                                        <div className="space-y-3">
-                                                            {(formData.modifiers as any[] || []).map((modifier, index) => (
-                                                                <div key={index} className="border border-gray-200 rounded-md p-3 dark:border-gray-600">
-                                                                    <div className="flex justify-between items-center mb-3">
-                                                                        <div className="flex-1">
-                                                                            <ModifierDetailForm
-                                                                                index={index}
-                                                                            />
+                                                {/* Modifiers Section */}
+                                                {hasModifiers && (
+                                                    <div className="space-y-4">
+                                                        <div className="flex justify-between items-center">
+                                                            <h3 className="text-lg font-medium">Modifiers</h3>
+                                                            <button
+                                                                type="button"
+                                                                onClick={addModifier}
+                                                                className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+                                                            >
+                                                                Add Modifier
+                                                            </button>
+                                                        </div>
+
+                                                        {(formData.modifiers as any[] || []).length === 0 ? (
+                                                            <p className="text-gray-500 text-sm">No modifiers added</p>
+                                                        ) : (
+                                                            <div className="space-y-3">
+                                                                {(formData.modifiers as any[] || []).map((modifier, index) => (
+                                                                    <div key={index} className="border border-gray-200 rounded-md p-3 dark:border-gray-600">
+                                                                        <div className="flex justify-between items-center mb-3">
+                                                                            <div className="flex-1">
+                                                                                <ModifierDetailForm
+                                                                                    index={index}
+                                                                                    feats={feats}
+                                                                                    featsLoading={featsLoading}
+                                                                                />
+                                                                            </div>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => removeModifier(index)}
+                                                                                className="text-red-500 hover:text-red-700 ml-3 flex-shrink-0"
+                                                                                title="Remove Modifier"
+                                                                            >
+                                                                                <TrashIcon className="h-4 w-4" />
+                                                                            </button>
                                                                         </div>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => removeModifier(index)}
-                                                                            className="text-red-500 hover:text-red-700 ml-3 flex-shrink-0"
-                                                                            title="Remove Modifier"
-                                                                        >
-                                                                            <TrashIcon className="h-4 w-4" />
-                                                                        </button>
                                                                     </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-
-                                            {(formData.progressionType as string) === 'effect' && (
-                                                <div className="space-y-4">
-                                                    <div className="flex justify-between items-center">
-                                                        <h3 className="text-lg font-medium">Special Effects</h3>
-                                                        <button
-                                                            type="button"
-                                                            onClick={addEffect}
-                                                            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-                                                        >
-                                                            Add Effect
-                                                        </button>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                     </div>
+                                                )}
 
-                                                    {(formData.effects as any[] || []).length === 0 ? (
-                                                        <p className="text-gray-500 text-sm">No effects added</p>
-                                                    ) : (
-                                                        <div className="space-y-3">
-                                                            {(formData.effects as any[] || []).map((effect, index) => (
-                                                                <div key={index} className="border border-gray-200 rounded-md p-3 dark:border-gray-600">
-                                                                    <div className="flex justify-between items-center mb-2">
-                                                                        <span className="text-sm font-medium">Effect {index + 1}</span>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => removeEffect(index)}
-                                                                            className="text-red-500 hover:text-red-700 text-sm"
-                                                                        >
-                                                                            Remove
-                                                                        </button>
-                                                                    </div>
-                                                                    <EffectDetailForm
-                                                                        index={index}
-                                                                    />
-                                                                </div>
-                                                            ))}
+                                                {/* Effects Section */}
+                                                {hasEffects && (
+                                                    <div className="space-y-4">
+                                                        <div className="flex justify-between items-center">
+                                                            <h3 className="text-lg font-medium">Special Effects</h3>
+                                                            <button
+                                                                type="button"
+                                                                onClick={addEffect}
+                                                                className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+                                                            >
+                                                                Add Effect
+                                                            </button>
                                                         </div>
-                                                    )}
-                                                </div>
-                                            )}
 
-                                            {(formData.progressionType as string) === 'choice' && (
-                                                <div className="space-y-4">
-                                                    <div className="flex justify-between items-center">
-                                                        <h3 className="text-lg font-medium">Choices</h3>
-                                                        <button
-                                                            type="button"
-                                                            onClick={addChoice}
-                                                            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-                                                        >
-                                                            Add Choice
-                                                        </button>
+                                                        {(formData.effects as any[] || []).length === 0 ? (
+                                                            <p className="text-gray-500 text-sm">No effects added</p>
+                                                        ) : (
+                                                            <div className="space-y-3">
+                                                                {(formData.effects as any[] || []).map((effect, index) => (
+                                                                    <div key={index} className="border border-gray-200 rounded-md p-3 dark:border-gray-600">
+                                                                        <div className="flex justify-between items-center mb-2">
+                                                                            <span className="text-sm font-medium">Effect {index + 1}</span>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => removeEffect(index)}
+                                                                                className="text-red-500 hover:text-red-700 text-sm"
+                                                                            >
+                                                                                Remove
+                                                                            </button>
+                                                                        </div>
+                                                                        <EffectDetailForm
+                                                                            index={index}
+                                                                        />
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                     </div>
+                                                )}
 
-                                                    {(formData.choices as any[] || []).length === 0 ? (
-                                                        <p className="text-gray-500 text-sm">No choices added</p>
-                                                    ) : (
-                                                        <div className="space-y-3">
-                                                            {(formData.choices as any[] || []).map((choice, index) => (
-                                                                <div key={index} className="border border-gray-200 rounded-md p-3 dark:border-gray-600">
-                                                                    <div className="flex justify-between items-center mb-2">
-                                                                        <span className="text-sm font-medium">Choice {index + 1}</span>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => removeChoice(index)}
-                                                                            className="text-red-500 hover:text-red-700 text-sm"
-                                                                        >
-                                                                            Remove
-                                                                        </button>
-                                                                    </div>
-                                                                    <ChoiceDetailForm
-                                                                        index={index}
-                                                                    />
-                                                                </div>
-                                                            ))}
+                                                {/* Choices Section */}
+                                                {hasChoices && (
+                                                    <div className="space-y-4">
+                                                        <div className="flex justify-between items-center">
+                                                            <h3 className="text-lg font-medium">Choices</h3>
+                                                            <button
+                                                                type="button"
+                                                                onClick={addChoice}
+                                                                className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+                                                            >
+                                                                Add Choice
+                                                            </button>
                                                         </div>
-                                                    )}
-                                                </div>
-                                            )}
 
-                                            {/* Prerequisites Section removed - now at feature level */}
+                                                        {(formData.choices as any[] || []).length === 0 ? (
+                                                            <p className="text-gray-500 text-sm">No choices added</p>
+                                                        ) : (
+                                                            <div className="space-y-3">
+                                                                {(formData.choices as any[] || []).map((choice, index) => (
+                                                                    <div key={index} className="border border-gray-200 rounded-md p-3 dark:border-gray-600">
+                                                                        <div className="flex justify-between items-center mb-2">
+                                                                            <span className="text-sm font-medium">Choice {index + 1}</span>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => removeChoice(index)}
+                                                                                className="text-red-500 hover:text-red-700 text-sm"
+                                                                            >
+                                                                                Remove
+                                                                            </button>
+                                                                        </div>
+                                                                        <ChoiceDetailForm
+                                                                            index={index}
+                                                                        />
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {/* Prerequisites Section removed - now at feature level */}
+                                            </div>
                                         </ValidatedForm>
                                     </ScrollArea.Content>
                                 </ScrollArea.Viewport>
@@ -590,15 +739,34 @@ export function FeatureProgressionDetailEdit({
 // Modifier Detail Form Component
 interface ModifierDetailFormProps {
     index: number;
+    feats: Array<{ id: number; name: string }>;
+    featsLoading: boolean;
 }
 
-function ModifierDetailForm({ index }: ModifierDetailFormProps) {
+function ModifierDetailForm({ index, feats, featsLoading }: ModifierDetailFormProps) {
     const { formData, setFormData } = useFormContext();
     const modifiers = formData.modifiers as any[] || [];
     const modifier = modifiers[index] || {};
     const [showConditional, setShowConditional] = useState(false);
     const [showConditions, setShowConditions] = useState(false);
     const prevAppliesToRef = useRef<number | null>(null);
+
+    // Update modifier with feat data when a feat is selected
+    useEffect(() => {
+        if (modifier.appliesTo === ModifierAppliesToType.Feat && modifier.appliesToId) {
+            const selectedFeat = feats.find(feat => feat.id === modifier.appliesToId);
+            if (selectedFeat && !modifier.feat) {
+                console.log('Setting feat data for modifier:', selectedFeat);
+                // Update the modifier with feat data
+                setFormData(prev => ({
+                    ...prev,
+                    modifiers: (prev.modifiers as any[] || []).map((mod, i) =>
+                        i === index ? { ...mod, feat: selectedFeat } : mod
+                    )
+                }));
+            }
+        }
+    }, [modifier.appliesTo, modifier.appliesToId, feats, index, setFormData]);
 
     // Helper function to get the appropriate appliesTo options based on modifierType
     const getAppliesToOptions = (modifierType: number | null) => {
@@ -622,7 +790,7 @@ function ModifierDetailForm({ index }: ModifierDetailFormProps) {
             case ModifierAppliesToType.Skill:
                 return [
                     { value: -1, label: 'Any Skill' },
-                    ...SKILL_SELECT_LIST
+                    ...FULL_SKILL_SELECT_LIST
                 ];
             case ModifierAppliesToType.SavingThrow:
                 return [
@@ -632,7 +800,8 @@ function ModifierDetailForm({ index }: ModifierDetailFormProps) {
             case ModifierAppliesToType.HitDice:
                 return RPG_DICE_SELECT_LIST;
             case ModifierAppliesToType.Damage:
-                return DAMAGE_TYPE_SELECT_LIST;
+                // For Quantity modifiers, show dice types; for others, show damage types
+                return modifier.type === ModifierType.Quantity ? RPG_DICE_SELECT_LIST : DAMAGE_TYPE_SELECT_LIST;
             case ModifierAppliesToType.DamageReduction:
                 return DAMAGE_TYPE_SELECT_LIST;
             case ModifierAppliesToType.AC:
@@ -645,6 +814,18 @@ function ModifierDetailForm({ index }: ModifierDetailFormProps) {
                 return [
                     { value: -1, label: 'Any Language' },
                     ...LANGUAGE_SELECT_LIST
+                ];
+
+            case ModifierAppliesToType.Feat:
+                // For direct feat grants, we need to load feats from the service
+                if (featsLoading) {
+                    return [
+                        { value: null, label: 'Loading feats...' }
+                    ];
+                }
+                return [
+                    { value: null, label: 'Select a feat...' },
+                    ...feats.map(feat => ({ value: feat.id, label: feat.name }))
                 ];
             case ModifierAppliesToType.MovementSpeed:
             case ModifierAppliesToType.Attack:
@@ -721,11 +902,36 @@ function ModifierDetailForm({ index }: ModifierDetailFormProps) {
         prevAppliesToRef.current = currentAppliesTo;
     }, [modifier.appliesTo, index]);
 
+    // Initialize arrays when formula changes to CONDITIONAL_SCALING
+    useEffect(() => {
+        const currentFormulaId = modifier.formulaParams?.formulaId;
+        if (currentFormulaId === 3) { // CONDITIONAL_SCALING
+            // Initialize arrays if they don't exist
+            if (!modifier.formulaParams?.thresholds || !modifier.formulaParams?.values) {
+                setFormData(prev => ({
+                    ...prev,
+                    modifiers: (prev.modifiers as any[] || []).map((mod, i) =>
+                        i === index ? {
+                            ...mod,
+                            formulaParams: {
+                                ...mod.formulaParams,
+                                thresholds: mod.formulaParams?.thresholds || [],
+                                values: mod.formulaParams?.values || [],
+                            }
+                        } : mod
+                    )
+                }));
+            }
+        }
+    }, [modifier.formulaParams?.formulaId, index]);
+
+
+
     // Helper functions for conditions
     const addCondition = () => {
         const newCondition = {
             conditionType: FeatureModifierConditionType.trigger,
-            conditionValue: '',
+            conditionValue: null,
         };
         setFormData(prev => ({
             ...prev,
@@ -766,15 +972,33 @@ function ModifierDetailForm({ index }: ModifierDetailFormProps) {
                     />
                 </div>
                 <div>
-                    <ValidatedInput
-                        field={`modifiers.${index}.value`}
-                        label="Value"
-                        type="number"
-                        required
-                        componentExtraClassName="flex items-center gap-2"
-                        inputExtraClassName="w-20"
-                        nested
-                    />
+                    {/* Show dice selection for damage replacement, numeric input for others */}
+                    {modifier.type === ModifierType.Replacement && (modifier.appliesTo === ModifierAppliesToType.Damage || modifier.appliesTo === ModifierAppliesToType.UnarmedDamage) ? (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Damage Dice
+                            </label>
+                            <p className="text-xs text-gray-500 mb-2">
+                                Use formula parameters for progression
+                            </p>
+                            <input
+                                type="text"
+                                value="Formula-based"
+                                disabled
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed"
+                            />
+                        </div>
+                    ) : (
+                        <ValidatedInput
+                            field={`modifiers.${index}.value`}
+                            label="Value"
+                            type="number"
+                            required
+                            componentExtraClassName="flex items-center gap-2"
+                            inputExtraClassName="w-20"
+                            nested
+                        />
+                    )}
                 </div>
                 <div>
                     <ValidatedCustomSelect
@@ -810,7 +1034,12 @@ function ModifierDetailForm({ index }: ModifierDetailFormProps) {
                             <ValidatedCustomSelect
                                 key={`appliesToId-${index}-${modifier.appliesTo}`}
                                 field={`modifiers.${index}.appliesToId`}
-                                label={modifier.appliesTo !== null && modifier.appliesTo !== undefined ? MODIFIER_APPLIES_TO_TYPES[modifier.appliesTo]?.name || 'Target' : 'Target'}
+                                label={(() => {
+                                    if (modifier.appliesTo === ModifierAppliesToType.Damage && modifier.type === ModifierType.Quantity) {
+                                        return 'Dice';
+                                    }
+                                    return modifier.appliesTo !== null && modifier.appliesTo !== undefined ? MODIFIER_APPLIES_TO_TYPES[modifier.appliesTo]?.name || 'Target' : 'Target';
+                                })()}
                                 options={appliesToIdOptions}
                                 placeholder="Select"
                                 componentExtraClassName="flex items-center gap-2"
@@ -917,14 +1146,82 @@ function ModifierDetailForm({ index }: ModifierDetailFormProps) {
                                     </div>
                                 );
 
-                            case 3: // CONDITIONAL_SCALING
+                            case 9: // LEVEL_TIMES_VALUE
+                                return (
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                                            No parameters needed. Base value will use the modifier's "Value" field above.
+                                        </div>
+                                    </div>
+                                );
+
+                            case 10: // VALUE_PLUS_LEVEL
+                                return (
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                                            No parameters needed. Fixed value will use the modifier's "Value" field above.
+                                        </div>
+                                    </div>
+                                );
+
+                            case 11: // LEVEL_PLUS_ATTRIBUTE
                                 return (
                                     <div className="grid grid-cols-1 gap-3">
                                         <div>
-                                            <p className="text-xs text-gray-600 dark:text-gray-400">
-                                                Conditional scaling parameters are configured separately.
-                                            </p>
+                                            <ValidatedCustomSelect
+                                                field={`modifiers.${index}.formulaParams.attributeId`}
+                                                label="Attribute"
+                                                options={ABILITY_SELECT_LIST}
+                                                placeholder="Select attribute"
+                                                componentExtraClassName="flex items-center gap-2"
+                                                nested
+                                            />
                                         </div>
+                                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                                            Formula will calculate: level + attribute modifier
+                                        </div>
+                                    </div>
+                                );
+
+                            case 3: // CONDITIONAL_SCALING
+                                return (
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <ArrayPairEditor
+                                            thresholds={modifier.formulaParams?.thresholds || []}
+                                            values={modifier.formulaParams?.values || []}
+                                            onThresholdsChange={(thresholds) => {
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    modifiers: (prev.modifiers as any[] || []).map((mod, i) =>
+                                                        i === index ? {
+                                                            ...mod,
+                                                            formulaParams: {
+                                                                ...mod.formulaParams,
+                                                                thresholds
+                                                            }
+                                                        } : mod
+                                                    )
+                                                }));
+                                            }}
+                                            onValuesChange={(values) => {
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    modifiers: (prev.modifiers as any[] || []).map((mod, i) =>
+                                                        i === index ? {
+                                                            ...mod,
+                                                            formulaParams: {
+                                                                ...mod.formulaParams,
+                                                                values
+                                                            }
+                                                        } : mod
+                                                    )
+                                                }));
+                                            }}
+                                            thresholdLabel="Level Threshold"
+                                            valueLabel="Value"
+                                            thresholdPlaceholder="e.g., 4"
+                                            valuePlaceholder="e.g., -2"
+                                        />
                                     </div>
                                 );
 
@@ -940,7 +1237,7 @@ function ModifierDetailForm({ index }: ModifierDetailFormProps) {
                                 );
                         }
                     })()}
-                    <FormulaPreview modifier={modifier} progressionLevel={formData.level as number} />
+                    <FormulaPreview modifier={modifier} progressionLevel={Number(formData.level) || 1} />
                 </div>
             )}
 
@@ -964,7 +1261,22 @@ function ModifierDetailForm({ index }: ModifierDetailFormProps) {
                             type="checkbox"
                             id={`conditional-${index}`}
                             checked={showConditional}
-                            onChange={(e) => setShowConditional(e.target.checked)}
+                            onChange={(e) => {
+                                setShowConditional(e.target.checked);
+                                // Clear conditional fields when checkbox is unchecked
+                                if (!e.target.checked) {
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        modifiers: (prev.modifiers as any[] || []).map((mod, i) =>
+                                            i === index ? {
+                                                ...mod,
+                                                appliesIfChoiceKey: null,
+                                                appliesIfChoiceValue: null
+                                            } : mod
+                                        )
+                                    }));
+                                }
+                            }}
                             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
                         <label htmlFor={`conditional-${index}`} className="text-sm font-medium">
@@ -977,7 +1289,18 @@ function ModifierDetailForm({ index }: ModifierDetailFormProps) {
                             type="checkbox"
                             id={`conditions-${index}`}
                             checked={showConditions}
-                            onChange={(e) => setShowConditions(e.target.checked)}
+                            onChange={(e) => {
+                                setShowConditions(e.target.checked);
+                                // Clear conditions when checkbox is unchecked
+                                if (!e.target.checked) {
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        modifiers: (prev.modifiers as any[] || []).map((mod, i) =>
+                                            i === index ? { ...mod, conditions: [] } : mod
+                                        )
+                                    }));
+                                }
+                            }}
                             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
                         <label htmlFor={`conditions-${index}`} className="text-sm font-medium">
@@ -1041,14 +1364,34 @@ function ModifierDetailForm({ index }: ModifierDetailFormProps) {
                                         componentExtraClassName="flex-1"
                                         nested
                                     />
-                                    <ValidatedInput
-                                        field={`modifiers.${index}.conditions.${conditionIndex}.conditionValue`}
-                                        label=""
-                                        type="text"
-                                        placeholder="Condition value"
-                                        componentExtraClassName="flex-1"
-                                        nested
-                                    />
+                                    {condition.conditionType === FeatureModifierConditionType.character_size ? (
+                                        <ValidatedCustomSelect
+                                            field={`modifiers.${index}.conditions.${conditionIndex}.conditionValue`}
+                                            label=""
+                                            options={SIZE_SELECT_LIST}
+                                            placeholder="Select size"
+                                            componentExtraClassName="flex-1"
+                                            nested
+                                        />
+                                    ) : condition.conditionType === FeatureModifierConditionType.attack_type ? (
+                                        <ValidatedCustomSelect
+                                            field={`modifiers.${index}.conditions.${conditionIndex}.conditionValue`}
+                                            label=""
+                                            options={ATTACK_TYPE_SELECT_LIST}
+                                            placeholder="Select attack type"
+                                            componentExtraClassName="flex-1"
+                                            nested
+                                        />
+                                    ) : (
+                                        <ValidatedInput
+                                            field={`modifiers.${index}.conditions.${conditionIndex}.conditionValue`}
+                                            label=""
+                                            type="text"
+                                            placeholder="Condition value"
+                                            componentExtraClassName="flex-1"
+                                            nested
+                                        />
+                                    )}
                                     <button
                                         type="button"
                                         onClick={() => removeCondition(conditionIndex)}
@@ -1076,13 +1419,118 @@ function EffectDetailForm({ index }: EffectDetailFormProps) {
     const effects = formData.effects as any[] || [];
     const effect = effects[index] || {};
 
+    // State for proficiency-specific data
+    const [proficiencyFeats, setProficiencyFeats] = useState<ProficiencyFeat[]>([]);
+    const [proficiencyItems, setProficiencyItems] = useState<ProficiencyItem[]>([]);
+    const [loadingFeats, setLoadingFeats] = useState(false);
+    const [loadingItems, setLoadingItems] = useState(false);
+
+    // State for weapon familiarity-specific data
+    const [exoticWeapons, setExoticWeapons] = useState<ProficiencyItem[]>([]);
+    const [loadingExoticWeapons, setLoadingExoticWeapons] = useState(false);
+
     const effectTypeOptions = Object.entries(FeatureSpecialEffectType).map(([key, value]) => ({
         value: value,
         label: key
     }));
 
+    const isProficiencyEffect = effect.effectType === FeatureSpecialEffectType.Proficiency;
+    const isWeaponFamiliarityEffect = effect.effectType === FeatureSpecialEffectType.WeaponFamiliarity;
+
+    // Load proficiency feats when component mounts or effect type changes
+    useEffect(() => {
+        if (isProficiencyEffect && proficiencyFeats.length === 0) {
+            loadProficiencyFeats();
+        }
+    }, [isProficiencyEffect]);
+
+    // Load items when feat is selected
+    useEffect(() => {
+        if (isProficiencyEffect && effect.featId) {
+            loadProficiencyItems(effect.featId);
+        } else if (isProficiencyEffect && !effect.featId) {
+            // Clear items when no feat is selected
+            setProficiencyItems([]);
+        }
+    }, [isProficiencyEffect, effect.featId]);
+
+    // Load exotic weapons when weapon familiarity is selected
+    useEffect(() => {
+        if (isWeaponFamiliarityEffect && exoticWeapons.length === 0) {
+            loadExoticWeapons();
+        }
+    }, [isWeaponFamiliarityEffect]);
+
+    const loadProficiencyFeats = async () => {
+        setLoadingFeats(true);
+        try {
+            const response = await FeatService.featQuery({ queryType: 'proficiency' });
+            const proficiencyFeats = response.results
+                .filter(feat => feat.benefits?.some(benefit =>
+                    benefit.typeId === FeatBenefitType.PROFICIENCY
+                ))
+                .map(feat => ({
+                    id: feat.id,
+                    name: feat.name,
+                    proficiencyTypeId: feat.benefits.find(b => b.typeId === FeatBenefitType.PROFICIENCY)?.referenceId
+                }));
+            setProficiencyFeats(proficiencyFeats);
+        } catch (error) {
+            console.error('Failed to load proficiency feats:', error);
+        } finally {
+            setLoadingFeats(false);
+        }
+    };
+
+    const loadProficiencyItems = async (featId: number) => {
+        const feat = proficiencyFeats.find(f => f.id === featId);
+        if (!feat?.proficiencyTypeId) return;
+
+        setLoadingItems(true);
+        try {
+            // Use the existing ClassProficiencyService method for proper filtering
+            const items = await ClassProficiencyService.getItemsByProficiencyType(feat.proficiencyTypeId);
+
+            // Sort items alphabetically by name
+            const sortedItems = items.sort((a, b) => a.name.localeCompare(b.name));
+
+            setProficiencyItems(sortedItems);
+        } catch (error) {
+            console.error('Failed to load proficiency items:', error);
+        } finally {
+            setLoadingItems(false);
+        }
+    };
+
+    const loadExoticWeapons = async () => {
+        setLoadingExoticWeapons(true);
+        try {
+            const response = await ItemService.itemQuery({
+                queryType: 'byCategory',
+                typeId: 1, // ITEM_TYPE_ENUM.WEAPON
+                category: 3 // WEAPON_CATEGORY_ENUM.EXOTIC
+            });
+
+            const exoticWeaponItems = response.results
+                .map(item => ({
+                    id: item.id,
+                    name: item.name,
+                    typeId: item.typeId,
+                    weapon: item.weapon
+                }))
+                .sort((a, b) => a.name.localeCompare(b.name));
+
+            setExoticWeapons(exoticWeaponItems);
+        } catch (error) {
+            console.error('Failed to load exotic weapons:', error);
+        } finally {
+            setLoadingExoticWeapons(false);
+        }
+    };
+
     return (
         <div className="space-y-4">
+            {/* Effect Type Selection */}
             <div>
                 <ValidatedCustomSelect
                     field={`effects.${index}.effectType`}
@@ -1094,36 +1542,109 @@ function EffectDetailForm({ index }: EffectDetailFormProps) {
                 />
             </div>
 
-            <div>
-                <ValidatedInput
-                    field={`effects.${index}.key`}
-                    label="Key"
-                    type="text"
-                    required
-                    componentExtraClassName="flex items-center gap-2"
-                    nested
-                />
-            </div>
+            {/* Dynamic Fields Based on Effect Type */}
+            {isProficiencyEffect ? (
+                // Proficiency-specific fields
+                <div className="space-y-4">
+                    <div>
+                        <ValidatedCustomSelect
+                            field={`effects.${index}.featId`}
+                            label="Proficiency Feat"
+                            required
+                            options={[
+                                { value: null, label: 'Select a proficiency feat...' },
+                                ...proficiencyFeats.map(feat => ({
+                                    value: feat.id,
+                                    label: feat.name
+                                }))
+                            ]}
+                            placeholder="Select feat"
+                            componentExtraClassName="flex items-center gap-2"
+                            nested
+                            disabled={loadingFeats}
+                        />
+                    </div>
 
-            <div>
-                <ValidatedInput
-                    field={`effects.${index}.value`}
-                    label="Value"
-                    type="text"
-                    componentExtraClassName="flex items-center gap-2"
-                    nested
-                />
-            </div>
+                    {effect.featId && (
+                        <div>
+                            <ValidatedCustomSelect
+                                field={`effects.${index}.itemId`}
+                                label="Specific Item (Optional)"
+                                options={[
+                                    { value: -1, label: 'All items of this type' },
+                                    ...proficiencyItems.map(item => ({
+                                        value: item.id,
+                                        label: item.name
+                                    }))
+                                ]}
+                                placeholder="Select item"
+                                componentExtraClassName="flex items-center gap-2"
+                                nested
+                                disabled={loadingItems}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                                Select -1 for all items of this proficiency type, or choose a specific item
+                            </p>
+                        </div>
+                    )}
+                </div>
+            ) : isWeaponFamiliarityEffect ? (
+                // Weapon familiarity-specific fields
+                <div className="space-y-4">
+                    <div>
+                        <ValidatedCustomSelect
+                            field={`effects.${index}.numericValue`}
+                            label="Weapon"
+                            required
+                            options={exoticWeapons.map(weapon => ({
+                                value: weapon.id,
+                                label: weapon.name
+                            }))}
+                            placeholder="Select exotic weapon..."
+                            componentExtraClassName="flex items-center gap-2"
+                            nested
+                            disabled={loadingExoticWeapons}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                            Select an exotic weapon that this race can treat as a martial weapon
+                        </p>
+                    </div>
+                </div>
+            ) : (
+                // Generic fields for other effect types
+                <>
+                    <div>
+                        <ValidatedInput
+                            field={`effects.${index}.key`}
+                            label="Key"
+                            type="text"
+                            required
+                            componentExtraClassName="flex items-center gap-2"
+                            nested
+                        />
+                    </div>
 
-            <div>
-                <ValidatedInput
-                    field={`effects.${index}.numericValue`}
-                    label="Numeric Value (Optional)"
-                    type="number"
-                    componentExtraClassName="flex items-center gap-2"
-                    nested
-                />
-            </div>
+                    <div>
+                        <ValidatedInput
+                            field={`effects.${index}.value`}
+                            label="Value"
+                            type="text"
+                            componentExtraClassName="flex items-center gap-2"
+                            nested
+                        />
+                    </div>
+
+                    <div>
+                        <ValidatedInput
+                            field={`effects.${index}.numericValue`}
+                            label="Numeric Value (Optional)"
+                            type="number"
+                            componentExtraClassName="flex items-center gap-2"
+                            nested
+                        />
+                    </div>
+                </>
+            )}
         </div>
     );
 }
@@ -1137,51 +1658,149 @@ function ChoiceDetailForm({ index }: ChoiceDetailFormProps) {
     const { formData, setFormData } = useFormContext();
     const choices = formData.choices as any[] || [];
     const choice = choices[index] || {};
+    const [availableFeats, setAvailableFeats] = useState<Array<{ id: number; name: string }>>([]);
+    const [availableFeatures, setAvailableFeatures] = useState<Array<{ id: number; name: string }>>([]);
 
-    const choiceTypeOptions = [
-        { value: 'Feat', label: 'Feat' },
-        { value: 'Feature', label: 'Class Feature' }
-    ];
+    // Ensure formulaParams is properly initialized
+    useEffect(() => {
+        if (choice && !choice.formulaParams) {
+            setFormData(prev => ({
+                ...prev,
+                choices: (prev.choices as any[] || []).map((c, i) =>
+                    i === index ? {
+                        ...c,
+                        formulaParams: {
+                            formulaId: null,
+                            interval: 1,
+                            formulaStartLevel: null,
+                            attributeId: null,
+                            thresholds: null,
+                            values: null,
+                        }
+                    } : c
+                )
+            }));
+        }
+    }, [choice, index, setFormData]);
 
-    const choiceBehaviorOptions = [
-        { value: 'Single', label: 'Single Choice' },
-        { value: 'Multiple', label: 'Multiple Choices' },
-        { value: 'Allocation', label: 'Allocation (e.g., +2 to specific favored enemy)' }
-    ];
+    // Initialize arrays when formula changes to CONDITIONAL_SCALING
+    useEffect(() => {
+        const currentFormulaId = choice.formulaParams?.formulaId;
+        if (currentFormulaId === 3) { // CONDITIONAL_SCALING
+            // Initialize arrays if they don't exist
+            if (!choice.formulaParams?.thresholds || !choice.formulaParams?.values) {
+                setFormData(prev => ({
+                    ...prev,
+                    choices: (prev.choices as any[] || []).map((c, i) =>
+                        i === index ? {
+                            ...c,
+                            formulaParams: {
+                                ...c.formulaParams,
+                                thresholds: c.formulaParams?.thresholds || [],
+                                values: c.formulaParams?.values || [],
+                            }
+                        } : c
+                    )
+                }));
+            }
+        }
+    }, [choice.formulaParams?.formulaId, index]);
+
+    const choiceTypeOptions = FEATURE_CHOICE_SELECT_LIST;
+    const choiceBehaviorOptions = FEATURE_CHOICE_BEHAVIOR_SELECT_LIST;
+
+    // REMOVED: appliesToTypeOptions and getAppliesToOptions - no longer needed after removing redundant fields
+
+    const isFeatChoice = choice.type === 0; // FeatureChoiceType.Feat
+    const isFeatureChoice = choice.type === 1; // FeatureChoiceType.Feature
+    const isCreatureTypeChoice = choice.type === 2; // FeatureChoiceType.CreatureType
+
+    // Load available feats for specific feat selection
+    useEffect(() => {
+        const loadFeats = async () => {
+            try {
+                const featResponse = await FeatService.featQuery({ queryType: 'all' });
+                const feats = featResponse.results.map((feat: any) => ({ id: Number(feat.id), name: feat.name }));
+                console.log('Loaded feats for choice selection:', feats.length, feats.slice(0, 3));
+                setAvailableFeats(feats);
+            } catch (error) {
+                console.error('Failed to load feats:', error);
+            }
+        };
+
+        if (isFeatChoice) {
+            loadFeats();
+        }
+    }, [isFeatChoice]);
+
+    // Load available features for specific feature selection
+    useEffect(() => {
+        const loadFeatures = async () => {
+            try {
+                const featureResponse = await FeatureSystemService.getFeatures({});
+                const features = featureResponse.results.map((feature: any) => ({ id: Number(feature.id), name: feature.name }));
+                console.log('Loaded features for choice selection:', features.length, features.slice(0, 3));
+                setAvailableFeatures(features);
+            } catch (error) {
+                console.error('Failed to load features:', error);
+            }
+        };
+
+        if (isFeatureChoice) {
+            loadFeatures();
+        }
+    }, [isFeatureChoice]);
+
+
 
     return (
-        <div className="space-y-4">
-            <div>
-                <ValidatedCustomSelect
-                    field={`choices.${index}.choiceType`}
-                    label="Choice Type"
-                    required
-                    options={choiceTypeOptions}
-                    placeholder="Select choice type"
-                    nested
-                />
-            </div>
-
-            <div>
-                <ValidatedInput
-                    field={`choices.${index}.label`}
-                    label="Label"
-                    type="text"
-                    required
-                    placeholder="e.g., Choose a favored enemy"
-                    componentExtraClassName="flex items-center gap-2"
-                    nested
-                />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-3">
+            {/* Main choice fields in a compact grid */}
+            <div className="grid grid-cols-[1fr_1fr_1.5fr] gap-3">
                 <div>
                     <ValidatedCustomSelect
-                        field={`choices.${index}.choiceBehavior`}
-                        label="Choice Behavior"
+                        field={`choices.${index}.type`}
+                        label="Type"
+                        required
+                        options={choiceTypeOptions}
+                        placeholder="Select type"
+                        componentExtraClassName="flex items-center gap-2"
+                        nested
+                    />
+                </div>
+                <div>
+                    <ValidatedCustomSelect
+                        field={`choices.${index}.formulaParams.formulaId`}
+                        label="Formula"
+                        options={FORMULA_SELECT_LIST}
+                        placeholder="Select"
+                        componentExtraClassName="flex items-center gap-2"
+                        nested
+                    />
+                </div>
+                <div>
+                    <ValidatedInput
+                        field={`choices.${index}.label`}
+                        label="Label"
+                        type="text"
+                        required
+                        placeholder="e.g., Bonus Feat"
+                        componentExtraClassName="flex items-center gap-2"
+                        nested
+                    />
+                </div>
+            </div>
+
+            {/* Behavior and Pick Count fields */}
+            <div className="grid grid-cols-[1fr_auto] gap-3">
+                <div>
+                    <ValidatedCustomSelect
+                        field={`choices.${index}.behavior`}
+                        label="Behavior"
                         required
                         options={choiceBehaviorOptions}
                         placeholder="Select behavior"
+                        componentExtraClassName="flex items-center gap-2"
                         nested
                     />
                 </div>
@@ -1193,31 +1812,251 @@ function ChoiceDetailForm({ index }: ChoiceDetailFormProps) {
                         min={1}
                         required
                         componentExtraClassName="flex items-center gap-2"
+                        inputExtraClassName="w-12"
                         nested
                     />
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <ValidatedInput
-                        field={`choices.${index}.featId`}
-                        label="Feat ID (Optional)"
-                        type="number"
-                        componentExtraClassName="flex items-center gap-2"
-                        nested
-                    />
+            {/* Feat-specific fields - Filter Type and Specific Feat side by side */}
+            {isFeatChoice && (
+                <div className="grid grid-cols-2 gap-3">
+                    <div>
+                        <ValidatedCustomSelect
+                            field={`choices.${index}.filterType`}
+                            label="Feat Filter Type"
+                            options={FEATURE_FEAT_CHOICE_FILTER_SELECT_LIST}
+                            placeholder="Select filter type"
+                            componentExtraClassName="flex items-center gap-2"
+                            nested
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                            Filter available feats
+                        </p>
+                    </div>
+                    <div>
+                        <ValidatedCustomSelect
+                            field={`choices.${index}.featId`}
+                            label="Specific Feat (Optional)"
+                            options={availableFeats.map(feat => ({ value: feat.id, label: feat.name }))}
+                            placeholder="Select specific feat"
+                            componentExtraClassName="flex items-center gap-2"
+                            nested
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                            Leave empty for filtered choice
+                        </p>
+                    </div>
                 </div>
-                <div>
-                    <ValidatedInput
-                        field={`choices.${index}.chosenFeatureId`}
-                        label="Chosen Feature ID (Optional)"
-                        type="number"
-                        componentExtraClassName="flex items-center gap-2"
-                        nested
-                    />
+            )}
+
+            {/* Feature-specific field */}
+            {isFeatureChoice && (
+                <div className="grid grid-cols-1 gap-3">
+                    <div>
+                        <ValidatedCustomSelect
+                            field={`choices.${index}.featureId`}
+                            label="Specific Feature (Optional)"
+                            options={availableFeatures.map(feature => ({ value: feature.id, label: feature.name }))}
+                            placeholder="Select specific feature"
+                            componentExtraClassName="flex items-center gap-2"
+                            nested
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                            Leave empty for filtered choice
+                        </p>
+                    </div>
                 </div>
-            </div>
+            )}
+
+            {/* Choice Approach Guidance */}
+            {isFeatChoice && (
+                <div className="border border-blue-200 rounded-md p-3 bg-blue-50 dark:bg-blue-900/20">
+                    <h4 className="text-sm font-medium mb-2 text-blue-800 dark:text-blue-200">
+                        Choice Selection Approach
+                    </h4>
+                    <div className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
+                        <p><strong>Specific Choice:</strong> Use "Specific Feat" above for predefined options (e.g., "Improved Grapple or Stunning Fist")</p>
+                        <p><strong>Filtered Choice:</strong> Use "Feat Filter Type" to restrict available feats (e.g., "Fighter Bonus" for fighter bonus feats)</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Creature type choice guidance */}
+            {isCreatureTypeChoice && (
+                <div className="border border-blue-200 rounded-md p-3 bg-blue-50 dark:bg-blue-900/20">
+                    <h4 className="text-sm font-medium mb-2 text-blue-800 dark:text-blue-200">
+                        Creature Type Choice
+                    </h4>
+                    <div className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
+                        <p><strong>Choice Behavior:</strong> Use "Single" for choosing a creature type, "Allocation" for distributing bonuses</p>
+                        <p><strong>Character Sheet:</strong> The character editor will provide the actual creature type selection options</p>
+                        <p><strong>Example:</strong> Favored Enemy uses "Single" to choose creature types, "Allocation" to distribute +2 bonuses</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Formula Parameters Section - only show if formula is selected */}
+            {choice.formulaParams?.formulaId && (
+                <div className="border border-gray-200 rounded-md p-3 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/20">
+                    <h4 className="text-sm font-medium mb-3">Formula Parameters</h4>
+                    {(() => {
+                        const formulaId = choice.formulaParams?.formulaId;
+                        const formula = FORMULA_MAP[formulaId];
+
+                        if (!formula) {
+                            return <p className="text-xs text-red-600 dark:text-red-400">Unknown formula</p>;
+                        }
+
+                        // Render different parameter inputs based on formula type
+                        switch (formulaId) {
+                            case 1: // LINEAR_SCALING
+                            case 2: // EVERY_N_LEVELS
+                            case 5: // DICE_SCALING
+                                return (
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <ValidatedInput
+                                                field={`choices.${index}.formulaParams.interval`}
+                                                label="Interval"
+                                                type="number"
+                                                min={1}
+                                                placeholder="e.g., 2 for every 2 levels"
+                                                componentExtraClassName="flex items-center gap-2"
+                                                nested
+                                            />
+                                        </div>
+                                        <div>
+                                            <ValidatedInput
+                                                field={`choices.${index}.formulaParams.formulaStartLevel`}
+                                                label="Formula Start Level (Optional)"
+                                                type="number"
+                                                min={1}
+                                                max={20}
+                                                placeholder="e.g., 2 for Fighter bonus feats"
+                                                componentExtraClassName="flex items-center gap-2"
+                                                nested
+                                            />
+                                        </div>
+                                    </div>
+                                );
+
+                            case 6: // ATTRIBUTE_BASED
+                                return (
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <div>
+                                            <ValidatedCustomSelect
+                                                field={`choices.${index}.formulaParams.attributeId`}
+                                                label="Attribute"
+                                                options={ABILITY_SELECT_LIST}
+                                                placeholder="Select attribute"
+                                                componentExtraClassName="flex items-center gap-2"
+                                                nested
+                                            />
+                                        </div>
+                                    </div>
+                                );
+
+                            case 7: // ATTRIBUTE_MODIFIER
+                                return (
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <div>
+                                            <ValidatedCustomSelect
+                                                field={`choices.${index}.formulaParams.attributeId`}
+                                                label="Attribute"
+                                                options={ABILITY_SELECT_LIST}
+                                                placeholder="Select attribute"
+                                                componentExtraClassName="flex items-center gap-2"
+                                                nested
+                                            />
+                                        </div>
+                                    </div>
+                                );
+
+                            case 8: // LEVEL_TIMES_ATTRIBUTE
+                                return (
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <div>
+                                            <ValidatedCustomSelect
+                                                field={`choices.${index}.formulaParams.attributeId`}
+                                                label="Attribute"
+                                                options={ABILITY_SELECT_LIST}
+                                                placeholder="Select attribute"
+                                                componentExtraClassName="flex items-center gap-2"
+                                                nested
+                                            />
+                                        </div>
+                                    </div>
+                                );
+
+                            case 9: // LEVEL_TIMES_VALUE
+                            case 10: // VALUE_PLUS_LEVEL
+                            case 11: // LEVEL_PLUS_ATTRIBUTE
+                                return (
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                                            No additional parameters needed for this formula type.
+                                        </div>
+                                    </div>
+                                );
+
+                            case 3: // CONDITIONAL_SCALING
+                                return (
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <ArrayPairEditor
+                                            thresholds={choice.formulaParams?.thresholds || []}
+                                            values={choice.formulaParams?.values || []}
+                                            onThresholdsChange={(thresholds) => {
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    choices: (prev.choices as any[] || []).map((c, i) =>
+                                                        i === index ? {
+                                                            ...c,
+                                                            formulaParams: {
+                                                                ...c.formulaParams,
+                                                                thresholds
+                                                            }
+                                                        } : c
+                                                    )
+                                                }));
+                                            }}
+                                            onValuesChange={(values) => {
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    choices: (prev.choices as any[] || []).map((c, i) =>
+                                                        i === index ? {
+                                                            ...c,
+                                                            formulaParams: {
+                                                                ...c.formulaParams,
+                                                                values
+                                                            }
+                                                        } : c
+                                                    )
+                                                }));
+                                            }}
+                                            thresholdLabel="Level Threshold"
+                                            valueLabel="Value"
+                                            thresholdPlaceholder="e.g., 4"
+                                            valuePlaceholder="e.g., -2"
+                                        />
+                                    </div>
+                                );
+
+                            default:
+                                return (
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <div>
+                                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                                                No parameters needed for this formula type.
+                                            </p>
+                                        </div>
+                                    </div>
+                                );
+                        }
+                    })()}
+                    <FormulaPreview modifier={choice} progressionLevel={Number(formData.level) || 1} />
+                </div>
+            )}
         </div>
     );
 }

@@ -4,11 +4,17 @@ import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthAuto } from '@/components/auth';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { FeatureSystemService } from '@/services/FeatureSystemService';
-import { GetFeatureResponse } from '@shared/schema';
+import { GetFeatureResponse, FeatureProgressionWithRelations } from '@shared/schema';
+import { formatProgression } from '@/lib/Formatters';
+import { FeatService } from '@/features/feat/FeatService';
+import { ModifierAppliesToType, FeatureSourceType } from '@shared/static-data';
 
 export function FeatureDetail() {
     const { id } = useParams();
     const [feature, setFeature] = useState<GetFeatureResponse | null>(null);
+    const [featureProgressions, setFeatureProgressions] = useState<FeatureProgressionWithRelations[]>([]);
+    const [feats, setFeats] = useState<Array<{ id: number; name: string }>>([]);
+    const [featsLoaded, setFeatsLoaded] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const { isAdmin } = useAuthAuto();
     const navigate = useNavigate();
@@ -19,9 +25,14 @@ export function FeatureDetail() {
     useEffect(() => {
         const Initialize = async () => {
             try {
-                // Convert to number before passing to API
-                const data = await FeatureSystemService.getFeatureById(undefined, { id: parseInt(id!) });
+                // Pass the string ID directly - Zod schema will transform it to number
+                const data = await FeatureSystemService.getFeatureById(undefined, { id: id! });
                 setFeature(data);
+
+                // Load feature progressions for this feature
+                const progressions = await FeatureSystemService.getFeatureProgressions(undefined, { id: parseInt(id!) });
+                setFeatureProgressions(progressions);
+
                 setIsLoading(false);
             } catch (error) {
                 console.error('Failed to initialize or fetch feature:', error);
@@ -31,8 +42,14 @@ export function FeatureDetail() {
         Initialize();
     }, [id, location.state]);
 
-    const innerCellContentClasses = "p-3 bg-content border-content rounded-lg border w-full";
-    const outerContainerClasses = "w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-600 rounded-lg shadow-lg p-1";
+    const handleBack = () => {
+        const backLink = getBackLink();
+        navigate(backLink);
+    };
+
+    const handleEdit = () => {
+        navigate(`/features/${id}/edit`, { state: { fromListParams: fromListParams, fromPage: fromPage } });
+    };
 
     const getBackLink = () => {
         switch (fromPage) {
@@ -41,8 +58,7 @@ export function FeatureDetail() {
             case 'races':
                 return fromListParams ? `/races?${fromListParams}` : '/races';
             default:
-                // Default to classes if no specific source is provided
-                return '/classes';
+                return fromListParams ? `/features?${fromListParams}` : '/features';
         }
     };
 
@@ -53,14 +69,55 @@ export function FeatureDetail() {
             case 'races':
                 return 'Back to Races';
             default:
-                return 'Back to Classes';
+                return 'Back to Features';
         }
     };
 
+    // Load feats if we have feat modifiers
+    useEffect(() => {
+        const loadFeatsIfNeeded = async () => {
+            const hasFeatModifiers = featureProgressions.some(progression =>
+                progression.modifiers?.some(modifier =>
+                    modifier.appliesTo === ModifierAppliesToType.Feat
+                )
+            );
+
+            if (hasFeatModifiers && feats.length === 0) {
+                try {
+                    const response = await FeatService.getFeats({});
+                    setFeats(response.results || []);
+                } catch (error) {
+                    console.error('Failed to load feats:', error);
+                } finally {
+                    setFeatsLoaded(true);
+                }
+            } else if (!hasFeatModifiers) {
+                setFeatsLoaded(true);
+            }
+        };
+
+        loadFeatsIfNeeded();
+    }, [featureProgressions, feats.length]);
+
+    // Enhance feature progressions with feat data
+    const enhancedFeatureProgressions = featureProgressions.map(progression => ({
+        ...progression,
+        modifiers: progression.modifiers?.map(modifier => {
+            if (modifier.appliesTo === ModifierAppliesToType.Feat && modifier.appliesToId) {
+                const feat = feats.find(f => f.id === modifier.appliesToId);
+                if (feat) {
+                    return { ...modifier, feat };
+                }
+                return modifier;
+            }
+            return modifier;
+        })
+    }));
+
     if (isLoading) return (
         <div className="pt-8">
-            <div className={outerContainerClasses}>
-                <div className={innerCellContentClasses}>
+            <div className="w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-600 rounded-lg shadow-lg p-1">
+                <div className="p-3 bg-content border-content rounded-lg border w-full">
                     Loading...
                 </div>
             </div>
@@ -69,8 +126,8 @@ export function FeatureDetail() {
 
     if (!feature) return (
         <div className="pt-8">
-            <div className={outerContainerClasses}>
-                <div className={innerCellContentClasses}>
+            <div className="w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-600 rounded-lg shadow-lg p-1">
+                <div className="p-3 bg-content border-content rounded-lg border w-full">
                     <p>Feature not found.</p>
                     <Link to={getBackLink()} className="text-blue-500 hover:text-blue-700">
                         {getBackText()}
@@ -82,8 +139,8 @@ export function FeatureDetail() {
 
     return (
         <div className="pt-8">
-            <div className={outerContainerClasses}>
-                <div className={innerCellContentClasses}>
+            <div className="w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-600 rounded-lg shadow-lg p-1">
+                <div className="p-3 bg-content border-content rounded-lg border w-full">
                     <div className="flex justify-between items-start mb-4">
                         <div>
                             <h1 className="text-2xl font-bold mb-2">{feature.name}</h1>
@@ -92,13 +149,13 @@ export function FeatureDetail() {
                         {isAdmin && (
                             <div className="flex space-x-2">
                                 <button
-                                    onClick={() => navigate(`/features/${feature.id}/edit`)}
+                                    onClick={handleEdit}
                                     className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                                 >
                                     Edit
                                 </button>
                                 <button
-                                    onClick={() => navigate(getBackLink())}
+                                    onClick={handleBack}
                                     className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
                                 >
                                     {getBackText()}
@@ -114,6 +171,68 @@ export function FeatureDetail() {
                                 markdown={feature.description}
                                 id={`feature-${feature.slug}-description`}
                             />
+                        </div>
+                    )}
+
+                    {/* Feature Progressions */}
+                    {enhancedFeatureProgressions.length > 0 && (
+                        <div className="mb-6">
+                            <h2 className="text-lg font-semibold mb-2">Progressions</h2>
+                            <div className="space-y-4">
+                                {enhancedFeatureProgressions.map((progression) => (
+                                    <div key={progression.id} className="border border-gray-200 rounded-md dark:border-gray-600 p-4">
+                                        <div className="mb-2">
+                                            <h3 className="text-lg font-medium">
+                                                Level {progression.level}
+                                            </h3>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                Source Type: {Object.keys(FeatureSourceType).find(key => FeatureSourceType[key as keyof typeof FeatureSourceType] === progression.sourceType) || `Unknown (${progression.sourceType})`}
+                                            </p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {progression.modifiers && progression.modifiers.length > 0 && (
+                                                <div>
+                                                    <h4 className="font-medium">Modifiers:</h4>
+                                                    <ul className="text-sm text-gray-600 dark:text-gray-400">
+                                                        {progression.modifiers.map((modifier, index) => {
+                                                            const formatter = formatProgression({ ...progression, modifiers: [modifier] });
+                                                            return (
+                                                                <li key={index}>
+                                                                    {formatter.value}
+                                                                </li>
+                                                            );
+                                                        })}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                            {progression.choices && progression.choices.length > 0 && (
+                                                <div>
+                                                    <h4 className="font-medium">Choices:</h4>
+                                                    <ul className="text-sm text-gray-600 dark:text-gray-400">
+                                                        {progression.choices.map((choice, index) => (
+                                                            <li key={index}>
+                                                                {choice.label}: {choice.type} ({choice.behavior})
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                            {progression.effects && progression.effects.length > 0 && (
+                                                <div>
+                                                    <h4 className="font-medium">Effects:</h4>
+                                                    <ul className="text-sm text-gray-600 dark:text-gray-400">
+                                                        {progression.effects.map((effect, index) => (
+                                                            <li key={index}>
+                                                                {effect.effectType}: {effect.key} = {effect.value}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
 

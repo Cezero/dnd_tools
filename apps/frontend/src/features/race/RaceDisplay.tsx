@@ -4,6 +4,7 @@ import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { GetRaceResponse } from '@shared/schema';
 import { SIZE_MAP, LANGUAGE_MAP, EDITION_MAP, ABILITY_MAP, CLASS_MAP, ModifierAppliesToType, ABILITY_LIST, SpecialFeatureId } from '@shared/static-data';
 import { LanguageService } from '../../lib/LanguageService';
+import { formatProgression } from '@/lib/Formatters';
 
 import pluralize from 'pluralize';
 
@@ -126,14 +127,30 @@ export function RaceDisplay({
                                                             racenamelower: race.name.toLowerCase(),
                                                             raceplural: pluralize(race.name),
                                                             raceplurallower: pluralize(race.name).toLowerCase(),
-                                                        }}   />
+                                                        }} />
                                                     </div>
                                                 )}
-                                                {featureProg.modifiers && featureProg.modifiers.length > 0 && (
-                                                    <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                                                        <strong>Modifiers:</strong> {featureProg.modifiers.length} modifier(s)
-                                                    </div>
-                                                )}
+                                                {(() => {
+                                                    const hasDetails = (featureProg.modifiers && featureProg.modifiers.length > 0) ||
+                                                        (featureProg.effects && featureProg.effects.length > 0) ||
+                                                        (featureProg.choices && featureProg.choices.length > 0);
+
+                                                    if (hasDetails) {
+                                                        const formatted = formatProgression(featureProg);
+                                                        const details = [];
+                                                        if (formatted.value) details.push(formatted.value);
+                                                        if (formatted.note) details.push(formatted.note);
+
+                                                        if (details.length > 0) {
+                                                            return (
+                                                                <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                                                    <strong>Details:</strong> {details.join(', ')}
+                                                                </div>
+                                                            );
+                                                        }
+                                                    }
+                                                    return null;
+                                                })()}
                                                 {featureProg.choices && featureProg.choices.length > 0 && (
                                                     <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                                                         <strong>Choices:</strong> {featureProg.choices.length} choice(s)

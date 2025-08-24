@@ -10,7 +10,7 @@ import {
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { FeatureSystemService } from '@/services/FeatureSystemService';
 import { FeatPrerequisiteMapSchema } from '@shared/schema';
-import { ABILITY_SELECT_LIST, FEAT_PREREQUISITE_TYPE_SELECT_LIST, FeatPrerequisiteType, SelectOption, SKILL_SELECT_LIST } from '@shared/static-data';
+import { ABILITY_SELECT_LIST, FEAT_PREREQUISITE_TYPE_SELECT_LIST, FeatPrerequisiteType, SelectOption, FULL_SKILL_SELECT_LIST } from '@shared/static-data';
 
 import { FeatService } from './FeatService';
 import { PrereqOptions } from './FeatUtil';
@@ -208,7 +208,7 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
                                             labelExtraClassName='w-32'
                                             itemTextExtraClassName='w-34'
                                             onValueChange={(value) => setFormData(prev => ({ ...prev, referenceId: value as number | null }))}
-                                            options={SKILL_SELECT_LIST}
+                                            options={FULL_SKILL_SELECT_LIST}
                                         />
                                         <ValidatedInput
                                             field="amount"

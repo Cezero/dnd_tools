@@ -51,7 +51,8 @@ export const SKILL_MAP: SkillMap = {
 };
 
 export const SKILL_LIST = Object.values(SKILL_MAP);
-export const SKILL_SELECT_LIST = NameSelectOptionList(SKILL_LIST);
+export const FULL_SKILL_SELECT_LIST = NameSelectOptionList(SKILL_LIST);
+export const SKILL_SELECT_LIST = NameSelectOptionList(SKILL_LIST.filter(skill => !skill.isAnalog));
 
 export const SKILL_RETRY_TYPE_MAP: Record<number, string> = {
     0: 'No',

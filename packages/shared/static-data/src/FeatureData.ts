@@ -55,11 +55,17 @@ export const ModifierAppliesToType = {
     Uses: 10,           // Uses per day/week
     Targets: 11,        // Number of targets
     Distance: 12,       // Range, reach, etc.
+    ExtraAttacks: 17,   // Extra attacks per round/action
+    Healing: 18,        // Healing hit points per day
+    SpellResistance: 19, // Spell Resistance (SR)
+    UnarmedDamage: 20,  // Unarmed strike damage dice
+    Feat: 21,           // Direct feat grants (e.g., Ranger Track, Endurance)
 
     // Other
     Other: 13,          // Special cases
     BonusLanguage: 14,  // Languages that require INT modifier
     AutomaticLanguage: 15, // Languages granted automatically
+    Choice: 16,         // Levels where choices can be made (e.g., Fighter Bonus Feats)
 } as const;
 
 export type ModifierAppliesToType = typeof ModifierAppliesToType[keyof typeof ModifierAppliesToType];
@@ -81,11 +87,17 @@ export const MODIFIER_APPLIES_TO_TYPES: BaseMap<CoreComponent> = {
     [ModifierAppliesToType.Uses]: { id: ModifierAppliesToType.Uses, name: 'Uses' },
     [ModifierAppliesToType.Targets]: { id: ModifierAppliesToType.Targets, name: 'Targets' },
     [ModifierAppliesToType.Distance]: { id: ModifierAppliesToType.Distance, name: 'Distance' },
+    [ModifierAppliesToType.ExtraAttacks]: { id: ModifierAppliesToType.ExtraAttacks, name: 'Extra Attacks' },
+    [ModifierAppliesToType.Healing]: { id: ModifierAppliesToType.Healing, name: 'Healing' },
+    [ModifierAppliesToType.SpellResistance]: { id: ModifierAppliesToType.SpellResistance, name: 'Spell Resistance' },
+    [ModifierAppliesToType.UnarmedDamage]: { id: ModifierAppliesToType.UnarmedDamage, name: 'Unarmed Damage' },
+    [ModifierAppliesToType.Feat]: { id: ModifierAppliesToType.Feat, name: 'Feat' },
 
     // Other
     [ModifierAppliesToType.Other]: { id: ModifierAppliesToType.Other, name: 'Other' },
     [ModifierAppliesToType.BonusLanguage]: { id: ModifierAppliesToType.BonusLanguage, name: 'Bonus Language' },
     [ModifierAppliesToType.AutomaticLanguage]: { id: ModifierAppliesToType.AutomaticLanguage, name: 'Automatic Language' },
+
 }
 
 export const MODIFIER_APPLIES_TO_LIST = Object.values(MODIFIER_APPLIES_TO_TYPES);
@@ -109,10 +121,14 @@ export const MODIFIER_TYPE_COMPATIBILITY = {
         ModifierAppliesToType.Uses,
         ModifierAppliesToType.Targets,
         ModifierAppliesToType.Distance,
+        ModifierAppliesToType.ExtraAttacks, // Extra attacks per round/action
         ModifierAppliesToType.Damage, // For dice quantities
+        ModifierAppliesToType.Healing, // Healing per day
+        ModifierAppliesToType.SpellResistance, // Spell Resistance (SR)
     ],
     [ModifierType.Replacement]: [
         ModifierAppliesToType.Damage,
+        ModifierAppliesToType.UnarmedDamage,
         ModifierAppliesToType.MovementSpeed,
         ModifierAppliesToType.Attribute, // For ability score replacement
     ],
@@ -120,6 +136,8 @@ export const MODIFIER_TYPE_COMPATIBILITY = {
         ModifierAppliesToType.Other,
         ModifierAppliesToType.BonusLanguage, // Bonus languages are Other type modifiers
         ModifierAppliesToType.AutomaticLanguage, // Automatic languages are Other type modifiers
+
+        ModifierAppliesToType.Feat, // Direct feat grants are Other type modifiers
     ],
 } as const;
 
@@ -188,6 +206,7 @@ export const FeatureSpecialEffectType = {
     WildShapeForm: 4,
     WildShapeSize: 5,
     Other: 6,
+    WeaponFamiliarity: 7,
 } as const;
 
 export type FeatureSpecialEffectType = typeof FeatureSpecialEffectType[keyof typeof FeatureSpecialEffectType];
@@ -200,6 +219,7 @@ export const FEATURE_SPECIAL_EFFECT_TYPES: BaseMap<CoreComponent> = {
     [FeatureSpecialEffectType.WildShapeForm]: { id: FeatureSpecialEffectType.WildShapeForm, name: 'Wild Shape Form' },
     [FeatureSpecialEffectType.WildShapeSize]: { id: FeatureSpecialEffectType.WildShapeSize, name: 'Wild Shape Size' },
     [FeatureSpecialEffectType.Other]: { id: FeatureSpecialEffectType.Other, name: 'Other' },
+    [FeatureSpecialEffectType.WeaponFamiliarity]: { id: FeatureSpecialEffectType.WeaponFamiliarity, name: 'Weapon Familiarity' },
 }
 
 export const FEATURE_SPECIAL_EFFECT_LIST = Object.values(FEATURE_SPECIAL_EFFECT_TYPES);
@@ -243,6 +263,40 @@ export const FEATURE_FEAT_CHOICE_FILTER_TYPES: BaseMap<CoreComponent> = {
 export const FEATURE_FEAT_CHOICE_FILTER_LIST = Object.values(FEATURE_FEAT_CHOICE_FILTER_TYPES);
 export const FEATURE_FEAT_CHOICE_FILTER_SELECT_LIST = NameSelectOptionList(FEATURE_FEAT_CHOICE_FILTER_LIST);
 
+export const FeatureChoiceType = {
+    Feat: 0,
+    Feature: 1,
+    CreatureType: 2,
+} as const;
+
+export type FeatureChoiceType = typeof FeatureChoiceType[keyof typeof FeatureChoiceType];
+
+export const FEATURE_CHOICE_TYPES: BaseMap<CoreComponent> = {
+    [FeatureChoiceType.Feat]: { id: FeatureChoiceType.Feat, name: 'Feat' },
+    [FeatureChoiceType.Feature]: { id: FeatureChoiceType.Feature, name: 'Feature' },
+    [FeatureChoiceType.CreatureType]: { id: FeatureChoiceType.CreatureType, name: 'Creature Type' },
+}
+
+export const FEATURE_CHOICE_LIST = Object.values(FEATURE_CHOICE_TYPES);
+export const FEATURE_CHOICE_SELECT_LIST = NameSelectOptionList(FEATURE_CHOICE_LIST);
+
+export const FeatureChoiceBehavior = {
+    Single: 0,
+    Multiple: 1,
+    Allocation: 2,
+} as const;
+
+export type FeatureChoiceBehavior = typeof FeatureChoiceBehavior[keyof typeof FeatureChoiceBehavior];
+
+export const FEATURE_CHOICE_BEHAVIOR_TYPES: BaseMap<CoreComponent> = {
+    [FeatureChoiceBehavior.Single]: { id: FeatureChoiceBehavior.Single, name: 'Single' },
+    [FeatureChoiceBehavior.Multiple]: { id: FeatureChoiceBehavior.Multiple, name: 'Multiple' },
+    [FeatureChoiceBehavior.Allocation]: { id: FeatureChoiceBehavior.Allocation, name: 'Allocation' },
+}
+
+export const FEATURE_CHOICE_BEHAVIOR_LIST = Object.values(FEATURE_CHOICE_BEHAVIOR_TYPES);
+export const FEATURE_CHOICE_BEHAVIOR_SELECT_LIST = NameSelectOptionList(FEATURE_CHOICE_BEHAVIOR_LIST);
+
 export const FeaturePrerequisiteType = {
     SkillRanks: 0,
     AbilityScore: 1,
@@ -269,7 +323,9 @@ export const FEATURE_PRE_REQ_SELECT_LIST = NameSelectOptionList(FEATURE_PRE_REQ_
 export const FeatureModifierConditionType = {
     trigger: 0,
     attack_type: 1,
-    other: 2,
+    character_size: 2,
+    other: 3,
+    feature: 4,
 } as const;
 
 export type FeatureModifierConditionType = typeof FeatureModifierConditionType[keyof typeof FeatureModifierConditionType];
@@ -277,7 +333,96 @@ export type FeatureModifierConditionType = typeof FeatureModifierConditionType[k
 export const FEATURE_MODIFIER_CONDITION_TYPES: BaseMap<CoreComponent> = {
     [FeatureModifierConditionType.trigger]: { id: FeatureModifierConditionType.trigger, name: 'Trigger' },
     [FeatureModifierConditionType.attack_type]: { id: FeatureModifierConditionType.attack_type, name: 'Attack Type' },
+    [FeatureModifierConditionType.character_size]: { id: FeatureModifierConditionType.character_size, name: 'Character Size' },
+    [FeatureModifierConditionType.other]: { id: FeatureModifierConditionType.other, name: 'Other' },
+    [FeatureModifierConditionType.feature]: { id: FeatureModifierConditionType.feature, name: 'Feature' },
 }
 
 export const FEATURE_MODIFIER_CONDITION_LIST = Object.values(FEATURE_MODIFIER_CONDITION_TYPES);
 export const FEATURE_MODIFIER_CONDITION_SELECT_LIST = NameSelectOptionList(FEATURE_MODIFIER_CONDITION_LIST);
+
+// Attack Type Enum for conditions
+export const ATTACK_TYPE_ENUM = {
+    MELEE: 1,
+    RANGED: 2,
+    SNEAK_ATTACK: 3,
+    CHARGE: 4,
+    FLURRY_OF_BLOWS: 5,
+    POWER_ATTACK: 6,
+    TWO_WEAPON_FIGHTING: 7,
+    GRAPPLE: 8,
+    TRIP: 9,
+    DISARM: 10,
+    SUNDER: 11,
+    BULL_RUSH: 12,
+    OVERRUN: 13,
+    AID_ANOTHER: 14,
+    FEINT: 15,
+} as const;
+
+export type AttackType = typeof ATTACK_TYPE_ENUM[keyof typeof ATTACK_TYPE_ENUM];
+
+export const ATTACK_TYPES: BaseMap<CoreComponent> = {
+    [ATTACK_TYPE_ENUM.MELEE]: { id: ATTACK_TYPE_ENUM.MELEE, name: 'Melee' },
+    [ATTACK_TYPE_ENUM.RANGED]: { id: ATTACK_TYPE_ENUM.RANGED, name: 'Ranged' },
+    [ATTACK_TYPE_ENUM.SNEAK_ATTACK]: { id: ATTACK_TYPE_ENUM.SNEAK_ATTACK, name: 'Sneak Attack' },
+    [ATTACK_TYPE_ENUM.CHARGE]: { id: ATTACK_TYPE_ENUM.CHARGE, name: 'Charge' },
+    [ATTACK_TYPE_ENUM.FLURRY_OF_BLOWS]: { id: ATTACK_TYPE_ENUM.FLURRY_OF_BLOWS, name: 'Flurry of Blows' },
+    [ATTACK_TYPE_ENUM.POWER_ATTACK]: { id: ATTACK_TYPE_ENUM.POWER_ATTACK, name: 'Power Attack' },
+    [ATTACK_TYPE_ENUM.TWO_WEAPON_FIGHTING]: { id: ATTACK_TYPE_ENUM.TWO_WEAPON_FIGHTING, name: 'Two-Weapon Fighting' },
+    [ATTACK_TYPE_ENUM.GRAPPLE]: { id: ATTACK_TYPE_ENUM.GRAPPLE, name: 'Grapple' },
+    [ATTACK_TYPE_ENUM.TRIP]: { id: ATTACK_TYPE_ENUM.TRIP, name: 'Trip' },
+    [ATTACK_TYPE_ENUM.DISARM]: { id: ATTACK_TYPE_ENUM.DISARM, name: 'Disarm' },
+    [ATTACK_TYPE_ENUM.SUNDER]: { id: ATTACK_TYPE_ENUM.SUNDER, name: 'Sunder' },
+    [ATTACK_TYPE_ENUM.BULL_RUSH]: { id: ATTACK_TYPE_ENUM.BULL_RUSH, name: 'Bull Rush' },
+    [ATTACK_TYPE_ENUM.OVERRUN]: { id: ATTACK_TYPE_ENUM.OVERRUN, name: 'Overrun' },
+    [ATTACK_TYPE_ENUM.AID_ANOTHER]: { id: ATTACK_TYPE_ENUM.AID_ANOTHER, name: 'Aid Another' },
+    [ATTACK_TYPE_ENUM.FEINT]: { id: ATTACK_TYPE_ENUM.FEINT, name: 'Feint' },
+};
+
+export const ATTACK_TYPE_LIST = Object.values(ATTACK_TYPES);
+export const ATTACK_TYPE_SELECT_LIST = NameSelectOptionList(ATTACK_TYPE_LIST);
+
+// Creature Types for Favored Enemy and similar features
+export const CreatureType = {
+    Aberration: 1,
+    Animal: 2,
+    Construct: 3,
+    Dragon: 4,
+    Elemental: 5,
+    Fey: 6,
+    Giant: 7,
+    Humanoid: 8,
+    MagicalBeast: 9,
+    MonstrousHumanoid: 10,
+    Ooze: 11,
+    Outsider: 12,
+    Plant: 13,
+    Undead: 14,
+    Vermin: 15,
+} as const;
+
+export type CreatureType = typeof CreatureType[keyof typeof CreatureType];
+
+export const CREATURE_TYPES: BaseMap<CoreComponent> = {
+    [CreatureType.Aberration]: { id: CreatureType.Aberration, name: 'Aberration' },
+    [CreatureType.Animal]: { id: CreatureType.Animal, name: 'Animal' },
+    [CreatureType.Construct]: { id: CreatureType.Construct, name: 'Construct' },
+    [CreatureType.Dragon]: { id: CreatureType.Dragon, name: 'Dragon' },
+    [CreatureType.Elemental]: { id: CreatureType.Elemental, name: 'Elemental' },
+    [CreatureType.Fey]: { id: CreatureType.Fey, name: 'Fey' },
+    [CreatureType.Giant]: { id: CreatureType.Giant, name: 'Giant' },
+    [CreatureType.Humanoid]: { id: CreatureType.Humanoid, name: 'Humanoid' },
+    [CreatureType.MagicalBeast]: { id: CreatureType.MagicalBeast, name: 'Magical Beast' },
+    [CreatureType.MonstrousHumanoid]: { id: CreatureType.MonstrousHumanoid, name: 'Monstrous Humanoid' },
+    [CreatureType.Ooze]: { id: CreatureType.Ooze, name: 'Ooze' },
+    [CreatureType.Outsider]: { id: CreatureType.Outsider, name: 'Outsider' },
+    [CreatureType.Plant]: { id: CreatureType.Plant, name: 'Plant' },
+    [CreatureType.Undead]: { id: CreatureType.Undead, name: 'Undead' },
+    [CreatureType.Vermin]: { id: CreatureType.Vermin, name: 'Vermin' },
+};
+
+export const CREATURE_TYPE_LIST = Object.values(CREATURE_TYPES);
+export const CREATURE_TYPE_SELECT_LIST = NameSelectOptionList(CREATURE_TYPE_LIST);
+
+

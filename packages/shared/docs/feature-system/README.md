@@ -14,14 +14,19 @@
 - **[class-skills.md](class-skills.md)** — How class skills are modeled in the feature system (~400 lines)
 - **[languages.md](languages.md)** — How automatic and bonus languages are modeled (~350 lines)
 - **[racial-features.md](racial-features.md)** — Complete examples for racial traits (~235 lines)
+- **[direct-feat-grants.md](direct-feat-grants.md)** — How direct feat grants are modeled (~200 lines)
+- **[weapon-familiarity-system.md](weapon-familiarity-system.md)** — Weapon familiarity system implementation (~300 lines)
 - **[component-selection.md](component-selection.md)** — When to use modifiers, choices, effects (~225 lines)
 - **[bulk-operations.md](bulk-operations.md)** — Creating and updating classes/races (~270 lines)
+- **[feature-progression-management.md](feature-progression-management.md)** — FeatureProgression management and backend consolidation (~300 lines)
+- **[choice-system-guide.md](choice-system-guide.md)** — Complex choice system implementation including Ranger fighting styles (~250 lines)
 
 ### **Advanced Topics**
 - **[formula-system-analysis.md](formula-system-analysis.md)** — Pre-defined formulas for D&D 3.5 scaling (~320 lines)
 - **[runtime-calculation.md](runtime-calculation.md)** — Character sheet calculation patterns (~285 lines)
 - **[common-pitfalls.md](common-pitfalls.md)** — Common mistakes and solutions (~210 lines)
 - **[testing-patterns.md](testing-patterns.md)** — Testing feature implementations (~280 lines)
+- **[formatter-utilities.md](formatter-utilities.md)** — Formatter and utility functions reference (~600 lines)
 
 ### **Reference**
 - **[schema-simplifications.md](schema-simplifications.md)** — Recent schema changes and migration (~210 lines)
@@ -29,6 +34,8 @@
 ## 🎯 **System Overview**
 
 The D&D Tools feature system provides a comprehensive framework for modeling all D&D 3.x class features, racial traits, and character abilities.
+
+> **💡 See [System Overview](../system-overview.md) for how the Feature System serves as the core engine for all other game systems.**
 
 ### **Core Architecture**
 ```
@@ -46,6 +53,20 @@ Feature (Definition)
 - **No Individual CRUD**: No individual endpoints for modifiers, choices, or effects
 - **Static System**: Features are only manipulated when adding new game content
 - **Single API Call**: Complete feature data sent in one request
+- **Consolidated Backend**: Single source of truth for FeatureProgression management across all services
+
+### **Backend Architecture**
+The feature system provides a consolidated backend architecture that eliminates duplicate logic:
+
+- **FeatureSystemService**: Central service containing all FeatureProgression management logic
+- **ClassService & RaceService**: Consumer services that call consolidated methods
+- **Single Source of Truth**: All FeatureProgression creation/deletion goes through FeatureSystemService
+- **Transaction Safety**: Consistent transaction patterns across all services
+
+**Related Documentation:**
+- [Class System Documentation](../class-system/README.md) - How classes integrate with the feature system
+- [Race System Documentation](../race-system/README.md) - How races integrate with the feature system
+- [FeatureProgression Management](feature-progression-management.md) - Detailed backend consolidation documentation
 
 ### **Simplified Schema**
 - **Removed Redundancy**: Eliminated base/full schema patterns for internal entities
@@ -87,13 +108,14 @@ Feature (Definition)
 | **[component-selection.md](component-selection.md)** | Decision making and component usage | ~225 |
 | **[bulk-operations.md](bulk-operations.md)** | API usage for creating/updating | ~270 |
 
-### **Advanced Topics** (~200-320 lines each)
+### **Advanced Topics** (~200-600 lines each)
 | Document | Purpose | Lines |
 |----------|---------|-------|
 | **[formula-system-analysis.md](formula-system-analysis.md)** | Pre-defined formulas for D&D 3.5 scaling | ~320 |
 | **[runtime-calculation.md](runtime-calculation.md)** | Character sheet calculation patterns | ~285 |
 | **[common-pitfalls.md](common-pitfalls.md)** | Common mistakes and solutions | ~210 |
 | **[testing-patterns.md](testing-patterns.md)** | Testing feature implementations | ~280 |
+| **[formatter-utilities.md](formatter-utilities.md)** | Formatter and utility functions reference | ~600 |
 
 ### **Reference Documents** (~200-210 lines each)
 | Document | Purpose | Lines |

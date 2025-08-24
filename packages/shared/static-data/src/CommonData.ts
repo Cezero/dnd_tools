@@ -1,17 +1,19 @@
-import { RpgDieMap, CurrencyMap, AlignmentMap, SizeMap, LanguageMap, EditionMap } from './types';
+import { RpgDieMap, CurrencyMap, AlignmentMap, SizeMap, LanguageMap, EditionMap, CastingTypeMap } from './types';
 import { AbbreviationSelectOptionList, NameSelectOptionList } from './Util';
 
-export enum RpgDice {
-    D4 = 0,
-    D6 = 1,
-    D8 = 2,
-    D10 = 3,
-    D12 = 4,
-    D20 = 5,
-    D100 = 6,
-    D2 = 7,
-    D3 = 8,
-}
+export const RpgDice = {
+    D4: 0,
+    D6: 1,
+    D8: 2,
+    D10: 3,
+    D12: 4,
+    D20: 5,
+    D100: 6,
+    D2: 7,
+    D3: 8,
+} as const;
+
+export type RpgDice = typeof RpgDice[keyof typeof RpgDice];
 
 export const RPG_DICE: RpgDieMap = {
     [RpgDice.D4]: { id: RpgDice.D4, name: 'd4', sides: 4 },
@@ -28,34 +30,72 @@ export const RPG_DICE: RpgDieMap = {
 export const RPG_DICE_LIST = Object.values(RPG_DICE);
 export const RPG_DICE_SELECT_LIST = NameSelectOptionList(RPG_DICE_LIST);
 
+export const CurrencyId = {
+    Copper: 1,
+    Silver: 2,
+    Gold: 3,
+    Platinum: 4,
+} as const;
+
+export type CurrencyId = typeof CurrencyId[keyof typeof CurrencyId];
+
 export const CURRENCY: CurrencyMap = {
-    1: { id: 1, name: 'Copper', abbreviation: 'cp', gpValue: .01 },
-    2: { id: 2, name: 'Silver', abbreviation: 'sp', gpValue: .1 },
-    3: { id: 3, name: 'Gold', abbreviation: 'gp', gpValue: 1 },
-    4: { id: 4, name: 'Platinum', abbreviation: 'pp', gpValue: 10 },
+    [CurrencyId.Copper]: { id: CurrencyId.Copper, name: 'Copper', abbreviation: 'cp', gpValue: .01 },
+    [CurrencyId.Silver]: { id: CurrencyId.Silver, name: 'Silver', abbreviation: 'sp', gpValue: .1 },
+    [CurrencyId.Gold]: { id: CurrencyId.Gold, name: 'Gold', abbreviation: 'gp', gpValue: 1 },
+    [CurrencyId.Platinum]: { id: CurrencyId.Platinum, name: 'Platinum', abbreviation: 'pp', gpValue: 10 },
 }
 
 export const CURRENCY_LIST = Object.values(CURRENCY);
 export const CURRENCY_SELECT_LIST = AbbreviationSelectOptionList(CURRENCY_LIST);
 
+export const AlignmentId = {
+    LawfulGood: 0,
+    NeutralGood: 1,
+    ChaoticGood: 2,
+    LawfulNeutral: 3,
+    TrueNeutral: 4,
+    ChaoticNeutral: 5,
+    LawfulEvil: 6,
+    NeutralEvil: 7,
+    ChaoticEvil: 8,
+} as const;
+
+export type AlignmentId = typeof AlignmentId[keyof typeof AlignmentId];
+
 export const ALIGNMENT_MAP: AlignmentMap = {
-    0: { id: 0, name: 'Lawful Good', abbreviation: 'LG' },
-    1: { id: 1, name: 'Neutral Good', abbreviation: 'NG' },
-    2: { id: 2, name: 'Chaotic Good', abbreviation: 'CG' },
-    3: { id: 3, name: 'Lawful Neutral', abbreviation: 'LN' },
-    4: { id: 4, name: 'True Neutral', abbreviation: 'N' },
-    5: { id: 5, name: 'Chaotic Neutral', abbreviation: 'CN' },
-    6: { id: 6, name: 'Lawful Evil', abbreviation: 'LE' },
-    7: { id: 7, name: 'Neutral Evil', abbreviation: 'NE' },
-    8: { id: 8, name: 'Chaotic Evil', abbreviation: 'CE' },
+    [AlignmentId.LawfulGood]: { id: AlignmentId.LawfulGood, name: 'Lawful Good', abbreviation: 'LG' },
+    [AlignmentId.NeutralGood]: { id: AlignmentId.NeutralGood, name: 'Neutral Good', abbreviation: 'NG' },
+    [AlignmentId.ChaoticGood]: { id: AlignmentId.ChaoticGood, name: 'Chaotic Good', abbreviation: 'CG' },
+    [AlignmentId.LawfulNeutral]: { id: AlignmentId.LawfulNeutral, name: 'Lawful Neutral', abbreviation: 'LN' },
+    [AlignmentId.TrueNeutral]: { id: AlignmentId.TrueNeutral, name: 'True Neutral', abbreviation: 'N' },
+    [AlignmentId.ChaoticNeutral]: { id: AlignmentId.ChaoticNeutral, name: 'Chaotic Neutral', abbreviation: 'CN' },
+    [AlignmentId.LawfulEvil]: { id: AlignmentId.LawfulEvil, name: 'Lawful Evil', abbreviation: 'LE' },
+    [AlignmentId.NeutralEvil]: { id: AlignmentId.NeutralEvil, name: 'Neutral Evil', abbreviation: 'NE' },
+    [AlignmentId.ChaoticEvil]: { id: AlignmentId.ChaoticEvil, name: 'Chaotic Evil', abbreviation: 'CE' },
 }
 
 export const ALIGNMENT_LIST = Object.values(ALIGNMENT_MAP);
 export const ALIGNMENT_SELECT_LIST = AbbreviationSelectOptionList(ALIGNMENT_LIST);
 
+// Size ID enum for type safety
+export const SizeId = {
+    Fine: 1,
+    Diminutive: 2,
+    Tiny: 3,
+    Small: 4,
+    Medium: 5,
+    Large: 6,
+    Huge: 7,
+    Gargantuan: 8,
+    Colossal: 9,
+} as const;
+
+export type SizeId = typeof SizeId[keyof typeof SizeId];
+
 export const SIZE_MAP: SizeMap = {
-    1: {
-        id: 1,
+    [SizeId.Fine]: {
+        id: SizeId.Fine,
         name: 'Fine',
         abbreviation: 'F',
         sizeModifier: +8,
@@ -67,8 +107,8 @@ export const SIZE_MAP: SizeMap = {
         naturalReachTall: 0,
         naturalReachLong: 0
     },
-    2: {
-        id: 2,
+    [SizeId.Diminutive]: {
+        id: SizeId.Diminutive,
         name: 'Diminutive',
         abbreviation: 'D',
         sizeModifier: +4,
@@ -80,8 +120,8 @@ export const SIZE_MAP: SizeMap = {
         naturalReachTall: 0,
         naturalReachLong: 0
     },
-    3: {
-        id: 3,
+    [SizeId.Tiny]: {
+        id: SizeId.Tiny,
         name: 'Tiny',
         abbreviation: 'T',
         sizeModifier: +2,
@@ -93,8 +133,8 @@ export const SIZE_MAP: SizeMap = {
         naturalReachTall: 0,
         naturalReachLong: 0
     },
-    4: {
-        id: 4,
+    [SizeId.Small]: {
+        id: SizeId.Small,
         name: 'Small',
         abbreviation: 'S',
         sizeModifier: +1,
@@ -106,8 +146,8 @@ export const SIZE_MAP: SizeMap = {
         naturalReachTall: 5,
         naturalReachLong: 5
     },
-    5: {
-        id: 5,
+    [SizeId.Medium]: {
+        id: SizeId.Medium,
         name: 'Medium',
         abbreviation: 'M',
         sizeModifier: 0,
@@ -119,8 +159,8 @@ export const SIZE_MAP: SizeMap = {
         naturalReachTall: 5,
         naturalReachLong: 5
     },
-    6: {
-        id: 6,
+    [SizeId.Large]: {
+        id: SizeId.Large,
         name: 'Large',
         abbreviation: 'L',
         sizeModifier: -1,
@@ -132,8 +172,8 @@ export const SIZE_MAP: SizeMap = {
         naturalReachTall: 10,
         naturalReachLong: 5
     },
-    7: {
-        id: 7,
+    [SizeId.Huge]: {
+        id: SizeId.Huge,
         name: 'Huge',
         abbreviation: 'H',
         sizeModifier: -2,
@@ -145,8 +185,8 @@ export const SIZE_MAP: SizeMap = {
         naturalReachTall: 15,
         naturalReachLong: 10
     },
-    8: {
-        id: 8,
+    [SizeId.Gargantuan]: {
+        id: SizeId.Gargantuan,
         name: 'Gargantuan',
         abbreviation: 'G',
         sizeModifier: -3,
@@ -158,8 +198,8 @@ export const SIZE_MAP: SizeMap = {
         naturalReachTall: 20,
         naturalReachLong: 15
     },
-    9: {
-        id: 9,
+    [SizeId.Colossal]: {
+        id: SizeId.Colossal,
         name: 'Colossal',
         abbreviation: 'C',
         sizeModifier: -4,
@@ -222,8 +262,17 @@ export const EDITION_SELECT_LIST = EDITION_LIST.map(edition => ({
     label: (edition.id === 4 ? '3E/3.5E Combined' : edition.abbreviation)
 })).filter(e => e.value !== 5);
 
-// Casting Type Options
-export const CASTING_TYPE_SELECT_LIST = [
-    { value: 'Prepared', label: 'Prepared' },
-    { value: 'Spontaneous', label: 'Spontaneous' },
-];
+export const CastingType = {
+    Prepared: 1,
+    Spontaneous: 2,
+} as const;
+
+export type CastingType = typeof CastingType[keyof typeof CastingType];
+
+export const CASTING_TYPE_MAP: CastingTypeMap = {
+    [CastingType.Prepared]: { id: CastingType.Prepared, name: 'Prepared' },
+    [CastingType.Spontaneous]: { id: CastingType.Spontaneous, name: 'Spontaneous' },
+}
+
+export const CASTING_TYPE_LIST = Object.values(CASTING_TYPE_MAP);
+export const CASTING_TYPE_SELECT_LIST = NameSelectOptionList(CASTING_TYPE_LIST);

@@ -2,14 +2,16 @@ import { Response } from 'express';
 
 import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedQueryT } from '@/util/validated-types';
 import {
-    FeatureIdParamRequest,
+    GetAllFeaturesResponse,
     CreateFeatureRequest,
     UpdateFeatureRequest,
-    GetAllFeaturesResponse,
+    FeatureIdParamRequest,
     GetFeatureResponse,
     CreateResponse,
     UpdateResponse,
     CreateFeatureProgressionRequest,
+    UpdateFeatureProgressionsRequest,
+    GetFeatureProgressionsResponse,
 } from '@shared/schema';
 
 import { featureSystemService } from './featureSystemService.js';
@@ -57,7 +59,7 @@ export async function UpdateFeature(req: ValidatedParamsBodyT<FeatureIdParamRequ
  * Updates an existing feature by ID.
  */
 export async function UpdateFeatureById(req: ValidatedParamsBodyT<FeatureIdParamRequest, UpdateFeatureRequest, UpdateResponse>, res: Response) {
-    const result = await featureSystemService.updateFeatureById(req.params, req.body);
+    const result = await featureSystemService.updateFeature(req.params, req.body);
     res.status(200).json(result);
 }
 
@@ -73,7 +75,7 @@ export async function DeleteFeature(req: ValidatedParamsT<FeatureIdParamRequest,
  * Deletes a feature by its ID.
  */
 export async function DeleteFeatureById(req: ValidatedParamsT<FeatureIdParamRequest, UpdateResponse>, res: Response) {
-    const result = await featureSystemService.deleteFeatureById(req.params);
+    const result = await featureSystemService.deleteFeature(req.params);
     res.status(200).json(result);
 }
 
@@ -84,4 +86,20 @@ export async function DeleteFeatureById(req: ValidatedParamsT<FeatureIdParamRequ
 export async function CreateFeatureProgressionWithRelations(req: ValidatedBodyT<CreateFeatureProgressionRequest, CreateResponse>, res: Response) {
     const result = await featureSystemService.createFeatureProgressionWithRelations(req.body);
     res.status(201).json(result);
+}
+
+/**
+ * Updates feature progressions for a specific feature.
+ */
+export async function UpdateFeatureProgressions(req: ValidatedParamsBodyT<FeatureIdParamRequest, UpdateFeatureProgressionsRequest, UpdateResponse>, res: Response) {
+    const result = await featureSystemService.updateFeatureProgressions(req.params.id, req.body.progressions);
+    res.status(200).json(result);
+}
+
+/**
+ * Gets all feature progressions for a specific feature.
+ */
+export async function GetFeatureProgressions(req: ValidatedParamsT<FeatureIdParamRequest, GetFeatureProgressionsResponse>, res: Response) {
+    const progressions = await featureSystemService.getFeatureProgressions(req.params.id);
+    res.status(200).json(progressions);
 } 

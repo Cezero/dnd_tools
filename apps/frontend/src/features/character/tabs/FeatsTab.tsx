@@ -4,7 +4,9 @@ import { z } from 'zod';
 import { GenericList } from '@/components/generic-list';
 import { FeatService } from '@/features/feat/FeatService';
 import { meetsPrerequisites } from '@/lib';
-import type { FeatSchema ,
+import { SpecialFeatureId } from '@shared/static-data';
+import type {
+    FeatSchema,
     RaceInQueryResponse,
     GetRaceResponse,
     GetClassResponse,
@@ -63,7 +65,7 @@ export function FeatsTab({
 
         // Extract proficiencies from feature progressions
         selectedClassDetails.features
-            .filter(prog => prog.appliesToType === 1) // FeatureAppliesToType.Item
+            .filter(prog => prog.featureId === SpecialFeatureId.ClassProficiency) // Use SpecialFeatureId instead of appliesToType
             .forEach(prog => {
                 // If appliesTo is -1, the class grants proficiency with all items of that type
                 if (prog.appliesTo === -1) {
@@ -130,7 +132,6 @@ export function FeatsTab({
 
     const availableSlots = getAvailableFeatSlots();
     const selectedCount = advancement?.feats?.length || 0;
-    const canSelectMore = selectedCount < availableSlots;
 
     // Get selected feat names from advancement
     const getSelectedFeatNames = (): string[] => {

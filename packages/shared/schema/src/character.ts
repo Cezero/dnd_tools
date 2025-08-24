@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { QueryResponseSchema } from './query.js';
+import { AbilityId } from '@shared/static-data';
 
 export const CharacterIdParamSchema = z.object({
     id: z.string().transform((val: string) => parseInt(val)),
@@ -210,6 +211,15 @@ export const UpdateCharacterItemPropertySchema = CharacterItemPropertySchema.par
 
 export const UpdateCharacterAttributeSchema = CreateCharacterAttributeSchema.partial();
 
+// Character context for formatter calculations
+export const CharacterContextSchema = z.object({
+    abilityScores: z.record(z.nativeEnum(AbilityId), z.number().int()), // abilityId -> score
+    classLevels: z.record(z.number().int(), z.number().int()), // classId -> level
+    raceId: z.number().int().optional(),
+    sizeId: z.number().int().optional(), // Maps directly to FeatureModifierCondition.conditionValue
+    attributes: z.record(z.number().int(), z.number().int()).optional(), // attributeId -> value (raw database attributes)
+});
+
 export type CharacterIdParamRequest = z.infer<typeof CharacterIdParamSchema>;
 export type CreateCharacterRequest = z.infer<typeof CreateCharacterSchema>;
 export type UpdateCharacterRequest = z.infer<typeof UpdateCharacterSchema>;
@@ -248,3 +258,6 @@ export type UpdateCharacterFeatureChoiceRequest = z.infer<typeof UpdateCharacter
 export type CreateCharacterAttributeRequest = z.infer<typeof CreateCharacterAttributeSchema>;
 export type UpdateCharacterAttributeRequest = z.infer<typeof UpdateCharacterAttributeSchema>;
 export type CharacterAttributeResponse = z.infer<typeof CharacterAttributeSchema>;
+
+// Character context type
+export type CharacterContext = z.infer<typeof CharacterContextSchema>;

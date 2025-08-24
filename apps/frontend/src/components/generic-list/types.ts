@@ -1,6 +1,6 @@
 import { ColumnDef } from '@tanstack/react-table';
 
-import type { RouteConfig, RouteType } from '@/types';
+import type { RouteConfig } from '@/types';
 import type { SelectOption } from '@shared/static-data';
 
 export const PAGE_LIMITS: SelectOption[] = [
@@ -29,7 +29,7 @@ export type DeleteServiceFunction = (id: number | string) => Promise<void>;
 
 // Utility functions to create delete service functions
 export const createDeleteServiceFunction = (
-    serviceMethod: (params: any, idParams: any) => Promise<any>,
+    serviceMethod: (params: undefined, idParams: Record<string, number | string>) => Promise<unknown>,
     idParamName: 'id' | 'slug' = 'id'
 ): DeleteServiceFunction => {
     return async (id: number | string) => {
@@ -41,13 +41,13 @@ export const createDeleteServiceFunction = (
 };
 
 export const createIdDeleteServiceFunction = (
-    serviceMethod: (params: any, idParams: { id: number }) => Promise<any>
+    serviceMethod: (params: undefined, idParams: { id: number }) => Promise<unknown>
 ): DeleteServiceFunction => {
     return createDeleteServiceFunction(serviceMethod, 'id');
 };
 
 export const createSlugDeleteServiceFunction = (
-    serviceMethod: (params: any, slugParams: { slug: string }) => Promise<any>
+    serviceMethod: (params: undefined, slugParams: { slug: string }) => Promise<unknown>
 ): DeleteServiceFunction => {
     return createDeleteServiceFunction(serviceMethod, 'slug');
 };
@@ -66,7 +66,7 @@ export interface GenericListFunctions<T> {
 
 export interface GenericListProps<T> {
     storageKey?: string;
-    columns: ColumnDef<T, any>[];
+    columns: ColumnDef<T, unknown>[];
     serviceFunction: () => Promise<{ results: T[]; total: number }>;
     itemDesc?: string;
     initialLimit?: number;

@@ -47,7 +47,7 @@ export const FormulaCalculator = {
                     // Scaling value comes from FeatureModifier.value
                     params[param.name] = modifier.value;
                 } else if (param.name === 'interval') {
-                    // Interval comes from FeatureModifierFormulaParams.interval
+                    // Interval comes from FeatureFormulaParams.interval
                     if ((modifier as any).formulaParams?.interval) {
                         params[param.name] = (modifier as any).formulaParams.interval;
                     } else {
@@ -55,20 +55,31 @@ export const FormulaCalculator = {
                         params[param.name] = modifier.value;
                     }
                 } else if (param.name === 'formulaStartLevel') {
-                    // Formula start level comes from FeatureModifierFormulaParams.formulaStartLevel
+                    // Formula start level comes from FeatureFormulaParams.formulaStartLevel
                     if ((modifier as any).formulaParams?.formulaStartLevel) {
                         params[param.name] = (modifier as any).formulaParams.formulaStartLevel;
                     }
-                } else if (param.name === 'thresholds' || param.name === 'values') {
-                    // These are special parameters that would need to be stored elsewhere
-                    // For now, use default values or skip
-                    console.warn(`Parameter ${param.name} not supported yet`);
-                    return modifier.value;
+                } else if (param.name === 'thresholds') {
+                    // Thresholds come from FeatureFormulaParams.thresholds
+                    if ((modifier as any).formulaParams?.thresholds) {
+                        params[param.name] = (modifier as any).formulaParams.thresholds;
+                    } else {
+                        // For conditional scaling, use empty string if not provided (formula will handle it)
+                        (params as any)[param.name] = '';
+                    }
+                } else if (param.name === 'values') {
+                    // Values come from FeatureFormulaParams.values
+                    if ((modifier as any).formulaParams?.values) {
+                        params[param.name] = (modifier as any).formulaParams.values;
+                    } else {
+                        // For conditional scaling, use empty string if not provided (formula will handle it)
+                        (params as any)[param.name] = '';
+                    }
                 } else if (param.name === 'baseValue') {
                     // Base value comes from FeatureModifier.value (already handled above)
                     params[param.name] = modifier.value;
                 } else if (param.name === 'attributeId') {
-                    // Attribute ID comes from FeatureModifierFormulaParams.attributeId
+                    // Attribute ID comes from FeatureFormulaParams.attributeId
                     if ((modifier as any).formulaParams?.attributeId) {
                         params[param.name] = (modifier as any).formulaParams.attributeId;
                     } else {
@@ -237,7 +248,7 @@ export const FormulaCalculator = {
      * Check if a formula is attribute-dependent
      */
     isAttributeDependentFormula(formulaId: number): boolean {
-        return formulaId === 6 || formulaId === 7 || formulaId === 8; // ATTRIBUTE_BASED, ATTRIBUTE_MODIFIER, LEVEL_TIMES_ATTRIBUTE
+        return formulaId === 6 || formulaId === 7 || formulaId === 8 || formulaId === 11; // ATTRIBUTE_BASED, ATTRIBUTE_MODIFIER, LEVEL_TIMES_ATTRIBUTE, LEVEL_PLUS_ATTRIBUTE
     },
 
     /**
@@ -270,6 +281,10 @@ export const FormulaCalculator = {
             case 8: // LEVEL_TIMES_ATTRIBUTE
                 const level = params.level || 1;
                 return level * abilityModifier;
+
+            case 11: // LEVEL_PLUS_ATTRIBUTE
+                const levelForPlus = params.level || 1;
+                return levelForPlus + abilityModifier;
 
             default:
                 console.warn(`Unknown attribute-dependent formula ID: ${formulaId}`);

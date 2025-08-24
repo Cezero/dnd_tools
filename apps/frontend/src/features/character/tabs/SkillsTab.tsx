@@ -1,12 +1,9 @@
 import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import React, { useMemo } from 'react';
 
-import { ValidatedInput } from '@/components/forms/ValidatedForm';
-import { AnalogSkillService } from '@/features/character/AnalogSkillService';
 import type { RaceInQueryResponse, GetRaceResponse, GetClassResponse, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse } from '@shared/schema';
 import {
     SKILL_LIST,
-    CLASS_MAP,
     ABILITY_MAP,
     GetAbilityModifier,
     GetAbilityModifierString
@@ -29,7 +26,6 @@ interface SkillsTabProps {
 export function SkillsTab({
     character,
     onUpdate,
-    races = [],
     selectedRaceDetails,
     selectedClassDetails,
     targetAdvancement,
@@ -48,15 +44,9 @@ export function SkillsTab({
         return selectedClassDetails.skills?.some(classSkill => classSkill.skillId === skillId) || false;
     };
 
-    // Check if a skill is a special skill that supports subtypes
-    const isSpecialSkill = (skillId: number): boolean => {
-        return skillId === 6 || skillId === 32 || skillId === 33; // Craft, Perform, Profession
-    };
 
-    // Check if a skill is Speak Language (special handling)
-    const isSpeakLanguage = (skillId: number): boolean => {
-        return skillId === 34; // Speak Language skill ID
-    };
+
+
 
     // Get ability score from attributes
     const getAbilityScore = (abilityId: number): number => {
@@ -324,7 +314,7 @@ export function SkillsTab({
         const total = getSkillTotal(skillId);
 
         // For analog skills, get additional info
-        const analogSkillInfo = isAnalogSkill ? AnalogSkillService.getAnalogSkillInfo(character, skillId) : null;
+
 
         return (
             <div

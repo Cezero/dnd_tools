@@ -6,7 +6,7 @@ import type {
     CreateDiceBoxAdminConfigRequest,
     UpdateDiceBoxAdminConfigRequest,
     GetAllDiceConfigsResponse,
-    UserDiceConfig
+    UpdateUserDiceConfigRequest
 } from '@shared/schema';
 import {
     DiceBoxAdminConfigSchema,
@@ -15,7 +15,7 @@ import {
     GetAllDiceConfigsResponseSchema,
     UpdateResponseSchema,
     DiceBoxConfigIdParamSchema,
-    UserDiceConfigSchema
+    UpdateUserDiceConfigSchema
 } from '@shared/schema';
 
 import { typedApi } from './Api';
@@ -30,13 +30,13 @@ const getAvailableConfigsApi = typedApi({
 const getUserDiceConfigApi = typedApi({
     path: '/dicebox/config/user',
     method: 'GET',
-    responseSchema: UserDiceConfigSchema
+    responseSchema: UpdateUserDiceConfigSchema
 });
 
-const updateUserDiceConfigApi = typedApi<typeof UserDiceConfigSchema, typeof UpdateResponseSchema>({
+const updateUserDiceConfigApi = typedApi<typeof UpdateUserDiceConfigSchema, typeof UpdateResponseSchema>({
     path: '/dicebox/config/user',
     method: 'PUT',
-    requestSchema: UserDiceConfigSchema,
+    requestSchema: UpdateUserDiceConfigSchema,
     responseSchema: UpdateResponseSchema
 });
 
@@ -82,12 +82,12 @@ export class DiceBoxService {
     }
 
     // Get user's dice configuration
-    static async getUserDiceConfig(): Promise<UserDiceConfig> {
+    static async getUserDiceConfig(): Promise<UpdateUserDiceConfigRequest> {
         return getUserDiceConfigApi(undefined);
     }
 
     // Update user's dice configuration
-    static async updateUserDiceConfig(userConfig: UserDiceConfig): Promise<{ message: string }> {
+    static async updateUserDiceConfig(userConfig: UpdateUserDiceConfigRequest): Promise<{ message: string }> {
         return updateUserDiceConfigApi(userConfig);
     }
 

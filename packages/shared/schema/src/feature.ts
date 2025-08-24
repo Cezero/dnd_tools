@@ -1,13 +1,9 @@
 import z from "zod";
-import { ModifierType, ModifierAppliesToType, FeatureSpecialEffectType, FeatureSourceType, FeatureAppliesToType, FeatureBonusType, FeaturePrerequisiteType, FeatureModifierConditionType } from "@shared/static-data";
+import { ModifierType, ModifierAppliesToType, FeatureSpecialEffectType, FeatureSourceType, FeatureBonusType, FeaturePrerequisiteType, FeatureModifierConditionType, FeatureChoiceType, FeatureChoiceBehavior } from "@shared/static-data";
 import { SpellcastingLinkSchema } from "./spellcasting";
 import { QueryResponseSchema } from "./query";
 import { FeatSchema } from "./feat";
 import { ItemSchema } from "./item";
-
-// Enum schemas
-export const ChoiceTypeEnumSchema = z.enum(['Feat', 'Feature']);
-export const ChoiceBehaviorEnumSchema = z.enum(['Single', 'Multiple', 'Allocation']);
 
 // Feature Prerequisite Schema
 export const FeaturePrerequisiteSchema = z.object({
@@ -32,16 +28,19 @@ export const FeatureModifierConditionSchema = z.object({
     id: z.number().int().positive('Condition ID must be a positive integer'),
     featureModifierId: z.number().int().positive('Feature modifier ID must be a positive integer'),
     conditionType: z.nativeEnum(FeatureModifierConditionType),
-    conditionValue: z.string().nullable(),
+    conditionValue: z.number().int(), // Made mandatory (not nullable) to match database schema
 });
 
-// Feature Modifier Formula Params Schema
-export const FeatureModifierFormulaParamsSchema = z.object({
+// Feature Formula Params Schema
+export const FeatureFormulaParamsSchema = z.object({
     id: z.number().int().positive('Formula params ID must be a positive integer'),
     formulaId: z.number().int().positive('Formula ID must be a positive integer'),
     interval: z.number().int().positive('Interval must be a positive integer').optional().nullable(),
     formulaStartLevel: z.number().int().positive('Formula start level must be a positive integer').optional().nullable(),
     attributeId: z.number().int().positive('Attribute ID must be a positive integer').optional().nullable(),
+    // UPDATED: Convert to arrays for better validation and manipulation
+    thresholds: z.array(z.number().int()).nullable(), // Array of level thresholds (e.g., [4, 8, 12])
+    values: z.array(z.union([z.string(), z.number()])).nullable(), // Array of corresponding values (e.g., ["-2", "-1", 0] or [1, 2, 3])
 });
 
 // Feature Modifier Schema
@@ -50,14 +49,12 @@ export const FeatureModifierSchema = z.object({
     featureProgressionId: z.number().int().positive('Feature progression ID must be a positive integer'),
     type: z.nativeEnum(ModifierType),
     value: z.number().int(),
-    formulaParamsId: z.number().int().nullable(), // References ProgressionFormulaParams
+    formulaParamsId: z.number().int().nullable(), // References FeatureFormulaParams
     bonusType: z.nativeEnum(FeatureBonusType).nullable(),
     appliesTo: z.nativeEnum(ModifierAppliesToType).nullable(),
     appliesToId: z.number().int().nullable(),
-    appliesIfChoiceKey: z.string().nullable(),
-    appliesIfChoiceValue: z.string().nullable(),
     conditions: z.array(FeatureModifierConditionSchema).optional(),
-    formulaParams: FeatureModifierFormulaParamsSchema.optional().nullable(),
+    formulaParams: FeatureFormulaParamsSchema.optional().nullable(),
 });
 
 // Feature Special Effect Schema
@@ -80,10 +77,12 @@ export const FeatureChoiceSchema = z.object({
     progressionId: z.number().int().positive('Progression ID must be a positive integer'),
     label: z.string().nullable(),
     pickCount: z.number().int().nullable(),
-    choiceType: ChoiceTypeEnumSchema,
-    choiceBehavior: ChoiceBehaviorEnumSchema,
+    type: z.nativeEnum(FeatureChoiceType),
+    behavior: z.nativeEnum(FeatureChoiceBehavior),
     featId: z.number().int().positive('Feat ID must be a positive integer').nullable(),
-    chosenFeatureId: z.number().int().positive('Chosen feature ID must be a positive integer').nullable(),
+    featureId: z.number().int().positive('Feature ID must be a positive integer').nullable(),
+    formulaParamsId: z.number().int().nullable(),
+    filterType: z.number().int().nullable(),
     feat: z.object({
         id: z.number().int().positive('Feat ID must be a positive integer'),
         name: z.string().min(1, 'Feat name is required'),
@@ -93,6 +92,7 @@ export const FeatureChoiceSchema = z.object({
         name: z.string().min(1, 'Feature name is required'),
         slug: z.string().min(1, 'Feature slug is required'),
     }).nullable(),
+    formulaParams: FeatureFormulaParamsSchema.optional().nullable(),
 });
 
 // Feature Progression Schema (the main one used for bulk operations)
@@ -101,8 +101,8 @@ export const FeatureProgressionSchema = z.object({
     sourceType: z.number().int().min(0, 'Source type must be at least 0').max(1, 'Source type must be at most 1'),
     level: z.number().int().min(1, 'Level must be at least 1').max(20, 'Level must be at most 20'),
     featureId: z.number().int().positive('Feature ID must be a positive integer'),
-    appliesToType: z.nativeEnum(FeatureAppliesToType).nullable(),
-    appliesTo: z.number().int().nullable(),
+    // REMOVED: appliesToType - redundant with SpecialFeatureId
+    // REMOVED: appliesTo - redundant and always null in practice
     classId: z.number().int().nullable(),
     raceId: z.number().int().nullable(),
     feature: FeatureSchema.optional(),
@@ -134,7 +134,7 @@ export const CreateFeatureProgressionSchema = FeatureProgressionSchema.omit({
             id: true,
             featureModifierId: true,
         })).optional(),
-        formulaParams: FeatureModifierFormulaParamsSchema.omit({
+        formulaParams: FeatureFormulaParamsSchema.omit({
             id: true,
         }).optional().nullable(),
     })).optional(),
@@ -143,6 +143,11 @@ export const CreateFeatureProgressionSchema = FeatureProgressionSchema.omit({
         progressionId: true,
         feat: true,
         feature: true,
+        formulaParamsId: true, // Backend sets this
+    }).extend({
+        formulaParams: FeatureFormulaParamsSchema.omit({
+            id: true,
+        }).optional().nullable(),
     })).optional(),
     effects: z.array(FeatureSpecialEffectSchema.omit({
         id: true,
@@ -197,8 +202,16 @@ export const GetFeatureResponseSchema = FeatureSchema.extend({
     prerequisites: z.array(FeaturePrerequisiteSchema).optional(),
 });
 
-export const GetFeatureProgressionsResponseSchema = QueryResponseSchema.extend({
-    results: z.array(FeatureProgressionSchema),
+// Feature Progression management schemas
+export const UpdateFeatureProgressionsRequestSchema = z.object({
+    progressions: z.array(CreateFeatureProgressionSchema),
+});
+
+export const GetFeatureProgressionsResponseSchema = z.array(FeatureProgressionSchema);
+
+// Schema for creating feature progressions in frontend forms (allows featureId to be 0 for new features)
+export const CreateFeatureProgressionFormSchema = CreateFeatureProgressionSchema.extend({
+    featureId: z.number().int().min(0, 'Feature ID must be 0 or a positive integer'),
 });
 
 // Type exports
@@ -213,16 +226,14 @@ export type FeatureIdParam = z.input<typeof FeatureIdParamSchema>;
 export type FeatureWithRelations = z.infer<typeof FeatureWithRelationsSchema>;
 export type FeatureProgressionWithRelations = z.infer<typeof FeatureProgressionSchema>;
 export type CreateFeatureProgressionRequest = z.infer<typeof CreateFeatureProgressionSchema>;
+export type CreateFeatureProgressionFormRequest = z.infer<typeof CreateFeatureProgressionFormSchema>;
 export type FeatureProgressionInQueryResponse = z.infer<typeof FeatureProgressionSchema>;
 export type FeatureModifierInQueryResponse = z.infer<typeof FeatureModifierSchema>;
 export type FeatureSpecialEffectInQueryResponse = z.infer<typeof FeatureSpecialEffectSchema>;
 export type FeatureChoiceInQueryResponse = z.infer<typeof FeatureChoiceSchema>;
 export type FeatureModifierConditionInQueryResponse = z.infer<typeof FeatureModifierConditionSchema>;
 export type GetFeatureProgressionsResponse = z.infer<typeof GetFeatureProgressionsResponseSchema>;
-
-// Enum type exports
-export type ChoiceType = z.infer<typeof ChoiceTypeEnumSchema>;
-export type ChoiceBehavior = z.infer<typeof ChoiceBehaviorEnumSchema>;
+export type UpdateFeatureProgressionsRequest = z.infer<typeof UpdateFeatureProgressionsRequestSchema>;
 
 // Re-export common response types
 export { CreateResponse, UpdateResponse } from './common';

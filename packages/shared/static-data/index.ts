@@ -11,6 +11,7 @@ export * from './src/SpellData';
 export * from './src/FeatData';
 export * from './src/ItemData';
 export * from './src/FeatureData';
+export * from './src/FormatterData';
 export * from './src/FormulaDefinitions';
 
 // Export DiceData with explicit names to avoid conflicts
@@ -38,6 +39,7 @@ export * as FeatData from './src/FeatData';
 export * as ItemData from './src/ItemData';
 export * as DiceData from './src/DiceData';
 export * as FeatureData from './src/FeatureData';
+export * as FormatterData from './src/FormatterData';
 export * as FormulaDefinitions from './src/FormulaDefinitions';
 
 // Default export for backward compatibility

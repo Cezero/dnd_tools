@@ -1,25 +1,24 @@
-import {
+import type { Prisma } from '@shared/prisma-client';
+import type {
     GetAllFeaturesResponse,
     CreateFeatureRequest,
     UpdateFeatureRequest,
-    FeatureIdParamRequest,
     GetFeatureResponse,
     CreateResponse,
     UpdateResponse,
     CreateFeatureProgressionRequest,
+    FeatureProgressionWithRelations,
 } from '@shared/schema';
 
-// Service interface
 export interface FeatureSystemService {
-    // Core Feature CRUD operations
-    getAllFeatures: (sourceType?: number) => Promise<GetAllFeaturesResponse>;
-    getFeatureById: (query: FeatureIdParamRequest) => Promise<GetFeatureResponse | null>;
-    createFeature: (data: CreateFeatureRequest) => Promise<CreateResponse>;
-    updateFeature: (query: FeatureIdParamRequest, data: UpdateFeatureRequest) => Promise<UpdateResponse>;
-    deleteFeature: (query: FeatureIdParamRequest) => Promise<UpdateResponse>;
-    updateFeatureById: (query: FeatureIdParamRequest, data: UpdateFeatureRequest) => Promise<UpdateResponse>;
-    deleteFeatureById: (query: FeatureIdParamRequest) => Promise<UpdateResponse>;
-
-    // Bulk Feature Progression management (for class/race creation)
-    createFeatureProgressionWithRelations: (data: CreateFeatureProgressionRequest) => Promise<CreateResponse>;
+    getAllFeatures(sourceType?: number): Promise<GetAllFeaturesResponse>;
+    getFeatureById(query: { id: number }): Promise<GetFeatureResponse | null>;
+    createFeature(data: CreateFeatureRequest): Promise<CreateResponse>;
+    updateFeature(query: { id: number }, data: UpdateFeatureRequest): Promise<UpdateResponse>;
+    deleteFeature(query: { id: number }): Promise<UpdateResponse>;
+    createFeatureProgressionWithRelations(data: CreateFeatureProgressionRequest): Promise<CreateResponse>;
+    createMultipleFeatureProgressions(progressions: CreateFeatureProgressionRequest[], context: { classId?: number; raceId?: number }, tx?: Prisma.TransactionClient): Promise<void>;
+    deleteFeatureProgressionsForContext(context: { classId?: number; raceId?: number }, tx?: Prisma.TransactionClient): Promise<void>;
+    updateFeatureProgressions(featureId: number, progressions: CreateFeatureProgressionRequest[]): Promise<UpdateResponse>;
+    getFeatureProgressions(featureId: number): Promise<FeatureProgressionWithRelations[]>;
 } 

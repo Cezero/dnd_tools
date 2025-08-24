@@ -2,27 +2,13 @@ import jwt from 'jsonwebtoken';
 
 import { config } from '@/config';
 import { PrismaClient } from '@shared/prisma-client';
-import type { UpdateUserProfileRequest, UserProfileResponse, UserProfileUpdateResponse, UserWithDiceConfig } from '@shared/schema';
+import { UserProfileResponse, UserProfileUpdateResponse, UpdateUserProfileRequest } from '@shared/schema';
 
 import { DiceBoxService } from '../diceBox/diceBoxService';
 
 const prisma = new PrismaClient();
 
-// UPDATED: Transform user data to include dice config
-function transformUserWithDiceConfig(user: UserWithDiceConfig): UserProfileResponse {
-    return {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        isAdmin: user.isAdmin,
-        preferredEditionId: user.preferredEditionId,
-        diceConfig: user.diceConfigBaseRef ? {
-            baseConfigId: user.diceConfigBaseRef.id,
-            baseConfigName: user.diceConfigBaseRef.name,
-            overrides: user.diceConfigOverrides
-        } : null
-    };
-}
+// No transformation needed - Prisma user object directly matches UserProfile schema
 
 export interface UserProfileService {
     getUserProfile: (userId: number) => Promise<UserProfileResponse | null>;
@@ -43,7 +29,7 @@ export const userProfileService: UserProfileService = {
 
             if (!user) return null;
 
-            return transformUserWithDiceConfig(user);
+            return user; // User object directly matches UserProfile schema
         } catch (error) {
             console.error('Error fetching user profile:', error);
             return null;
@@ -51,12 +37,15 @@ export const userProfileService: UserProfileService = {
     },
 
     async updateUserProfile(userId: number, data: UpdateUserProfileRequest): Promise<UserProfileUpdateResponse> {
-        const { preferredEditionId, diceConfig } = data;
+        const { preferredEditionId, diceConfigBase, diceConfigOverrides } = data;
 
         // Prepare update data
-        const updateData: { preferredEditionId?: number } = {};
+        const updateData: { preferredEditionId?: number; diceConfigBase?: number } = {};
         if (preferredEditionId !== undefined) {
             updateData.preferredEditionId = preferredEditionId;
+        }
+        if (diceConfigBase !== undefined) {
+            updateData.diceConfigBase = diceConfigBase;
         }
 
         // Update user profile
@@ -69,12 +58,12 @@ export const userProfileService: UserProfileService = {
             }
         });
 
-        // Update dice configuration if provided
-        if (diceConfig) {
+        // Update dice configuration overrides if provided
+        if (diceConfigOverrides !== undefined) {
             await DiceBoxService.updateUserDiceConfig(
                 userId,
-                diceConfig.baseConfigId,
-                diceConfig.overrides || {}
+                diceConfigBase || updatedUser.diceConfigBase || 1, // Use provided base or existing or default
+                diceConfigOverrides
             );
         }
 

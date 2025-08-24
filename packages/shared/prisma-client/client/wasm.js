@@ -187,8 +187,6 @@ exports.Prisma.FeatureProgressionScalarFieldEnum = {
   sourceType: 'sourceType',
   level: 'level',
   featureId: 'featureId',
-  appliesToType: 'appliesToType',
-  appliesTo: 'appliesTo',
   classId: 'classId',
   raceId: 'raceId'
 };
@@ -201,17 +199,17 @@ exports.Prisma.FeatureModifierScalarFieldEnum = {
   bonusType: 'bonusType',
   appliesTo: 'appliesTo',
   appliesToId: 'appliesToId',
-  formulaParamsId: 'formulaParamsId',
-  appliesIfChoiceKey: 'appliesIfChoiceKey',
-  appliesIfChoiceValue: 'appliesIfChoiceValue'
+  formulaParamsId: 'formulaParamsId'
 };
 
-exports.Prisma.FeatureModifierFormulaParamsScalarFieldEnum = {
+exports.Prisma.FeatureFormulaParamsScalarFieldEnum = {
   id: 'id',
   formulaId: 'formulaId',
   interval: 'interval',
   formulaStartLevel: 'formulaStartLevel',
-  attributeId: 'attributeId'
+  attributeId: 'attributeId',
+  thresholds: 'thresholds',
+  values: 'values'
 };
 
 exports.Prisma.FeatureModifierConditionScalarFieldEnum = {
@@ -237,10 +235,12 @@ exports.Prisma.FeatureChoiceScalarFieldEnum = {
   progressionId: 'progressionId',
   label: 'label',
   pickCount: 'pickCount',
-  choiceType: 'choiceType',
-  choiceBehavior: 'choiceBehavior',
+  type: 'type',
+  behavior: 'behavior',
   featId: 'featId',
-  chosenFeatureId: 'chosenFeatureId'
+  featureId: 'featureId',
+  formulaParamsId: 'formulaParamsId',
+  filterType: 'filterType'
 };
 
 exports.Prisma.FeaturePrerequisiteScalarFieldEnum = {
@@ -506,10 +506,10 @@ exports.Prisma.UserCharacterScalarFieldEnum = {
   notes: 'notes'
 };
 
-exports.Prisma.UserCharacterAttributeScalarFieldEnum = {
+exports.Prisma.UserCharacterAbilityScoreScalarFieldEnum = {
   id: 'id',
   characterId: 'characterId',
-  attributeId: 'attributeId',
+  abilityId: 'abilityId',
   value: 'value'
 };
 
@@ -521,7 +521,7 @@ exports.Prisma.CharacterAdvancementScalarFieldEnum = {
   classId: 'classId',
   secondaryClassId: 'secondaryClassId',
   hitPoints: 'hitPoints',
-  attributeId: 'attributeId',
+  abilityId: 'abilityId',
   notes: 'notes',
   createdAt: 'createdAt'
 };
@@ -639,13 +639,9 @@ exports.Prisma.FeatureOrderByRelevanceFieldEnum = {
   description: 'description'
 };
 
-exports.Prisma.FeatureModifierOrderByRelevanceFieldEnum = {
-  appliesIfChoiceKey: 'appliesIfChoiceKey',
-  appliesIfChoiceValue: 'appliesIfChoiceValue'
-};
-
-exports.Prisma.FeatureModifierConditionOrderByRelevanceFieldEnum = {
-  conditionValue: 'conditionValue'
+exports.Prisma.FeatureFormulaParamsOrderByRelevanceFieldEnum = {
+  thresholds: 'thresholds',
+  values: 'values'
 };
 
 exports.Prisma.FeatureSpecialEffectOrderByRelevanceFieldEnum = {
@@ -804,17 +800,6 @@ exports.CastingTypeEnum = exports.$Enums.CastingTypeEnum = {
   Spontaneous: 'Spontaneous'
 };
 
-exports.ChoiceType = exports.$Enums.ChoiceType = {
-  Feat: 'Feat',
-  Feature: 'Feature'
-};
-
-exports.ChoiceBehavior = exports.$Enums.ChoiceBehavior = {
-  Single: 'Single',
-  Multiple: 'Multiple',
-  Allocation: 'Allocation'
-};
-
 exports.ItemPropertyType = exports.$Enums.ItemPropertyType = {
   Material: 'Material',
   Enhancement: 'Enhancement',
@@ -846,7 +831,7 @@ exports.Prisma.ModelName = {
   Feature: 'Feature',
   FeatureProgression: 'FeatureProgression',
   FeatureModifier: 'FeatureModifier',
-  FeatureModifierFormulaParams: 'FeatureModifierFormulaParams',
+  FeatureFormulaParams: 'FeatureFormulaParams',
   FeatureModifierCondition: 'FeatureModifierCondition',
   FeatureSpecialEffect: 'FeatureSpecialEffect',
   FeatureChoice: 'FeatureChoice',
@@ -880,7 +865,7 @@ exports.Prisma.ModelName = {
   ReferenceTableRow: 'ReferenceTableRow',
   ReferenceTableCell: 'ReferenceTableCell',
   UserCharacter: 'UserCharacter',
-  UserCharacterAttribute: 'UserCharacterAttribute',
+  UserCharacterAbilityScore: 'UserCharacterAbilityScore',
   CharacterAdvancement: 'CharacterAdvancement',
   AdvancementSkill: 'AdvancementSkill',
   AdvancementFeat: 'AdvancementFeat',

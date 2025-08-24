@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthAuto } from '@/components/auth';
 import { FeatureDetail, FeatureEdit } from '@/components/feature-system';
 import { GenericList } from '@/components/generic-list/GenericList';
-import { createIdDeleteServiceFunction, createSlugDeleteServiceFunction } from '@/components/generic-list/types';
+import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { FeatureSystemService } from '@/services/FeatureSystemService';
 import { RaceInQueryResponse, FeatureInQueryResponse } from '@shared/schema';
 

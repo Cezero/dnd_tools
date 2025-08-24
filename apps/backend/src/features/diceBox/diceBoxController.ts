@@ -1,10 +1,11 @@
 import { Response } from 'express';
 
 import { ValidatedNoInput, ValidatedBodyT, ValidatedParamsBodyT, ValidatedParamsT } from '@/util/validated-types';
-import type {
+import {
     CreateDiceBoxAdminConfigRequest,
     UpdateDiceBoxAdminConfigRequest,
-    DiceBoxConfigIdParamRequest
+    DiceBoxConfigIdParamRequest,
+    UpdateUserDiceConfigRequest
 } from '@shared/schema';
 
 import { DiceBoxService } from './diceBoxService';
@@ -32,11 +33,11 @@ export class DiceBoxController {
     }
 
     // Update user's dice configuration
-    static async updateUserDiceConfig(req: ValidatedBodyT<{ baseConfigId: number; overrides?: Record<string, string> }>, res: Response): Promise<void> {
+    static async updateUserDiceConfig(req: ValidatedBodyT<UpdateUserDiceConfigRequest>, res: Response): Promise<void> {
         try {
             const userId = req.user!.id; // Safe to use ! because requireAuth middleware guarantees user exists
-            const { baseConfigId, overrides } = req.body;
-            await DiceBoxService.updateUserDiceConfig(userId, baseConfigId, overrides || {});
+            const { diceConfigBase, diceConfigOverrides } = req.body;
+            await DiceBoxService.updateUserDiceConfig(userId, diceConfigBase, diceConfigOverrides);
             res.json({ message: 'User dice configuration updated successfully' });
         } catch (_error) {
             res.status(500).json({ error: 'Internal server error' });

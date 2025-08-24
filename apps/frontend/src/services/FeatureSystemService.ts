@@ -10,6 +10,8 @@ import {
     GetAllFeaturesResponseSchema,
     CreateResponseSchema,
     UpdateResponseSchema,
+    UpdateFeatureProgressionsRequestSchema,
+    GetFeatureProgressionsResponseSchema,
 } from '@shared/schema';
 
 /**
@@ -65,5 +67,21 @@ export const FeatureSystemService = {
         method: 'POST',
         requestSchema: CreateFeatureProgressionSchema,
         responseSchema: CreateResponseSchema,
+    }),
+
+    // Feature Progression management for individual features
+    updateFeatureProgressions: typedApi<typeof UpdateFeatureProgressionsRequestSchema, typeof UpdateResponseSchema, typeof FeatureIdParamSchema>({
+        path: '/features/:id/progressions',
+        method: 'PUT',
+        requestSchema: UpdateFeatureProgressionsRequestSchema,
+        paramsSchema: FeatureIdParamSchema,
+        responseSchema: UpdateResponseSchema,
+    }),
+
+    getFeatureProgressions: typedApi<undefined, typeof GetFeatureProgressionsResponseSchema, typeof FeatureIdParamSchema>({
+        path: '/features/:id/progressions',
+        method: 'GET',
+        paramsSchema: FeatureIdParamSchema,
+        responseSchema: GetFeatureProgressionsResponseSchema,
     }),
 }; 

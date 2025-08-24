@@ -1,6 +1,5 @@
 import {
     SpecialFeatureId,
-    FeatureAppliesToType,
     ModifierAppliesToType,
     ModifierType,
     FeatureSourceType,
@@ -29,9 +28,9 @@ interface FeatureModifierCondition {
 
 interface FeatureChoice {
     id: number;
-    choiceType: string;
-    choiceBehavior: string;
-    appliesToType: number | null;
+    type: string;
+    behavior: string;
+    // REMOVED: appliesToType - not used in FeatureChoice
     label: string | null;
     pickCount: number | null;
 }
@@ -41,8 +40,7 @@ interface FeatureProgressionWithRelations {
     sourceType: number;
     level: number;
     featureId: number;
-    appliesToType: number | null;
-    appliesTo: number | null;
+    // REMOVED: appliesToType and appliesTo - redundant with SpecialFeatureId
     modifiers?: FeatureModifier[];
     choices?: FeatureChoice[];
     effects?: any[];
@@ -138,7 +136,7 @@ export class LanguageService {
      */
     static isClassLanguageFeature(progression: FeatureProgressionWithRelations | CreateFeatureProgressionRequest): boolean {
         return progression.sourceType === FeatureSourceType.Class &&
-            progression.appliesToType === FeatureAppliesToType.Language;
+            (progression.featureId === SpecialFeatureId.AutomaticLanguage || progression.featureId === SpecialFeatureId.BonusLanguage);
     }
 
     /**

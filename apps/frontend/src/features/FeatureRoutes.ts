@@ -1,4 +1,3 @@
-import { routes as featureSystemRoutes } from '@/components/feature-system/FeatureConfig';
 import { routes as profileRoutes } from '@/components/profile/ProfileConfig';
 import { routes as adminRoutes } from '@/features/admin/config/AdminConfig';
 import { routes as characterRoutes } from '@/features/character/CharacterConfig';
@@ -10,6 +9,8 @@ import { routes as skillRoutes } from '@/features/skill/SkillConfig';
 import { routes as spellRoutes } from '@/features/spell/SpellConfig';
 import { RouteConfig } from '@/types';
 
+import { routes as featureSystemRoutes } from '@/features/admin/features/feature-system/FeatureConfig';
+
 export const FeatureRoutes: RouteConfig[] = [
     ...spellRoutes,
     ...characterRoutes,
@@ -19,6 +20,6 @@ export const FeatureRoutes: RouteConfig[] = [
     ...classRoutes,
     ...raceRoutes,
     ...itemRoutes,
-    ...profileRoutes,
     ...featureSystemRoutes,
+    ...profileRoutes,
 ]; 

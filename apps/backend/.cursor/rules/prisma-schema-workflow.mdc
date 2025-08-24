@@ -153,26 +153,6 @@ npx prisma migrate dev  # NEVER do this
 
 ## EXAMPLES
 
-### ❌ WRONG - Running migration myself
-```bash
-npx prisma migrate dev  # I should NOT do this
-```
-
-### ✅ RIGHT - Asking user to migrate
-```
-I've updated the Prisma schema. Please run: `cd apps/backend && npx prisma migrate dev --name add_user_profile`
-```
-
-### ❌ WRONG - Continuing without confirmation
-```typescript
-// I should NOT proceed without user confirming migration was successful
-```
-
-### ✅ RIGHT - Waiting for confirmation
-```
-Please confirm the migration was successful and I'll continue with the implementation.
-```
-
 ### ❌ WRONG - Incomplete schema changes
 ```prisma
 // I should NOT make partial schema changes and then proceed to implementation
@@ -203,9 +183,5 @@ model User {
 
 description: Comprehensive Prisma Schema Change Workflow and Validation Patterns - CRITICAL for Database Schema Modifications
 globs: ["**/prisma/schema.prisma"]
-alwaysApply: true
-priority: 1
-description:
-globs:
 alwaysApply: false
 ---

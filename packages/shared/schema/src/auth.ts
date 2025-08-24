@@ -1,11 +1,11 @@
 import { z } from 'zod';
-import { UserDiceConfigOverrideSchema } from './diceBox.js';
+import { UserDiceConfigOverrideSchema, DiceBoxAdminConfigSchema } from './diceBox.js';
 
-// NEW: User dice configuration schema (replaces old dice preferences)
+// User dice configuration schema (aligned with Prisma database structure)
 export const UserDiceConfigSchema = z.object({
-    baseConfigId: z.number(),
-    baseConfigName: z.string(),
-    overrides: z.array(UserDiceConfigOverrideSchema).default([])
+    diceConfigBase: z.number().nullable(),
+    diceConfigBaseRef: DiceBoxAdminConfigSchema.pick({ id: true, name: true }).nullable(),
+    diceConfigOverrides: z.array(UserDiceConfigOverrideSchema).default([])
 });
 
 // Schema for user registration
@@ -30,14 +30,16 @@ export const AuthUserSchema = z.object({
     isAdmin: z.boolean(),
 });
 
-// User profile schema (profile-related data)
+// User profile schema (profile-related data) - matches Prisma User structure
 export const UserProfileSchema = z.object({
     id: z.number(),
     username: z.string(),
     isAdmin: z.boolean(),
     email: z.string(),
     preferredEditionId: z.number().nullable(),
-    diceConfig: UserDiceConfigSchema.nullable(),
+    diceConfigBase: z.number().nullable(),
+    diceConfigBaseRef: DiceBoxAdminConfigSchema.pick({ id: true, name: true }).nullable(),
+    diceConfigOverrides: z.array(UserDiceConfigOverrideSchema).default([]),
 });
 
 // Schema for user login
@@ -71,10 +73,8 @@ export const AuthServiceResultSchema = z.object({
 // Schema for updating user profile (matches Prisma User model field names)
 export const UpdateUserProfileSchema = z.object({
     preferredEditionId: z.number().int().positive().optional(),
-    diceConfig: z.object({
-        baseConfigId: z.number().int().positive(),
-        overrides: z.record(z.string(), z.string()).optional()
-    }).optional(), // NEW: Add dice configuration updates
+    diceConfigBase: z.number().int().positive().optional(),
+    diceConfigOverrides: z.array(UserDiceConfigOverrideSchema).optional(),
 });
 
 export const UserProfileIdParamSchema = z.object({
@@ -91,11 +91,18 @@ export const UserProfileUpdateResponseSchema = z.object({
     token: z.string(),
 });
 
+// Schema for updating user dice configuration (separate from profile updates)
+export const UpdateUserDiceConfigSchema = z.object({
+    diceConfigBase: z.number().int().positive(),
+    diceConfigOverrides: z.array(UserDiceConfigOverrideSchema).default([])
+});
+
 // Type inference from schemas
 export type UpdateUserProfileRequest = z.infer<typeof UpdateUserProfileSchema>;
 export type UserProfileResponse = z.infer<typeof UserProfileResponseSchema>;
 export type UserProfileUpdateResponse = z.infer<typeof UserProfileUpdateResponseSchema>;
 export type UserProfileIdParamRequest = z.infer<typeof UserProfileIdParamSchema>;
+export type UpdateUserDiceConfigRequest = z.infer<typeof UpdateUserDiceConfigSchema>;
 
 // Type inference from schemas
 export type RegisterUserRequest = z.infer<typeof RegisterUserSchema>;

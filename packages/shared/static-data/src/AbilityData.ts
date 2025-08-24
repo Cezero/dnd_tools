@@ -1,13 +1,25 @@
 import { AbilityMap, NameToIdMap, SavingThrowMap } from './types';
 import { AbbreviationSelectOptionList } from './Util';
 
+// Ability ID enum for type safety
+export const AbilityId = {
+    Strength: 1,
+    Dexterity: 2,
+    Constitution: 3,
+    Intelligence: 4,
+    Wisdom: 5,
+    Charisma: 6,
+} as const;
+
+export type AbilityId = typeof AbilityId[keyof typeof AbilityId];
+
 export const ABILITY_MAP: AbilityMap = {
-    1: { id: 1, name: 'Strength', abbreviation: 'STR' },
-    2: { id: 2, name: 'Dexterity', abbreviation: 'DEX' },
-    3: { id: 3, name: 'Constitution', abbreviation: 'CON' },
-    4: { id: 4, name: 'Intelligence', abbreviation: 'INT' },
-    5: { id: 5, name: 'Wisdom', abbreviation: 'WIS' },
-    6: { id: 6, name: 'Charisma', abbreviation: 'CHA' },
+    [AbilityId.Strength]: { id: AbilityId.Strength, name: 'Strength', abbreviation: 'STR' },
+    [AbilityId.Dexterity]: { id: AbilityId.Dexterity, name: 'Dexterity', abbreviation: 'DEX' },
+    [AbilityId.Constitution]: { id: AbilityId.Constitution, name: 'Constitution', abbreviation: 'CON' },
+    [AbilityId.Intelligence]: { id: AbilityId.Intelligence, name: 'Intelligence', abbreviation: 'INT' },
+    [AbilityId.Wisdom]: { id: AbilityId.Wisdom, name: 'Wisdom', abbreviation: 'WIS' },
+    [AbilityId.Charisma]: { id: AbilityId.Charisma, name: 'Charisma', abbreviation: 'CHA' },
 }
 
 export const ABILITY_LIST = Object.values(ABILITY_MAP);
@@ -63,10 +75,18 @@ export const GetBonusSpellsForAbility = (abilityScore: number): number[] => {
     return bonusSpells;
 }
 
+export const SavingThrowId = {
+    Fortitude: 1,
+    Will: 2,
+    Reflex: 3,
+} as const;
+
+export type SavingThrowId = typeof SavingThrowId[keyof typeof SavingThrowId];
+
 export const SAVING_THROW_MAP: SavingThrowMap = {
-    1: { id: 1, name: "Fortitude", abbreviation: "Fort" },
-    2: { id: 2, name: "Will", abbreviation: "Will" },
-    3: { id: 3, name: "Reflex", abbreviation: "Ref" },
+    [SavingThrowId.Fortitude]: { id: SavingThrowId.Fortitude, name: "Fortitude", abbreviation: "Fort" },
+    [SavingThrowId.Will]: { id: SavingThrowId.Will, name: "Will", abbreviation: "Will" },
+    [SavingThrowId.Reflex]: { id: SavingThrowId.Reflex, name: "Reflex", abbreviation: "Ref" },
 }
 
 export const SAVING_THROW_LIST = Object.values(SAVING_THROW_MAP)

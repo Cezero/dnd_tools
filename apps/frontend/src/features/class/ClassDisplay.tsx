@@ -1,19 +1,20 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { generateClassProgression } from '@/lib/ClassProgression';
 import { ClassProgressionTable } from '@/lib/ClassProgressionTable';
-import { formatClassProficiencies, formatProgression, expandFormulaProgressions, formatPrerequisites } from '@/lib/Formatters';
+import { formatClassProficiencies, formatProgression, expandFormulaProgressions, formatPrerequisites, formatWildShapeProgressions } from '@/lib/Formatters';
 import { GetClassResponse } from '@shared/schema';
+import { FeatService } from '@/features/feat/FeatService';
 import {
     RPG_DICE,
     EDITION_MAP,
     ABILITY_MAP,
     SKILL_MAP,
     FeatureBonusType,
-    FeatureAppliesToType,
     SpecialFeatureId,
     ModifierAppliesToType,
+    ModifierType,
     FeatureSpecialEffectType
 } from '@shared/static-data';
 
@@ -38,6 +39,49 @@ export function ClassDisplay({
     isAdmin = false,
     fromListParams = ''
 }: ClassDisplayProps): React.JSX.Element {
+    const [feats, setFeats] = useState<Array<{ id: number; name: string }>>([]);
+    const [featsLoaded, setFeatsLoaded] = useState(false);
+
+    // Load feats if we have feat modifiers
+    useEffect(() => {
+        const loadFeatsIfNeeded = async () => {
+            if (featsLoaded) return;
+
+            const hasFeatModifiers = cls.features?.some(progression =>
+                progression.modifiers?.some(modifier =>
+                    modifier.appliesTo === ModifierAppliesToType.Feat
+                )
+            );
+
+            if (hasFeatModifiers) {
+                try {
+                    const response = await FeatService.getFeats({});
+                    setFeats(response.results || []);
+                } catch (error) {
+                    console.error('Failed to load feats:', error);
+                } finally {
+                    setFeatsLoaded(true);
+                }
+            } else {
+                setFeatsLoaded(true);
+            }
+        };
+
+        loadFeatsIfNeeded();
+    }, [cls.features, featsLoaded]);
+
+    // Enhance modifiers with feat data
+    const enhancedFeatures = cls.features?.map(progression => ({
+        ...progression,
+        modifiers: progression.modifiers?.map(modifier => {
+            if (modifier.appliesTo === ModifierAppliesToType.Feat && modifier.appliesToId) {
+                const feat = feats.find(f => f.id === modifier.appliesToId);
+                return feat ? { ...modifier, feat } : modifier;
+            }
+            return modifier;
+        })
+    })) || [];
+
     return (
         <div className={showHeader ? "pt-8" : ""}>
             <div className={showHeader ? "w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-600 rounded-lg shadow-lg p-1" : ""}>
@@ -87,10 +131,9 @@ export function ClassDisplay({
 
                     {/* Class Skills Section */}
                     {(() => {
-                        const classSkills = cls.features
+                        const classSkills = enhancedFeatures
                             ?.filter(progression =>
-                                progression.featureId === SpecialFeatureId.ClassSkill &&
-                                progression.appliesToType === FeatureAppliesToType.Skill
+                                progression.featureId === SpecialFeatureId.ClassSkill
                             )
                             .flatMap(progression =>
                                 progression.modifiers
@@ -124,7 +167,7 @@ export function ClassDisplay({
                     {/* Class Proficiencies Section */}
                     {(() => {
                         // Extract proficiencies in the same format as ClassEdit.tsx
-                        const classProficiencies = cls.features
+                        const classProficiencies = enhancedFeatures
                             ?.filter(progression =>
                                 progression.featureId === SpecialFeatureId.ClassProficiency
                             )
@@ -155,13 +198,14 @@ export function ClassDisplay({
                         return null;
                     })()}
 
+
+
                     {/* Class Features Section */}
                     {(() => {
                         // Filter out progressions that contain skills and proficiencies
-                        const actualFeatures = cls.features?.filter(progression => {
+                        const actualFeatures = enhancedFeatures?.filter(progression => {
                             // Check if this progression contains class skills
-                            const hasClassSkills = progression.featureId === SpecialFeatureId.ClassSkill &&
-                                progression.appliesToType === FeatureAppliesToType.Skill;
+                            const hasClassSkills = progression.featureId === SpecialFeatureId.ClassSkill;
 
                             // Check if this progression contains proficiencies
                             const hasProficiencies = progression.featureId === SpecialFeatureId.ClassProficiency;
@@ -240,6 +284,24 @@ export function ClassDisplay({
 
                                                                         {/* Show combined progression details */}
                                                                         {(() => {
+                                                                            // Check if this is a wild shape feature
+                                                                            const isWildShape = feature?.name?.toLowerCase().includes('wild shape');
+
+                                                                            if (isWildShape) {
+                                                                                // Use special wild shape formatting
+                                                                                const wildShapeDetails = formatWildShapeProgressions(progressions);
+                                                                                if (wildShapeDetails) {
+                                                                                    return (
+                                                                                        <div className={`mt-2 space-y-1 ${isFirstOccurrence ? 'ml-4' : ''}`}>
+                                                                                            <div className="text-sm">
+                                                                                                {!isFirstOccurrence && <span className="font-medium">{feature?.name || `Feature ${feature?.id}`}:</span>} {wildShapeDetails}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    );
+                                                                                }
+                                                                                return null;
+                                                                            }
+
                                                                             // Collect all details from all progressions for this feature at this level
                                                                             const allDetails: string[] = [];
 
@@ -249,6 +311,7 @@ export function ClassDisplay({
                                                                                     (progression.choices && progression.choices.length > 0);
 
                                                                                 if (hasDetails) {
+                                                                                    // Use normal formatting for all modifiers
                                                                                     const formatted = formatProgression(progression);
                                                                                     const details = [];
                                                                                     if (formatted.value) details.push(formatted.value);
@@ -260,10 +323,13 @@ export function ClassDisplay({
                                                                             });
 
                                                                             if (allDetails.length > 0) {
+                                                                                // Check if this is a synthetic Choice entry (expanded from formula)
+                                                                                const isSyntheticChoiceEntry = false; // Legacy choice system removed
+
                                                                                 return (
                                                                                     <div className={`mt-2 space-y-1 ${isFirstOccurrence ? 'ml-4' : ''}`}>
                                                                                         <div className="text-sm">
-                                                                                            {!isFirstOccurrence && <span className="font-medium">{feature?.name || `Feature ${feature?.id}`}:</span>} {allDetails.join(', ')}
+                                                                                            {!isFirstOccurrence && !isSyntheticChoiceEntry && <span className="font-medium">{feature?.name || `Feature ${feature?.id}`}:</span>} {allDetails.join(', ')}
                                                                                         </div>
                                                                                     </div>
                                                                                 );

@@ -24,12 +24,14 @@ import {
 import {
     FeatureSpecialEffectType,
     SpecialFeatureId,
+    ModifierAppliesToType,
 } from '@shared/static-data';
 
 import { ClassFeatureAssoc } from './ClassFeatureAssoc';
 import { ClassProficiencyService } from './ClassProficiencyService';
 import { ClassSkillService } from './ClassSkillService';
 import { ClassService } from './ClassService';
+import { FeatService } from '@/features/feat/FeatService';
 import {
     BasicInfoTab,
     SkillsTab,
@@ -58,6 +60,8 @@ export default function ClassEdit() {
     const [isProgressionDialogOpen, setIsProgressionDialogOpen] = useState(false);
     const [editingProgression, setEditingProgression] = useState<FeatureProgressionWithRelations | null>(null);
     const [preSelectedFeature, setPreSelectedFeature] = useState<{ id: number; name: string; description: string; slug: string } | undefined>(undefined);
+    const [feats, setFeats] = useState<Array<{ id: number; name: string }>>([]);
+    const [featsLoaded, setFeatsLoaded] = useState(false);
 
     // Ref to track if we've already processed the newFeature
     const processedNewFeatureRef = useRef<boolean>(false);
@@ -75,9 +79,9 @@ export default function ClassEdit() {
     /**
      * Handles adding a class skill via the feature system.
      */
-    const handleAddSkill = useCallback((skillId: number) => {
+    const handleAddSkill = (skillId: number) => {
         ClassSkillService.addSkill(featureProgressions, setFeatureProgressions, skillId, parseInt(id || '0'));
-    }, [id, featureProgressions, setFeatureProgressions]);
+    };
 
     /**
      * Handles removing a class skill via the feature system.
@@ -110,8 +114,6 @@ export default function ClassEdit() {
                         classId: parseInt(id || '0'),
                         raceId: null,
                         level: 1,
-                        appliesToType: null,
-                        appliesTo: null,
                         feature: {
                             id: SpecialFeatureId.ClassProficiency,
                             slug: 'class-proficiency',
@@ -253,6 +255,32 @@ export default function ClassEdit() {
     }, []); // Remove preSelectedFeature dependency to prevent infinite re-renders
 
     /**
+     * Handles adding a feature to the class by creating a default level 1 progression.
+     */
+    const handleAddFeature = useCallback((feature: { id: number; name: string; description: string; slug: string }) => {
+        console.log('handleAddFeature called with:', feature);
+        const defaultProgression: FeatureProgressionWithRelations = {
+            id: Date.now() + Math.random(), // Temporary ID for frontend
+            sourceType: 1, // 1 for Class
+            classId: parseInt(id || '0'),
+            raceId: null,
+            level: 1, // Default to level 1
+            featureId: feature.id,
+            feature: {
+                id: feature.id,
+                name: feature.name,
+                description: feature.description,
+                slug: feature.slug,
+            },
+            modifiers: [],
+            choices: [],
+            effects: [],
+        };
+
+        setFeatureProgressions(prev => [...prev, defaultProgression]);
+    }, [id]);
+
+    /**
      * Handles the removal of a feature progression from the class.
      */
     const handleRemoveProgression = useCallback((progressionId: number) => {
@@ -349,6 +377,51 @@ export default function ClassEdit() {
         fetchClass();
     }, [id]);
 
+    // Load feats if we have feat modifiers
+    useEffect(() => {
+        const loadFeatsIfNeeded = async () => {
+            const hasFeatModifiers = featureProgressions.some(progression =>
+                progression.modifiers?.some(modifier =>
+                    modifier.appliesTo === ModifierAppliesToType.Feat
+                )
+            );
+
+
+
+            if (hasFeatModifiers && feats.length === 0) {
+                try {
+                    const response = await FeatService.getFeats({});
+                    setFeats(response.results || []);
+                } catch (error) {
+                    console.error('Failed to load feats:', error);
+                } finally {
+                    setFeatsLoaded(true);
+                }
+            } else if (!hasFeatModifiers) {
+                setFeatsLoaded(true);
+            }
+        };
+
+        loadFeatsIfNeeded();
+    }, [featureProgressions, feats.length]);
+
+    // Enhance feature progressions with feat data
+    const enhancedFeatureProgressions = featureProgressions.map(progression => ({
+        ...progression,
+        modifiers: progression.modifiers?.map(modifier => {
+            if (modifier.appliesTo === ModifierAppliesToType.Feat && modifier.appliesToId) {
+                const feat = feats.find(f => f.id === modifier.appliesToId);
+                if (feat) {
+                    return { ...modifier, feat };
+                }
+                return modifier;
+            }
+            return modifier;
+        })
+    }));
+
+
+
     // Handle new feature from association dialog
     useEffect(() => {
         if (location.state?.newFeature && !processedNewFeatureRef.current) {
@@ -363,8 +436,6 @@ export default function ClassEdit() {
                 raceId: null,
                 level: 1, // Default to level 1
                 featureId: newFeature.featureId,
-                appliesToType: null,
-                appliesTo: null,
                 feature: {
                     id: newFeature.featureId,
                     name: newFeature.name,
@@ -417,6 +488,11 @@ export default function ClassEdit() {
                             } else if (modData.formulaParamsId) {
                                 // If we have formulaParamsId but no formulaParams, this is an error
                                 console.error('Modifier has formulaParamsId but no formulaParams:', modData);
+                            }
+                            // Preserve feat data for feat modifiers
+                            if (modData.appliesTo === ModifierAppliesToType.Feat) {
+                                // Keep the feat data for display purposes
+                                // The backend will use appliesToId to link to the actual feat
                             }
                             return modData;
                         }) || [],
@@ -515,7 +591,7 @@ export default function ClassEdit() {
     }
 
     // Group progressions by feature for display
-    const progressionsByFeature = featureProgressions.reduce((acc, progression) => {
+    const progressionsByFeature = enhancedFeatureProgressions.reduce((acc, progression) => {
         const featureId = progression.featureId;
         if (!acc[featureId]) {
             acc[featureId] = {
@@ -587,7 +663,7 @@ export default function ClassEdit() {
                                 setFormData={setFormData}
                                 validation={form.validation}
                                 isLoading={isLoading}
-                                featureProgressions={featureProgressions}
+                                featureProgressions={enhancedFeatureProgressions}
                                 setFeatureProgressions={setFeatureProgressions}
                                 spellcastingProgression={spellcastingProgression}
                                 setSpellcastingProgression={setSpellcastingProgression}
@@ -603,6 +679,12 @@ export default function ClassEdit() {
                                 setEditingProgression={setEditingProgression}
                                 preSelectedFeature={preSelectedFeature}
                                 setPreSelectedFeature={setPreSelectedFeature}
+                                onRemoveProgression={handleRemoveProgression}
+                                onAddFeature={handleAddFeature}
+                                onEditProgression={handleEditProgression}
+                                onAddSkill={handleAddSkill}
+                                onRemoveSkill={handleRemoveSkill}
+                                classId={id !== 'new' ? parseInt(id) : undefined}
                             />
                         )}
                     </div>

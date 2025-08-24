@@ -6,14 +6,15 @@
 **D&D 3.5 Character Generation and Management System** - Complete character creation with printable character sheet for between-session use.
 
 ## Current Status
-**Phase**: Formula Integration
-**Progress**: ~40% complete
+**Phase**: Unified Choice System Complete
+**Progress**: ~60% complete
 
 ## Key Deliverables
 - ✅ Basic character creation workflow
 - ✅ Class/race management with feature association
 - ✅ Feature system data structures and UI
 - ✅ Formula definitions library
+- ✅ **Unified Choice System Complete** - All core classes modeled with proper choice system integration
 - ⏳ Formula integration (CRITICAL GAP)
 - ⏳ Feature resolution service (CRITICAL GAP)
 - ⏳ Character sheet generation and export
@@ -22,7 +23,7 @@
 
 ## Current Focus
 **Task**: Implement formula integration and feature resolution service
-**Status**: Formula definitions exist, no integration with UI or backend
+**Status**: Unified choice system complete, formula definitions exist, no integration with UI or backend
 **Next**: Connect formulaId to formula definitions in frontend and backend
 
 ## Formula System Architecture
@@ -92,6 +93,9 @@
 - ✅ FeatureProgressionDetailEdit dialog complete
 - ✅ Character advancement system working
 - ✅ Formula definitions library complete
+- ✅ **Unified Choice System Complete** - Fighter, Wizard, and Rogue bonus feat/ability systems modeled
+- ✅ **Display System Complete** - Both ClassEdit.tsx and ClassDetail.tsx display correctly
+- ✅ **Legacy System Cleanup** - Removed deprecated ModifierAppliesToType.Choice system
 - ⏳ Formula integration (CRITICAL MISSING)
 - ⏳ Feature resolution service (CRITICAL MISSING)
 

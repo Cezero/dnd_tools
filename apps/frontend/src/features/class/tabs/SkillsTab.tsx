@@ -7,7 +7,6 @@ import { ClassSkillService } from '@/features/class/ClassSkillService';
 import {
     ModifierAppliesToType,
     ModifierType,
-    FeatureAppliesToType,
     SpecialFeatureId,
     SKILL_MAP,
     SKILL_SELECT_LIST,
@@ -24,7 +23,9 @@ export function SkillsTab({
     validation,
     isLoading = false,
     featureProgressions = [],
-    setFeatureProgressions
+    setFeatureProgressions,
+    onAddSkill,
+    onRemoveSkill
 }: ClassTabProps): React.JSX.Element {
     const [skillDetails, setSkillDetails] = useState<Record<number, GetSkillResponse>>({});
     const [loadingSkills, setLoadingSkills] = useState<Set<number>>(new Set());
@@ -65,22 +66,30 @@ export function SkillsTab({
     }, [featureProgressions, skillDetails, loadingSkills]);
 
     const handleAddSkill = (skillId: number) => {
-        if (!setFeatureProgressions) return;
-        ClassSkillService.addSkill(
-            featureProgressions as FeatureProgressionWithRelations[],
-            setFeatureProgressions,
-            skillId,
-            (formData as { id?: number }).id || 0
-        );
+        if (onAddSkill) {
+            onAddSkill(skillId);
+        } else if (setFeatureProgressions) {
+            // Fallback to direct service call if callback not provided
+            ClassSkillService.addSkill(
+                featureProgressions as FeatureProgressionWithRelations[],
+                setFeatureProgressions,
+                skillId,
+                (formData as { id?: number }).id || 0
+            );
+        }
     };
 
     const handleRemoveSkill = (skillId: number) => {
-        if (!setFeatureProgressions) return;
-        ClassSkillService.removeSkill(
-            featureProgressions as FeatureProgressionWithRelations[],
-            setFeatureProgressions,
-            skillId
-        );
+        if (onRemoveSkill) {
+            onRemoveSkill(skillId);
+        } else if (setFeatureProgressions) {
+            // Fallback to direct service call if callback not provided
+            ClassSkillService.removeSkill(
+                featureProgressions as FeatureProgressionWithRelations[],
+                setFeatureProgressions,
+                skillId
+            );
+        }
 
         // Remove skill details from state
         setSkillDetails(prev => {
@@ -91,6 +100,9 @@ export function SkillsTab({
     };
 
     const classSkills = ClassSkillService.getClassSkills(featureProgressions as FeatureProgressionWithRelations[]);
+
+    // Filter out skills that are already added as class skills
+    const availableSkills = SKILL_SELECT_LIST.filter(skill => !classSkills.includes(skill.value));
 
     return (
         <div className="p-6 space-y-6">
@@ -107,8 +119,7 @@ export function SkillsTab({
                                 handleAddSkill(value as number);
                             }
                         }}
-                        options={SKILL_SELECT_LIST
-                            .filter(skill => !classSkills.includes(skill.value))}
+                        options={availableSkills}
                         placeholder="Select a skill to add"
                     />
                 </div>

@@ -46,4 +46,12 @@ export interface ClassTabProps {
     setEditingProgression?: (progression: FeatureProgressionWithRelations | null) => void;
     preSelectedFeature?: FeatureProgressionWithRelations['feature'] | null;
     setPreSelectedFeature?: (feature: FeatureProgressionWithRelations['feature'] | null) => void;
+    // Skill management callbacks
+    onAddSkill?: (skillId: number) => void;
+    onRemoveSkill?: (skillId: number) => void;
+    // Feature management callbacks
+    onEditProgression?: (progression: FeatureProgressionWithRelations) => void;
+    onRemoveProgression?: (progressionId: number) => void;
+    onAddFeature?: (feature: { id: number; name: string; description: string; slug: string }) => void;
+    classId?: number;
 }

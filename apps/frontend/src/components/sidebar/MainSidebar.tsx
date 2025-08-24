@@ -1,5 +1,5 @@
 import { NavigationMenu } from '@base-ui-components/react/navigation-menu';
-import { ChevronRightIcon, ChevronLeftIcon, UserGroupIcon, SparklesIcon, TableCellsIcon, BookOpenIcon, ChevronDownIcon, AcademicCapIcon, UserIcon, WrenchScrewdriverIcon, StarIcon, CubeIcon, ChartBarIcon, TableCellsIcon as TableCellsIcon2, Cog6ToothIcon, CubeTransparentIcon, BeakerIcon } from '@heroicons/react/24/outline';
+import { ChevronRightIcon, ChevronLeftIcon, UserGroupIcon, SparklesIcon, BookOpenIcon, ChevronDownIcon, AcademicCapIcon, UserIcon, WrenchScrewdriverIcon, StarIcon, CubeIcon, ChartBarIcon, TableCellsIcon as TableCellsIcon2, Cog6ToothIcon, CubeTransparentIcon, BeakerIcon } from '@heroicons/react/24/outline';
 import React, { useRef, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
@@ -24,7 +24,6 @@ export function MainSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }
     const sidebarRef = useRef<HTMLDivElement>(null);
     const [showHandle, setShowHandle] = useState<boolean>(false);
     const location = useLocation();
-    const navigate = useNavigate();
 
     // This button toggles between Expanded and Minimal states
     const ToggleExpandedMinimal = (): void => {
@@ -215,6 +214,15 @@ export function MainSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }
                                         >
                                             <ChartBarIcon className={`${location.pathname === '/admin' ? 'text-blue-600 dark:text-blue-400' : ''} w-4 h-4 mr-2`} />
                                             <span className={`${location.pathname === '/admin' ? 'text-blue-600 dark:text-blue-400' : ''}`}>Dashboard</span>
+                                        </CustomLink>
+                                        <CustomLink
+                                            className={`flex items-center px-4 py-2 text-sm
+                                                        text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600
+                                                        ${location.pathname.startsWith('/features') ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
+                                            href="/features"
+                                        >
+                                            <SparklesIcon className={`${location.pathname.startsWith('/features') ? 'text-blue-600 dark:text-blue-400' : ''} w-4 h-4 mr-2`} />
+                                            <span className={`${location.pathname.startsWith('/features') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Features</span>
                                         </CustomLink>
                                         <CustomLink
                                             className={`flex items-center px-4 py-2 text-sm

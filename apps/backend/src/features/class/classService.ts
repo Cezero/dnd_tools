@@ -1,16 +1,19 @@
 import { PrismaClient } from '@shared/prisma-client';
 import {
-    ClassIdParamRequest,
-    CreateClassRequest,
     GetAllClassesResponse,
-    GetClassResponse,
+    CreateClassRequest,
     UpdateClassRequest,
-    CreateResponse
+    ClassIdParamRequest,
+    GetClassResponse,
+    CreateResponse,
+    CreateSpellcastingProgressionRequest,
+    CreateSpellcastingSlotRequest,
 } from '@shared/schema';
-import type { CreateSpellcastingProgressionRequest, CreateSpellcastingSlotRequest } from '@shared/schema';
-
 
 import type { ClassService } from './types';
+import { transformFormulaParamsFromDatabase } from '../../utils/formulaParamTransformers';
+import { featureSystemService } from '../featureSystem/featureSystemService';
+
 
 const prisma = new PrismaClient();
 
@@ -78,7 +81,8 @@ export const classService: ClassService = {
                                         name: true,
                                         slug: true
                                     }
-                                }
+                                },
+                                formulaParams: true
                             }
                         },
                         effects: {
@@ -103,11 +107,29 @@ export const classService: ClassService = {
             },
         });
 
-        return {
+        // Transform formula parameters from strings to arrays for frontend consumption
+        const transformedClassData = {
             ...classData,
+            features: classData?.features?.map(feature => ({
+                ...feature,
+                modifiers: feature.modifiers?.map(modifier => ({
+                    ...modifier,
+                    formulaParams: modifier.formulaParams
+                        ? transformFormulaParamsFromDatabase(modifier.formulaParams)
+                        : null
+                })),
+                choices: feature.choices?.map(choice => ({
+                    ...choice,
+                    formulaParams: choice.formulaParams
+                        ? transformFormulaParamsFromDatabase(choice.formulaParams)
+                        : null
+                }))
+            })),
             spellcastingProgression: classData?.spellcastingProgression ?? null,
             spellsKnownProgression: classData?.classSpellsKnown ?? null,
-        } as GetClassResponse;
+        };
+
+        return transformedClassData as GetClassResponse;
     },
 
     async createClass(data: CreateClassRequest): Promise<CreateResponse> {
@@ -127,84 +149,9 @@ export const classService: ClassService = {
                 },
             });
 
-            // Create feature progressions with their related entities
+            // Create feature progressions using consolidated feature system service
             if (features && features.length > 0) {
-                for (const progression of features) {
-                    const { modifiers, choices, effects, ...progressionData } = progression;
-
-                    // Create the feature progression
-                    const featureProgression = await tx.featureProgression.create({
-                        data: {
-                            ...progressionData,
-                            classId: classResult.id,
-                        },
-                    });
-
-                    // Create related modifiers
-                    if (modifiers && modifiers.length > 0) {
-                        for (const modifier of modifiers) {
-                            const { conditions, formulaParams, ...modifierData } = modifier;
-
-                            // Create formula params first if they exist
-                            let formulaParamsId = null;
-                            if (formulaParams) {
-                                const createdFormulaParams = await tx.featureModifierFormulaParams.create({
-                                    data: {
-                                        formulaId: formulaParams.formulaId,
-                                        interval: formulaParams.interval,
-                                        formulaStartLevel: formulaParams.formulaStartLevel,
-                                        attributeId: formulaParams.attributeId,
-                                    },
-                                });
-                                formulaParamsId = createdFormulaParams.id;
-                            }
-
-                            // Create the modifier with formula params reference
-                            const createdModifier = await tx.featureModifier.create({
-                                data: {
-                                    ...modifierData,
-                                    featureProgressionId: featureProgression.id,
-                                    formulaParamsId: formulaParamsId,
-                                },
-                            });
-
-                            // Create related conditions if any
-                            if (conditions && conditions.length > 0) {
-                                await tx.featureModifierCondition.createMany({
-                                    data: conditions.map(condition => ({
-                                        ...condition,
-                                        featureModifierId: createdModifier.id,
-                                    })),
-                                });
-                            }
-                        }
-                    }
-
-                    // Create related choices
-                    if (choices && choices.length > 0) {
-                        await tx.featureChoice.createMany({
-                            data: choices.map(choice => ({
-                                ...choice,
-                                progressionId: featureProgression.id,
-                            })),
-                        });
-                    }
-
-                    // Create related effects
-                    if (effects && effects.length > 0) {
-                        await tx.featureSpecialEffect.createMany({
-                            data: effects.map(effect => ({
-                                ...effect,
-                                progressionId: featureProgression.id,
-                                featId: effect.featId || null,
-                                itemId: effect.itemId || null,
-                            })),
-                        });
-                    }
-
-                    // Prerequisites are now handled at the feature level
-                    // No need to create prerequisites for progressions
-                }
+                await featureSystemService.createMultipleFeatureProgressions(features, { classId: classResult.id });
             }
 
             // Create spellcasting progression (spell slots)
@@ -269,33 +216,8 @@ export const classService: ClassService = {
             // Delete existing source book mappings
             await tx.classSourceMap.deleteMany({ where: { classId: query.id } });
 
-            // Delete existing feature progressions and their related entities
-            const existingProgressions = await tx.featureProgression.findMany({
-                where: { classId: query.id },
-                select: { id: true }
-            });
-
-            if (existingProgressions.length > 0) {
-                const progressionIds = existingProgressions.map(p => p.id);
-
-                // Delete related entities first
-                await tx.featureModifier.deleteMany({
-                    where: { featureProgressionId: { in: progressionIds } }
-                });
-                await tx.featureChoice.deleteMany({
-                    where: { progressionId: { in: progressionIds } }
-                });
-                await tx.featureSpecialEffect.deleteMany({
-                    where: { progressionId: { in: progressionIds } }
-                });
-                // Prerequisites are now at the feature level, not the progression level
-                // No need to delete prerequisites for progressions
-
-                // Delete the progressions
-                await tx.featureProgression.deleteMany({
-                    where: { classId: query.id }
-                });
-            }
+            // Delete existing feature progressions using consolidated feature system service
+            await featureSystemService.deleteFeatureProgressionsForContext({ classId: query.id }, tx);
 
             // Delete existing spellcasting progression and slots
             const existingSpellcastingProgressions = await tx.spellcastingProgression.findMany({
@@ -353,84 +275,9 @@ export const classService: ClassService = {
                 },
             });
 
-            // Create new feature progressions with their related entities
+            // Create new feature progressions using consolidated feature system service
             if (features && features.length > 0) {
-                for (const progression of features) {
-                    const { modifiers, choices, effects, ...progressionData } = progression;
-
-                    // Create the feature progression
-                    const featureProgression = await tx.featureProgression.create({
-                        data: {
-                            ...progressionData,
-                            classId: query.id,
-                        },
-                    });
-
-                    // Create related modifiers
-                    if (modifiers && modifiers.length > 0) {
-                        for (const modifier of modifiers) {
-                            const { conditions, formulaParams, ...modifierData } = modifier;
-
-                            // Create formula params first if they exist
-                            let formulaParamsId = null;
-                            if (formulaParams) {
-                                const createdFormulaParams = await tx.featureModifierFormulaParams.create({
-                                    data: {
-                                        formulaId: formulaParams.formulaId,
-                                        interval: formulaParams.interval,
-                                        formulaStartLevel: formulaParams.formulaStartLevel,
-                                        attributeId: formulaParams.attributeId,
-                                    },
-                                });
-                                formulaParamsId = createdFormulaParams.id;
-                            }
-
-                            // Create the modifier with formula params reference
-                            const createdModifier = await tx.featureModifier.create({
-                                data: {
-                                    ...modifierData,
-                                    featureProgressionId: featureProgression.id,
-                                    formulaParamsId: formulaParamsId,
-                                },
-                            });
-
-                            // Create related conditions if any
-                            if (conditions && conditions.length > 0) {
-                                await tx.featureModifierCondition.createMany({
-                                    data: conditions.map(condition => ({
-                                        ...condition,
-                                        featureModifierId: createdModifier.id,
-                                    })),
-                                });
-                            }
-                        }
-                    }
-
-                    // Create related choices
-                    if (choices && choices.length > 0) {
-                        await tx.featureChoice.createMany({
-                            data: choices.map(choice => ({
-                                ...choice,
-                                progressionId: featureProgression.id,
-                            })),
-                        });
-                    }
-
-                    // Create related effects
-                    if (effects && effects.length > 0) {
-                        await tx.featureSpecialEffect.createMany({
-                            data: effects.map(effect => ({
-                                ...effect,
-                                progressionId: featureProgression.id,
-                                featId: effect.featId || null,
-                                itemId: effect.itemId || null,
-                            })),
-                        });
-                    }
-
-                    // Prerequisites are now handled at the feature level
-                    // No need to create prerequisites for progressions
-                }
+                await featureSystemService.createMultipleFeatureProgressions(features, { classId: query.id }, tx);
             }
 
             // Create new spellcasting progression (spell slots)

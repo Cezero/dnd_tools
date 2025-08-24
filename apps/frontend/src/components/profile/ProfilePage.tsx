@@ -10,7 +10,7 @@ import { ColorPicker } from '@/components/widgets';
 import { DiceBoxService } from '@/services/DiceBoxService';
 import { UserProfileService } from '@/services/UserProfileService';
 import { generateDiceColorScheme } from '@/utils/color-scheme';
-import type { UserProfileResponse, UpdateUserProfileRequest, GetAllDiceConfigsResponse, UserDiceConfig , DiceBoxAdminConfig } from '@shared/schema';
+import type { UserProfileResponse, UpdateUserProfileRequest, GetAllDiceConfigsResponse, UpdateUserDiceConfigRequest, DiceBoxAdminConfig } from '@shared/schema';
 import { DICE_THEME_SELECT_LIST, doesThemeIgnoreColor, getSystemNameById } from '@shared/static-data';
 
 
@@ -163,8 +163,8 @@ function ProfilePageComponent({ auth }: ProfilePageProps): React.JSX.Element {
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
                                         className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === tab.id
-                                                ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
-                                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800'
+                                            ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800'
                                             }`}
                                     >
                                         <Icon className="mr-3 h-5 w-5" />
@@ -366,18 +366,18 @@ function DndPreferencesTab({ profile, onUpdate }: { profile: UserProfileResponse
 
 function DiceConfigTab({ profile, onUpdate }: { profile: UserProfileResponse | null; onUpdate: (data: Partial<UpdateUserProfileRequest>) => Promise<void> }): React.JSX.Element {
     const [availableConfigs, setAvailableConfigs] = useState<GetAllDiceConfigsResponse | null>(null);
-    const [userConfig, setUserConfig] = useState<UserDiceConfig | null>(null);
+    const [userConfig, setUserConfig] = useState<UpdateUserDiceConfigRequest | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState('');
     const { diceBox } = useDiceBox();
 
     const getCurrentValue = (propertyName: string, defaultValue: any) => {
-        if (userConfig?.overrides && userConfig.overrides[propertyName] !== undefined) {
-            return userConfig.overrides[propertyName];
+        if (userConfig?.diceConfigOverrides && userConfig.diceConfigOverrides[propertyName] !== undefined) {
+            return userConfig.diceConfigOverrides[propertyName];
         }
-        if (userConfig?.configId && availableConfigs) {
-            const config = availableConfigs.results.find(c => c.id === userConfig.configId);
+        if (userConfig?.diceConfigBase && availableConfigs) {
+            const config = availableConfigs.results.find(c => c.id === userConfig.diceConfigBase);
             if (config && config[propertyName as keyof typeof config] !== undefined) {
                 return config[propertyName as keyof typeof config];
             }
@@ -432,7 +432,7 @@ function DiceConfigTab({ profile, onUpdate }: { profile: UserProfileResponse | n
         setUserConfig(prev => {
             if (!prev) return prev;
 
-            const newOverrides = { ...prev.overrides };
+            const newOverrides = { ...prev.diceConfigOverrides };
             if (value === getCurrentValue(propertyName, null)) {
                 // Remove override if it matches the base value
                 delete newOverrides[propertyName];
@@ -443,7 +443,7 @@ function DiceConfigTab({ profile, onUpdate }: { profile: UserProfileResponse | n
 
             return {
                 ...prev,
-                overrides: newOverrides
+                diceConfigOverrides: newOverrides
             };
         });
     };
@@ -488,8 +488,8 @@ function DiceConfigTab({ profile, onUpdate }: { profile: UserProfileResponse | n
                         Base Configuration
                     </label>
                     <CustomSelect
-                        value={userConfig.configId}
-                        onValueChange={(value) => setUserConfig(prev => prev ? { ...prev, configId: value as number } : null)}
+                        value={userConfig.diceConfigBase}
+                        onValueChange={(value) => setUserConfig(prev => prev ? { ...prev, diceConfigBase: value as number } : null)}
                         options={availableConfigs.results.map(config => ({
                             value: config.id,
                             label: config.name

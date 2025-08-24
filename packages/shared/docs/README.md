@@ -6,6 +6,10 @@ Comprehensive documentation for the D&D Tools feature system, database schema, a
 
 This documentation package provides detailed guidance for developers working with the D&D Tools application, covering the feature system, database interactions, and best practices for both frontend and backend development.
 
+### **🎯 Start Here**
+- **[System Overview](system-overview.md)** - Complete overview of all systems and their relationships
+- **[Comprehensive Documentation Overview](comprehensive-documentation-overview.md)** - Detailed documentation structure and status
+
 ## Documentation Structure
 
 ### 📋 Features Documentation (`features/`)
@@ -18,16 +22,24 @@ This documentation package provides detailed guidance for developers working wit
 - **tables/** - Detailed documentation for each table
 - **relationships.md** - How tables relate and interact with each other
 
-### 🔄 Interaction Patterns (`interactions/`)
-- **frontend-patterns.md** - Frontend interaction patterns and best practices
-- **backend-patterns.md** - Backend interaction patterns and API design
-- **api-guidelines.md** - API design guidelines and conventions
+### 🎨 Frontend Components (`frontend-components/`)
+- **generic-list-system.md** - Reusable list component with filtering and selection
+- **validated-form-system.md** - Type-safe form system with Zod validation
+- **api-integration-patterns.md** - Frontend API integration patterns and best practices
+
+### ⚙️ Backend Patterns (`backend/`)
+- **backend-patterns.md** - Backend service layer, controllers, and middleware patterns
+
+### 🔌 API Design (`api/`)
+- **api-design-standards.md** - API design guidelines, RESTful conventions, and standards
 
 ## Quick Start
 
 1. **New to the project?** Start with `features/overview.md`
 2. **Working with the database?** Check `database/schema-overview.md`
-3. **Building features?** Review the relevant interaction patterns
+3. **Building frontend components?** Review `frontend-components/` patterns
+4. **Working on backend services?** Check `backend/backend-patterns.md`
+5. **Designing APIs?** Follow `api/api-design-standards.md`
 
 ## Contributing to Documentation
 
@@ -43,19 +55,20 @@ This documentation is designed to be referenced by both developers and AI assist
 ### For Developers
 - Reference these docs when implementing new features
 - Use examples as templates for common scenarios
-- Follow the patterns outlined in interaction guides
+- Follow the patterns outlined in component and service guides
 
 ### For AI Assistants
 - These docs provide context for code generation
 - Examples demonstrate proper usage patterns
-- Guidelines ensure consistent implementation
+- Guidelines ensure consistent implementation across frontend and backend
 
 ## Maintenance
 
 Documentation should be updated whenever:
 - New features are added to the system
 - Database schema changes are made
-- New interaction patterns are established
+- New component or service patterns are established
+- API changes or new endpoints are added
 - Breaking changes are introduced
 
 ---

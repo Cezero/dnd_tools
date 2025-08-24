@@ -2,7 +2,7 @@ import DiceBox from '@3d-dice/dice-box';
 import DiceParser from '@3d-dice/dice-parser-interface';
 
 import { DiceBoxService } from '@/services/DiceBoxService';
-import type { DiceBoxAdminConfig, UserDiceConfig } from '@shared/schema';
+import type { DiceBoxAdminConfig, UpdateUserDiceConfigRequest } from '@shared/schema';
 import { getSystemNameById } from '@shared/static-data';
 
 import type { DiceBoxConfig } from './DiceBox';
@@ -33,7 +33,7 @@ export class DiceBoxManager {
     }
 
     // Initialize with UserDiceConfig (for normal user usage)
-    async initializeWithUserConfig(userConfig: UserDiceConfig): Promise<void> {
+    async initializeWithUserConfig(userConfig: UpdateUserDiceConfigRequest): Promise<void> {
         // Ensure cache is initialized
         await this.initializeCache();
 
@@ -130,17 +130,17 @@ export class DiceBoxManager {
     }
 
     // Merge UserDiceConfig with admin config
-    mergeUserConfigWithAdminConfig(userConfig: UserDiceConfig): DiceBoxAdminConfig {
-        const adminConfig = this.adminConfigsCache.get(userConfig.baseConfigId);
+    mergeUserConfigWithAdminConfig(userConfig: UpdateUserDiceConfigRequest): DiceBoxAdminConfig {
+        const adminConfig = this.adminConfigsCache.get(userConfig.diceConfigBase);
         if (!adminConfig) {
-            throw new Error(`Admin config with ID ${userConfig.baseConfigId} not found in cache`);
+            throw new Error(`Admin config with ID ${userConfig.diceConfigBase} not found in cache`);
         }
 
         // Start with admin config
         const mergedConfig: DiceBoxAdminConfig = { ...adminConfig };
 
         // Apply user overrides
-        Object.entries(userConfig.overrides).forEach(([key, value]) => {
+        Object.entries(userConfig.diceConfigOverrides).forEach(([key, value]) => {
             const propertyKey = key as keyof DiceBoxAdminConfig;
             if (propertyKey in mergedConfig) {
                 // Convert string value to appropriate type
@@ -161,8 +161,8 @@ export class DiceBoxManager {
         // 3. Else use admin config iconColor if present
         // 4. Else use admin config themeColor if present
         // 5. Else use default #3937b8
-        const userIconColor = userConfig.overrides.iconColor;
-        const userThemeColor = userConfig.overrides.themeColor;
+        const userIconColor = userConfig.diceConfigOverrides.iconColor;
+        const userThemeColor = userConfig.diceConfigOverrides.themeColor;
         const adminIconColor = adminConfig.iconColor;
         const adminThemeColor = adminConfig.themeColor;
 
@@ -290,7 +290,7 @@ export class DiceBoxManager {
     }
 
     // Update config with UserDiceConfig (for normal user usage)
-    async updateConfigWithUserConfig(userConfig: UserDiceConfig): Promise<void> {
+    async updateConfigWithUserConfig(userConfig: UpdateUserDiceConfigRequest): Promise<void> {
         // Ensure cache is initialized
         await this.initializeCache();
 

@@ -41,15 +41,15 @@ export class DiceBoxService {
                     throw new Error('No dice configuration available');
                 }
                 return {
-                    baseConfigId: mostRecentConfig.id,
-                    baseConfigName: mostRecentConfig.name,
-                    overrides: {}
+                    diceConfigBase: mostRecentConfig.id,
+                    diceConfigBaseRef: { id: mostRecentConfig.id, name: mostRecentConfig.name },
+                    diceConfigOverrides: []
                 };
             }
             return {
-                baseConfigId: defaultConfig.id,
-                baseConfigName: defaultConfig.name,
-                overrides: {}
+                diceConfigBase: defaultConfig.id,
+                diceConfigBaseRef: { id: defaultConfig.id, name: defaultConfig.name },
+                diceConfigOverrides: []
             };
         }
 
@@ -61,24 +61,26 @@ export class DiceBoxService {
             throw new Error('No dice configuration available');
         }
 
-        // Convert overrides to record format
-        const overrides: Record<string, string> = {};
-        user.diceConfigOverrides.forEach(override => {
-            overrides[override.propertyName] = override.propertyValue;
-        });
+        // Convert overrides to array format
+        const overrides = user.diceConfigOverrides.map(override => ({
+            id: override.id,
+            userId: override.userId,
+            propertyName: override.propertyName,
+            propertyValue: override.propertyValue
+        }));
 
         return {
-            baseConfigId: baseConfig.id,
-            baseConfigName: baseConfig.name,
-            overrides
+            diceConfigBase: baseConfig.id,
+            diceConfigBaseRef: { id: baseConfig.id, name: baseConfig.name },
+            diceConfigOverrides: overrides
         };
     }
 
     // Update user's dice configuration
-    static async updateUserDiceConfig(userId: number, baseConfigId: number, overrides: Record<string, string>): Promise<void> {
+    static async updateUserDiceConfig(userId: number, diceConfigBase: number, diceConfigOverrides: Array<{ propertyName: string; propertyValue: string }>): Promise<void> {
         // Verify base config exists
         const baseConfig = await prisma.diceBoxAdminConfig.findUnique({
-            where: { id: baseConfigId }
+            where: { id: diceConfigBase }
         });
         if (!baseConfig) {
             throw new Error('Base dice configuration not found');
@@ -87,7 +89,7 @@ export class DiceBoxService {
         // Update user's base config reference
         await prisma.user.update({
             where: { id: userId },
-            data: { diceConfigBase: baseConfigId }
+            data: { diceConfigBase: diceConfigBase }
         });
 
         // Clear existing overrides
@@ -96,12 +98,12 @@ export class DiceBoxService {
         });
 
         // Create new overrides if any exist
-        if (Object.keys(overrides).length > 0) {
+        if (diceConfigOverrides && diceConfigOverrides.length > 0) {
             await prisma.userDiceConfigOverride.createMany({
-                data: Object.entries(overrides).map(([propertyName, propertyValue]) => ({
+                data: diceConfigOverrides.map(override => ({
                     userId,
-                    propertyName,
-                    propertyValue
+                    propertyName: override.propertyName,
+                    propertyValue: override.propertyValue
                 }))
             });
         }

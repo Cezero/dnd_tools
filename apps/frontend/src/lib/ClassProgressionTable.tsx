@@ -2,8 +2,27 @@ import ordinal from 'ordinal';
 
 import { ProgressionRow } from '@/lib/ClassProgression';
 
+function hasSpellsAtLevel(progression: ProgressionRow[], spellLevel: number, isSpellsKnown: boolean = false): boolean {
+    return progression.some(row => {
+        const spells = isSpellsKnown ? row.spellsKnown : row.spells;
+        return spells && spellLevel in spells && spells[spellLevel] > 0;
+    });
+}
+
+function countSpellLevels(progression: ProgressionRow[], isSpellsKnown: boolean = false): number {
+    let count = 0;
+    for (let i = 0; i <= 9; i++) {
+        if (hasSpellsAtLevel(progression, i, isSpellsKnown)) {
+            count++;
+        }
+    }
+    return count;
+}
+
 function getMaxSpellLevel(spells: { [spellLevel: number]: number }): number {
-    return Math.max(...Object.keys(spells).map(Number));
+    // Get all spell levels that have slots
+    const spellLevels = Object.keys(spells).map(Number);
+    return spellLevels.length > 0 ? Math.max(...spellLevels) : 0;
 }
 
 interface ClassProgressionTableProps {
@@ -19,6 +38,8 @@ export function ClassProgressionTable({ progression, className = '' }: ClassProg
     // Check if any row has spells to determine if we need spell columns
     const hasSpells = progression.some(row => row.spells);
     const hasSpellsKnown = progression.some(row => row.spellsKnown);
+
+    // Get the maximum spell level that has actual spells
     const maxSpellLevel = hasSpells
         ? Math.max(...progression.map(row => row.spells ? getMaxSpellLevel(row.spells) : 0))
         : 0;
@@ -48,12 +69,12 @@ export function ClassProgressionTable({ progression, className = '' }: ClassProg
                                 Will<br />Save
                             </th>
                             {hasSpells && (
-                                <th className="border-r border-gray-300 dark:border-gray-500 px-2 py-1 text-center text-sm font-medium align-bottom" colSpan={maxSpellLevel + 1}>
+                                <th className="border-r border-gray-300 dark:border-gray-500 px-2 py-1 text-center text-sm font-medium align-bottom" colSpan={countSpellLevels(progression)}>
                                     Spells per Day
                                 </th>
                             )}
                             {hasSpellsKnown && (
-                                <th className="border-r border-gray-300 dark:border-gray-500 px-2 py-1 text-center text-sm font-medium align-bottom" colSpan={maxSpellsKnownLevel + 1}>
+                                <th className="border-r border-gray-300 dark:border-gray-500 px-2 py-1 text-center text-sm font-medium align-bottom" colSpan={countSpellLevels(progression, true)}>
                                     Spells Known
                                 </th>
                             )}
@@ -61,20 +82,34 @@ export function ClassProgressionTable({ progression, className = '' }: ClassProg
                     )}
                     {(hasSpells || hasSpellsKnown) && (
                         <tr className="bg-gray-100 dark:bg-gray-800">
-                            {hasSpells && Array.from({ length: maxSpellLevel + 1 }, (_, i) => (
-                                <th key={`spells-${i}`} className={`px-2 py-1 border text-center text-sm font-medium whitespace-nowrap align-bottom ${i === 0 ? 'border-l-gray-300 dark:border-l-gray-500' : 'border-l-gray-200 dark:border-l-gray-600'
-                                    } ${i === maxSpellLevel ? 'border-r-gray-300 dark:border-r-gray-500' : 'border-r-gray-200 dark:border-r-gray-600'
-                                    } border-t-gray-200 dark:border-t-gray-600 border-b-gray-200 dark:border-b-gray-600`}>
-                                    {i === 0 ? '0' : ordinal(i)}
-                                </th>
-                            ))}
-                            {hasSpellsKnown && Array.from({ length: maxSpellsKnownLevel + 1 }, (_, i) => (
-                                <th key={`spells-known-${i}`} className={`px-2 py-1 border text-center text-sm font-medium whitespace-nowrap align-bottom ${i === 0 ? 'border-l-gray-300 dark:border-l-gray-500' : 'border-l-gray-200 dark:border-l-gray-600'
-                                    } ${i === maxSpellsKnownLevel ? 'border-r-gray-300 dark:border-r-gray-500' : 'border-r-gray-200 dark:border-r-gray-600'
-                                    } border-t-gray-200 dark:border-t-gray-600 border-b-gray-200 dark:border-b-gray-600`}>
-                                    {i === 0 ? '0' : ordinal(i)}
-                                </th>
-                            ))}
+                            {hasSpells && Array.from({ length: 10 }, (_, i) => {
+                                // Only show column if there are spells at this level
+                                if (!hasSpellsAtLevel(progression, i)) {
+                                    return null;
+                                }
+
+                                return (
+                                    <th key={`spells-${i}`} className={`px-2 py-1 border text-center text-sm font-medium whitespace-nowrap align-bottom ${i === 0 ? 'border-l-gray-300 dark:border-l-gray-500' : 'border-l-gray-200 dark:border-l-gray-600'
+                                        } ${i === maxSpellLevel ? 'border-r-gray-300 dark:border-r-gray-500' : 'border-r-gray-200 dark:border-r-gray-600'
+                                        } border-t-gray-200 dark:border-t-gray-600 border-b-gray-200 dark:border-b-gray-600`}>
+                                        {i === 0 ? '0' : ordinal(i)}
+                                    </th>
+                                );
+                            }).filter(Boolean)}
+                            {hasSpellsKnown && Array.from({ length: 10 }, (_, i) => {
+                                // Only show column if there are spells known at this level
+                                if (!hasSpellsAtLevel(progression, i, true)) {
+                                    return null;
+                                }
+
+                                return (
+                                    <th key={`spells-known-${i}`} className={`px-2 py-1 border text-center text-sm font-medium whitespace-nowrap align-bottom ${i === 0 ? 'border-l-gray-300 dark:border-l-gray-500' : 'border-l-gray-200 dark:border-l-gray-600'
+                                        } ${i === maxSpellsKnownLevel ? 'border-r-gray-300 dark:border-r-gray-500' : 'border-r-gray-200 dark:border-r-gray-600'
+                                        } border-t-gray-200 dark:border-t-gray-600 border-b-gray-200 dark:border-b-gray-600`}>
+                                        {i === 0 ? '0' : ordinal(i)}
+                                    </th>
+                                );
+                            }).filter(Boolean)}
                         </tr>
                     )}
                     {!hasSpells && !hasSpellsKnown && (
@@ -118,24 +153,38 @@ export function ClassProgressionTable({ progression, className = '' }: ClassProg
                             </td>
                             {hasSpells && (
                                 <>
-                                    {Array.from({ length: maxSpellLevel + 1 }, (_, i) => (
-                                        <td key={`spells-${i}`} className={`px-2 py-1 border text-sm text-center whitespace-nowrap ${i === 0 ? 'border-l-gray-300 dark:border-l-gray-500' : 'border-l-gray-200 dark:border-l-gray-600'
-                                            } ${i === maxSpellLevel ? 'border-r-gray-300 dark:border-r-gray-500' : 'border-r-gray-200 dark:border-r-gray-600'
-                                            } ${index === progression.length - 1 ? 'border-b-gray-300 dark:border-b-gray-500' : 'border-b-gray-200 dark:border-b-gray-600'}`}>
-                                            {row.spells && row.spells[i] !== undefined ? row.spells[i] : '-'}
-                                        </td>
-                                    ))}
+                                    {Array.from({ length: 10 }, (_, i) => {
+                                        // Only show column if there are spells at this level
+                                        if (!hasSpellsAtLevel(progression, i)) {
+                                            return null;
+                                        }
+
+                                        return (
+                                            <td key={`spells-${i}`} className={`px-2 py-1 border text-sm text-center whitespace-nowrap ${i === 0 ? 'border-l-gray-300 dark:border-l-gray-500' : 'border-l-gray-200 dark:border-l-gray-600'
+                                                } ${i === maxSpellLevel ? 'border-r-gray-300 dark:border-r-gray-500' : 'border-r-gray-200 dark:border-r-gray-600'
+                                                } ${index === progression.length - 1 ? 'border-b-gray-300 dark:border-b-gray-500' : 'border-b-gray-200 dark:border-b-gray-600'}`}>
+                                                {row.spells && row.spells[i] !== undefined ? row.spells[i] : '-'}
+                                            </td>
+                                        );
+                                    }).filter(Boolean)}
                                 </>
                             )}
                             {hasSpellsKnown && (
                                 <>
-                                    {Array.from({ length: maxSpellsKnownLevel + 1 }, (_, i) => (
-                                        <td key={`spells-known-${i}`} className={`px-2 py-1 border text-sm text-center whitespace-nowrap ${i === 0 ? 'border-l-gray-300 dark:border-l-gray-500' : 'border-l-gray-200 dark:border-l-gray-600'
-                                            } ${i === maxSpellsKnownLevel ? 'border-r-gray-300 dark:border-r-gray-500' : 'border-r-gray-200 dark:border-r-gray-600'
-                                            } ${index === progression.length - 1 ? 'border-b-gray-300 dark:border-b-gray-500' : 'border-b-gray-200 dark:border-b-gray-600'}`}>
-                                            {row.spellsKnown && row.spellsKnown[i] !== undefined ? row.spellsKnown[i] : '-'}
-                                        </td>
-                                    ))}
+                                    {Array.from({ length: 10 }, (_, i) => {
+                                        // Only show column if there are spells known at this level
+                                        if (!hasSpellsAtLevel(progression, i, true)) {
+                                            return null;
+                                        }
+
+                                        return (
+                                            <td key={`spells-known-${i}`} className={`px-2 py-1 border text-sm text-center whitespace-nowrap ${i === 0 ? 'border-l-gray-300 dark:border-l-gray-500' : 'border-l-gray-200 dark:border-l-gray-600'
+                                                } ${i === maxSpellsKnownLevel ? 'border-r-gray-300 dark:border-r-gray-500' : 'border-r-gray-200 dark:border-r-gray-600'
+                                                } ${index === progression.length - 1 ? 'border-b-gray-300 dark:border-b-gray-500' : 'border-b-gray-200 dark:border-b-gray-600'}`}>
+                                                {row.spellsKnown && row.spellsKnown[i] !== undefined ? row.spellsKnown[i] : '-'}
+                                            </td>
+                                        );
+                                    }).filter(Boolean)}
                                 </>
                             )}
                         </tr>

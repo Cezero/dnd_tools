@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 
 import { useLogPanel } from '@/components/log-panel';
 import { useToast } from '@/hooks/useToast';
-import type { DiceBoxAdminConfig, UserDiceConfig } from '@shared/schema';
+import type { DiceBoxAdminConfig, UpdateUserDiceConfigRequest } from '@shared/schema';
 
 import { DiceBoxManager, type DiceResult } from './DiceBoxManager';
 import { DiceResultRenderer } from './DiceResultRenderer';
@@ -18,13 +18,13 @@ export interface DiceBoxContextType {
     onRollComplete: (callback: (result: DiceResult | DiceResult[]) => void) => void;
     clearResults: () => void;
     reinitialize: () => Promise<void>;
-    reinitializeWithUserConfig: (userConfig: UserDiceConfig) => Promise<void>;
+    reinitializeWithUserConfig: (userConfig: UpdateUserDiceConfigRequest) => Promise<void>;
     reinitializeWithAdminConfig: (adminConfig: DiceBoxAdminConfig) => Promise<void>;
-    updateConfigWithUserConfig: (userConfig: UserDiceConfig) => Promise<void>;
+    updateConfigWithUserConfig: (userConfig: UpdateUserDiceConfigRequest) => Promise<void>;
     updateConfigWithAdminConfig: (adminConfig: Partial<DiceBoxAdminConfig>) => void;
     clearAdminTestFlag: () => Promise<void>;
 
-    getCurrentConfig: () => UserDiceConfig | null;
+    getCurrentConfig: () => UpdateUserDiceConfigRequest | null;
     getCurrentIconColor: () => string;
     setTestingMode: (isTesting: boolean) => void;
 }
@@ -49,7 +49,7 @@ class DiceBoxSingleton {
         return DiceBoxSingleton.instance;
     }
 
-    async initialize(userConfig?: UserDiceConfig): Promise<void> {
+    async initialize(userConfig?: UpdateUserDiceConfigRequest): Promise<void> {
         // If already initialized, return existing promise or resolved promise
         if (this.isInitialized) {
             return Promise.resolve();
@@ -75,7 +75,7 @@ class DiceBoxSingleton {
         return this.initializationPromise;
     }
 
-    private async performInitialization(userConfig?: UserDiceConfig): Promise<void> {
+    private async performInitialization(userConfig?: UpdateUserDiceConfigRequest): Promise<void> {
         // Clean up any existing canvas first
         this.cleanupCanvas();
 
@@ -126,7 +126,7 @@ class DiceBoxSingleton {
 // Provider props
 interface DiceBoxProviderProps {
     children: React.ReactNode;
-    userDiceConfig?: UserDiceConfig | null;
+    userDiceConfig?: UpdateUserDiceConfigRequest | null;
 }
 
 export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderProps): React.JSX.Element {
@@ -136,7 +136,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
     const [lastResult, setLastResult] = useState<any | null>(null);
     const [isTestingMode, setIsTestingMode] = useState(false);
     const mountedRef = useRef(true);
-    const currentUserConfigRef = useRef<UserDiceConfig | null>(userDiceConfig || null);
+    const currentUserConfigRef = useRef<UpdateUserDiceConfigRequest | null>(userDiceConfig || null);
     const adminTestFlagRef = useRef(false);
     const previousLocationRef = useRef(location.pathname);
     const toastManagerRef = useRef<any>(null);
@@ -399,7 +399,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
     }, []);
 
     // Re-initialize with user config
-    const reinitializeWithUserConfig = useCallback(async (userConfig: UserDiceConfig) => {
+    const reinitializeWithUserConfig = useCallback(async (userConfig: UpdateUserDiceConfigRequest) => {
         if (isRolling) {
             return;
         }
@@ -440,7 +440,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
     }, [isRolling]);
 
     // Update config with user config
-    const updateConfigWithUserConfig = useCallback(async (userConfig: UserDiceConfig) => {
+    const updateConfigWithUserConfig = useCallback(async (userConfig: UpdateUserDiceConfigRequest) => {
         const manager = diceBoxSingleton.getManager();
         if (manager) {
             await manager.updateConfigWithUserConfig(userConfig);

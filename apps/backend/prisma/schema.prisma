@@ -114,19 +114,16 @@ model Feature {
 
     progressions  FeatureProgression[]
     featureChoice FeatureChoice[]
-    prerequisites FeaturePrerequisite[] // NEW: Feature-level prerequisites
+    prerequisites FeaturePrerequisite[]
 }
 
 model FeatureProgression {
-    id            Int  @id @default(autoincrement())
-    sourceType    Int
-    level         Int
-    featureId     Int
-    appliesToType Int?
-    appliesTo     Int?
-
-    classId Int?
-    raceId  Int?
+    id         Int  @id @default(autoincrement())
+    sourceType Int
+    level      Int
+    featureId  Int
+    classId    Int?
+    raceId     Int?
 
     class Class? @relation(fields: [classId], references: [id])
     race  Race?  @relation(fields: [raceId], references: [id])
@@ -137,11 +134,10 @@ model FeatureProgression {
     effects                FeatureSpecialEffect[]
     modifiers              FeatureModifier[]
     characterFeatureChoice CharacterFeatureChoice[]
-    // REMOVED: prerequisites FeaturePrerequisite[] - moved to Feature level
 }
 
 model FeatureModifier {
-    id                   Int     @id @default(autoincrement())
+    id                   Int  @id @default(autoincrement())
     featureProgressionId Int
     type                 Int
     value                Int
@@ -149,30 +145,30 @@ model FeatureModifier {
     appliesTo            Int?
     appliesToId          Int?
     formulaParamsId      Int?
-    appliesIfChoiceKey   String?
-    appliesIfChoiceValue String?
 
-    featureProgression FeatureProgression            @relation(fields: [featureProgressionId], references: [id])
+    featureProgression FeatureProgression         @relation(fields: [featureProgressionId], references: [id])
     conditions         FeatureModifierCondition[]
-    formulaParams      FeatureModifierFormulaParams? @relation(fields: [formulaParamsId], references: [id])
+    formulaParams      FeatureFormulaParams?      @relation(fields: [formulaParamsId], references: [id])
 }
 
-model FeatureModifierFormulaParams {
-    id                Int  @id @default(autoincrement())
+model FeatureFormulaParams {
+    id                Int     @id @default(autoincrement())
     formulaId         Int
     interval          Int?
     formulaStartLevel Int?
-    // NEW: Attribute-dependent formula parameters
     attributeId       Int?
+    thresholds        String? // Comma-separated level thresholds (e.g., "4,8,12")
+    values            String? // Comma-separated corresponding values (e.g., "-2,-1,0")
 
     featureModifier FeatureModifier[]
+    featureChoice   FeatureChoice[]
 }
 
 model FeatureModifierCondition {
-    id                Int     @id @default(autoincrement())
+    id                Int  @id @default(autoincrement())
     featureModifierId Int
     conditionType     Int
-    conditionValue    String?
+    conditionValue    Int
 
     featureModifier FeatureModifier @relation(fields: [featureModifierId], references: [id])
 }
@@ -193,36 +189,28 @@ model FeatureSpecialEffect {
     item               Item?              @relation(fields: [itemId], references: [id])
 }
 
-enum ChoiceType {
-    Feat
-    Feature
-}
-
-enum ChoiceBehavior {
-    Single
-    Multiple
-    Allocation
-}
-
 model FeatureChoice {
-    id              Int            @id @default(autoincrement())
+    id              Int     @id @default(autoincrement())
     progressionId   Int
     label           String?
     pickCount       Int?
-    choiceType      ChoiceType
-    choiceBehavior  ChoiceBehavior
+    type            Int
+    behavior        Int
     featId          Int?
-    chosenFeatureId Int?
+    featureId       Int?
+    formulaParamsId Int?
+    filterType      Int?
 
     featureProgression     FeatureProgression       @relation(fields: [progressionId], references: [id])
     feat                   Feat?                    @relation(fields: [featId], references: [id])
-    feature                Feature?                 @relation(fields: [chosenFeatureId], references: [id])
+    feature                Feature?                 @relation(fields: [featureId], references: [id])
+    formulaParams          FeatureFormulaParams?    @relation(fields: [formulaParamsId], references: [id])
     characterFeatureChoice CharacterFeatureChoice[]
 }
 
 model FeaturePrerequisite {
     id        Int  @id @default(autoincrement())
-    featureId Int // CHANGED: From featureProgressionId to featureId
+    featureId Int
     type      Int
     skillId   Int?
     minValue  Int
@@ -656,7 +644,7 @@ model UserCharacter {
     gender      String?
     notes       String? @db.Text
 
-    attributes     UserCharacterAttribute[]
+    abilityScores     UserCharacterAbilityScore[]
     characterItems CharacterItem[]
     advancements   CharacterAdvancement[]
     preparedSpells CharacterSpellPreparation[]
@@ -665,10 +653,10 @@ model UserCharacter {
     user User @relation(fields: [userId], references: [id])
 }
 
-model UserCharacterAttribute {
+model UserCharacterAbilityScore {
     id          Int @id @default(autoincrement())
     characterId Int
-    attributeId Int
+    abilityId   Int
     value       Int
 
     character UserCharacter @relation(fields: [characterId], references: [id])
@@ -682,7 +670,7 @@ model CharacterAdvancement {
     classId          Int
     secondaryClassId Int? // for gestalt/variant multiclassing
     hitPoints        Int
-    attributeId      Int?
+    abilityId        Int?
     notes            String?  @db.Text
     createdAt        DateTime @default(now())
 

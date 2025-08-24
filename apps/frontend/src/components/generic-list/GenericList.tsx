@@ -34,7 +34,7 @@ import { useAuthAuto } from '@/components/auth';
 import { ColumnHeaderContextMenu } from './ColumnHeaderContextMenu';
 import { createCellRenderer } from './columnUtils';
 import { FloatingTextInput } from './FloatingTextInput';
-import type { GenericListProps } from './types';
+import type { GenericListProps, GenericListColumnMeta, DataItem } from './types';
 import { PAGE_LIMITS } from './types';
 import { usePersistentTableState } from './usePersistantTableState';
 
@@ -152,13 +152,14 @@ export function GenericList<T>({
     // Process columns to add automatic cell renderers for truncation and markdown
     const processedColumns = useMemo<ColumnDef<T>[]>(() => {
         return columns.map(column => {
-            const meta = column.meta as any;
+            const meta = column.meta as GenericListColumnMeta;
 
             // If column has truncate or isMarkdown meta properties, add a cell renderer
             if (meta?.truncate || meta?.isMarkdown) {
                 const getMarkdownId = meta?.isMarkdown ? (row: T) => {
-                    const id = (row as any).id || (row as any).slug;
-                    const columnKey = (column as any).accessorKey || column.id;
+                    const dataItem = row as DataItem;
+                    const id = dataItem.id || dataItem.slug;
+                    const columnKey = column.accessorKey || column.id;
                     return `${columnKey}-${id}-description`;
                 } : undefined;
 
@@ -183,8 +184,9 @@ export function GenericList<T>({
     }, [columnDefs]);
 
     // Create a stable selection cell component
-    const SelectionCell = useCallback(({ row }: { row: any }) => {
-        const itemId = (row.original as any).id || (row.original as any).slug;
+    const SelectionCell = useCallback(({ row }: { row: { original: T } }) => {
+        const dataItem = row.original as DataItem;
+        const itemId = dataItem.id || dataItem.slug;
         const isChecked = internalSelectedIdsRef.current.includes(itemId);
 
         return (

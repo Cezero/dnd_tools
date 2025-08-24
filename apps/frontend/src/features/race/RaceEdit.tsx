@@ -1,4 +1,9 @@
-import { TrashIcon, UserPlusIcon } from '@heroicons/react/24/outline';
+import {
+    DocumentTextIcon,
+    UserIcon,
+    AcademicCapIcon,
+    SparklesIcon
+} from '@heroicons/react/24/outline';
 import pluralize from 'pluralize';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
@@ -6,21 +11,32 @@ import { z } from 'zod';
 
 import {
     ValidatedForm,
-    ValidatedInput,
     useValidatedForm
 } from '@/components/forms';
-import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
-import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
-import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { UpdateRaceSchema, GetRaceResponseSchema, CreateFeatureProgressionSchema, CreateRaceRequest, UpdateRaceRequest, FeatureProgressionWithRelations } from '@shared/schema';
-import { EDITION_SELECT_LIST_FULL, SIZE_SELECT_LIST, ABILITY_LIST, LANGUAGE_SELECT_LIST, ModifierAppliesToType, FeatureAppliesToType, SpecialFeatureId, ModifierType, FeatureSourceType, GetBaseClassesByEdition } from '@shared/static-data';
+import { UpdateRaceSchema, GetRaceResponseSchema, CreateRaceRequest, UpdateRaceRequest, FeatureProgressionWithRelations } from '@shared/schema';
+import { ModifierAppliesToType, SpecialFeatureId, ModifierType, FeatureSourceType } from '@shared/static-data';
 
 import { RaceFeatureAssoc } from './RaceFeatureAssoc';
 import { RaceService } from './RaceService';
 import { LanguageService } from '../../lib/LanguageService';
+import { FeatureProgressionDetailEdit } from '@/components/feature-system';
+import {
+    BasicInfoTab,
+    AbilitiesTab,
+    LanguagesTab,
+    FeaturesTab,
+    DescriptionTab,
+    type RaceTabProps,
+    type RaceFormData
+} from './tabs';
 
-// Type definitions for the form state
-type RaceFormData = CreateRaceRequest | UpdateRaceRequest;
+// Tab configuration interface
+interface TabConfig {
+    id: string;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    component: React.ComponentType<RaceTabProps>;
+}
 
 export function RaceEdit() {
     const { id } = useParams<{ id: string }>();
@@ -29,9 +45,11 @@ export function RaceEdit() {
     const [message, setMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState<string>('basic');
     const [isAddFeatureModalOpen, setIsAddFeatureModalOpen] = useState(false);
-    const [focusedAbilityId, setFocusedAbilityId] = useState<number | null>(null);
-    const [editingAbilityValue, setEditingAbilityValue] = useState('');
+    const [isProgressionDialogOpen, setIsProgressionDialogOpen] = useState(false);
+    const [editingProgression, setEditingProgression] = useState<FeatureProgressionWithRelations | null>(null);
+    const [preSelectedFeature, setPreSelectedFeature] = useState<{ id: number; name: string; description: string; slug: string } | undefined>(undefined);
     const [featureProgressions, setFeatureProgressions] = useState<FeatureProgressionWithRelations[]>([]);
     const fromListParams = location.state?.fromListParams || '';
 
@@ -50,6 +68,17 @@ export function RaceEdit() {
     };
 
     const [formData, setFormData] = useState<RaceFormData>(initialFormData);
+
+    // Tab configuration
+    const tabs: TabConfig[] = [
+        { id: 'basic', label: 'Basic Info', icon: DocumentTextIcon, component: BasicInfoTab },
+        { id: 'abilities', label: 'Abilities', icon: UserIcon, component: AbilitiesTab },
+        { id: 'languages', label: 'Languages', icon: AcademicCapIcon, component: LanguagesTab },
+        { id: 'features', label: 'Features', icon: SparklesIcon, component: FeaturesTab },
+        { id: 'description', label: 'Description', icon: DocumentTextIcon, component: DescriptionTab }
+    ];
+
+    const CurrentTabComponent = tabs.find(tab => tab.id === activeTab)?.component;
 
     // Use the validated form hook
     const form = useValidatedForm(
@@ -108,9 +137,8 @@ export function RaceEdit() {
                     classId: null,
                     level: selectedFeature.level,
                     featureId: selectedFeature.featureId,
-                    appliesTo: null,
+                    // REMOVED: appliesTo and appliesToType - redundant fields removed from schema
                     sourceType: FeatureSourceType.Race,
-                    appliesToType: FeatureAppliesToType.Language,
                     feature: {
                         id: selectedFeature.featureId,
                         name: selectedFeature.name,
@@ -156,7 +184,6 @@ export function RaceEdit() {
             // Check if this language is already added
             const existingLanguageModifier = prev.some(fp =>
                 fp.featureId === featureId &&
-                fp.appliesToType === FeatureAppliesToType.Language &&
                 fp.modifiers?.some(mod =>
                     mod.appliesTo === (isAutomatic ? ModifierAppliesToType.AutomaticLanguage : ModifierAppliesToType.BonusLanguage) &&
                     mod.appliesToId === languageId
@@ -170,8 +197,7 @@ export function RaceEdit() {
 
             // Find existing language progression or create new one
             let languageProgression = prev.find(fp =>
-                fp.featureId === featureId &&
-                fp.appliesToType === FeatureAppliesToType.Language
+                fp.featureId === featureId
             );
 
             if (!languageProgression) {
@@ -182,9 +208,8 @@ export function RaceEdit() {
                     level: 1,
                     classId: null,
                     featureId: featureId,
-                    appliesTo: null,
+                    // REMOVED: appliesTo and appliesToType - redundant fields removed from schema
                     sourceType: FeatureSourceType.Race,
-                    appliesToType: FeatureAppliesToType.Language,
                     feature: {
                         id: featureId,
                         name: isAutomatic ? 'Automatic Language' : 'Bonus Language',
@@ -214,7 +239,7 @@ export function RaceEdit() {
 
             // Update the existing progression or add a new one
             const updatedProgressions = prev.map(fp => {
-                if (fp.featureId === featureId && fp.appliesToType === FeatureAppliesToType.Language) {
+                if (fp.featureId === featureId) {
                     return {
                         ...fp,
                         modifiers: [...(fp.modifiers || []), languageModifier]
@@ -224,7 +249,7 @@ export function RaceEdit() {
             });
 
             // If no existing progression was found, add the new one with the language modifier
-            if (!prev.some(fp => fp.featureId === featureId && fp.appliesToType === FeatureAppliesToType.Language)) {
+            if (!prev.some(fp => fp.featureId === featureId)) {
                 languageProgression.modifiers = [languageModifier];
                 updatedProgressions.push(languageProgression);
             }
@@ -232,6 +257,62 @@ export function RaceEdit() {
             return updatedProgressions;
         });
     }, [id]);
+
+    /**
+     * Handles adding a feature to the race.
+     */
+    const handleAddFeature = useCallback((feature: { id: number; name: string; description: string; slug: string }) => {
+        const newProgression: FeatureProgressionWithRelations = {
+            id: Date.now() + Math.random(), // Temporary ID for frontend
+            sourceType: FeatureSourceType.Race,
+            classId: null,
+            raceId: parseInt(id || '0'),
+            level: 1, // Default to level 1
+            featureId: feature.id,
+            feature: {
+                id: feature.id,
+                name: feature.name,
+                description: feature.description,
+                slug: feature.slug,
+            },
+            modifiers: [],
+            choices: [],
+            effects: [],
+        };
+
+        setFeatureProgressions(prev => [...prev, newProgression]);
+    }, [id]);
+
+    /**
+     * Handles removing a feature progression from the race.
+     */
+    const handleRemoveProgression = useCallback((progressionId: number) => {
+        setFeatureProgressions(prev => prev.filter(p => p.id !== progressionId));
+    }, []);
+
+    /**
+     * Handles updating an existing feature progression.
+     */
+    const handleUpdateProgression = useCallback((oldProgression: FeatureProgressionWithRelations, updatedProgression: FeatureProgressionWithRelations) => {
+        setFeatureProgressions(prev => prev.map(p =>
+            p.id === oldProgression.id ? updatedProgression : p
+        ));
+    }, []);
+
+    /**
+     * Handles adding a new feature progression.
+     */
+    const handleAddProgression = useCallback((progression: FeatureProgressionWithRelations) => {
+        setFeatureProgressions(prev => [...prev, progression]);
+    }, []);
+
+    /**
+     * Handles editing a feature progression.
+     */
+    const handleEditProgression = useCallback((progression: FeatureProgressionWithRelations) => {
+        setEditingProgression(progression);
+        setIsProgressionDialogOpen(true);
+    }, []);
 
     /**
      * Handles the removal of a language from the race using FeatureModifier approach.
@@ -339,9 +420,8 @@ export function RaceEdit() {
                     classId: null,
                     level: 1,
                     featureId: SpecialFeatureId.AbilityAdjustment,
-                    appliesTo: null,
+                    // REMOVED: appliesTo and appliesToType - redundant fields removed from schema
                     sourceType: FeatureSourceType.Race,
-                    appliesToType: FeatureAppliesToType.Other,
                     feature: {
                         id: SpecialFeatureId.AbilityAdjustment,
                         slug: 'ability-adjustment',
@@ -445,49 +525,10 @@ export function RaceEdit() {
         return <div>No race data available</div>;
     }
 
-    // Helper functions to extract languages and ability adjustments from feature progression
-    const getLanguages = () => {
-        // Use LanguageService to extract languages
-        const automaticLanguageIds = LanguageService.getAutomaticLanguages(featureProgressions);
-        const bonusLanguageIds = LanguageService.getBonusLanguages(featureProgressions);
 
-        const automaticLanguages = automaticLanguageIds.map(languageId => ({
-            languageId,
-            isAutomatic: true
-        }));
-
-        const bonusLanguages = bonusLanguageIds.map(languageId => ({
-            languageId,
-            isAutomatic: false
-        }));
-
-        return [...automaticLanguages, ...bonusLanguages];
-    };
-
-    const getAbilityAdjustments = () => {
-        const abilityFeatures = featureProgressions.filter(fp =>
-            fp.featureId === SpecialFeatureId.AbilityAdjustment &&
-            fp.modifiers?.some(m => m.appliesTo === ModifierAppliesToType.Attribute)
-        );
-
-        return ABILITY_LIST.map(ability => {
-            const abilityFeature = abilityFeatures.find(fp =>
-                fp.featureId === SpecialFeatureId.AbilityAdjustment &&
-                fp.modifiers?.some(m => m.appliesTo === ModifierAppliesToType.Attribute && m.appliesToId === ability.id)
-            );
-            const abilityModifier = abilityFeature?.modifiers?.find(m => m.appliesTo === ModifierAppliesToType.Attribute && m.appliesToId === ability.id);
-            return {
-                abilityId: ability.id,
-                value: abilityModifier?.value || 0
-            };
-        });
-    };
-
-    const automaticLanguages = getLanguages().filter(lang => lang.isAutomatic);
-    const bonusLanguages = getLanguages().filter(lang => !lang.isAutomatic);
 
     return (
-        <div className="max-w-6xl mx-auto p-6">
+        <div className="w-4/5 mx-auto p-6">
             <div className="mb-6">
                 <h1 className="text-3xl font-bold">
                     {id === 'new' ? 'Create New Race' : 'Edit Race'}
@@ -514,266 +555,52 @@ export function RaceEdit() {
                 setFormData={setFormData}
                 validation={form.validation}
             >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2 w-full">
-                        <ValidatedInput
-                            field="name"
-                            label="Name"
-                            type="text"
-                            componentExtraClassName="flex items-center gap-2"
-                            labelExtraClassName="w-30"
-                            inputExtraClassName="w-auto"
-                            required
-                            placeholder="e.g., Human, Elf, Dwarf"
-                            data-1p-ignore
-                        />
-                        <div className="flex items-center gap-4 w-full">
-                            <CustomSelect
-                                label="Size"
-                                value={formData.sizeId}
-                                options={SIZE_SELECT_LIST}
-                                required
-                                componentExtraClassName="flex items-center gap-2"
-                                labelExtraClassName="w-30"
-                                itemExtraClassName="w-auto"
-                                itemTextExtraClassName="w-16"
-                                onValueChange={(value) => setFormData(prev => ({ ...prev, sizeId: value as number }))}
-                                placeholder="Select size"
-                            />
-                            <ValidatedInput
-                                field="speed"
-                                label="Speed"
-                                componentExtraClassName="flex items-center gap-2"
-                                labelExtraClassName="w-30"
-                                inputExtraClassName="w-auto"
-                                type="number"
-                                min={0}
-                                max={60}
-                                step={5}
-                            />
-                        </div>
-                        <CustomSelect
-                            label="Favored Class"
-                            componentExtraClassName="flex items-center gap-2"
-                            labelExtraClassName="w-30"
-                            itemExtraClassName="w-full"
-                            itemTextExtraClassName="w-24"
-                            value={formData.favoredClassId}
-                            onValueChange={(value) => setFormData(prev => ({ ...prev, favoredClassId: value as number }))}
-                            options={[
-                                { value: -1, label: 'Any' },
-                                ...GetBaseClassesByEdition(formData.editionId)
-                            ]}
-                            placeholder="Select favored class"
-                        />
+                <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg">
+                    {/* Tab Navigation */}
+                    <div className="border-b border-gray-200 dark:border-gray-700">
+                        <nav className="-mb-px flex space-x-8 px-6">
+                            {tabs.map((tab) => {
+                                const Icon = tab.icon;
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        type="button"
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${activeTab === tab.id
+                                            ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                                            }`}
+                                    >
+                                        <Icon className="h-5 w-5" />
+                                        <span>{tab.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </nav>
                     </div>
-                    <div className="space-y-2">
-                        <div className="flex flex-col justify-end">
-                            <CustomSelect
-                                label="Edition"
-                                required
-                                componentExtraClassName="flex items-center gap-2"
-                                labelExtraClassName="w-2/7"
-                                itemExtraClassName="w-24"
-                                itemTextExtraClassName="w-16"
-                                value={formData.editionId}
-                                onValueChange={(value) => setFormData(prev => ({ ...prev, editionId: value as number }))}
-                                options={EDITION_SELECT_LIST_FULL}
-                                placeholder="Select edition"
-                            />
-                            <CustomCheckbox
-                                label="Visible in Lists"
-                                checked={formData.isVisible as boolean}
-                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isVisible: checked }))}
-                            />
-                        </div>
-                    </div>
-                </div>
 
-                {/* Description */}
-                <div className="mt-6">
-                    <div className="space-y-2">
-                        <MarkdownEditor
-                            id="description"
-                            value={formData.description || ''}
-                            onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
-                        />
-                        {form.validation.getError('description') && (
-                            <span className="text-red-500 text-sm">{form.validation.getError('description')}</span>
+                    {/* Tab Content */}
+                    <div className="bg-white dark:bg-gray-800">
+                        {CurrentTabComponent && (
+                            <CurrentTabComponent
+                                formData={formData}
+                                setFormData={setFormData}
+                                validation={form.validation}
+                                isLoading={isLoading}
+                                featureProgressions={featureProgressions}
+                                setFeatureProgressions={setFeatureProgressions}
+                                isAddFeatureModalOpen={isAddFeatureModalOpen}
+                                setIsAddFeatureModalOpen={setIsAddFeatureModalOpen}
+                                onAddLanguage={handleAddLanguage}
+                                onRemoveLanguage={handleRemoveLanguage}
+                                onAbilityChange={handleAbilityChange}
+                                onAddFeature={handleAddFeature}
+                                onRemoveProgression={handleRemoveProgression}
+                                onEditProgression={handleEditProgression}
+                                raceId={id !== 'new' ? parseInt(id) : undefined}
+                            />
                         )}
                     </div>
-                </div>
-
-                {/* Ability Adjustments and Languages */}
-                <div className="mt-4 grid grid-cols-2 gap-4">
-                    <div>
-                        <h3 className="text-lg font-semibold mb-2">Ability Adjustments</h3>
-                        <div className="grid grid-cols-3 gap-2 border rounded p-2 dark:border-gray-600">
-                            {ABILITY_LIST.map(ability => (
-                                <div key={ability.id} className="flex items-center gap-2">
-                                    <label htmlFor={`ability-${ability.id}`} className="text-sm font-medium w-20">
-                                        {ability.name}:
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id={`ability-${ability.id}`}
-                                        value={focusedAbilityId === ability.id ? editingAbilityValue : (() => {
-                                            const adjustment = getAbilityAdjustments().find(adj => adj.abilityId === ability.id)?.value || 0;
-                                            return adjustment > 0 ? `+${adjustment}` : adjustment;
-                                        })()}
-                                        onChange={(e) => setEditingAbilityValue(e.target.value)}
-                                        onFocus={() => {
-                                            setFocusedAbilityId(ability.id);
-                                            const currentAdjustment = getAbilityAdjustments().find(adj => adj.abilityId === ability.id)?.value || 0;
-                                            setEditingAbilityValue(String(currentAdjustment));
-                                        }}
-                                        onBlur={() => {
-                                            const parsedValue = editingAbilityValue === '' || editingAbilityValue === '-' ? 0 : parseInt(editingAbilityValue) || 0;
-                                            handleAbilityChange(ability.id, parsedValue);
-                                            setFocusedAbilityId(null);
-                                            setEditingAbilityValue('');
-                                        }}
-                                        className="w-10 p-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    <div>
-                        <div>
-                            <h3 className="text-lg font-semibold mb-2">Automatic Languages</h3>
-                            <div className="flex flex-wrap gap-2 mb-2 p-2 border rounded dark:border-gray-600 min-h-[40px]">
-                                {automaticLanguages.length === 0 && <span className="text-gray-500 dark:text-gray-400">No automatic languages added.</span>}
-                                {automaticLanguages.map((lang, index) => (
-                                    <span key={lang.languageId} className="group relative text-sm pt-1 pb-1 pl-0 pr-0 cursor-pointer">
-                                        {LANGUAGE_SELECT_LIST.find(l => l.value === lang.languageId)?.label || 'Unknown Language'}
-                                        {index < automaticLanguages.length - 1 && ','}
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveLanguage(lang.languageId)}
-                                            className="absolute inset-0 flex items-center justify-center text-red-600 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                                            title="Remove Language"
-                                        >
-                                            <TrashIcon className="h-5 w-5" />
-                                        </button>
-                                    </span>
-                                ))}
-                                <CustomSelect
-                                    label=""
-                                    value={null}
-                                    componentExtraClassName="flex items-center gap-1 text-sm"
-                                    itemExtraClassName="w-24 text-sm"
-                                    itemTextExtraClassName="w-16"
-                                    onValueChange={(value) => {
-                                        if (value !== null && value !== undefined) {
-                                            handleAddLanguage(value as number, true);
-                                        }
-                                    }}
-                                    options={LANGUAGE_SELECT_LIST
-                                        .filter(lang => !getLanguages().some(rl => rl.languageId === lang.value))}
-                                    placeholder="Add"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Bonus Languages */}
-                        <div>
-                            <h3 className="text-lg font-semibold mb-2">Bonus Languages</h3>
-                            <div className="flex flex-wrap gap-2 mb-2 p-2 border rounded dark:border-gray-600 min-h-[40px]">
-                                {bonusLanguages.length === 0 && <span className="text-gray-500 dark:text-gray-400">No bonus languages added.</span>}
-                                {bonusLanguages.map((lang, index) => (
-                                    <span key={lang.languageId} className="group relative text-sm pt-1 pb-1 pl-0 pr-0 cursor-pointer">
-                                        {LANGUAGE_SELECT_LIST.find(l => l.value === lang.languageId)?.label || 'Unknown Language'}
-                                        {index < bonusLanguages.length - 1 && ','}
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveLanguage(lang.languageId)}
-                                            className="absolute inset-0 flex items-center justify-center text-red-600 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                                            title="Remove Language"
-                                        >
-                                            <TrashIcon className="h-5 w-5" />
-                                        </button>
-                                    </span>
-                                ))}
-                                <CustomSelect
-                                    label=""
-                                    value={null}
-                                    componentExtraClassName="flex items-center gap-1 text-sm"
-                                    itemExtraClassName="w-24 text-sm"
-                                    itemTextExtraClassName="w-16"
-                                    onValueChange={(value) => {
-                                        if (value !== null && value !== undefined) {
-                                            handleAddLanguage(value as number, false);
-                                        }
-                                    }}
-                                    options={LANGUAGE_SELECT_LIST
-                                        .filter(lang => !getLanguages().some(rl => rl.languageId === lang.value))}
-                                    placeholder="Add"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Race Features */}
-                <div className="mt-4">
-                    <h2 className="text-xl font-semibold mb-2">Features</h2>
-                    {featureProgressions.filter(fp =>
-                        fp.featureId !== SpecialFeatureId.AutomaticLanguage &&
-                        fp.featureId !== SpecialFeatureId.BonusLanguage &&
-                        fp.featureId !== SpecialFeatureId.AbilityAdjustment
-                    ).length > 0 ? (
-                        <div className="space-y-2 border p-2 rounded dark:border-gray-600 mb-2">
-                            {featureProgressions.filter(fp =>
-                                fp.featureId !== SpecialFeatureId.AutomaticLanguage &&
-                                fp.featureId !== SpecialFeatureId.BonusLanguage &&
-                                fp.featureId !== SpecialFeatureId.AbilityAdjustment
-                            ).map((featureProg, index) => (
-                                <div key={index} className="rounded border p-2 dark:border-gray-700 grid grid-cols-[130px_1fr_auto] gap-2 items-center">
-                                    <div>
-                                        <h3 className="text-lg font-medium mb-2">Feature {featureProg.featureId}</h3>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">Level: {featureProg.level}</p>
-                                    </div>
-                                    <div className="w-full">
-                                        <p className="text-gray-600 dark:text-gray-400">
-                                            {featureProg.feature?.name || `Feature ${featureProg.featureId}`}
-                                        </p>
-                                        {featureProg.feature?.description && (
-                                            <ProcessMarkdown
-                                                markdown={featureProg.feature.description}
-                                                id={`feature-${featureProg.featureId}-description`}
-                                                userVars={{
-                                                    racename: formData.name,
-                                                    racenamelower: formData.name.toLowerCase(),
-                                                    raceplural: pluralize(formData.name),
-                                                    raceplurallower: pluralize(formData.name).toLowerCase(),
-                                                }}
-                                            />
-                                        )}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleDeleteFeature(featureProg.featureId)}
-                                            className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600"
-                                        >
-                                            <TrashIcon className="h-5 w-5" />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-gray-500 dark:text-gray-400 mb-4">No features added yet.</div>
-                    )}
-
-                    <button
-                        type="button"
-                        onClick={() => setIsAddFeatureModalOpen(true)}
-                        className="px-4 py-2 bg-green-600 rounded hover:bg-green-700 text-white"
-                    >
-                        Add Feature
-                    </button>
                 </div>
 
                 {/* Action Buttons */}
@@ -804,6 +631,26 @@ export function RaceEdit() {
                 onSave={handleAddOrUpdateFeature}
                 initialSelectedFeatureIds={featureProgressions.map(f => f.featureId.toString())}
                 raceId={parseInt(id)}
+            />
+
+            {/* Feature Progression Dialog */}
+            <FeatureProgressionDetailEdit
+                isOpen={isProgressionDialogOpen}
+                onClose={() => {
+                    setIsProgressionDialogOpen(false);
+                    setPreSelectedFeature(undefined);
+                }}
+                progression={editingProgression}
+                onSave={(progression) => {
+                    if (editingProgression) {
+                        handleUpdateProgression(editingProgression, progression);
+                    } else {
+                        handleAddProgression(progression);
+                    }
+                    setIsProgressionDialogOpen(false);
+                    setPreSelectedFeature(undefined);
+                }}
+                preSelectedFeature={preSelectedFeature}
             />
         </div>
     );
