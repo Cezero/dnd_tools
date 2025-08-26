@@ -1,20 +1,18 @@
 import React, { useEffect, useState } from 'react';
 
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
+import { FeatService } from '@/features/feat/FeatService';
 import { generateClassProgression } from '@/lib/ClassProgression';
 import { ClassProgressionTable } from '@/lib/ClassProgressionTable';
-import { formatClassProficiencies, formatProgression, expandFormulaProgressions, formatPrerequisites, formatWildShapeProgressions } from '@/lib/Formatters';
-import { GetClassResponse } from '@shared/schema';
-import { FeatService } from '@/features/feat/FeatService';
+import { formatterOrchestrator, formatClassProficiencies, formatPrerequisites } from '@/lib/formatters';
+import { GetClassResponse, FormatterMetadata } from '@shared/schema';
 import {
     RPG_DICE,
     EDITION_MAP,
     ABILITY_MAP,
     SKILL_MAP,
-    FeatureBonusType,
-    SpecialFeatureId,
     ModifierAppliesToType,
-    ModifierType,
+    SpecialFeatureId,
     FeatureSpecialEffectType
 } from '@shared/static-data';
 
@@ -28,8 +26,6 @@ interface ClassDisplayProps {
     fromListParams?: string;
 }
 
-
-
 export function ClassDisplay({
     cls,
     showHeader = true,
@@ -37,10 +33,55 @@ export function ClassDisplay({
     onBack,
     onEdit,
     isAdmin = false,
-    fromListParams = ''
+    fromListParams: _fromListParams = ''
 }: ClassDisplayProps): React.JSX.Element {
     const [feats, setFeats] = useState<Array<{ id: number; name: string }>>([]);
     const [featsLoaded, setFeatsLoaded] = useState(false);
+
+    // Extract FormatterMetadata from the class data
+    const extractFormatterMetadata = (): FormatterMetadata => {
+        const featNames: Array<{ id: number; name: string }> = [];
+        const featureNames: Array<{ id: number; name: string }> = [];
+        const itemNames: Array<{ id: number; name: string }> = [];
+
+        // Extract feat names from nested choice data
+        cls.features?.forEach(progression => {
+            progression.choices?.forEach(choice => {
+                if (choice.feat && choice.featId) {
+                    featNames.push({
+                        id: choice.featId,
+                        name: choice.feat.name
+                    });
+                }
+            });
+        });
+
+        // Extract feature names from nested choice data
+        cls.features?.forEach(progression => {
+            progression.choices?.forEach(choice => {
+                if (choice.feature && choice.featureId) {
+                    featureNames.push({
+                        id: choice.featureId,
+                        name: choice.feature.name
+                    });
+                }
+            });
+        });
+
+        // Remove duplicates
+        const uniqueFeatNames = Array.from(
+            new Map(featNames.map(item => [item.id, item])).values()
+        );
+        const uniqueFeatureNames = Array.from(
+            new Map(featureNames.map(item => [item.id, item])).values()
+        );
+
+        return {
+            featNames: uniqueFeatNames.length > 0 ? uniqueFeatNames : undefined,
+            featureNames: uniqueFeatureNames.length > 0 ? uniqueFeatureNames : undefined,
+            itemNames: itemNames.length > 0 ? itemNames : undefined
+        };
+    };
 
     // Load feats if we have feat modifiers
     useEffect(() => {
@@ -81,6 +122,9 @@ export function ClassDisplay({
             return modifier;
         })
     })) || [];
+
+    // Get FormatterMetadata for this class
+    const formatterMetadata = extractFormatterMetadata();
 
     return (
         <div className={showHeader ? "pt-8" : ""}>
@@ -214,45 +258,30 @@ export function ClassDisplay({
                             return !hasClassSkills && !hasProficiencies;
                         }) || [];
 
-                        // Expand formula-based progressions into multiple entries
-                        const expandedFeatures = expandFormulaProgressions(actualFeatures);
+                        if (actualFeatures.length > 0) {
+                            // Get the level-indexed map from the orchestrator (this handles formula expansion)
+                            const levelMap = formatterOrchestrator.formatProgressionsForDetailDisplay(actualFeatures, undefined, formatterMetadata);
 
-                        if (expandedFeatures.length > 0) {
+                            // Track which features we've already shown descriptions for
+                            const shownFeatureDescriptions = new Set<number>();
+
                             return (
                                 <div className="mt-4">
                                     <h3 className="text-lg font-semibold mb-2">Class Features</h3>
                                     <div className="space-y-4">
-                                        {(() => {
-                                            // Group features by level first, then by feature ID
-                                            const groupedByLevelAndFeature = expandedFeatures.reduce((acc, progression) => {
-                                                const level = progression.level;
-                                                const featureId = progression.featureId;
+                                        {/* Sort levels and render each group */}
+                                        {Array.from(levelMap.keys())
+                                            .sort((a, b) => a - b)
+                                            .map(level => {
+                                                const levelEntries = levelMap.get(level)!;
 
-                                                if (!acc[level]) {
-                                                    acc[level] = {};
-                                                }
-                                                if (!acc[level][featureId]) {
-                                                    acc[level][featureId] = [];
-                                                }
-                                                acc[level][featureId].push(progression);
-                                                return acc;
-                                            }, {} as Record<number, Record<number, typeof expandedFeatures>>);
-
-                                            // Track which features we've already shown descriptions for
-                                            const shownFeatureDescriptions = new Set<number>();
-
-                                            // Sort levels and render each group
-                                            return Object.keys(groupedByLevelAndFeature)
-                                                .sort((a, b) => parseInt(a) - parseInt(b))
-                                                .map(level => (
+                                                return (
                                                     <div key={level} className="border border-gray-200 dark:border-gray-600 rounded-md p-3">
                                                         <h4 className="text-md font-medium mb-2">Level {level}</h4>
                                                         <div className="space-y-2">
-                                                            {/* Features */}
-                                                            {Object.values(groupedByLevelAndFeature[parseInt(level)]).map((progressions, index) => {
-                                                                const firstProgression = progressions[0];
-                                                                const feature = firstProgression.feature;
-                                                                const isFirstOccurrence = !shownFeatureDescriptions.has(feature?.id || 0);
+                                                            {levelEntries.map((entry, index) => {
+                                                                const feature = entry.feature;
+                                                                const isFirstOccurrence = feature?.id && !shownFeatureDescriptions.has(feature.id);
 
                                                                 // Mark this feature as shown if it's the first occurrence
                                                                 if (isFirstOccurrence && feature?.id) {
@@ -260,7 +289,7 @@ export function ClassDisplay({
                                                                 }
 
                                                                 return (
-                                                                    <div key={`feature-${index}`} className="p-2">
+                                                                    <div key={`entry-${index}`} className="p-2">
                                                                         {/* Show feature description only on first occurrence */}
                                                                         {isFirstOccurrence && feature?.description && (
                                                                             <div>
@@ -272,77 +301,29 @@ export function ClassDisplay({
                                                                                     }}
                                                                                 />
                                                                                 {/* Show prerequisites if they exist */}
-                                                                                {(feature as any).prerequisites && (feature as any).prerequisites.length > 0 && (
+                                                                                {(feature as { prerequisites?: unknown[] }).prerequisites && (feature as { prerequisites?: unknown[] }).prerequisites!.length > 0 && (
                                                                                     <div className="mt-2 inline-block p-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-md">
                                                                                         <p className="text-xs text-slate-700 dark:text-slate-300">
-                                                                                            <strong>Prerequisites:</strong> {formatPrerequisites((feature as any).prerequisites)}
+                                                                                            <strong>Prerequisites:</strong> {formatPrerequisites((feature as { prerequisites?: unknown[] }).prerequisites!)}
                                                                                         </p>
                                                                                     </div>
                                                                                 )}
                                                                             </div>
                                                                         )}
 
-                                                                        {/* Show combined progression details */}
-                                                                        {(() => {
-                                                                            // Check if this is a wild shape feature
-                                                                            const isWildShape = feature?.name?.toLowerCase().includes('wild shape');
-
-                                                                            if (isWildShape) {
-                                                                                // Use special wild shape formatting
-                                                                                const wildShapeDetails = formatWildShapeProgressions(progressions);
-                                                                                if (wildShapeDetails) {
-                                                                                    return (
-                                                                                        <div className={`mt-2 space-y-1 ${isFirstOccurrence ? 'ml-4' : ''}`}>
-                                                                                            <div className="text-sm">
-                                                                                                {!isFirstOccurrence && <span className="font-medium">{feature?.name || `Feature ${feature?.id}`}:</span>} {wildShapeDetails}
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    );
-                                                                                }
-                                                                                return null;
-                                                                            }
-
-                                                                            // Collect all details from all progressions for this feature at this level
-                                                                            const allDetails: string[] = [];
-
-                                                                            progressions.forEach(progression => {
-                                                                                const hasDetails = (progression.modifiers && progression.modifiers.length > 0) ||
-                                                                                    (progression.effects && progression.effects.length > 0) ||
-                                                                                    (progression.choices && progression.choices.length > 0);
-
-                                                                                if (hasDetails) {
-                                                                                    // Use normal formatting for all modifiers
-                                                                                    const formatted = formatProgression(progression);
-                                                                                    const details = [];
-                                                                                    if (formatted.value) details.push(formatted.value);
-                                                                                    if (formatted.note) details.push(formatted.note);
-                                                                                    if (details.length > 0) {
-                                                                                        allDetails.push(details.join(', '));
-                                                                                    }
-                                                                                }
-                                                                            });
-
-                                                                            if (allDetails.length > 0) {
-                                                                                // Check if this is a synthetic Choice entry (expanded from formula)
-                                                                                const isSyntheticChoiceEntry = false; // Legacy choice system removed
-
-                                                                                return (
-                                                                                    <div className={`mt-2 space-y-1 ${isFirstOccurrence ? 'ml-4' : ''}`}>
-                                                                                        <div className="text-sm">
-                                                                                            {!isFirstOccurrence && !isSyntheticChoiceEntry && <span className="font-medium">{feature?.name || `Feature ${feature?.id}`}:</span>} {allDetails.join(', ')}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                );
-                                                                            }
-                                                                            return null;
-                                                                        })()}
+                                                                        {/* Show formatted entry */}
+                                                                        <div className={`mt-2 space-y-1 ${isFirstOccurrence ? 'ml-4' : ''}`}>
+                                                                            <div className="text-sm">
+                                                                                {!isFirstOccurrence && <span className="font-medium">{feature?.name || `Feature ${feature?.id}`}:</span>} {entry.formattedValue}
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
                                                                 );
                                                             })}
                                                         </div>
                                                     </div>
-                                                ));
-                                        })()}
+                                                );
+                                            })}
                                     </div>
                                 </div>
                             );

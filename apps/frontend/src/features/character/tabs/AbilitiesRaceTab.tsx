@@ -50,24 +50,24 @@ export function AbilitiesRaceTab({
 
             if (generationMethod === 'roll-3d6-order') {
                 // Handle 3d6 order - assign all results at once
-                const newAttributes = [...character.attributes];
+                const newAbilityScores = [...character.abilityScores];
                 let allAssigned = true;
 
                 results.forEach(result => {
                     const ability = ABILITY_LIST.find(ability => ability.name === result.group);
                     if (ability) {
                         console.log('Assigning', result.value, 'to', ability.name);
-                        const existingIndex = newAttributes.findIndex(attr => attr.attributeId === ability.id);
+                        const existingIndex = newAbilityScores.findIndex(attr => attr.abilityId === ability.id);
                         if (existingIndex >= 0) {
-                            newAttributes[existingIndex] = {
-                                ...newAttributes[existingIndex],
+                            newAbilityScores[existingIndex] = {
+                                ...newAbilityScores[existingIndex],
                                 value: result.value
                             };
                         } else {
-                            newAttributes.push({
+                            newAbilityScores.push({
                                 id: 0,
                                 characterId: character.id,
-                                attributeId: ability.id,
+                                abilityId: ability.id,
                                 value: result.value
                             });
                         }
@@ -77,7 +77,7 @@ export function AbilitiesRaceTab({
                 });
 
                 if (allAssigned) {
-                    onUpdate({ attributes: newAttributes });
+                    onUpdate({ abilityScores: newAbilityScores });
                     setIsRollingAbilitySet(false);
                 }
             } else if (generationMethod === 'roll-3d6-arrange' || generationMethod === 'roll-4d6-drop') {
@@ -111,34 +111,34 @@ export function AbilitiesRaceTab({
         });
 
         return unsubscribe;
-    }, [onRollComplete, generationMethod, character.attributes, rolledValues, onUpdate]);
+    }, [onRollComplete, generationMethod, character.abilityScores, rolledValues, onUpdate]);
 
-    // Get ability score from attributes
+    // Get ability score
     const getAbilityScore = (abilityId: number): number | null => {
-        const attribute = character.attributes.find(attr => attr.attributeId === abilityId);
-        return attribute?.value ?? null;
+        const abilityScore = character.abilityScores.find(attr => attr.abilityId === abilityId);
+        return abilityScore?.value ?? null;
     };
 
-    // Set ability score in attributes
+    // Set ability score
     const setAbilityScore = (abilityId: number, value: number) => {
-        const updatedAttributes = [...character.attributes];
-        const existingIndex = updatedAttributes.findIndex(attr => attr.attributeId === abilityId);
+        const updatedAbilityScores = [...character.abilityScores];
+        const existingIndex = updatedAbilityScores.findIndex(attr => attr.abilityId === abilityId);
 
         if (existingIndex >= 0) {
-            updatedAttributes[existingIndex] = {
-                ...updatedAttributes[existingIndex],
+            updatedAbilityScores[existingIndex] = {
+                ...updatedAbilityScores[existingIndex],
                 value: value
             };
         } else {
-            updatedAttributes.push({
+            updatedAbilityScores.push({
                 id: 0,
                 characterId: character.id,
-                attributeId: abilityId,
+                abilityId: abilityId,
                 value: value
             });
         }
 
-        onUpdate({ attributes: updatedAttributes });
+        onUpdate({ abilityScores: updatedAbilityScores });
     };
 
     const handleRollAbility = (abilityId: number) => {
@@ -186,13 +186,13 @@ export function AbilitiesRaceTab({
         if (method === 'point-buy') {
             const allUndefined = ABILITY_LIST.every(ability => getAbilityScore(ability.id) === null);
             if (allUndefined) {
-                const newAttributes = ABILITY_LIST.map(ability => ({
+                const newAbilityScores = ABILITY_LIST.map(ability => ({
                     id: 0,
                     characterId: character.id,
-                    attributeId: ability.id,
+                    abilityId: ability.id,
                     value: 8
                 }));
-                onUpdate({ attributes: newAttributes });
+                onUpdate({ abilityScores: newAbilityScores });
             }
         }
     };
@@ -203,7 +203,7 @@ export function AbilitiesRaceTab({
         setAssignedAbilitiesForOrder(new Set());
 
         // Clear all assigned abilities when rolling new values
-        onUpdate({ attributes: [] });
+        onUpdate({ abilityScores: [] });
 
         const diceFormula = generationMethod === 'roll-4d6-drop' ? '4d6dl1' : '3d6';
         const numRolls = 6;
@@ -266,19 +266,19 @@ export function AbilitiesRaceTab({
             setRolledValues(newRolledValues);
         } else if (source === 'ability' && targetAbilityId !== undefined) {
             // Moving from one ability to another ability
-            const sourceAttribute = character.attributes.find(attr => attr.value === value);
-            if (sourceAttribute) {
+            const sourceAbilityScore = character.abilityScores.find(attr => attr.value === value);
+            if (sourceAbilityScore) {
                 const existingValue = getAbilityScore(targetAbilityId);
 
                 // Remove the source ability
-                const updatedAttributes = character.attributes.filter(attr => attr.attributeId !== sourceAttribute.attributeId);
+                const updatedAbilityScores = character.abilityScores.filter(attr => attr.abilityId !== sourceAbilityScore.abilityId);
 
                 // Add the target ability
-                if (targetAbilityId !== sourceAttribute.attributeId) {
-                    updatedAttributes.push({
+                if (targetAbilityId !== sourceAbilityScore.abilityId) {
+                    updatedAbilityScores.push({
                         id: 0,
                         characterId: character.id,
-                        attributeId: targetAbilityId,
+                        abilityId: targetAbilityId,
                         value: value
                     });
                 }
@@ -290,13 +290,13 @@ export function AbilitiesRaceTab({
                     newRolledValues = [...newRolledValues, existingValue];
                 }
 
-                onUpdate({ attributes: updatedAttributes });
+                onUpdate({ abilityScores: updatedAbilityScores });
                 setRolledValues(newRolledValues);
             }
         } else if (source === 'ability' && targetAbilityId === undefined) {
             // Moving from ability back to pool
-            const updatedAttributes = character.attributes.filter(attr => attr.value !== value);
-            onUpdate({ attributes: updatedAttributes });
+            const updatedAbilityScores = character.abilityScores.filter(attr => attr.value !== value);
+            onUpdate({ abilityScores: updatedAbilityScores });
             setRolledValues([...rolledValues, value]);
         }
     };

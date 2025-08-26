@@ -4,7 +4,7 @@ export interface LogEntry {
     message: string;
     type?: 'info' | 'success' | 'warning' | 'error';
     source?: string; // e.g., 'dice-box', 'system', etc.
-    data?: any; // Additional structured data
+    data?: Record<string, unknown>; // Additional structured data
 }
 
 export interface LogPanelContextType {

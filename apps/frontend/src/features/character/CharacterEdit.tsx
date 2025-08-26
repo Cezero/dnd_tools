@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 
 import { useAuthAuto } from '@/components/auth';
 import { RaceService } from '@/features/race/RaceService';
-import type { RaceInQueryResponse, GetRaceResponse, GetClassResponse, CharacterWithAllDetailsResponse , CharacterAdvancementWithDetailsResponse } from '@shared/schema';
+import type { RaceInQueryResponse, GetRaceResponse, GetClassResponse, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse } from '@shared/schema';
 
 import {
     AbilitiesRaceTab, ClassTab, SkillsTab, FeatsTab, DescriptionTab, EquipmentTab
@@ -57,7 +57,7 @@ export function CharacterEdit(): React.JSX.Element {
             id: 0,
             name: ''
         },
-        attributes: [],
+        abilityScores: [],
         advancements: [
             {
                 id: 0,
@@ -67,13 +67,13 @@ export function CharacterEdit(): React.JSX.Element {
                 classId: 0,
                 secondaryClassId: null,
                 hitPoints: 0,
-                attributeId: null,
+                abilityId: null,
                 notes: null,
                 createdAt: new Date(),
                 skills: [],
                 feats: [],
                 spellsKnown: [],
-                features: []
+                featureChoices: []
             }
         ],
         preparedSpells: []

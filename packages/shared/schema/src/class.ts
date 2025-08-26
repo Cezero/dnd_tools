@@ -1,12 +1,9 @@
 import { z } from 'zod';
 import { QueryResponseSchema } from './query.js';
 import { SourceMapSchema } from './sourcebook.js';
-import { ProgressionType } from '@shared/static-data';
+import { CastingType, ProgressionType } from '@shared/static-data';
 import { CreateFeatureProgressionSchema, FeatureProgressionSchema } from './feature.js';
 import { SpellcastingProgressionSchema, CreateSpellcastingProgressionSchema, SpellcastingProgressionWithSlotsSchema } from './spellcasting.js';
-
-// Enum schemas
-export const CastingTypeEnumSchema = z.enum(['Prepared', 'Spontaneous']);
 
 export const BaseClassSchema = z.object({
     name: z.string()
@@ -25,7 +22,7 @@ export const BaseClassSchema = z.object({
     hitDie: z.number().int().min(0, 'Hit die must be at least 0').max(20, 'Hit die must be at most 20'),
     skillPoints: z.number().int().min(0, 'Skill points must be non-negative').max(100, 'Skill points must be less than 100'),
     castingAbilityId: z.number().int().positive('Casting ability ID must be a positive integer').nullable(),
-    castingType: CastingTypeEnumSchema.nullable(),
+    castingType: z.nativeEnum(CastingType).nullable(),
     babProgression: z.nativeEnum(ProgressionType),
     fortProgression: z.nativeEnum(ProgressionType),
     refProgression: z.nativeEnum(ProgressionType),
@@ -73,9 +70,6 @@ export const CreateClassSchema = BaseClassSchema.omit({
     spellcastingProgression: z.array(CreateSpellcastingProgressionSchema).nullable(),
     spellsKnownProgression: z.array(CreateSpellcastingProgressionSchema).nullable(),
 });
-
-// Enum type exports
-export type CastingType = z.infer<typeof CastingTypeEnumSchema>;
 
 export type ClassInQueryResponse = z.infer<typeof ClassSummarySchema>;
 export type ClassIdParamRequest = z.infer<typeof ClassIdParamSchema>;

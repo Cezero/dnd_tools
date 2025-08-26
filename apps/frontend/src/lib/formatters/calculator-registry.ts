@@ -1,142 +1,179 @@
+import { FormulaId } from '@shared/static-data';
+
+import {
+    FormulaCalculatorImpl,
+    ChoiceCalculatorImpl,
+    ConditionalValueDetectorImpl
+} from './calculators';
+import {
+    ProgressionGeneratorImpl,
+    TransitionDetectorImpl
+} from './progression-generators';
 import type {
     FormulaCalculator,
     ProgressionGenerator,
     TransitionDetector,
-    ConditionalValueDetector
-} from './interfaces';
-import {
-    formulaCalculator,
-    choiceCalculator,
-    conditionalValueDetector
-} from './calculators';
-import {
-    progressionGenerator,
-    transitionDetector
-} from './progression-generators';
+    ConditionalValueDetector,
+    IChoiceCalculator,
+} from './types';
+
+// Unified calculator registry interface
+interface ICalculatorRegistry {
+    // Core unified methods
+    registerCalculator(
+        calculatorType: 'formula' | 'choice' | 'progression' | 'transition' | 'conditional',
+        typeId: number,
+        calculator: FormulaCalculator | IChoiceCalculator | ProgressionGenerator | TransitionDetector | ConditionalValueDetector
+    ): void;
+
+    getCalculator(
+        calculatorType: 'formula' | 'choice' | 'progression' | 'transition' | 'conditional',
+        typeId: number
+    ): FormulaCalculator | IChoiceCalculator | ProgressionGenerator | TransitionDetector | ConditionalValueDetector | undefined;
+}
 
 /**
  * Registry for managing all calculation components
+ * Follows the same pattern as FormatterRegistry with hierarchical keys
  */
-export class CalculatorRegistry {
-    private formulaCalculators = new Map<number, FormulaCalculator>();
-    private choiceCalculators = new Map<number, any>(); // Will be properly typed when we have choice calculation interfaces
-    private progressionGenerators = new Map<number, ProgressionGenerator>();
-    private transitionDetectors = new Map<number, TransitionDetector>();
-    private conditionalValueDetectors = new Map<number, ConditionalValueDetector>();
+export class CalculatorRegistry implements ICalculatorRegistry {
+    // Use hierarchical keys: `${calculatorType}:${typeId}`
+    private calculators = new Map<string, FormulaCalculator | IChoiceCalculator | ProgressionGenerator | TransitionDetector | ConditionalValueDetector>();
 
     constructor() {
         this.initializeDefaultCalculators();
     }
 
-    /**
-     * Get the default formula calculator
-     */
-    getFormulaCalculator(): FormulaCalculator {
-        return formulaCalculator;
+    // Core unified registration method
+    registerCalculator(
+        calculatorType: 'formula' | 'choice' | 'progression' | 'transition' | 'conditional',
+        typeId: number,
+        calculator: FormulaCalculator | IChoiceCalculator | ProgressionGenerator | TransitionDetector | ConditionalValueDetector
+    ): void {
+        const key = this.generateKey(calculatorType, typeId);
+        this.calculators.set(key, calculator);
     }
 
-    /**
-     * Get the default choice calculator
-     */
-    getChoiceCalculator(): any { // Will be properly typed when we have choice calculation interfaces
-        return choiceCalculator;
+    // Core unified getter method
+    getCalculator(
+        calculatorType: 'formula' | 'choice' | 'progression' | 'transition' | 'conditional',
+        typeId: number
+    ): FormulaCalculator | IChoiceCalculator | ProgressionGenerator | TransitionDetector | ConditionalValueDetector | undefined {
+        const key = this.generateKey(calculatorType, typeId);
+        return this.calculators.get(key);
     }
 
-    /**
-     * Get the default progression generator
-     */
-    getProgressionGenerator(): ProgressionGenerator {
-        return progressionGenerator;
+    // Convenience wrapper methods for common registration patterns
+
+    // Formula calculator convenience wrappers
+    registerFormulaCalculator(formulaType: FormulaId, calculator: FormulaCalculator): void {
+        this.registerCalculator('formula', formulaType, calculator);
     }
 
-    /**
-     * Get the default transition detector
-     */
-    getTransitionDetector(): TransitionDetector {
-        return transitionDetector;
+    registerChoiceCalculator(choiceType: number, calculator: IChoiceCalculator): void {
+        this.registerCalculator('choice', choiceType, calculator);
     }
 
-    /**
-     * Get the default conditional value detector
-     */
-    getConditionalValueDetector(): ConditionalValueDetector {
-        return conditionalValueDetector;
-    }
-
-    /**
-     * Register a formula calculator for a specific formula type
-     */
-    registerFormulaCalculator(formulaType: number, calculator: FormulaCalculator): void {
-        this.formulaCalculators.set(formulaType, calculator);
-    }
-
-    /**
-     * Register a choice calculator for a specific choice type
-     */
-    registerChoiceCalculator(choiceType: number, calculator: any): void { // Will be properly typed when we have choice calculation interfaces
-        this.choiceCalculators.set(choiceType, calculator);
-    }
-
-    /**
-     * Register a progression generator for a specific progression type
-     */
     registerProgressionGenerator(progressionType: number, generator: ProgressionGenerator): void {
-        this.progressionGenerators.set(progressionType, generator);
+        this.registerCalculator('progression', progressionType, generator);
     }
 
-    /**
-     * Register a transition detector for a specific transition type
-     */
     registerTransitionDetector(transitionType: number, detector: TransitionDetector): void {
-        this.transitionDetectors.set(transitionType, detector);
+        this.registerCalculator('transition', transitionType, detector);
     }
 
-    /**
-     * Register a conditional value detector for a specific condition type
-     */
     registerConditionalValueDetector(conditionType: number, detector: ConditionalValueDetector): void {
-        this.conditionalValueDetectors.set(conditionType, detector);
+        this.registerCalculator('conditional', conditionType, detector);
     }
 
-    /**
-     * Get a formula calculator for a specific formula type
-     */
-    getFormulaCalculatorForType(formulaType: number): FormulaCalculator | undefined {
-        return this.formulaCalculators.get(formulaType) || formulaCalculator;
+    // Convenience getter methods
+    getFormulaCalculator(formulaType: FormulaId): FormulaCalculator | undefined {
+        return this.getCalculator('formula', formulaType) as FormulaCalculator | undefined;
     }
 
-    /**
-     * Get a choice calculator for a specific choice type
-     */
-    getChoiceCalculatorForType(choiceType: number): any | undefined { // Will be properly typed when we have choice calculation interfaces
-        return this.choiceCalculators.get(choiceType) || choiceCalculator;
+    getChoiceCalculator(choiceType: number): IChoiceCalculator | undefined {
+        return this.getCalculator('choice', choiceType) as IChoiceCalculator | undefined;
     }
 
-    /**
-     * Get a progression generator for a specific progression type
-     */
-    getProgressionGeneratorForType(progressionType: number): ProgressionGenerator | undefined {
-        return this.progressionGenerators.get(progressionType) || progressionGenerator;
+    getProgressionGenerator(progressionType: number): ProgressionGenerator | undefined {
+        return this.getCalculator('progression', progressionType) as ProgressionGenerator | undefined;
     }
 
-    /**
-     * Get a transition detector for a specific transition type
-     */
-    getTransitionDetectorForType(transitionType: number): TransitionDetector | undefined {
-        return this.transitionDetectors.get(transitionType) || transitionDetector;
+    getTransitionDetector(transitionType: number): TransitionDetector | undefined {
+        return this.getCalculator('transition', transitionType) as TransitionDetector | undefined;
     }
 
-    /**
-     * Get a conditional value detector for a specific condition type
-     */
-    getConditionalValueDetectorForType(conditionType: number): ConditionalValueDetector | undefined {
-        return this.conditionalValueDetectors.get(conditionType) || conditionalValueDetector;
+    getConditionalValueDetector(conditionType: number): ConditionalValueDetector | undefined {
+        return this.getCalculator('conditional', conditionType) as ConditionalValueDetector | undefined;
+    }
+
+    // Generate hierarchical key for calculator storage
+    private generateKey(calculatorType: string, typeId: number): string {
+        return `${calculatorType}:${typeId}`;
+    }
+
+    // Legacy methods for backward compatibility during transition
+    getDefaultFormulaCalculator(): FormulaCalculator {
+        // This will be removed after all callers are updated
+        console.warn('Using legacy getDefaultFormulaCalculator method. Please update to use getFormulaCalculator with specific formula type.');
+        return this.getFormulaCalculator(FormulaId.LINEAR_SCALING) || new FormulaCalculatorImpl();
+    }
+
+    getDefaultChoiceCalculator(): IChoiceCalculator {
+        // This will be removed after all callers are updated
+        console.warn('Using legacy getDefaultChoiceCalculator method. Please update to use getChoiceCalculator with specific choice type.');
+        return this.getChoiceCalculator(0) || new ChoiceCalculatorImpl();
+    }
+
+    getDefaultProgressionGenerator(): ProgressionGenerator {
+        // This will be removed after all callers are updated
+        console.warn('Using legacy getDefaultProgressionGenerator method. Please update to use getProgressionGenerator with specific progression type.');
+        return this.getProgressionGenerator(0) || new ProgressionGeneratorImpl();
+    }
+
+    getDefaultTransitionDetector(): TransitionDetector {
+        // This will be removed after all callers are updated
+        console.warn('Using legacy getDefaultTransitionDetector method. Please update to use getTransitionDetector with specific transition type.');
+        return this.getTransitionDetector(0) || new TransitionDetectorImpl();
+    }
+
+    getDefaultConditionalValueDetector(): ConditionalValueDetector {
+        // This will be removed after all callers are updated
+        console.warn('Using legacy getDefaultConditionalValueDetector method. Please update to use getConditionalValueDetector with specific condition type.');
+        return this.getConditionalValueDetector(0) || new ConditionalValueDetectorImpl();
     }
 
     private initializeDefaultCalculators(): void {
-        // For now, we're using the default calculators for all types
-        // In the future, we can register specific calculators for different formula/choice types
-        // This allows for extensibility and customization
+        // Create calculator instances
+        const formulaCalculator = new FormulaCalculatorImpl();
+        const choiceCalculator = new ChoiceCalculatorImpl();
+        const progressionGenerator = new ProgressionGeneratorImpl();
+        const transitionDetector = new TransitionDetectorImpl();
+        const conditionalValueDetector = new ConditionalValueDetectorImpl();
+
+        // Register default calculators for all formula types
+        this.registerFormulaCalculator(FormulaId.LINEAR_SCALING, formulaCalculator);
+        this.registerFormulaCalculator(FormulaId.EVERY_N_LEVELS, formulaCalculator);
+        this.registerFormulaCalculator(FormulaId.CONDITIONAL_SCALING, formulaCalculator);
+        this.registerFormulaCalculator(FormulaId.DICE_SCALING, formulaCalculator);
+        this.registerFormulaCalculator(FormulaId.ABILITY_BASED, formulaCalculator);
+        this.registerFormulaCalculator(FormulaId.ABILITY_MODIFIER, formulaCalculator);
+        this.registerFormulaCalculator(FormulaId.LEVEL_TIMES_ABILITY, formulaCalculator);
+        this.registerFormulaCalculator(FormulaId.LEVEL_TIMES_VALUE, formulaCalculator);
+        this.registerFormulaCalculator(FormulaId.VALUE_PLUS_LEVEL, formulaCalculator);
+        this.registerFormulaCalculator(FormulaId.LEVEL_PLUS_ABILITY, formulaCalculator);
+
+        // Register default choice calculator
+        this.registerChoiceCalculator(0, choiceCalculator); // Default choice type
+
+        // Register default progression generator
+        this.registerProgressionGenerator(0, progressionGenerator); // Default progression type
+
+        // Register default transition detector
+        this.registerTransitionDetector(0, transitionDetector); // Default transition type
+
+        // Register default conditional value detector
+        this.registerConditionalValueDetector(0, conditionalValueDetector); // Default condition type
     }
 }
 

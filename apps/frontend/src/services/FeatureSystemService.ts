@@ -1,6 +1,5 @@
 import { typedApi } from '@/services/Api';
 import {
-    FeatureSlugParamSchema,
     FeatureIdParamSchema,
     FeatureQuerySchema,
     CreateFeatureSchema,

@@ -191,7 +191,7 @@ export function FeatsTab({
         {
             accessorKey: 'name',
             header: 'Feat Name',
-            cell: ({ row }: any) => (
+            cell: ({ row }: { row: { original: { name: string; description?: string; benefit?: string } } }) => (
                 <div className="font-medium text-gray-900 dark:text-white">
                     {row.original.name}
                 </div>
@@ -200,7 +200,7 @@ export function FeatsTab({
         {
             accessorKey: 'description',
             header: 'Description',
-            cell: ({ row }: any) => (
+            cell: ({ row }: { row: { original: { name: string; description?: string; benefit?: string } } }) => (
                 <div className="text-sm text-gray-600 dark:text-gray-300 max-w-md truncate">
                     {row.original.description || 'No description available'}
                 </div>
@@ -209,7 +209,7 @@ export function FeatsTab({
         {
             accessorKey: 'benefit',
             header: 'Benefit',
-            cell: ({ row }: any) => (
+            cell: ({ row }: { row: { original: { name: string; description?: string; benefit?: string } } }) => (
                 <div className="text-sm text-gray-600 dark:text-gray-300 max-w-md truncate">
                     {row.original.benefit || 'No benefit description'}
                 </div>

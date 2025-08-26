@@ -296,7 +296,7 @@ enum FeatureSpecialEffectType {
     bonusType: FeatureBonusType.Other,
     formulaParams: {
         formulaId: FormulaId.ATTRIBUTE_BASED,
-        attributeId: ABILITY_MAP.CHA, // Add Charisma modifier
+        abilityId: ABILITY_MAP.CHA, // Add Charisma modifier
         // Results in: 3 + CHA modifier
     }
 }

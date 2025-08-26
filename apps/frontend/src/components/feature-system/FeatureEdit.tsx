@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { z } from 'zod';
 
 import { useAuthAuto } from '@/components/auth';
+import { FeatureProgressionDetailEdit } from '@/components/feature-system';
 import {
     ValidatedForm,
     ValidatedInput,
@@ -10,16 +10,13 @@ import {
     useValidatedForm,
     useFormContext
 } from '@/components/forms';
-import { FeatureProgressionDetailEdit } from '@/components/feature-system';
-import { FeatureSystemService } from '@/services/FeatureSystemService';
-import { CreateFeatureSchema, UpdateFeatureSchema, GetFeatureResponse, FeatureProgressionWithRelations, CreateFeatureProgressionFormRequest } from '@shared/schema';
-import { FEATURE_PRE_REQ_SELECT_LIST, FeaturePrerequisiteType, FULL_SKILL_SELECT_LIST, FeatureSourceType, ModifierAppliesToType } from '@shared/static-data';
-import { formatProgression } from '@/lib/Formatters';
 import { FeatService } from '@/features/feat/FeatService';
+import { formatterOrchestrator } from '@/lib/formatters';
+import { FeatureSystemService } from '@/services/FeatureSystemService';
+import { CreateFeatureRequest, CreateFeatureSchema, UpdateFeatureRequest, UpdateFeatureSchema, GetFeatureResponse, FeatureProgressionWithRelations, FeaturePrerequisite } from '@shared/schema';
+import { FEATURE_PRE_REQ_SELECT_LIST, FeaturePrerequisiteType, FULL_SKILL_SELECT_LIST, FeatureSourceType, ModifierAppliesToType } from '@shared/static-data';
 
-type CreateFeatureFormData = z.infer<typeof CreateFeatureSchema>;
-type UpdateFeatureFormData = z.infer<typeof UpdateFeatureSchema>;
-type FeatureFormData = CreateFeatureFormData | UpdateFeatureFormData;
+type FeatureFormData = CreateFeatureRequest | UpdateFeatureRequest;
 
 export function FeatureEdit() {
     const { id } = useParams();
@@ -38,9 +35,6 @@ export function FeatureEdit() {
     const [isProgressionDialogOpen, setIsProgressionDialogOpen] = useState(false);
     const [editingProgression, setEditingProgression] = useState<FeatureProgressionWithRelations | null>(null);
     const [feats, setFeats] = useState<Array<{ id: number; name: string }>>([]);
-    const [featsLoaded, setFeatsLoaded] = useState(false);
-
-
 
     // Determine which schema to use based on whether we're creating or editing
     const schema = id === 'new' ? CreateFeatureSchema : UpdateFeatureSchema;
@@ -128,11 +122,7 @@ export function FeatureEdit() {
                     setFeats(response.results || []);
                 } catch (error) {
                     console.error('Failed to load feats:', error);
-                } finally {
-                    setFeatsLoaded(true);
                 }
-            } else if (!hasFeatModifiers) {
-                setFeatsLoaded(true);
             }
         };
 
@@ -233,7 +223,7 @@ export function FeatureEdit() {
             setIsLoading(true);
 
             if (id === 'new') {
-                const result = await FeatureSystemService.createFeature(formData as CreateFeatureFormData);
+                const result = await FeatureSystemService.createFeature(formData as CreateFeatureRequest);
                 setMessage('Feature created successfully');
 
                 // Save FeatureProgressions after feature creation
@@ -268,7 +258,7 @@ export function FeatureEdit() {
                 if (isNaN(numericId)) {
                     throw new Error('Invalid feature ID');
                 }
-                await FeatureSystemService.updateFeature(formData as UpdateFeatureFormData, { id: numericId });
+                await FeatureSystemService.updateFeature(formData as UpdateFeatureRequest, { id: numericId });
                 setMessage('Feature updated successfully');
 
                 // Save FeatureProgressions after feature update
@@ -506,10 +496,10 @@ export function FeatureEdit() {
                                                 <h4 className="font-medium">Modifiers:</h4>
                                                 <ul className="text-sm text-gray-600 dark:text-gray-400">
                                                     {progression.modifiers.map((modifier, index) => {
-                                                        const formatter = formatProgression({ ...progression, modifiers: [modifier] });
+                                                        const formatter = formatterOrchestrator.formatProgressionForEdit({ ...progression, modifiers: [modifier] });
                                                         return (
                                                             <li key={index}>
-                                                                {formatter.value}
+                                                                {formatter.formattedValue}
                                                             </li>
                                                         );
                                                     })}
@@ -616,8 +606,8 @@ interface PrerequisiteDetailFormProps {
 
 function PrerequisiteDetailForm({ index }: PrerequisiteDetailFormProps) {
     const { formData, setFormData } = useFormContext();
-    const prerequisites = formData.prerequisites as any[] || [];
-    const prerequisite = prerequisites[index] || {};
+    const prerequisites = formData.prerequisites as FeaturePrerequisite[] || [];
+    const prerequisite = prerequisites[index] || { type: undefined };
 
     return (
         <div className="space-y-4">

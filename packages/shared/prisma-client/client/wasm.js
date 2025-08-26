@@ -207,7 +207,7 @@ exports.Prisma.FeatureFormulaParamsScalarFieldEnum = {
   formulaId: 'formulaId',
   interval: 'interval',
   formulaStartLevel: 'formulaStartLevel',
-  attributeId: 'attributeId',
+  abilityId: 'abilityId',
   thresholds: 'thresholds',
   values: 'values'
 };
@@ -795,11 +795,6 @@ exports.Prisma.UserDiceConfigOverrideOrderByRelevanceFieldEnum = {
   propertyName: 'propertyName',
   propertyValue: 'propertyValue'
 };
-exports.CastingTypeEnum = exports.$Enums.CastingTypeEnum = {
-  Prepared: 'Prepared',
-  Spontaneous: 'Spontaneous'
-};
-
 exports.ItemPropertyType = exports.$Enums.ItemPropertyType = {
   Material: 'Material',
   Enhancement: 'Enhancement',

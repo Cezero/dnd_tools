@@ -1,5 +1,5 @@
-import { SpellLevelMapping } from "@shared/schema";
-import { CLASS_MAP } from "@shared/static-data";
+import { SpellLevelMapping } from '@shared/schema';
+import { CLASS_MAP } from '@shared/static-data';
 
 export const GetClassDisplay = (classes: SpellLevelMapping[], spellLevel: number): string => {
     if (!classes || classes.length === 0) return '';

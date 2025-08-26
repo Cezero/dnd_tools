@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
 import { ScrollArea } from '@base-ui-components/react/scroll-area';
+import React, { useMemo } from 'react';
+
 import { CreateSpellcastingProgressionRequest } from '@shared/schema';
 
 export interface SpellProgressionPreviewProps {

@@ -1,25 +1,27 @@
 import { ContextMenu } from '@base-ui-components/react/context-menu';
 import { Tooltip } from '@base-ui-components/react/tooltip';
+import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
 import { CheckIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { ChevronDoubleUpIcon, ChevronDoubleDownIcon , FunnelIcon as FunnelIconSolid } from '@heroicons/react/24/solid';
-import { flexRender, type Header } from '@tanstack/react-table';
+import { ChevronDoubleUpIcon, ChevronDoubleDownIcon, FunnelIcon as FunnelIconSolid } from '@heroicons/react/24/solid';
+import { flexRender, type Header, type Column } from '@tanstack/react-table';
 import React, { useState, useRef } from 'react';
 
 import { FilterSubmenu } from './FilterSubmenu';
 import { formatFilterTooltip } from './filterTooltipUtils';
-import { FilterType } from './types';
+import { FilterConfig, FilterValue, DataItem } from './types';
+import { FilterType } from '@shared/static-data';
 
 interface ColumnHeaderContextMenuProps {
-    header: Header<any, unknown>;
-    allColumns: any[];
+    header: Header<DataItem, unknown>;
+    allColumns: Column<DataItem, unknown>[];
     onToggleVisibility: (columnId: string) => void;
     onSort: (columnId: string, direction: 'asc' | 'desc') => void;
-    columnFilters: any[];
-    handleFilterChange: (columnId: string, value: any) => void;
+    columnFilters: FilterValue[];
+    handleFilterChange: (columnId: string, value: FilterValue) => void;
     handleClearFilter: (columnId: string) => void;
     onRestoreHiddenColumn?: (hiddenColumnId: string, positionAfterColumnId: string) => void;
-    dragAttributes?: any;
-    dragListeners?: any;
+    dragAttributes?: DraggableAttributes;
+    dragListeners?: DraggableSyntheticListeners;
 }
 
 export const ColumnHeaderContextMenu: React.FC<ColumnHeaderContextMenuProps> = ({
@@ -50,11 +52,11 @@ export const ColumnHeaderContextMenu: React.FC<ColumnHeaderContextMenuProps> = (
         e.preventDefault();
         e.stopPropagation();
 
-        const filterConfig = header.column.columnDef.meta as any;
+        const filterConfig = header.column.columnDef.meta as FilterConfig;
 
         if (filterConfig?.filterType === FilterType.TEXT_INPUT) {
             // For text input, trigger the text input visibility toggle
-            handleFilterChange(header.id, { type: 'toggle_text_input' });
+            handleFilterChange(header.id, { id: header.id, type: 'toggle_text_input' });
         } else {
             // For other filter types, open the context menu and filter submenu at click position
             setContextMenuPosition({ x: e.clientX, y: e.clientY });
@@ -127,7 +129,7 @@ export const ColumnHeaderContextMenu: React.FC<ColumnHeaderContextMenuProps> = (
                                     <Tooltip.Popup className="px-2 py-1 text-xs text-white bg-gray-900 dark:bg-gray-700 rounded shadow-lg">
                                         {formatFilterTooltip(
                                             columnFilters.find(f => f.id === header.id),
-                                            header.column.columnDef.meta as any,
+                                            header.column.columnDef.meta as FilterConfig,
                                             columnFilters
                                         )}
                                     </Tooltip.Popup>
@@ -209,7 +211,7 @@ export const ColumnHeaderContextMenu: React.FC<ColumnHeaderContextMenuProps> = (
                                         >
                                             <FilterSubmenu
                                                 columnId={header.id}
-                                                filterConfig={header.column.columnDef.meta}
+                                                filterConfig={header.column.columnDef.meta as FilterConfig}
                                                 currentFilter={columnFilters.find(f => f.id === header.id)}
                                                 columnFilters={columnFilters}
                                                 onFilterChange={(value) => {
@@ -320,7 +322,7 @@ export const ColumnHeaderContextMenu: React.FC<ColumnHeaderContextMenuProps> = (
                                                                     return hiddenColumn.id;
                                                                 } else if (React.isValidElement(header)) {
                                                                     // For React elements, try to extract text content
-                                                                    const textContent = (header as any)?.props?.children;
+                                                                    const textContent = (header as React.ReactElement<{ children?: string }>)?.props?.children;
                                                                     if (typeof textContent === 'string') {
                                                                         return textContent;
                                                                     }

@@ -1,18 +1,19 @@
-import React, { useState, useEffect, useRef } from 'react';
 import { TrashIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect, useRef } from 'react';
+
 import { renderCellValue } from '@/components/generic-list/columnUtils';
+import { ClassProficiencyService } from '@/features/class/ClassProficiencyService';
 import { FeatService } from '@/features/feat/FeatService';
 import { ItemService } from '@/features/item/ItemService';
-import { ClassProficiencyService } from '@/features/class/ClassProficiencyService';
-
-import type { ClassTabProps } from './types';
 import type { GetFeatResponse, ItemWithDetails, FeatureProgressionWithRelations } from '@shared/schema';
 
+import type { ClassTabProps } from './types';
+
 export function ProficienciesTab({
-    formData,
-    setFormData,
-    validation,
-    isLoading = false,
+    formData: _formData,
+    setFormData: _setFormData,
+    validation: _validation,
+    isLoading: _isLoading = false,
     featureProgressions = [],
     setFeatureProgressions,
     setIsProficiencyDialogOpen

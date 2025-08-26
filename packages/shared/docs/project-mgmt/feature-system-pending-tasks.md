@@ -20,178 +20,27 @@
 - **Legacy System Cleanup**: ✅ Removed deprecated `ModifierAppliesToType.Choice` system and cleaned up related code
 - **Formatter System**: ✅ Enhanced formatters to handle both original and synthetic progression entries
 - **UI Components**: ✅ Updated FeatureProgressionDetailEdit.tsx with proper choice formatter support
-- **Testing and Validation**: ✅ All existing functionality continues to work correctly
 
-### ✅ **Dice Configuration System Cleanup - COMPLETED**
-- **Schema Alignment**: ✅ Updated `UserProfileSchema` to match Prisma database fields directly
-- **Removed Transformation**: ✅ Eliminated `transformUserWithDiceConfig` functions from auth and userProfile services
-- **Field Names**: ✅ Updated from nested `diceConfig.baseConfigId` to top-level `diceConfigBase`
-- **Frontend Updates**: ✅ Updated ProfilePage and DiceBoxService to use new field names
-- **Type Safety**: ✅ All TypeScript errors resolved, clean build achieved
-- **API Consistency**: ✅ Backend and frontend now use consistent field names throughout
-- **Simplified Architecture**: ✅ Eliminated unnecessary transformation layer, direct database-to-API mapping
+### ✅ **Direct Feat Grant Support - COMPLETED**
+- **Database Schema**: ✅ Added `ModifierAppliesToType.Feat` enum value (21)
+- **UI Implementation**: ✅ Added direct feat grant configuration to FeatureProgressionDetailEdit.tsx
+- **Dynamic Feat Loading**: ✅ Implemented feat loading in both ClassDisplay and ClassEdit
+- **Feat Data Enhancement**: ✅ Implemented modifier enhancement with feat data
+- **Testing**: ✅ Tested with Ranger Track and Endurance features - proper feat name display
 
-### ✅ **Feature Migration to Unified Choice System - COMPLETED**
-- **Migrate Fighter Bonus Feats**: ✅ Converted Fighter bonus feats from `FeatureModifier.type: Other, AppliesTo: Choice` to unified `FeatureChoice` system with formula support
-- **Migrate Wizard Bonus Feats**: ✅ Converted Wizard bonus feats to use `filterType: MetamagicOrItemCreation` in unified choice system
-- **Migrate Rogue Special Abilities**: ✅ Converted Rogue special abilities to use unified choice system with formula support
-- **Update UI Components**: ✅ Ensured all migrated features display correctly in UI
-- **Testing and Validation**: ✅ Verified all migrated features work as expected
-- **Documentation**: ✅ Updated feature documentation to reflect new unified system
+### 🔴 **Phase 5: Formatter System Refactoring - CRITICAL INTEGRATION FAILURE**
+1. **6-Layer Clean Architecture**: ✅ Implemented complete new formatter system with orchestrator, registry, strategies, calculators, generators, and utilities
+2. **Data Structure Updates**: ✅ Converted formula parameters to arrays and made condition values mandatory
+3. **Component Migration**: ✅ All frontend components migrated from old system to new formatter orchestrator
+4. **Old System Removal**: ✅ Completely removed old Formatters.ts and related files
+5. **Integration Complete**: ❌ **FAILED** - Layers implemented but never connected, system shows "Level X (Level X)" instead of proper formatting
+6. **Documentation**: ✅ Updated all documentation to reflect actual broken status
 
-### ✅ **Schema Cleanup - COMPLETED**
-- **Remove Redundant Fields**: ✅ Removed `FeatureProgression.appliesToType` and `appliesTo` fields from schema
-- **Update Service Layer**: ✅ Removed `appliesToType` checks, use only `SpecialFeatureId` for filtering
-- **Update UI Components**: ✅ Removed redundant field handling from forms and displays
-- **Update Validation**: ✅ Removed `appliesToType`/`appliesTo` from Zod schemas
-- **Database Migration**: ✅ Removed columns from FeatureProgression table
-- **Testing**: ✅ Verified all existing features work correctly after cleanup
+**CRITICAL ISSUE**: The formatter system displays "Level X (Level X)" for all features because the display strategies never use the pure formatters. The system generates raw numbers instead of properly formatted feature information.
 
-### ✅ **Direct Feat Grant Implementation - COMPLETED**
-- **Add ModifierAppliesToType.Feat**: ✅ Added new enum value (21) for direct feat grants
-- **UI Support**: ✅ Added feat selection dropdowns to FeatureProgressionDetailEdit.tsx
-- **Feat Selection**: ✅ Added feat selection dropdown for direct feat grants (e.g., Ranger Track, Endurance)
-- **Form Validation**: ✅ Updated validation to handle direct feat grant fields
-- **UI Integration**: ✅ Updated ClassEdit.tsx and ClassDetail.tsx to display direct feat grants with proper feat names
-- **Dynamic Feat Loading**: ✅ Both ClassDisplay and ClassEdit load feats when feat modifiers are detected
-- **Feat Data Enhancement**: ✅ Modifiers are enhanced with feat data for proper display
-- **Testing**: ✅ Tested with Ranger Track and Endurance features - now displays "Granted Feat: Endurance" instead of "Granted Feat (ID: 78)"
+**IMMEDIATE ACTION REQUIRED**: Fix layer integration in `display-strategies.ts` to connect pure formatters with display strategies.
 
-### ✅ **Favored Enemy Implementation - COMPLETED**
-- **Add ChoiceType.CreatureType**: ✅ Added new choice type for creature type selection
-- **Add Creature Type Definitions**: ✅ Added creature type enum and select list to static data
-- **UI Support**: ✅ Added creature type selection to FeatureProgressionDetailEdit.tsx
-- **Allocation System**: ✅ Leveraged existing ChoiceBehavior.Allocation for bonus distribution
-- **Documentation**: ✅ Updated class-features.md with complete favored enemy implementation strategy
-- **Simple Model**: ✅ FeatureProgression defines choices only, custom character sheet function handles calculations
-- **Flexible Allocation**: ✅ Players can distribute +2 bonuses among favored enemies as they prefer
-- **Class Display**: ✅ Updated formatters to show generic creature type choice labels ("Choose Creature Type", "Allocate Bonus")
-
-### ✅ **Ranger Class Complete Implementation - COMPLETED**
-- **Combat Style Features**: ✅ Created "Archery Combat Style" and "Two-Weapon Combat Style" as standalone features
-- **Combat Style Choices**: ✅ Implemented ChoiceType.Feature with specific feature selection
-- **Favored Enemy System**: ✅ Implemented complete favored enemy progression (levels 1, 5, 10, 15, 20)
-- **Allocation Mechanics**: ✅ Used ChoiceBehavior.Allocation for +2 bonus distribution
-- **Database Schema**: ✅ Updated Prisma schema with ChoiceType.CreatureType
-- **Frontend Support**: ✅ Updated FeatureProgressionDetailEdit.tsx for creature type choices
-- **Formatter System**: ✅ Updated formatters to display creature type choices properly
-- **Documentation**: ✅ Complete implementation strategy documented in class-features.md
-
-### ✅ **Weapon Familiarity System Implementation - COMPLETED**
-- **New Special Effect Type**: ✅ Added `FeatureSpecialEffectType.WeaponFamiliarity` (7) to handle racial weapon familiarity
-- **Schema Updates**: ✅ Updated `FeatureSpecialEffectType` enum and related schemas to support weapon familiarity
-- **UI Enhancements**: ✅ Updated `FeatureProgressionDetailEdit.tsx` to show exotic weapon selection when WeaponFamiliarity is selected
-- **Display Logic**: ✅ Updated formatters to show weapon familiarity effects (e.g., "treat dwarven waraxe as martial weapon")
-- **Data Model**: ✅ Use `numericValue` field to store the `itemId` of the weapon that benefits from familiarity
-- **Racial Features**: Ready for implementation - dwarf weapon familiarity (dwarven waraxe, dwarven urgrosh) and gnome weapon familiarity (gnome hooked hammer)
-- **Runtime Logic**: Future character calculation system will treat familiar weapons as martial for proficiency purposes
-- **Validation**: ✅ Ensure weapon familiarity only applies to exotic weapons
-
-### 🔴 **Backend Response Validation Middleware (HIGH PRIORITY)**
-- **Response Schema Validation**: Add response validation to `buildValidatedRouter` to validate all API responses before sending
-- **Middleware Enhancement**: Extend `buildValidatedRouter` to accept and validate response schemas
-- **Error Handling**: Ensure response validation failures result in 500 errors, not invalid data sent to frontend
-- **Type Safety**: Enforce runtime validation of response data against Zod schemas
-- **Architecture Fix**: Address current gap where backend sends raw database data without validation
-- **Example Case**: Fix issue where `FeatureFormulaParams.thresholds` and `values` were sent as strings instead of arrays
-- **Consistency**: Ensure all API endpoints validate responses before sending to frontend
-- **Documentation**: Update backend patterns documentation to include response validation requirements
-
-### 🔴 **Character Schema Cleanup (TODO)**
-- **Duplicate Schema Issue**: Fix duplicate `CharacterIdParamSchema` and `CharacterIdParamSchema2` in `characterRoutes.ts` and `character.ts`
-- **Schema Consolidation**: Consolidate parameter schemas to use consistent naming and structure
-- **Route Parameter Standardization**: Ensure all character routes use consistent parameter validation
-- **Code Quality**: Remove redundant schema definitions and improve maintainability
-
-### 🔴 **Character Sheet System Enhancements (Future)**
-- **Creature Type Selection UI**: Implement character editor interface for selecting specific creature types
-- **Favored Enemy Allocation UI**: Create interface for distributing +2 bonuses among chosen creature types
-- **Choice Persistence**: Store character's specific choices (which creature types, how bonuses allocated)
-- **Bonus Calculation**: Implement custom character sheet function to calculate favored enemy bonuses
-- **Reallocation Support**: Allow players to reallocate bonuses during level-up
-- **Skill/Damage Application**: Apply favored enemy bonuses to Bluff, Listen, Sense Motive, Spot, Survival, and damage
-- **Combat Style Application**: Apply chosen combat style features to character abilities
-- **Choice History**: Track and display character's choice history for features
-- **Validation**: Ensure choices are valid and within allowed parameters
-
-### 🔴 **Druid Animal Companion System**
-- **Monster/NPC Feature System**: Implement monster and NPC feature system as dependency
-- **Animal Companion Feature**: Create feature for animal companion with level-based progression
-- **Companion Statistics**: Implement companion HP, BAB, saves, and skill progression
-- **Companion Abilities**: Implement special abilities like Link, Share Spells, etc.
-- **Character Sheet Integration**: Display companion statistics on character sheet
-- **Companion Management**: UI for managing companion details and abilities
-- **Note**: Paladin Special Mount feature also depends on this system
-
-### ✅ **RaceEdit Tab System Refactoring - COMPLETED**
-- **Previous State**: Monolithic RaceEdit component (806 lines) with basic feature display
-- **Current State**: Tab-based layout matching ClassEdit architecture with enhanced feature management
-- **Feature System Integration**: ✅ Correctly uses SpecialFeatureId.AbilityAdjustment, SpecialFeatureId.AutomaticLanguage, and SpecialFeatureId.BonusLanguage
-- **Implementation Completed**:
-  1. ✅ **Created Shared FeaturesTab Component**: Moved ClassEdit FeaturesTab to shared location and made it configurable
-  2. ✅ **Created Race Tab Infrastructure**: Implemented tab components (BasicInfoTab, AbilitiesTab, LanguagesTab, FeaturesTab, DescriptionTab)
-  3. ✅ **Converted RaceEdit to Tab-Based Layout**: Refactored RaceEdit.tsx to use tab navigation
-  4. ✅ **Feature System Integration**: No changes needed - abilities and languages already use feature system correctly
-- **Benefits Achieved**: ✅ Consistent UX between Class and Race editing, code reuse, feature parity, better maintainability
-- **Success Criteria Met**: ✅ Race editing has same capabilities as Class editing, identical navigation patterns, all existing data works unchanged
-
-### 🔴 **Language System Implementation**
-- **Add ModifierAppliesToType.Language**: Add Language type to modifier applies to enum
-- **Create LanguageService**: Utility functions for extracting languages from feature progressions
-- **Update RaceEdit.tsx**: Use FeatureModifier approach for languages instead of current implementation
-- **Update FeatureProgressionDetailEdit.tsx**: Add support for ModifierAppliesToType.Language
-- **Implement getClassBonusLanguages()**: Scan class features for bonus languages via appliesIfChoiceKey
-- **Character Creation UI**: Language selection interface in character creation flow
-- **Language Condition Evaluation**: INT modifier condition handling for bonus languages
-
-### 🔴 **Feature-Linked Skill Analogs Implementation**
-- **Add isAnalog Field to Skill Model**: Add `isAnalog` boolean field to distinguish feature-linked skills from custom skills
-- **Create Wild Empathy Skill and Feature**: Implement Wild Empathy as feature-linked skill analog
-- **Extend Character Sheet Display**: Display analog skills with calculated values
-- **Implement Analog Skill Calculation**: Calculate analog skill values based on class levels and ability scores
-- **Prevent Skill Allocation**: Ensure analog skills cannot be allocated skill points
-- **Support Multiclass Characters**: Handle analog skills for characters with multiple classes
-- **Backend Character Calculation**: Include analog skills in character calculation service
-
-## Implementation Phases
-
-### **Phase 1: Choice System Unification** ✅ **COMPLETED**
-1. **Schema Updates**: ✅ Converted Prisma enums to static-data enums and added new fields
-2. **Data Migration**: ✅ User manually migrated existing enum values and formula references
-3. **Backend Services**: ✅ Updated all services to handle formula params for choices and use new field names
-4. **Frontend Components**: ✅ Updated all UI components to use new enum values and support new fields
-5. **Testing and Validation**: ✅ All existing functionality continues to work correctly
-
-### **Phase 2: Feature Migration to Unified Choice System** 🔴 **HIGHEST PRIORITY**
-1. **Fighter Bonus Feats**: Migrate from `FeatureModifier.type: Other, AppliesTo: Choice` to unified `FeatureChoice` system
-2. **Wizard Bonus Feats**: Migrate to use `filterType: MetamagicOrItemCreation` in unified choice system
-3. **Rogue Special Abilities**: Migrate to use unified choice system with formula support
-4. **UI Updates**: Ensure all migrated features display correctly
-5. **Testing and Validation**: Verify all migrated features work as expected
-
-### **Phase 3: Schema Cleanup** ✅ **COMPLETED**
-1. **Database Migration**: ✅ Removed `appliesToType` and `appliesTo` columns from FeatureProgression
-2. **Service Layer Updates**: ✅ Updated ClassSkillService, LanguageService to use only SpecialFeatureId
-3. **UI Component Updates**: ✅ Removed redundant field handling from all forms
-4. **Validation Updates**: ✅ Removed fields from Zod schemas
-5. **Testing**: ✅ Comprehensive testing of all existing features
-
-### **Phase 4: Direct Feat Grant Support** ✅ **COMPLETED**
-1. **Add ModifierAppliesToType.Feat**: ✅ Added new enum value (21)
-2. **Update UI**: ✅ Added direct feat grant configuration to FeatureProgressionDetailEdit.tsx
-3. **Dynamic Feat Loading**: ✅ Implemented feat loading in both ClassDisplay and ClassEdit
-4. **Feat Data Enhancement**: ✅ Implemented modifier enhancement with feat data
-5. **Testing**: ✅ Tested with Ranger Track and Endurance features - proper feat name display
-
-### **Phase 5: Formatter System Refactoring** ✅ **COMPLETED**
-1. **File Extraction**: ✅ Extracted monolithic Formatters.ts into focused modules
-2. **Utility Functions**: ✅ Created formatterUtils.ts, formulaUtils.ts, wildShapeUtils.ts, formatterFactories.ts
-3. **Clean Architecture**: ✅ Functions now import dependencies directly instead of receiving them as parameters
-4. **Documentation**: ✅ Created comprehensive formatter-utilities.md documentation
-5. **Code Reduction**: ✅ Reduced Formatters.ts from 1100+ lines to ~810 lines (~27% reduction)
-6. **Improved Maintainability**: ✅ Better separation of concerns and easier testing
-
-### **Phase 6: Standalone Feature Creation UI** ✅ **COMPLETED**
+### ✅ **Phase 6: Standalone Feature Creation UI - COMPLETED**
 1. **Create Standalone Feature Creation UI**: ✅ File: `frontend/src/components/feature-system/FeatureEdit.tsx`
    - Allow creating features without class/race association ✅
    - Support for feature descriptions, prerequisites, and metadata ✅
@@ -211,7 +60,17 @@
 5. **Ranger Combat Style Implementation**: ✅ Create "Archery Combat Style" and "Two-Weapon Combat Style" features
 6. **Test Standalone Feature System**: ✅ Verify features can be created and referenced by choices
 
-### **Phase 7: Feature Resolution Service** 🟡 **FUTURE ENHANCEMENT**
+### 🔴 **Phase 5.5: Fix Formatter System Integration - CRITICAL PRIORITY**
+1. **Fix EditPageDisplayStrategy**: Connect pure formatters to display strategies in `display-strategies.ts`
+2. **Fix DetailPageDisplayStrategy**: Same integration fixes for detail page formatting
+3. **Fix CharacterSheetDisplayStrategy**: Same integration fixes for character sheet display
+4. **Test with Real Data**: Load real feature data and verify proper formatting
+5. **Validate Metadata Passing**: Ensure all modifier metadata reaches formatters correctly
+6. **End-to-End Testing**: Test with Bard's Inspire Greatness, Fighter's Weapon Specialization, etc.
+
+**CRITICAL**: This must be completed before any other feature work can proceed, as the formatter system is currently non-functional.
+
+### 🟡 **Phase 7: Feature Resolution Service - FUTURE ENHANCEMENT**
 1. **Runtime Feature Resolution**: Service to dynamically calculate which features apply to a character
 2. **Equipment Integration**: Connect feature resolution to character inventory (e.g., Ring of Evasion)
 3. **Conditional Evaluation**: Implement runtime condition checking (e.g., Trap Sense, Dwarven Giant Fighting)
@@ -220,7 +79,7 @@
 6. **Backend Character Calculation**: Formula evaluation and feature resolution for character stats
 7. **Feature Prerequisites Validation**: Enforcement logic for feature requirements
 
-### **Phase 8: Feature-Based Choice System** 🟡 **MEDIUM PRIORITY**
+### 🟡 **Phase 8: Feature-Based Choice System - MEDIUM PRIORITY**
 1. **Add FeatureModifierConditionType.feature**: Add new condition type (6)
 2. **Create Standalone Features**: Create features for choice options (Archery Combat Style, Two-Weapon Combat Style, etc.)
 3. **Update Choice UI**: Consolidate choice configuration and simplify choice entries
@@ -229,7 +88,7 @@
 6. **Rogue Special Abilities Implementation**: Model Rogue special ability choices using the feature-based system
 7. **Character Calculation Integration**: Include feature-based conditions in modifier calculations
 
-### **Phase 9: Language System** 🟡 **MEDIUM PRIORITY**
+### 🟡 **Phase 9: Language System - MEDIUM PRIORITY**
 1. **Add ModifierAppliesToType.Language**: Add Language type to enum
 2. **Create LanguageService**: Utility functions for language extraction and management
 3. **Update RaceEdit.tsx**: Use FeatureModifier approach for languages
@@ -240,7 +99,7 @@
 8. **Test Class Language Features**: Verify class language expansion works
 9. **Character Creation Integration**: Combine racial and class bonus languages
 
-### **Phase 10: Companion System Implementation** 🟡 **MEDIUM PRIORITY**
+### 🟡 **Phase 10: Companion System Implementation - MEDIUM PRIORITY**
 1. **Design Companion Data Model**: Familiar and animal companion data structures
 2. **Design Companion Progression System**: Level-based companion advancement
 3. **Design Companion Choice System**: Companion selection and customization
@@ -251,7 +110,7 @@
 8. **Character Sheet Integration**: Display companion statistics and abilities
 9. **Companion Management UI**: User interface for managing companion details
 
-### **Phase 11: Spellcasting Enhancements** 🟡 **MEDIUM PRIORITY**
+### 🟡 **Phase 11: Spellcasting Enhancements - MEDIUM PRIORITY**
 1. **Design Domain System**: Choice, ability grants, and spell access for cleric domains
 2. **Implement School Specialization**: Choice, benefits, and restrictions for wizard schools
 3. **Implement Metamagic System**: Feat-based spell modification and cost calculation
@@ -259,134 +118,111 @@
 5. **School Specialization Implementation**: Wizard school benefits and restrictions
 6. **Metamagic System Implementation**: Spell modification and cost calculation
 
-### **Phase 12: Formula Calculation Tooltips** 🟢 **LOW PRIORITY**
+### 🟢 **Phase 12: Formula Calculation Tooltips - LOW PRIORITY**
 1. **UI Integration**: Add tooltip display to calculated values in character sheet
 2. **Tooltip Generation**: Create functions to show formula breakdown and calculation steps
 3. **Character Context**: Pass character data to tooltip functions for accurate calculations
-4. **Formula Display**: Show progression patterns and level-specific values
-5. **Attribute-Dependent Formulas**: Display attribute modifiers and calculations
-6. **Conditional Formulas**: Show condition evaluation and impact on values
 
-### **Phase 13: Backend Character Calculation** 🟢 **LOW PRIORITY**
-1. **Feature Resolution Service**: Service to resolve all features for a character
-2. **Modifier Calculation**: Calculate all modifiers with formulas and conditions
-3. **Choice Processing**: Process character choices and apply conditional modifiers
-4. **Feature Prerequisites**: Validate feature prerequisites and availability
-5. **Character Sheet Data**: Generate complete character sheet data from features
-6. **Performance Optimization**: Optimize calculation performance for complex characters
+## Current Implementation Status
 
-## Completed Components
+### ✅ **COMPLETED: Core Infrastructure (100%)**
+- **Database Schema**: All feature system models implemented and working
+- **Formula System**: Complete implementation with 5 formula types tested
+- **Class Modeling**: All core classes (Barbarian, Bard, Cleric, Druid, Fighter, Monk, Paladin) successfully modeled
+- **Unified Choice System**: Complete implementation with proper choice system integration
+- **FeatureProgressionDetailEdit UI**: Complete with formula input, conditions, choices, and dynamic preview
+- **Backend Services**: Complete API endpoints and services for feature CRUD operations
+- **Direct Feat Grant Support**: Complete implementation with proper feat name display
 
-### ✅ **Monk Class Features**
-- **Flurry of Blows**: Conditional scaling with negative values and complex progression
-- **Unarmed Strike**: Size-based damage with multiple size conditions and damage dice
-- **Diamond Soul**: Value plus level formula for spell resistance
-- **Wholeness of Body**: Level times value formula for healing
-- **Bonus Feats**: Choice system with level-specific feat options
-- **Complete Implementation**: All major Monk features modeled and tested
+### ⚠️ **PARTIALLY IMPLEMENTED: Formatter System (80%)**
+- **6-Layer Architecture**: All layers implemented but not properly connected
+- **Pure Formatters**: Complete implementation for all modifier types
+- **Formatter Registry**: Complete with all formatters registered
+- **Display Strategies**: Complete implementation but not using pure formatters
+- **Formatter Orchestrator**: Complete but not properly integrating layers
+- **Critical Issue**: Display strategies generate raw numbers instead of properly formatted output
 
-### ✅ **Paladin Class Features**
-- **Divine Grace**: Attribute modifier formula for saving throws
-- **Lay on Hands**: Level times attribute formula for healing
-- **Turn Undead**: Attribute based formula for uses per day
-- **Smite Evil**: Attribute modifier formula for attack bonuses
-- **Divine Health**: No progression (static feature)
-- **Special Mount**: Noted as dependent on monster/NPC implementation
-- **Complete Implementation**: All major Paladin features modeled and tested
+### ❌ **MISSING: Critical Integration Components (20%)**
+- **Layer Integration**: Display strategies not connected to pure formatters
+- **Metadata Passing**: Modifier metadata not reaching formatters
+- **End-to-End Testing**: System not tested with real feature data
+- **Character Integration**: No runtime feature calculation or character sheet integration
+- **Feature Resolution Service**: No dynamic feature application to character stats
 
-### ✅ **Formula System**
-- **Conditional Scaling**: Level-based thresholds with corresponding values
-- **Linear Scaling**: Scales based on levels since feature started
-- **Level Times Value**: Scales by total character level
-- **Value Plus Level**: Fixed value plus character level
-- **Attribute-Dependent**: Based on character ability scores
-- **Formula Parameters**: Comprehensive parameter system for all formula types
-- **Formula Calculator**: Frontend utility for calculating modifier values
-- **Formula Preview**: UI display of formula progression patterns
+## Implementation Priority Matrix
 
-### ✅ **Condition System**
-- **Feature Modifier Conditions**: Conditions that affect modifier application
-- **Condition Types**: Trigger, attack type, character size, and other conditions
-- **Condition Evaluation**: Runtime evaluation of conditions during character calculation
-- **Size-Based Conditions**: Character size conditions for damage and other effects
-- **Condition UI**: User interface for configuring conditions in feature editor
+### 🔴 **CRITICAL PRIORITY (Must Complete First)**
+1. **Fix Formatter System Integration**: Connect pure formatters to display strategies
+2. **Test with Real Data**: Validate system works with actual feature data
+3. **Fix Metadata Passing**: Ensure all modifier metadata reaches formatters
 
-### ✅ **Choice System Foundation**
-- **FeatureChoice Model**: Database model for defining player choices
-- **CharacterFeatureChoice Model**: Database model for storing player choices
-- **Choice Types**: Feat and Feature choice types
-- **Choice Behaviors**: Single, Multiple, and Allocation choice behaviors
-- **Choice UI**: User interface for configuring choices in feature editor
-- **Choice Display**: Display of available choices in character sheet
+### 🟡 **HIGH PRIORITY (After Formatter Fix)**
+1. **Feature Resolution Service**: Runtime feature calculation
+2. **Character Integration**: Character sheet display of calculated values
+3. **Feature Prerequisites Validation**: Enforcement logic for feature requirements
 
-### ✅ **Special Effects System**
-- **FeatureSpecialEffect Model**: Database model for non-numeric abilities
-- **Effect Types**: Proficiency, Favored Enemy, Turn Undead, Wild Shape, and other effects
-- **Effect UI**: User interface for configuring special effects
-- **Effect Display**: Display of special effects in character sheet
+### 🟢 **MEDIUM PRIORITY (Future Enhancements)**
+1. **Language System**: Complete language integration
+2. **Companion System**: Familiar and animal companion implementation
+3. **Spellcasting Enhancements**: Domain and school specialization systems
+4. **Formula Calculation Tooltips**: UI enhancements for formula breakdown
 
-### ✅ **Class Skills System**
-- **SpecialFeatureId.ClassSkill**: Reserved feature ID for class skills
-- **ClassSkillService**: Service for managing class skills
-- **Class Skills UI**: User interface for adding/removing class skills
-- **Class Skills Display**: Display of class skills in character sheet
-- **Container Pattern**: Single progression containing multiple skill modifiers
+## Critical Path Dependencies
 
-### ✅ **Weapon/Armor Proficiencies System**
-- **SpecialFeatureId.ClassProficiency**: Reserved feature ID for class proficiencies
-- **ClassProficiencyService**: Service for managing class proficiencies
-- **Proficiency UI**: User interface for adding/removing proficiencies
-- **Proficiency Display**: Display of proficiencies in character sheet
-- **Special Effects Pattern**: Uses FeatureSpecialEffect for proficiency grants
+### Formatter System Integration (Blocking All Other Work)
+- **Dependency**: Must fix layer integration before any other feature work
+- **Impact**: All feature display currently broken
+- **Effort**: High - requires careful integration of 6 layers
+- **Risk**: High - complex integration with multiple failure points
 
-## Testing Status
+### Feature Resolution Service (Blocking Character Integration)
+- **Dependency**: Must complete formatter system integration first
+- **Impact**: Character sheet cannot display calculated values
+- **Effort**: High - requires backend calculation service
+- **Risk**: Medium - well-defined requirements
 
-### ✅ **Tested Formula Types**
-- **Conditional Scaling**: Monk Flurry of Blows (attack penalty and extra attacks)
-- **Linear Scaling**: Monk Unarmed Strike damage progression
-- **Level Times Value**: Monk Wholeness of Body healing
-- **Value Plus Level**: Monk Diamond Soul spell resistance
-- **Attribute-Dependent**: Paladin Divine Grace (saving throws), Lay on Hands (healing), Turn Undead (uses)
+### Character Integration (Blocking Character Sheet)
+- **Dependency**: Must complete feature resolution service first
+- **Impact**: Character sheet displays raw values instead of calculated features
+- **Effort**: Medium - primarily frontend integration
+- **Risk**: Low - straightforward integration work
 
-### ❌ **Untested Formula Types**
-- **DICE_SCALING**: Not yet implemented or tested
-- **Complex Attribute Formulas**: Advanced attribute-dependent calculations
+## Risk Assessment
 
-### ✅ **Tested Condition Types**
-- **Character Size**: Monk Unarmed Strike size-based damage
-- **Trigger Conditions**: Basic trigger condition evaluation
-- **Attack Type**: Basic attack type condition evaluation
+### High Risk Items
+1. **Formatter System Integration**: Complex 6-layer integration with multiple failure points
+2. **Feature Resolution Service**: Backend calculation service with performance implications
+3. **Character Integration**: End-to-end testing with real character data
 
-### ❌ **Untested Condition Types**
-- **Feature Conditions**: FeatureModifierConditionType.feature (not yet implemented)
-- **Complex Condition Combinations**: Multiple conditions on single modifier
+### Medium Risk Items
+1. **Language System**: Schema changes and data migration
+2. **Companion System**: Complex data model with progression system
+3. **Spellcasting Enhancements**: Domain and school specialization logic
 
-### ✅ **Tested Choice Types**
-- **Feat Choices**: Monk bonus feats with specific feat options ✅
-- **Feature Choices**: Ranger Combat Style with ChoiceType.Feature ✅
-- **Creature Type Choices**: Ranger Favored Enemy with ChoiceType.CreatureType ✅
-- **Single Choice Behavior**: Basic single choice functionality ✅
-- **Allocation Choice Behavior**: Ranger Favored Enemy +2 bonus allocation ✅
-- **Choice Display**: Display of available choices in UI ✅
+### Low Risk Items
+1. **Formula Calculation Tooltips**: UI enhancements only
+2. **Documentation Updates**: No functional changes
+3. **Code Cleanup**: Refactoring and optimization
 
-### ❌ **Untested Choice Types**
-- **Multiple Choice Behavior**: Multiple choice functionality (not yet implemented)
+## Success Criteria
 
-## Schema Simplification Benefits
+### Formatter System Integration
+- [ ] Display strategies use pure formatters for all value formatting
+- [ ] Modifier metadata properly passed to formatters
+- [ ] System produces properly formatted output (e.g., "Dmg: +1d6" not "1")
+- [ ] Integration tested with real feature data
+- [ ] No "Level X (Level X)" display issues
 
-### **1. Reduced Complexity**
-- **Fewer fields** to maintain and validate
-- **Clearer intent** with `SpecialFeatureId` as primary identifier
-- **Simplified service logic** with single field filtering
+### Character Integration
+- [ ] Backend character calculation service implemented
+- [ ] Feature resolution service implemented
+- [ ] Character sheet displays calculated values
+- [ ] Feature prerequisites validation working
+- [ ] End-to-end testing with real character data
 
-### **2. Improved Consistency**
-- **Uniform patterns** across all feature types
-- **No redundant checks** in service layer
-- **Cleaner UI** with fewer configuration options
-
-### **3. Better Maintainability**
-- **Single source of truth** for feature type identification
-- **Easier to extend** with new feature types
-- **Reduced documentation** complexity
-
-This updated task list reflects the choice system unification priority and the planned refactoring to eliminate dual choice mechanisms.
+### Performance and Quality
+- [ ] System handles 100+ progressions without performance issues
+- [ ] All formatter types properly tested
+- [ ] No console errors or warnings
+- [ ] Comprehensive unit tests for all components
+- [ ] Documentation matches actual implementation status

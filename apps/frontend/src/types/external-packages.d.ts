@@ -27,7 +27,7 @@ declare module '@uiw/react-md-editor' {
         className?: string;
         height?: string | number;
         preview?: 'live' | 'edit' | 'preview';
-        components?: Record<string, ComponentType<any>>;
+        components?: Record<string, ComponentType<Record<string, unknown>>>;
     }
 
     const MDEditor: ComponentType<MDEditorProps>;
@@ -121,4 +121,66 @@ declare module '@mdi/js' {
 declare module 'pluralize' {
     function pluralize(word: string, count?: number, inclusive?: boolean): string;
     export = pluralize;
+}
+
+// @3d-dice/dice-box type definitions
+// Note: DiceBoxConfig and DiceResult are now imported from @shared/schema
+declare module '@3d-dice/dice-box' {
+    import type { DiceBoxConfig, DiceResult } from '@shared/schema';
+
+    export interface DiceGroup {
+        notation: string;
+        sides: number;
+        count: number;
+        group?: string;
+        originalNotation?: string;
+    }
+
+    export interface DiceBoxInstance {
+        init(): Promise<void>;
+        roll(dieGroups: DiceGroup[]): void;
+        hide(): { clear(): void };
+        clear(): void;
+        updateConfig(config: Partial<DiceBoxConfig>): void;
+        onRollComplete: ((results: DiceResult | DiceResult[]) => void) | null;
+    }
+
+    export default class DiceBox implements DiceBoxInstance {
+        constructor(config: DiceBoxConfig);
+        init(): Promise<void>;
+        roll(dieGroups: DiceGroup[]): void;
+        hide(): { clear(): void };
+        clear(): void;
+        updateConfig(config: Partial<DiceBoxConfig>): void;
+        onRollComplete: ((results: DiceResult | DiceResult[]) => void) | null;
+    }
+
+    // Re-export types from shared schema for convenience
+    export type { DiceBoxConfig, DiceResult };
+}
+
+// @3d-dice/dice-parser-interface type definitions
+declare module '@3d-dice/dice-parser-interface' {
+    import type { DiceResult } from '@shared/schema';
+
+    export interface ParsedDiceGroup {
+        notation: string;
+        sides: number;
+        count: number;
+        group?: string;
+        originalNotation?: string;
+    }
+
+    export interface RawDiceResult {
+        notation: string;
+        results: number[];
+        total: number;
+        group?: string;
+        originalNotation?: string;
+    }
+
+    export default class DiceParser {
+        parseNotation(notation: string): ParsedDiceGroup[];
+        parseFinalResults(results: RawDiceResult): DiceResult;
+    }
 } 

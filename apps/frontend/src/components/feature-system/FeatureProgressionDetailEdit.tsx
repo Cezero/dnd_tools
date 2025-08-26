@@ -3,16 +3,16 @@ import { ScrollArea } from '@base-ui-components/react/scroll-area';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import React, { useState, useEffect, useRef } from 'react';
 
+import type { ProficiencyFeat, ProficiencyItem } from '@/components/feature-system/FeatureProficiencyDialog';
 import { ValidatedCustomSelect, ValidatedInput, ValidatedForm, useValidatedForm, useFormContext } from '@/components/forms';
+import { ClassProficiencyService } from '@/features/class/ClassProficiencyService';
 import { FeatService } from '@/features/feat/FeatService';
 import { ItemService } from '@/features/item/ItemService';
+import { formatterOrchestrator } from '@/lib/formatters';
+import { progressionGenerator } from '@/lib/formatters/progression-generators';
+import { ModifierGroupingStrategy } from '@/lib/formatters/grouping-strategies';
 import { FeatureSystemService } from '@/services/FeatureSystemService';
-import { ClassProficiencyService } from '@/features/class/ClassProficiencyService';
-import type { ProficiencyFeat, ProficiencyItem } from '@/components/feature-system/FeatureProficiencyDialog';
-import { PROGRESSION_FORMATTERS, getFormulaProgressionPattern } from '@/lib/Formatters';
-import { FormulaCalculator } from '@/lib/formulaCalculator';
-import { CreateFeatureProgressionRequest, CreateFeatureProgressionSchema, CreateFeatureProgressionFormSchema, FeatureModifierInQueryResponse, FeatureProgressionWithRelations } from '@shared/schema';
-import { ArrayPairEditor } from './ArrayPairEditor';
+import { CreateFeatureProgressionSchema, CreateFeatureProgressionFormSchema, FeatureModifierInQueryResponse, FeatureProgressionWithRelations, FeatureSpecialEffectInQueryResponse, FeatureChoiceInQueryResponse } from '@shared/schema';
 import {
     MODIFIER_SELECT_LIST,
     FEATURE_BONUS_SELECT_LIST,
@@ -22,12 +22,9 @@ import {
     FeaturePrerequisiteType,
     FeatureModifierConditionType,
     ABILITY_SELECT_LIST,
-    ABILITY_MAP,
     FULL_SKILL_SELECT_LIST,
     SAVING_THROW_SELECT_LIST,
-    SAVING_THROW_MAP,
     RPG_DICE_SELECT_LIST,
-    RPG_DICE,
     DAMAGE_TYPE_SELECT_LIST,
     USES_FREQUENCY_SELECT_LIST,
     MODIFIER_APPLIES_TO_SELECT_LIST,
@@ -39,13 +36,16 @@ import {
     FORMULA_MAP,
     LANGUAGE_SELECT_LIST,
     SIZE_SELECT_LIST,
-    FeatureFeatChoiceFilter,
+    SPELL_SCHOOL_SELECT_LIST,
     FEATURE_FEAT_CHOICE_FILTER_SELECT_LIST,
+    FEATURE_FEAT_CHOICE_FILTER_TYPES,
     FEATURE_CHOICE_SELECT_LIST,
     FEATURE_CHOICE_BEHAVIOR_SELECT_LIST,
     FeatBenefitType,
-    PROFICIENCY_TYPES,
+    FormulaId,
 } from '@shared/static-data';
+
+import { ArrayPairEditor } from './ArrayPairEditor';
 
 interface FeatureProgressionDetailEditProps {
     isOpen: boolean;
@@ -56,9 +56,26 @@ interface FeatureProgressionDetailEditProps {
 }
 
 // Formula Preview Component
-function FormulaPreview({ modifier, progressionLevel }: { modifier: any; progressionLevel: number }) {
+function FormulaPreview({
+    item, // Can be either FeatureModifierInQueryResponse or FeatureChoiceInQueryResponse
+    progressionLevel,
+    featureName
+}: {
+    item: FeatureModifierInQueryResponse | FeatureChoiceInQueryResponse;
+    progressionLevel: number;
+    featureName?: string;
+}) {
     const { formData } = useFormContext();
-    const formulaId = modifier.formulaParams?.formulaId;
+
+    // Determine if this is a choice by checking for choice-specific properties
+    // Choices have 'behavior' property, modifiers don't
+    const isChoice = 'behavior' in item;
+
+    // Get formula ID from the appropriate source
+    const formulaId = isChoice
+        ? (item as FeatureChoiceInQueryResponse).formulaParams?.formulaId
+        : (item as FeatureModifierInQueryResponse).formulaParams?.formulaId;
+
     if (!formulaId) {
         return null;
     }
@@ -68,37 +85,141 @@ function FormulaPreview({ modifier, progressionLevel }: { modifier: any; progres
         return <p className="text-xs text-red-600 dark:text-red-400">Unknown formula</p>;
     }
 
-    // Handle both modifiers and choices
-    const isChoice = modifier.type !== undefined && modifier.behavior !== undefined &&
-        typeof modifier.type === 'number' && typeof modifier.behavior === 'number';
-    const appliesTo = isChoice ? ModifierAppliesToType.Choice : modifier.appliesTo;
-
-    const formatter = PROGRESSION_FORMATTERS[appliesTo];
-    if (!formatter) {
-        return <p className="text-xs text-red-600 dark:text-red-400">No formatter for type</p>;
+    // Get the choice name for display
+    let choiceName = '';
+    if (isChoice) {
+        const choice = item as FeatureChoiceInQueryResponse;
+        if (choice.feat?.name) {
+            choiceName = choice.feat.name;
+        } else if (choice.featId && choice.filterType && FEATURE_FEAT_CHOICE_FILTER_TYPES[choice.filterType]) {
+            choiceName = FEATURE_FEAT_CHOICE_FILTER_TYPES[choice.filterType].name;
+        } else if (choice.label) {
+            choiceName = choice.label;
+        } else {
+            choiceName = 'Bonus Feat';
+        }
     }
 
-    // Use the centralized getFormulaProgressionPattern function for consistent display
-    // We need to pass the actual progression data to get access to choices
-    const progressionData = {
-        level: progressionLevel,
-        choices: formData.choices || [] // Pass the actual choices from the form
-    };
+    try {
+        // For choices, we need to generate the progression values directly
+        if (isChoice) {
+            const choice = item as FeatureChoiceInQueryResponse;
+            const formulaParams = choice.formulaParams;
+            
+            if (!formulaParams) {
+                return <p className="text-xs text-gray-600 dark:text-gray-400">No formula parameters</p>;
+            }
 
-    const progressionPattern = getFormulaProgressionPattern(modifier, progressionLevel, undefined, progressionData);
+            // Generate progression values for levels 10-20
+            const values = progressionGenerator.generateProgressionValues(
+                formulaParams,
+                progressionLevel,
+                20, // Max level for display
+                undefined, // No character context needed
+                1 // Default value for choices
+            );
 
-    if (!progressionPattern) {
-        return <p className="text-xs text-gray-600 dark:text-gray-400">No progression pattern found</p>;
+            // Format the values based on formula type
+            let formattedValue = '';
+            if (formulaId === FormulaId.EVERY_N_LEVELS) {
+                // For EVERY_N_LEVELS, only show transition points
+                const transitions = [];
+                
+                // Find levels where value changes (transitions)
+                for (let i = 1; i < values.length; i++) {
+                    if (values[i].value !== values[i - 1].value) {
+                        transitions.push(values[i]);
+                    }
+                }
+
+                // Include the first level if it has a non-zero value
+                const firstValue = typeof values[0].value === 'number' ? values[0].value : Number(values[0].value);
+                if (firstValue > 0) {
+                    transitions.unshift(values[0]);
+                }
+
+                formattedValue = transitions.map(val => `Level ${val.level} (${choiceName})`).join(', ');
+            } else {
+                // For other formulas, show all levels
+                formattedValue = values.map(val => `Level ${val.level} (${choiceName})`).join(', ');
+            }
+
+            return (
+                <div className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                    <div className="font-medium mb-1">Formula Preview:</div>
+                    <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded text-xs">
+                        {formattedValue}
+                    </div>
+                </div>
+            );
+        } else {
+            // For modifiers, generate progression values and format them properly
+            const modifier = item as FeatureModifierInQueryResponse;
+            const formulaParams = modifier.formulaParams;
+            
+            if (!formulaParams) {
+                return <p className="text-xs text-gray-600 dark:text-gray-400">No formula parameters</p>;
+            }
+
+            // Generate progression values for levels 1-20
+            const values = progressionGenerator.generateProgressionValues(
+                formulaParams,
+                progressionLevel,
+                20, // Max level for display
+                undefined, // No character context needed
+                modifier.value // Use the modifier's base value
+            );
+
+            // Format the values using the grouping strategy (same as ClassEdit.tsx)
+            const formattedValues = values.map(val => {
+                // Create a temporary modifier with the calculated value for this level
+                const tempModifier = {
+                    ...modifier,
+                    value: val.value
+                };
+                
+                // Use the grouping strategy to format the value (same as ClassEdit.tsx)
+                const modifierGroupingStrategy = new ModifierGroupingStrategy();
+                const groupedResult = modifierGroupingStrategy.group([{
+                    formattedValue: formatterOrchestrator.formatValue(tempModifier.value, tempModifier.appliesTo, tempModifier, { breakdown: val.breakdown }),
+                    breakdown: val.breakdown,
+                    metadata: { breakdown: val.breakdown },
+                    modifier: tempModifier
+                }]);
+                return groupedResult.formattedValue;
+            });
+
+            // Format the values - ALL formulas should show only transition points
+            const transitions = [];
+            
+            // Find levels where value changes (transitions)
+            for (let i = 1; i < values.length; i++) {
+                if (values[i].value !== values[i - 1].value) {
+                    transitions.push({ level: values[i].level, formattedValue: formattedValues[i] });
+                }
+            }
+
+            // Include the first level if it has a non-zero/non-empty value
+            const firstValue = values[0].value;
+            const shouldIncludeFirst = typeof firstValue === 'number' ? firstValue > 0 : firstValue && firstValue.toString().trim() !== '';
+            if (shouldIncludeFirst) {
+                transitions.unshift({ level: values[0].level, formattedValue: formattedValues[0] });
+            }
+
+            const formattedValue = transitions.map(val => `Level ${val.level}: ${val.formattedValue}`).join('; ');
+
+            return (
+                <div className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                    <div className="font-medium mb-1">Formula Preview:</div>
+                    <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded text-xs">
+                        {formattedValue}
+                    </div>
+                </div>
+            );
+        }
+    } catch (error) {
+        return <p className="text-xs text-red-600 dark:text-red-400">Error generating preview</p>;
     }
-
-    return (
-        <div className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-            <div className="font-medium mb-1">Formula Preview:</div>
-            <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded text-xs">
-                {progressionPattern}
-            </div>
-        </div>
-    );
 }
 
 export function FeatureProgressionDetailEdit({
@@ -170,7 +291,7 @@ export function FeatureProgressionDetailEdit({
                     formulaId: null,
                     interval: 1,
                     formulaStartLevel: null,
-                    attributeId: null,
+                    abilityId: null,
                     thresholds: null,
                     values: null,
                 }
@@ -181,12 +302,19 @@ export function FeatureProgressionDetailEdit({
         };
 
         console.log('Setting form data:', newFormData);
+        console.log('Modifiers with formula params:', newFormData.modifiers?.map(m => ({
+            formulaId: m.formulaParams?.formulaId,
+            thresholds: m.formulaParams?.thresholds,
+            values: m.formulaParams?.values,
+            valueTypes: m.formulaParams?.values?.map(v => typeof v),
+            rawValues: m.formulaParams?.values
+        })));
         setFormData(newFormData);
     }, [progression, preSelectedFeature]);
 
     // Load feats when component mounts or when a feat modifier is added
     useEffect(() => {
-        const modifiers = formData.modifiers as any[] || [];
+        const modifiers = formData.modifiers as FeatureModifierInQueryResponse[] || [];
         const hasFeatModifier = modifiers.some(mod => mod.appliesTo === ModifierAppliesToType.Feat);
         if (hasFeatModifier && feats.length === 0) {
             loadFeats();
@@ -229,7 +357,7 @@ export function FeatureProgressionDetailEdit({
                         formulaId: modifier.formulaParams.formulaId,
                         interval: modifier.formulaParams.interval || 1,
                         formulaStartLevel: modifier.formulaParams.formulaStartLevel || null,
-                        attributeId: modifier.formulaParams.attributeId || null,
+                        abilityId: modifier.formulaParams.abilityId || null,
                         // Only include arrays for CONDITIONAL_SCALING formula
                         thresholds: modifier.formulaParams.formulaId === 3 ? (modifier.formulaParams.thresholds || []) : null,
                         values: modifier.formulaParams.formulaId === 3 ? (modifier.formulaParams.values || []) : null,
@@ -244,12 +372,12 @@ export function FeatureProgressionDetailEdit({
 
                 return modifier;
             }),
-            effects: (formData.effects as any[] || []).map(effect => {
+            effects: (formData.effects as FeatureSpecialEffectInQueryResponse[] || []).map(effect => {
                 // Remove id and progressionId for bulk creation schema
                 const { id, progressionId, ...cleanEffect } = effect;
                 return cleanEffect;
             }),
-            choices: (formData.choices as any[] || []).map(choice => {
+            choices: (formData.choices as FeatureChoiceInQueryResponse[] || []).map(choice => {
                 // Remove id and progressionId for bulk creation schema
                 const { id, progressionId, ...cleanChoice } = choice;
 
@@ -261,7 +389,7 @@ export function FeatureProgressionDetailEdit({
                         formulaId: choice.formulaParams.formulaId,
                         interval: choice.formulaParams.interval || 1,
                         formulaStartLevel: choice.formulaParams.formulaStartLevel || null,
-                        attributeId: choice.formulaParams.attributeId || null,
+                        abilityId: choice.formulaParams.abilityId || null,
                         // Only include arrays for CONDITIONAL_SCALING formula
                         thresholds: choice.formulaParams.formulaId === 3 ? (choice.formulaParams.thresholds || []) : null,
                         values: choice.formulaParams.formulaId === 3 ? (choice.formulaParams.values || []) : null,
@@ -311,21 +439,21 @@ export function FeatureProgressionDetailEdit({
                 formulaId: null,
                 interval: 1,
                 formulaStartLevel: null,
-                attributeId: null,
+                abilityId: null,
                 thresholds: null,
                 values: null,
             },
         };
         setFormData(prev => ({
             ...prev,
-            modifiers: [...(prev.modifiers as any[] || []), newModifier]
+            modifiers: [...(prev.modifiers as FeatureModifierInQueryResponse[] || []), newModifier]
         }));
     };
 
     const removeModifier = (index: number) => {
         setFormData(prev => ({
             ...prev,
-            modifiers: (prev.modifiers as any[] || []).filter((_, i) => i !== index)
+            modifiers: (prev.modifiers as FeatureModifierInQueryResponse[] || []).filter((_, i) => i !== index)
         }));
     };
 
@@ -338,14 +466,14 @@ export function FeatureProgressionDetailEdit({
         };
         setFormData(prev => ({
             ...prev,
-            effects: [...(prev.effects as any[] || []), newEffect]
+            effects: [...(prev.effects as FeatureSpecialEffectInQueryResponse[] || []), newEffect]
         }));
     };
 
     const removeEffect = (index: number) => {
         setFormData(prev => ({
             ...prev,
-            effects: (prev.effects as any[] || []).filter((_, i) => i !== index)
+            effects: (prev.effects as FeatureSpecialEffectInQueryResponse[] || []).filter((_, i) => i !== index)
         }));
     };
 
@@ -362,21 +490,21 @@ export function FeatureProgressionDetailEdit({
                 formulaId: null,
                 interval: 1,
                 formulaStartLevel: null,
-                attributeId: null,
+                abilityId: null,
                 thresholds: null,
                 values: null,
             },
         };
         setFormData(prev => ({
             ...prev,
-            choices: [...(prev.choices as any[] || []), newChoice]
+            choices: [...(prev.choices as FeatureChoiceInQueryResponse[] || []), newChoice]
         }));
     };
 
     const removeChoice = (index: number) => {
         setFormData(prev => ({
             ...prev,
-            choices: (prev.choices as any[] || []).filter((_, i) => i !== index)
+            choices: (prev.choices as FeatureChoiceInQueryResponse[] || []).filter((_, i) => i !== index)
         }));
     };
 
@@ -418,7 +546,7 @@ export function FeatureProgressionDetailEdit({
 
     // Helper function to get selected formula description
     const getSelectedFormulaDescription = () => {
-        const modifiers = formData.modifiers as any[] || [];
+        const modifiers = formData.modifiers as FeatureModifierInQueryResponse[] || [];
         const formulaModifiers = modifiers.filter(mod =>
             mod.formulaParams?.formulaId !== null && mod.formulaParams?.formulaId !== undefined
         );
@@ -435,9 +563,9 @@ export function FeatureProgressionDetailEdit({
     };
 
     // Get current section states
-    const hasModifiers = (formData.modifiers as any[] || []).length > 0;
-    const hasEffects = (formData.effects as any[] || []).length > 0;
-    const hasChoices = (formData.choices as any[] || []).length > 0;
+    const hasModifiers = (formData.modifiers as FeatureModifierInQueryResponse[] || []).length > 0;
+    const hasEffects = (formData.effects as FeatureSpecialEffectInQueryResponse[] || []).length > 0;
+    const hasChoices = (formData.choices as FeatureChoiceInQueryResponse[] || []).length > 0;
 
     return (
         <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -529,7 +657,7 @@ export function FeatureProgressionDetailEdit({
                                                                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                                             />
                                                             <span className="text-sm font-medium">Modifiers</span>
-                                                            <span className="text-xs text-gray-500">({(formData.modifiers as any[] || []).length})</span>
+                                                            <span className="text-xs text-gray-500">({(formData.modifiers as FeatureModifierInQueryResponse[] || []).length})</span>
                                                         </label>
                                                         <label className="flex items-center gap-2">
                                                             <input
@@ -545,7 +673,7 @@ export function FeatureProgressionDetailEdit({
                                                                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                                             />
                                                             <span className="text-sm font-medium">Special Effects</span>
-                                                            <span className="text-xs text-gray-500">({(formData.effects as any[] || []).length})</span>
+                                                            <span className="text-xs text-gray-500">({(formData.effects as FeatureSpecialEffectInQueryResponse[] || []).length})</span>
                                                         </label>
                                                         <label className="flex items-center gap-2">
                                                             <input
@@ -561,7 +689,7 @@ export function FeatureProgressionDetailEdit({
                                                                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                                             />
                                                             <span className="text-sm font-medium">Choices</span>
-                                                            <span className="text-xs text-gray-500">({(formData.choices as any[] || []).length})</span>
+                                                            <span className="text-xs text-gray-500">({(formData.choices as FeatureChoiceInQueryResponse[] || []).length})</span>
                                                         </label>
                                                     </div>
                                                 </div>
@@ -580,11 +708,11 @@ export function FeatureProgressionDetailEdit({
                                                             </button>
                                                         </div>
 
-                                                        {(formData.modifiers as any[] || []).length === 0 ? (
+                                                        {(formData.modifiers as FeatureModifierInQueryResponse[] || []).length === 0 ? (
                                                             <p className="text-gray-500 text-sm">No modifiers added</p>
                                                         ) : (
                                                             <div className="space-y-3">
-                                                                {(formData.modifiers as any[] || []).map((modifier, index) => (
+                                                                {(formData.modifiers as FeatureModifierInQueryResponse[] || []).map((modifier, index) => (
                                                                     <div key={index} className="border border-gray-200 rounded-md p-3 dark:border-gray-600">
                                                                         <div className="flex justify-between items-center mb-3">
                                                                             <div className="flex-1">
@@ -592,6 +720,8 @@ export function FeatureProgressionDetailEdit({
                                                                                     index={index}
                                                                                     feats={feats}
                                                                                     featsLoading={featsLoading}
+                                                                                    preSelectedFeature={preSelectedFeature}
+                                                                                    progression={progression}
                                                                                 />
                                                                             </div>
                                                                             <button
@@ -624,11 +754,11 @@ export function FeatureProgressionDetailEdit({
                                                             </button>
                                                         </div>
 
-                                                        {(formData.effects as any[] || []).length === 0 ? (
+                                                        {(formData.effects as FeatureSpecialEffectInQueryResponse[] || []).length === 0 ? (
                                                             <p className="text-gray-500 text-sm">No effects added</p>
                                                         ) : (
                                                             <div className="space-y-3">
-                                                                {(formData.effects as any[] || []).map((effect, index) => (
+                                                                {(formData.effects as FeatureSpecialEffectInQueryResponse[] || []).map((effect, index) => (
                                                                     <div key={index} className="border border-gray-200 rounded-md p-3 dark:border-gray-600">
                                                                         <div className="flex justify-between items-center mb-2">
                                                                             <span className="text-sm font-medium">Effect {index + 1}</span>
@@ -664,11 +794,11 @@ export function FeatureProgressionDetailEdit({
                                                             </button>
                                                         </div>
 
-                                                        {(formData.choices as any[] || []).length === 0 ? (
+                                                        {(formData.choices as FeatureChoiceInQueryResponse[] || []).length === 0 ? (
                                                             <p className="text-gray-500 text-sm">No choices added</p>
                                                         ) : (
                                                             <div className="space-y-3">
-                                                                {(formData.choices as any[] || []).map((choice, index) => (
+                                                                {(formData.choices as FeatureChoiceInQueryResponse[] || []).map((choice, index) => (
                                                                     <div key={index} className="border border-gray-200 rounded-md p-3 dark:border-gray-600">
                                                                         <div className="flex justify-between items-center mb-2">
                                                                             <span className="text-sm font-medium">Choice {index + 1}</span>
@@ -682,6 +812,8 @@ export function FeatureProgressionDetailEdit({
                                                                         </div>
                                                                         <ChoiceDetailForm
                                                                             index={index}
+                                                                            preSelectedFeature={preSelectedFeature}
+                                                                            progression={progression}
                                                                         />
                                                                     </div>
                                                                 ))}
@@ -741,12 +873,14 @@ interface ModifierDetailFormProps {
     index: number;
     feats: Array<{ id: number; name: string }>;
     featsLoading: boolean;
+    preSelectedFeature?: { id: number; name: string; description: string; slug: string };
+    progression?: FeatureProgressionWithRelations | null;
 }
 
-function ModifierDetailForm({ index, feats, featsLoading }: ModifierDetailFormProps) {
+function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeature, progression }: ModifierDetailFormProps) {
     const { formData, setFormData } = useFormContext();
-    const modifiers = formData.modifiers as any[] || [];
-    const modifier = modifiers[index] || {};
+    const modifiers = formData.modifiers as FeatureModifierInQueryResponse[] || [];
+    const modifier = modifiers[index] || { appliesTo: null, appliesToId: null };
     const [showConditional, setShowConditional] = useState(false);
     const [showConditions, setShowConditions] = useState(false);
     const prevAppliesToRef = useRef<number | null>(null);
@@ -760,7 +894,7 @@ function ModifierDetailForm({ index, feats, featsLoading }: ModifierDetailFormPr
                 // Update the modifier with feat data
                 setFormData(prev => ({
                     ...prev,
-                    modifiers: (prev.modifiers as any[] || []).map((mod, i) =>
+                    modifiers: (prev.modifiers as FeatureModifierInQueryResponse[] || []).map((mod, i) =>
                         i === index ? { ...mod, feat: selectedFeat } : mod
                     )
                 }));
@@ -782,9 +916,9 @@ function ModifierDetailForm({ index, feats, featsLoading }: ModifierDetailFormPr
         if (appliesTo === null || appliesTo === undefined) return [];
 
         switch (appliesTo) {
-            case ModifierAppliesToType.Attribute:
+            case ModifierAppliesToType.Ability:
                 return [
-                    { value: -1, label: 'Any Attribute' },
+                    { value: -1, label: 'Any Ability' },
                     ...ABILITY_SELECT_LIST
                 ];
             case ModifierAppliesToType.Skill:
@@ -856,7 +990,7 @@ function ModifierDetailForm({ index, feats, featsLoading }: ModifierDetailFormPr
                 // Clear the appliesTo value if it's not valid for the current type
                 setFormData(prev => ({
                     ...prev,
-                    modifiers: (prev.modifiers as any[] || []).map((mod, i) =>
+                    modifiers: (prev.modifiers as FeatureModifierInQueryResponse[] || []).map((mod, i) =>
                         i === index ? { ...mod, appliesTo: null, appliesToId: null } : mod
                     )
                 }));
@@ -868,7 +1002,7 @@ function ModifierDetailForm({ index, feats, featsLoading }: ModifierDetailFormPr
                     // Clear the appliesTo value if it's not valid for the current type
                     setFormData(prev => ({
                         ...prev,
-                        modifiers: (prev.modifiers as any[] || []).map((mod, i) =>
+                        modifiers: (prev.modifiers as FeatureModifierInQueryResponse[] || []).map((mod, i) =>
                             i === index ? { ...mod, appliesTo: null, appliesToId: null } : mod
                         )
                     }));
@@ -894,7 +1028,7 @@ function ModifierDetailForm({ index, feats, featsLoading }: ModifierDetailFormPr
             // Clear appliesToId when appliesTo changes to ensure the dropdown updates properly
             setFormData(prev => ({
                 ...prev,
-                modifiers: (prev.modifiers as any[] || []).map((mod, i) =>
+                modifiers: (prev.modifiers as FeatureModifierInQueryResponse[] || []).map((mod, i) =>
                     i === index ? { ...mod, appliesToId: null } : mod
                 )
             }));
@@ -910,7 +1044,7 @@ function ModifierDetailForm({ index, feats, featsLoading }: ModifierDetailFormPr
             if (!modifier.formulaParams?.thresholds || !modifier.formulaParams?.values) {
                 setFormData(prev => ({
                     ...prev,
-                    modifiers: (prev.modifiers as any[] || []).map((mod, i) =>
+                    modifiers: (prev.modifiers as FeatureModifierInQueryResponse[] || []).map((mod, i) =>
                         i === index ? {
                             ...mod,
                             formulaParams: {
@@ -935,7 +1069,7 @@ function ModifierDetailForm({ index, feats, featsLoading }: ModifierDetailFormPr
         };
         setFormData(prev => ({
             ...prev,
-            modifiers: (prev.modifiers as any[] || []).map((mod, i) =>
+            modifiers: (prev.modifiers as FeatureModifierInQueryResponse[] || []).map((mod, i) =>
                 i === index ? {
                     ...mod,
                     conditions: [...(mod.conditions || []), newCondition]
@@ -947,7 +1081,7 @@ function ModifierDetailForm({ index, feats, featsLoading }: ModifierDetailFormPr
     const removeCondition = (conditionIndex: number) => {
         setFormData(prev => ({
             ...prev,
-            modifiers: (prev.modifiers as any[] || []).map((mod, i) =>
+            modifiers: (prev.modifiers as FeatureModifierInQueryResponse[] || []).map((mod, i) =>
                 i === index ? {
                     ...mod,
                     conditions: (mod.conditions || []).filter((_, ci) => ci !== conditionIndex)
@@ -1064,9 +1198,9 @@ function ModifierDetailForm({ index, feats, featsLoading }: ModifierDetailFormPr
 
                         // Render different parameter inputs based on formula type
                         switch (formulaId) {
-                            case 1: // LINEAR_SCALING
-                            case 2: // EVERY_N_LEVELS
-                            case 5: // DICE_SCALING
+                            case FormulaId.LINEAR_SCALING: // LINEAR_SCALING
+                            case FormulaId.EVERY_N_LEVELS: // EVERY_N_LEVELS
+                            case FormulaId.DICE_SCALING: // DICE_SCALING
                                 return (
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
@@ -1095,15 +1229,15 @@ function ModifierDetailForm({ index, feats, featsLoading }: ModifierDetailFormPr
                                     </div>
                                 );
 
-                            case 6: // ATTRIBUTE_BASED
+                            case FormulaId.ABILITY_BASED:
                                 return (
                                     <div className="grid grid-cols-1 gap-3">
                                         <div>
                                             <ValidatedCustomSelect
-                                                field={`modifiers.${index}.formulaParams.attributeId`}
-                                                label="Attribute"
+                                                field={`modifiers.${index}.formulaParams.abilityId`}
+                                                label="Ability"
                                                 options={ABILITY_SELECT_LIST}
-                                                placeholder="Select attribute"
+                                                placeholder="Select ability"
                                                 componentExtraClassName="flex items-center gap-2"
                                                 nested
                                             />
@@ -1114,15 +1248,15 @@ function ModifierDetailForm({ index, feats, featsLoading }: ModifierDetailFormPr
                                     </div>
                                 );
 
-                            case 7: // ATTRIBUTE_MODIFIER
+                            case FormulaId.ABILITY_MODIFIER:
                                 return (
                                     <div className="grid grid-cols-1 gap-3">
                                         <div>
                                             <ValidatedCustomSelect
-                                                field={`modifiers.${index}.formulaParams.attributeId`}
-                                                label="Attribute"
+                                                field={`modifiers.${index}.formulaParams.abilityId`}
+                                                label="Ability"
                                                 options={ABILITY_SELECT_LIST}
-                                                placeholder="Select attribute"
+                                                placeholder="Select ability"
                                                 componentExtraClassName="flex items-center gap-2"
                                                 nested
                                             />
@@ -1130,15 +1264,15 @@ function ModifierDetailForm({ index, feats, featsLoading }: ModifierDetailFormPr
                                     </div>
                                 );
 
-                            case 8: // LEVEL_TIMES_ATTRIBUTE
+                            case FormulaId.LEVEL_TIMES_ABILITY:
                                 return (
                                     <div className="grid grid-cols-1 gap-3">
                                         <div>
                                             <ValidatedCustomSelect
-                                                field={`modifiers.${index}.formulaParams.attributeId`}
-                                                label="Attribute"
+                                                field={`modifiers.${index}.formulaParams.abilityId`}
+                                                label="Ability"
                                                 options={ABILITY_SELECT_LIST}
-                                                placeholder="Select attribute"
+                                                placeholder="Select ability"
                                                 componentExtraClassName="flex items-center gap-2"
                                                 nested
                                             />
@@ -1146,7 +1280,7 @@ function ModifierDetailForm({ index, feats, featsLoading }: ModifierDetailFormPr
                                     </div>
                                 );
 
-                            case 9: // LEVEL_TIMES_VALUE
+                            case FormulaId.LEVEL_TIMES_VALUE: // LEVEL_TIMES_VALUE
                                 return (
                                     <div className="grid grid-cols-1 gap-3">
                                         <div className="text-xs text-gray-600 dark:text-gray-400">
@@ -1155,7 +1289,7 @@ function ModifierDetailForm({ index, feats, featsLoading }: ModifierDetailFormPr
                                     </div>
                                 );
 
-                            case 10: // VALUE_PLUS_LEVEL
+                            case FormulaId.VALUE_PLUS_LEVEL: // VALUE_PLUS_LEVEL
                                 return (
                                     <div className="grid grid-cols-1 gap-3">
                                         <div className="text-xs text-gray-600 dark:text-gray-400">
@@ -1164,26 +1298,26 @@ function ModifierDetailForm({ index, feats, featsLoading }: ModifierDetailFormPr
                                     </div>
                                 );
 
-                            case 11: // LEVEL_PLUS_ATTRIBUTE
+                            case FormulaId.LEVEL_PLUS_ABILITY:
                                 return (
                                     <div className="grid grid-cols-1 gap-3">
                                         <div>
                                             <ValidatedCustomSelect
-                                                field={`modifiers.${index}.formulaParams.attributeId`}
-                                                label="Attribute"
+                                                field={`modifiers.${index}.formulaParams.abilityId`}
+                                                label="Ability"
                                                 options={ABILITY_SELECT_LIST}
-                                                placeholder="Select attribute"
+                                                placeholder="Select ability"
                                                 componentExtraClassName="flex items-center gap-2"
                                                 nested
                                             />
                                         </div>
                                         <div className="text-xs text-gray-600 dark:text-gray-400">
-                                            Formula will calculate: level + attribute modifier
+                                            Formula will calculate: level + ability modifier
                                         </div>
                                     </div>
                                 );
 
-                            case 3: // CONDITIONAL_SCALING
+                            case FormulaId.CONDITIONAL_SCALING:
                                 return (
                                     <div className="grid grid-cols-1 gap-3">
                                         <ArrayPairEditor
@@ -1217,8 +1351,6 @@ function ModifierDetailForm({ index, feats, featsLoading }: ModifierDetailFormPr
                                                     )
                                                 }));
                                             }}
-                                            thresholdLabel="Level Threshold"
-                                            valueLabel="Value"
                                             thresholdPlaceholder="e.g., 4"
                                             valuePlaceholder="e.g., -2"
                                         />
@@ -1237,7 +1369,11 @@ function ModifierDetailForm({ index, feats, featsLoading }: ModifierDetailFormPr
                                 );
                         }
                     })()}
-                    <FormulaPreview modifier={modifier} progressionLevel={Number(formData.level) || 1} />
+                    <FormulaPreview
+                        item={modifier}
+                        progressionLevel={Number(formData.level) || 1}
+                        featureName={preSelectedFeature?.name || progression?.feature?.name}
+                    />
                 </div>
             )}
 
@@ -1379,6 +1515,15 @@ function ModifierDetailForm({ index, feats, featsLoading }: ModifierDetailFormPr
                                             label=""
                                             options={ATTACK_TYPE_SELECT_LIST}
                                             placeholder="Select attack type"
+                                            componentExtraClassName="flex-1"
+                                            nested
+                                        />
+                                    ) : condition.conditionType === FeatureModifierConditionType.spell_school ? (
+                                        <ValidatedCustomSelect
+                                            field={`modifiers.${index}.conditions.${conditionIndex}.conditionValue`}
+                                            label=""
+                                            options={SPELL_SCHOOL_SELECT_LIST}
+                                            placeholder="Select spell school"
                                             componentExtraClassName="flex-1"
                                             nested
                                         />
@@ -1652,9 +1797,11 @@ function EffectDetailForm({ index }: EffectDetailFormProps) {
 // Choice Detail Form Component
 interface ChoiceDetailFormProps {
     index: number;
+    preSelectedFeature?: { id: number; name: string; description: string; slug: string };
+    progression?: FeatureProgressionWithRelations | null;
 }
 
-function ChoiceDetailForm({ index }: ChoiceDetailFormProps) {
+function ChoiceDetailForm({ index, preSelectedFeature, progression }: ChoiceDetailFormProps) {
     const { formData, setFormData } = useFormContext();
     const choices = formData.choices as any[] || [];
     const choice = choices[index] || {};
@@ -1673,7 +1820,7 @@ function ChoiceDetailForm({ index }: ChoiceDetailFormProps) {
                             formulaId: null,
                             interval: 1,
                             formulaStartLevel: null,
-                            attributeId: null,
+                            abilityId: null,
                             thresholds: null,
                             values: null,
                         }
@@ -1910,9 +2057,9 @@ function ChoiceDetailForm({ index }: ChoiceDetailFormProps) {
 
                         // Render different parameter inputs based on formula type
                         switch (formulaId) {
-                            case 1: // LINEAR_SCALING
-                            case 2: // EVERY_N_LEVELS
-                            case 5: // DICE_SCALING
+                            case FormulaId.LINEAR_SCALING:
+                            case FormulaId.EVERY_N_LEVELS:
+                            case FormulaId.DICE_SCALING:
                                 return (
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
@@ -1941,15 +2088,15 @@ function ChoiceDetailForm({ index }: ChoiceDetailFormProps) {
                                     </div>
                                 );
 
-                            case 6: // ATTRIBUTE_BASED
+                            case FormulaId.ABILITY_BASED:
                                 return (
                                     <div className="grid grid-cols-1 gap-3">
                                         <div>
                                             <ValidatedCustomSelect
-                                                field={`choices.${index}.formulaParams.attributeId`}
-                                                label="Attribute"
+                                                field={`choices.${index}.formulaParams.abilityId`}
+                                                label="Ability"
                                                 options={ABILITY_SELECT_LIST}
-                                                placeholder="Select attribute"
+                                                placeholder="Select ability"
                                                 componentExtraClassName="flex items-center gap-2"
                                                 nested
                                             />
@@ -1957,15 +2104,15 @@ function ChoiceDetailForm({ index }: ChoiceDetailFormProps) {
                                     </div>
                                 );
 
-                            case 7: // ATTRIBUTE_MODIFIER
+                            case FormulaId.ABILITY_MODIFIER:
                                 return (
                                     <div className="grid grid-cols-1 gap-3">
                                         <div>
                                             <ValidatedCustomSelect
-                                                field={`choices.${index}.formulaParams.attributeId`}
-                                                label="Attribute"
+                                                field={`choices.${index}.formulaParams.abilityId`}
+                                                label="Ability"
                                                 options={ABILITY_SELECT_LIST}
-                                                placeholder="Select attribute"
+                                                placeholder="Select ability"
                                                 componentExtraClassName="flex items-center gap-2"
                                                 nested
                                             />
@@ -1973,15 +2120,15 @@ function ChoiceDetailForm({ index }: ChoiceDetailFormProps) {
                                     </div>
                                 );
 
-                            case 8: // LEVEL_TIMES_ATTRIBUTE
+                            case FormulaId.LEVEL_TIMES_ABILITY:
                                 return (
                                     <div className="grid grid-cols-1 gap-3">
                                         <div>
                                             <ValidatedCustomSelect
-                                                field={`choices.${index}.formulaParams.attributeId`}
-                                                label="Attribute"
+                                                field={`choices.${index}.formulaParams.abilityId`}
+                                                label="Ability"
                                                 options={ABILITY_SELECT_LIST}
-                                                placeholder="Select attribute"
+                                                placeholder="Select ability"
                                                 componentExtraClassName="flex items-center gap-2"
                                                 nested
                                             />
@@ -1989,9 +2136,9 @@ function ChoiceDetailForm({ index }: ChoiceDetailFormProps) {
                                     </div>
                                 );
 
-                            case 9: // LEVEL_TIMES_VALUE
-                            case 10: // VALUE_PLUS_LEVEL
-                            case 11: // LEVEL_PLUS_ATTRIBUTE
+                            case FormulaId.LEVEL_TIMES_VALUE:
+                            case FormulaId.VALUE_PLUS_LEVEL:
+                            case FormulaId.LEVEL_PLUS_ABILITY:
                                 return (
                                     <div className="grid grid-cols-1 gap-3">
                                         <div className="text-xs text-gray-600 dark:text-gray-400">
@@ -2000,7 +2147,7 @@ function ChoiceDetailForm({ index }: ChoiceDetailFormProps) {
                                     </div>
                                 );
 
-                            case 3: // CONDITIONAL_SCALING
+                            case FormulaId.CONDITIONAL_SCALING:
                                 return (
                                     <div className="grid grid-cols-1 gap-3">
                                         <ArrayPairEditor
@@ -2034,8 +2181,6 @@ function ChoiceDetailForm({ index }: ChoiceDetailFormProps) {
                                                     )
                                                 }));
                                             }}
-                                            thresholdLabel="Level Threshold"
-                                            valueLabel="Value"
                                             thresholdPlaceholder="e.g., 4"
                                             valuePlaceholder="e.g., -2"
                                         />
@@ -2054,7 +2199,11 @@ function ChoiceDetailForm({ index }: ChoiceDetailFormProps) {
                                 );
                         }
                     })()}
-                    <FormulaPreview modifier={choice} progressionLevel={Number(formData.level) || 1} />
+                    <FormulaPreview
+                        item={choice}
+                        progressionLevel={Number(formData.level) || 1}
+                        featureName={preSelectedFeature?.name || progression?.feature?.name}
+                    />
                 </div>
             )}
         </div>

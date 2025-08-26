@@ -1,5 +1,5 @@
 import { Dialog } from '@base-ui-components/react/dialog';
-import React, { useState, useEffect, useCallback, Fragment } from 'react';
+import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 
 import {
@@ -27,7 +27,6 @@ interface FeatPrereqEditProps {
 }
 
 export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: FeatPrereqEditProps) {
-    const [prereq, setPrereq] = useState<FeatPrerequisiteFormData | null>(null);
     const [message, setMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -108,26 +107,7 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
     if (!isOpen) return null;
 
     // Create listbox props for type
-    const typeListboxProps = {
-        value: formData.typeId,
-        onChange: (value: string | number | null) => {
-            setFormData(prev => ({ ...prev, typeId: value as number | null }));
-            form.validation.validateField('typeId', value);
-        },
-        error: form.validation.getError('typeId'),
-        hasError: form.validation.hasError('typeId')
-    };
 
-    // Create listbox props for reference
-    const referenceListboxProps = {
-        value: formData.referenceId,
-        onChange: (value: string | number | null) => {
-            setFormData(prev => ({ ...prev, referenceId: value as number | null }));
-            form.validation.validateField('referenceId', value);
-        },
-        error: form.validation.getError('referenceId'),
-        hasError: form.validation.hasError('referenceId')
-    };
 
     return (
         <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>

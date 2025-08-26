@@ -1,7 +1,5 @@
 ---
 description: Naming files and folders
-globs: ["**/*"]
-priority: 2
 alwaysApply: false
 ---
 Folder naming conventions:

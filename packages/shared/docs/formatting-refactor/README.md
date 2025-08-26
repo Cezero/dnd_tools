@@ -21,6 +21,10 @@ This directory contains the analysis and planning documents for refactoring the 
 - [Pain Points and Issues](./pain-points-analysis.md)
 - [Refactoring Strategy](./refactoring-strategy.md)
 - [Implementation Plan](./implementation-plan.md)
+- [Implementation Status](./implementation-status.md)
+- [Unified Registry Summary](./unified-registry-summary.md)
+- [Final Implementation Summary](./final-implementation-summary.md)
+- [Inheritance-Based Refactoring](./inheritance-based-refactoring.md)
 
 ## Key Principles
 
@@ -39,3 +43,7 @@ This directory contains the analysis and planning documents for refactoring the 
 - [x] Pain points identification
 - [x] Refactoring strategy design
 - [x] Implementation plan creation
+- [x] Unified formatter registry implementation
+- [x] 6-layer clean architecture implementation
+- [x] Inheritance-based display strategies refactoring
+- [x] Documentation updates

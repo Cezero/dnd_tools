@@ -13,9 +13,9 @@ import type {
     CreateSpellPreparationRequest,
     UpdateSpellPreparationRequest,
     CharacterSpellPreparationWithMetamagicResponse,
-    CreateCharacterAttributeRequest,
-    UpdateCharacterAttributeRequest,
-    CharacterAttributeResponse,
+    CreateCharacterAbilityScoreRequest,
+    UpdateCharacterAbilityScoreRequest,
+    CharacterAbilityScoreResponse,
     CharacterWithAllDetailsResponse,
 } from '@shared/schema';
 
@@ -41,9 +41,9 @@ export interface CharacterService {
     deleteSpellPreparation: (characterId: number, prepKey: string) => Promise<UpdateResponse>;
     getCharacterSpellPreparations: (characterId: number) => Promise<CharacterSpellPreparationWithMetamagicResponse[]>;
 
-    // Character attribute methods
-    createCharacterAttribute: (data: CreateCharacterAttributeRequest) => Promise<CreateResponse>;
-    updateCharacterAttribute: (id: number, data: UpdateCharacterAttributeRequest) => Promise<UpdateResponse>;
-    deleteCharacterAttribute: (id: number) => Promise<UpdateResponse>;
-    getCharacterAttributes: (characterId: number) => Promise<CharacterAttributeResponse[]>;
+    // Character ability score methods
+    createCharacterAbilityScore: (data: CreateCharacterAbilityScoreRequest) => Promise<CreateResponse>;
+    updateCharacterAbilityScore: (id: number, data: UpdateCharacterAbilityScoreRequest) => Promise<UpdateResponse>;
+    deleteCharacterAbilityScore: (id: number) => Promise<UpdateResponse>;
+    getCharacterAbilityScores: (characterId: number) => Promise<CharacterAbilityScoreResponse[]>;
 } 

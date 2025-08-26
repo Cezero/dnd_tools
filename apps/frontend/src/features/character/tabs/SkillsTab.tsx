@@ -1,6 +1,7 @@
 import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import React, { useMemo } from 'react';
 
+import { AnalogSkillService } from '@/features/character/AnalogSkillService';
 import type { RaceInQueryResponse, GetRaceResponse, GetClassResponse, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse } from '@shared/schema';
 import {
     SKILL_LIST,
@@ -8,10 +9,6 @@ import {
     GetAbilityModifier,
     GetAbilityModifierString
 } from '@shared/static-data';
-
-interface SkillRowProps {
-    skillId: number;
-}
 
 interface SkillsTabProps {
     character: CharacterWithAllDetailsResponse;
@@ -41,17 +38,13 @@ export function SkillsTab({
         if (!advancement?.classId || !selectedClassDetails) return false;
 
         // Check if the skill is in the class's skill list
-        return selectedClassDetails.skills?.some(classSkill => classSkill.skillId === skillId) || false;
+        return selectedClassDetails.skillList?.some(classSkill => classSkill.id === skillId) || false;
     };
 
-
-
-
-
-    // Get ability score from attributes
+    // Get ability score
     const getAbilityScore = (abilityId: number): number => {
-        const attribute = character.attributes.find(attr => attr.attributeId === abilityId);
-        return attribute?.value ?? 10; // Default to 10 if not set
+        const abilityScore = character.abilityScores.find(attr => attr.abilityId === abilityId);
+        return abilityScore?.value ?? 10; // Default to 10 if not set
     };
 
     // Get skill ranks from advancement
@@ -96,7 +89,7 @@ export function SkillsTab({
 
             return basePoints;
         }
-    }, [advancement?.classId, selectedClassDetails, character.attributes, character.raceId, selectedRaceDetails, isNewCharacter]);
+    }, [advancement?.classId, selectedClassDetails, character.abilityScores, character.raceId, selectedRaceDetails, isNewCharacter]);
 
     // Calculate skill points spent
     const skillPointsSpent = useMemo(() => {

@@ -4,7 +4,6 @@ import {
 import {
     ModifierAppliesToType,
     ModifierType,
-    FeatureSpecialEffectType,
     SpecialFeatureId,
 } from '@shared/static-data';
 

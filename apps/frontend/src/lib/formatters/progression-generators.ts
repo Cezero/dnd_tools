@@ -1,14 +1,16 @@
 import type {
-    ProgressionGenerator,
-    TransitionDetector
-} from './interfaces';
+    FormulaParamsData
+} from '@shared/schema';
+import { FORMULA_MAP } from '@shared/static-data';
+
+import { calculatorRegistry } from './calculator-registry';
 import type {
-    FormulaParamsData,
     CalculationContext,
     ProgressionValue,
-    TransitionPoint
-} from '@shared/schema';
-import { formulaCalculator } from './calculators';
+    TransitionPoint,
+    ProgressionGenerator,
+    TransitionDetector
+} from './types';
 
 /**
  * Pure generator for progression values across level ranges
@@ -18,7 +20,8 @@ export class ProgressionGeneratorImpl implements ProgressionGenerator {
         formula: FormulaParamsData,
         startLevel: number,
         endLevel: number,
-        context?: CalculationContext
+        context?: CalculationContext,
+        modifierValue?: number
     ): Array<ProgressionValue> {
         const values: Array<ProgressionValue> = [];
 
@@ -30,7 +33,8 @@ export class ProgressionGeneratorImpl implements ProgressionGenerator {
                 character: context?.character
             };
 
-            const result = formulaCalculator.calculate(formula, level, calculationContext);
+            const formulaCalculator = calculatorRegistry.getDefaultFormulaCalculator();
+            const result = formulaCalculator.calculate(formula, level, calculationContext, modifierValue);
 
             values.push({
                 level,
@@ -44,15 +48,49 @@ export class ProgressionGeneratorImpl implements ProgressionGenerator {
     }
 
     /**
+     * Generate display strings for character-dependent formulas without character context
+     */
+    generateDisplayStrings(
+        formula: FormulaParamsData,
+        startLevel: number,
+        endLevel: number
+    ): Array<string> {
+        const displayStrings: Array<string> = [];
+        const formulaDef = FORMULA_MAP[formula.formulaId];
+
+        if (!formulaDef) {
+            return displayStrings;
+        }
+
+        for (let level = startLevel; level <= endLevel; level++) {
+            const params = {
+                level,
+                startLevel,
+                interval: formula.interval,
+                formulaStartLevel: formula.formulaStartLevel,
+                abilityId: formula.abilityId,
+                thresholds: formula.thresholds,
+                values: formula.values
+            };
+
+            const displayString = formulaDef.getDisplayString(params);
+            displayStrings.push(displayString);
+        }
+
+        return displayStrings;
+    }
+
+    /**
      * Generate progression values for a specific feature progression
      */
     generateProgressionValues(
         formula: FormulaParamsData,
         progressionLevel: number,
         maxLevel: number = 20,
-        context?: CalculationContext
+        context?: CalculationContext,
+        modifierValue?: number
     ): Array<ProgressionValue> {
-        return this.generateValues(formula, progressionLevel, maxLevel, context);
+        return this.generateValues(formula, progressionLevel, maxLevel, context, modifierValue);
     }
 
     /**

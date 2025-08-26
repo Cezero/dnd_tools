@@ -4,8 +4,7 @@ import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthAuto } from '@/components/auth';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { ReferenceTableService } from '@/features/admin/features/reference-table-management/ReferenceTableService';
-import { RenderStructuredTable } from '@/plugins/RenderStructuredTable';
-import { ReferenceTableDataResponse, ReferenceTableSummary } from '@shared/schema';
+import { ReferenceTableSummary } from '@shared/schema';
 
 export function ReferenceTableViewer() {
     const { slug } = useParams();

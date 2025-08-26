@@ -1,9 +1,8 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter, createEqualsFilter } from '@/components/generic-list/filterFunctions';
-import { FilterType } from '@/components/generic-list/types';
 import { CharacterWithRaceResponse } from '@shared/schema';
-import { ALIGNMENT_MAP, ALIGNMENT_SELECT_LIST } from '@shared/static-data';
+import { ALIGNMENT_MAP, ALIGNMENT_SELECT_LIST, FilterType } from '@shared/static-data';
 
 export const CHARACTER_COLUMNS: ColumnDef<CharacterWithRaceResponse, unknown>[] = [
     {

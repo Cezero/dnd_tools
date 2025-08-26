@@ -36,7 +36,7 @@ const UserCharacterSchema = z.object({
 const UserCharacterAttributeSchema = z.object({
     id: z.number().int().positive(),
     characterId: z.number().int().positive(),
-    attributeId: z.number().int().positive(),
+    abilityId: z.number().int().positive(),
     value: z.number().int().positive(),
     
     // Relationships
@@ -54,7 +54,7 @@ const CharacterAdvancementSchema = z.object({
     classId: z.number().int().positive(),
     secondaryClassId: z.number().int().positive().optional(), // For gestalt/variant multiclassing
     hitPoints: z.number().int().positive(),
-    attributeId: z.number().int().positive().optional(),
+    abilityId: z.number().int().positive().optional(),
     notes: z.string().optional(),
     createdAt: z.date(),
     

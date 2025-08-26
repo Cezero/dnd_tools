@@ -20,7 +20,7 @@ export const SpellPreparationParamSchema = z.object({
     prepKey: z.string(),
 });
 
-export const AttributeIdParamSchema = z.object({
+export const AbilityIdParamSchema = z.object({
     id: z.string().transform((val: string) => parseInt(val)),
 });
 
@@ -54,12 +54,12 @@ export const CharacterWithRaceSchema = CharacterSchema.extend({
     }),
 });
 
-// Character attribute schema
-export const CharacterAttributeSchema = z.object({
-    id: z.number().int().positive('Attribute ID must be a positive integer'),
+// Character ability score schema
+export const CharacterAbilityScoreSchema = z.object({
+    id: z.number().int().positive('Ability score ID must be a positive integer'),
     characterId: z.number().int().positive('Character ID must be a positive integer'),
-    attributeId: z.number().int().positive('Attribute ID must be a positive integer'),
-    value: z.number().int().min(1, 'Attribute value must be a positive integer').max(50, 'Attribute value must be less than 50'),
+    abilityId: z.number().int().positive('Ability ID must be a positive integer'),
+    value: z.number().int().min(1, 'Ability score value must be a positive integer').max(50, 'Ability score value must be less than 50'),
 });
 
 // Character advancement schemas
@@ -71,7 +71,7 @@ export const CharacterAdvancementSchema = z.object({
     classId: z.number().int().positive('Class ID must be a positive integer'),
     secondaryClassId: z.number().int().positive('Secondary class ID must be a positive integer').nullable(),
     hitPoints: z.number().int().min(1, 'Hit points must be a positive integer'),
-    attributeId: z.number().int().positive('Attribute ID must be a positive integer').nullable(),
+    abilityId: z.number().int().positive('Ability ID must be a positive integer').nullable(),
     notes: z.string().max(1000, 'Notes must be less than 1000 characters').nullable(),
     createdAt: z.date(),
 });
@@ -136,7 +136,7 @@ export const CharacterSpellPreparationWithMetamagicSchema = CharacterSpellPrepar
 
 // Character with all related data
 export const CharacterWithAllDetailsSchema = CharacterWithRaceSchema.extend({
-    attributes: z.array(CharacterAttributeSchema),
+    abilityScores: z.array(CharacterAbilityScoreSchema),
     advancements: z.array(CharacterAdvancementWithDetailsSchema),
     preparedSpells: z.array(CharacterSpellPreparationWithMetamagicSchema),
 });
@@ -156,7 +156,7 @@ export const CreateAdvancementSchema = z.object({
     classId: z.number().int().positive('Class ID must be a positive integer'),
     secondaryClassId: z.number().int().positive('Secondary class ID must be a positive integer').nullable(),
     hitPoints: z.number().int().min(1, 'Hit points must be a positive integer'),
-    attributeId: z.number().int().positive('Attribute ID must be a positive integer').nullable(),
+    abilityId: z.number().int().positive('Ability ID must be a positive integer').nullable(),
     notes: z.string().max(1000, 'Notes must be less than 1000 characters').nullable(),
 });
 
@@ -174,11 +174,11 @@ export const CreateSpellPreparationSchema = z.object({
 
 export const UpdateSpellPreparationSchema = CreateSpellPreparationSchema.partial();
 
-// Request/response schemas for character attributes
-export const CreateCharacterAttributeSchema = z.object({
+// Request/response schemas for character ability scores
+export const CreateCharacterAbilityScoreSchema = z.object({
     characterId: z.number().int().positive('Character ID must be a positive integer'),
-    attributeId: z.number().int().positive('Attribute ID must be a positive integer'),
-    value: z.number().int().min(1, 'Attribute value must be a positive integer').max(50, 'Attribute value must be less than 50'),
+    abilityId: z.number().int().positive('Ability ID must be a positive integer'),
+    value: z.number().int().min(1, 'Ability score value must be a positive integer').max(50, 'Ability score value must be less than 50'),
 });
 
 // Character item schemas
@@ -209,7 +209,7 @@ export const UpdateCharacterFeatureChoiceSchema = CharacterFeatureChoiceSchema.p
 
 export const UpdateCharacterItemPropertySchema = CharacterItemPropertySchema.partial().omit({ id: true });
 
-export const UpdateCharacterAttributeSchema = CreateCharacterAttributeSchema.partial();
+export const UpdateCharacterAbilityScoreSchema = CreateCharacterAbilityScoreSchema.partial();
 
 // Character context for formatter calculations
 export const CharacterContextSchema = z.object({
@@ -217,7 +217,6 @@ export const CharacterContextSchema = z.object({
     classLevels: z.record(z.number().int(), z.number().int()), // classId -> level
     raceId: z.number().int().optional(),
     sizeId: z.number().int().optional(), // Maps directly to FeatureModifierCondition.conditionValue
-    attributes: z.record(z.number().int(), z.number().int()).optional(), // attributeId -> value (raw database attributes)
 });
 
 export type CharacterIdParamRequest = z.infer<typeof CharacterIdParamSchema>;
@@ -240,7 +239,6 @@ export type UpdateSpellPreparationRequest = z.infer<typeof UpdateSpellPreparatio
 export type CharacterSpellPreparationResponse = z.infer<typeof CharacterSpellPreparationSchema>;
 export type CharacterSpellPreparationWithMetamagicResponse = z.infer<typeof CharacterSpellPreparationWithMetamagicSchema>;
 
-// Character attribute types
 // Character item types
 export type CharacterItem = z.infer<typeof CharacterItemSchema>;
 export type CreateCharacterItemRequest = z.infer<typeof CreateCharacterItemSchema>;
@@ -255,9 +253,9 @@ export type CharacterFeatureChoice = z.infer<typeof CharacterFeatureChoiceSchema
 export type CreateCharacterFeatureChoiceRequest = z.infer<typeof CreateCharacterFeatureChoiceSchema>;
 export type UpdateCharacterFeatureChoiceRequest = z.infer<typeof UpdateCharacterFeatureChoiceSchema>;
 
-export type CreateCharacterAttributeRequest = z.infer<typeof CreateCharacterAttributeSchema>;
-export type UpdateCharacterAttributeRequest = z.infer<typeof UpdateCharacterAttributeSchema>;
-export type CharacterAttributeResponse = z.infer<typeof CharacterAttributeSchema>;
+export type CreateCharacterAbilityScoreRequest = z.infer<typeof CreateCharacterAbilityScoreSchema>;
+export type UpdateCharacterAbilityScoreRequest = z.infer<typeof UpdateCharacterAbilityScoreSchema>;
+export type CharacterAbilityScoreResponse = z.infer<typeof CharacterAbilityScoreSchema>;
 
 // Character context type
 export type CharacterContext = z.infer<typeof CharacterContextSchema>;

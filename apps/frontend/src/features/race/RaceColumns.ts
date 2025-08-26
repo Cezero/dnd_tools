@@ -1,7 +1,6 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter, createEqualsFilter, createArrayIdFilter } from '@/components/generic-list/filterFunctions';
-import { FilterType } from '@/components/generic-list/types';
 import { RaceInQueryResponse } from '@shared/schema';
 import {
     EDITION_SELECT_LIST,
@@ -9,7 +8,8 @@ import {
     SIZE_SELECT_LIST,
     EDITION_MAP,
     CLASS_MAP,
-    SIZE_MAP
+    SIZE_MAP,
+    FilterType
 } from '@shared/static-data';
 
 export const RACE_COLUMNS: ColumnDef<RaceInQueryResponse, unknown>[] = [

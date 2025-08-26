@@ -1,8 +1,8 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter } from '@/components/generic-list/filterFunctions';
-import { FilterType } from '@/components/generic-list/types';
 import { FeatureInQueryResponse } from '@shared/schema';
+import { FilterType } from '@shared/static-data';
 
 export const FEATURE_COLUMNS: ColumnDef<FeatureInQueryResponse, unknown>[] = [
     {

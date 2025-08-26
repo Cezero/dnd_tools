@@ -1,8 +1,12 @@
 import React from 'react';
+
 import { TrashIcon } from '@heroicons/react/24/outline';
-import { CustomSelect } from '@/components/forms/FormComponents';
+
 import { LANGUAGE_SELECT_LIST } from '@shared/static-data';
+
+import { CustomSelect } from '@/components/forms/FormComponents';
 import { LanguageService } from '../../../lib/LanguageService';
+
 import type { RaceTabProps } from './types';
 
 export function LanguagesTab({

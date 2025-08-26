@@ -1,4 +1,4 @@
-import { BaseMap, CoreComponent } from "./types";
+import { AppliesToType, BaseMap, CoreComponent } from "./types";
 import { NameSelectOptionList } from "./Util";
 
 export const SpecialFeatureId = {
@@ -40,7 +40,7 @@ export const MODIFIER_SELECT_LIST = NameSelectOptionList(MODIFIER_LIST);
 
 export const ModifierAppliesToType = {
     // Bonus-compatible types
-    Attribute: 0,        // STR, DEX, CON, etc.
+    Ability: 0,        // STR, DEX, CON, etc.
     Skill: 1,           // Climb, Jump, etc.
     SavingThrow: 2,     // Fort, Ref, Will
     AC: 3,              // Armor Class
@@ -65,39 +65,37 @@ export const ModifierAppliesToType = {
     Other: 13,          // Special cases
     BonusLanguage: 14,  // Languages that require INT modifier
     AutomaticLanguage: 15, // Languages granted automatically
-    Choice: 16,         // Levels where choices can be made (e.g., Fighter Bonus Feats)
 } as const;
 
 export type ModifierAppliesToType = typeof ModifierAppliesToType[keyof typeof ModifierAppliesToType];
 
-export const MODIFIER_APPLIES_TO_TYPES: BaseMap<CoreComponent> = {
+export const MODIFIER_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
     // Bonus-compatible types
-    [ModifierAppliesToType.Attribute]: { id: ModifierAppliesToType.Attribute, name: 'Attribute' },
-    [ModifierAppliesToType.Skill]: { id: ModifierAppliesToType.Skill, name: 'Skill' },
-    [ModifierAppliesToType.SavingThrow]: { id: ModifierAppliesToType.SavingThrow, name: 'Saving Throw' },
-    [ModifierAppliesToType.AC]: { id: ModifierAppliesToType.AC, name: 'Armor Class' },
-    [ModifierAppliesToType.Attack]: { id: ModifierAppliesToType.Attack, name: 'Attack' },
-    [ModifierAppliesToType.Damage]: { id: ModifierAppliesToType.Damage, name: 'Damage' },
-    [ModifierAppliesToType.DamageReduction]: { id: ModifierAppliesToType.DamageReduction, name: 'DR' },
-    [ModifierAppliesToType.Initiative]: { id: ModifierAppliesToType.Initiative, name: 'Initiative' },
+    [ModifierAppliesToType.Ability]: { id: ModifierAppliesToType.Ability, name: 'Ability', displayName: null },
+    [ModifierAppliesToType.Skill]: { id: ModifierAppliesToType.Skill, name: 'Skill', displayName: 'Skill' },
+    [ModifierAppliesToType.SavingThrow]: { id: ModifierAppliesToType.SavingThrow, name: 'Saving Throw', displayName: 'Save' },
+    [ModifierAppliesToType.AC]: { id: ModifierAppliesToType.AC, name: 'Armor Class', displayName: 'AC' },
+    [ModifierAppliesToType.Attack]: { id: ModifierAppliesToType.Attack, name: 'Attack', displayName: 'Atk' },
+    [ModifierAppliesToType.Damage]: { id: ModifierAppliesToType.Damage, name: 'Damage', displayName: 'Dmg' },
+    [ModifierAppliesToType.DamageReduction]: { id: ModifierAppliesToType.DamageReduction, name: 'Damage Reduction', displayName: 'DR' },
+    [ModifierAppliesToType.Initiative]: { id: ModifierAppliesToType.Initiative, name: 'Initiative', displayName: 'Init' },
 
     // Quantity-compatible types
-    [ModifierAppliesToType.MovementSpeed]: { id: ModifierAppliesToType.MovementSpeed, name: 'Movement Speed' },
-    [ModifierAppliesToType.HitDice]: { id: ModifierAppliesToType.HitDice, name: 'Hit Dice' },
-    [ModifierAppliesToType.Uses]: { id: ModifierAppliesToType.Uses, name: 'Uses' },
-    [ModifierAppliesToType.Targets]: { id: ModifierAppliesToType.Targets, name: 'Targets' },
-    [ModifierAppliesToType.Distance]: { id: ModifierAppliesToType.Distance, name: 'Distance' },
-    [ModifierAppliesToType.ExtraAttacks]: { id: ModifierAppliesToType.ExtraAttacks, name: 'Extra Attacks' },
-    [ModifierAppliesToType.Healing]: { id: ModifierAppliesToType.Healing, name: 'Healing' },
-    [ModifierAppliesToType.SpellResistance]: { id: ModifierAppliesToType.SpellResistance, name: 'Spell Resistance' },
-    [ModifierAppliesToType.UnarmedDamage]: { id: ModifierAppliesToType.UnarmedDamage, name: 'Unarmed Damage' },
-    [ModifierAppliesToType.Feat]: { id: ModifierAppliesToType.Feat, name: 'Feat' },
+    [ModifierAppliesToType.MovementSpeed]: { id: ModifierAppliesToType.MovementSpeed, name: 'Movement Speed', displayName: 'Move Speed' },
+    [ModifierAppliesToType.HitDice]: { id: ModifierAppliesToType.HitDice, name: 'Hit Dice', displayName: 'HD' },
+    [ModifierAppliesToType.Uses]: { id: ModifierAppliesToType.Uses, name: 'Uses', displayName: 'Uses' },
+    [ModifierAppliesToType.Targets]: { id: ModifierAppliesToType.Targets, name: 'Targets', displayName: 'Targets' },
+    [ModifierAppliesToType.Distance]: { id: ModifierAppliesToType.Distance, name: 'Distance', displayName: 'Distance' },
+    [ModifierAppliesToType.ExtraAttacks]: { id: ModifierAppliesToType.ExtraAttacks, name: 'Extra Attacks', displayName: 'Extra Attacks' },
+    [ModifierAppliesToType.Healing]: { id: ModifierAppliesToType.Healing, name: 'Healing', displayName: 'Healing' },
+    [ModifierAppliesToType.SpellResistance]: { id: ModifierAppliesToType.SpellResistance, name: 'Spell Resistance', displayName: 'SR' },
+    [ModifierAppliesToType.UnarmedDamage]: { id: ModifierAppliesToType.UnarmedDamage, name: 'Unarmed Damage', displayName: 'Unarmed Dmg' },
+    [ModifierAppliesToType.Feat]: { id: ModifierAppliesToType.Feat, name: 'Feat', displayName: 'Feat' },
 
     // Other
-    [ModifierAppliesToType.Other]: { id: ModifierAppliesToType.Other, name: 'Other' },
-    [ModifierAppliesToType.BonusLanguage]: { id: ModifierAppliesToType.BonusLanguage, name: 'Bonus Language' },
-    [ModifierAppliesToType.AutomaticLanguage]: { id: ModifierAppliesToType.AutomaticLanguage, name: 'Automatic Language' },
-
+    [ModifierAppliesToType.Other]: { id: ModifierAppliesToType.Other, name: 'Other', displayName: 'Other' },
+    [ModifierAppliesToType.BonusLanguage]: { id: ModifierAppliesToType.BonusLanguage, name: 'Bonus Language', displayName: 'Bonus Language' },
+    [ModifierAppliesToType.AutomaticLanguage]: { id: ModifierAppliesToType.AutomaticLanguage, name: 'Automatic Language', displayName: 'Automatic Language' },
 }
 
 export const MODIFIER_APPLIES_TO_LIST = Object.values(MODIFIER_APPLIES_TO_TYPES);
@@ -106,7 +104,7 @@ export const MODIFIER_APPLIES_TO_SELECT_LIST = NameSelectOptionList(MODIFIER_APP
 // Type compatibility matrix - defines which ModifierAppliesToType values are valid for each ModifierType
 export const MODIFIER_TYPE_COMPATIBILITY = {
     [ModifierType.Bonus]: [
-        ModifierAppliesToType.Attribute,
+        ModifierAppliesToType.Ability,
         ModifierAppliesToType.Skill,
         ModifierAppliesToType.SavingThrow,
         ModifierAppliesToType.AC,
@@ -130,7 +128,7 @@ export const MODIFIER_TYPE_COMPATIBILITY = {
         ModifierAppliesToType.Damage,
         ModifierAppliesToType.UnarmedDamage,
         ModifierAppliesToType.MovementSpeed,
-        ModifierAppliesToType.Attribute, // For ability score replacement
+        ModifierAppliesToType.Ability, // For ability score replacement
     ],
     [ModifierType.Other]: [
         ModifierAppliesToType.Other,
@@ -326,6 +324,7 @@ export const FeatureModifierConditionType = {
     character_size: 2,
     other: 3,
     feature: 4,
+    spell_school: 5,
 } as const;
 
 export type FeatureModifierConditionType = typeof FeatureModifierConditionType[keyof typeof FeatureModifierConditionType];
@@ -336,6 +335,7 @@ export const FEATURE_MODIFIER_CONDITION_TYPES: BaseMap<CoreComponent> = {
     [FeatureModifierConditionType.character_size]: { id: FeatureModifierConditionType.character_size, name: 'Character Size' },
     [FeatureModifierConditionType.other]: { id: FeatureModifierConditionType.other, name: 'Other' },
     [FeatureModifierConditionType.feature]: { id: FeatureModifierConditionType.feature, name: 'Feature' },
+    [FeatureModifierConditionType.spell_school]: { id: FeatureModifierConditionType.spell_school, name: 'Spell School' },
 }
 
 export const FEATURE_MODIFIER_CONDITION_LIST = Object.values(FEATURE_MODIFIER_CONDITION_TYPES);
@@ -358,6 +358,7 @@ export const ATTACK_TYPE_ENUM = {
     OVERRUN: 13,
     AID_ANOTHER: 14,
     FEINT: 15,
+    UNARMED_ATTACK: 16,
 } as const;
 
 export type AttackType = typeof ATTACK_TYPE_ENUM[keyof typeof ATTACK_TYPE_ENUM];
@@ -378,6 +379,7 @@ export const ATTACK_TYPES: BaseMap<CoreComponent> = {
     [ATTACK_TYPE_ENUM.OVERRUN]: { id: ATTACK_TYPE_ENUM.OVERRUN, name: 'Overrun' },
     [ATTACK_TYPE_ENUM.AID_ANOTHER]: { id: ATTACK_TYPE_ENUM.AID_ANOTHER, name: 'Aid Another' },
     [ATTACK_TYPE_ENUM.FEINT]: { id: ATTACK_TYPE_ENUM.FEINT, name: 'Feint' },
+    [ATTACK_TYPE_ENUM.UNARMED_ATTACK]: { id: ATTACK_TYPE_ENUM.UNARMED_ATTACK, name: 'Unarmed Attack' },
 };
 
 export const ATTACK_TYPE_LIST = Object.values(ATTACK_TYPES);

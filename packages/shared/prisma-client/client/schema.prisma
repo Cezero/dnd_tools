@@ -12,25 +12,20 @@ datasource db {
 // Class related
 // =================
 
-enum CastingTypeEnum {
-  Prepared
-  Spontaneous
-}
-
 model Class {
-  id               Int              @id @default(autoincrement())
+  id               Int     @id @default(autoincrement())
   name             String
   abbreviation     String
   editionId        Int?
-  isPrestige       Boolean          @default(false)
-  isVisible        Boolean          @default(true)
-  canCastSpells    Boolean          @default(false)
-  spellsKnown      Boolean          @default(false)
-  hitDie           Int              @default(1)
-  description      String?          @db.Text
+  isPrestige       Boolean @default(false)
+  isVisible        Boolean @default(true)
+  canCastSpells    Boolean @default(false)
+  spellsKnown      Boolean @default(false)
+  hitDie           Int     @default(1)
+  description      String? @db.Text
   skillPoints      Int
   castingAbilityId Int?
-  castingType      CastingTypeEnum?
+  castingType      Int?
 
   babProgression  Int
   fortProgression Int
@@ -156,7 +151,7 @@ model FeatureFormulaParams {
   formulaId         Int
   interval          Int?
   formulaStartLevel Int?
-  attributeId       Int?
+  abilityId         Int?
   thresholds        String? // Comma-separated level thresholds (e.g., "4,8,12")
   values            String? // Comma-separated corresponding values (e.g., "-2,-1,0")
 

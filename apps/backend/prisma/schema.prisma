@@ -12,11 +12,6 @@ datasource db {
 // Class related
 // =================
 
-enum CastingTypeEnum {
-    Prepared
-    Spontaneous
-}
-
 model Class {
     id               Int              @id @default(autoincrement())
     name             String
@@ -30,7 +25,7 @@ model Class {
     description      String?          @db.Text
     skillPoints      Int
     castingAbilityId Int?
-    castingType      CastingTypeEnum?
+    castingType      Int?
 
     babProgression  Int
     fortProgression Int
@@ -156,7 +151,7 @@ model FeatureFormulaParams {
     formulaId         Int
     interval          Int?
     formulaStartLevel Int?
-    attributeId       Int?
+    abilityId         Int?
     thresholds        String? // Comma-separated level thresholds (e.g., "4,8,12")
     values            String? // Comma-separated corresponding values (e.g., "-2,-1,0")
 
@@ -165,7 +160,7 @@ model FeatureFormulaParams {
 }
 
 model FeatureModifierCondition {
-    id                Int  @id @default(autoincrement())
+    id                Int @id @default(autoincrement())
     featureModifierId Int
     conditionType     Int
     conditionValue    Int
@@ -644,7 +639,7 @@ model UserCharacter {
     gender      String?
     notes       String? @db.Text
 
-    abilityScores     UserCharacterAbilityScore[]
+    abilityScores  UserCharacterAbilityScore[]
     characterItems CharacterItem[]
     advancements   CharacterAdvancement[]
     preparedSpells CharacterSpellPreparation[]

@@ -29,9 +29,9 @@ export function meetsPrerequisites(
         switch (prereq.typeId) {
             case FeatPrerequisiteType.ABILITY:
                 if (!prereq.referenceId || !prereq.amount) return true;
-                const abilityAttribute = character.attributes.find(attr => attr.attributeId === prereq.referenceId);
-                const abilityScore = abilityAttribute?.value ?? 0;
-                return abilityScore >= prereq.amount;
+                const abilityScore = character.abilityScores.find(ability => ability.abilityId === prereq.referenceId);
+                const abilityScoreValue = abilityScore?.value ?? 0;
+                return abilityScoreValue >= prereq.amount;
 
             case FeatPrerequisiteType.SKILL:
                 if (!prereq.referenceId || !prereq.amount) return true;
@@ -109,8 +109,8 @@ export function getAbilityScore(
     character: CharacterWithAllDetailsResponse,
     abilityId: number
 ): number {
-    const attribute = character.attributes.find(attr => attr.attributeId === abilityId);
-    return attribute?.value ?? 0;
+    const abilityScore = character.abilityScores.find(ability => ability.abilityId === abilityId);
+    return abilityScore?.value ?? 0;
 }
 
 export function getSkillRanks(

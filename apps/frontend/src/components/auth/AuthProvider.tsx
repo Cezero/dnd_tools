@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 
 import { AuthService } from '@/services/AuthService';
 import { DiceBoxService } from '@/services/DiceBoxService';
@@ -10,7 +10,6 @@ import {
 import type {
     UserDiceConfig,
     AuthUser,
-    DiceBoxAdminConfig,
     UpdateUserProfileRequest,
 } from '@shared/schema';
 
@@ -142,7 +141,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
             localStorage.setItem('token', responseData.token);
             setUser(responseData.user);
             ScheduleRefreshToken(responseData.token);
-        } catch (error) {
+        } catch (_error) {
             console.warn('Token refresh failed. User might need to re-login.');
             Logout();
         }

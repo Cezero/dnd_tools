@@ -1,7 +1,5 @@
 ---
-description: Using shared helpers
-globs: ["**/*"]
-priority: 3
+description: Creating shared utility and helper functions
 alwaysApply: false
 ---
 Put shared utilities or helpers in a `lib/` folder with stable APIs, not in feature folders.

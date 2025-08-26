@@ -37,7 +37,7 @@ export const FeatureFormulaParamsSchema = z.object({
     formulaId: z.number().int().positive('Formula ID must be a positive integer'),
     interval: z.number().int().positive('Interval must be a positive integer').optional().nullable(),
     formulaStartLevel: z.number().int().positive('Formula start level must be a positive integer').optional().nullable(),
-    attributeId: z.number().int().positive('Attribute ID must be a positive integer').optional().nullable(),
+    abilityId: z.number().int().positive('Ability ID must be a positive integer').optional().nullable(),
     // UPDATED: Convert to arrays for better validation and manipulation
     thresholds: z.array(z.number().int()).nullable(), // Array of level thresholds (e.g., [4, 8, 12])
     values: z.array(z.union([z.string(), z.number()])).nullable(), // Array of corresponding values (e.g., ["-2", "-1", 0] or [1, 2, 3])
@@ -223,6 +223,7 @@ export type CreateFeatureRequest = z.infer<typeof CreateFeatureSchema>;
 export type UpdateFeatureRequest = z.infer<typeof UpdateFeatureSchema>;
 export type GetFeatureResponse = z.infer<typeof GetFeatureResponseSchema>;
 export type FeatureIdParam = z.input<typeof FeatureIdParamSchema>;
+export type FeaturePrerequisite = z.infer<typeof FeaturePrerequisiteSchema>;
 export type FeatureWithRelations = z.infer<typeof FeatureWithRelationsSchema>;
 export type FeatureProgressionWithRelations = z.infer<typeof FeatureProgressionSchema>;
 export type CreateFeatureProgressionRequest = z.infer<typeof CreateFeatureProgressionSchema>;
@@ -235,5 +236,14 @@ export type FeatureModifierConditionInQueryResponse = z.infer<typeof FeatureModi
 export type GetFeatureProgressionsResponse = z.infer<typeof GetFeatureProgressionsResponseSchema>;
 export type UpdateFeatureProgressionsRequest = z.infer<typeof UpdateFeatureProgressionsRequestSchema>;
 
+// Array schemas for frontend type safety
+export const PrerequisiteArraySchema = z.array(FeaturePrerequisiteSchema);
+export const ModifierArraySchema = z.array(FeatureModifierSchema);
+
 // Re-export common response types
 export { CreateResponse, UpdateResponse } from './common';
+
+// Additional type exports for frontend use
+export type PrerequisiteArray = z.infer<typeof PrerequisiteArraySchema>;
+export type ModifierArray = z.infer<typeof ModifierArraySchema>;
+export type FormulaParamsData = z.infer<typeof FeatureFormulaParamsSchema>;

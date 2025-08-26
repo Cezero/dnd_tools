@@ -2,7 +2,6 @@
 description: Import Order and Organization - Enforce consistent import patterns
 globs: ["**/*.ts", "**/*.tsx", "**/*.js"]
 alwaysApply: true
-priority: 3
 ---
 
 Organize imports in the following order:
@@ -26,21 +25,3 @@ Type-only imports:
 
 No empty lines:
 - Do not add empty lines within a group.
-
-Example:
-// 1. External packages
-import cors from 'cors';
-import express, { Request, Response } from 'express';
-
-// 2. Aliased/internal packages
-import { PrismaClient } from '@shared/prisma-client';
-import { UpdateUserProfileSchema } from '@shared/schema';
-
-// 3. Parent imports
-import { something } from '../parentModule';
-
-// 4. Sibling imports
-import { helper } from './helper';
-
-// 5. Index imports
-import main from './';

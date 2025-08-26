@@ -1,6 +1,6 @@
 import React from 'react';
 
-import type { AuthUser, UserDiceConfig } from '@shared/schema';
+import type { AuthUser, UserDiceConfig, UpdateUserProfileRequest } from '@shared/schema';
 
 // Auth context interface
 export interface AuthContextType {
@@ -9,7 +9,7 @@ export interface AuthContextType {
     Logout: () => void;
     isLoading: boolean;
     UpdatePreferredEdition: (editionId: number) => Promise<boolean>;
-    UpdateUserProfile: (data: any) => Promise<boolean>;
+    UpdateUserProfile: (data: UpdateUserProfileRequest) => Promise<boolean>;
     userDiceConfig: UserDiceConfig | null;
     isLoadingDiceConfig: boolean;
     refreshDiceConfig: () => Promise<void>;

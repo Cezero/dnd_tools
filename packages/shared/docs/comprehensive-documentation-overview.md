@@ -88,7 +88,7 @@ The D&D Tools project documentation has been reorganized into a functional domai
 
 #### **Character Management Schema**
 - `UserCharacter` - Character base information
-- `UserCharacterAttribute` - Ability scores
+- `UserCharacterAb` - Ability scores
 - `CharacterAdvancement` - Level progression
 - `AdvancementSkill` - Skill point allocation
 - `AdvancementFeat` - Feat selections

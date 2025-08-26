@@ -10,9 +10,6 @@ export interface SelectOption<T = string | number> {
 }
 
 export interface CustomSelectMultiProps<T = string | number> {
-    value?: T | null;
-    onValueChange?: (value: T) => void;
-
     selectedValues?: T[];
     onSelectedValuesChange?: (values: T[]) => void;
     logicType?: 'or' | 'and';
@@ -33,9 +30,6 @@ export interface CustomSelectMultiProps<T = string | number> {
 }
 
 export function CustomSelectMulti<T = string | number>({
-    value,
-    onValueChange,
-
     selectedValues = [],
     onSelectedValuesChange,
     logicType = 'or',

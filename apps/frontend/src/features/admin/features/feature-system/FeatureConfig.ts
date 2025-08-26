@@ -2,9 +2,9 @@ import { ColumnDef } from '@tanstack/react-table';
 
 import { FeatureDetail, FeatureEdit } from '@/components/feature-system';
 import { createContainsFilter } from '@/components/generic-list/filterFunctions';
-import { FilterType } from '@/components/generic-list/types';
 import { RouteConfig, NavigationItem } from '@/types';
 import { FeatureInQueryResponse } from '@shared/schema';
+import { FilterType } from '@shared/static-data';
 
 import FeatureList from './FeatureList';
 

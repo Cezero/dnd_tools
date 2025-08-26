@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
+
 import { CreateSpellcastingProgressionRequest } from '@shared/schema';
 
 export interface SpellSlotGridProps {

@@ -1,6 +1,16 @@
 import { z } from 'zod';
 import { QueryResponseSchema } from './query.js';
 
+// Dice result interface for callback functions
+export interface DiceResult {
+    notation: string;
+    results: number[];
+    total: number;
+    group?: string;
+    originalNotation?: string;
+    critHighlight?: boolean;
+}
+
 // Full DiceBox configuration type (for internal use)
 export interface DiceBoxConfig {
     id?: string;
@@ -21,7 +31,7 @@ export interface DiceBoxConfig {
     lightIntensity?: number;
     enableShadows?: boolean;
     shadowTransparency?: number;
-    theme?: number; // 3D dice theme ID
+    theme?: string; // 3D dice theme name (not ID)
     preloadThemes?: string[];
     externalThemes?: Record<string, string>;
     themeColor?: string;
@@ -29,8 +39,8 @@ export interface DiceBoxConfig {
     suspendSimulation?: boolean;
     origin?: string;
     onBeforeRoll?: (notation: string) => void;
-    onDieComplete?: (results: any) => void;
-    onRollComplete?: (results: any) => void;
+    onDieComplete?: (results: DiceResult) => void;
+    onRollComplete?: (results: DiceResult | DiceResult[]) => void;
     onRemoveComplete?: () => void;
     onThemeConfigLoaded?: (theme: string) => void;
     onThemeLoaded?: (theme: string) => void;

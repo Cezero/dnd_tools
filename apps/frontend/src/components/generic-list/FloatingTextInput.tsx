@@ -26,8 +26,8 @@ export const FloatingTextInput: React.FC<FloatingTextInputProps> = ({
     const [debouncedValue, setDebouncedValue] = useState(currentValue);
     const [hasBeenFocused, setHasBeenFocused] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
-    const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const focusTimeRef = useRef<number>(0);
 
     // Initialize the input value when it becomes visible

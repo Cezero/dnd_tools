@@ -1,9 +1,11 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { z } from 'zod';
 
-import { createContainsFilter, createEqualsFilter } from '@/components/generic-list/filterFunctions';
-import { FilterType } from '@/components/generic-list/types';
+import { createContainsFilter } from '@/components/generic-list/filterFunctions';
+
 import { FeatureSchema } from '@shared/schema';
+import { FilterType } from '@shared/static-data';
+
 
 export const RACE_TRAIT_COLUMNS: ColumnDef<z.infer<typeof FeatureSchema>, unknown>[] = [
     {

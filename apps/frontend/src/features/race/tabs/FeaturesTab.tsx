@@ -1,6 +1,9 @@
 import React from 'react';
+
 import { SpecialFeatureId } from '@shared/static-data';
+
 import { FeaturesTab as SharedFeaturesTab } from '@/components/feature-system/FeaturesTab';
+
 import type { RaceTabProps } from './types';
 
 export function FeaturesTab(props: RaceTabProps): React.JSX.Element {

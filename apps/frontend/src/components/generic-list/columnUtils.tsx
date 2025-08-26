@@ -8,7 +8,7 @@ import { GenericListColumnMeta } from './types';
  * Renders a cell value with optional truncation and markdown processing
  */
 export function renderCellValue(
-    value: any,
+    value: string | number | boolean | null | undefined,
     meta: GenericListColumnMeta | undefined,
     markdownId?: string
 ): React.ReactNode {
@@ -39,8 +39,9 @@ export function createCellRenderer<T>(
     meta: GenericListColumnMeta | undefined,
     getMarkdownId?: (row: T) => string
 ) {
-    return ({ row, getValue }: { row: { original: T }; getValue: () => T }) => {
-        const value = getValue();
+    return ({ row, getValue }: { row: { original: T }; getValue: () => unknown }) => {
+        const value = getValue() as string | number | boolean | null | undefined;
+               
         const markdownId = getMarkdownId ? getMarkdownId(row.original) : undefined;
         return renderCellValue(value, meta, markdownId);
     };

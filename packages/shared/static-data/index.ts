@@ -13,20 +13,10 @@ export * from './src/ItemData';
 export * from './src/FeatureData';
 export * from './src/FormatterData';
 export * from './src/FormulaDefinitions';
+export * from './src/GenericList';
 
 // Export DiceData with explicit names to avoid conflicts
-export {
-    DiceTheme,
-    DICE_THEMES,
-    DICE_THEME_LIST,
-    DICE_THEME_SELECT_LIST,
-    DICE_THEME_NAMES,
-    getDiceThemeBySystemName,
-    getDiceThemeById,
-    getSystemNameById,
-    isDiceThemeValid,
-    doesThemeIgnoreColor
-} from './src/DiceData';
+export * from './src/DiceData';
 
 // Re-export specific modules for direct access
 export * as AbilityData from './src/AbilityData';

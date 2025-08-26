@@ -1,10 +1,10 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter, createEqualsFilter } from '@/components/generic-list/filterFunctions';
-import { FilterType } from '@/components/generic-list/types';
+
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { SkillInQueryResponse } from '@shared/schema';
-import { ABILITY_SELECT_LIST, ABILITY_MAP } from '@shared/static-data';
+import { ABILITY_SELECT_LIST, ABILITY_MAP, FilterType } from '@shared/static-data';
 
 export const SKILL_COLUMNS: ColumnDef<SkillInQueryResponse, unknown>[] = [
     {

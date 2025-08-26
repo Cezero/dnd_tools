@@ -161,7 +161,7 @@ export const characterCalculationService = {
         if (!skill) return 0;
         
         const abilityScore = character.attributes.find(
-            attr => attr.attributeId === skill.abilityId
+            attr => attr.abilityId === skill.abilityId
         )?.value || 10;
         
         const abilityModifier = Math.floor((abilityScore - 10) / 2);

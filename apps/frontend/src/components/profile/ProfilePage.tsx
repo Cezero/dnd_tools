@@ -1,5 +1,5 @@
 import { UserIcon, Cog6ToothIcon, CubeIcon } from '@heroicons/react/24/outline';
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import type { AuthContextType } from '@/components/auth/types';
 import { withAuthContext } from '@/components/auth/withAuth';
@@ -9,9 +9,8 @@ import { CustomSelect } from '@/components/forms/FormComponents';
 import { ColorPicker } from '@/components/widgets';
 import { DiceBoxService } from '@/services/DiceBoxService';
 import { UserProfileService } from '@/services/UserProfileService';
-import { generateDiceColorScheme } from '@/utils/color-scheme';
-import type { UserProfileResponse, UpdateUserProfileRequest, GetAllDiceConfigsResponse, UpdateUserDiceConfigRequest, DiceBoxAdminConfig } from '@shared/schema';
-import { DICE_THEME_SELECT_LIST, doesThemeIgnoreColor, getSystemNameById } from '@shared/static-data';
+import type { UserProfileResponse, UpdateUserProfileRequest, GetAllDiceConfigsResponse, UpdateUserDiceConfigRequest } from '@shared/schema';
+import { THREE_D_DICE_THEME_SELECT_LIST, doesThemeIgnoreColor } from '@shared/static-data';
 
 
 interface ProfilePageProps {
@@ -46,7 +45,7 @@ const tabs: TabConfig[] = [
     }
 ];
 
-function ProfilePageComponent({ auth }: ProfilePageProps): React.JSX.Element {
+function ProfilePageComponent({ auth: _auth }: ProfilePageProps): React.JSX.Element {
     const [activeTab, setActiveTab] = useState<string>('identity');
     const [profile, setProfile] = useState<UserProfileResponse | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -195,12 +194,10 @@ function ProfilePageComponent({ auth }: ProfilePageProps): React.JSX.Element {
 export const ProfilePage = withAuthContext(ProfilePageComponent);
 
 // Tab Components
-function IdentityTab({ profile, onUpdate }: { profile: UserProfileResponse | null; onUpdate: (data: Partial<UpdateUserProfileRequest>) => Promise<void> }): React.JSX.Element {
+function IdentityTab({ profile, onUpdate: _onUpdate }: { profile: UserProfileResponse | null; onUpdate: (data: Partial<UpdateUserProfileRequest>) => Promise<void> }): React.JSX.Element {
     const [formData, setFormData] = useState({
         username: profile?.username || '',
         email: profile?.email || '',
-        firstName: profile?.firstName || '',
-        lastName: profile?.lastName || '',
     });
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState('');
@@ -209,9 +206,10 @@ function IdentityTab({ profile, onUpdate }: { profile: UserProfileResponse | nul
         try {
             setIsSaving(true);
             setMessage('');
-            await onUpdate(formData);
-            setMessage('Profile updated successfully');
-        } catch (err) {
+            // Note: Username and email updates are not supported by the current schema
+            // This would need backend changes to support identity updates
+            setMessage('Identity updates not yet supported');
+        } catch (_err) {
             setMessage('Failed to update profile');
         } finally {
             setIsSaving(false);
@@ -253,29 +251,7 @@ function IdentityTab({ profile, onUpdate }: { profile: UserProfileResponse | nul
                     />
                 </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        First Name
-                    </label>
-                    <input
-                        type="text"
-                        value={formData.firstName}
-                        onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                    />
-                </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Last Name
-                    </label>
-                    <input
-                        type="text"
-                        value={formData.lastName}
-                        onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                    />
-                </div>
 
                 <div className="pt-4">
                     <button
@@ -294,7 +270,6 @@ function IdentityTab({ profile, onUpdate }: { profile: UserProfileResponse | nul
 function DndPreferencesTab({ profile, onUpdate }: { profile: UserProfileResponse | null; onUpdate: (data: Partial<UpdateUserProfileRequest>) => Promise<void> }): React.JSX.Element {
     const [formData, setFormData] = useState({
         preferredEditionId: profile?.preferredEditionId || 1,
-        showAdvancedOptions: profile?.showAdvancedOptions || false,
     });
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState('');
@@ -305,7 +280,7 @@ function DndPreferencesTab({ profile, onUpdate }: { profile: UserProfileResponse
             setMessage('');
             await onUpdate(formData);
             setMessage('Preferences updated successfully');
-        } catch (err) {
+        } catch (_err) {
             setMessage('Failed to update preferences');
         } finally {
             setIsSaving(false);
@@ -337,18 +312,7 @@ function DndPreferencesTab({ profile, onUpdate }: { profile: UserProfileResponse
                     />
                 </div>
 
-                <div className="flex items-center">
-                    <input
-                        type="checkbox"
-                        id="showAdvancedOptions"
-                        checked={formData.showAdvancedOptions}
-                        onChange={(e) => setFormData(prev => ({ ...prev, showAdvancedOptions: e.target.checked }))}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="showAdvancedOptions" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                        Show Advanced Options
-                    </label>
-                </div>
+
 
                 <div className="pt-4">
                     <button
@@ -364,15 +328,15 @@ function DndPreferencesTab({ profile, onUpdate }: { profile: UserProfileResponse
     );
 }
 
-function DiceConfigTab({ profile, onUpdate }: { profile: UserProfileResponse | null; onUpdate: (data: Partial<UpdateUserProfileRequest>) => Promise<void> }): React.JSX.Element {
+function DiceConfigTab({ profile: _profile, onUpdate: _onUpdate }: { profile: UserProfileResponse | null; onUpdate: (data: Partial<UpdateUserProfileRequest>) => Promise<void> }): React.JSX.Element {
     const [availableConfigs, setAvailableConfigs] = useState<GetAllDiceConfigsResponse | null>(null);
     const [userConfig, setUserConfig] = useState<UpdateUserDiceConfigRequest | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState('');
-    const { diceBox } = useDiceBox();
+    const { updateConfigWithUserConfig } = useDiceBox();
 
-    const getCurrentValue = (propertyName: string, defaultValue: any) => {
+    const getCurrentValue = (propertyName: string, defaultValue: string | number | boolean) => {
         if (userConfig?.diceConfigOverrides && userConfig.diceConfigOverrides[propertyName] !== undefined) {
             return userConfig.diceConfigOverrides[propertyName];
         }
@@ -415,9 +379,7 @@ function DiceConfigTab({ profile, onUpdate }: { profile: UserProfileResponse | n
             setMessage('Dice configuration updated successfully');
 
             // Refresh the dice box with new configuration
-            if (diceBox) {
-                diceBox.configure(userConfig);
-            }
+            await updateConfigWithUserConfig(userConfig);
         } catch (err) {
             console.error('Failed to update dice configuration:', err);
             setMessage('Failed to update dice configuration');
@@ -505,7 +467,7 @@ function DiceConfigTab({ profile, onUpdate }: { profile: UserProfileResponse | n
                     <CustomSelect
                         value={getCurrentValue('theme', 'default')}
                         onValueChange={(value) => handleOverrideChange('theme', value)}
-                        options={DICE_THEME_SELECT_LIST}
+                        options={THREE_D_DICE_THEME_SELECT_LIST}
                     />
                 </div>
 
@@ -515,6 +477,7 @@ function DiceConfigTab({ profile, onUpdate }: { profile: UserProfileResponse | n
                         Color Scheme
                     </label>
                     <ColorPicker
+                        label="Color Scheme"
                         value={getCurrentValue('colorScheme', '#000000')}
                         onChange={(color) => handleOverrideChange('colorScheme', color)}
                         disabled={doesThemeIgnoreColor(getCurrentValue('theme', 'default'))}
@@ -527,6 +490,7 @@ function DiceConfigTab({ profile, onUpdate }: { profile: UserProfileResponse | n
                         Size: {getCurrentValue('size', 100)}%
                     </label>
                     <SliderControl
+                        label="Size"
                         value={getCurrentValue('size', 100)}
                         onChange={(value) => handleOverrideChange('size', value)}
                         min={50}

@@ -1,6 +1,5 @@
 // Export types and interfaces
 export * from './types';
-export * from './interfaces';
 
 // Export pure formatters
 export * from './pure-formatters';
@@ -20,6 +19,12 @@ export * from './display-strategies';
 
 // Export orchestrator
 export * from './formatter-orchestrator';
+
+// Export utilities
+export * from './utilities';
+
+// Export grouping strategies
+export * from './grouping-strategies';
 
 // Re-export the singleton registry instance
 export { formatterRegistry } from './formatter-registry';

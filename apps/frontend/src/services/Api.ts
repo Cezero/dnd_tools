@@ -1,6 +1,9 @@
-import { ZodTypeAny, z } from 'zod';
+import { z, type ZodTypeAny } from 'zod';
 
 import type { ApiOptions } from './types';
+
+// RequestInit is available in the DOM types
+type RequestInit = globalThis.RequestInit;
 
 export const Api = async <TResponse = unknown, TRequest = unknown, TParams = unknown>(
     endpoint: string,

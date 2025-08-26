@@ -1,27 +1,26 @@
-import React, { useState, useEffect } from 'react';
 import { TrashIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect } from 'react';
+
 import { CustomSelect } from '@/components/forms';
 import { renderCellValue } from '@/components/generic-list/columnUtils';
-import { SkillService } from '@/features/skill/SkillService';
 import { ClassSkillService } from '@/features/class/ClassSkillService';
+import { SkillService } from '@/features/skill/SkillService';
+import type { GetSkillResponse, FeatureProgressionWithRelations } from '@shared/schema';
 import {
-    ModifierAppliesToType,
-    ModifierType,
-    SpecialFeatureId,
     SKILL_MAP,
     SKILL_SELECT_LIST,
     ABILITY_MAP,
 } from '@shared/static-data';
+
 import type { ClassTabProps } from './types';
-import type { GetSkillResponse, FeatureProgressionWithRelations } from '@shared/schema';
 
 
 
 export function SkillsTab({
-    formData,
-    setFormData,
-    validation,
-    isLoading = false,
+    formData: _formData,
+    setFormData: _setFormData,
+    validation: _validation,
+    isLoading: _isLoading = false,
     featureProgressions = [],
     setFeatureProgressions,
     onAddSkill,
@@ -74,7 +73,7 @@ export function SkillsTab({
                 featureProgressions as FeatureProgressionWithRelations[],
                 setFeatureProgressions,
                 skillId,
-                (formData as { id?: number }).id || 0
+                (_formData as { id?: number }).id || 0
             );
         }
     };
@@ -134,7 +133,7 @@ export function SkillsTab({
 
                             if (!skill) return null;
 
-                            // Format the header: "Skill Name (Attribute; Trained only)"
+                            // Format the header: "Skill Name (Ability; Trained only)"
                             const abilityAbbr = ABILITY_MAP[skill.abilityId]?.abbreviation || 'Unknown';
                             const headerText = skill.trainedOnly
                                 ? `${skill.name} (${abilityAbbr}; Trained only)`

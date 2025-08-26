@@ -1,7 +1,4 @@
-import { z } from 'zod';
-
 import type {
-    DiceBoxConfig,
     DiceBoxAdminConfig,
     CreateDiceBoxAdminConfigRequest,
     UpdateDiceBoxAdminConfigRequest,
@@ -123,13 +120,13 @@ export class DiceBoxService {
     // Update an existing admin configuration (admin only)
     static async updateAdminConfig(data: UpdateDiceBoxAdminConfigRequest): Promise<{ message: string }> {
         // Extract the config ID from the config object for the URL parameter
-        const configId = (data.config as any).id;
+        const configId = (data.config as { id: number }).id;
         if (!configId) {
             throw new Error('Config ID is required for update operations');
         }
 
         // Remove the ID from the config data since it's now in the URL
-        const { id, ...configData } = data.config as any;
+        const { id, ...configData } = data.config as { id: number;[key: string]: unknown };
         const updateData = { config: configData };
 
         return updateAdminConfigApi(updateData, { id: configId });

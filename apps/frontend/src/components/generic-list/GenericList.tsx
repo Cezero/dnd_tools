@@ -21,21 +21,23 @@ import {
     getSortedRowModel,
     getPaginationRowModel,
     flexRender,
+    Cell,
     type ColumnDef,
-    type PaginationState,
+
+    type SortingState
 } from '@tanstack/react-table';
 import pluralize from 'pluralize';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
-
+import { CustomSelect } from '@/components/forms/FormComponents';
+import { PAGE_LIMITS } from '@shared/static-data';
 
 import { ColumnHeaderContextMenu } from './ColumnHeaderContextMenu';
 import { createCellRenderer } from './columnUtils';
 import { FloatingTextInput } from './FloatingTextInput';
 import type { GenericListProps, GenericListColumnMeta, DataItem } from './types';
-import { PAGE_LIMITS } from './types';
 import { usePersistentTableState } from './usePersistantTableState';
 
 function SortableHeaderCell({ header, allColumns, onToggleVisibility, onSort, columnFilters, handleFilterChange, handleClearFilter, onRestoreHiddenColumn }) {
@@ -100,7 +102,7 @@ export function GenericList<T>({
     onSelectedIdsChange,
 }: GenericListProps<T>) {
     const [data, setData] = useState<T[]>([]);
-    const [total, setTotal] = useState(0);
+    const [_total, setTotal] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
     const { isAdmin } = useAuthAuto();
@@ -154,12 +156,12 @@ export function GenericList<T>({
         return columns.map(column => {
             const meta = column.meta as GenericListColumnMeta;
 
-            // If column has truncate or isMarkdown meta properties, add a cell renderer
+            // If column has truncate or isMarkdown meta properties, add enhanced cell renderer
             if (meta?.truncate || meta?.isMarkdown) {
                 const getMarkdownId = meta?.isMarkdown ? (row: T) => {
                     const dataItem = row as DataItem;
                     const id = dataItem.id || dataItem.slug;
-                    const columnKey = column.accessorKey || column.id;
+                    const columnKey = 'accessorKey' in column && column.accessorKey ? String(column.accessorKey) : column.id;
                     return `${columnKey}-${id}-description`;
                 } : undefined;
 
@@ -187,7 +189,9 @@ export function GenericList<T>({
     const SelectionCell = useCallback(({ row }: { row: { original: T } }) => {
         const dataItem = row.original as DataItem;
         const itemId = dataItem.id || dataItem.slug;
-        const isChecked = internalSelectedIdsRef.current.includes(itemId);
+        // Fix: Ensure itemId is string or number, not boolean
+        const safeItemId = typeof itemId === 'boolean' ? String(itemId) : itemId;
+        const isChecked = internalSelectedIdsRef.current.includes(safeItemId);
 
         return (
             <input
@@ -196,8 +200,8 @@ export function GenericList<T>({
                 onChange={(e) => {
                     e.stopPropagation();
                     const newSelectedIds = e.target.checked
-                        ? [...internalSelectedIdsRef.current, itemId]
-                        : internalSelectedIdsRef.current.filter(id => id !== itemId);
+                        ? [...internalSelectedIdsRef.current, safeItemId]
+                        : internalSelectedIdsRef.current.filter(id => id !== safeItemId);
                     handleInternalSelectedIdsChange(newSelectedIds);
                 }}
                 className="h-4 w-4 accent-blue-600 dark:bg-gray-700 dark:accent-gray-400 dark:border-gray-600 focus:ring-0 focus:ring-offset-0"
@@ -242,16 +246,13 @@ export function GenericList<T>({
         setColumnSizing,
         columnOrder,
         setColumnOrder,
-    } = usePersistentTableState(storageKey, adjustedColumnOrder);
+        pagination,
+        setPagination,
+    } = usePersistentTableState(storageKey, adjustedColumnOrder, initialLimit);
 
-    const [pagination, setPagination] = useState<PaginationState>({
-        pageIndex: 0,
-        pageSize: initialLimit,
-    });
-
-    const handleSortingChange = (updater: any) => {
+    const handleSortingChange = (updater: (sorting: SortingState) => SortingState) => {
         // Simply pass through the sorting change
-        const newSorting = typeof updater === 'function' ? updater(sorting) : updater;
+        const newSorting = updater(sorting);
         setSorting(newSorting);
     };
 
@@ -317,9 +318,9 @@ export function GenericList<T>({
     };
 
     // Filter handlers
-    const handleFilterChange = (columnId: string, value: any) => {
+    const handleFilterChange = (columnId: string, value: { id: string; value: string } | { type: 'toggle_text_input' } | null) => {
         // Handle text input toggle
-        if (value && value.type === 'toggle_text_input') {
+        if (value && 'type' in value && value.type === 'toggle_text_input') {
             const headerElement = document.querySelector(`[data-column-id="${columnId}"]`);
             if (headerElement) {
                 const rect = headerElement.getBoundingClientRect();
@@ -339,8 +340,8 @@ export function GenericList<T>({
         if (value === null) {
             // Remove filter
             setColumnFilters(prev => prev.filter(f => f.id !== columnId));
-        } else {
-            // Add or update filter
+        } else if ('id' in value && 'value' in value) {
+            // Add or update filter - only handle proper filter objects
             setColumnFilters(prev => {
                 const existing = prev.find(f => f.id === columnId);
                 if (existing) {
@@ -396,18 +397,15 @@ export function GenericList<T>({
         }
     };
 
-    // Find the required column (usually 'name' or 'id')
-    const requiredColumn = useMemo(() => {
-        return columns.find(col => (col.meta as any)?.required === true);
-    }, [columns]);
-
     // Helper function to find route by type
     const findRouteByType = (routeType: 'detail' | 'edit' | 'delete') => {
         return routes?.find(route => route.routeType === routeType);
     };
 
     // Navigation cell renderer for detail links
-    const renderDetailCell = (item: T, cellValue: any) => {
+    const renderDetailCell = (item: T, cell: Cell<T, unknown>) => {
+        const cellValue = String(cell.getValue());
+
         // If functions are provided, use the detail function
         if (functions?.detail) {
             return (
@@ -425,7 +423,8 @@ export function GenericList<T>({
         if (!detailRoute) return cellValue;
 
         // Handle both id and slug identifiers
-        const itemId = (item as any).id || (item as any).slug;
+        const dataItem = item as DataItem;
+        const itemId = dataItem.id || dataItem.slug;
         if (!itemId) return cellValue;
 
         // Extract the route path from the detail route (e.g., 'spells/:id' -> 'spells')
@@ -496,13 +495,16 @@ export function GenericList<T>({
         const editRoute = findRouteByType('edit');
 
         // Handle both id and slug identifiers
-        const itemId = (item as any).id || (item as any).slug;
-        if (!itemId) return null;
+        const dataItem = item as DataItem;
+        const itemId = dataItem.id || dataItem.slug;
+        // Fix: Ensure itemId is string or number for delete function
+        const safeItemId = typeof itemId === 'boolean' ? String(itemId) : itemId;
+        if (!safeItemId) return null;
 
         if (editRoute && (!editRoute.requireAdmin || isAdmin)) {
             // Extract the route path from the edit route (e.g., 'spells/:id/edit' -> 'spells')
             const routePath = editRoute.path.split('/:')[0];
-            const editPath = `${basePath}/${routePath}/${itemId}/edit`;
+            const editPath = `${basePath}/${routePath}/${safeItemId}/edit`;
 
             actions.push(
                 <a
@@ -523,7 +525,7 @@ export function GenericList<T>({
                     onClick={async () => {
                         if (window.confirm(`Are you sure you want to delete this ${itemDesc}?`)) {
                             try {
-                                await deleteServiceFunction(itemId);
+                                await deleteServiceFunction(safeItemId);
                                 // Refresh the data after successful deletion
                                 const { results, total } = await serviceFunction();
                                 setData(results);
@@ -635,14 +637,14 @@ export function GenericList<T>({
                                                 <tr key={row.id} className="hover:bg-gray-100 dark:hover:bg-gray-800 odd:bg-gray-500 even:bg-white dark:odd:bg-[#141e2d] dark:even:bg-[#121212]">
                                                     {row.getVisibleCells().map((cell, cellIndex) => {
                                                         const cellValue = flexRender(cell.column.columnDef.cell, cell.getContext());
-                                                        const isRequiredColumn = (cell.column.columnDef.meta as any)?.required === true;
+                                                        const isRequiredColumn = (cell.column.columnDef.meta as GenericListColumnMeta)?.required === true;
                                                         const isLastVisibleCell = cellIndex === row.getVisibleCells().length - 1;
 
                                                         let finalCellValue = cellValue;
 
                                                         // Apply detail navigation to required column
                                                         if (isRequiredColumn && (routes || functions?.detail)) {
-                                                            finalCellValue = renderDetailCell(row.original, cellValue);
+                                                            finalCellValue = renderDetailCell(row.original, cell);
                                                         }
 
                                                         // Add action icons to the last visible cell (but not in option selector mode)
@@ -673,26 +675,19 @@ export function GenericList<T>({
                                     Showing {start}–{end} of {filteredTotal}
                                 </div>
                                 <div className="flex gap-2 items-center">
-                                    <select
+                                    <CustomSelect
+                                        options={PAGE_LIMITS}
                                         value={pagination.pageSize}
-                                        onChange={(e) => {
-                                            const newPageSize = Number(e.target.value);
+                                        onValueChange={(newPageSize) => {
                                             table.setPageSize(newPageSize);
-                                            setPagination(prev => ({
-                                                ...prev,
+                                            setPagination({
                                                 pageSize: newPageSize,
                                                 pageIndex: 0 // Reset to first page when changing page size
-                                            }));
+                                            });
                                         }}
-                                        className="px-2 py-1 border rounded bg-white dark:bg-gray-800"
-                                        title="Select number of items per page"
-                                    >
-                                        {PAGE_LIMITS.map(option => (
-                                            <option key={option.value} value={option.value}>
-                                                {option.label}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        triggerExtraClassName="px-2 py-1 border rounded bg-white dark:bg-gray-800"
+                                        placeholder="Select number of items per page"
+                                    />
                                     <button
                                         onClick={() => table.setPageIndex(0)}
                                         disabled={!table.getCanPreviousPage()}
@@ -736,3 +731,4 @@ export function GenericList<T>({
         </>
     );
 }
+

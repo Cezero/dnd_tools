@@ -1,7 +1,10 @@
 import React from 'react';
+
+import { EDITION_SELECT_LIST_FULL, SIZE_SELECT_LIST, GetBaseClassesByEdition } from '@shared/static-data';
+
 import { ValidatedInput } from '@/components/forms';
 import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
-import { EDITION_SELECT_LIST_FULL, SIZE_SELECT_LIST, GetBaseClassesByEdition } from '@shared/static-data';
+
 import type { RaceTabProps } from './types';
 
 export function BasicInfoTab({

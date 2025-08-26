@@ -95,8 +95,8 @@ const character = {
     raceId: RACE_MAP.HUMAN,
     alignmentId: ALIGNMENT_MAP.LAWFUL_GOOD,
     attributes: [
-        { attributeId: ABILITY_MAP.STR, value: 16 },
-        { attributeId: ABILITY_MAP.DEX, value: 14 },
+        { abilityId: ABILITY_MAP.STR, value: 16 },
+{ abilityId: ABILITY_MAP.DEX, value: 14 },
         // ... other attributes
     ]
 };

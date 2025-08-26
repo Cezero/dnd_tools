@@ -1,33 +1,15 @@
+import { Toast } from '@base-ui-components/react/toast';
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import { useLogPanel } from '@/components/log-panel';
+import type { LogPanelContextType } from '@/components/log-panel/types';
 import { useToast } from '@/hooks/useToast';
-import type { DiceBoxAdminConfig, UpdateUserDiceConfigRequest } from '@shared/schema';
+import type { DiceBoxAdminConfig, UpdateUserDiceConfigRequest, DiceResult } from '@shared/schema';
 
-import { DiceBoxManager, type DiceResult } from './DiceBoxManager';
+import { DiceBoxManager } from './DiceBoxManager';
 import { DiceResultRenderer } from './DiceResultRenderer';
-
-// Types
-export interface DiceBoxContextType {
-    rollDice: (notation: string, group?: string, critHighlight?: boolean) => void;
-    rollDiceGroups: (notations: string[], groups?: string[], critHighlight?: boolean) => void;
-    isReady: boolean;
-    isRolling: boolean;
-    lastResult: DiceResult | null;
-    onRollComplete: (callback: (result: DiceResult | DiceResult[]) => void) => void;
-    clearResults: () => void;
-    reinitialize: () => Promise<void>;
-    reinitializeWithUserConfig: (userConfig: UpdateUserDiceConfigRequest) => Promise<void>;
-    reinitializeWithAdminConfig: (adminConfig: DiceBoxAdminConfig) => Promise<void>;
-    updateConfigWithUserConfig: (userConfig: UpdateUserDiceConfigRequest) => Promise<void>;
-    updateConfigWithAdminConfig: (adminConfig: Partial<DiceBoxAdminConfig>) => void;
-    clearAdminTestFlag: () => Promise<void>;
-
-    getCurrentConfig: () => UpdateUserDiceConfigRequest | null;
-    getCurrentIconColor: () => string;
-    setTestingMode: (isTesting: boolean) => void;
-}
+import type { DiceBoxContextType } from './types';
 
 // Create context
 const DiceBoxContext = createContext<DiceBoxContextType | null>(null);
@@ -133,18 +115,18 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
     const location = useLocation();
     const [isReady, setIsReady] = useState(false);
     const [isRolling, setIsRolling] = useState(false);
-    const [lastResult, setLastResult] = useState<any | null>(null);
+    const [lastResult, setLastResult] = useState<DiceResult | null>(null);
     const [isTestingMode, setIsTestingMode] = useState(false);
     const mountedRef = useRef(true);
     const currentUserConfigRef = useRef<UpdateUserDiceConfigRequest | null>(userDiceConfig || null);
     const adminTestFlagRef = useRef(false);
     const previousLocationRef = useRef(location.pathname);
-    const toastManagerRef = useRef<any>(null);
+    const toastManagerRef = useRef<ReturnType<typeof Toast.useToastManager> | null>(null);
     const groupNameMappingRef = useRef<Map<string, string>>(new Map());
-    const pendingResultsRef = useRef<any[]>([]);
+    const pendingResultsRef = useRef<DiceResult[]>([]);
     const batchTimeoutRef = useRef<number | null>(null);
     const currentCritHighlightRef = useRef<boolean>(false);
-    const batchCallbacksRef = useRef<Set<(results: any[]) => void>>(new Set());
+    const batchCallbacksRef = useRef<Set<(results: DiceResult[]) => void>>(new Set());
 
     // Get the singleton instance
     const diceBoxSingleton = DiceBoxSingleton.getInstance();
@@ -207,9 +189,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
                                             // Call batch callbacks
                                             batchCallbacksRef.current.forEach(callback => {
                                                 try {
-                                                    // If only one result, pass it as a single result, otherwise pass the array
-                                                    const resultToPass = results.length === 1 ? results[0] : results;
-                                                    callback(resultToPass);
+                                                    callback(results);
                                                 } catch (error) {
                                                     console.error('Error in batch callback:', error);
                                                 }
@@ -228,8 +208,12 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
                                                 try {
                                                     const toastData = {
                                                         title: results.length === 1 ? generateTitle(results[0].originalNotation || 'Unknown', results[0].group) : `Multiple Rolls: ${results.length} results`,
-                                                        description: formattedContent,
+                                                        description: results.length === 1 ? `Roll: ${results[0].originalNotation || 'Unknown'}` : `Multiple dice rolls completed`,
                                                         type: 'default',
+                                                        data: {
+                                                            formattedContent,
+                                                            results
+                                                        }
                                                     };
                                                     toastManagerRef.current.add(toastData);
                                                 } catch (error) {
@@ -245,7 +229,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
                                                     source: 'dice-box',
                                                     data: { formattedContent, results }
                                                 };
-                                                logPanel.addLogEntry(logData);
+                                                (logPanel as LogPanelContextType).addLogEntry(logData);
                                             } catch (error) {
                                                 console.error('Failed to add dice result to log:', error);
                                             }
@@ -333,7 +317,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
                 setIsRolling(false);
             }
         }
-    }, [isReady]);
+    }, [isReady, diceBoxSingleton]);
 
     // Roll dice groups function
     const rollDiceGroups = useCallback((notations: string[], groups?: string[], critHighlight?: boolean) => {
@@ -350,7 +334,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
         try {
             // Store the original group names for later mapping
             if (groups) {
-                groups.forEach((group, index) => {
+                groups.forEach((group) => {
                     groupNameMappingRef.current.set(group, group);
                 });
             }
@@ -363,7 +347,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
                 setIsRolling(false);
             }
         }
-    }, [isReady]);
+    }, [isReady, diceBoxSingleton]);
 
     // Register roll complete callback
     const onRollComplete = useCallback((callback: (result: DiceResult | DiceResult[]) => void) => {
@@ -373,13 +357,17 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
             return () => { };
         }
 
-        // Add callback to batch callbacks set
-        batchCallbacksRef.current.add(callback);
+        // Add callback to batch callbacks set - handle both single and array results
+        const batchCallback = (results: DiceResult[]) => {
+            const resultToPass = results.length === 1 ? results[0] : results;
+            callback(resultToPass);
+        };
+        batchCallbacksRef.current.add(batchCallback);
 
         return () => {
-            batchCallbacksRef.current.delete(callback);
+            batchCallbacksRef.current.delete(batchCallback);
         };
-    }, []);
+    }, [diceBoxSingleton]);
 
     // Clear results
     const clearResults = useCallback(() => {
@@ -396,7 +384,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
         if (mountedRef.current) {
             setIsReady(true);
         }
-    }, []);
+    }, [diceBoxSingleton]);
 
     // Re-initialize with user config
     const reinitializeWithUserConfig = useCallback(async (userConfig: UpdateUserDiceConfigRequest) => {
@@ -424,9 +412,9 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
             const manager = new DiceBoxManager();
             await manager.initializeWithAdminConfig(adminConfig);
 
-            // Replace the singleton's manager
-            (diceBoxSingleton as any).manager = manager;
-            (diceBoxSingleton as any).isInitialized = true;
+            // Replace the singleton's manager - use type assertion for private property access
+            (diceBoxSingleton as unknown as { manager: DiceBoxManager; isInitialized: boolean }).manager = manager;
+            (diceBoxSingleton as unknown as { manager: DiceBoxManager; isInitialized: boolean }).isInitialized = true;
 
             if (mountedRef.current) {
                 setIsReady(true);
@@ -445,7 +433,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
         if (manager) {
             await manager.updateConfigWithUserConfig(userConfig);
         }
-    }, []);
+    }, [diceBoxSingleton]);
 
     // Update config with admin config
     const updateConfigWithAdminConfig = useCallback((adminConfig: Partial<DiceBoxAdminConfig>) => {
@@ -453,7 +441,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
         if (manager) {
             manager.updateConfigWithAdminConfig(adminConfig);
         }
-    }, []);
+    }, [diceBoxSingleton]);
 
     // Get current config
     const getCurrentConfig = useCallback(() => {
@@ -467,7 +455,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
             return manager.getCurrentIconColor();
         }
         return '#3937b8'; // Default fallback
-    }, []);
+    }, [diceBoxSingleton]);
 
     // Clear admin test flag and restore user config if needed
     const clearAdminTestFlag = useCallback(async () => {

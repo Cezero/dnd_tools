@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
 import { TrashIcon } from '@heroicons/react/24/outline';
-import { formatProgression, formatPrerequisites, formatWildShapeProgressions, expandFormulaProgressions } from '@/lib/Formatters';
-import { FormulaCalculator } from '@/lib/formulaCalculator';
-import { renderCellValue } from '@/components/generic-list/columnUtils';
-import { FeatureProgressionWithRelations } from '@shared/schema';
-import { SpecialFeatureId, ModifierAppliesToType, ModifierType, FeatureModifierConditionType, SIZE_SELECT_LIST } from '@shared/static-data';
+import React, { useState } from 'react';
+
 import { FeatureSelectionDialog } from '@/components/feature-system';
+import { renderCellValue } from '@/components/generic-list/columnUtils';
+import { formatterOrchestrator, formatPrerequisites, formatWildShapeProgressions, expandFormulaProgressions } from '@/lib/formatters';
+import { FeatureProgressionWithRelations } from '@shared/schema';
+
 
 interface FeaturesTabProps {
     // Common props
@@ -19,11 +19,11 @@ interface FeaturesTabProps {
     contextId: number;
 
     // Special feature filtering
-    excludeSpecialFeatures?: SpecialFeatureId[];
+    excludeSpecialFeatures?: number[];
 
     // Dialog state management
     setEditingProgression: (progression: FeatureProgressionWithRelations | null) => void;
-    setPreSelectedFeature: (feature: any) => void;
+    setPreSelectedFeature: (feature: FeatureProgressionWithRelations['feature'] | null) => void;
     setIsProgressionDialogOpen: (open: boolean) => void;
 }
 
@@ -54,7 +54,7 @@ export function FeaturesTab({
             }
             acc[featureId].progressions.push(progression);
             return acc;
-        }, {} as Record<number, { feature: any; progressions: FeatureProgressionWithRelations[] }>);
+        }, {} as Record<number, { feature: FeatureProgressionWithRelations['feature']; progressions: FeatureProgressionWithRelations[] }>);
 
     // Sort features by name
     const sortedFeatures = Object.values(featuresByFeature).sort((a, b) =>
@@ -215,71 +215,7 @@ export function FeaturesTab({
                                                             className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-left"
                                                             title="Edit progression details"
                                                         >
-                                                            {(() => {
-                                                                // Special handling for damage dice replacement modifiers
-                                                                const hasDamageDiceReplacement = progression.modifiers?.some(mod =>
-                                                                    (mod.appliesTo === (ModifierAppliesToType as any).UnarmedDamage || mod.appliesTo === ModifierAppliesToType.Damage) &&
-                                                                    mod.type === ModifierType.Replacement
-                                                                );
-
-                                                                if (hasDamageDiceReplacement) {
-                                                                    // For damage dice, show each modifier with its conditions
-                                                                    const damageModifiers = progression.modifiers?.filter(mod =>
-                                                                        (mod.appliesTo === (ModifierAppliesToType as any).UnarmedDamage || mod.appliesTo === ModifierAppliesToType.Damage) &&
-                                                                        mod.type === ModifierType.Replacement
-                                                                    ) || [];
-
-                                                                    if (damageModifiers.length > 0) {
-                                                                        const damageDetails: string[] = [];
-
-                                                                        for (const damageModifier of damageModifiers) {
-                                                                            // Create a single progression with just this damage modifier
-                                                                            const singleModifierProgression = {
-                                                                                ...progression,
-                                                                                modifiers: [damageModifier]
-                                                                            };
-
-                                                                            // Use formatProgression on this single modifier progression
-                                                                            const formatted = formatProgression(singleModifierProgression);
-                                                                            if (formatted.value) {
-                                                                                // Check if this modifier has size conditions
-                                                                                const sizeCondition = damageModifier.conditions?.find(cond =>
-                                                                                    cond.conditionType === FeatureModifierConditionType.character_size
-                                                                                );
-
-                                                                                if (sizeCondition && sizeCondition.conditionValue !== null) {
-                                                                                    // Get the size name from SIZE_SELECT_LIST
-                                                                                    const sizeName = SIZE_SELECT_LIST.find(size =>
-                                                                                        size.value === sizeCondition.conditionValue
-                                                                                    )?.label || sizeCondition.conditionValue;
-
-                                                                                    damageDetails.push(`Size: ${sizeName} - ${formatted.value}`);
-                                                                                } else {
-                                                                                    // Default modifier (no size condition)
-                                                                                    damageDetails.push(formatted.value);
-                                                                                }
-                                                                            }
-                                                                        }
-
-                                                                        if (damageDetails.length > 0) {
-                                                                            return `Level ${progression.level} (${damageDetails.join(', ')})`;
-                                                                        }
-                                                                    }
-                                                                }
-
-                                                                // Use normal formatting for other modifiers
-                                                                const formatted = formatProgression(progression);
-                                                                if (formatted.label === '') {
-                                                                    // Formula-based progression - return the raw value without wrapping
-                                                                    return formatted.value;
-                                                                } else {
-                                                                    // Regular progression - wrap with level and details
-                                                                    const details = [];
-                                                                    if (formatted.value) details.push(formatted.value);
-                                                                    if (formatted.note) details.push(formatted.note);
-                                                                    return `Level ${progression.level}${details.length > 0 ? ` (${details.join(', ')})` : ''}`;
-                                                                }
-                                                            })()}
+                                                            {formatterOrchestrator.formatProgressionForEditDisplay(progression)}
                                                         </button>
                                                         <button
                                                             type="button"

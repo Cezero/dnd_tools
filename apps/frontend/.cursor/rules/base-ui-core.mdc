@@ -1,5 +1,5 @@
 ---
-description: Base UI Library Integration - Core Principles and Component Selection
+description: When creating components and forms
 alwaysApply: false
 ---
 **CRITICAL**: Use Base UI components for consistent, accessible, and maintainable React interfaces.
@@ -14,93 +14,7 @@ Base UI (`@base-ui-components/react`) is a collection of high-quality, unstyled 
 ### Documentation Resources
 
 #### Base UI Component Documentation
-**ALWAYS** refer to the official Base UI documentation for component details:
-- **Main Documentation**: [https://base-ui.com/react/](https://base-ui.com/react/)
-- **Component Reference**: [https://base-ui.com/react/components/](https://base-ui.com/react/components/)
-- **Specific Components**: Each component has its own documentation page
-
-#### Finding Component Documentation
-When using Base UI components directly, **ALWAYS** check the official documentation:
-1. **Go to**: [https://base-ui.com/react/components/](https://base-ui.com/react/components/)
-2. **Find the component** in the list (e.g., ScrollArea, Dialog, Tabs)
-3. **Click the component** to view its detailed documentation
-4. **Follow the examples** and API reference for proper usage
-
-#### Component Documentation Examples
-- **ScrollArea**: [https://base-ui.com/react/components/scroll-area.md](https://base-ui.com/react/components/scroll-area.md)
-- **Dialog**: [https://base-ui.com/react/components/dialog.md](https://base-ui.com/react/components/dialog.md)
-- **Tabs**: [https://base-ui.com/react/components/tabs.md](https://base-ui.com/react/components/tabs.md)
-- **Select**: [https://base-ui.com/react/components/select.md](https://base-ui.com/react/components/select.md)
-
-### Core Principles
-
-#### 1. Component Selection Priority
-**ALWAYS** use components in this order:
-1. **Custom Form Components** (`@forms/`) - When available for form controls
-2. **Base UI Components** - For navigation, feedback, layout, and data display
-3. **Custom implementations** - Only when neither custom nor Base UI components fit
-
-#### 2. Available Custom Form Components
-**ALWAYS** prefer these custom components over base Base UI:
-- **`ValidatedInput`** - Text, email, password, number, textarea inputs with validation
-- **`ValidatedCustomSelect`** - Select dropdown with validation
-- **`CustomSelect`** - Basic select dropdown
-- **`CustomSelectMulti`** - Multi-select with logic options
-- **`CustomCheckbox`** - Checkbox with validation support
-- **`SliderControl`** - Slider with value display
-- **`ValidatedForm`** - Form container with validation context
-
-#### 3. Styling Approach
-- **Use Tailwind CSS** for styling Base UI components
-- **Leverage composition** to customize component behavior
-- **Maintain accessibility** - Base UI handles ARIA attributes automatically
-- **Follow design system** - use consistent spacing, colors, and typography
-
-### Available Components
-
-#### Custom Form Components (PREFERRED)
-- **ValidatedInput**: Text, email, password, number, textarea with validation
-- **ValidatedCustomSelect**: Select dropdown with validation
-- **CustomSelect**: Basic select dropdown
-- **CustomSelectMulti**: Multi-select with logic options (OR/AND)
-- **CustomCheckbox**: Checkbox with validation support
-- **SliderControl**: Slider with value display
-- **ValidatedForm**: Form container with validation context
-- **useValidatedForm**: Hook for form validation
-
-#### Base UI Components (Use Directly)
-**Documentation**: [https://base-ui.com/react/components/](https://base-ui.com/react/components/)
-
-**Form Controls**: 
-- Input, Select, Checkbox, Radio, Switch, Number Field, Slider, Field, Fieldset, Form
-- **Note**: Prefer custom `@forms/` components over these
-
-**Navigation**: 
-- Menu, Navigation Menu, Menubar, Tabs, Breadcrumb
-- **Documentation**: [https://base-ui.com/react/components/navigation-menu.md](https://base-ui.com/react/components/navigation-menu.md)
-
-**Feedback**: 
-- Dialog, Alert Dialog, Toast, Tooltip, Popover, Context Menu
-- **Documentation**: [https://base-ui.com/react/components/dialog.md](https://base-ui.com/react/components/dialog.md)
-
-**Layout**: 
-- Accordion, Collapsible, Separator, Scroll Area, Toolbar
-- **Documentation**: [https://base-ui.com/react/components/scroll-area.md](https://base-ui.com/react/components/scroll-area.md)
-
-**Data Display**: 
-- Progress, Meter, Avatar, Preview Card
-- **Documentation**: [https://base-ui.com/react/components/progress.md](https://base-ui.com/react/components/progress.md)
-
-### Success Criteria
-- [ ] Custom form components used for all form controls
-- [ ] Base UI components used for navigation, feedback, layout, and data display
-- [ ] Official Base UI documentation consulted for component usage
-- [ ] Consistent Tailwind CSS styling applied
-- [ ] Accessibility features maintained
-- [ ] Component composition follows patterns
-- [ ] Design system colors and spacing used
-- [ ] Form validation integrated properly
-- [ ] Keyboard navigation works correctly
-- [ ] Screen reader compatibility verified
-
-**CRITICAL**: Always prefer custom form components from `@forms/` over base Base UI components for form controls. Use Base UI directly only for navigation, feedback, layout, and data display components. **ALWAYS** consult the official Base UI documentation for proper component usage.
+**ALWAYS** refer to the official Base UI documentation which is available in the shared/docs package:
+  @shared/docs/base-ui/
+**CRITICAL**: Always prefer custom form components from `@forms/` over base Base UI components for form controls. Use Base UI directly only for navigation, feedback, layout, and data display components.
+**ALWAYS** consult the official Base UI documentation for proper component usage.

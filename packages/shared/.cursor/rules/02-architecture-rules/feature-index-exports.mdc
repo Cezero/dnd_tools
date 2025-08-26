@@ -1,7 +1,11 @@
 ---
-description: Exporting from a feature folder
-globs: ["**/*"]
-priority: 2
-alwaysApply: false
+description: type rules
+alwaysApply: true
 ---
+use Zod validated types from the shared/schema package
+Prefer Zod types over locally defined types
+Use `interface` for props and `type` for unions; always prefer explicit over inferred types for public APIs
+avoid the use of 'any' and 'unknown' types
+Use a functional component written in TypeScript with typed props
 Use an `index.ts` file in each feature folder to re-export module elements for cleaner imports.
+Do not re-export types imported from other packages

@@ -1,7 +1,6 @@
 import React from 'react';
 
 import { icons } from '@/assets/icons';
-import type { DiceType } from '@/assets/icons';
 
 interface DiceSvgTestProps {
     className?: string;

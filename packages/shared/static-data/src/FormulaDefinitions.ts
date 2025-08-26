@@ -1,21 +1,22 @@
 import type { BaseMap, Formula } from './types';
 import { NameSelectOptionList } from './Util';
+import { GetAbilityModifier, ABILITY_MAP } from './AbilityData';
 
 export const enum FormulaId {
     LINEAR_SCALING = 1,         // Scales since feature started: (level - startLevel + 1) × multiplier
     EVERY_N_LEVELS = 2,         // Generic: increases every N levels (with optional formulaStartLevel)
     CONDITIONAL_SCALING = 3,    // Generic: different values based on level thresholds
     DICE_SCALING = 5,           // Generic: dice scaling (e.g., +1d6 every N levels)
-    // NEW: Attribute-dependent formulas
-    ATTRIBUTE_BASED = 6,        // Base value + attribute modifier
-    ATTRIBUTE_MODIFIER = 7,     // Just attribute modifier
-    LEVEL_TIMES_ATTRIBUTE = 8,  // Level × attribute modifier
+    // NEW: Ability-dependent formulas
+    ABILITY_BASED = 6,        // Base value + ability modifier
+    ABILITY_MODIFIER = 7,     // Just ability modifier
+    LEVEL_TIMES_ABILITY = 8,  // Level × ability modifier
     // NEW: Level-based multiplication
     LEVEL_TIMES_VALUE = 9,      // Total level × base value (e.g., 2 × level for healing)
     // NEW: Fixed value plus level
     VALUE_PLUS_LEVEL = 10,      // Fixed value + level (e.g., 10 + level for Spell Resistance)
-    // NEW: Level plus attribute modifier
-    LEVEL_PLUS_ATTRIBUTE = 11,  // Level + attribute modifier (e.g., level + CHA for Wild Empathy)
+    // NEW: Level plus ability modifier
+    LEVEL_PLUS_ABILITY = 11,  // Level + ability modifier (e.g., level + CHA for Wild Empathy)
 }
 
 // ============================================================================
@@ -40,7 +41,12 @@ export const FORMULA_MAP: BaseMap<Formula> = {
             // Calculate levels since the progression started
             const levelsSinceStart = params.level - params.startLevel + 1;
             return levelsSinceStart * params.scalingValue;
-        }
+        },
+        getDisplayString: (params) => {
+            return `(${params.level} - ${params.startLevel} + 1) × ${params.scalingValue}`;
+        },
+        hasProgression: true,
+        isCharacterDependent: false
     },
 
     [FormulaId.EVERY_N_LEVELS]: {
@@ -79,7 +85,15 @@ export const FORMULA_MAP: BaseMap<Formula> = {
             }
 
             return params.scalingValue + (intervals * params.scalingValue);
-        }
+        },
+        getDisplayString: (params) => {
+            if (params.formulaStartLevel) {
+                return `${params.scalingValue} + (intervals since ${params.formulaStartLevel}) × ${params.scalingValue}`;
+            }
+            return `${params.scalingValue} + (intervals since ${params.startLevel}) × ${params.scalingValue}`;
+        },
+        hasProgression: true,
+        isCharacterDependent: false
     },
 
     [FormulaId.CONDITIONAL_SCALING]: {
@@ -101,26 +115,8 @@ export const FORMULA_MAP: BaseMap<Formula> = {
                 return params.scalingValue; // Return base value if parameters are missing
             }
 
-            const thresholdsStr = params.thresholds.toString().trim();
-            const valuesStr = params.values.toString().trim();
-
-            // If parameters are empty, return base value
-            if (!thresholdsStr || !valuesStr) {
-                return params.scalingValue;
-            }
-
-            const thresholds = thresholdsStr.split(',').map(t => t.trim()).filter(t => t).map(Number);
-            const values = valuesStr.split(',').map(v => v.trim()).filter(v => v);
-
-            // Validate that we have valid numbers for thresholds
-            if (thresholds.some(isNaN)) {
-                return params.scalingValue; // Return base value if invalid thresholds
-            }
-
-            // For damage dice, values are strings, so we don't validate them as numbers
-            // For numeric values, we can optionally validate them
-            const numericValues = values.map(v => Number(v));
-            const hasNumericValues = !numericValues.some(isNaN);
+            const thresholds = params.thresholds;
+            const values = params.values;
 
             if (thresholds.length === 0) {
                 return params.scalingValue; // Return base value if no thresholds defined
@@ -141,18 +137,20 @@ export const FORMULA_MAP: BaseMap<Formula> = {
             for (let i = absoluteThresholds.length - 1; i >= 0; i--) {
                 if (params.level >= absoluteThresholds[i]) {
                     const value = values[i]; // Return the value that applies at/after this threshold
-                    // If the value is numeric, return it as a number, otherwise return as string
-                    const numericValue = Number(value);
-                    return isNaN(numericValue) ? value : numericValue;
+                    // For Conditional Scaling, preserve the original value type (string or number)
+                    return value;
                 }
             }
 
             // If we get here, level is before all thresholds
             // This shouldn't happen if thresholds start at 1, but return the first value as fallback
-            const firstValue = values[0];
-            const numericValue = Number(firstValue);
-            return isNaN(numericValue) ? firstValue : numericValue;
-        }
+            return values[0];
+        },
+        getDisplayString: (params) => {
+            return `Conditional scaling based on level thresholds`;
+        },
+        hasProgression: true,
+        isCharacterDependent: false
     },
 
     [FormulaId.DICE_SCALING]: {
@@ -175,47 +173,78 @@ export const FORMULA_MAP: BaseMap<Formula> = {
             const levelsSinceStart = params.level - params.startLevel;
             const intervals = Math.floor(levelsSinceStart / params.interval);
             return (intervals + 1) * params.scalingValue;
-        }
+        },
+        getDisplayString: (params) => {
+            return `${params.scalingValue}d6 + (intervals since ${params.startLevel}) × ${params.scalingValue}d6`;
+        },
+        hasProgression: true,
+        isCharacterDependent: false
     },
 
-    [FormulaId.ATTRIBUTE_BASED]: {
-        id: FormulaId.ATTRIBUTE_BASED,
-        name: 'Attribute Based',
-        description: 'Base value plus attribute modifier (e.g., 3 + CHA modifier)',
+    [FormulaId.ABILITY_BASED]: {
+        id: FormulaId.ABILITY_BASED,
+        name: 'Ability Based',
+        description: 'Base value plus ability modifier (e.g., 3 + CHA modifier)',
         parameters: [
-            { name: 'baseValue', description: 'Base value to add to attribute modifier', required: true },
-            { name: 'attributeId', description: 'Attribute ID to use for modifier', required: true }
+            { name: 'baseValue', description: 'Base value to add to ability modifier', required: true },
+            { name: 'abilityId', description: 'Ability ID to use for modifier', required: true }
         ],
         calculate: (params) => {
-            // This will be calculated in frontend with character context
-            return params.baseValue; // Placeholder - frontend will add attribute modifier
-        }
+            // Always expect context to be available when calculate() is called
+            const abilityScore = params.context.character.abilityScores[params.abilityId];
+            const modifier = GetAbilityModifier(abilityScore);
+            return params.baseValue + modifier;
+        },
+        getDisplayString: (params) => {
+            // Always return formula structure, no context needed
+            const abilityName = ABILITY_MAP[params.abilityId]?.abbreviation || 'ability';
+            return `${params.baseValue} + ${abilityName}`;
+        },
+        hasProgression: false,
+        isCharacterDependent: true
     },
 
-    [FormulaId.ATTRIBUTE_MODIFIER]: {
-        id: FormulaId.ATTRIBUTE_MODIFIER,
-        name: 'Attribute Modifier',
-        description: 'Just the attribute modifier (e.g., +WIS modifier to AC)',
+    [FormulaId.ABILITY_MODIFIER]: {
+        id: FormulaId.ABILITY_MODIFIER,
+        name: 'Ability Modifier',
+        description: 'Just the ability modifier (e.g., +WIS modifier to AC)',
         parameters: [
-            { name: 'attributeId', description: 'Attribute ID to use for modifier', required: true }
+            { name: 'abilityId', description: 'Ability ID to use for modifier', required: true }
         ],
         calculate: (params) => {
-            // This will be calculated in frontend with character context
-            return 0; // Placeholder - frontend will return attribute modifier
-        }
+            // Always expect context to be available when calculate() is called
+            const abilityScore = params.context.character.abilityScores[params.abilityId];
+            return GetAbilityModifier(abilityScore);
+        },
+        getDisplayString: (params) => {
+            // Always return formula structure, no context needed
+            const abilityName = ABILITY_MAP[params.abilityId]?.abbreviation || 'ability';
+            return `${abilityName} modifier`;
+        },
+        hasProgression: false,
+        isCharacterDependent: true
     },
 
-    [FormulaId.LEVEL_TIMES_ATTRIBUTE]: {
-        id: FormulaId.LEVEL_TIMES_ATTRIBUTE,
-        name: 'Level Times Attribute',
-        description: 'Level multiplied by attribute modifier (e.g., level × CHA modifier)',
+    [FormulaId.LEVEL_TIMES_ABILITY]: {
+        id: FormulaId.LEVEL_TIMES_ABILITY,
+        name: 'Level Times Ability',
+        description: 'Level multiplied by ability modifier (e.g., level × CHA modifier)',
         parameters: [
-            { name: 'attributeId', description: 'Attribute ID to use for modifier', required: true }
+            { name: 'abilityId', description: 'Ability ID to use for modifier', required: true }
         ],
         calculate: (params) => {
-            // This will be calculated in frontend with character context
-            return params.level; // Placeholder - frontend will multiply by attribute modifier
-        }
+            // Always expect context to be available when calculate() is called
+            const abilityScore = params.context.character.abilityScores[params.abilityId];
+            const modifier = GetAbilityModifier(abilityScore);
+            return params.level * modifier;
+        },
+        getDisplayString: (params) => {
+            // Always return formula structure, no context needed
+            const abilityName = ABILITY_MAP[params.abilityId]?.abbreviation || 'ability';
+            return `level × ${abilityName}`;
+        },
+        hasProgression: true,
+        isCharacterDependent: true
     },
 
     [FormulaId.LEVEL_TIMES_VALUE]: {
@@ -233,7 +262,12 @@ export const FORMULA_MAP: BaseMap<Formula> = {
                 return 0;
             }
             return params.level * params.scalingValue;
-        }
+        },
+        getDisplayString: (params) => {
+            return `level × ${params.scalingValue}`;
+        },
+        hasProgression: true,
+        isCharacterDependent: false
     },
 
     [FormulaId.VALUE_PLUS_LEVEL]: {
@@ -251,26 +285,40 @@ export const FORMULA_MAP: BaseMap<Formula> = {
                 return 0;
             }
             return params.scalingValue + params.level;
-        }
+        },
+        getDisplayString: (params) => {
+            return `${params.scalingValue} + level`;
+        },
+        hasProgression: true,
+        isCharacterDependent: false
     },
 
-    [FormulaId.LEVEL_PLUS_ATTRIBUTE]: {
-        id: FormulaId.LEVEL_PLUS_ATTRIBUTE,
-        name: 'Level Plus Attribute',
-        description: 'Character level plus attribute modifier (e.g., level + CHA for Wild Empathy, level + CHA for Turn Undead uses)',
+    [FormulaId.LEVEL_PLUS_ABILITY]: {
+        id: FormulaId.LEVEL_PLUS_ABILITY,
+        name: 'Level Plus Ability',
+        description: 'Character level plus ability modifier (e.g., level + CHA for Wild Empathy, level + CHA for Turn Undead uses)',
         parameters: [
             { name: 'level', description: 'Character level', required: true },
             { name: 'startLevel', description: 'Starting level for the progression', required: true },
-            { name: 'attributeId', description: 'Attribute ID to use for modifier', required: true }
+            { name: 'abilityId', description: 'Ability ID to use for modifier', required: true }
         ],
         calculate: (params) => {
             // If character level is before the starting level, return 0
             if (params.level < params.startLevel) {
                 return 0;
             }
-            // This will be calculated in frontend with character context
-            return params.level; // Placeholder - frontend will add attribute modifier
-        }
+            // Always expect context to be available when calculate() is called
+            const abilityScore = params.context.character.abilityScores[params.abilityId];
+            const modifier = GetAbilityModifier(abilityScore);
+            return params.level + modifier;
+        },
+        getDisplayString: (params) => {
+            // Always return formula structure, no context needed
+            const abilityName = ABILITY_MAP[params.abilityId]?.abbreviation || 'ability';
+            return `level + ${abilityName}`;
+        },
+        hasProgression: true,
+        isCharacterDependent: true
     },
 
 };

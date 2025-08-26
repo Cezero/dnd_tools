@@ -1,30 +1,32 @@
 import type {
-    FormulaCalculator,
-    ProgressionGenerator,
-    TransitionDetector,
-    ConditionalValueDetector
-} from './interfaces';
-import type {
     FormulaParamsData,
-    CalculationContext,
-    CalculationResult,
-    ProgressionValue,
-    TransitionPoint,
-    ConditionalValue,
-    CharacterContext
+    FeatureModifierInQueryResponse,
+    FeatureModifierConditionInQueryResponse
 } from '@shared/schema';
-import type { FeatureModifierInQueryResponse } from '@shared/schema';
 import {
     FORMULA_MAP,
-    ABILITY_MAP,
-    SIZE_MAP
+    FormulaId,
+    DisplayType
 } from '@shared/static-data';
+
+import { buildFormulaParams } from './formula-utils';
+import type {
+    CalculationContext,
+    CalculationResult,
+    ConditionalValue,
+    CharacterContext,
+    FormulaCalculator,
+    ConditionalValueDetector,
+    SelectedValue,
+    ChoiceBasedCalculation,
+    IChoiceCalculator
+} from './types';
 
 /**
  * Pure calculator for formula-based value calculations
  */
 export class FormulaCalculatorImpl implements FormulaCalculator {
-    calculate(formula: FormulaParamsData, level: number, context?: CalculationContext): CalculationResult {
+    calculate(formula: FormulaParamsData, level: number, context?: CalculationContext, modifierValue?: number): CalculationResult {
         const formulaDef = FORMULA_MAP[formula.formulaId];
         if (!formulaDef) {
             return {
@@ -54,62 +56,51 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
             formula?: string;
         }> = [];
 
-        // Calculate based on formula type
-        switch (formula.formulaId) {
-            case 1: // EVERY_N_LEVELS
-                value = this.calculateEveryNLevels(formula, calculationLevel, progressionLevel);
-                components.push({
-                    source: 'Formula',
-                    value,
-                    type: 1, // BreakdownComponentType.Formula
-                    description: `Every ${formula.interval} levels starting at level ${formula.formulaStartLevel || progressionLevel}`,
-                    formula: `floor((${calculationLevel} - ${formula.formulaStartLevel || progressionLevel}) / ${formula.interval}) + 1`
-                });
-                break;
+        // Build parameters object for the formula calculation
+        // Convert CalculationContext to DisplayContext for buildFormulaParams
+        const displayContext = context ? {
+            character: context.character,
+            displayType: DisplayType.Edit,
+            currentLevel: context.level,
+            showBreakdown: false
+        } : undefined;
+        const params = buildFormulaParams(formula, calculationLevel, progressionLevel, displayContext, modifierValue);
 
-            case 2: // CONDITIONAL_SCALING
-                value = this.calculateConditionalScaling(formula, calculationLevel, context);
-                components.push({
-                    source: 'Formula',
-                    value,
-                    type: 1, // BreakdownComponentType.Formula
-                    description: 'Conditional scaling based on thresholds',
-                    formula: 'Threshold-based calculation'
-                });
-                break;
+        // Use the formula's calculate function
+        const calculatedValue = formulaDef.calculate(params);
 
-            case 3: // ATTRIBUTE_BASED
-                value = this.calculateAttributeBased(formula, calculationLevel, context);
-                const attributeName = formula.abilityId ? ABILITY_MAP[formula.abilityId]?.name || `Ability ${formula.abilityId}` : 'Unknown';
-                components.push({
-                    source: 'Formula',
-                    value,
-                    type: 1, // BreakdownComponentType.Formula
-                    description: `Based on ${attributeName}`,
-                    formula: `${attributeName} modifier`
-                });
-                break;
+        // For Conditional Scaling with string values, we need to handle them specially
+        if (formula.formulaId === FormulaId.CONDITIONAL_SCALING && typeof calculatedValue === 'string') {
+            // For string values (like "1d6"), we need to convert them to a numeric representation
+            // that can be used by the formatter system, but preserve the original string for display
+            // Use a hash of the string as the numeric value for comparison purposes
+            const stringHash = calculatedValue.split('').reduce((hash, char) => hash + char.charCodeAt(0), 0);
+            value = stringHash;
 
-            case 4: // LEVEL_PLUS_ATTRIBUTE
-                value = this.calculateLevelPlusAttribute(formula, calculationLevel, context);
-                const attrName = formula.abilityId ? ABILITY_MAP[formula.abilityId]?.name || `Ability ${formula.abilityId}` : 'Unknown';
-                components.push({
-                    source: 'Formula',
-                    value,
-                    type: 1, // BreakdownComponentType.Formula
-                    description: `Level + ${attrName} modifier`,
-                    formula: `${calculationLevel} + ${attrName} modifier`
-                });
-                break;
+            // Store the original string value in the breakdown for later use
+            components.push({
+                source: formulaDef.name,
+                value: stringHash,
+                type: 1, // BreakdownComponentType.Formula
+                description: `Conditional scaling: ${calculatedValue}`,
+                formula: calculatedValue // Store original string in formula field
+            });
+        } else {
+            // For numeric values, use them as-is
+            value = typeof calculatedValue === 'number' ? calculatedValue : Number(calculatedValue) || 0;
 
-            default:
-                value = 0;
-                components.push({
-                    source: 'Formula',
-                    value: 0,
-                    type: 1, // BreakdownComponentType.Formula
-                    description: `Unsupported formula type: ${formula.formulaId}`
-                });
+            // Use the formula's display string function
+            const formulaString = formulaDef.getDisplayString ?
+                formulaDef.getDisplayString(params) :
+                formulaDef.name;
+
+            components.push({
+                source: formulaDef.name,
+                value,
+                type: 1, // BreakdownComponentType.Formula
+                description: formulaDef.description,
+                formula: formulaString
+            });
         }
 
         return {
@@ -121,56 +112,15 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
             }
         };
     }
-
-    private calculateEveryNLevels(formula: FormulaParamsData, level: number, startLevel: number): number {
-        const interval = formula.interval || 1;
-        const formulaStartLevel = formula.formulaStartLevel || startLevel;
-        return Math.floor((level - formulaStartLevel) / interval) + 1;
-    }
-
-    private calculateConditionalScaling(formula: FormulaParamsData, level: number, context?: CalculationContext): number {
-        if (!formula.thresholds || !formula.values) {
-            return 0;
-        }
-
-        // Find the highest threshold that the current level meets or exceeds
-        let result = 0;
-        for (let i = 0; i < formula.thresholds.length; i++) {
-            if (level >= formula.thresholds[i]) {
-                const value = formula.values[i];
-                result = typeof value === 'number' ? value : parseInt(value.toString()) || 0;
-            }
-        }
-        return result;
-    }
-
-    private calculateAttributeBased(formula: FormulaParamsData, level: number, context?: CalculationContext): number {
-        if (!formula.abilityId || !context?.character?.abilityScores) {
-            return 0;
-        }
-
-        const abilityScore = context.character.abilityScores[formula.abilityId];
-        if (abilityScore === undefined) {
-            return 0;
-        }
-
-        return Math.floor((abilityScore - 10) / 2);
-    }
-
-    private calculateLevelPlusAttribute(formula: FormulaParamsData, level: number, context?: CalculationContext): number {
-        const levelValue = level;
-        const attributeValue = this.calculateAttributeBased(formula, level, context);
-        return levelValue + attributeValue;
-    }
 }
 
 /**
  * Pure calculator for choice-based calculations
  */
-export class ChoiceCalculatorImpl {
+export class ChoiceCalculatorImpl implements IChoiceCalculator {
     calculateChoiceValue(
-        choice: any, // Will be properly typed when we have choice calculation interfaces
-        selectedValues: Array<{ id: number; name: string; value?: number }>,
+        choice: ChoiceBasedCalculation,
+        selectedValues: SelectedValue[],
         context?: CalculationContext
     ): CalculationResult {
         // This is a placeholder for choice-based calculations
@@ -213,7 +163,7 @@ export class ConditionalValueDetectorImpl implements ConditionalValueDetector {
 
     private createConditionalValue(
         modifier: FeatureModifierInQueryResponse,
-        condition: any, // Will be properly typed when we have condition interfaces
+        condition: FeatureModifierConditionInQueryResponse,
         context?: CharacterContext
     ): ConditionalValue | null {
         // This is a placeholder for conditional value creation

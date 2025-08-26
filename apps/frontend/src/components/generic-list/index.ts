@@ -18,4 +18,3 @@ export type {
     GenericListProps
 } from './types';
 
-export { FilterType } from './types';

@@ -1,69 +1,71 @@
-import type { DiceThemeMap, SelectOption } from './types';
+import type { DiceThemeMap } from './types';
 import { NameSelectOptionList } from './Util';
 
-export enum DiceTheme {
-    DEFAULT = 1,
-    ROCK = 2,
-    DICE_OF_ROLLING = 3,
-    BLUE_GREEN_METAL = 4,
-    GEMSTONE = 5,
-    RUST = 6,
-    SMOOTH = 7,
-    WOODEN = 8
-}
+export const ThreeDDiceTheme = {
+    DEFAULT: 1,
+    ROCK: 2,
+    DICE_OF_ROLLING: 3,
+    BLUE_GREEN_METAL: 4,
+    GEMSTONE: 5,
+    RUST: 6,
+    SMOOTH: 7,
+    WOODEN: 8
+} as const;
 
-export const DICE_THEMES: DiceThemeMap = {
-    [DiceTheme.DEFAULT]: {
-        id: DiceTheme.DEFAULT,
+export type ThreeDDiceTheme = typeof ThreeDDiceTheme[keyof typeof ThreeDDiceTheme];
+
+export const THREE_D_DICE_THEMES: DiceThemeMap = {
+    [ThreeDDiceTheme.DEFAULT]: {
+        id: ThreeDDiceTheme.DEFAULT,
         name: 'Default',
         systemName: 'default',
         description: 'Default dice theme with standard colors',
         ignoresThemeColor: false
     },
-    [DiceTheme.ROCK]: {
-        id: DiceTheme.ROCK,
+    [ThreeDDiceTheme.ROCK]: {
+        id: ThreeDDiceTheme.ROCK,
         name: 'Rock',
         systemName: 'rock',
         description: 'Rock-textured dice with natural stone appearance',
         ignoresThemeColor: false
     },
-    [DiceTheme.DICE_OF_ROLLING]: {
-        id: DiceTheme.DICE_OF_ROLLING,
+    [ThreeDDiceTheme.DICE_OF_ROLLING]: {
+        id: ThreeDDiceTheme.DICE_OF_ROLLING,
         name: 'Dice of Rolling',
         systemName: 'dice-of-rolling',
         description: 'Multicolored dice based on Dice of Rolling',
         ignoresThemeColor: true
     },
-    [DiceTheme.BLUE_GREEN_METAL]: {
-        id: DiceTheme.BLUE_GREEN_METAL,
+    [ThreeDDiceTheme.BLUE_GREEN_METAL]: {
+        id: ThreeDDiceTheme.BLUE_GREEN_METAL,
         name: 'Blue Green Metal',
         systemName: 'blue-green-metal',
         description: 'Metallic dice with blue-green finish',
         ignoresThemeColor: true
     },
-    [DiceTheme.GEMSTONE]: {
-        id: DiceTheme.GEMSTONE,
+    [ThreeDDiceTheme.GEMSTONE]: {
+        id: ThreeDDiceTheme.GEMSTONE,
         name: 'Gemstone',
         systemName: 'gemstone',
         description: 'Gemstone-textured dice with precious stone appearance',
         ignoresThemeColor: false
     },
-    [DiceTheme.RUST]: {
-        id: DiceTheme.RUST,
+    [ThreeDDiceTheme.RUST]: {
+        id: ThreeDDiceTheme.RUST,
         name: 'Rust',
         systemName: 'rust',
         description: 'Weathered dice with rust texture',
         ignoresThemeColor: false
     },
-    [DiceTheme.SMOOTH]: {
-        id: DiceTheme.SMOOTH,
+    [ThreeDDiceTheme.SMOOTH]: {
+        id: ThreeDDiceTheme.SMOOTH,
         name: 'Smooth',
         systemName: 'smooth',
         description: 'Smooth, polished dice with clean surfaces',
         ignoresThemeColor: false
     },
-    [DiceTheme.WOODEN]: {
-        id: DiceTheme.WOODEN,
+    [ThreeDDiceTheme.WOODEN]: {
+        id: ThreeDDiceTheme.WOODEN,
         name: 'Wooden',
         systemName: 'wooden',
         description: 'Wooden-textured dice with natural grain',
@@ -71,19 +73,19 @@ export const DICE_THEMES: DiceThemeMap = {
     }
 };
 
-export const DICE_THEME_LIST = Object.values(DICE_THEMES);
-export const DICE_THEME_SELECT_LIST = NameSelectOptionList(DICE_THEME_LIST);
+export const THREE_D_DICE_THEME_LIST = Object.values(THREE_D_DICE_THEMES);
+export const THREE_D_DICE_THEME_SELECT_LIST = NameSelectOptionList(THREE_D_DICE_THEME_LIST);
 
 // Theme names array for API responses and dropdowns
-export const DICE_THEME_NAMES: string[] = Object.values(DICE_THEMES).map(theme => theme.systemName);
+export const THREE_D_DICE_THEME_NAMES: string[] = Object.values(THREE_D_DICE_THEMES).map(theme => theme.systemName);
 
 // Helper functions for theme data
 export function getDiceThemeBySystemName(systemName: string) {
-    return Object.values(DICE_THEMES).find(theme => theme.systemName === systemName);
+    return Object.values(THREE_D_DICE_THEMES).find(theme => theme.systemName === systemName);
 }
 
 export function getDiceThemeById(id: number) {
-    return Object.values(DICE_THEMES).find(theme => theme.id === id);
+    return Object.values(THREE_D_DICE_THEMES).find(theme => theme.id === id);
 }
 
 export function getSystemNameById(id: number): string | undefined {
@@ -92,7 +94,7 @@ export function getSystemNameById(id: number): string | undefined {
 }
 
 export function isDiceThemeValid(systemName: string): boolean {
-    return DICE_THEME_NAMES.includes(systemName);
+    return THREE_D_DICE_THEME_NAMES.includes(systemName);
 }
 
 export function doesThemeIgnoreColor(systemName: string): boolean {

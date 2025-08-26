@@ -27,7 +27,7 @@ export function useAuthAuto(): UseAuthAutoReturn & {
         return isAuthenticated();
     }, [isAuthenticated, isAdmin]);
 
-    const requireAuth = useCallback((redirectTo = '/login') => {
+    const requireAuth = useCallback((_redirectTo = '/login') => {
         if (!isAuthenticated()) {
             // You could trigger a redirect here if needed
             return false;

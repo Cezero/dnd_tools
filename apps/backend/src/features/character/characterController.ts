@@ -15,9 +15,9 @@ import {
     CreateSpellPreparationRequest,
     UpdateSpellPreparationRequest,
     CharacterSpellPreparationWithMetamagicResponse,
-    CreateCharacterAttributeRequest,
-    UpdateCharacterAttributeRequest,
-    CharacterAttributeResponse,
+    CreateCharacterAbilityScoreRequest,
+    UpdateCharacterAbilityScoreRequest,
+    CharacterAbilityScoreResponse,
 } from '@shared/schema';
 
 import { characterService } from './characterService';
@@ -174,41 +174,41 @@ export async function GetCharacterSpellPreparations(req: ValidatedParamsT<{ char
     res.json(preparations);
 }
 
-// Character attribute methods
-export async function CreateCharacterAttribute(req: ValidatedBodyT<CreateCharacterAttributeRequest>, res: Response) {
-    const result = await characterService.createCharacterAttribute(req.body);
+// Character ability score methods
+export async function CreateCharacterAbilityScore(req: ValidatedBodyT<CreateCharacterAbilityScoreRequest>, res: Response) {
+    const result = await characterService.createCharacterAbilityScore(req.body);
     res.status(201).json(result);
 }
 
-export async function UpdateCharacterAttribute(req: ValidatedParamsBodyT<{ id: string }, UpdateCharacterAttributeRequest>, res: Response) {
+export async function UpdateCharacterAbilityScore(req: ValidatedParamsBodyT<{ id: string }, UpdateCharacterAbilityScoreRequest>, res: Response) {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
-        res.status(400).json({ error: 'Invalid attribute ID' });
+        res.status(400).json({ error: 'Invalid ability score ID' });
         return;
     }
 
-    await characterService.updateCharacterAttribute(id, req.body);
-    res.json({ message: 'Character attribute updated successfully' });
+    await characterService.updateCharacterAbilityScore(id, req.body);
+    res.json({ message: 'Character ability score updated successfully' });
 }
 
-export async function DeleteCharacterAttribute(req: ValidatedParamsT<{ id: string }>, res: Response) {
+export async function DeleteCharacterAbilityScore(req: ValidatedParamsT<{ id: string }>, res: Response) {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
-        res.status(400).json({ error: 'Invalid attribute ID' });
+        res.status(400).json({ error: 'Invalid ability score ID' });
         return;
     }
 
-    await characterService.deleteCharacterAttribute(id);
-    res.json({ message: 'Character attribute deleted successfully' });
+    await characterService.deleteCharacterAbilityScore(id);
+    res.json({ message: 'Character ability score deleted successfully' });
 }
 
-export async function GetCharacterAttributes(req: ValidatedParamsT<{ characterId: string }, CharacterAttributeResponse[]>, res: Response) {
+export async function GetCharacterAbilityScores(req: ValidatedParamsT<{ characterId: string }, CharacterAbilityScoreResponse[]>, res: Response) {
     const characterId = parseInt(req.params.characterId);
     if (isNaN(characterId)) {
         res.status(400).json({ error: 'Invalid character ID' });
         return;
     }
 
-    const attributes = await characterService.getCharacterAttributes(characterId);
-    res.json(attributes);
+    const abilities = await characterService.getCharacterAbilityScores(characterId);
+    res.json(abilities);
 }

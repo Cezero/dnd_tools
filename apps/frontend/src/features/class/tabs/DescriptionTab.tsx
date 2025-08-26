@@ -1,12 +1,14 @@
 import React from 'react';
+
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
+
 import type { ClassTabProps } from './types';
 
 export function DescriptionTab({
     formData,
     setFormData,
     validation,
-    isLoading = false
+    isLoading: _isLoading = false
 }: ClassTabProps): React.JSX.Element {
     return (
         <div className="p-6 space-y-6">

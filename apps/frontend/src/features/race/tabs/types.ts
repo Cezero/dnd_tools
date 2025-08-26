@@ -1,4 +1,4 @@
-import { FeatureProgressionWithRelations } from '@shared/schema';
+import type { FeatureProgressionWithRelations } from '@shared/schema';
 
 // Form data type for race editing
 export interface RaceFormData {
@@ -16,7 +16,7 @@ export interface RaceFormData {
 interface ValidationState {
     hasErrors: boolean;
     getError: (field: string) => string | null;
-    validateForm: (data: any) => boolean;
+    validateForm: (data: Record<string, unknown>) => boolean;
     validationState: {
         errors: Record<string, string[]>;
         touched: Record<string, boolean>;

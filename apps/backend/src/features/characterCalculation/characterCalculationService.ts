@@ -1,4 +1,5 @@
 import { PrismaClient } from '@shared/prisma-client';
+import { ModifierAppliesToType } from '@shared/static-data';
 import type { CharacterWithAllDetailsResponse } from '@shared/schema';
 
 const prisma = new PrismaClient();
@@ -90,7 +91,7 @@ export const characterCalculationService = {
                 classId: classId,
                 modifiers: {
                     some: {
-                        appliesTo: 1, // ModifierAppliesToType.Skill
+                        appliesTo: ModifierAppliesToType.Skill,
                         appliesToId: skillId,
                     }
                 }
@@ -104,8 +105,8 @@ export const characterCalculationService = {
      * Get character's ability score for a given ability ID
      */
     getCharacterAbilityScore(character: CharacterWithAllDetailsResponse, abilityId: number): number {
-        const attribute = character.attributes.find(attr => attr.attributeId === abilityId);
-        return attribute?.value ?? 10; // Default to 10 if not set
+        const abilityScore = character.abilityScores.find(attr => attr.abilityId === abilityId);
+        return abilityScore?.value ?? 10; // Default to 10 if not set
     },
 
     /**
@@ -144,7 +145,6 @@ export const characterCalculationService = {
 
         return {
             analogSkills,
-            // Add other calculated stats as needed
         };
     },
 

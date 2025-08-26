@@ -27,13 +27,14 @@ export const PrereqOptions = (prereqType: number): SelectOption[] => {
         case FeatPrerequisiteType.FEAT:
             // This will be populated dynamically
             return [];
-        case FeatPrerequisiteType.CLASSLEVEL:
+        case FeatPrerequisiteType.CLASSLEVEL: {
             // Get base classes for edition 4 (D&D 3.5) and add character level option
             const baseClasses = GetBaseClassesByEdition(4);
             return [
                 { value: -1, label: 'Character Level' },
                 ...baseClasses
             ];
+        }
         case FeatPrerequisiteType.CLASSFEATURE:
             // This will be populated dynamically
             return [];
@@ -84,7 +85,7 @@ export const getPrereqDisplayText = async (prereq: { typeId: number; referenceId
 
         case FeatPrerequisiteType.CLASSFEATURE: {
             // For class features, we need to check if there's a featureSlug property
-            const featureSlug = (prereq as any).featureSlug || prereq.referenceId;
+            const featureSlug = (prereq as { featureSlug?: string | number }).featureSlug || prereq.referenceId;
             if (featureSlug) {
                 try {
                     const feature = await FeatureSystemService.getFeatureBySlug(undefined, { slug: featureSlug.toString() });

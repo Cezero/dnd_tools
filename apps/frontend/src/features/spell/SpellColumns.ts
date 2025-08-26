@@ -1,7 +1,7 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createArrayIdFilter, createEqualsFilter, createContainsFilter } from '@/components/generic-list/filterFunctions';
-import { FilterType } from '@/components/generic-list/types';
+
 import { SpellInQueryResponse } from '@shared/schema/spell';
 import {
     SPELL_SCHOOL_SELECT_LIST,
@@ -13,6 +13,7 @@ import {
     SpellDescriptorNameList,
     SpellComponentAbbrList,
     GetSourceDisplay,
+    FilterType
 } from '@shared/static-data';
 
 import { GetClassDisplay } from './spellUtil';

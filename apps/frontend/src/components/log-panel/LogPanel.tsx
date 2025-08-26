@@ -8,7 +8,7 @@ import { useLogPanel } from './LogPanelProvider';
 export function LogPanel(): React.JSX.Element {
     const { entries, isOpen, setIsOpen, clearLog } = useLogPanel();
     const [showHandle, setShowHandle] = useState<boolean>(false);
-    const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const _scrollAreaRef = useRef<HTMLDivElement>(null);
     const viewportRef = useRef<HTMLDivElement>(null);
 
     // Mouse detection for showing handle

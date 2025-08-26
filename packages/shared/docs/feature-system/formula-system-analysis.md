@@ -26,7 +26,7 @@ The formula system replaces the text-based `valueFormula` approach with a `formu
   - `formulaId`: References the formula definition
   - `interval`: For "every N levels" formulas (e.g., every 2 levels)
   - `formulaStartLevel`: Starting level for formula calculation
-  - `attributeId`: For attribute-dependent formulas
+  - `abilityId`: For ability-dependent formulas
 
 #### **Formula Definitions**
 - Pre-defined formulas in `shared/static-data/src/FormulaDefinitions.ts`
@@ -47,9 +47,9 @@ if (param.name === 'level') {
 } else if (param.name === 'formulaStartLevel') {
     // From FeatureModifierFormulaParams.formulaStartLevel
     params[param.name] = modifier.formulaParams?.formulaStartLevel;
-} else if (param.name === 'attributeId') {
-    // From FeatureModifierFormulaParams.attributeId
-    params[param.name] = modifier.formulaParams?.attributeId;
+} else if (param.name === 'abilityId') {
+    // From FeatureModifierFormulaParams.abilityId
+    params[param.name] = modifier.formulaParams?.abilityId;
 } else if (param.name === 'scalingValue' || param.name === 'baseValue') {
     // From FeatureModifier.value
     params[param.name] = modifier.value;
@@ -74,7 +74,7 @@ FeatureModifierFormulaParams {
     formulaId: Int        -- Formula ID
     interval: Int?        -- For "every N levels" formulas
     formulaStartLevel: Int? -- Starting level for calculation
-    attributeId: Int?     -- For attribute-dependent formulas
+    abilityId: Int?     -- For ability-dependent formulas
 }
 ```
 
@@ -98,7 +98,7 @@ FeatureModifierFormulaParams {
     formulaId: 2, // EVERY_N_LEVELS
     interval: 2,  // Every 2 levels
     formulaStartLevel: 2, // Start at level 2
-    attributeId: null
+    abilityId: null
 }
 ```
 
@@ -119,7 +119,7 @@ FeatureModifierFormulaParams {
     formulaId: 2, // EVERY_N_LEVELS
     interval: 2,  // Every 2 levels
     formulaStartLevel: 16, // Start at level 16
-    attributeId: null
+    abilityId: null
 }
 ```
 
@@ -141,7 +141,7 @@ FeatureModifierFormulaParams {
     formulaId: 15,
     interval: null,
     formulaStartLevel: null,
-    attributeId: 1 // Strength attribute
+    abilityId: 1 // Strength ability
 }
 ```
 

@@ -7,13 +7,13 @@ import {
     AdvancementIdParamSchema,
     CharacterIdParamSchema2,
     SpellPreparationParamSchema,
-    AttributeIdParamSchema,
+    AbilityIdParamSchema,
     CreateAdvancementSchema,
     UpdateAdvancementSchema,
     CreateSpellPreparationSchema,
     UpdateSpellPreparationSchema,
-    CreateCharacterAttributeSchema,
-    UpdateCharacterAttributeSchema,
+    CreateCharacterAbilityScoreSchema,
+    UpdateCharacterAbilityScoreSchema,
 } from '@shared/schema';
 
 import {
@@ -33,10 +33,10 @@ import {
     UpdateSpellPreparation,
     DeleteSpellPreparation,
     GetCharacterSpellPreparations,
-    CreateCharacterAttribute,
-    UpdateCharacterAttribute,
-    DeleteCharacterAttribute,
-    GetCharacterAttributes,
+    CreateCharacterAbilityScore,
+    UpdateCharacterAbilityScore,
+    DeleteCharacterAbilityScore,
+    GetCharacterAbilityScores,
 } from './characterController';
 import { requireAuth } from '../../middleware/authMiddleware.js';
 
@@ -65,10 +65,10 @@ post('/spell-preparations', requireAuth, { body: CreateSpellPreparationSchema },
 put('/spell-preparations/:characterId/:prepKey', requireAuth, { params: SpellPreparationParamSchema, body: UpdateSpellPreparationSchema }, UpdateSpellPreparation);
 deleteRoute('/spell-preparations/:characterId/:prepKey', requireAuth, { params: SpellPreparationParamSchema }, DeleteSpellPreparation);
 
-// Character Attribute Routes
-get('/:characterId/attributes', requireAuth, { params: CharacterIdParamSchema2 }, GetCharacterAttributes);
-post('/attributes', requireAuth, { body: CreateCharacterAttributeSchema }, CreateCharacterAttribute);
-put('/attributes/:id', requireAuth, { params: AttributeIdParamSchema, body: UpdateCharacterAttributeSchema }, UpdateCharacterAttribute);
-deleteRoute('/attributes/:id', requireAuth, { params: AttributeIdParamSchema }, DeleteCharacterAttribute);
+// Character Ability Score Routes
+get('/:characterId/abilities', requireAuth, { params: CharacterIdParamSchema2 }, GetCharacterAbilityScores);
+post('/abilities', requireAuth, { body: CreateCharacterAbilityScoreSchema }, CreateCharacterAbilityScore);
+put('/abilities/:id', requireAuth, { params: AbilityIdParamSchema, body: UpdateCharacterAbilityScoreSchema }, UpdateCharacterAbilityScore);
+deleteRoute('/abilities/:id', requireAuth, { params: AbilityIdParamSchema }, DeleteCharacterAbilityScore);
 
 export { CharacterRouter };

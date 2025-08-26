@@ -48,6 +48,15 @@ export const DAMAGE_TYPE_ENUM = {
     POISON: 9,
     RADIANT: 10,
     FORCE: 11,
+    MAGIC: 12,
+    LAWFUL: 13,
+    CHAOTIC: 14,
+    GOOD: 15,
+    EVIL: 16,
+    SILVER: 17,
+    ADAMANTINE: 18,
+    COLDIRON: 19,
+    EPIC: 20,
 };
 
 export const DAMAGE_TYPES: BaseMap<CoreComponent> = {
@@ -63,6 +72,15 @@ export const DAMAGE_TYPES: BaseMap<CoreComponent> = {
     [DAMAGE_TYPE_ENUM.POISON]: { id: DAMAGE_TYPE_ENUM.POISON, name: 'Poison' },
     [DAMAGE_TYPE_ENUM.RADIANT]: { id: DAMAGE_TYPE_ENUM.RADIANT, name: 'Radiant' },
     [DAMAGE_TYPE_ENUM.FORCE]: { id: DAMAGE_TYPE_ENUM.FORCE, name: 'Force' },
+    [DAMAGE_TYPE_ENUM.MAGIC]: { id: DAMAGE_TYPE_ENUM.MAGIC, name: 'Magic' },
+    [DAMAGE_TYPE_ENUM.LAWFUL]: { id: DAMAGE_TYPE_ENUM.LAWFUL, name: 'Lawful' },
+    [DAMAGE_TYPE_ENUM.CHAOTIC]: { id: DAMAGE_TYPE_ENUM.CHAOTIC, name: 'Chaotic' },
+    [DAMAGE_TYPE_ENUM.GOOD]: { id: DAMAGE_TYPE_ENUM.GOOD, name: 'Good' },
+    [DAMAGE_TYPE_ENUM.EVIL]: { id: DAMAGE_TYPE_ENUM.EVIL, name: 'Evil' },
+    [DAMAGE_TYPE_ENUM.SILVER]: { id: DAMAGE_TYPE_ENUM.SILVER, name: 'Silver' },
+    [DAMAGE_TYPE_ENUM.ADAMANTINE]: { id: DAMAGE_TYPE_ENUM.ADAMANTINE, name: 'Adamantine' },
+    [DAMAGE_TYPE_ENUM.COLDIRON]: { id: DAMAGE_TYPE_ENUM.COLDIRON, name: 'Cold Iron' },
+    [DAMAGE_TYPE_ENUM.EPIC]: { id: DAMAGE_TYPE_ENUM.EPIC, name: 'Epic' },
 };
 
 export const DAMAGE_TYPE_LIST = Object.values(DAMAGE_TYPES);

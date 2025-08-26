@@ -1,10 +1,7 @@
 import { DiceBoxService } from '@/services/DiceBoxService';
 import type {
     DiceBoxAdminConfig,
-    CreateDiceBoxAdminConfigRequest,
-    UpdateDiceBoxAdminConfigRequest,
-    GetAllDiceConfigsResponse,
-    UpdateResponse
+    GetAllDiceConfigsResponse
 } from '@shared/schema';
 
 export class DiceConfigurationService {

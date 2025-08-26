@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react';
+
 import {
     DocumentTextIcon,
     UserIcon,
@@ -5,21 +7,21 @@ import {
     SparklesIcon
 } from '@heroicons/react/24/outline';
 import pluralize from 'pluralize';
-import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
+
+import { UpdateRaceSchema, GetRaceResponseSchema, CreateRaceRequest, UpdateRaceRequest, FeatureProgressionWithRelations } from '@shared/schema';
+import { ModifierAppliesToType, SpecialFeatureId, ModifierType, FeatureSourceType } from '@shared/static-data';
 
 import {
     ValidatedForm,
     useValidatedForm
 } from '@/components/forms';
-import { UpdateRaceSchema, GetRaceResponseSchema, CreateRaceRequest, UpdateRaceRequest, FeatureProgressionWithRelations } from '@shared/schema';
-import { ModifierAppliesToType, SpecialFeatureId, ModifierType, FeatureSourceType } from '@shared/static-data';
+import { FeatureProgressionDetailEdit } from '@/components/feature-system';
+import { LanguageService } from '../../lib/LanguageService';
 
 import { RaceFeatureAssoc } from './RaceFeatureAssoc';
 import { RaceService } from './RaceService';
-import { LanguageService } from '../../lib/LanguageService';
-import { FeatureProgressionDetailEdit } from '@/components/feature-system';
 import {
     BasicInfoTab,
     AbilitiesTab,
@@ -126,7 +128,7 @@ export function RaceEdit() {
     const handleAddOrUpdateFeature = useCallback((selectedFeatureObjects: Array<{ featureId: number; slug: string; name: string; description: string; level: number }>) => {
         setFeatureProgressions(prev => {
             // Create a map of existing features for quick lookup by featureId
-            const existingFeaturesMap = new Map<number, any>();
+            const existingFeaturesMap = new Map<number, { modifiers?: unknown[]; choices?: unknown[]; effects?: unknown[] }>();
             prev.forEach(f => existingFeaturesMap.set(f.featureId, f));
 
             const updatedFeatures = selectedFeatureObjects.map(selectedFeature => {
@@ -145,9 +147,9 @@ export function RaceEdit() {
                         description: selectedFeature.description,
                         slug: selectedFeature.slug,
                     },
-                    modifiers: (existingFeature as any)?.modifiers || [],
-                    choices: (existingFeature as any)?.choices || [],
-                    effects: (existingFeature as any)?.effects || [],
+                    modifiers: existingFeature?.modifiers || [],
+                    choices: existingFeature?.choices || [],
+                    effects: existingFeature?.effects || [],
                 };
             });
             return updatedFeatures;
@@ -357,7 +359,7 @@ export function RaceEdit() {
             if (existingAbilityFeature) {
                 // Check if this specific ability already has a modifier
                 const existingModifier = existingAbilityFeature.modifiers?.find(m =>
-                    m.appliesTo === ModifierAppliesToType.Attribute && m.appliesToId === abilityId
+                    m.appliesTo === ModifierAppliesToType.Ability && m.appliesToId === abilityId
                 );
 
                 if (existingModifier) {
@@ -367,7 +369,7 @@ export function RaceEdit() {
                             ? {
                                 ...fp,
                                 modifiers: fp.modifiers?.map(m =>
-                                    m.appliesTo === ModifierAppliesToType.Attribute && m.appliesToId === abilityId
+                                    m.appliesTo === ModifierAppliesToType.Ability && m.appliesToId === abilityId
                                         ? { ...m, value: parsedValue }
                                         : m
                                 ) || []
@@ -387,7 +389,7 @@ export function RaceEdit() {
                                     type: ModifierType.Bonus,
                                     value: parsedValue,
                                     bonusType: null,
-                                    appliesTo: ModifierAppliesToType.Attribute,
+                                    appliesTo: ModifierAppliesToType.Ability,
                                     appliesToId: abilityId,
                                     formulaParamsId: null,
                                     appliesIfChoiceKey: null,
@@ -405,7 +407,7 @@ export function RaceEdit() {
                             ? {
                                 ...fp,
                                 modifiers: fp.modifiers?.filter(m =>
-                                    !(m.appliesTo === ModifierAppliesToType.Attribute && m.appliesToId === abilityId)
+                                    !(m.appliesTo === ModifierAppliesToType.Ability && m.appliesToId === abilityId)
                                 ) || []
                             }
                             : fp
@@ -434,7 +436,7 @@ export function RaceEdit() {
                         type: ModifierType.Bonus,
                         value: parsedValue,
                         bonusType: null,
-                        appliesTo: ModifierAppliesToType.Attribute,
+                        appliesTo: ModifierAppliesToType.Ability,
                         appliesToId: abilityId,
                         formulaParamsId: null,
                         appliesIfChoiceKey: null,

@@ -1,19 +1,11 @@
 ---
-title: Documentation Enforcement and Project Management - MANDATORY for All Changes
-globs: ["**/*"]
+title: Documentation Enforcement and Project Management
 alwaysApply: true
-priority: 1
 ---
 
 **CRITICAL**: Documentation updates are MANDATORY for any code changes.
 
 ## Documentation Enforcement and Project Management
-
-### Living Documentation Principle
-- **Project management docs are living documents** - they must reflect current reality
-- **Update documentation as you work** - don't wait until the end
-- **Documentation accuracy is more important than implementation speed**
-- **When in doubt, update the docs first**
 
 ### Automatic Documentation Triggers
 **ANY** of the following actions MUST trigger documentation updates:
@@ -36,15 +28,6 @@ priority: 1
    - Verify current status assessment matches reality
    - Identify any discrepancies between docs and code
 
-2. **Reference the correct documents**
-   - `shared/docs/project-mgmt/project-roadmap.md` - High-level overview
-   - `shared/docs/project-mgmt/feature-system-implementation-plan.md` - Detailed implementation
-   - `shared/docs/project-mgmt/feature-system-pending-tasks.md` - Task priorities
-   - `shared/docs/project-mgmt/feature-system-roadmap.md` - Feature-specific roadmap
-   - `shared/docs/project-mgmt/character-integration-plan.md` - Character system integration
-   - `shared/docs/project-mgmt/feature-formula-system-design.md` - Formula system design
-   - `shared/docs/project-mgmt/ui-enhancement-plan.md` - UI improvement strategy
-
 #### During Implementation
 1. **Update status immediately** when you start working on a task
 2. **Mark progress** as you complete sub-tasks
@@ -55,124 +38,4 @@ priority: 1
 1. **Update ALL affected documents** before considering work complete
 2. **Verify accuracy** of all status assessments
 3. **Remove completed tasks** from pending lists
-4. **Add new discoveries** to appropriate sections
 
-### Document Update Verification
-
-#### Required Updates for Each Change Type
-- **New Feature**: Update implementation plan, pending tasks, and roadmap
-- **Bug Fix**: Update status assessments and remove from critical missing if applicable
-- **Schema Change**: Update all documents that reference the schema
-- **File Creation**: Add to "Current Working Files" or "Key Files for Implementation"
-- **File Deletion**: Remove from file lists and update references
-- **Refactoring**: Update file references and implementation details
-
-#### Status Update Patterns
-- **✅ Completed**: Move from "Critical Missing" or "Partially Implemented"
-- **⏳ Partially Implemented**: Update when basic structure exists but logic missing
-- **❌ Critical Missing**: Add new discoveries or move from completed
-
-### Documentation Quality Standards
-
-#### Accuracy Requirements
-- **No outdated information** - Remove or update old status
-- **No missing critical gaps** - Document all discovered issues
-- **No incorrect file references** - Verify all file paths
-- **No stale success criteria** - Update based on actual achievements
-
-#### Completeness Requirements
-- **All major components** must have status assessment
-- **All critical files** must be listed in appropriate sections
-- **All dependencies** must be documented
-- **All risks** must be identified and assessed
-
-#### Status Assessments
-- **Current Status sections** must match actual implementation
-- **Completed/Partially Implemented/Critical Missing** must be accurate
-- **File references** must point to actual files
-- **Success criteria** must reflect actual achievements
-
-#### Implementation Tracking
-- **Key Files for Implementation** - Update as you create files
-- **Missing Implementation Files** - Remove implemented, add discovered
-- **Current Working Files** - Keep current with actual working files
-- **Dependencies** - Update as you discover new dependencies
-
-#### Priority Management
-- **Critical path dependencies** - Update as you complete blocking items
-- **Implementation priorities** - Adjust based on discoveries
-- **Risk assessments** - Update as risks are mitigated or new risks discovered
-
-### Documentation Update Triggers
-
-#### Automatic Updates Required
-- **Before starting any implementation**: Check and update status
-- **When creating new files**: Add to appropriate file lists
-- **When completing tasks**: Update status assessments
-- **When discovering gaps**: Add to critical missing sections
-- **When changing architecture**: Update design documents
-
-#### Verification Points
-- **After each major change**: Verify documentation accuracy
-- **Before committing code**: Ensure docs reflect changes
-- **When switching tasks**: Update status in relevant docs
-- **When discovering errors**: Document in appropriate sections
-
-### Enforcement Mechanisms
-
-#### Mandatory Checkpoints
-1. **Before starting work**: Check project-mgmt docs
-2. **After each major change**: Update relevant documents
-3. **Before completing work**: Verify all docs are current
-4. **When discovering issues**: Document in appropriate sections
-
-#### Required Actions
-1. **Check documentation before any work**
-2. **Update status as you progress**
-3. **Verify accuracy after completion**
-4. **Document discoveries immediately**
-
-#### Verification Checklist (MANDATORY)
-- [ ] Checked project-mgmt README for current status
-- [ ] Referenced relevant implementation plan documents
-- [ ] Updated status assessments in affected documents
-- [ ] Updated file references to match implementation
-- [ ] Removed completed tasks from pending lists
-- [ ] Added new discoveries to appropriate sections
-- [ ] Verified documentation accuracy after changes
-
-### Critical Documents to Update
-
-#### Core Documents (Always Check)
-- `shared/docs/project-mgmt/README.md` - Current status overview
-- `shared/docs/project-mgmt/feature-system-implementation-plan.md` - Implementation details
-- `shared/docs/project-mgmt/feature-system-pending-tasks.md` - Task priorities
-
-#### Context-Specific Documents
-- `shared/docs/project-mgmt/feature-system-roadmap.md` - Feature system status
-- `shared/docs/project-mgmt/character-integration-plan.md` - Character system integration
-- `shared/docs/project-mgmt/feature-formula-system-design.md` - Formula system design
-- `shared/docs/project-mgmt/ui-enhancement-plan.md` - UI improvement strategy
-
-### Quality Checks
-- [ ] Status assessments match reality
-- [ ] File references are correct
-- [ ] No outdated information
-- [ ] All critical gaps documented
-- [ ] Success criteria are current
-- [ ] Dependencies are accurate
-
-### Failure Consequences
-- **Documentation drift** leads to confusion and errors
-- **Outdated status** causes incorrect prioritization
-- **Missing file references** makes maintenance difficult
-- **Incomplete task tracking** leads to missed dependencies
-
-### Success Criteria
-- **All documents** reflect current implementation status
-- **File references** match actual codebase structure
-- **Task status** accurately reflects completion state
-- **No outdated information** remains in documentation
-- **New discoveries** are properly documented
-
-**CRITICAL**: This rule is non-negotiable. Documentation updates are as important as code changes.

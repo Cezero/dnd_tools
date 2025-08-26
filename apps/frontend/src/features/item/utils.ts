@@ -1,4 +1,4 @@
-import { CURRENCY } from '@shared/static-data';
+
 
 /**
  * Formats a cost value (stored as decimal in gold pieces) into a readable currency string

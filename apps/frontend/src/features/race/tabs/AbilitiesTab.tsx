@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
+
 import { ABILITY_LIST, SpecialFeatureId, ModifierAppliesToType } from '@shared/static-data';
-import { LanguageService } from '../../../lib/LanguageService';
+
 import type { RaceTabProps } from './types';
 
 export function AbilitiesTab({
-    formData,
+    formData: _formData,
     featureProgressions = [],
     onAbilityChange
 }: RaceTabProps): React.JSX.Element {
@@ -15,15 +16,15 @@ export function AbilitiesTab({
     const getAbilityAdjustments = () => {
         const abilityFeatures = featureProgressions.filter(fp =>
             fp.featureId === SpecialFeatureId.AbilityAdjustment &&
-            fp.modifiers?.some(m => m.appliesTo === ModifierAppliesToType.Attribute)
+            fp.modifiers?.some(m => m.appliesTo === ModifierAppliesToType.Ability)
         );
 
         return ABILITY_LIST.map(ability => {
             const abilityFeature = abilityFeatures.find(fp =>
                 fp.featureId === SpecialFeatureId.AbilityAdjustment &&
-                fp.modifiers?.some(m => m.appliesTo === ModifierAppliesToType.Attribute && m.appliesToId === ability.id)
+                fp.modifiers?.some(m => m.appliesTo === ModifierAppliesToType.Ability && m.appliesToId === ability.id)
             );
-            const abilityModifier = abilityFeature?.modifiers?.find(m => m.appliesTo === ModifierAppliesToType.Attribute && m.appliesToId === ability.id);
+            const abilityModifier = abilityFeature?.modifiers?.find(m => m.appliesTo === ModifierAppliesToType.Ability && m.appliesToId === ability.id);
             return {
                 abilityId: ability.id,
                 value: abilityModifier?.value || 0

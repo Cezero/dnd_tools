@@ -8,7 +8,7 @@ import { RegisterUserSchema } from '@shared/schema';
 import { UseAuth } from './AuthProvider';
 import type { RegisterPageProps } from './types';
 
-export function RegisterPage({ redirectTo = '/' }: RegisterPageProps = {}): React.JSX.Element {
+export function RegisterPage({ redirectTo: _redirectTo = '/' }: RegisterPageProps = {}): React.JSX.Element {
     const [username, setUsername] = useState<string>('');
     const [password, setPassword] = useState<string>('');
     const [email, setEmail] = useState<string>('');
@@ -23,7 +23,7 @@ export function RegisterPage({ redirectTo = '/' }: RegisterPageProps = {}): Reac
             // Validate input with Zod
             const registerData = RegisterUserSchema.parse({ username, password, email });
 
-            const responseData = await AuthService.register(registerData);
+            await AuthService.register(registerData);
 
             // Auto-login after registration
             const success = await Login(username, password);

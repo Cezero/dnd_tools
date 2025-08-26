@@ -13,7 +13,7 @@ export function transformFormulaParamsForDatabase(formulaParams: {
     formulaId: number;
     interval?: number | null;
     formulaStartLevel?: number | null;
-    attributeId?: number | null;
+    abilityId?: number | null;
     thresholds?: (number | string)[] | null;
     values?: (number | string)[] | null;
 }): {
@@ -21,7 +21,7 @@ export function transformFormulaParamsForDatabase(formulaParams: {
     formulaId: number;
     interval?: number | null;
     formulaStartLevel?: number | null;
-    attributeId?: number | null;
+    abilityId?: number | null;
     thresholds?: string | null;
     values?: string | null;
 } {
@@ -30,7 +30,7 @@ export function transformFormulaParamsForDatabase(formulaParams: {
         formulaId: formulaParams.formulaId,
         interval: formulaParams.interval,
         formulaStartLevel: formulaParams.formulaStartLevel,
-        attributeId: formulaParams.attributeId,
+        abilityId: formulaParams.abilityId,
         // Transform arrays to comma-separated strings
         thresholds: formulaParams.thresholds ? formulaParams.thresholds.join(',') : null,
         values: formulaParams.values ? formulaParams.values.map(v => String(v)).join(',') : null,
@@ -45,7 +45,7 @@ export function transformFormulaParamsFromDatabase(formulaParams: {
     formulaId: number;
     interval?: number | null;
     formulaStartLevel?: number | null;
-    attributeId?: number | null;
+    abilityId?: number | null;
     thresholds?: string | null;
     values?: string | null;
 }): {
@@ -53,7 +53,7 @@ export function transformFormulaParamsFromDatabase(formulaParams: {
     formulaId: number;
     interval?: number | null;
     formulaStartLevel?: number | null;
-    attributeId?: number | null;
+    abilityId?: number | null;
     thresholds?: number[] | null;
     values?: (string | number)[] | null;
 } {
@@ -62,7 +62,7 @@ export function transformFormulaParamsFromDatabase(formulaParams: {
         formulaId: formulaParams.formulaId,
         interval: formulaParams.interval,
         formulaStartLevel: formulaParams.formulaStartLevel,
-        attributeId: formulaParams.attributeId,
+        abilityId: formulaParams.abilityId,
         // Transform comma-separated strings to arrays
         thresholds: formulaParams.thresholds
             ? formulaParams.thresholds.split(',').map(s => parseInt(s.trim(), 10))
@@ -70,7 +70,11 @@ export function transformFormulaParamsFromDatabase(formulaParams: {
         values: formulaParams.values
             ? formulaParams.values.split(',').map(s => {
                 const trimmed = s.trim();
-                // Try to parse as number first, fall back to string
+                // Check if it's a dice notation (contains 'd')
+                if (trimmed.includes('d')) {
+                    return trimmed; // Keep as string for dice notation
+                }
+                // Try to parse as number for non-dice values
                 const num = parseInt(trimmed, 10);
                 return isNaN(num) ? trimmed : num;
             })

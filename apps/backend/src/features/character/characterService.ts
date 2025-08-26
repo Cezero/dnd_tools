@@ -14,9 +14,9 @@ import {
     CreateSpellPreparationRequest,
     UpdateSpellPreparationRequest,
     CharacterSpellPreparationWithMetamagicResponse,
-    CreateCharacterAttributeRequest,
-    UpdateCharacterAttributeRequest,
-    CharacterAttributeResponse,
+    CreateCharacterAbilityScoreRequest,
+    UpdateCharacterAbilityScoreRequest,
+    CharacterAbilityScoreResponse,
     CharacterWithAllDetailsResponse,
 } from '@shared/schema';
 
@@ -76,7 +76,7 @@ export const characterService: CharacterService = {
                         name: true,
                     },
                 },
-                attributes: true,
+                abilityScores: true,
                 advancements: {
                     include: {
                         skills: true,
@@ -233,37 +233,37 @@ export const characterService: CharacterService = {
         return preparations as CharacterSpellPreparationWithMetamagicResponse[];
     },
 
-    // Character attribute methods
-    async createCharacterAttribute(data: CreateCharacterAttributeRequest): Promise<CreateResponse> {
-        const result = await prisma.userCharacterAttribute.create({
+    // Character ability score methods
+    async createCharacterAbilityScore(data: CreateCharacterAbilityScoreRequest): Promise<CreateResponse> {
+        const result = await prisma.userCharacterAbilityScore.create({
             data,
         });
 
-        return { id: result.id.toString(), message: 'Character attribute created successfully' };
+        return { id: result.id.toString(), message: 'Character ability score created successfully' };
     },
 
-    async updateCharacterAttribute(id: number, data: UpdateCharacterAttributeRequest): Promise<UpdateResponse> {
-        await prisma.userCharacterAttribute.update({
+    async updateCharacterAbilityScore(id: number, data: UpdateCharacterAbilityScoreRequest): Promise<UpdateResponse> {
+        await prisma.userCharacterAbilityScore.update({
             where: { id },
             data,
         });
 
-        return { message: 'Character attribute updated successfully' };
+        return { message: 'Character ability score updated successfully' };
     },
 
-    async deleteCharacterAttribute(id: number): Promise<UpdateResponse> {
-        await prisma.userCharacterAttribute.delete({
+    async deleteCharacterAbilityScore(id: number): Promise<UpdateResponse> {
+        await prisma.userCharacterAbilityScore.delete({
             where: { id },
         });
 
-        return { message: 'Character attribute deleted successfully' };
+        return { message: 'Character ability score deleted successfully' };
     },
 
-    async getCharacterAttributes(characterId: number): Promise<CharacterAttributeResponse[]> {
-        const attributes = await prisma.userCharacterAttribute.findMany({
+    async getCharacterAbilityScores(characterId: number): Promise<CharacterAbilityScoreResponse[]> {
+        const abilities = await prisma.userCharacterAbilityScore.findMany({
             where: { characterId },
         });
 
-        return attributes as CharacterAttributeResponse[];
+        return abilities as CharacterAbilityScoreResponse[];
     },
 }; 

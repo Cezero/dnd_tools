@@ -1,9 +1,0 @@
----
-description: Creating types and interface definitions
-globs: ["**/*"]
-priority: 3
-alwaysApply: false
----
-- Avoid the use of any when generating types
-- Use TypeScript types or interfaces to enforce strict typing
-- Generated types should be placed in types.ts and not inline

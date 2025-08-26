@@ -186,9 +186,9 @@ export const ValidatedCustomSelect = forwardRef<HTMLDivElement, ValidatedCustomS
         labelExtraClassName = '',
         disabled = false,
         nested = false,
-        ...props
+        ..._props
     }, ref) => {
-        const { formData, setFormData, validation } = useFormContext();
+        const { formData, setFormData } = useFormContext();
 
         // Helper function to get nested value
         const getNestedValue = (obj: Record<string, unknown>, path: string): unknown => {
@@ -299,7 +299,7 @@ export const ValidatedForm: React.FC<ValidatedFormProps> = ({
     children,
     onSubmit,
     validationState,
-    isLoading = false,
+    isLoading: _isLoading = false,
     className = '',
     formData,
     setFormData,

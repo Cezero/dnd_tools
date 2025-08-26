@@ -158,7 +158,7 @@ const character = await prisma.userCharacter.findUnique({
     include: {
         race: true,
         class: true,
-        attributes: true,
+        abilityScores: true,
         advancements: {
             include: {
                 skills: true,

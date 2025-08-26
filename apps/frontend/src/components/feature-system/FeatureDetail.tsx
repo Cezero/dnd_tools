@@ -3,10 +3,10 @@ import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
+import { FeatService } from '@/features/feat/FeatService';
+import { formatterOrchestrator } from '@/lib/formatters';
 import { FeatureSystemService } from '@/services/FeatureSystemService';
 import { GetFeatureResponse, FeatureProgressionWithRelations } from '@shared/schema';
-import { formatProgression } from '@/lib/Formatters';
-import { FeatService } from '@/features/feat/FeatService';
 import { ModifierAppliesToType, FeatureSourceType } from '@shared/static-data';
 
 export function FeatureDetail() {
@@ -14,7 +14,6 @@ export function FeatureDetail() {
     const [feature, setFeature] = useState<GetFeatureResponse | null>(null);
     const [featureProgressions, setFeatureProgressions] = useState<FeatureProgressionWithRelations[]>([]);
     const [feats, setFeats] = useState<Array<{ id: number; name: string }>>([]);
-    const [featsLoaded, setFeatsLoaded] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const { isAdmin } = useAuthAuto();
     const navigate = useNavigate();
@@ -26,7 +25,7 @@ export function FeatureDetail() {
         const Initialize = async () => {
             try {
                 // Pass the string ID directly - Zod schema will transform it to number
-                const data = await FeatureSystemService.getFeatureById(undefined, { id: id! });
+                const data = await FeatureSystemService.getFeatureById(undefined, { id: parseInt(id!) });
                 setFeature(data);
 
                 // Load feature progressions for this feature
@@ -88,11 +87,7 @@ export function FeatureDetail() {
                     setFeats(response.results || []);
                 } catch (error) {
                     console.error('Failed to load feats:', error);
-                } finally {
-                    setFeatsLoaded(true);
                 }
-            } else if (!hasFeatModifiers) {
-                setFeatsLoaded(true);
             }
         };
 
@@ -195,10 +190,10 @@ export function FeatureDetail() {
                                                     <h4 className="font-medium">Modifiers:</h4>
                                                     <ul className="text-sm text-gray-600 dark:text-gray-400">
                                                         {progression.modifiers.map((modifier, index) => {
-                                                            const formatter = formatProgression({ ...progression, modifiers: [modifier] });
+                                                            const formatter = formatterOrchestrator.formatProgressionForEdit({ ...progression, modifiers: [modifier] });
                                                             return (
                                                                 <li key={index}>
-                                                                    {formatter.value}
+                                                                    {formatter.formattedValue}
                                                                 </li>
                                                             );
                                                         })}

@@ -10,8 +10,8 @@ import {
 } from '@/components/forms';
 import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
-import { CreateFeatSchema, FeatBenefitMapSchema, FeatPrerequisiteMapSchema, UpdateFeatSchema, GetFeatResponseSchema } from '@shared/schema';
-import { FEAT_PREREQUISITE_TYPES, FEAT_BENEFIT_TYPE_BY_ID, FEAT_TYPE_SELECT_LIST, FeatBenefitType } from '@shared/static-data';
+import { CreateFeatSchema, FeatBenefitMapSchema, FeatPrerequisiteMapSchema, UpdateFeatSchema } from '@shared/schema';
+import { FEAT_BENEFIT_TYPE_BY_ID, FEAT_TYPE_SELECT_LIST, FeatBenefitType } from '@shared/static-data';
 
 import { FeatBenefitEdit } from './FeatBenefitEdit';
 import { FeatPrereqEdit } from './FeatPrereqEdit';

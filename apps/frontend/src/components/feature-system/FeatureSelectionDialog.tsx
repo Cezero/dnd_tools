@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
 import { Dialog } from '@base-ui-components/react/dialog';
-import { GenericList } from '@/components/generic-list';
-import { FeatureSystemService } from '@/services/FeatureSystemService';
-import { FeatureProgressionWithRelations } from '@shared/schema';
 import { ColumnDef } from '@tanstack/react-table';
+import React, { useState, useEffect } from 'react';
+
+import { GenericList } from '@/components/generic-list';
 import { createContainsFilter } from '@/components/generic-list/filterFunctions';
-import { FilterType } from '@/components/generic-list/types';
+import { FeatureSystemService } from '@/services/FeatureSystemService';
 import { FeatureInQueryResponse } from '@shared/schema';
+import { FilterType } from '@shared/static-data';
 
 interface FeatureSelectionDialogProps {
     isOpen: boolean;

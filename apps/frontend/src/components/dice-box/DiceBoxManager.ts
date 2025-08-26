@@ -2,20 +2,15 @@ import DiceBox from '@3d-dice/dice-box';
 import DiceParser from '@3d-dice/dice-parser-interface';
 
 import { DiceBoxService } from '@/services/DiceBoxService';
-import type { DiceBoxAdminConfig, UpdateUserDiceConfigRequest } from '@shared/schema';
+import type { DiceBoxAdminConfig, UpdateUserDiceConfigRequest, UserDiceConfigOverride, DiceResult } from '@shared/schema';
 import { getSystemNameById } from '@shared/static-data';
 
-import type { DiceBoxConfig } from './DiceBox';
-
-export interface DiceResult {
-    notation: string;
-    results: number[];
-    total: number;
-    group?: string;
-}
+// Type for dynamic property assignment
+type DiceBoxConfigProperty = keyof DiceBoxAdminConfig;
+type DiceBoxConfigValue = string | number | boolean | null;
 
 export class DiceBoxManager {
-    private instance: InstanceType<typeof DiceBox> | null = null;
+    private instance: DiceBox | null = null;
     private isInitialized = false;
     private onRollCompleteCallbacks: ((result: DiceResult) => void)[] = [];
     private diceParser: DiceParser;
@@ -75,11 +70,11 @@ export class DiceBoxManager {
 
         // Cache the current icon color if config was provided
         if (config) {
-            this.currentIconColor = (config as any).iconColor || config.themeColor || '#3937b8';
+            this.currentIconColor = config.iconColor || config.themeColor || '#3937b8';
         }
 
         // Set up roll complete handler
-        this.instance.onRollComplete = (results: any) => {
+        this.instance.onRollComplete = (results: DiceResult | DiceResult[]) => {
             this.handleRollComplete(results);
         };
 
@@ -129,6 +124,27 @@ export class DiceBoxManager {
         return this.adminConfigsCache.get(configId);
     }
 
+    // Helper function to get override value from array
+    private getOverrideValue(overrides: UserDiceConfigOverride[], propertyName: string): string | undefined {
+        return overrides.find(override => override.propertyName === propertyName)?.propertyValue;
+    }
+
+    // Helper function to safely set property with type conversion
+    private setConfigProperty(config: DiceBoxAdminConfig, propertyName: string, value: string): void {
+        const propertyKey = propertyName as DiceBoxConfigProperty;
+        if (propertyKey in config) {
+            // Convert string value to appropriate type
+            const numValue = parseFloat(value);
+            if (!isNaN(numValue)) {
+                (config as Record<string, DiceBoxConfigValue>)[propertyKey] = numValue;
+            } else if (value === 'true' || value === 'false') {
+                (config as Record<string, DiceBoxConfigValue>)[propertyKey] = value === 'true';
+            } else {
+                (config as Record<string, DiceBoxConfigValue>)[propertyKey] = value;
+            }
+        }
+    }
+
     // Merge UserDiceConfig with admin config
     mergeUserConfigWithAdminConfig(userConfig: UpdateUserDiceConfigRequest): DiceBoxAdminConfig {
         const adminConfig = this.adminConfigsCache.get(userConfig.diceConfigBase);
@@ -139,20 +155,9 @@ export class DiceBoxManager {
         // Start with admin config
         const mergedConfig: DiceBoxAdminConfig = { ...adminConfig };
 
-        // Apply user overrides
-        Object.entries(userConfig.diceConfigOverrides).forEach(([key, value]) => {
-            const propertyKey = key as keyof DiceBoxAdminConfig;
-            if (propertyKey in mergedConfig) {
-                // Convert string value to appropriate type
-                const numValue = parseFloat(value);
-                if (!isNaN(numValue)) {
-                    (mergedConfig as any)[propertyKey] = numValue;
-                } else if (value === 'true' || value === 'false') {
-                    (mergedConfig as any)[propertyKey] = value === 'true';
-                } else {
-                    (mergedConfig as any)[propertyKey] = value;
-                }
-            }
+        // Apply user overrides from array structure
+        userConfig.diceConfigOverrides.forEach((override) => {
+            this.setConfigProperty(mergedConfig, override.propertyName, override.propertyValue);
         });
 
         // Apply color hierarchy logic
@@ -161,15 +166,15 @@ export class DiceBoxManager {
         // 3. Else use admin config iconColor if present
         // 4. Else use admin config themeColor if present
         // 5. Else use default #3937b8
-        const userIconColor = userConfig.diceConfigOverrides.iconColor;
-        const userThemeColor = userConfig.diceConfigOverrides.themeColor;
+        const userIconColor = this.getOverrideValue(userConfig.diceConfigOverrides, 'iconColor');
+        const userThemeColor = this.getOverrideValue(userConfig.diceConfigOverrides, 'themeColor');
         const adminIconColor = adminConfig.iconColor;
         const adminThemeColor = adminConfig.themeColor;
 
         const finalIconColor = userIconColor || userThemeColor || adminIconColor || adminThemeColor || '#3937b8';
 
         // Set the iconColor in the merged config
-        (mergedConfig as any).iconColor = finalIconColor;
+        mergedConfig.iconColor = finalIconColor;
 
         return mergedConfig;
     }
@@ -188,7 +193,7 @@ export class DiceBoxManager {
         throw new Error('Failed to find [data-dice-box] container after waiting');
     }
 
-    private handleRollComplete(results: any): void {
+    private handleRollComplete(results: DiceResult | DiceResult[]): void {
         try {
             console.log('results', results);
 
@@ -277,7 +282,7 @@ export class DiceBoxManager {
         }
     }
 
-    onRollComplete(callback: (result: any) => void): () => void {
+    onRollComplete(callback: (result: DiceResult) => void): () => void {
         this.onRollCompleteCallbacks.push(callback);
 
         // Return cleanup function
@@ -316,14 +321,16 @@ export class DiceBoxManager {
         }
 
         try {
-            // Convert theme ID to theme name if present
-            const diceBoxConfig = {
+            // Convert theme ID to theme name if present and create proper DiceBox config
+            const diceBoxConfig: Partial<import('@shared/schema').DiceBoxConfig> = {
                 ...config,
-                theme: config.theme ? getSystemNameById(config.theme) : undefined
+                theme: config.theme ? getSystemNameById(config.theme) : undefined,
+                // Convert id from number to string if present
+                ...(config.id && { id: config.id.toString() })
             };
 
             // Cache the current icon color (color hierarchy is handled in mergeUserConfigWithAdminConfig)
-            this.currentIconColor = (config as any).iconColor || '#3937b8';
+            this.currentIconColor = config.iconColor || '#3937b8';
 
             this.instance.updateConfig(diceBoxConfig);
         } catch (error) {

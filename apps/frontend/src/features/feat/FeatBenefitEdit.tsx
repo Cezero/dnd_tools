@@ -22,7 +22,7 @@ interface FeatBenefitEditProps {
     featId: number;
 }
 
-export function FeatBenefitEdit({ isOpen, onClose, onSave, initialBenefitData, featId }: FeatBenefitEditProps) {
+export function FeatBenefitEdit({ isOpen, onClose, onSave, initialBenefitData, featId: _featId }: FeatBenefitEditProps) {
     const [message, setMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);

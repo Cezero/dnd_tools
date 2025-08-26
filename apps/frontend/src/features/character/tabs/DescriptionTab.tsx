@@ -18,7 +18,7 @@ interface DescriptionTabProps {
 export function DescriptionTab({
     character,
     onUpdate,
-    races = [],
+    races: _races = [],
     selectedRaceDetails
 }: DescriptionTabProps): React.JSX.Element {
     const alignmentOptions = ALIGNMENT_LIST.map((alignment) => ({

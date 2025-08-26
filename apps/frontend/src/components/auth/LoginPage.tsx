@@ -7,7 +7,7 @@ import { LoginUserSchema } from '@shared/schema';
 import { UseAuth } from './AuthProvider';
 import type { LoginPageProps } from './types';
 
-export function LoginPage({ redirectTo = '/' }: LoginPageProps = {}): React.JSX.Element {
+export function LoginPage({ redirectTo: _redirectTo = '/' }: LoginPageProps = {}): React.JSX.Element {
     const [username, setUsername] = useState<string>('');
     const [password, setPassword] = useState<string>('');
     const [error, setError] = useState<string>('');

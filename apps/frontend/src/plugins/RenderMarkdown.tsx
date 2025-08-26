@@ -1,3 +1,5 @@
+import React from 'react';
+
 import type { MarkdownComponentProps } from '@/plugins/types';
 
 import { useMarkdownHast } from './markdownCache';

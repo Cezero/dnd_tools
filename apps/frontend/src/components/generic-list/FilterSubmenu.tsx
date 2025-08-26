@@ -1,11 +1,11 @@
 import { ContextMenu } from '@base-ui-components/react/context-menu';
-import { Input } from '@base-ui-components/react/input';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import React, { useRef, useEffect, useState } from 'react';
 
+import { FilterType } from '@shared/static-data';
 import { ContextMenuMultiSelect } from './ContextMenuMultiSelect';
 import { ContextMenuSingleSelect } from './ContextMenuSingleSelect';
-import { FilterType , FilterConfig, FilterValue } from './types';
+import { FilterConfig, FilterValue } from './types';
 
 interface FilterSubmenuProps {
     columnId: string;
@@ -22,10 +22,16 @@ export const FilterSubmenu: React.FC<FilterSubmenuProps> = ({
     onFilterChange,
     columnFilters = []
 }) => {
-    const [textValue, setTextValue] = useState(currentFilter?.value || '');
-    const inputRef = useRef<HTMLInputElement>(null);
+    const [_textValue, _setTextValue] = useState(currentFilter?.value || '');
+    const _inputRef = useRef<HTMLInputElement>(null);
+    const selectedValuesRef = useRef<(string | number)[]>([]);
 
-
+    // Update ref when currentFilter changes
+    useEffect(() => {
+        if (currentFilter?.value && typeof currentFilter.value === 'object' && 'values' in currentFilter.value) {
+            selectedValuesRef.current = currentFilter.value.values;
+        }
+    }, [currentFilter?.value]);
 
     if (!filterConfig || !filterConfig.filterType) {
         return (
@@ -46,7 +52,7 @@ export const FilterSubmenu: React.FC<FilterSubmenuProps> = ({
     };
 
     switch (filterType) {
-        case FilterType.SINGLE_SELECT:
+        case FilterType.SINGLE_SELECT: {
             const singleSelectOptions = getOptions();
             if (!singleSelectOptions) {
                 return (
@@ -58,7 +64,7 @@ export const FilterSubmenu: React.FC<FilterSubmenuProps> = ({
             return (
                 <ContextMenuSingleSelect
                     options={singleSelectOptions}
-                    selected={currentFilter?.value || null}
+                    selected={typeof currentFilter?.value === 'string' || typeof currentFilter?.value === 'number' ? currentFilter.value : null}
                     onValueChange={(value) => {
                         if (value === null) {
                             onFilterChange(null);
@@ -68,8 +74,9 @@ export const FilterSubmenu: React.FC<FilterSubmenuProps> = ({
                     }}
                 />
             );
+        }
 
-        case FilterType.MULTI_SELECT:
+        case FilterType.MULTI_SELECT: {
             const multiSelectOptions = getOptions();
             if (!multiSelectOptions) {
                 return (
@@ -78,14 +85,12 @@ export const FilterSubmenu: React.FC<FilterSubmenuProps> = ({
                     </div>
                 );
             }
-            const selectedValues = currentFilter?.value?.values || [];
-            const currentLogicType = currentFilter?.value?.logicType || 'or';
-            const selectedValuesRef = useRef(selectedValues);
-
-            // Update ref when selectedValues changes
-            useEffect(() => {
-                selectedValuesRef.current = selectedValues;
-            }, [selectedValues]);
+            const selectedValues = currentFilter?.value && typeof currentFilter.value === 'object' && 'values' in currentFilter.value
+                ? currentFilter.value.values
+                : [];
+            const currentLogicType = currentFilter?.value && typeof currentFilter.value === 'object' && 'logicType' in currentFilter.value
+                ? currentFilter.value.logicType || 'or'
+                : 'or';
 
             return (
                 <ContextMenuMultiSelect
@@ -120,8 +125,9 @@ export const FilterSubmenu: React.FC<FilterSubmenuProps> = ({
                     }}
                 />
             );
+        }
 
-        case FilterType.TEXT_INPUT:
+        case FilterType.TEXT_INPUT: {
             return (
                 <ContextMenu.Item
                     className="px-2 py-1 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
@@ -140,12 +146,14 @@ export const FilterSubmenu: React.FC<FilterSubmenuProps> = ({
                     </div>
                 </ContextMenu.Item>
             );
+        }
 
-        default:
+        default: {
             return (
                 <div className="px-2 py-1 text-sm text-gray-500 dark:text-gray-400">
                     Unknown filter type
                 </div>
             );
+        }
     }
 }; 

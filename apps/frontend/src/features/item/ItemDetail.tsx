@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
@@ -8,8 +8,7 @@ import {
     WEAPON_CATEGORIES,
     WEAPON_TYPES,
     DAMAGE_TYPES,
-    ARMOR_CATEGORIES,
-    ITEM_TYPES
+    ARMOR_CATEGORIES
 } from '@shared/static-data';
 
 import { ItemService } from './ItemService';

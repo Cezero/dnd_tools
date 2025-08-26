@@ -1,9 +1,8 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter, createEqualsFilter, createArrayIdFilter } from '@/components/generic-list/filterFunctions';
-import { FilterType } from '@/components/generic-list/types';
 import { FeatInQueryResponse } from '@shared/schema';
-import { FEAT_TYPE_SELECT_LIST } from '@shared/static-data';
+import { FEAT_TYPE_SELECT_LIST, FilterType } from '@shared/static-data';
 
 export const FEAT_COLUMNS: ColumnDef<FeatInQueryResponse, unknown>[] = [
     {

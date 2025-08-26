@@ -1,11 +1,10 @@
-import { z } from 'zod';
-
 import { typedApi } from '@/services/Api';
 import {
     SpellIdParamSchema,
     UpdateSpellSchema,
     GetSpellResponseSchema,
     GetAllSpellsResponseSchema,
+    UpdateResponseSchema,
 } from '@shared/schema';
 
 /**
@@ -47,19 +46,19 @@ export const SpellService = {
     }),
 
     // Update spell with path parameter
-    updateSpell: typedApi<typeof UpdateSpellSchema, z.ZodObject<Record<string, never>>, typeof SpellIdParamSchema>({
+    updateSpell: typedApi<typeof UpdateSpellSchema, typeof UpdateResponseSchema, typeof SpellIdParamSchema>({
         path: '/spells/:id',
         method: 'PUT',
         paramsSchema: SpellIdParamSchema,
         requestSchema: UpdateSpellSchema,
-        responseSchema: z.object({})
+        responseSchema: UpdateResponseSchema
     }),
 
     // Delete spell with path parameter
-    deleteSpell: typedApi<undefined, z.ZodObject<Record<string, never>>, typeof SpellIdParamSchema>({
+    deleteSpell: typedApi<undefined, typeof UpdateResponseSchema, typeof SpellIdParamSchema>({
         path: '/spells/:id',
         method: 'DELETE',
         paramsSchema: SpellIdParamSchema,
-        responseSchema: z.object({}),
+        responseSchema: UpdateResponseSchema,
     }),
 }; 

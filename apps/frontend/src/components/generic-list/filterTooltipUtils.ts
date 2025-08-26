@@ -1,14 +1,10 @@
-import { FilterType, GenericListColumnMeta } from './types';
-
-interface FilterValue {
-    id: string;
-    value: any;
-}
+import { FilterType } from '@shared/static-data';
+import { FilterConfig, FilterValue } from './types';
 
 export const formatFilterTooltip = (
-    filter: FilterValue,
-    columnMeta: GenericListColumnMeta,
-    columnFilters?: any[] // Add columnFilters parameter for dynamic options
+    filter: FilterValue | undefined,
+    columnMeta: FilterConfig,
+    columnFilters?: FilterValue[]
 ): string => {
     if (!filter || !filter.value) {
         return '';
@@ -28,7 +24,7 @@ export const formatFilterTooltip = (
             // For text input, just show the string value
             return String(filter.value);
 
-        case FilterType.SINGLE_SELECT:
+        case FilterType.SINGLE_SELECT: {
             // For single select, find the label for the selected value
             const singleSelectOptions = getOptions();
             if (singleSelectOptions) {
@@ -36,10 +32,11 @@ export const formatFilterTooltip = (
                 return option ? option.label : String(filter.value);
             }
             return String(filter.value);
+        }
 
-        case FilterType.MULTI_SELECT:
+        case FilterType.MULTI_SELECT: {
             // For multi select, show values with appropriate delimiter
-            if (filter.value.values && Array.isArray(filter.value.values)) {
+            if (typeof filter.value === 'object' && filter.value && 'values' in filter.value && Array.isArray(filter.value.values)) {
                 const logicType = filter.value.logicType || 'or';
                 const delimiter = logicType === 'and' ? ' & ' : ' | ';
 
@@ -57,6 +54,7 @@ export const formatFilterTooltip = (
                 }
             }
             return '';
+        }
 
         default:
             return String(filter.value);

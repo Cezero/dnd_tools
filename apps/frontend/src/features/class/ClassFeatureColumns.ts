@@ -2,8 +2,8 @@ import { ColumnDef } from '@tanstack/react-table';
 import { z } from 'zod';
 
 import { createContainsFilter } from '@/components/generic-list/filterFunctions';
-import { FilterType } from '@/components/generic-list/types';
 import { FeatureSchema } from '@shared/schema';
+import { FilterType } from '@shared/static-data';
 
 export const CLASS_FEATURE_COLUMNS: ColumnDef<z.infer<typeof FeatureSchema>, unknown>[] = [
     {

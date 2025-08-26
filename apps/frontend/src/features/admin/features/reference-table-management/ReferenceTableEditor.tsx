@@ -1,6 +1,6 @@
 import * as mdiIcons from '@mdi/js';
 import Icon from '@mdi/react';
-import { useReactTable, getCoreRowModel } from '@tanstack/react-table';
+import { useReactTable } from '@tanstack/react-table';
 import React, { useEffect, useState, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -50,7 +50,7 @@ export function ReferenceTableEditor() {
     const [loading, setLoading] = useState(true);
     const [tableName, setTableName] = useState('');
     const [tableDescription, setTableDescription] = useState('');
-    const [tableId, setTableId] = useState(slug);
+    const [_tableId, setTableId] = useState(slug);
     const [tableSlug, setTableSlug] = useState('');
 
     // Refs for focus management
@@ -387,7 +387,7 @@ export function ReferenceTableEditor() {
             })),
             rows: data.map((row, rowIndex) => {
                 const currentRowCells = [];
-                columns.forEach((col, colIndex) => {
+                columns.forEach((col, _colIndex) => {
                     const cellData = row[col.accessorKey];
 
                     // If the cell doesn't exist or is marked as merged, skip it.

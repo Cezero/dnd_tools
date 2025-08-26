@@ -1,4 +1,5 @@
 import React from 'react';
+
 import type { CreateClassRequest, UpdateClassRequest, FeatureProgressionWithRelations, SpellcastingProgressionWithSlots } from '@shared/schema';
 
 // Type definitions for the form state

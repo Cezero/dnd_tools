@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { SpellcastingProgressionWithSlots, CreateSpellcastingProgressionRequest } from '@shared/schema';
+import React, { useCallback, useMemo } from 'react';
+
 import { SpellSlotGrid } from '@/components/spell-progression/SpellSlotGrid';
+import { SpellcastingProgressionWithSlots, CreateSpellcastingProgressionRequest } from '@shared/schema';
 
 export interface SpellProgressionEditorProps {
     /** Current spell progression data */

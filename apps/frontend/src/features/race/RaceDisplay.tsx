@@ -1,12 +1,12 @@
+import pluralize from 'pluralize';
 import React from 'react';
 
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { GetRaceResponse } from '@shared/schema';
-import { SIZE_MAP, LANGUAGE_MAP, EDITION_MAP, ABILITY_MAP, CLASS_MAP, ModifierAppliesToType, ABILITY_LIST, SpecialFeatureId } from '@shared/static-data';
+import { formatterOrchestrator } from '@/lib/formatters';
 import { LanguageService } from '../../lib/LanguageService';
-import { formatProgression } from '@/lib/Formatters';
 
-import pluralize from 'pluralize';
+import { GetRaceResponse, FormatterMetadata } from '@shared/schema';
+import { SIZE_MAP, LANGUAGE_MAP, EDITION_MAP, ABILITY_MAP, CLASS_MAP, ModifierAppliesToType, ABILITY_LIST, SpecialFeatureId } from '@shared/static-data';
 
 interface RaceDisplayProps {
     race: GetRaceResponse;
@@ -25,8 +25,56 @@ export function RaceDisplay({
     onBack,
     onEdit,
     isAdmin = false,
-    fromListParams = ''
+    fromListParams: _fromListParams = ''
 }: RaceDisplayProps): React.JSX.Element {
+    // Extract FormatterMetadata from the race data
+    const extractFormatterMetadata = (): FormatterMetadata => {
+        const featNames: Array<{ id: number; name: string }> = [];
+        const featureNames: Array<{ id: number; name: string }> = [];
+        const itemNames: Array<{ id: number; name: string }> = [];
+
+        // Extract feat names from nested choice data
+        race.features?.forEach(progression => {
+            progression.choices?.forEach(choice => {
+                if (choice.feat && choice.featId) {
+                    featNames.push({
+                        id: choice.featId,
+                        name: choice.feat.name
+                    });
+                }
+            });
+        });
+
+        // Extract feature names from nested choice data
+        race.features?.forEach(progression => {
+            progression.choices?.forEach(choice => {
+                if (choice.feature && choice.featureId) {
+                    featureNames.push({
+                        id: choice.featureId,
+                        name: choice.feature.name
+                    });
+                }
+            });
+        });
+
+        // Remove duplicates
+        const uniqueFeatNames = Array.from(
+            new Map(featNames.map(item => [item.id, item])).values()
+        );
+        const uniqueFeatureNames = Array.from(
+            new Map(featureNames.map(item => [item.id, item])).values()
+        );
+
+        return {
+            featNames: uniqueFeatNames.length > 0 ? uniqueFeatNames : undefined,
+            featureNames: uniqueFeatureNames.length > 0 ? uniqueFeatureNames : undefined,
+            itemNames: itemNames.length > 0 ? itemNames : undefined
+        };
+    };
+
+    // Get FormatterMetadata for this race
+    const formatterMetadata = extractFormatterMetadata();
+
     // Inner cell styling (the inner border, padding, background, text colors)
     const innerCellContentClasses = "p-3 bg-content border-content rounded-lg border w-full";
 
@@ -73,7 +121,7 @@ export function RaceDisplay({
                                 (() => {
                                     const abilityFeatures = race.features?.filter(fp =>
                                         fp.featureId === SpecialFeatureId.AbilityAdjustment &&
-                                        fp.modifiers?.some(m => m.appliesTo === ModifierAppliesToType.Attribute)
+                                        fp.modifiers?.some(m => m.appliesTo === ModifierAppliesToType.Ability)
                                     ) || [];
 
                                     const adjustments: Array<{ abilityId: number; value: number }> = [];
@@ -82,10 +130,10 @@ export function RaceDisplay({
                                     for (const ability of ABILITY_LIST) {
                                         const abilityFeature = abilityFeatures.find(fp =>
                                             fp.featureId === SpecialFeatureId.AbilityAdjustment &&
-                                            fp.modifiers?.some(m => m.appliesTo === ModifierAppliesToType.Attribute && m.appliesToId === ability.id)
+                                            fp.modifiers?.some(m => m.appliesTo === ModifierAppliesToType.Ability && m.appliesToId === ability.id)
                                         );
                                         const abilityModifier = abilityFeature?.modifiers?.find(m =>
-                                            m.appliesTo === ModifierAppliesToType.Attribute && m.appliesToId === ability.id
+                                            m.appliesTo === ModifierAppliesToType.Ability && m.appliesToId === ability.id
                                         );
                                         if (abilityModifier && abilityModifier.value !== 0) {
                                             adjustments.push({
@@ -136,15 +184,12 @@ export function RaceDisplay({
                                                         (featureProg.choices && featureProg.choices.length > 0);
 
                                                     if (hasDetails) {
-                                                        const formatted = formatProgression(featureProg);
-                                                        const details = [];
-                                                        if (formatted.value) details.push(formatted.value);
-                                                        if (formatted.note) details.push(formatted.note);
+                                                        const formattedEntries = formatterOrchestrator.formatProgressionsForDetailDisplay([featureProg], undefined, formatterMetadata).get(featureProg.level) || [];
 
-                                                        if (details.length > 0) {
+                                                        if (formattedEntries.length > 0) {
                                                             return (
                                                                 <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                                                                    <strong>Details:</strong> {details.join(', ')}
+                                                                    <strong>Details:</strong> {formattedEntries.join(', ')}
                                                                 </div>
                                                             );
                                                         }

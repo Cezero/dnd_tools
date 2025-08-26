@@ -1,5 +1,7 @@
 import React from 'react';
+
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
+
 import type { RaceTabProps } from './types';
 
 export function DescriptionTab({

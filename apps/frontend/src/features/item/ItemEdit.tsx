@@ -11,7 +11,7 @@ import {
 } from '@/components/forms';
 import { CustomSelect, CustomSelectMulti } from '@/components/forms/FormComponents';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
-import { CreateItemSchema, UpdateItemSchema } from '@shared/schema';
+import { CreateItemSchema, UpdateItemSchema, type Weapon, type Armor } from '@shared/schema';
 import {
     WEAPON_CATEGORY_SELECT_LIST,
     WEAPON_TYPE_SELECT_LIST,
@@ -164,7 +164,7 @@ export function ItemEdit() {
     }, [id, initialFormData]);
 
     // Helper functions to check if weapon/armor objects are empty/default
-    const isWeaponEmpty = (weapon: any): boolean => {
+    const isWeaponEmpty = (weapon: Weapon | null): boolean => {
         if (!weapon) return true;
         return (
             weapon.category === 1 &&
@@ -181,7 +181,7 @@ export function ItemEdit() {
         );
     };
 
-    const isArmorEmpty = (armor: any): boolean => {
+    const isArmorEmpty = (armor: Armor | null): boolean => {
         if (!armor) return true;
         return (
             armor.category === 1 &&

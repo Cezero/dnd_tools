@@ -7,7 +7,7 @@ import { GenericList } from '@/components/generic-list';
 import { ColorPicker } from '@/components/widgets';
 import { generateDiceColorScheme } from '@/utils/color-scheme';
 import type { DiceBoxAdminConfig } from '@shared/schema';
-import { doesThemeIgnoreColor , getDiceThemeById, DICE_THEME_SELECT_LIST } from '@shared/static-data';
+import { doesThemeIgnoreColor , getDiceThemeById, THREE_D_DICE_THEME_SELECT_LIST } from '@shared/static-data';
 
 import { DICE_CONFIGURATION_COLUMNS } from './DiceConfigurationsColumns';
 import { DiceConfigurationService } from './DiceConfigurationService';
@@ -15,7 +15,7 @@ import { DiceConfigurationService } from './DiceConfigurationService';
 
 export function DiceConfigurationPage(): React.JSX.Element {
     const [config, setConfig] = useState<DiceBoxAdminConfig & { id?: number }>(DiceConfigurationService.getDefaultConfig());
-    const [selectedConfigId, setSelectedConfigId] = useState<number | null>(null);
+    const [_selectedConfigId, setSelectedConfigId] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -24,7 +24,7 @@ export function DiceConfigurationPage(): React.JSX.Element {
     const debounceTimeoutRef = useRef<number | null>(null);
     const isInitializedRef = useRef<boolean>(false);
     const isSavingRef = useRef<boolean>(false);
-    const isUnmountingRef = useRef<boolean>(false);
+    const _isUnmountingRef = useRef<boolean>(false);
 
 
 
@@ -154,7 +154,7 @@ export function DiceConfigurationPage(): React.JSX.Element {
         config.angularDamping, config.linearDamping, config.spinForce, config.throwForce,
         config.startingHeight, config.settleTimeout, config.lightIntensity,
         config.enableShadows, config.shadowTransparency,
-        isReady, debouncedUpdate
+        isReady, debouncedUpdate, config
     ]);
 
     const loadDefaultConfig = async () => {
@@ -209,7 +209,7 @@ export function DiceConfigurationPage(): React.JSX.Element {
         }
     };
 
-    const handleSetDefault = async (configId: number) => {
+    const _handleSetDefault = async (configId: number) => {
         try {
             // TODO: Implement set default endpoint
             console.log('Setting default config:', configId);
@@ -478,7 +478,7 @@ export function DiceConfigurationPage(): React.JSX.Element {
                                             <h3 className="text-lg font-semibold mb-4">Visual Settings</h3>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <CustomSelect
-                                                    options={DICE_THEME_SELECT_LIST}
+                                                    options={THREE_D_DICE_THEME_SELECT_LIST}
                                                     value={typeof config.theme === 'number' ? config.theme : 1}
                                                     onValueChange={(theme) => handleConfigChange({ theme })}
                                                     label="Theme"

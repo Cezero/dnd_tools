@@ -5,14 +5,9 @@ import {
     SparklesIcon,
     BeakerIcon
 } from '@heroicons/react/24/outline';
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
-import { FeatureProgressionDetailEdit, FeatureProficiencyDialog } from '@/components/feature-system';
-import {
-    ValidatedForm,
-    useValidatedForm,
-} from '@/components/forms';
 import {
     CreateClassSchema,
     UpdateClassSchema,
@@ -27,11 +22,17 @@ import {
     ModifierAppliesToType,
 } from '@shared/static-data';
 
+import { FeatureProgressionDetailEdit, FeatureProficiencyDialog } from '@/components/feature-system';
+import {
+    ValidatedForm,
+    useValidatedForm,
+} from '@/components/forms';
+import { FeatService } from '@/features/feat/FeatService';
+
 import { ClassFeatureAssoc } from './ClassFeatureAssoc';
 import { ClassProficiencyService } from './ClassProficiencyService';
 import { ClassSkillService } from './ClassSkillService';
 import { ClassService } from './ClassService';
-import { FeatService } from '@/features/feat/FeatService';
 import {
     BasicInfoTab,
     SkillsTab,
@@ -61,7 +62,7 @@ export default function ClassEdit() {
     const [editingProgression, setEditingProgression] = useState<FeatureProgressionWithRelations | null>(null);
     const [preSelectedFeature, setPreSelectedFeature] = useState<{ id: number; name: string; description: string; slug: string } | undefined>(undefined);
     const [feats, setFeats] = useState<Array<{ id: number; name: string }>>([]);
-    const [featsLoaded, setFeatsLoaded] = useState(false);
+    const [_featsLoaded, setFeatsLoaded] = useState(false);
 
     // Ref to track if we've already processed the newFeature
     const processedNewFeatureRef = useRef<boolean>(false);
@@ -190,14 +191,14 @@ export default function ClassEdit() {
     /**
      * Handles removing a proficiency via the feature system.
      */
-    const handleRemoveProficiency = useCallback((featId: number, itemId: number) => {
+    const _handleRemoveProficiency = useCallback((featId: number, itemId: number) => {
         ClassProficiencyService.removeProficiency(featureProgressions, setFeatureProgressions, featId, itemId);
     }, [featureProgressions, setFeatureProgressions]);
 
 
 
     // Initialize form data with default values
-    const initialFormData: ClassFormData = {
+    const initialFormData = useMemo((): ClassFormData => ({
         name: '',
         abbreviation: '',
         editionId: 1,
@@ -214,7 +215,7 @@ export default function ClassEdit() {
         willProgression: 2, // poor
         spellcastingProgression: [],
         ...(id !== 'new' && { id: parseInt(id) })
-    };
+    }), [id]);
 
     const [formData, setFormData] = useState<ClassFormData>(initialFormData);
 
@@ -309,7 +310,7 @@ export default function ClassEdit() {
     /**
      * Opens the progression dialog for adding a new progression.
      */
-    const handleOpenProgressionDialog = useCallback(() => {
+    const _handleOpenProgressionDialog = useCallback(() => {
         setEditingProgression(null);
         setIsProgressionDialogOpen(true);
     }, []);
@@ -375,7 +376,7 @@ export default function ClassEdit() {
         };
 
         fetchClass();
-    }, [id]);
+    }, [id, initialFormData]);
 
     // Load feats if we have feat modifiers
     useEffect(() => {
@@ -450,7 +451,7 @@ export default function ClassEdit() {
             // Clear the state
             navigate(location.pathname, { replace: true, state: {} });
         }
-    }, [location.state?.newFeature, id, navigate]);
+    }, [location.state?.newFeature, id, navigate, location.pathname]);
 
     const HandleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -481,7 +482,7 @@ export default function ClassEdit() {
                             if (modData.formulaParams && modData.formulaParams.formulaId) {
                                 // Keep the formulaParams data but remove any temporary IDs
                                 const formulaParamsData = { ...modData.formulaParams };
-                                delete (formulaParamsData as any).id; // Remove id if it exists
+                                delete (formulaParamsData as { id?: unknown }).id; // Remove id if it exists
                                 modData.formulaParams = formulaParamsData;
                                 // Remove formulaParamsId as it will be set by the backend
                                 delete modData.formulaParamsId;
@@ -554,7 +555,7 @@ export default function ClassEdit() {
                 errorMessage = err.message;
             } else if (typeof err === 'object' && err !== null) {
                 // Try to extract error details from response
-                const errorObj = err as any;
+                const errorObj = err as { response?: { data?: { error?: string } }; message?: string };
                 if (errorObj.response?.data?.error) {
                     errorMessage = errorObj.response.data.error;
                 } else if (errorObj.message) {
@@ -601,7 +602,7 @@ export default function ClassEdit() {
         }
         acc[featureId].progressions.push(progression);
         return acc;
-    }, {} as Record<number, { feature: any; progressions: FeatureProgressionWithRelations[] }>);
+    }, {} as Record<number, { feature: { id: number; name: string; description: string; slug: string }; progressions: FeatureProgressionWithRelations[] }>);
 
     return (
         <div className="w-4/5 mx-auto p-6">

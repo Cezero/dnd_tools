@@ -1,21 +1,9 @@
 import React from 'react';
 
-// Type for the parsed result from dice-parser-interface
-interface ParsedDiceResult {
-    count?: { value: number };
-    die?: { value: number };
-    rolls?: Array<{
-        value: number;
-        drop?: boolean;
-    }>;
-    value: number;
-    originalNotation?: string;
-    group?: string;
-    critHighlight?: boolean;
-}
+import type { DiceResult } from '@shared/schema';
 
 interface DiceResultRendererProps {
-    results: ParsedDiceResult[];
+    results: DiceResult[];
     critHighlight?: boolean;
 }
 
@@ -28,25 +16,24 @@ export function DiceResultRenderer({ results, critHighlight = false }: DiceResul
 }
 
 interface SingleResultRendererProps {
-    result: ParsedDiceResult;
+    result: DiceResult;
     critHighlight?: boolean;
 }
 
 function SingleResultRenderer({ result, critHighlight = false }: SingleResultRendererProps): React.JSX.Element {
-    const { count, die, rolls, value, originalNotation, group } = result;
-    const sides = die?.value || 6;
-    const title = generateTitle(originalNotation || `${count?.value || 1}d${sides}`, group);
+    const { results, total, originalNotation, group } = result;
+    const title = generateTitle(originalNotation || 'Unknown', group);
 
     return (
         <span className="text-sm text-gray-600 dark:text-gray-300">
             {title}:{' '}
             <span className="font-mono">
-                {rolls?.map((roll, index) => {
-                    const rollElement = renderDieRoll(roll.value, sides, roll.drop, critHighlight);
+                {results.map((roll, index) => {
+                    const rollElement = renderDieRoll(roll, 6, false, critHighlight);
                     return <React.Fragment key={index}>{rollElement}</React.Fragment>;
                 })}
                 <span className="ml-2 font-bold text-base text-gray-900 dark:text-white">
-                    = {value}
+                    = {total}
                 </span>
             </span>
         </span>
@@ -54,7 +41,7 @@ function SingleResultRenderer({ result, critHighlight = false }: SingleResultRen
 }
 
 interface MultipleResultsRendererProps {
-    results: ParsedDiceResult[];
+    results: DiceResult[];
     critHighlight?: boolean;
 }
 
@@ -62,20 +49,19 @@ function MultipleResultsRenderer({ results, critHighlight = false }: MultipleRes
     return (
         <span className="text-sm text-gray-600 dark:text-gray-300 flex flex-wrap gap-2">
             {results.map((result, resultIndex) => {
-                const { count, die, rolls, value, originalNotation, group } = result;
-                const sides = die?.value || 6;
-                const title = generateTitle(originalNotation || `${count?.value || 1}d${sides}`, group);
+                const { results: diceResults, total, originalNotation, group } = result;
+                const title = generateTitle(originalNotation || 'Unknown', group);
 
                 return (
                     <span key={resultIndex} className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1">
                         {title}:{' '}
                         <span className="font-mono">
-                            {rolls?.map((roll, index) => {
-                                const rollElement = renderDieRoll(roll.value, sides, roll.drop, critHighlight);
+                            {diceResults.map((roll, index) => {
+                                const rollElement = renderDieRoll(roll, 6, false, critHighlight);
                                 return <React.Fragment key={index}>{rollElement}</React.Fragment>;
                             })}
                             <span className="ml-2 font-bold text-base text-gray-900 dark:text-white">
-                                = {value}
+                                = {total}
                             </span>
                         </span>
                     </span>
@@ -100,7 +86,7 @@ function renderDieRoll(value: number, sides: number, isDropped: boolean = false,
     }
 
     if (isDropped) {
-        rollClasses += " line-through opacity-60";
+        rollClasses += " opacity-50 line-through";
     }
 
     return (
@@ -112,7 +98,7 @@ function renderDieRoll(value: number, sides: number, isDropped: boolean = false,
 
 function generateTitle(notation: string, group?: string): string {
     if (group) {
-        return `${group} Roll: ${notation}`;
+        return `${group}: ${notation}`;
     }
-    return `Dice Roll: ${notation}`;
+    return notation;
 } 

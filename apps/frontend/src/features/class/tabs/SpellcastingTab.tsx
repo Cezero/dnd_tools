@@ -1,15 +1,17 @@
 import React from 'react';
+
 import { CustomSelect, CustomCheckbox } from '@/components/forms';
 import { SpellProgressionEditor } from '@/components/spell-progression';
-import { ABILITY_SELECT_LIST, CASTING_TYPE_SELECT_LIST } from '@shared/static-data';
-import type { ClassTabProps } from './types';
 import type { CreateSpellcastingProgressionRequest } from '@shared/schema';
+import { ABILITY_SELECT_LIST, CASTING_TYPE_SELECT_LIST } from '@shared/static-data';
+
+import type { ClassTabProps } from './types';
 
 export function SpellcastingTab({
     formData,
     setFormData,
-    validation,
-    isLoading = false,
+    validation: _validation,
+    isLoading: _isLoading = false,
     spellcastingProgression = [],
     setSpellcastingProgression,
     spellsKnownProgression = [],
@@ -105,7 +107,7 @@ export function SpellcastingTab({
                                             setSpellcastingProgression(dbProgression);
                                         }
                                     }}
-                                    readOnly={isLoading}
+                                    readOnly={_isLoading}
                                     editorId="spell-slots"
                                 />
                             </div>
@@ -137,7 +139,7 @@ export function SpellcastingTab({
                                                 setSpellsKnownProgression(dbProgression);
                                             }
                                         }}
-                                        readOnly={isLoading}
+                                        readOnly={_isLoading}
                                         editorId="spells-known"
                                     />
                                 </div>

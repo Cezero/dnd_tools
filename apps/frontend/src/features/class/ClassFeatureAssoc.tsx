@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { z } from 'zod';
 
 import { ItemAssoc } from '@/lib/ItemAssoc';
@@ -29,7 +29,6 @@ interface ClassFeatureAssocProps {
  * selected features' information is passed to the `onSave` handler.
  */
 export function ClassFeatureAssoc({ isOpen, onClose, onSave, initialSelectedFeatureIds = [], classId }: ClassFeatureAssocProps) {
-    const [availableFeatures, setAvailableFeatures] = useState<ClassFeatureItem[]>([]);
 
     const transformSelectedFeatures = (features: ClassFeatureItem[]): SelectedFeatureData[] => {
         return features.map(feature => ({
@@ -54,7 +53,6 @@ export function ClassFeatureAssoc({ isOpen, onClose, onSave, initialSelectedFeat
             parentId={classId}
             serviceFunction={async () => {
                 const response = await FeatureSystemService.getFeatures({});
-                setAvailableFeatures(response.results);
                 return response;
             }}
             storageKey="classFeatureSelectionList"

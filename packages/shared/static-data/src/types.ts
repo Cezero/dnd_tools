@@ -24,6 +24,11 @@ export interface CoreComponent {
     name: string;
 }
 
+// Extended type for appliesTo types with optional display names
+export interface AppliesToType extends CoreComponent {
+    displayName?: string | null;
+}
+
 export interface CoreComponentAbbreviation extends CoreComponent {
     abbreviation: string;
 }
@@ -39,7 +44,10 @@ export interface Currency extends CoreComponentAbbreviation {
 export interface Formula extends CoreComponent {
     description: string;
     parameters: FormulaParameter[];
-    calculate: (params: Record<string, number>) => number | string;
+    calculate: (params: Record<string, any>) => number | string;
+    getDisplayString: (params: Record<string, any>) => string;
+    hasProgression: boolean; // Does this formula scale with level?
+    isCharacterDependent: boolean; // Does this formula require character context?
 }
 
 export interface FormulaParameter {

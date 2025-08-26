@@ -1,7 +1,6 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter, createEqualsFilter, createArrayIdFilter } from '@/components/generic-list/filterFunctions';
-import { FilterType } from '@/components/generic-list/types';
 import { ClassInQueryResponse } from '@shared/schema';
 import {
     RPG_DICE_SELECT_LIST,
@@ -12,22 +11,23 @@ import {
     RPG_DICE,
     EDITION_MAP,
     ABILITY_MAP,
-    GetSourceDisplay
+    GetSourceDisplay,
+    FilterType
 } from '@shared/static-data';
 
 // Function to get source book options filtered by current edition selection
-const getSourceBookOptionsForEdition = (currentFilters: any[]) => {
+const getSourceBookOptionsForEdition = (currentFilters: Array<{ id: string; value: unknown }>) => {
     // Find the current edition filter
     const editionFilter = currentFilters.find(f => f.id === 'editionId');
     let selectedEditionIds: number[] = [];
 
     if (editionFilter) {
         if (editionFilter.value && typeof editionFilter.value === 'object' && 'values' in editionFilter.value) {
-            selectedEditionIds = editionFilter.value.values;
+            selectedEditionIds = (editionFilter.value as { values: number[] }).values;
         } else if (Array.isArray(editionFilter.value)) {
-            selectedEditionIds = editionFilter.value;
+            selectedEditionIds = editionFilter.value as number[];
         } else if (editionFilter.value) {
-            selectedEditionIds = [editionFilter.value];
+            selectedEditionIds = [editionFilter.value as number];
         }
     }
 

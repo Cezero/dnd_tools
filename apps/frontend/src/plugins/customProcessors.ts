@@ -2,7 +2,6 @@ import type { ElementContent } from 'hast';
 import { h } from 'hastscript';
 
 import { extractDiceType } from '@/lib/DiceUtils';
-import { formatDiceDisplay } from '@/lib/Formatters';
 import { getPreRenderedTable } from '@/lib/TableResolution';
 import { MarkdownComponentProps, MarkdownProcessingOptions } from '@/plugins/types';
 import { SPELL_NAME_MAP, CLASS_NAME_MAP } from '@shared/static-data';

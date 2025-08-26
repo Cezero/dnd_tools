@@ -3,6 +3,7 @@ import type {
     ColumnFiltersState,
     SortingState,
     ColumnSizingState,
+    PaginationState,
 } from '@tanstack/react-table';
 import { useEffect, useState } from 'react';
 
@@ -12,14 +13,23 @@ export type TableConfig = {
     sorting: SortingState;
     columnSizing: ColumnSizingState;
     columnOrder: string[];
+    pagination: PaginationState;
 };
 
-export function usePersistentTableState(storageKey: string, defaultColumnOrder: string[]) {
+export function usePersistentTableState(
+    storageKey: string,
+    defaultColumnOrder: string[],
+    defaultPageSize: number = 20
+) {
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
     const [columnOrder, setColumnOrder] = useState<string[]>(defaultColumnOrder);
+    const [pagination, setPagination] = useState<PaginationState>({
+        pageIndex: 0,
+        pageSize: defaultPageSize,
+    });
     const [isLoaded, setIsLoaded] = useState(false);
 
     // Load from localStorage on mount
@@ -37,14 +47,25 @@ export function usePersistentTableState(storageKey: string, defaultColumnOrder: 
                 if (parsed.columnOrder && parsed.columnOrder.some(id => id === null || id === '')) {
                     throw new Error('Corrupted column order');
                 }
+                if (parsed.columnOrder) setColumnOrder(parsed.columnOrder);
+                if (parsed.pagination) {
+                    // Only restore pagination if it's valid
+                    if (typeof parsed.pagination.pageSize === 'number' && parsed.pagination.pageSize > 0) {
+                        setPagination(parsed.pagination);
+                    }
+                }
             } catch (e) {
                 console.warn(`Invalid table config in localStorage for key "${storageKey}"`, e);
                 localStorage.removeItem(storageKey);
                 setColumnOrder(defaultColumnOrder);
+                setPagination({
+                    pageIndex: 0,
+                    pageSize: defaultPageSize,
+                });
             }
         }
         setIsLoaded(true);
-    }, [storageKey]);
+    }, [storageKey, defaultColumnOrder, defaultPageSize]);
 
     // Save to localStorage when any piece changes (but only after initial load)
     useEffect(() => {
@@ -58,9 +79,10 @@ export function usePersistentTableState(storageKey: string, defaultColumnOrder: 
             sorting,
             columnSizing,
             columnOrder,
+            pagination,
         };
         localStorage.setItem(storageKey, JSON.stringify(config));
-    }, [columnVisibility, columnFilters, sorting, columnSizing, columnOrder, storageKey, isLoaded]);
+    }, [columnVisibility, columnFilters, sorting, columnSizing, columnOrder, pagination, storageKey, isLoaded]);
 
     // Optional reset helper
     const resetTableState = () => {
@@ -70,6 +92,10 @@ export function usePersistentTableState(storageKey: string, defaultColumnOrder: 
         setSorting([]);
         setColumnSizing({});
         setColumnOrder(defaultColumnOrder);
+        setPagination({
+            pageIndex: 0,
+            pageSize: defaultPageSize,
+        });
     };
 
     return {
@@ -83,6 +109,8 @@ export function usePersistentTableState(storageKey: string, defaultColumnOrder: 
         setColumnSizing,
         columnOrder,
         setColumnOrder,
+        pagination,
+        setPagination,
         resetTableState,
     };
 }

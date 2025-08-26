@@ -13,8 +13,8 @@ interface EquipmentTabProps {
 export function EquipmentTab({
     character,
     onUpdate,
-    races = [],
-    selectedRaceDetails
+    races: _races = [],
+    selectedRaceDetails: _selectedRaceDetails
 }: EquipmentTabProps): React.JSX.Element {
     const handleMoneyChange = (currencyId: number, value: number) => {
         const newMoney = { ...character.money, [currencyId]: value };

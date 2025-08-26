@@ -33,11 +33,4 @@ export function formatLanguageName(languageId: number, languageSelectList: Array
     return languageOption?.label || `Language ${languageId}`;
 }
 
-/**
- * Format dice display expression
- */
-export function formatDiceDisplay(expr: string): string {
-    return expr
-        .replace('/level', ' per level')
-        .replace(/,max(\d+d?\d*)/, ' (max $1)');
-}
+

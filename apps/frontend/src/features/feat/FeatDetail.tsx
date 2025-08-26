@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { FeatService } from '@/features/feat/FeatService';
 import { GetFeatResponse } from '@shared/schema';
-import { FEAT_TYPES, FEAT_BENEFIT_TYPE_BY_ID, FEAT_PREREQ_BY_ID, FeatBenefitType } from '@shared/static-data';
+import { FEAT_TYPES, FEAT_BENEFIT_TYPE_BY_ID, FeatBenefitType } from '@shared/static-data';
 
 import { FeatOptions, getPrereqDisplayText } from './FeatUtil';
 

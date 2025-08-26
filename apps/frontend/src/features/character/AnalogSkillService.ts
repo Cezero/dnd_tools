@@ -90,8 +90,8 @@ export const AnalogSkillService = {
      * Get character's ability score for a given ability ID
      */
     getCharacterAbilityScore(character: CharacterWithAllDetailsResponse, abilityId: number): number {
-        const attribute = character.attributes.find(attr => attr.attributeId === abilityId);
-        return attribute?.value ?? 10; // Default to 10 if not set
+        const abilityScore = character.abilityScores.find(abilityScore => abilityScore.abilityId === abilityId);
+        return abilityScore?.value ?? 10; // Default to 10 if not set
     },
 
     /**

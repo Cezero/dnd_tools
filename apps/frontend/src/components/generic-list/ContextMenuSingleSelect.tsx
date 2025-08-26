@@ -6,14 +6,12 @@ interface ContextMenuSingleSelectProps {
     options: Array<{ value: number | string; label: string }>;
     selected: number | string | null;
     onValueChange: (value: number | string | null) => void;
-    placeholder?: string;
 }
 
 export const ContextMenuSingleSelect: React.FC<ContextMenuSingleSelectProps> = ({
     options,
     selected,
     onValueChange,
-    placeholder = 'Select...'
 }) => {
     const handleValueChange = (value: number | string) => {
         // Toggle behavior: if clicking the same value, clear it

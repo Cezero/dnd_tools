@@ -1,14 +1,11 @@
-import React from 'react';
 import { TrashIcon } from '@heroicons/react/24/outline';
-import { ValidatedInput } from '@/components/forms';
+import React from 'react';
 
 interface ArrayPairEditorProps {
     thresholds: number[];
     values: (string | number)[];
     onThresholdsChange: (thresholds: number[]) => void;
     onValuesChange: (values: (string | number)[]) => void;
-    thresholdLabel?: string;
-    valueLabel?: string;
     thresholdPlaceholder?: string;
     valuePlaceholder?: string;
     thresholdMin?: number;
@@ -21,8 +18,6 @@ export function ArrayPairEditor({
     values,
     onThresholdsChange,
     onValuesChange,
-    thresholdLabel = "Threshold",
-    valueLabel = "Value",
     thresholdPlaceholder = "e.g., 4",
     valuePlaceholder = "e.g., -2",
     thresholdMin = 1,

@@ -472,7 +472,7 @@ export function SpellEdit() {
                                     onCheckedChange={(checked) => handleSchoolChange(school.value, checked)}
                                     labelClassName="font-bold text-base"
                                 />
-                                {(SPELL_SUBSCHOOL_LIST_BY_SCHOOL_ID[school.value] as any[])?.length > 0 && (
+                                {(SPELL_SUBSCHOOL_LIST_BY_SCHOOL_ID[school.value] as SelectOption[])?.length > 0 && (
                                     <div className="ml-6 mt-1 grid grid-cols-1 gap-y-1">
                                         {(SPELL_SUBSCHOOL_LIST_BY_SCHOOL_ID[school.value] as SelectOption[]).map(subschool => (
                                             <CustomCheckbox

@@ -1,10 +1,9 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter, createEqualsFilter } from '@/components/generic-list/filterFunctions';
-import { FilterType } from '@/components/generic-list/types';
 import { formatColorWithSwatch } from '@/lib/ColorFormatters';
 import { DiceBoxAdminConfigInQueryResponse } from '@shared/schema';
-import { getDiceThemeById, DICE_THEME_SELECT_LIST } from '@shared/static-data';
+import { getDiceThemeById, FilterType, THREE_D_DICE_THEME_SELECT_LIST } from '@shared/static-data';
 
 
 export const DICE_CONFIGURATION_COLUMNS: ColumnDef<DiceBoxAdminConfigInQueryResponse, unknown>[] = [
@@ -57,7 +56,7 @@ export const DICE_CONFIGURATION_COLUMNS: ColumnDef<DiceBoxAdminConfigInQueryResp
         },
         meta: {
             filterType: FilterType.SINGLE_SELECT,
-            options: DICE_THEME_SELECT_LIST,
+            options: THREE_D_DICE_THEME_SELECT_LIST,
         },
     },
     {

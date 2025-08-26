@@ -1,92 +1,211 @@
-import type { BaseFormatter, ChoiceFormatter } from './interfaces';
-import { ModifierAppliesToType, FeatureChoiceType } from '@shared/static-data';
+import { ModifierAppliesToType, FeatureChoiceType, ModifierType, FeatureSpecialEffectType } from '@shared/static-data';
+import type { FeatureSpecialEffectInQueryResponse } from '@shared/schema';
+
+import type { BaseFormatter, ChoiceFormatter } from './types';
+import { FeatureType } from './types';
 import {
-  DamageFormatter,
-  HealingFormatter,
-  SignedValueFormatter,
-  FeatureChoiceFormatter,
-  LanguageFormatter,
-  FeatFormatter,
-  UsesFormatter,
-  TargetsFormatter,
-  ExtraAttacksFormatter,
-  DistanceFormatter,
-  DiceFormatter,
-  DamageReductionFormatter,
-  SpellResistanceFormatter,
-  OtherFormatter
+    DamageFormatter,
+    HealingFormatter,
+    SignedValueFormatter,
+    SkillFormatter,
+    FeatureChoiceFormatter,
+    LanguageFormatter,
+    FeatFormatter,
+    UsesFormatter,
+    TargetsFormatter,
+    ExtraAttacksFormatter,
+    DistanceFormatter,
+    MovementSpeedFormatter,
+    DiceFormatter,
+    DiceBonusFormatter,
+    DamageReductionFormatter,
+    SpellResistanceFormatter,
+    OtherFormatter,
+    DamageBonusFormatter
 } from './pure-formatters';
 
-export class FormatterRegistry {
-  private formatters = new Map<ModifierAppliesToType, BaseFormatter>();
-  private choiceFormatters = new Map<FeatureChoiceType, ChoiceFormatter>();
+// Effect formatter interface (to be implemented)
+interface EffectFormatter {
+    format(effect: FeatureSpecialEffectInQueryResponse, level: number): string;
+}
 
-  constructor() {
-    this.initializeDefaultFormatters();
-  }
+// Unified formatter registry interface
+interface IFormatterRegistry {
+    // Core unified method
+    registerFormatter(
+        featureType: FeatureType,
+        featureSubType: ModifierType | FeatureSpecialEffectType | FeatureChoiceType,
+        formatter: BaseFormatter | EffectFormatter | ChoiceFormatter,
+        subTypeId?: ModifierAppliesToType
+    ): void;
 
-  register(type: ModifierAppliesToType, formatter: BaseFormatter): void {
-    this.formatters.set(type, formatter);
-  }
+    // Unified getter method
+    getFormatter(
+        featureType: FeatureType,
+        featureSubType: ModifierType | FeatureSpecialEffectType | FeatureChoiceType,
+        subTypeId?: ModifierAppliesToType
+    ): BaseFormatter | EffectFormatter | ChoiceFormatter | undefined;
+}
 
-  registerChoice(type: FeatureChoiceType, formatter: ChoiceFormatter): void {
-    this.choiceFormatters.set(type, formatter);
-  }
+export class FormatterRegistry implements IFormatterRegistry {
+    // Use hierarchical keys: `${featureType}:${featureSubType}:${subTypeId}`
+    private formatters = new Map<string, BaseFormatter | EffectFormatter | ChoiceFormatter>();
 
-  getFormatter(type: ModifierAppliesToType): BaseFormatter | undefined {
-    return this.formatters.get(type);
-  }
+    constructor() {
+        this.initializeDefaultFormatters();
+    }
 
-  getChoiceFormatter(type: FeatureChoiceType): ChoiceFormatter | undefined {
-    return this.choiceFormatters.get(type);
-  }
+    // Core unified registration method
+    registerFormatter(
+        featureType: FeatureType,
+        featureSubType: ModifierType | FeatureSpecialEffectType | FeatureChoiceType,
+        formatter: BaseFormatter | EffectFormatter | ChoiceFormatter,
+        subTypeId?: ModifierAppliesToType
+    ): void {
+        const key = this.generateKey(featureType, featureSubType, subTypeId);
+        this.formatters.set(key, formatter);
+    }
 
-  private initializeDefaultFormatters(): void {
-    // Create formatter instances
-    const damageFormatter = new DamageFormatter();
-    const healingFormatter = new HealingFormatter();
-    const signedValueFormatter = new SignedValueFormatter();
-    const languageFormatter = new LanguageFormatter();
-    const featFormatter = new FeatFormatter();
-    const usesFormatter = new UsesFormatter();
-    const targetsFormatter = new TargetsFormatter();
-    const extraAttacksFormatter = new ExtraAttacksFormatter();
-    const distanceFormatter = new DistanceFormatter();
-    const diceFormatter = new DiceFormatter();
-    const damageReductionFormatter = new DamageReductionFormatter();
-    const spellResistanceFormatter = new SpellResistanceFormatter();
-    const otherFormatter = new OtherFormatter();
+    // Core unified getter method
+    getFormatter(
+        featureType: FeatureType,
+        featureSubType: ModifierType | FeatureSpecialEffectType | FeatureChoiceType,
+        subTypeId?: ModifierAppliesToType
+    ): BaseFormatter | EffectFormatter | ChoiceFormatter | undefined {
+        const key = this.generateKey(featureType, featureSubType, subTypeId);
+        return this.formatters.get(key);
+    }
 
-    // Register formatters for all ModifierAppliesToType values
-    this.register(ModifierAppliesToType.Attribute, signedValueFormatter);
-    this.register(ModifierAppliesToType.Skill, signedValueFormatter);
-    this.register(ModifierAppliesToType.SavingThrow, signedValueFormatter);
-    this.register(ModifierAppliesToType.AC, signedValueFormatter);
-    this.register(ModifierAppliesToType.Attack, signedValueFormatter);
-    this.register(ModifierAppliesToType.Damage, damageFormatter);
-    this.register(ModifierAppliesToType.DamageReduction, damageReductionFormatter);
-    this.register(ModifierAppliesToType.Initiative, signedValueFormatter);
-    this.register(ModifierAppliesToType.MovementSpeed, distanceFormatter);
-    this.register(ModifierAppliesToType.HitDice, diceFormatter);
-    this.register(ModifierAppliesToType.Uses, usesFormatter);
-    this.register(ModifierAppliesToType.Targets, targetsFormatter);
-    this.register(ModifierAppliesToType.Distance, distanceFormatter);
-    this.register(ModifierAppliesToType.ExtraAttacks, extraAttacksFormatter);
-    this.register(ModifierAppliesToType.Healing, healingFormatter);
-    this.register(ModifierAppliesToType.SpellResistance, spellResistanceFormatter);
-    this.register(ModifierAppliesToType.UnarmedDamage, damageFormatter);
-    this.register(ModifierAppliesToType.Feat, featFormatter);
-    this.register(ModifierAppliesToType.Other, otherFormatter);
-    this.register(ModifierAppliesToType.BonusLanguage, languageFormatter);
-    this.register(ModifierAppliesToType.AutomaticLanguage, languageFormatter);
-    // Note: ModifierAppliesToType.Choice is handled by choice formatters, not base formatters
+    // Convenience wrapper methods for common registration patterns
 
-    // Register choice formatters
-    const choiceFormatter = new FeatureChoiceFormatter();
-    this.registerChoice(FeatureChoiceType.Feat, choiceFormatter);
-    this.registerChoice(FeatureChoiceType.Feature, choiceFormatter);
-    this.registerChoice(FeatureChoiceType.CreatureType, choiceFormatter);
-  }
+    // Modifier convenience wrappers
+    registerBonusFormatter(appliesToType: ModifierAppliesToType, formatter: BaseFormatter): void {
+        this.registerFormatter(FeatureType.Modifier, ModifierType.Bonus, formatter, appliesToType);
+    }
+
+    registerQuantityFormatter(appliesToType: ModifierAppliesToType, formatter: BaseFormatter): void {
+        this.registerFormatter(FeatureType.Modifier, ModifierType.Quantity, formatter, appliesToType);
+    }
+
+    registerReplacementFormatter(appliesToType: ModifierAppliesToType, formatter: BaseFormatter): void {
+        this.registerFormatter(FeatureType.Modifier, ModifierType.Replacement, formatter, appliesToType);
+    }
+
+    registerOtherFormatter(appliesToType: ModifierAppliesToType, formatter: BaseFormatter): void {
+        this.registerFormatter(FeatureType.Modifier, ModifierType.Other, formatter, appliesToType);
+    }
+
+    // Effect convenience wrapper
+    registerEffectFormatter(effectType: FeatureSpecialEffectType, formatter: EffectFormatter): void {
+        this.registerFormatter(FeatureType.Effect, effectType, formatter);
+    }
+
+    // Choice convenience wrapper
+    registerChoiceFormatter(choiceType: FeatureChoiceType, formatter: ChoiceFormatter): void {
+        this.registerFormatter(FeatureType.Choice, choiceType, formatter);
+    }
+
+    // Generate hierarchical key for formatter storage
+    private generateKey(
+        featureType: FeatureType,
+        featureSubType: ModifierType | FeatureSpecialEffectType | FeatureChoiceType,
+        subTypeId?: ModifierAppliesToType
+    ): string {
+        if (subTypeId !== undefined) {
+            return `${featureType}:${featureSubType}:${subTypeId}`;
+        }
+        return `${featureType}:${featureSubType}`;
+    }
+
+    // Legacy methods for backward compatibility during transition
+    register(type: ModifierAppliesToType, formatter: BaseFormatter): void {
+        // This will be removed after all callers are updated
+        console.warn('Using legacy register method. Please update to use registerFormatter.');
+    }
+
+    registerChoice(type: FeatureChoiceType, formatter: ChoiceFormatter): void {
+        // This will be removed after all callers are updated
+        console.warn('Using legacy registerChoice method. Please update to use registerFormatter.');
+    }
+
+    getChoiceFormatter(type: FeatureChoiceType): ChoiceFormatter | undefined {
+        // This will be removed after all callers are updated
+        console.warn('Using legacy getChoiceFormatter method. Please update to use getFormatter with FeatureType.');
+        return undefined;
+    }
+
+    private initializeDefaultFormatters(): void {
+        // Create formatter instances
+        const damageFormatter = new DamageFormatter();
+        const healingFormatter = new HealingFormatter();
+        const signedValueFormatter = new SignedValueFormatter();
+        const skillFormatter = new SkillFormatter();
+        const languageFormatter = new LanguageFormatter();
+        const featFormatter = new FeatFormatter();
+        const usesFormatter = new UsesFormatter();
+        const targetsFormatter = new TargetsFormatter();
+        const extraAttacksFormatter = new ExtraAttacksFormatter();
+        const distanceFormatter = new DistanceFormatter();
+        const movementSpeedFormatter = new MovementSpeedFormatter();
+        const diceFormatter = new DiceFormatter();
+        const diceBonusFormatter = new DiceBonusFormatter();
+        const damageReductionFormatter = new DamageReductionFormatter();
+        const spellResistanceFormatter = new SpellResistanceFormatter();
+        const otherFormatter = new OtherFormatter();
+        const damageBonusFormatter = new DamageBonusFormatter();
+
+        // Register all modifier combinations using convenience wrappers
+
+        // Bonus-compatible types (using convenience wrapper)
+        this.registerBonusFormatter(ModifierAppliesToType.Ability, signedValueFormatter);
+        this.registerBonusFormatter(ModifierAppliesToType.Skill, signedValueFormatter);
+        this.registerBonusFormatter(ModifierAppliesToType.SavingThrow, signedValueFormatter);
+        this.registerBonusFormatter(ModifierAppliesToType.AC, signedValueFormatter);
+        this.registerBonusFormatter(ModifierAppliesToType.Attack, signedValueFormatter);
+        this.registerBonusFormatter(ModifierAppliesToType.Damage, signedValueFormatter);
+        this.registerBonusFormatter(ModifierAppliesToType.DamageReduction, damageReductionFormatter);
+        this.registerBonusFormatter(ModifierAppliesToType.Initiative, signedValueFormatter);
+        this.registerBonusFormatter(ModifierAppliesToType.Damage, damageBonusFormatter);
+
+        // Quantity-compatible types
+        this.registerQuantityFormatter(ModifierAppliesToType.MovementSpeed, movementSpeedFormatter);
+        this.registerQuantityFormatter(ModifierAppliesToType.HitDice, diceBonusFormatter);
+        this.registerQuantityFormatter(ModifierAppliesToType.Uses, usesFormatter);
+        this.registerQuantityFormatter(ModifierAppliesToType.Targets, targetsFormatter);
+        this.registerQuantityFormatter(ModifierAppliesToType.Distance, distanceFormatter);
+        this.registerQuantityFormatter(ModifierAppliesToType.ExtraAttacks, extraAttacksFormatter);
+        this.registerQuantityFormatter(ModifierAppliesToType.Damage, damageFormatter);
+        this.registerQuantityFormatter(ModifierAppliesToType.Healing, healingFormatter);
+        this.registerQuantityFormatter(ModifierAppliesToType.SpellResistance, spellResistanceFormatter);
+
+        // Replacement-compatible types
+        this.registerReplacementFormatter(ModifierAppliesToType.Damage, diceFormatter);
+        this.registerReplacementFormatter(ModifierAppliesToType.UnarmedDamage, diceFormatter);
+        this.registerReplacementFormatter(ModifierAppliesToType.MovementSpeed, movementSpeedFormatter);
+        this.registerReplacementFormatter(ModifierAppliesToType.Ability, signedValueFormatter);
+
+        // Other-compatible types
+        this.registerOtherFormatter(ModifierAppliesToType.Other, otherFormatter);
+        this.registerOtherFormatter(ModifierAppliesToType.BonusLanguage, languageFormatter);
+        this.registerOtherFormatter(ModifierAppliesToType.AutomaticLanguage, languageFormatter);
+        this.registerOtherFormatter(ModifierAppliesToType.Feat, featFormatter);
+
+        // Register choice formatters using convenience wrapper
+        const choiceFormatter = new FeatureChoiceFormatter();
+        this.registerChoiceFormatter(FeatureChoiceType.Feat, choiceFormatter);
+        this.registerChoiceFormatter(FeatureChoiceType.Feature, choiceFormatter);
+        this.registerChoiceFormatter(FeatureChoiceType.CreatureType, choiceFormatter);
+
+        // TODO: Register effect formatters once EffectFormatter implementations are created
+        // this.registerEffectFormatter(FeatureSpecialEffectType.Other, new OtherEffectFormatter());
+        // this.registerEffectFormatter(FeatureSpecialEffectType.Proficiency, new ProficiencyEffectFormatter());
+        // this.registerEffectFormatter(FeatureSpecialEffectType.FavoredEnemy, new FavoredEnemyEffectFormatter());
+        // this.registerEffectFormatter(FeatureSpecialEffectType.ConditionalUpgrade, new ConditionalUpgradeEffectFormatter());
+        // this.registerEffectFormatter(FeatureSpecialEffectType.TurnUndead, new TurnUndeadEffectFormatter());
+        // this.registerEffectFormatter(FeatureSpecialEffectType.WildShapeForm, new WildShapeFormEffectFormatter());
+        // this.registerEffectFormatter(FeatureSpecialEffectType.WildShapeSize, new WildShapeSizeEffectFormatter());
+        // this.registerEffectFormatter(FeatureSpecialEffectType.WeaponFamiliarity, new WeaponFamiliarityEffectFormatter());
+    }
 }
 
 // Export a singleton instance

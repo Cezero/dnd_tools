@@ -1,4 +1,5 @@
 import React from 'react';
+
 import {
     ValidatedInput,
     CustomSelect,
@@ -8,18 +9,18 @@ import { generateClassProgression } from '@/lib/ClassProgression';
 import { ClassProgressionTable } from '@/lib/ClassProgressionTable';
 import {
     RPG_DICE_SELECT_LIST,
-    ABILITY_SELECT_LIST,
     EDITION_SELECT_LIST_FULL,
     BAB_PROGRESSION_SELECT_LIST,
     SAVE_PROGRESSION_SELECT_LIST,
 } from '@shared/static-data';
+
 import type { ClassTabProps } from './types';
 
 export function BasicInfoTab({
     formData,
     setFormData,
     validation,
-    isLoading = false
+    isLoading: _isLoading = false
 }: ClassTabProps): React.JSX.Element {
     const progressionConfig = {
         babProgression: formData.babProgression,

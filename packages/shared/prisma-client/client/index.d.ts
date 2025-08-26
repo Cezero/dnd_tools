@@ -288,15 +288,7 @@ export type UserDiceConfigOverride = $Result.DefaultSelection<Prisma.$UserDiceCo
  * Enums
  */
 export namespace $Enums {
-  export const CastingTypeEnum: {
-  Prepared: 'Prepared',
-  Spontaneous: 'Spontaneous'
-};
-
-export type CastingTypeEnum = (typeof CastingTypeEnum)[keyof typeof CastingTypeEnum]
-
-
-export const ItemPropertyType: {
+  export const ItemPropertyType: {
   Material: 'Material',
   Enhancement: 'Enhancement',
   SpecialAbility: 'SpecialAbility',
@@ -326,10 +318,6 @@ export const TextAlignment: {
 export type TextAlignment = (typeof TextAlignment)[keyof typeof TextAlignment]
 
 }
-
-export type CastingTypeEnum = $Enums.CastingTypeEnum
-
-export const CastingTypeEnum: typeof $Enums.CastingTypeEnum
 
 export type ItemPropertyType = $Enums.ItemPropertyType
 
@@ -6525,6 +6513,7 @@ export namespace Prisma {
     hitDie: number | null
     skillPoints: number | null
     castingAbilityId: number | null
+    castingType: number | null
     babProgression: number | null
     fortProgression: number | null
     refProgression: number | null
@@ -6537,6 +6526,7 @@ export namespace Prisma {
     hitDie: number | null
     skillPoints: number | null
     castingAbilityId: number | null
+    castingType: number | null
     babProgression: number | null
     fortProgression: number | null
     refProgression: number | null
@@ -6556,7 +6546,7 @@ export namespace Prisma {
     description: string | null
     skillPoints: number | null
     castingAbilityId: number | null
-    castingType: $Enums.CastingTypeEnum | null
+    castingType: number | null
     babProgression: number | null
     fortProgression: number | null
     refProgression: number | null
@@ -6576,7 +6566,7 @@ export namespace Prisma {
     description: string | null
     skillPoints: number | null
     castingAbilityId: number | null
-    castingType: $Enums.CastingTypeEnum | null
+    castingType: number | null
     babProgression: number | null
     fortProgression: number | null
     refProgression: number | null
@@ -6611,6 +6601,7 @@ export namespace Prisma {
     hitDie?: true
     skillPoints?: true
     castingAbilityId?: true
+    castingType?: true
     babProgression?: true
     fortProgression?: true
     refProgression?: true
@@ -6623,6 +6614,7 @@ export namespace Prisma {
     hitDie?: true
     skillPoints?: true
     castingAbilityId?: true
+    castingType?: true
     babProgression?: true
     fortProgression?: true
     refProgression?: true
@@ -6789,7 +6781,7 @@ export namespace Prisma {
     description: string | null
     skillPoints: number
     castingAbilityId: number | null
-    castingType: $Enums.CastingTypeEnum | null
+    castingType: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -6904,7 +6896,7 @@ export namespace Prisma {
       description: string | null
       skillPoints: number
       castingAbilityId: number | null
-      castingType: $Enums.CastingTypeEnum | null
+      castingType: number | null
       babProgression: number
       fortProgression: number
       refProgression: number
@@ -7298,7 +7290,7 @@ export namespace Prisma {
     readonly description: FieldRef<"Class", 'String'>
     readonly skillPoints: FieldRef<"Class", 'Int'>
     readonly castingAbilityId: FieldRef<"Class", 'Int'>
-    readonly castingType: FieldRef<"Class", 'CastingTypeEnum'>
+    readonly castingType: FieldRef<"Class", 'Int'>
     readonly babProgression: FieldRef<"Class", 'Int'>
     readonly fortProgression: FieldRef<"Class", 'Int'>
     readonly refProgression: FieldRef<"Class", 'Int'>
@@ -16085,7 +16077,7 @@ export namespace Prisma {
     formulaId: number | null
     interval: number | null
     formulaStartLevel: number | null
-    attributeId: number | null
+    abilityId: number | null
   }
 
   export type FeatureFormulaParamsSumAggregateOutputType = {
@@ -16093,7 +16085,7 @@ export namespace Prisma {
     formulaId: number | null
     interval: number | null
     formulaStartLevel: number | null
-    attributeId: number | null
+    abilityId: number | null
   }
 
   export type FeatureFormulaParamsMinAggregateOutputType = {
@@ -16101,7 +16093,7 @@ export namespace Prisma {
     formulaId: number | null
     interval: number | null
     formulaStartLevel: number | null
-    attributeId: number | null
+    abilityId: number | null
     thresholds: string | null
     values: string | null
   }
@@ -16111,7 +16103,7 @@ export namespace Prisma {
     formulaId: number | null
     interval: number | null
     formulaStartLevel: number | null
-    attributeId: number | null
+    abilityId: number | null
     thresholds: string | null
     values: string | null
   }
@@ -16121,7 +16113,7 @@ export namespace Prisma {
     formulaId: number
     interval: number
     formulaStartLevel: number
-    attributeId: number
+    abilityId: number
     thresholds: number
     values: number
     _all: number
@@ -16133,7 +16125,7 @@ export namespace Prisma {
     formulaId?: true
     interval?: true
     formulaStartLevel?: true
-    attributeId?: true
+    abilityId?: true
   }
 
   export type FeatureFormulaParamsSumAggregateInputType = {
@@ -16141,7 +16133,7 @@ export namespace Prisma {
     formulaId?: true
     interval?: true
     formulaStartLevel?: true
-    attributeId?: true
+    abilityId?: true
   }
 
   export type FeatureFormulaParamsMinAggregateInputType = {
@@ -16149,7 +16141,7 @@ export namespace Prisma {
     formulaId?: true
     interval?: true
     formulaStartLevel?: true
-    attributeId?: true
+    abilityId?: true
     thresholds?: true
     values?: true
   }
@@ -16159,7 +16151,7 @@ export namespace Prisma {
     formulaId?: true
     interval?: true
     formulaStartLevel?: true
-    attributeId?: true
+    abilityId?: true
     thresholds?: true
     values?: true
   }
@@ -16169,7 +16161,7 @@ export namespace Prisma {
     formulaId?: true
     interval?: true
     formulaStartLevel?: true
-    attributeId?: true
+    abilityId?: true
     thresholds?: true
     values?: true
     _all?: true
@@ -16266,7 +16258,7 @@ export namespace Prisma {
     formulaId: number
     interval: number | null
     formulaStartLevel: number | null
-    attributeId: number | null
+    abilityId: number | null
     thresholds: string | null
     values: string | null
     _count: FeatureFormulaParamsCountAggregateOutputType | null
@@ -16295,7 +16287,7 @@ export namespace Prisma {
     formulaId?: boolean
     interval?: boolean
     formulaStartLevel?: boolean
-    attributeId?: boolean
+    abilityId?: boolean
     thresholds?: boolean
     values?: boolean
     featureModifier?: boolean | FeatureFormulaParams$featureModifierArgs<ExtArgs>
@@ -16310,12 +16302,12 @@ export namespace Prisma {
     formulaId?: boolean
     interval?: boolean
     formulaStartLevel?: boolean
-    attributeId?: boolean
+    abilityId?: boolean
     thresholds?: boolean
     values?: boolean
   }
 
-  export type FeatureFormulaParamsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "formulaId" | "interval" | "formulaStartLevel" | "attributeId" | "thresholds" | "values", ExtArgs["result"]["featureFormulaParams"]>
+  export type FeatureFormulaParamsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "formulaId" | "interval" | "formulaStartLevel" | "abilityId" | "thresholds" | "values", ExtArgs["result"]["featureFormulaParams"]>
   export type FeatureFormulaParamsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     featureModifier?: boolean | FeatureFormulaParams$featureModifierArgs<ExtArgs>
     featureChoice?: boolean | FeatureFormulaParams$featureChoiceArgs<ExtArgs>
@@ -16333,7 +16325,7 @@ export namespace Prisma {
       formulaId: number
       interval: number | null
       formulaStartLevel: number | null
-      attributeId: number | null
+      abilityId: number | null
       thresholds: string | null
       values: string | null
     }, ExtArgs["result"]["featureFormulaParams"]>
@@ -16711,7 +16703,7 @@ export namespace Prisma {
     readonly formulaId: FieldRef<"FeatureFormulaParams", 'Int'>
     readonly interval: FieldRef<"FeatureFormulaParams", 'Int'>
     readonly formulaStartLevel: FieldRef<"FeatureFormulaParams", 'Int'>
-    readonly attributeId: FieldRef<"FeatureFormulaParams", 'Int'>
+    readonly abilityId: FieldRef<"FeatureFormulaParams", 'Int'>
     readonly thresholds: FieldRef<"FeatureFormulaParams", 'String'>
     readonly values: FieldRef<"FeatureFormulaParams", 'String'>
   }
@@ -62391,7 +62383,7 @@ export namespace Prisma {
     formulaId: 'formulaId',
     interval: 'interval',
     formulaStartLevel: 'formulaStartLevel',
-    attributeId: 'attributeId',
+    abilityId: 'abilityId',
     thresholds: 'thresholds',
     values: 'values'
   };
@@ -63238,13 +63230,6 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'CastingTypeEnum'
-   */
-  export type EnumCastingTypeEnumFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CastingTypeEnum'>
-    
-
-
-  /**
    * Reference to a field of type 'Decimal'
    */
   export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
@@ -63305,7 +63290,7 @@ export namespace Prisma {
     description?: StringNullableFilter<"Class"> | string | null
     skillPoints?: IntFilter<"Class"> | number
     castingAbilityId?: IntNullableFilter<"Class"> | number | null
-    castingType?: EnumCastingTypeEnumNullableFilter<"Class"> | $Enums.CastingTypeEnum | null
+    castingType?: IntNullableFilter<"Class"> | number | null
     babProgression?: IntFilter<"Class"> | number
     fortProgression?: IntFilter<"Class"> | number
     refProgression?: IntFilter<"Class"> | number
@@ -63365,7 +63350,7 @@ export namespace Prisma {
     description?: StringNullableFilter<"Class"> | string | null
     skillPoints?: IntFilter<"Class"> | number
     castingAbilityId?: IntNullableFilter<"Class"> | number | null
-    castingType?: EnumCastingTypeEnumNullableFilter<"Class"> | $Enums.CastingTypeEnum | null
+    castingType?: IntNullableFilter<"Class"> | number | null
     babProgression?: IntFilter<"Class"> | number
     fortProgression?: IntFilter<"Class"> | number
     refProgression?: IntFilter<"Class"> | number
@@ -63421,7 +63406,7 @@ export namespace Prisma {
     description?: StringNullableWithAggregatesFilter<"Class"> | string | null
     skillPoints?: IntWithAggregatesFilter<"Class"> | number
     castingAbilityId?: IntNullableWithAggregatesFilter<"Class"> | number | null
-    castingType?: EnumCastingTypeEnumNullableWithAggregatesFilter<"Class"> | $Enums.CastingTypeEnum | null
+    castingType?: IntNullableWithAggregatesFilter<"Class"> | number | null
     babProgression?: IntWithAggregatesFilter<"Class"> | number
     fortProgression?: IntWithAggregatesFilter<"Class"> | number
     refProgression?: IntWithAggregatesFilter<"Class"> | number
@@ -63937,7 +63922,7 @@ export namespace Prisma {
     formulaId?: IntFilter<"FeatureFormulaParams"> | number
     interval?: IntNullableFilter<"FeatureFormulaParams"> | number | null
     formulaStartLevel?: IntNullableFilter<"FeatureFormulaParams"> | number | null
-    attributeId?: IntNullableFilter<"FeatureFormulaParams"> | number | null
+    abilityId?: IntNullableFilter<"FeatureFormulaParams"> | number | null
     thresholds?: StringNullableFilter<"FeatureFormulaParams"> | string | null
     values?: StringNullableFilter<"FeatureFormulaParams"> | string | null
     featureModifier?: FeatureModifierListRelationFilter
@@ -63949,7 +63934,7 @@ export namespace Prisma {
     formulaId?: SortOrder
     interval?: SortOrderInput | SortOrder
     formulaStartLevel?: SortOrderInput | SortOrder
-    attributeId?: SortOrderInput | SortOrder
+    abilityId?: SortOrderInput | SortOrder
     thresholds?: SortOrderInput | SortOrder
     values?: SortOrderInput | SortOrder
     featureModifier?: FeatureModifierOrderByRelationAggregateInput
@@ -63965,7 +63950,7 @@ export namespace Prisma {
     formulaId?: IntFilter<"FeatureFormulaParams"> | number
     interval?: IntNullableFilter<"FeatureFormulaParams"> | number | null
     formulaStartLevel?: IntNullableFilter<"FeatureFormulaParams"> | number | null
-    attributeId?: IntNullableFilter<"FeatureFormulaParams"> | number | null
+    abilityId?: IntNullableFilter<"FeatureFormulaParams"> | number | null
     thresholds?: StringNullableFilter<"FeatureFormulaParams"> | string | null
     values?: StringNullableFilter<"FeatureFormulaParams"> | string | null
     featureModifier?: FeatureModifierListRelationFilter
@@ -63977,7 +63962,7 @@ export namespace Prisma {
     formulaId?: SortOrder
     interval?: SortOrderInput | SortOrder
     formulaStartLevel?: SortOrderInput | SortOrder
-    attributeId?: SortOrderInput | SortOrder
+    abilityId?: SortOrderInput | SortOrder
     thresholds?: SortOrderInput | SortOrder
     values?: SortOrderInput | SortOrder
     _count?: FeatureFormulaParamsCountOrderByAggregateInput
@@ -63995,7 +63980,7 @@ export namespace Prisma {
     formulaId?: IntWithAggregatesFilter<"FeatureFormulaParams"> | number
     interval?: IntNullableWithAggregatesFilter<"FeatureFormulaParams"> | number | null
     formulaStartLevel?: IntNullableWithAggregatesFilter<"FeatureFormulaParams"> | number | null
-    attributeId?: IntNullableWithAggregatesFilter<"FeatureFormulaParams"> | number | null
+    abilityId?: IntNullableWithAggregatesFilter<"FeatureFormulaParams"> | number | null
     thresholds?: StringNullableWithAggregatesFilter<"FeatureFormulaParams"> | string | null
     values?: StringNullableWithAggregatesFilter<"FeatureFormulaParams"> | string | null
   }
@@ -67015,7 +67000,7 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    castingType?: $Enums.CastingTypeEnum | null
+    castingType?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -67043,7 +67028,7 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    castingType?: $Enums.CastingTypeEnum | null
+    castingType?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -67070,7 +67055,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    castingType?: NullableEnumCastingTypeEnumFieldUpdateOperationsInput | $Enums.CastingTypeEnum | null
+    castingType?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -67098,7 +67083,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    castingType?: NullableEnumCastingTypeEnumFieldUpdateOperationsInput | $Enums.CastingTypeEnum | null
+    castingType?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -67126,7 +67111,7 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    castingType?: $Enums.CastingTypeEnum | null
+    castingType?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -67145,7 +67130,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    castingType?: NullableEnumCastingTypeEnumFieldUpdateOperationsInput | $Enums.CastingTypeEnum | null
+    castingType?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -67165,7 +67150,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    castingType?: NullableEnumCastingTypeEnumFieldUpdateOperationsInput | $Enums.CastingTypeEnum | null
+    castingType?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -67622,7 +67607,7 @@ export namespace Prisma {
     formulaId: number
     interval?: number | null
     formulaStartLevel?: number | null
-    attributeId?: number | null
+    abilityId?: number | null
     thresholds?: string | null
     values?: string | null
     featureModifier?: FeatureModifierCreateNestedManyWithoutFormulaParamsInput
@@ -67634,7 +67619,7 @@ export namespace Prisma {
     formulaId: number
     interval?: number | null
     formulaStartLevel?: number | null
-    attributeId?: number | null
+    abilityId?: number | null
     thresholds?: string | null
     values?: string | null
     featureModifier?: FeatureModifierUncheckedCreateNestedManyWithoutFormulaParamsInput
@@ -67645,7 +67630,7 @@ export namespace Prisma {
     formulaId?: IntFieldUpdateOperationsInput | number
     interval?: NullableIntFieldUpdateOperationsInput | number | null
     formulaStartLevel?: NullableIntFieldUpdateOperationsInput | number | null
-    attributeId?: NullableIntFieldUpdateOperationsInput | number | null
+    abilityId?: NullableIntFieldUpdateOperationsInput | number | null
     thresholds?: NullableStringFieldUpdateOperationsInput | string | null
     values?: NullableStringFieldUpdateOperationsInput | string | null
     featureModifier?: FeatureModifierUpdateManyWithoutFormulaParamsNestedInput
@@ -67657,7 +67642,7 @@ export namespace Prisma {
     formulaId?: IntFieldUpdateOperationsInput | number
     interval?: NullableIntFieldUpdateOperationsInput | number | null
     formulaStartLevel?: NullableIntFieldUpdateOperationsInput | number | null
-    attributeId?: NullableIntFieldUpdateOperationsInput | number | null
+    abilityId?: NullableIntFieldUpdateOperationsInput | number | null
     thresholds?: NullableStringFieldUpdateOperationsInput | string | null
     values?: NullableStringFieldUpdateOperationsInput | string | null
     featureModifier?: FeatureModifierUncheckedUpdateManyWithoutFormulaParamsNestedInput
@@ -67669,7 +67654,7 @@ export namespace Prisma {
     formulaId: number
     interval?: number | null
     formulaStartLevel?: number | null
-    attributeId?: number | null
+    abilityId?: number | null
     thresholds?: string | null
     values?: string | null
   }
@@ -67678,7 +67663,7 @@ export namespace Prisma {
     formulaId?: IntFieldUpdateOperationsInput | number
     interval?: NullableIntFieldUpdateOperationsInput | number | null
     formulaStartLevel?: NullableIntFieldUpdateOperationsInput | number | null
-    attributeId?: NullableIntFieldUpdateOperationsInput | number | null
+    abilityId?: NullableIntFieldUpdateOperationsInput | number | null
     thresholds?: NullableStringFieldUpdateOperationsInput | string | null
     values?: NullableStringFieldUpdateOperationsInput | string | null
   }
@@ -67688,7 +67673,7 @@ export namespace Prisma {
     formulaId?: IntFieldUpdateOperationsInput | number
     interval?: NullableIntFieldUpdateOperationsInput | number | null
     formulaStartLevel?: NullableIntFieldUpdateOperationsInput | number | null
-    attributeId?: NullableIntFieldUpdateOperationsInput | number | null
+    abilityId?: NullableIntFieldUpdateOperationsInput | number | null
     thresholds?: NullableStringFieldUpdateOperationsInput | string | null
     values?: NullableStringFieldUpdateOperationsInput | string | null
   }
@@ -70637,13 +70622,6 @@ export namespace Prisma {
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
   }
 
-  export type EnumCastingTypeEnumNullableFilter<$PrismaModel = never> = {
-    equals?: $Enums.CastingTypeEnum | EnumCastingTypeEnumFieldRefInput<$PrismaModel> | null
-    in?: $Enums.CastingTypeEnum[] | null
-    notIn?: $Enums.CastingTypeEnum[] | null
-    not?: NestedEnumCastingTypeEnumNullableFilter<$PrismaModel> | $Enums.CastingTypeEnum | null
-  }
-
   export type FeatureProgressionListRelationFilter = {
     every?: FeatureProgressionWhereInput
     some?: FeatureProgressionWhereInput
@@ -70741,6 +70719,7 @@ export namespace Prisma {
     hitDie?: SortOrder
     skillPoints?: SortOrder
     castingAbilityId?: SortOrder
+    castingType?: SortOrder
     babProgression?: SortOrder
     fortProgression?: SortOrder
     refProgression?: SortOrder
@@ -70793,6 +70772,7 @@ export namespace Prisma {
     hitDie?: SortOrder
     skillPoints?: SortOrder
     castingAbilityId?: SortOrder
+    castingType?: SortOrder
     babProgression?: SortOrder
     fortProgression?: SortOrder
     refProgression?: SortOrder
@@ -70873,16 +70853,6 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedStringNullableFilter<$PrismaModel>
     _max?: NestedStringNullableFilter<$PrismaModel>
-  }
-
-  export type EnumCastingTypeEnumNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.CastingTypeEnum | EnumCastingTypeEnumFieldRefInput<$PrismaModel> | null
-    in?: $Enums.CastingTypeEnum[] | null
-    notIn?: $Enums.CastingTypeEnum[] | null
-    not?: NestedEnumCastingTypeEnumNullableWithAggregatesFilter<$PrismaModel> | $Enums.CastingTypeEnum | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedEnumCastingTypeEnumNullableFilter<$PrismaModel>
-    _max?: NestedEnumCastingTypeEnumNullableFilter<$PrismaModel>
   }
 
   export type ClassScalarRelationFilter = {
@@ -71348,7 +71318,7 @@ export namespace Prisma {
     formulaId?: SortOrder
     interval?: SortOrder
     formulaStartLevel?: SortOrder
-    attributeId?: SortOrder
+    abilityId?: SortOrder
     thresholds?: SortOrder
     values?: SortOrder
   }
@@ -71358,7 +71328,7 @@ export namespace Prisma {
     formulaId?: SortOrder
     interval?: SortOrder
     formulaStartLevel?: SortOrder
-    attributeId?: SortOrder
+    abilityId?: SortOrder
   }
 
   export type FeatureFormulaParamsMaxOrderByAggregateInput = {
@@ -71366,7 +71336,7 @@ export namespace Prisma {
     formulaId?: SortOrder
     interval?: SortOrder
     formulaStartLevel?: SortOrder
-    attributeId?: SortOrder
+    abilityId?: SortOrder
     thresholds?: SortOrder
     values?: SortOrder
   }
@@ -71376,7 +71346,7 @@ export namespace Prisma {
     formulaId?: SortOrder
     interval?: SortOrder
     formulaStartLevel?: SortOrder
-    attributeId?: SortOrder
+    abilityId?: SortOrder
     thresholds?: SortOrder
     values?: SortOrder
   }
@@ -71386,7 +71356,7 @@ export namespace Prisma {
     formulaId?: SortOrder
     interval?: SortOrder
     formulaStartLevel?: SortOrder
-    attributeId?: SortOrder
+    abilityId?: SortOrder
   }
 
   export type FeatureModifierScalarRelationFilter = {
@@ -74167,10 +74137,6 @@ export namespace Prisma {
 
   export type NullableStringFieldUpdateOperationsInput = {
     set?: string | null
-  }
-
-  export type NullableEnumCastingTypeEnumFieldUpdateOperationsInput = {
-    set?: $Enums.CastingTypeEnum | null
   }
 
   export type FeatureProgressionUpdateManyWithoutClassNestedInput = {
@@ -78308,13 +78274,6 @@ export namespace Prisma {
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
   }
 
-  export type NestedEnumCastingTypeEnumNullableFilter<$PrismaModel = never> = {
-    equals?: $Enums.CastingTypeEnum | EnumCastingTypeEnumFieldRefInput<$PrismaModel> | null
-    in?: $Enums.CastingTypeEnum[] | null
-    notIn?: $Enums.CastingTypeEnum[] | null
-    not?: NestedEnumCastingTypeEnumNullableFilter<$PrismaModel> | $Enums.CastingTypeEnum | null
-  }
-
   export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[]
@@ -78411,16 +78370,6 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedStringNullableFilter<$PrismaModel>
     _max?: NestedStringNullableFilter<$PrismaModel>
-  }
-
-  export type NestedEnumCastingTypeEnumNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.CastingTypeEnum | EnumCastingTypeEnumFieldRefInput<$PrismaModel> | null
-    in?: $Enums.CastingTypeEnum[] | null
-    notIn?: $Enums.CastingTypeEnum[] | null
-    not?: NestedEnumCastingTypeEnumNullableWithAggregatesFilter<$PrismaModel> | $Enums.CastingTypeEnum | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedEnumCastingTypeEnumNullableFilter<$PrismaModel>
-    _max?: NestedEnumCastingTypeEnumNullableFilter<$PrismaModel>
   }
 
   export type NestedBoolNullableFilter<$PrismaModel = never> = {
@@ -79045,7 +78994,7 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    castingType?: $Enums.CastingTypeEnum | null
+    castingType?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -79072,7 +79021,7 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    castingType?: $Enums.CastingTypeEnum | null
+    castingType?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -79103,7 +79052,7 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    castingType?: $Enums.CastingTypeEnum | null
+    castingType?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -79130,7 +79079,7 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    castingType?: $Enums.CastingTypeEnum | null
+    castingType?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -79216,7 +79165,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    castingType?: NullableEnumCastingTypeEnumFieldUpdateOperationsInput | $Enums.CastingTypeEnum | null
+    castingType?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -79243,7 +79192,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    castingType?: NullableEnumCastingTypeEnumFieldUpdateOperationsInput | $Enums.CastingTypeEnum | null
+    castingType?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -79280,7 +79229,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    castingType?: NullableEnumCastingTypeEnumFieldUpdateOperationsInput | $Enums.CastingTypeEnum | null
+    castingType?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -79307,7 +79256,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    castingType?: NullableEnumCastingTypeEnumFieldUpdateOperationsInput | $Enums.CastingTypeEnum | null
+    castingType?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -79544,7 +79493,7 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    castingType?: $Enums.CastingTypeEnum | null
+    castingType?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -79571,7 +79520,7 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    castingType?: $Enums.CastingTypeEnum | null
+    castingType?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -79641,7 +79590,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    castingType?: NullableEnumCastingTypeEnumFieldUpdateOperationsInput | $Enums.CastingTypeEnum | null
+    castingType?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -79668,7 +79617,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    castingType?: NullableEnumCastingTypeEnumFieldUpdateOperationsInput | $Enums.CastingTypeEnum | null
+    castingType?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -79784,7 +79733,7 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    castingType?: $Enums.CastingTypeEnum | null
+    castingType?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -79811,7 +79760,7 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    castingType?: $Enums.CastingTypeEnum | null
+    castingType?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -79915,7 +79864,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    castingType?: NullableEnumCastingTypeEnumFieldUpdateOperationsInput | $Enums.CastingTypeEnum | null
+    castingType?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -79942,7 +79891,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    castingType?: NullableEnumCastingTypeEnumFieldUpdateOperationsInput | $Enums.CastingTypeEnum | null
+    castingType?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -80136,7 +80085,7 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    castingType?: $Enums.CastingTypeEnum | null
+    castingType?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -80163,7 +80112,7 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    castingType?: $Enums.CastingTypeEnum | null
+    castingType?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -80399,7 +80348,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    castingType?: NullableEnumCastingTypeEnumFieldUpdateOperationsInput | $Enums.CastingTypeEnum | null
+    castingType?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -80426,7 +80375,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    castingType?: NullableEnumCastingTypeEnumFieldUpdateOperationsInput | $Enums.CastingTypeEnum | null
+    castingType?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -80689,7 +80638,7 @@ export namespace Prisma {
     formulaId: number
     interval?: number | null
     formulaStartLevel?: number | null
-    attributeId?: number | null
+    abilityId?: number | null
     thresholds?: string | null
     values?: string | null
     featureChoice?: FeatureChoiceCreateNestedManyWithoutFormulaParamsInput
@@ -80700,7 +80649,7 @@ export namespace Prisma {
     formulaId: number
     interval?: number | null
     formulaStartLevel?: number | null
-    attributeId?: number | null
+    abilityId?: number | null
     thresholds?: string | null
     values?: string | null
     featureChoice?: FeatureChoiceUncheckedCreateNestedManyWithoutFormulaParamsInput
@@ -80788,7 +80737,7 @@ export namespace Prisma {
     formulaId?: IntFieldUpdateOperationsInput | number
     interval?: NullableIntFieldUpdateOperationsInput | number | null
     formulaStartLevel?: NullableIntFieldUpdateOperationsInput | number | null
-    attributeId?: NullableIntFieldUpdateOperationsInput | number | null
+    abilityId?: NullableIntFieldUpdateOperationsInput | number | null
     thresholds?: NullableStringFieldUpdateOperationsInput | string | null
     values?: NullableStringFieldUpdateOperationsInput | string | null
     featureChoice?: FeatureChoiceUpdateManyWithoutFormulaParamsNestedInput
@@ -80799,7 +80748,7 @@ export namespace Prisma {
     formulaId?: IntFieldUpdateOperationsInput | number
     interval?: NullableIntFieldUpdateOperationsInput | number | null
     formulaStartLevel?: NullableIntFieldUpdateOperationsInput | number | null
-    attributeId?: NullableIntFieldUpdateOperationsInput | number | null
+    abilityId?: NullableIntFieldUpdateOperationsInput | number | null
     thresholds?: NullableStringFieldUpdateOperationsInput | string | null
     values?: NullableStringFieldUpdateOperationsInput | string | null
     featureChoice?: FeatureChoiceUncheckedUpdateManyWithoutFormulaParamsNestedInput
@@ -81279,7 +81228,7 @@ export namespace Prisma {
     formulaId: number
     interval?: number | null
     formulaStartLevel?: number | null
-    attributeId?: number | null
+    abilityId?: number | null
     thresholds?: string | null
     values?: string | null
     featureModifier?: FeatureModifierCreateNestedManyWithoutFormulaParamsInput
@@ -81290,7 +81239,7 @@ export namespace Prisma {
     formulaId: number
     interval?: number | null
     formulaStartLevel?: number | null
-    attributeId?: number | null
+    abilityId?: number | null
     thresholds?: string | null
     values?: string | null
     featureModifier?: FeatureModifierUncheckedCreateNestedManyWithoutFormulaParamsInput
@@ -81455,7 +81404,7 @@ export namespace Prisma {
     formulaId?: IntFieldUpdateOperationsInput | number
     interval?: NullableIntFieldUpdateOperationsInput | number | null
     formulaStartLevel?: NullableIntFieldUpdateOperationsInput | number | null
-    attributeId?: NullableIntFieldUpdateOperationsInput | number | null
+    abilityId?: NullableIntFieldUpdateOperationsInput | number | null
     thresholds?: NullableStringFieldUpdateOperationsInput | string | null
     values?: NullableStringFieldUpdateOperationsInput | string | null
     featureModifier?: FeatureModifierUpdateManyWithoutFormulaParamsNestedInput
@@ -81466,7 +81415,7 @@ export namespace Prisma {
     formulaId?: IntFieldUpdateOperationsInput | number
     interval?: NullableIntFieldUpdateOperationsInput | number | null
     formulaStartLevel?: NullableIntFieldUpdateOperationsInput | number | null
-    attributeId?: NullableIntFieldUpdateOperationsInput | number | null
+    abilityId?: NullableIntFieldUpdateOperationsInput | number | null
     thresholds?: NullableStringFieldUpdateOperationsInput | string | null
     values?: NullableStringFieldUpdateOperationsInput | string | null
     featureModifier?: FeatureModifierUncheckedUpdateManyWithoutFormulaParamsNestedInput
@@ -86000,7 +85949,7 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    castingType?: $Enums.CastingTypeEnum | null
+    castingType?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -86027,7 +85976,7 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    castingType?: $Enums.CastingTypeEnum | null
+    castingType?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -86058,7 +86007,7 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    castingType?: $Enums.CastingTypeEnum | null
+    castingType?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -86085,7 +86034,7 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    castingType?: $Enums.CastingTypeEnum | null
+    castingType?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -86260,7 +86209,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    castingType?: NullableEnumCastingTypeEnumFieldUpdateOperationsInput | $Enums.CastingTypeEnum | null
+    castingType?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -86287,7 +86236,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    castingType?: NullableEnumCastingTypeEnumFieldUpdateOperationsInput | $Enums.CastingTypeEnum | null
+    castingType?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -86324,7 +86273,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    castingType?: NullableEnumCastingTypeEnumFieldUpdateOperationsInput | $Enums.CastingTypeEnum | null
+    castingType?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -86351,7 +86300,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    castingType?: NullableEnumCastingTypeEnumFieldUpdateOperationsInput | $Enums.CastingTypeEnum | null
+    castingType?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -87221,7 +87170,7 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    castingType?: $Enums.CastingTypeEnum | null
+    castingType?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -87248,7 +87197,7 @@ export namespace Prisma {
     description?: string | null
     skillPoints: number
     castingAbilityId?: number | null
-    castingType?: $Enums.CastingTypeEnum | null
+    castingType?: number | null
     babProgression: number
     fortProgression: number
     refProgression: number
@@ -87412,7 +87361,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    castingType?: NullableEnumCastingTypeEnumFieldUpdateOperationsInput | $Enums.CastingTypeEnum | null
+    castingType?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number
@@ -87439,7 +87388,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     skillPoints?: IntFieldUpdateOperationsInput | number
     castingAbilityId?: NullableIntFieldUpdateOperationsInput | number | null
-    castingType?: NullableEnumCastingTypeEnumFieldUpdateOperationsInput | $Enums.CastingTypeEnum | null
+    castingType?: NullableIntFieldUpdateOperationsInput | number | null
     babProgression?: IntFieldUpdateOperationsInput | number
     fortProgression?: IntFieldUpdateOperationsInput | number
     refProgression?: IntFieldUpdateOperationsInput | number

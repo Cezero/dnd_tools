@@ -8,7 +8,7 @@ The formatter system has been refactored into several focused modules:
 
 - **`formatterUtils.ts`** - Core formatting utilities
 - **`formulaUtils.ts`** - Formula-related utilities  
-- **`wildShapeUtils.ts`** - Wild shape specific utilities
+- **`utilities.ts`** - General utilities including wild shape formatting
 - **`formatterFactories.ts`** - Formatter factory functions
 - **`Formatters.ts`** - Main formatter exports and core logic
 
@@ -176,58 +176,50 @@ formatDamageDice(modifier, undefined, 5)  // "Unarmed Damage: 1d10"
 formatDamageDice(modifier)  // "Unarmed Damage: Level 1: 1d6, Level 4: 1d8, ..."
 ```
 
-## Wild Shape Utilities (`wildShapeUtils.ts`)
+## Wild Shape Utilities (`utilities.ts`)
 
-### `isWildShapeEffect(effect: any): boolean`
+### `formatWildShapeProgressions(progressions: FeatureProgressionWithRelations[], character?: CharacterContext): string`
 
-Checks if an effect should be processed for wild shape.
-
-```typescript
-isWildShapeEffect({ effectType: FeatureSpecialEffectType.WildShapeForm })  // true
-isWildShapeEffect({ effectType: FeatureSpecialEffectType.WildShapeSize })  // true
-isWildShapeEffect({ effectType: FeatureSpecialEffectType.Other })          // false
-```
-
-### `shouldSkipWildShapeEffect(effect: any): boolean`
-
-Checks if an effect should be skipped (elemental form effect).
+Formats multiple wild shape progressions together for display. This is used when multiple progressions exist for the same feature at the same level.
 
 ```typescript
-shouldSkipWildShapeEffect({ 
-  effectType: FeatureSpecialEffectType.WildShapeForm, 
-  value: 'elemental' 
-})  // true
-
-shouldSkipWildShapeEffect({ 
-  effectType: FeatureSpecialEffectType.WildShapeForm, 
-  value: 'wolf' 
-})  // false
+const result = formatWildShapeProgressions(progressions, character);
+// Returns: "3/day, elemental: 1/day, wolf, size Small, elemental forms"
 ```
 
-### `processWildShapeEffects(effects: any[], hasElementalEffects: boolean): string[]`
+The function processes both regular and elemental wild shape progressions, combining:
+- Uses per day (from modifiers)
+- Form types and sizes (from effects)
+- Elemental form capabilities
 
-Processes wild shape effects and returns formatted effects array.
+### Internal Helper Functions
 
-```typescript
-const effects = processWildShapeEffects([
-  { effectType: FeatureSpecialEffectType.WildShapeForm, value: 'wolf' },
-  { effectType: FeatureSpecialEffectType.WildShapeSize, value: 'Small' }
-], false);
-// Returns: ["wolf", "Small"]
+The following functions are used internally by `formatWildShapeProgressions`:
 
-const effects = processWildShapeEffects([
-  { effectType: FeatureSpecialEffectType.WildShapeForm, value: 'fire' }
-], true);
-// Returns: ["elemental: fire"]
-```
+#### `processWildShapeModifiers(modifiers: any[], progression: FeatureProgressionWithRelations, character?: CharacterContext): string`
 
-### `processWildShapeModifiers(modifiers: any[], progression: any, character?: CharacterContext): string`
-
-Processes wild shape modifiers and returns formatted uses string.
+Processes wild shape modifiers for uses per day.
 
 ```typescript
 const uses = processWildShapeModifiers(modifiers, progression, character);
-// Returns: "3/day, elemental: 1/day"
+// Returns: "3/day"
+```
+
+#### `processWildShapeEffects(effects: any[], isElemental: boolean): string[]`
+
+Processes wild shape effects for forms and sizes.
+
+```typescript
+const effects = processWildShapeEffects([
+  { key: 'form', value: 'wolf' },
+  { key: 'size', value: 'Small' }
+], false);
+// Returns: ["wolf", "size Small"]
+
+const effects = processWildShapeEffects([
+  { key: 'elementalwildshape', value: true }
+], true);
+// Returns: ["elemental forms"]
 ```
 
 ## Formatter Factories (`formatterFactories.ts`)
@@ -434,10 +426,10 @@ const displayValue = getDisplayValue(formulaResult, valueInt, formatSignedValue)
 ### Working with Wild Shape Features
 
 ```typescript
-import { processWildShapeModifiers, processWildShapeEffects } from './wildShapeUtils';
+import { formatWildShapeProgressions } from './utilities';
 
-const uses = processWildShapeModifiers(modifiers, progression, character);
-const effects = processWildShapeEffects(effects, hasElementalEffects);
+const result = formatWildShapeProgressions(progressions, character);
+// Returns formatted string with uses, forms, and sizes
 ```
 
 ## Best Practices

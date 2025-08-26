@@ -1,8 +1,7 @@
-// Import all SVG icons as React components
+import React from 'react';
+
 import { ReactComponent as ArmorVest } from './armor-vest.svg';
 import { ReactComponent as AxeSword } from './axe-sword.svg';
-
-// Import individual dice SVGs
 import { ReactComponent as D100Die } from './d100_die.svg';
 import { ReactComponent as D10Die } from './d10_die.svg';
 import { ReactComponent as D12Die } from './d12_die.svg';

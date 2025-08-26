@@ -1,21 +1,27 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import type { RouteConfig } from '@/types';
-import type { SelectOption } from '@shared/static-data';
+import type { SelectOption, FilterType } from '@shared/static-data';
 
-export const PAGE_LIMITS: SelectOption[] = [
-    { value: 10, label: '10' },
-    { value: 20, label: '20' },
-    { value: 40, label: '40' },
-    { value: 80, label: '80' },
-    { value: 160, label: '160' }
-];
+// Filter value types
+export interface FilterMultiValue {
+    values: (string | number)[];
+    logicType: 'and' | 'or';
+}
 
-export enum FilterType {
-    TEXT_INPUT = 'text-input',
-    SINGLE_SELECT = 'single-select',
-    MULTI_SELECT = 'multi-select',
-    BOOLEAN = 'boolean'
+export interface FilterValue {
+    id: string;
+    value?: string | number | boolean | FilterMultiValue | null;
+    type?: 'toggle_text_input';
+}
+
+export interface FilterConfig {
+    filterType?: FilterType;
+    options?: SelectOption[] | ((columnFilters: FilterValue[]) => SelectOption[]);
+    placeholder?: string;
+    required?: boolean;
+    truncate?: number;
+    isMarkdown?: boolean;
 }
 
 // Data item interface
