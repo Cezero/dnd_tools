@@ -2,17 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
+import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { FeatService } from '@/features/feat/FeatService';
-import { formatterOrchestrator } from '@/lib/formatters';
-import { FeatureSystemService } from '@/services/FeatureSystemService';
-import { GetFeatureResponse, FeatureProgressionWithRelations } from '@shared/schema';
-import { ModifierAppliesToType, FeatureSourceType } from '@shared/static-data';
+import { FeatApi } from '@/features/feat/FeatApi';
+import { displayStrategyFactory } from '@/lib/formatters';
+import { GetFeatureResponse, FeatureProgression } from '@shared/schema';
+import { DisplayType, ModifierAppliesToType, FeatureSourceType } from '@shared/static-data';
 
 export function FeatureDetail() {
     const { id } = useParams();
     const [feature, setFeature] = useState<GetFeatureResponse | null>(null);
-    const [featureProgressions, setFeatureProgressions] = useState<FeatureProgressionWithRelations[]>([]);
+    const [featureProgressions, setFeatureProgressions] = useState<FeatureProgression[]>([]);
     const [feats, setFeats] = useState<Array<{ id: number; name: string }>>([]);
     const [isLoading, setIsLoading] = useState(true);
     const { isAdmin } = useAuthAuto();
@@ -25,11 +25,11 @@ export function FeatureDetail() {
         const Initialize = async () => {
             try {
                 // Pass the string ID directly - Zod schema will transform it to number
-                const data = await FeatureSystemService.getFeatureById(undefined, { id: parseInt(id!) });
+                const data = await FeatureSystemApi.getFeatureById(undefined, { id: parseInt(id!) });
                 setFeature(data);
 
                 // Load feature progressions for this feature
-                const progressions = await FeatureSystemService.getFeatureProgressions(undefined, { id: parseInt(id!) });
+                const progressions = await FeatureSystemApi.getFeatureProgressions(undefined, { id: parseInt(id!) });
                 setFeatureProgressions(progressions);
 
                 setIsLoading(false);
@@ -83,7 +83,7 @@ export function FeatureDetail() {
 
             if (hasFeatModifiers && feats.length === 0) {
                 try {
-                    const response = await FeatService.getFeats({});
+                    const response = await FeatApi.getFeats({});
                     setFeats(response.results || []);
                 } catch (error) {
                     console.error('Failed to load feats:', error);
@@ -190,7 +190,8 @@ export function FeatureDetail() {
                                                     <h4 className="font-medium">Modifiers:</h4>
                                                     <ul className="text-sm text-gray-600 dark:text-gray-400">
                                                         {progression.modifiers.map((modifier, index) => {
-                                                            const formatter = formatterOrchestrator.formatProgressionForEdit({ ...progression, modifiers: [modifier] });
+                                                            const strategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
+                                                            const formatter = strategy.formatProgression({ ...progression, modifiers: [modifier] });
                                                             return (
                                                                 <li key={index}>
                                                                     {formatter.formattedValue}

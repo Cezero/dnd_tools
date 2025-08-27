@@ -3,9 +3,9 @@ import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { SpellService } from '@/features/spell/SpellService';
+import { SpellApi } from '@/features/spell/SpellApi';
 import { GetSpellResponse } from '@shared/schema';
-import { SpellSchoolNameList, SpellDescriptorNameList, SpellComponentAbbrList, GetSourceDisplay, CLASS_MAP } from '@shared/static-data';
+import { SpellSchoolNameList, SpellDescriptorNameList, SpellComponentAbbrList } from '@shared/static-data';
 
 import { GetClassLevelAbbr } from './spellUtil';
 
@@ -21,7 +21,7 @@ export function SpellDetail(): React.JSX.Element {
     useEffect(() => {
         const Initialize = async (): Promise<void> => {
             try {
-                const data = await SpellService.getSpellById(undefined, { id: parseInt(id!) });
+                const data = await SpellApi.getSpellById(undefined, { id: parseInt(id!) });
                 setSpell(data);
                 setIsLoading(false);
             } catch (error) {

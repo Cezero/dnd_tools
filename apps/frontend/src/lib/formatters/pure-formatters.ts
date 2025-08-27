@@ -1,31 +1,24 @@
+import pluralize from 'pluralize';
+
 import type {
-    FeatureModifierInQueryResponse,
-    FeatureChoiceInQueryResponse
+    FeatureModifier,
+    FeatureChoice,
+    FeatureSpecialEffect
 } from '@shared/schema';
 import {
     FeatureChoiceType,
     FeatureChoiceBehavior,
-    FeatureBonusType
-} from '@shared/static-data';
-import {
     FEATURE_FEAT_CHOICE_FILTER_TYPES,
-    SIZE_MAP,
-    ABILITY_MAP,
-    SKILL_MAP,
     LANGUAGE_MAP,
+    FEATURE_BONUS_TYPES,
     RPG_DICE,
-    DAMAGE_TYPES,
-    SAVING_THROW_MAP,
-    USES_FREQUENCY_ENUM,
-    USES_FREQUENCIES,
-    FEATURE_BONUS_TYPES
+    DAMAGE_TYPES
 } from '@shared/static-data';
-import pluralize from 'pluralize';
 
-import type { BaseFormatter, ChoiceFormatter, FormatterMetadata, DisplayContext, NameLookupRecord } from './types';
+import type { BaseFormatter, ChoiceFormatter, EffectFormatter, FormatterMetadata } from './types';
 
 export class DamageFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifierInQueryResponse, metadata?: FormatterMetadata): string {
+    format(value: number, _modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
         // For now, use default values since diceType and size aren't in the current schema
         const diceType = 'd6';
         const sizeSuffix = '';
@@ -34,7 +27,7 @@ export class DamageFormatter implements BaseFormatter {
 }
 
 export class DamageBonusFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifierInQueryResponse, metadata?: FormatterMetadata): string {
+    format(value: number, modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
         const baseValue = formatSignedValue(value);
 
         // Include damage type if appliesToId is present
@@ -47,13 +40,13 @@ export class DamageBonusFormatter implements BaseFormatter {
 }
 
 export class HealingFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifierInQueryResponse, metadata?: FormatterMetadata): string {
+    format(value: number, _modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
         return `${value} hp/day`;
     }
 }
 
 export class SignedValueFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifierInQueryResponse, metadata?: FormatterMetadata): string {
+    format(value: number, modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
         const baseValue = formatSignedValue(value);
 
         // Include bonus type if present
@@ -67,13 +60,13 @@ export class SignedValueFormatter implements BaseFormatter {
 }
 
 export class SkillFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifierInQueryResponse, metadata?: FormatterMetadata): string {
+    format(value: number, _modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
         return formatSignedValue(value);
     }
 }
 
 export class LanguageFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifierInQueryResponse, metadata?: FormatterMetadata): string {
+    format(value: number, modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
         const languageId = modifier.appliesToId;
         if (languageId && LANGUAGE_MAP[languageId]) {
             return LANGUAGE_MAP[languageId].name;
@@ -83,7 +76,7 @@ export class LanguageFormatter implements BaseFormatter {
 }
 
 export class FeatFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifierInQueryResponse, metadata?: FormatterMetadata): string {
+    format(value: number, modifier: FeatureModifier, metadata?: FormatterMetadata): string {
         const featId = modifier.appliesToId;
         if (featId && metadata?.featNames) {
             const featName = metadata.featNames.find(f => f.id === featId)?.name;
@@ -96,7 +89,7 @@ export class FeatFormatter implements BaseFormatter {
 }
 
 export class UsesFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifierInQueryResponse, metadata?: FormatterMetadata): string {
+    format(value: number, _modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
         // For now, use default frequency since useType isn't in the current schema
         const frequency = 'day';
         return `${value}/${frequency}`;
@@ -104,31 +97,31 @@ export class UsesFormatter implements BaseFormatter {
 }
 
 export class TargetsFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifierInQueryResponse, metadata?: FormatterMetadata): string {
+    format(value: number, _modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
         return `${value} ${pluralize('target', value)}`;
     }
 }
 
 export class ExtraAttacksFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifierInQueryResponse, metadata?: FormatterMetadata): string {
+    format(value: number, _modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
         return `${value} extra ${pluralize('attack', value)}`;
     }
 }
 
 export class DistanceFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifierInQueryResponse, metadata?: FormatterMetadata): string {
+    format(value: number, _modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
         return `${value} ft.`;
     }
 }
 
 export class MovementSpeedFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifierInQueryResponse, metadata?: FormatterMetadata): string {
+    format(value: number, _modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
         return `+${value} ft.`;
     }
 }
 
 export class DiceFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifierInQueryResponse, metadata?: FormatterMetadata): string {
+    format(value: number, modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
         // Use appliesToId to determine the dice type
         const diceId = modifier.appliesToId;
         if (diceId !== null && diceId !== undefined && RPG_DICE[diceId]) {
@@ -141,7 +134,7 @@ export class DiceFormatter implements BaseFormatter {
 }
 
 export class DiceBonusFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifierInQueryResponse, metadata?: FormatterMetadata): string {
+    format(value: number, modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
         // Use appliesToId to determine the dice type
         const diceId = modifier.appliesToId;
         if (diceId !== null && diceId !== undefined && RPG_DICE[diceId]) {
@@ -154,7 +147,7 @@ export class DiceBonusFormatter implements BaseFormatter {
 }
 
 export class DamageReductionFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifierInQueryResponse, metadata?: FormatterMetadata): string {
+    format(value: number, modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
         const damageTypeId = modifier.appliesToId;
         if (damageTypeId !== null && damageTypeId !== undefined && DAMAGE_TYPES[damageTypeId]) {
             const damageType = DAMAGE_TYPES[damageTypeId].name;
@@ -165,13 +158,13 @@ export class DamageReductionFormatter implements BaseFormatter {
 }
 
 export class SpellResistanceFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifierInQueryResponse, metadata?: FormatterMetadata): string {
+    format(value: number, _modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
         return `SR ${value}`;
     }
 }
 
 export class FeatureChoiceFormatter implements ChoiceFormatter {
-    formatChoice(choice: FeatureChoiceInQueryResponse, metadata?: FormatterMetadata): string {
+    formatChoice(choice: FeatureChoice, metadata?: FormatterMetadata): string {
         // CRITICAL: Always use actual names/abbreviations, never IDs
         const choiceName = this.getChoiceName(choice, metadata);
 
@@ -189,7 +182,7 @@ export class FeatureChoiceFormatter implements ChoiceFormatter {
         }
     }
 
-    private getChoiceName(choice: FeatureChoiceInQueryResponse, metadata?: FormatterMetadata): string {
+    private getChoiceName(choice: FeatureChoice, metadata?: FormatterMetadata): string {
         switch (choice.type) {
             case FeatureChoiceType.Feat:
                 return this.getFeatName(choice, metadata);
@@ -200,7 +193,7 @@ export class FeatureChoiceFormatter implements ChoiceFormatter {
         }
     }
 
-    private getFeatName(choice: FeatureChoiceInQueryResponse, metadata?: FormatterMetadata): string {
+    private getFeatName(choice: FeatureChoice, metadata?: FormatterMetadata): string {
         // Priority 1: Use passed-in feat data (specific feat selected)
         if (choice.feat?.name) {
             return choice.feat.name;
@@ -228,7 +221,7 @@ export class FeatureChoiceFormatter implements ChoiceFormatter {
         return 'Bonus Feat';
     }
 
-    private getFeatureName(choice: FeatureChoiceInQueryResponse, metadata?: FormatterMetadata): string {
+    private getFeatureName(choice: FeatureChoice, metadata?: FormatterMetadata): string {
         // Priority 1: Use passed-in feature data
         if (choice.feature?.name) {
             return choice.feature.name;
@@ -263,7 +256,7 @@ export class FeatureChoiceFormatter implements ChoiceFormatter {
 }
 
 export class OtherFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifierInQueryResponse, metadata?: FormatterMetadata): string {
+    format(value: number, _modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
         return `${value}`;
     }
 }
@@ -272,8 +265,12 @@ export class OtherFormatter implements BaseFormatter {
  * Formatter for proficiency effects (FeatureSpecialEffectType.Proficiency)
  * Handles featId/itemId resolution and "all X" vs specific item display
  */
-export class ProficiencyEffectFormatter {
-    format(featName: string, itemId: number, itemName?: string): string {
+export class ProficiencyEffectFormatter implements EffectFormatter {
+    format(effect: FeatureSpecialEffect, _level: number): string {
+        const featName = effect.feat?.name || `Feat ${effect.featId}`;
+        const itemId = effect.itemId || -1;
+        const itemName = effect.item?.name;
+
         const proficiencyNameMap = {
             "Armor Proficiency (Light)": "light armor",
             "Armor Proficiency (Medium)": "medium armor",

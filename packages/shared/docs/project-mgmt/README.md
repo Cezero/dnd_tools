@@ -24,14 +24,15 @@ This directory contains the project management documentation for the D&D Tools F
 - ✅ **COMPLETED**: FeatureProgressionDetailEdit with formula input and preview
 - ✅ **COMPLETED**: Backend services and API endpoints
 
-#### [formatting-refactor/implementation-status.md](../formatting-refactor/implementation-status.md)
-**Purpose**: Detailed formatter system implementation status
+#### [feature-system/formatting/README.md](../feature-system/formatting/README.md)
+**Purpose**: Feature formatting system documentation (moved from formatting-refactor)
 **Key Content**:
-- ⚠️ **PARTIALLY IMPLEMENTED**: 6-layer clean architecture formatter system
+- ✅ **COMPLETED**: 6-layer clean architecture formatter system
 - ✅ **COMPLETED**: Pure formatters and formatter registry
-- ✅ **COMPLETED**: Display strategies and orchestrator
-- ❌ **CRITICAL ISSUE**: Layer integration incomplete - display strategies not using pure formatters
-- 🔴 **IMMEDIATE ACTION REQUIRED**: Fix layer integration in display-strategies.ts
+- ✅ **COMPLETED**: Display strategies as true orchestrators
+- ✅ **COMPLETED**: Architecture inversion fix - removed FormatterOrchestrator
+- ✅ **COMPLETED**: Formula property-based routing (isCharacterDependent, hasProgression)
+- ✅ **COMPLETED**: Proper dependency flow and separation of concerns
 
 #### [feature-system-pending-tasks.md](feature-system-pending-tasks.md)
 **Purpose**: Prioritized task list for feature system
@@ -124,12 +125,12 @@ This directory contains the project management documentation for the D&D Tools F
 
 ## Immediate Priorities
 
-### 🔴 **CRITICAL: Fix Formatter System Integration**
-1. **Fix EditPageDisplayStrategy**: Connect pure formatters to display strategies
-2. **Fix DetailPageDisplayStrategy**: Same integration fixes for detail page formatting
-3. **Fix CharacterSheetDisplayStrategy**: Same integration fixes for character sheet display
-4. **Test with Real Data**: Load real feature data and verify proper formatting
-5. **Validate Metadata Passing**: Ensure all modifier metadata reaches formatters correctly
+### ✅ **COMPLETED: Formatter System Architecture Fix**
+1. **✅ Fixed Architecture Inversion**: Removed `getDisplayStrategy()` method from orchestrator
+2. **✅ Eliminated Circular Dependencies**: Proper dependency flow between layers
+3. **✅ Maintained Clean Separation**: Orchestrator coordinates, doesn't create strategies
+4. **✅ Updated Documentation**: Comprehensive usage guidelines for agents
+5. **✅ Preserved Factory Pattern**: Strategy creation handled by factory when needed
 
 ### 🟡 **HIGH PRIORITY: Character Integration**
 1. **Backend Character Calculation Service**: Runtime feature calculation

@@ -1,9 +1,9 @@
 import React from 'react';
 
-import type { DiceResult } from '@shared/schema';
+import type { LocalDiceRollResult, DieRoll } from './types';
 
 interface DiceResultRendererProps {
-    results: DiceResult[];
+    results: LocalDiceRollResult[];
     critHighlight?: boolean;
 }
 
@@ -16,24 +16,24 @@ export function DiceResultRenderer({ results, critHighlight = false }: DiceResul
 }
 
 interface SingleResultRendererProps {
-    result: DiceResult;
+    result: LocalDiceRollResult;
     critHighlight?: boolean;
 }
 
 function SingleResultRenderer({ result, critHighlight = false }: SingleResultRendererProps): React.JSX.Element {
-    const { results, total, originalNotation, group } = result;
+    const { rolls, value, originalNotation, group } = result;
     const title = generateTitle(originalNotation || 'Unknown', group);
 
     return (
         <span className="text-sm text-gray-600 dark:text-gray-300">
             {title}:{' '}
             <span className="font-mono">
-                {results.map((roll, index) => {
-                    const rollElement = renderDieRoll(roll, 6, false, critHighlight);
+                {rolls.map((roll: DieRoll, index) => {
+                    const rollElement = renderDieRoll(roll.value, roll.die, false, critHighlight);
                     return <React.Fragment key={index}>{rollElement}</React.Fragment>;
                 })}
                 <span className="ml-2 font-bold text-base text-gray-900 dark:text-white">
-                    = {total}
+                    = {value}
                 </span>
             </span>
         </span>
@@ -41,7 +41,7 @@ function SingleResultRenderer({ result, critHighlight = false }: SingleResultRen
 }
 
 interface MultipleResultsRendererProps {
-    results: DiceResult[];
+    results: LocalDiceRollResult[];
     critHighlight?: boolean;
 }
 
@@ -49,19 +49,19 @@ function MultipleResultsRenderer({ results, critHighlight = false }: MultipleRes
     return (
         <span className="text-sm text-gray-600 dark:text-gray-300 flex flex-wrap gap-2">
             {results.map((result, resultIndex) => {
-                const { results: diceResults, total, originalNotation, group } = result;
+                const { rolls, value, originalNotation, group } = result;
                 const title = generateTitle(originalNotation || 'Unknown', group);
 
                 return (
                     <span key={resultIndex} className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1">
                         {title}:{' '}
                         <span className="font-mono">
-                            {diceResults.map((roll, index) => {
-                                const rollElement = renderDieRoll(roll, 6, false, critHighlight);
+                            {rolls.map((roll: DieRoll, index) => {
+                                const rollElement = renderDieRoll(roll.value, roll.die, false, critHighlight);
                                 return <React.Fragment key={index}>{rollElement}</React.Fragment>;
                             })}
                             <span className="ml-2 font-bold text-base text-gray-900 dark:text-white">
-                                = {total}
+                                = {value}
                             </span>
                         </span>
                     </span>

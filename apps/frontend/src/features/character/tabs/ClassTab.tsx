@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 
 import { CustomSelect } from '@/components/forms/FormComponents';
+import { ClassApi } from '@/features/class/ClassApi';
 import { ClassDisplay } from '@/features/class/ClassDisplay';
-import { ClassService } from '@/features/class/ClassService';
-import type { GetClassResponse, CharacterWithAllDetailsResponse } from '@shared/schema';
+import type { DnDClass, CharacterWithAllDetailsResponse } from '@shared/schema';
 import {
     CLASS_MAP,
     GetBaseClassesByEdition
@@ -12,8 +12,8 @@ import {
 interface ClassTabProps {
     character: CharacterWithAllDetailsResponse;
     onUpdate: (data: Partial<CharacterWithAllDetailsResponse>) => void;
-    selectedClassDetails?: GetClassResponse | null;
-    onClassDetailsChange: (classDetails: GetClassResponse | null) => void;
+    selectedClassDetails?: DnDClass | null;
+    onClassDetailsChange: (classDetails: DnDClass | null) => void;
 }
 
 export function ClassTab({
@@ -35,7 +35,7 @@ export function ClassTab({
                     {
                         ...character.advancements[0],
                         classId: 0,
-                        features: []
+                        featureChoices: []
                     }
                 ]
             });
@@ -49,7 +49,7 @@ export function ClassTab({
         // Fetch class details from backend
         setIsLoadingClass(true);
         try {
-            const classDetails = await ClassService.getClassById(undefined, { id: classId });
+            const classDetails = await ClassApi.getClassById(undefined, { id: classId });
             onClassDetailsChange(classDetails);
 
             // Update the first advancement entry
@@ -59,7 +59,7 @@ export function ClassTab({
                         ...character.advancements[0],
                         classId: classId,
                         // Keep existing features, they'll be populated when class features are loaded
-                        features: character.advancements[0].features
+                        featureChoices: character.advancements[0].featureChoices
                     }
                 ]
             });
@@ -72,7 +72,7 @@ export function ClassTab({
                     {
                         ...character.advancements[0],
                         classId: classId,
-                        features: character.advancements[0].features
+                        featureChoices: character.advancements[0].featureChoices
                     }
                 ]
             });

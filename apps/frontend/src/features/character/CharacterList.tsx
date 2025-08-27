@@ -5,7 +5,7 @@ import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { CHARACTER_COLUMNS } from '@/features/character/CharacterColumns';
-import { CharacterService } from '@/features/character/CharacterService';
+import { CharacterApi } from '@/features/character/CharacterApi';
 import { CharacterWithRaceResponse } from '@shared/schema';
 
 import { routes } from './CharacterConfig';
@@ -37,10 +37,10 @@ export function CharacterList(): React.JSX.Element {
             <GenericList<CharacterWithRaceResponse>
                 storageKey="characters-list"
                 columns={CHARACTER_COLUMNS}
-                serviceFunction={() => CharacterService.getCharacters({})}
+                serviceFunction={() => CharacterApi.getCharacters({})}
                 itemDesc="character"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction(CharacterService.deleteCharacter)}
+                deleteServiceFunction={createIdDeleteServiceFunction(CharacterApi.deleteCharacter)}
                 basePath=""
             />
         </div>

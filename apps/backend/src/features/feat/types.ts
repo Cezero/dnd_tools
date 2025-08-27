@@ -1,5 +1,5 @@
 import {
-    GetFeatResponse,
+    Feat,
     GetAllFeatsResponse,
     FeatIdParamRequest,
     UpdateFeatRequest,
@@ -12,7 +12,7 @@ import {
 
 export interface FeatService {
     getAllFeats: () => Promise<GetAllFeatsResponse>;
-    getFeatById: (id: FeatIdParamRequest) => Promise<GetFeatResponse | null>;
+    getFeatById: (id: FeatIdParamRequest) => Promise<Feat | null>;
     featQuery: (query: FeatQueryRequest) => Promise<FeatQueryResponse>;
     createFeat: (data: CreateFeatRequest) => Promise<CreateResponse>;
     updateFeat: (id: FeatIdParamRequest, data: UpdateFeatRequest) => Promise<UpdateResponse>;

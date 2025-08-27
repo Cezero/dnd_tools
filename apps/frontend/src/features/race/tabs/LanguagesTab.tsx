@@ -1,16 +1,15 @@
+import { TrashIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 
-import { TrashIcon } from '@heroicons/react/24/outline';
-
-import { LANGUAGE_SELECT_LIST } from '@shared/static-data';
 
 import { CustomSelect } from '@/components/forms/FormComponents';
-import { LanguageService } from '../../../lib/LanguageService';
+import { LANGUAGE_SELECT_LIST } from '@shared/static-data';
 
 import type { RaceTabProps } from './types';
+import { LanguageService } from '../../../lib/LanguageService';
 
 export function LanguagesTab({
-    formData,
+    formData: _formData,
     featureProgressions = [],
     onAddLanguage,
     onRemoveLanguage

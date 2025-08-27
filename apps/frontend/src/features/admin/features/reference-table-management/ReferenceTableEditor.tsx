@@ -1,11 +1,10 @@
 import * as mdiIcons from '@mdi/js';
 import Icon from '@mdi/react';
-import { useReactTable } from '@tanstack/react-table';
 import React, { useEffect, useState, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 
-import { ReferenceTableService } from '@/features/admin/features/reference-table-management/ReferenceTableService';
+import { ReferenceTableApi } from '@/features/admin/features/reference-table-management/ReferenceTableApi';
 import { ReferenceTableUpdate } from '@shared/schema/referencetables';
 
 const {
@@ -231,7 +230,7 @@ export function ReferenceTableEditor() {
                 setTableSlug('');
                 setLoading(false);
             } else {
-                const tableData = await ReferenceTableService.getReferenceTableByIdentifier(undefined, { slug: slug });
+                const tableData = await ReferenceTableApi.getReferenceTableByIdentifier(undefined, { slug: slug });
                 const { columns, rows } = tableData;
                 setTableName(tableData.name);
                 setTableDescription(tableData.description ?? '');
@@ -414,11 +413,11 @@ export function ReferenceTableEditor() {
         console.log('[ReferenceTableEditor:HandleSave] tableData', tableData);
         try {
             if (slug === 'new') {
-                const response = await ReferenceTableService.createReferenceTable(tableData);
+                const response = await ReferenceTableApi.createReferenceTable(tableData);
                 setTableId(response.id); // Update tableId with the new slug
                 navigate('/admin/referencetables');
             } else {
-                await ReferenceTableService.updateReferenceTable(tableData, { slug: tableSlug });
+                await ReferenceTableApi.updateReferenceTable(tableData, { slug: tableSlug });
                 navigate('/admin/referencetables');
             }
         } catch (error) {

@@ -1,7 +1,26 @@
-import type { FeatureProgressionWithRelations } from '@shared/schema';
+import type { FeatureProgression } from '@shared/schema';
 
 // Feature system specific types
 // These types are used for feature data management and UI state
+
+export interface ProficiencyFeat {
+    id: number;
+    name: string;
+    proficiencyTypeId: number;
+}
+
+export interface ProficiencyItem {
+    id: number;
+    name: string;
+    typeId: number;
+    weapon?: {
+        category: number;
+        type: number;
+    };
+    armor?: {
+        category: number;
+    };
+}
 
 // Feature form state
 export interface FeatureFormState {
@@ -49,7 +68,7 @@ export interface FeaturePaginationState {
 
 // Feature list state
 export interface FeatureListState {
-    features: FeatureProgressionWithRelations[];
+    features: FeatureProgression[];
     loading: boolean;
     error?: string;
     filter: FeatureFilterState;
@@ -59,16 +78,16 @@ export interface FeatureListState {
 
 // Feature detail state
 export interface FeatureDetailState {
-    feature?: FeatureProgressionWithRelations;
-    progressions: FeatureProgressionWithRelations[];
+    feature?: FeatureProgression;
+    progressions: FeatureProgression[];
     loading: boolean;
     error?: string;
 }
 
 // Feature edit state
 export interface FeatureEditState {
-    originalFeature?: FeatureProgressionWithRelations;
-    editedFeature?: FeatureProgressionWithRelations;
+    originalFeature?: FeatureProgression;
+    editedFeature?: FeatureProgression;
     isDirty: boolean;
     saving: boolean;
     error?: string;

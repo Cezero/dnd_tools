@@ -1,11 +1,8 @@
+import { CreateFeatureProgressionRequest } from '@shared/schema';
 import {
     SpecialFeatureId,
-    ModifierAppliesToType,
-    ModifierType,
-    FeatureSourceType,
-    FeatureModifierConditionType
+    ModifierAppliesToType
 } from '@shared/static-data';
-import { CreateFeatureProgressionRequest } from '@shared/schema';
 
 // Type definitions for feature progressions with relations
 interface FeatureModifier {
@@ -43,7 +40,7 @@ interface FeatureProgressionWithRelations {
     // REMOVED: appliesToType and appliesTo - redundant with SpecialFeatureId
     modifiers?: FeatureModifier[];
     choices?: FeatureChoice[];
-    effects?: any[];
+    effects?: unknown[];
 }
 
 export class LanguageService {
@@ -135,7 +132,7 @@ export class LanguageService {
      * @returns True if this is a class language feature
      */
     static isClassLanguageFeature(progression: FeatureProgressionWithRelations | CreateFeatureProgressionRequest): boolean {
-        return progression.sourceType === FeatureSourceType.Class &&
+        return progression.sourceType === 1 && // FeatureSourceType.Class
             (progression.featureId === SpecialFeatureId.AutomaticLanguage || progression.featureId === SpecialFeatureId.BonusLanguage);
     }
 

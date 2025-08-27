@@ -1,10 +1,9 @@
-import { Prisma, PrismaClient } from '@shared/prisma-client';
+import { Feat, Prisma, PrismaClient } from '@shared/prisma-client';
 import {
     FeatIdParamRequest,
     CreateFeatRequest,
     UpdateFeatRequest,
     GetAllFeatsResponse,
-    GetFeatResponse,
     CreateResponse,
     UpdateResponse,
     FeatQueryResponse,
@@ -30,8 +29,6 @@ export const featService: FeatService = {
             results: feats,
         };
     },
-
-
 
     async featQuery(query: FeatQueryRequest): Promise<FeatQueryResponse> {
         let whereClause: Prisma.FeatWhereInput = {};
@@ -64,7 +61,7 @@ export const featService: FeatService = {
         };
     },
 
-    async getFeatById(query: FeatIdParamRequest): Promise<GetFeatResponse | null> {
+    async getFeatById(query: FeatIdParamRequest): Promise<Feat | null> {
         const feat = await prisma.feat.findUnique({
             where: { id: query.id },
             include: {
@@ -73,7 +70,7 @@ export const featService: FeatService = {
             },
         });
 
-        return feat as GetFeatResponse;
+        return feat as Feat;
     },
 
     async createFeat(data: CreateFeatRequest): Promise<CreateResponse> {

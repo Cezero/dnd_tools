@@ -38,9 +38,8 @@ export const FeatureFormulaParamsSchema = z.object({
     interval: z.number().int().positive('Interval must be a positive integer').optional().nullable(),
     formulaStartLevel: z.number().int().positive('Formula start level must be a positive integer').optional().nullable(),
     abilityId: z.number().int().positive('Ability ID must be a positive integer').optional().nullable(),
-    // UPDATED: Convert to arrays for better validation and manipulation
-    thresholds: z.array(z.number().int()).nullable(), // Array of level thresholds (e.g., [4, 8, 12])
-    values: z.array(z.union([z.string(), z.number()])).nullable(), // Array of corresponding values (e.g., ["-2", "-1", 0] or [1, 2, 3])
+    thresholds: z.array(z.number().int()).nullable(),
+    values: z.array(z.union([z.string(), z.number()])).nullable(),
 });
 
 // Feature Modifier Schema
@@ -101,8 +100,6 @@ export const FeatureProgressionSchema = z.object({
     sourceType: z.number().int().min(0, 'Source type must be at least 0').max(1, 'Source type must be at most 1'),
     level: z.number().int().min(1, 'Level must be at least 1').max(20, 'Level must be at most 20'),
     featureId: z.number().int().positive('Feature ID must be a positive integer'),
-    // REMOVED: appliesToType - redundant with SpecialFeatureId
-    // REMOVED: appliesTo - redundant and always null in practice
     classId: z.number().int().nullable(),
     raceId: z.number().int().nullable(),
     feature: FeatureSchema.optional(),
@@ -116,6 +113,43 @@ export const FeatureProgressionSchema = z.object({
     spellcasting: SpellcastingLinkSchema.optional(),
 });
 
+export const CreateFeatureSpecialEffectSchema = FeatureSpecialEffectSchema.omit({
+    id: true,
+    progressionId: true,
+    feat: true,
+    item: true,
+});
+
+export const CreateFeatureModifierConditionSchema = FeatureModifierConditionSchema.omit({
+    id: true,
+    featureModifierId: true,
+});
+
+export const CreateFeatureFormulaParamsSchema = FeatureFormulaParamsSchema.omit({
+    id: true,
+});
+
+export const CreateFeatureModifierSchema = FeatureModifierSchema.omit({
+    id: true,
+    featureProgressionId: true,
+    conditions: true,
+    formulaParams: true,
+    formulaParamsId: true,
+}).extend({
+    conditions: z.array(CreateFeatureModifierConditionSchema).optional(),
+    formulaParams: CreateFeatureFormulaParamsSchema.optional().nullable(),
+});
+
+export const CreateFeatureChoiceSchema = FeatureChoiceSchema.omit({
+    id: true,
+    progressionId: true,
+    feat: true,
+    feature: true,
+    formulaParamsId: true,
+}).extend({
+    formulaParams: CreateFeatureFormulaParamsSchema.optional().nullable(),
+});
+
 // Schema for creating feature progressions (used in bulk operations)
 export const CreateFeatureProgressionSchema = FeatureProgressionSchema.omit({
     id: true,
@@ -123,38 +157,9 @@ export const CreateFeatureProgressionSchema = FeatureProgressionSchema.omit({
     class: true,
     spellcasting: true,
 }).extend({
-    modifiers: z.array(FeatureModifierSchema.omit({
-        id: true,
-        featureProgressionId: true,
-        conditions: true,
-        formulaParams: true,
-        formulaParamsId: true,
-    }).extend({
-        conditions: z.array(FeatureModifierConditionSchema.omit({
-            id: true,
-            featureModifierId: true,
-        })).optional(),
-        formulaParams: FeatureFormulaParamsSchema.omit({
-            id: true,
-        }).optional().nullable(),
-    })).optional(),
-    choices: z.array(FeatureChoiceSchema.omit({
-        id: true,
-        progressionId: true,
-        feat: true,
-        feature: true,
-        formulaParamsId: true, // Backend sets this
-    }).extend({
-        formulaParams: FeatureFormulaParamsSchema.omit({
-            id: true,
-        }).optional().nullable(),
-    })).optional(),
-    effects: z.array(FeatureSpecialEffectSchema.omit({
-        id: true,
-        progressionId: true,
-        feat: true,
-        item: true,
-    })).optional(),
+    modifiers: z.array(CreateFeatureModifierSchema).optional(),
+    choices: z.array(CreateFeatureChoiceSchema).optional(),
+    effects: z.array(CreateFeatureSpecialEffectSchema).optional(),
 });
 
 // Feature with relations (used for feature detail views)
@@ -215,7 +220,7 @@ export const CreateFeatureProgressionFormSchema = CreateFeatureProgressionSchema
 });
 
 // Type exports
-export type FeatureInQueryResponse = z.infer<typeof FeatureSchema>;
+export type Feature = z.infer<typeof FeatureSchema>;
 export type FeatureIdParamRequest = z.infer<typeof FeatureIdParamSchema>;
 export type FeatureSlugParamRequest = z.infer<typeof FeatureSlugParamSchema>;
 export type GetAllFeaturesResponse = z.infer<typeof GetAllFeaturesResponseSchema>;
@@ -225,14 +230,19 @@ export type GetFeatureResponse = z.infer<typeof GetFeatureResponseSchema>;
 export type FeatureIdParam = z.input<typeof FeatureIdParamSchema>;
 export type FeaturePrerequisite = z.infer<typeof FeaturePrerequisiteSchema>;
 export type FeatureWithRelations = z.infer<typeof FeatureWithRelationsSchema>;
-export type FeatureProgressionWithRelations = z.infer<typeof FeatureProgressionSchema>;
 export type CreateFeatureProgressionRequest = z.infer<typeof CreateFeatureProgressionSchema>;
 export type CreateFeatureProgressionFormRequest = z.infer<typeof CreateFeatureProgressionFormSchema>;
-export type FeatureProgressionInQueryResponse = z.infer<typeof FeatureProgressionSchema>;
-export type FeatureModifierInQueryResponse = z.infer<typeof FeatureModifierSchema>;
-export type FeatureSpecialEffectInQueryResponse = z.infer<typeof FeatureSpecialEffectSchema>;
-export type FeatureChoiceInQueryResponse = z.infer<typeof FeatureChoiceSchema>;
-export type FeatureModifierConditionInQueryResponse = z.infer<typeof FeatureModifierConditionSchema>;
+export type FeatureProgression = z.infer<typeof FeatureProgressionSchema>;
+export type FeatureModifier = z.infer<typeof FeatureModifierSchema>;
+export type CreateFeatureModifierRequest = z.infer<typeof CreateFeatureModifierSchema>;
+export type CreateFeatureSpecialEffectRequest = z.infer<typeof CreateFeatureSpecialEffectSchema>;
+export type CreateFeatureChoiceRequest = z.infer<typeof CreateFeatureChoiceSchema>;
+export type CreateFeatureModifierConditionRequest = z.infer<typeof CreateFeatureModifierConditionSchema>;
+export type CreateFeatureFormulaParamsRequest = z.infer<typeof CreateFeatureFormulaParamsSchema>;
+export type FeatureSpecialEffect = z.infer<typeof FeatureSpecialEffectSchema>;
+export type FeatureChoice = z.infer<typeof FeatureChoiceSchema>;
+export type FeatureModifierCondition = z.infer<typeof FeatureModifierConditionSchema>;
+export type FeatureFormulaParams = z.infer<typeof FeatureFormulaParamsSchema>;
 export type GetFeatureProgressionsResponse = z.infer<typeof GetFeatureProgressionsResponseSchema>;
 export type UpdateFeatureProgressionsRequest = z.infer<typeof UpdateFeatureProgressionsRequestSchema>;
 

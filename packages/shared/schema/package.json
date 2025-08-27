@@ -72,10 +72,6 @@
             "types": "./dist/spellcasting.d.ts",
             "import": "./dist/spellcasting.js"
         },
-        "./userProfile": {
-            "types": "./dist/userProfile.d.ts",
-            "import": "./dist/userProfile.js"
-        },
         "./item": {
             "types": "./dist/item.d.ts",
             "import": "./dist/item.js"

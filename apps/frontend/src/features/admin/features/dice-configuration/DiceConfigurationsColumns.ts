@@ -1,12 +1,11 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter, createEqualsFilter } from '@/components/generic-list/filterFunctions';
-import { formatColorWithSwatch } from '@/lib/ColorFormatters';
-import { DiceBoxAdminConfigInQueryResponse } from '@shared/schema';
+import { formatColorWithSwatch } from '@/lib/ColorFormattersUtils';
+import { DiceBoxAdminConfig } from '@shared/schema';
 import { getDiceThemeById, FilterType, THREE_D_DICE_THEME_SELECT_LIST } from '@shared/static-data';
 
-
-export const DICE_CONFIGURATION_COLUMNS: ColumnDef<DiceBoxAdminConfigInQueryResponse, unknown>[] = [
+export const DICE_CONFIGURATION_COLUMNS: ColumnDef<DiceBoxAdminConfig, unknown>[] = [
     {
         accessorKey: 'name',
         header: 'Configuration Name',
@@ -14,7 +13,7 @@ export const DICE_CONFIGURATION_COLUMNS: ColumnDef<DiceBoxAdminConfigInQueryResp
         enableColumnFilter: true,
         enableResizing: true,
         size: 200,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<DiceBoxAdminConfig>(),
         meta: {
             required: true,
             filterType: FilterType.TEXT_INPUT,
@@ -28,7 +27,7 @@ export const DICE_CONFIGURATION_COLUMNS: ColumnDef<DiceBoxAdminConfigInQueryResp
         enableColumnFilter: true,
         enableResizing: true,
         size: 80,
-        filterFn: createEqualsFilter(),
+        filterFn: createEqualsFilter<DiceBoxAdminConfig>(),
         cell: info => {
             const isDefault = info.getValue() as boolean;
             return isDefault ? 'Yes' : 'No';
@@ -48,7 +47,7 @@ export const DICE_CONFIGURATION_COLUMNS: ColumnDef<DiceBoxAdminConfigInQueryResp
         enableColumnFilter: true,
         enableResizing: true,
         size: 120,
-        filterFn: createEqualsFilter(),
+        filterFn: createEqualsFilter<DiceBoxAdminConfig>(),
         cell: info => {
             const themeId = info.getValue() as number;
             const theme = getDiceThemeById(themeId);
@@ -66,7 +65,7 @@ export const DICE_CONFIGURATION_COLUMNS: ColumnDef<DiceBoxAdminConfigInQueryResp
         enableColumnFilter: true,
         enableResizing: true,
         size: 120,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<DiceBoxAdminConfig>(),
         cell: info => {
             const color = info.getValue() as string;
             return formatColorWithSwatch(color);
@@ -83,7 +82,7 @@ export const DICE_CONFIGURATION_COLUMNS: ColumnDef<DiceBoxAdminConfigInQueryResp
         enableColumnFilter: true,
         enableResizing: true,
         size: 80,
-        filterFn: createEqualsFilter(),
+        filterFn: createEqualsFilter<DiceBoxAdminConfig>(),
         meta: {
             filterType: FilterType.TEXT_INPUT,
             placeholder: 'Filter by scale...'

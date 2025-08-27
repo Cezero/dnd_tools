@@ -1,6 +1,6 @@
 import { PrismaClient } from '@shared/prisma-client';
-import { ModifierAppliesToType } from '@shared/static-data';
 import type { CharacterWithAllDetailsResponse } from '@shared/schema';
+import { ModifierAppliesToType } from '@shared/static-data';
 
 const prisma = new PrismaClient();
 

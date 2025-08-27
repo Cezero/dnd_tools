@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { FeatService } from '@/features/feat/FeatService';
+import { FeatApi } from '@/features/feat/FeatApi';
 import { generateClassProgression } from '@/lib/ClassProgression';
 import { ClassProgressionTable } from '@/lib/ClassProgressionTable';
-import { formatterOrchestrator, formatClassProficiencies, formatPrerequisites } from '@/lib/formatters';
-import { GetClassResponse, FormatterMetadata } from '@shared/schema';
+import { displayStrategyFactory } from '@/lib/formatters';
+import type { FormatterMetadata } from '@/lib/formatters';
+import { DnDClass } from '@shared/schema';
 import {
+    DisplayType,
     RPG_DICE,
     EDITION_MAP,
     ABILITY_MAP,
@@ -17,7 +19,7 @@ import {
 } from '@shared/static-data';
 
 interface ClassDisplayProps {
-    cls: GetClassResponse;
+    cls: DnDClass;
     showHeader?: boolean;
     showActions?: boolean;
     onBack?: () => void;
@@ -96,7 +98,7 @@ export function ClassDisplay({
 
             if (hasFeatModifiers) {
                 try {
-                    const response = await FeatService.getFeats({});
+                    const response = await FeatApi.getFeats({});
                     setFeats(response.results || []);
                 } catch (error) {
                     console.error('Failed to load feats:', error);
@@ -227,17 +229,25 @@ export function ClassDisplay({
                             ) || [];
 
                         if (classProficiencies.length > 0) {
-                            const formattedProficiencies = formatClassProficiencies(classProficiencies);
-                            return (
-                                <div className="mt-4">
-                                    <h3 className="text-lg font-semibold mb-2">Class Proficiencies</h3>
-                                    <div className="flex flex-wrap gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md">
-                                        <span className="text-sm">
-                                            {formattedProficiencies}
-                                        </span>
+                            // Use display strategy to format proficiencies
+                            const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
+                            const proficiencyProgressions = enhancedFeatures?.filter(progression =>
+                                progression.featureId === SpecialFeatureId.ClassProficiency
+                            ) || [];
+
+                            if (proficiencyProgressions.length > 0) {
+                                const result = strategy.formatProgressions(proficiencyProgressions, undefined, formatterMetadata);
+                                return (
+                                    <div className="mt-4">
+                                        <h3 className="text-lg font-semibold mb-2">Class Proficiencies</h3>
+                                        <div className="flex flex-wrap gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md">
+                                            <span className="text-sm">
+                                                {result.formattedValue}
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
-                            );
+                                );
+                            }
                         }
                         return null;
                     })()}
@@ -259,71 +269,35 @@ export function ClassDisplay({
                         }) || [];
 
                         if (actualFeatures.length > 0) {
-                            // Get the level-indexed map from the orchestrator (this handles formula expansion)
-                            const levelMap = formatterOrchestrator.formatProgressionsForDetailDisplay(actualFeatures, undefined, formatterMetadata);
+                            // Use display strategy to format features
+                            const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
+                            const result = strategy.formatProgressions(actualFeatures, undefined, formatterMetadata);
 
                             // Track which features we've already shown descriptions for
-                            const shownFeatureDescriptions = new Set<number>();
+                            const _shownFeatureDescriptions = new Set<number>();
 
                             return (
                                 <div className="mt-4">
                                     <h3 className="text-lg font-semibold mb-2">Class Features</h3>
                                     <div className="space-y-4">
-                                        {/* Sort levels and render each group */}
-                                        {Array.from(levelMap.keys())
-                                            .sort((a, b) => a - b)
-                                            .map(level => {
-                                                const levelEntries = levelMap.get(level)!;
+                                        {/* Render level entries from the result */}
+                                        {result.levelEntries?.map(levelEntry => {
 
-                                                return (
-                                                    <div key={level} className="border border-gray-200 dark:border-gray-600 rounded-md p-3">
-                                                        <h4 className="text-md font-medium mb-2">Level {level}</h4>
-                                                        <div className="space-y-2">
-                                                            {levelEntries.map((entry, index) => {
-                                                                const feature = entry.feature;
-                                                                const isFirstOccurrence = feature?.id && !shownFeatureDescriptions.has(feature.id);
-
-                                                                // Mark this feature as shown if it's the first occurrence
-                                                                if (isFirstOccurrence && feature?.id) {
-                                                                    shownFeatureDescriptions.add(feature.id);
-                                                                }
-
-                                                                return (
-                                                                    <div key={`entry-${index}`} className="p-2">
-                                                                        {/* Show feature description only on first occurrence */}
-                                                                        {isFirstOccurrence && feature?.description && (
-                                                                            <div>
-                                                                                <ProcessMarkdown
-                                                                                    markdown={feature.description}
-                                                                                    id={`${cls.name.toLowerCase()}-feature-${feature.id}`}
-                                                                                    userVars={{
-                                                                                        classname: cls.name.toLowerCase()
-                                                                                    }}
-                                                                                />
-                                                                                {/* Show prerequisites if they exist */}
-                                                                                {(feature as { prerequisites?: unknown[] }).prerequisites && (feature as { prerequisites?: unknown[] }).prerequisites!.length > 0 && (
-                                                                                    <div className="mt-2 inline-block p-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-md">
-                                                                                        <p className="text-xs text-slate-700 dark:text-slate-300">
-                                                                                            <strong>Prerequisites:</strong> {formatPrerequisites((feature as { prerequisites?: unknown[] }).prerequisites!)}
-                                                                                        </p>
-                                                                                    </div>
-                                                                                )}
-                                                                            </div>
-                                                                        )}
-
-                                                                        {/* Show formatted entry */}
-                                                                        <div className={`mt-2 space-y-1 ${isFirstOccurrence ? 'ml-4' : ''}`}>
-                                                                            <div className="text-sm">
-                                                                                {!isFirstOccurrence && <span className="font-medium">{feature?.name || `Feature ${feature?.id}`}:</span>} {entry.formattedValue}
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
+                                            return (
+                                                <div key={levelEntry.level} className="border border-gray-200 dark:border-gray-600 rounded-md p-3">
+                                                    <h4 className="text-md font-medium mb-2">Level {levelEntry.level}</h4>
+                                                    <div className="space-y-2">
+                                                        {levelEntry.items?.map((entry, index) => (
+                                                            <div key={`entry-${index}`} className="p-2">
+                                                                <div className="text-sm">
+                                                                    {entry.formattedValue}
+                                                                </div>
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                );
-                                            })}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             );

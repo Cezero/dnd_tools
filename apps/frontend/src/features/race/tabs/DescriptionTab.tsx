@@ -8,7 +8,7 @@ export function DescriptionTab({
     formData,
     setFormData,
     validation,
-    isLoading = false
+    isLoading: _isLoading = false
 }: RaceTabProps): React.JSX.Element {
     return (
         <div className="p-6 space-y-6">
@@ -22,7 +22,7 @@ export function DescriptionTab({
                     <MarkdownEditor
                         id="description"
                         value={formData.description || ''}
-                        onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
+                        onChange={(value) => setFormData({ ...formData, description: value })}
                     />
                     {validation?.getError?.('description') && (
                         <span className="text-red-500 text-sm">{validation.getError('description')}</span>

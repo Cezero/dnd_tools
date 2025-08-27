@@ -3,7 +3,7 @@ import { ChevronUpIcon, ChevronDownIcon, TrashIcon } from '@heroicons/react/24/o
 import React, { useRef, useEffect, useState } from 'react';
 
 import { LogEntryComponent } from './LogEntry';
-import { useLogPanel } from './LogPanelProvider';
+import { useLogPanel } from './LogPanelHooks';
 
 export function LogPanel(): React.JSX.Element {
     const { entries, isOpen, setIsOpen, clearLog } = useLogPanel();

@@ -5,7 +5,7 @@ import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
 import { createSlugDeleteServiceFunction } from '@/components/generic-list/types';
 import { REFERENCE_TABLE_COLUMNS } from '@/features/admin/features/reference-table-management/ReferenceTableColumns';
-import { ReferenceTableService } from '@/features/admin/features/reference-table-management/ReferenceTableService';
+import { ReferenceTableApi } from '@/features/admin/features/reference-table-management/ReferenceTableApi';
 import { ReferenceTableSummary } from '@shared/schema';
 
 import { routes } from './ReferenceTableConfig';
@@ -37,10 +37,10 @@ export function ReferenceTablesList(): React.JSX.Element {
             <GenericList<ReferenceTableSummary>
                 storageKey="reference-tables-list"
                 columns={REFERENCE_TABLE_COLUMNS}
-                serviceFunction={() => ReferenceTableService.getReferenceTables({})}
+                serviceFunction={() => ReferenceTableApi.getReferenceTables({})}
                 itemDesc="reference table"
                 routes={routes}
-                deleteServiceFunction={createSlugDeleteServiceFunction(ReferenceTableService.deleteReferenceTable)}
+                deleteServiceFunction={createSlugDeleteServiceFunction(ReferenceTableApi.deleteReferenceTable)}
                 basePath="/admin"
             />
         </div>

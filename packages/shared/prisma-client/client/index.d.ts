@@ -30634,7 +30634,6 @@ export namespace Prisma {
     typeId: number | null
     referenceId: number | null
     amount: number | null
-    featureSlug: string | null
     index: number | null
   }
 
@@ -30643,7 +30642,6 @@ export namespace Prisma {
     typeId: number | null
     referenceId: number | null
     amount: number | null
-    featureSlug: string | null
     index: number | null
   }
 
@@ -30652,7 +30650,6 @@ export namespace Prisma {
     typeId: number
     referenceId: number
     amount: number
-    featureSlug: number
     index: number
     _all: number
   }
@@ -30679,7 +30676,6 @@ export namespace Prisma {
     typeId?: true
     referenceId?: true
     amount?: true
-    featureSlug?: true
     index?: true
   }
 
@@ -30688,7 +30684,6 @@ export namespace Prisma {
     typeId?: true
     referenceId?: true
     amount?: true
-    featureSlug?: true
     index?: true
   }
 
@@ -30697,7 +30692,6 @@ export namespace Prisma {
     typeId?: true
     referenceId?: true
     amount?: true
-    featureSlug?: true
     index?: true
     _all?: true
   }
@@ -30793,7 +30787,6 @@ export namespace Prisma {
     typeId: number
     referenceId: number | null
     amount: number | null
-    featureSlug: string | null
     index: number
     _count: FeatPrerequisiteMapCountAggregateOutputType | null
     _avg: FeatPrerequisiteMapAvgAggregateOutputType | null
@@ -30821,7 +30814,6 @@ export namespace Prisma {
     typeId?: boolean
     referenceId?: boolean
     amount?: boolean
-    featureSlug?: boolean
     index?: boolean
     feat?: boolean | FeatDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["featPrerequisiteMap"]>
@@ -30833,11 +30825,10 @@ export namespace Prisma {
     typeId?: boolean
     referenceId?: boolean
     amount?: boolean
-    featureSlug?: boolean
     index?: boolean
   }
 
-  export type FeatPrerequisiteMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"featId" | "typeId" | "referenceId" | "amount" | "featureSlug" | "index", ExtArgs["result"]["featPrerequisiteMap"]>
+  export type FeatPrerequisiteMapOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"featId" | "typeId" | "referenceId" | "amount" | "index", ExtArgs["result"]["featPrerequisiteMap"]>
   export type FeatPrerequisiteMapInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     feat?: boolean | FeatDefaultArgs<ExtArgs>
   }
@@ -30852,7 +30843,6 @@ export namespace Prisma {
       typeId: number
       referenceId: number | null
       amount: number | null
-      featureSlug: string | null
       index: number
     }, ExtArgs["result"]["featPrerequisiteMap"]>
     composites: {}
@@ -31228,7 +31218,6 @@ export namespace Prisma {
     readonly typeId: FieldRef<"FeatPrerequisiteMap", 'Int'>
     readonly referenceId: FieldRef<"FeatPrerequisiteMap", 'Int'>
     readonly amount: FieldRef<"FeatPrerequisiteMap", 'Int'>
-    readonly featureSlug: FieldRef<"FeatPrerequisiteMap", 'String'>
     readonly index: FieldRef<"FeatPrerequisiteMap", 'Int'>
   }
     
@@ -62558,7 +62547,6 @@ export namespace Prisma {
     typeId: 'typeId',
     referenceId: 'referenceId',
     amount: 'amount',
-    featureSlug: 'featureSlug',
     index: 'index'
   };
 
@@ -63031,13 +63019,6 @@ export namespace Prisma {
   };
 
   export type FeatOrderByRelevanceFieldEnum = (typeof FeatOrderByRelevanceFieldEnum)[keyof typeof FeatOrderByRelevanceFieldEnum]
-
-
-  export const FeatPrerequisiteMapOrderByRelevanceFieldEnum: {
-    featureSlug: 'featureSlug'
-  };
-
-  export type FeatPrerequisiteMapOrderByRelevanceFieldEnum = (typeof FeatPrerequisiteMapOrderByRelevanceFieldEnum)[keyof typeof FeatPrerequisiteMapOrderByRelevanceFieldEnum]
 
 
   export const RaceOrderByRelevanceFieldEnum: {
@@ -64903,7 +64884,6 @@ export namespace Prisma {
     typeId?: IntFilter<"FeatPrerequisiteMap"> | number
     referenceId?: IntNullableFilter<"FeatPrerequisiteMap"> | number | null
     amount?: IntNullableFilter<"FeatPrerequisiteMap"> | number | null
-    featureSlug?: StringNullableFilter<"FeatPrerequisiteMap"> | string | null
     index?: IntFilter<"FeatPrerequisiteMap"> | number
     feat?: XOR<FeatScalarRelationFilter, FeatWhereInput>
   }
@@ -64913,10 +64893,8 @@ export namespace Prisma {
     typeId?: SortOrder
     referenceId?: SortOrderInput | SortOrder
     amount?: SortOrderInput | SortOrder
-    featureSlug?: SortOrderInput | SortOrder
     index?: SortOrder
     feat?: FeatOrderByWithRelationInput
-    _relevance?: FeatPrerequisiteMapOrderByRelevanceInput
   }
 
   export type FeatPrerequisiteMapWhereUniqueInput = Prisma.AtLeast<{
@@ -64928,7 +64906,6 @@ export namespace Prisma {
     typeId?: IntFilter<"FeatPrerequisiteMap"> | number
     referenceId?: IntNullableFilter<"FeatPrerequisiteMap"> | number | null
     amount?: IntNullableFilter<"FeatPrerequisiteMap"> | number | null
-    featureSlug?: StringNullableFilter<"FeatPrerequisiteMap"> | string | null
     index?: IntFilter<"FeatPrerequisiteMap"> | number
     feat?: XOR<FeatScalarRelationFilter, FeatWhereInput>
   }, "featId_index">
@@ -64938,7 +64915,6 @@ export namespace Prisma {
     typeId?: SortOrder
     referenceId?: SortOrderInput | SortOrder
     amount?: SortOrderInput | SortOrder
-    featureSlug?: SortOrderInput | SortOrder
     index?: SortOrder
     _count?: FeatPrerequisiteMapCountOrderByAggregateInput
     _avg?: FeatPrerequisiteMapAvgOrderByAggregateInput
@@ -64955,7 +64931,6 @@ export namespace Prisma {
     typeId?: IntWithAggregatesFilter<"FeatPrerequisiteMap"> | number
     referenceId?: IntNullableWithAggregatesFilter<"FeatPrerequisiteMap"> | number | null
     amount?: IntNullableWithAggregatesFilter<"FeatPrerequisiteMap"> | number | null
-    featureSlug?: StringNullableWithAggregatesFilter<"FeatPrerequisiteMap"> | string | null
     index?: IntWithAggregatesFilter<"FeatPrerequisiteMap"> | number
   }
 
@@ -68573,7 +68548,6 @@ export namespace Prisma {
     typeId: number
     referenceId?: number | null
     amount?: number | null
-    featureSlug?: string | null
     index: number
     feat: FeatCreateNestedOneWithoutPrereqsInput
   }
@@ -68583,7 +68557,6 @@ export namespace Prisma {
     typeId: number
     referenceId?: number | null
     amount?: number | null
-    featureSlug?: string | null
     index: number
   }
 
@@ -68591,7 +68564,6 @@ export namespace Prisma {
     typeId?: IntFieldUpdateOperationsInput | number
     referenceId?: NullableIntFieldUpdateOperationsInput | number | null
     amount?: NullableIntFieldUpdateOperationsInput | number | null
-    featureSlug?: NullableStringFieldUpdateOperationsInput | string | null
     index?: IntFieldUpdateOperationsInput | number
     feat?: FeatUpdateOneRequiredWithoutPrereqsNestedInput
   }
@@ -68601,7 +68573,6 @@ export namespace Prisma {
     typeId?: IntFieldUpdateOperationsInput | number
     referenceId?: NullableIntFieldUpdateOperationsInput | number | null
     amount?: NullableIntFieldUpdateOperationsInput | number | null
-    featureSlug?: NullableStringFieldUpdateOperationsInput | string | null
     index?: IntFieldUpdateOperationsInput | number
   }
 
@@ -68610,7 +68581,6 @@ export namespace Prisma {
     typeId: number
     referenceId?: number | null
     amount?: number | null
-    featureSlug?: string | null
     index: number
   }
 
@@ -68618,7 +68588,6 @@ export namespace Prisma {
     typeId?: IntFieldUpdateOperationsInput | number
     referenceId?: NullableIntFieldUpdateOperationsInput | number | null
     amount?: NullableIntFieldUpdateOperationsInput | number | null
-    featureSlug?: NullableStringFieldUpdateOperationsInput | string | null
     index?: IntFieldUpdateOperationsInput | number
   }
 
@@ -68627,7 +68596,6 @@ export namespace Prisma {
     typeId?: IntFieldUpdateOperationsInput | number
     referenceId?: NullableIntFieldUpdateOperationsInput | number | null
     amount?: NullableIntFieldUpdateOperationsInput | number | null
-    featureSlug?: NullableStringFieldUpdateOperationsInput | string | null
     index?: IntFieldUpdateOperationsInput | number
   }
 
@@ -72122,12 +72090,6 @@ export namespace Prisma {
     index?: SortOrder
   }
 
-  export type FeatPrerequisiteMapOrderByRelevanceInput = {
-    fields: FeatPrerequisiteMapOrderByRelevanceFieldEnum | FeatPrerequisiteMapOrderByRelevanceFieldEnum[]
-    sort: SortOrder
-    search: string
-  }
-
   export type FeatPrerequisiteMapFeatIdIndexCompoundUniqueInput = {
     featId: number
     index: number
@@ -72138,7 +72100,6 @@ export namespace Prisma {
     typeId?: SortOrder
     referenceId?: SortOrder
     amount?: SortOrder
-    featureSlug?: SortOrder
     index?: SortOrder
   }
 
@@ -72155,7 +72116,6 @@ export namespace Prisma {
     typeId?: SortOrder
     referenceId?: SortOrder
     amount?: SortOrder
-    featureSlug?: SortOrder
     index?: SortOrder
   }
 
@@ -72164,7 +72124,6 @@ export namespace Prisma {
     typeId?: SortOrder
     referenceId?: SortOrder
     amount?: SortOrder
-    featureSlug?: SortOrder
     index?: SortOrder
   }
 
@@ -82680,7 +82639,6 @@ export namespace Prisma {
     typeId: number
     referenceId?: number | null
     amount?: number | null
-    featureSlug?: string | null
     index: number
   }
 
@@ -82688,7 +82646,6 @@ export namespace Prisma {
     typeId: number
     referenceId?: number | null
     amount?: number | null
-    featureSlug?: string | null
     index: number
   }
 
@@ -82854,7 +82811,6 @@ export namespace Prisma {
     typeId?: IntFilter<"FeatPrerequisiteMap"> | number
     referenceId?: IntNullableFilter<"FeatPrerequisiteMap"> | number | null
     amount?: IntNullableFilter<"FeatPrerequisiteMap"> | number | null
-    featureSlug?: StringNullableFilter<"FeatPrerequisiteMap"> | string | null
     index?: IntFilter<"FeatPrerequisiteMap"> | number
   }
 
@@ -88972,7 +88928,6 @@ export namespace Prisma {
     typeId: number
     referenceId?: number | null
     amount?: number | null
-    featureSlug?: string | null
     index: number
   }
 
@@ -89032,7 +88987,6 @@ export namespace Prisma {
     typeId?: IntFieldUpdateOperationsInput | number
     referenceId?: NullableIntFieldUpdateOperationsInput | number | null
     amount?: NullableIntFieldUpdateOperationsInput | number | null
-    featureSlug?: NullableStringFieldUpdateOperationsInput | string | null
     index?: IntFieldUpdateOperationsInput | number
   }
 
@@ -89040,7 +88994,6 @@ export namespace Prisma {
     typeId?: IntFieldUpdateOperationsInput | number
     referenceId?: NullableIntFieldUpdateOperationsInput | number | null
     amount?: NullableIntFieldUpdateOperationsInput | number | null
-    featureSlug?: NullableStringFieldUpdateOperationsInput | string | null
     index?: IntFieldUpdateOperationsInput | number
   }
 
@@ -89048,7 +89001,6 @@ export namespace Prisma {
     typeId?: IntFieldUpdateOperationsInput | number
     referenceId?: NullableIntFieldUpdateOperationsInput | number | null
     amount?: NullableIntFieldUpdateOperationsInput | number | null
-    featureSlug?: NullableStringFieldUpdateOperationsInput | string | null
     index?: IntFieldUpdateOperationsInput | number
   }
 

@@ -1,6 +1,4 @@
-import { Checkbox } from '@base-ui-components/react/checkbox';
-import { Select } from '@base-ui-components/react/select';
-import { ChevronUpDownIcon } from '@heroicons/react/24/solid';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
@@ -13,9 +11,9 @@ import {
 } from '@/components/forms';
 import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
-import { SkillService } from '@/features/skill/SkillService';
+import { SkillApi } from '@/features/skill/SkillApi';
 import { CreateSkillSchema, UpdateSkillSchema } from '@shared/schema';
-import { ABILITY_MAP, ABILITY_SELECT_LIST, SKILL_RETRY_TYPE_MAP } from '@shared/static-data';
+import { ABILITY_SELECT_LIST, SKILL_RETRY_TYPE_MAP } from '@shared/static-data';
 
 
 // Type definitions for the form state
@@ -76,7 +74,7 @@ export function SkillEdit() {
 
             try {
                 setIsLoading(true);
-                const fetchedSkill = await SkillService.getSkillById(undefined, { id: parseInt(id) });
+                const fetchedSkill = await SkillApi.getSkillById(undefined, { id: parseInt(id) });
                 setSkill(fetchedSkill);
                 setFormData(fetchedSkill);
             } catch (err) {
@@ -102,11 +100,11 @@ export function SkillEdit() {
         try {
             setIsLoading(true);
             if (id === 'new') {
-                const newSkill = await SkillService.createSkill(formData as z.infer<typeof CreateSkillSchema>);
+                const newSkill = await SkillApi.createSkill(formData as z.infer<typeof CreateSkillSchema>);
                 setMessage('Skill created successfully!');
                 setTimeout(() => navigate(`/skills/${newSkill.id}`, { state: { fromListParams: fromListParams, refresh: true } }), 1500);
             } else {
-                await SkillService.updateSkill(formData as z.infer<typeof UpdateSkillSchema>, { id: parseInt(id) });
+                await SkillApi.updateSkill(formData as z.infer<typeof UpdateSkillSchema>, { id: parseInt(id) });
                 setMessage('Skill updated successfully!');
                 navigate(`/skills/${id}`, { state: { fromListParams: fromListParams, refresh: true } });
             }

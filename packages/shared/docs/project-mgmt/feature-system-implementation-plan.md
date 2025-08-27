@@ -333,7 +333,7 @@ The system currently has **two separate but overlapping choice mechanisms** that
 **Phase 1 COMPLETED**:
 - ✅ Created shared FeaturesTab component at `frontend/src/components/feature-system/FeaturesTab.tsx`
 - ✅ Added context-specific configuration (class/race, contextId, excludeSpecialFeatures)
-- ✅ Updated FeatureSelectionDialog to support both classId and raceId
+- ✅ Replaced FeatureSelectionDialog with ListSelectionDialog for consistency and better type safety
 - ✅ Refactored ClassEdit FeaturesTab to use shared component
 - ✅ Verified ClassEdit functionality remains intact
 

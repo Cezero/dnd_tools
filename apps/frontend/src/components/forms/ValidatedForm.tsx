@@ -1,27 +1,10 @@
 import { Select } from '@base-ui-components/react/select';
 import { ChevronUpDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import React, { forwardRef, createContext, useContext } from 'react';
-import { z } from 'zod';
+import React, { forwardRef } from 'react';
 
-import { useZodValidation, type ValidationState } from '@/hooks/useZodValidation';
+import { type ValidationState } from '@/hooks/useZodValidation';
 
-// Form Context
-interface FormContextType {
-    formData: Record<string, unknown>;
-    setFormData: (data: Record<string, unknown> | ((prev: Record<string, unknown>) => Record<string, unknown>)) => void;
-    validation: ReturnType<typeof useZodValidation>;
-}
-
-const FormContext = createContext<FormContextType | null>(null);
-
-// Hook to use form context
-export function useFormContext() {
-    const context = useContext(FormContext);
-    if (!context) {
-        throw new Error('ValidatedInput must be used within a ValidatedForm');
-    }
-    return context;
-}
+import { FormContext, useFormContext } from './ValidatedFormHooks';
 
 // Validated Input Component
 export interface ValidatedInputProps {
@@ -292,7 +275,7 @@ export interface ValidatedFormProps {
     className?: string;
     formData: Record<string, unknown>;
     setFormData: (data: Record<string, unknown> | ((prev: Record<string, unknown>) => Record<string, unknown>)) => void;
-    validation: ReturnType<typeof useZodValidation>;
+    validation: ReturnType<typeof import('@/hooks/useZodValidation').useZodValidation>;
 }
 
 export const ValidatedForm: React.FC<ValidatedFormProps> = ({
@@ -326,18 +309,4 @@ export const ValidatedForm: React.FC<ValidatedFormProps> = ({
     );
 };
 
-// Hook for creating validated form fields
-export function useValidatedForm<T extends z.ZodSchema>(
-    schema: T,
-    formData: Record<string, unknown>,
-    setFormData: (data: Record<string, unknown> | ((prev: Record<string, unknown>) => Record<string, unknown>)) => void,
-    options?: Parameters<typeof useZodValidation>[1]
-) {
-    const validation = useZodValidation(schema, options);
 
-    return {
-        formData,
-        setFormData,
-        validation,
-    };
-} 

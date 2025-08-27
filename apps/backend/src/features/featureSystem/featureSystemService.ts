@@ -8,7 +8,7 @@ import {
     CreateResponse,
     UpdateResponse,
     CreateFeatureProgressionRequest,
-    FeatureProgressionWithRelations,
+    FeatureProgression,
 } from '@shared/schema';
 
 import type { FeatureSystemService } from './types';
@@ -620,7 +620,7 @@ export const featureSystemService: FeatureSystemService = {
         return { message: 'Feature progressions updated successfully' };
     },
 
-    async getFeatureProgressions(featureId: number): Promise<FeatureProgressionWithRelations[]> {
+    async getFeatureProgressions(featureId: number): Promise<FeatureProgression[]> {
         const progressions = await prisma.featureProgression.findMany({
             where: { featureId },
             include: {
@@ -683,6 +683,6 @@ export const featureSystemService: FeatureSystemService = {
             }))
         }));
 
-        return transformedProgressions as FeatureProgressionWithRelations[];
+        return transformedProgressions as FeatureProgression[];
     },
 }; 

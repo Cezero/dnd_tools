@@ -1,7 +1,7 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter, createEqualsFilter, createArrayIdFilter } from '@/components/generic-list/filterFunctions';
-import { ClassInQueryResponse } from '@shared/schema';
+import { ClassSummary } from '@shared/schema';
 import {
     RPG_DICE_SELECT_LIST,
     ABILITY_SELECT_LIST,
@@ -49,7 +49,7 @@ const getSourceBookOptionsForEdition = (currentFilters: Array<{ id: string; valu
     }));
 };
 
-export const CLASS_COLUMNS: ColumnDef<ClassInQueryResponse, unknown>[] = [
+export const CLASS_COLUMNS: ColumnDef<ClassSummary, unknown>[] = [
     {
         accessorKey: 'name',
         header: 'Name',
@@ -57,7 +57,7 @@ export const CLASS_COLUMNS: ColumnDef<ClassInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 150,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<ClassSummary>(),
         meta: {
             required: true,
             filterType: FilterType.TEXT_INPUT,
@@ -78,7 +78,7 @@ export const CLASS_COLUMNS: ColumnDef<ClassInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 100,
-        filterFn: createArrayIdFilter('editionId'),
+        filterFn: createArrayIdFilter<ClassSummary>('editionId'),
         cell: info => {
             const editionId = info.getValue() as number;
             return EDITION_MAP[editionId]?.abbreviation || '';
@@ -95,7 +95,7 @@ export const CLASS_COLUMNS: ColumnDef<ClassInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 120,
-        filterFn: createEqualsFilter(),
+        filterFn: createEqualsFilter<ClassSummary>(),
         cell: info => {
             const isPrestige = info.getValue() as boolean;
             return isPrestige ? 'Yes' : 'No';
@@ -115,7 +115,7 @@ export const CLASS_COLUMNS: ColumnDef<ClassInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 100,
-        filterFn: createEqualsFilter(),
+        filterFn: createEqualsFilter<ClassSummary>(),
         cell: info => {
             const canCastSpells = info.getValue() as boolean;
             return canCastSpells ? 'Yes' : 'No';
@@ -135,7 +135,7 @@ export const CLASS_COLUMNS: ColumnDef<ClassInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 100,
-        filterFn: createEqualsFilter(),
+        filterFn: createEqualsFilter<ClassSummary>(),
         cell: info => {
             const hitDie = info.getValue() as number;
             return RPG_DICE[hitDie]?.name || 'Unknown';
@@ -152,7 +152,7 @@ export const CLASS_COLUMNS: ColumnDef<ClassInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 100,
-        filterFn: createEqualsFilter(),
+        filterFn: createEqualsFilter<ClassSummary>(),
         cell: info => {
             const isVisible = info.getValue() as boolean;
             return isVisible ? 'Yes' : 'No';
@@ -179,7 +179,7 @@ export const CLASS_COLUMNS: ColumnDef<ClassInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 120,
-        filterFn: createEqualsFilter(),
+        filterFn: createEqualsFilter<ClassSummary>(),
         cell: info => {
             const castingAbilityId = info.getValue() as number | null;
             return castingAbilityId ? ABILITY_MAP[castingAbilityId]?.name || 'Unknown' : 'None';
@@ -205,7 +205,7 @@ export const CLASS_COLUMNS: ColumnDef<ClassInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 150,
-        filterFn: createArrayIdFilter('sourceBookId'),
+        filterFn: createArrayIdFilter<ClassSummary>('sourceBookId'),
         cell: info => {
             const sourceBookInfo = info.getValue() as { sourceBookId: number; pageNumber: number }[];
             if (sourceBookInfo && sourceBookInfo.length > 0) {

@@ -3,14 +3,14 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { FeatureDetail, FeatureEdit } from '@/components/feature-system';
+import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { GenericList } from '@/components/generic-list/GenericList';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
-import { FeatureSystemService } from '@/services/FeatureSystemService';
-import { ClassInQueryResponse, FeatureInQueryResponse } from '@shared/schema';
+import { ClassSummary, Feature } from '@shared/schema';
 
+import { ClassApi } from './ClassApi';
 import { CLASS_COLUMNS } from './ClassColumns';
 import { routes } from './ClassConfig';
-import { ClassService } from './ClassService';
 import { FEATURE_COLUMNS } from './FeatureColumns';
 
 export default function ClassList(): React.JSX.Element {
@@ -51,13 +51,13 @@ export default function ClassList(): React.JSX.Element {
                 </div>
             )}
             <div id="classes-list-container">
-                <GenericList<ClassInQueryResponse>
+                <GenericList<ClassSummary>
                     storageKey="classes-list"
                     columns={CLASS_COLUMNS}
-                    serviceFunction={() => ClassService.getClasses({})}
+                    serviceFunction={() => ClassApi.getClasses({})}
                     itemDesc="class"
                     routes={routes}
-                    deleteServiceFunction={createIdDeleteServiceFunction(ClassService.deleteClass)}
+                    deleteServiceFunction={createIdDeleteServiceFunction(ClassApi.deleteClass)}
                 />
             </div>
 
@@ -73,10 +73,10 @@ export default function ClassList(): React.JSX.Element {
                         </button>
                     </div>
                     <div id="features-list-container">
-                        <GenericList<FeatureInQueryResponse>
+                        <GenericList<Feature>
                             storageKey="features-list"
                             columns={FEATURE_COLUMNS}
-                            serviceFunction={() => FeatureSystemService.getFeatures({ sourceType: 1 })}
+                            serviceFunction={() => FeatureSystemApi.getFeatures({ sourceType: 1 })}
                             itemDesc="feature"
                             routes={[
                                 { path: 'features/:id', component: FeatureDetail, exact: true, requireAuth: true, requireAdmin: true, routeType: 'detail' },
@@ -92,7 +92,7 @@ export default function ClassList(): React.JSX.Element {
                                     });
                                 }
                             }}
-                            deleteServiceFunction={createIdDeleteServiceFunction(FeatureSystemService.deleteFeature)}
+                            deleteServiceFunction={createIdDeleteServiceFunction(FeatureSystemApi.deleteFeature)}
                         />
                     </div>
                 </>

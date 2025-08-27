@@ -2,14 +2,13 @@ import pluralize from 'pluralize';
 import React from 'react';
 
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { formatterOrchestrator } from '@/lib/formatters';
-import { LanguageService } from '../../lib/LanguageService';
-
-import { GetRaceResponse, FormatterMetadata } from '@shared/schema';
-import { SIZE_MAP, LANGUAGE_MAP, EDITION_MAP, ABILITY_MAP, CLASS_MAP, ModifierAppliesToType, ABILITY_LIST, SpecialFeatureId } from '@shared/static-data';
+import { displayStrategyFactory, FormatterMetadata } from '@/lib/formatters';
+import { LanguageService } from '@/lib/LanguageService';
+import { Race } from '@shared/schema';
+import { DisplayType , SIZE_MAP, LANGUAGE_MAP, EDITION_MAP, ABILITY_MAP, CLASS_MAP, ModifierAppliesToType, ABILITY_LIST, SpecialFeatureId } from '@shared/static-data';
 
 interface RaceDisplayProps {
-    race: GetRaceResponse;
+    race: Race;
     showHeader?: boolean;
     showActions?: boolean;
     onBack?: () => void;
@@ -184,7 +183,9 @@ export function RaceDisplay({
                                                         (featureProg.choices && featureProg.choices.length > 0);
 
                                                     if (hasDetails) {
-                                                        const formattedEntries = formatterOrchestrator.formatProgressionsForDetailDisplay([featureProg], undefined, formatterMetadata).get(featureProg.level) || [];
+                                                        const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
+                                                        const result = strategy.formatProgressions([featureProg], undefined, formatterMetadata);
+                                                        const formattedEntries = result.levelEntries?.find(entry => entry.level === featureProg.level)?.items || [];
 
                                                         if (formattedEntries.length > 0) {
                                                             return (

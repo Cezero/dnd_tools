@@ -68,9 +68,9 @@ export function createTable(rawValue: string, props: MarkdownComponentProps, opt
 
 // Directive processor map
 export const directiveProcessors: Record<string, (rawValue: string, props: MarkdownComponentProps, options: MarkdownProcessingOptions) => ElementContent> = {
-    spell: (rawValue, props, options) => createEntityLink('spell', rawValue),
-    class: (rawValue, props, options) => createEntityLink('class', rawValue),
-    dice: (rawValue, props, options) => createDiceButton(rawValue),
-    var: (rawValue, props, options) => createVariable(rawValue, props),
+    spell: (rawValue, _props, _options) => createEntityLink('spell', rawValue),
+    class: (rawValue, _props, _options) => createEntityLink('class', rawValue),
+    dice: (rawValue, _props, _options) => createDiceButton(rawValue),
+    var: (rawValue, props, _options) => createVariable(rawValue, props),
     table: (rawValue, props, options) => createTable(rawValue, props, options),
 }; 

@@ -1,10 +1,10 @@
 import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 import { useDiceBox } from '@/components/dice-box';
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import type { RaceInQueryResponse, GetRaceResponse, CharacterWithAllDetailsResponse } from '@shared/schema';
+import type { RaceSummary, Race, CharacterWithAllDetailsResponse } from '@shared/schema';
 import {
     ABILITY_LIST,
     ABILITY_MAP,
@@ -14,15 +14,14 @@ import {
     GetPointBuyCost,
     LANGUAGE_MAP,
     SIZE_MAP,
-    EDITION_MAP,
     CLASS_MAP
 } from '@shared/static-data';
 
 interface AbilitiesRaceTabProps {
     character: CharacterWithAllDetailsResponse;
     onUpdate: (data: Partial<CharacterWithAllDetailsResponse>) => void;
-    races?: RaceInQueryResponse[];
-    selectedRaceDetails?: GetRaceResponse | null;
+    races?: RaceSummary[];
+    selectedRaceDetails?: Race | null;
 }
 
 export function AbilitiesRaceTab({
@@ -35,11 +34,84 @@ export function AbilitiesRaceTab({
     const [generationMethod, setGenerationMethod] = useState<string>('manual');
     const [rolledValues, setRolledValues] = useState<number[]>([]);
     const [isRollingAbilitySet, setIsRollingAbilitySet] = useState(false);
-    const [pendingRolls, setPendingRolls] = useState<Set<string>>(new Set());
-    const [assignedAbilitiesForOrder, setAssignedAbilitiesForOrder] = useState<Set<string>>(new Set());
+    const [_pendingRolls, setPendingRolls] = useState<Set<string>>(new Set());
+    const [_assignedAbilitiesForOrder, setAssignedAbilitiesForOrder] = useState<Set<string>>(new Set());
     const [showChevrons, setShowChevrons] = useState(true);
     const [pointBuyConfig, setPointBuyConfig] = useState<string>('Challenging');
     const [customPointBuy, setCustomPointBuy] = useState<number>(22);
+
+    const getPointBuyLimit = useCallback((): number => {
+        switch (pointBuyConfig) {
+            case 'Low-powered': return 15;
+            case 'Challenging': return 22;
+            case 'Tougher': return 28;
+            case 'High-powered': return 32;
+            case 'Custom': return customPointBuy;
+            default: return 22;
+        }
+    }, [pointBuyConfig, customPointBuy]);
+
+    // Get ability score
+    const getAbilityScore = useCallback((abilityId: number): number | null => {
+        const abilityScore = character.abilityScores.find(attr => attr.abilityId === abilityId);
+        return abilityScore?.value ?? null;
+    }, [character.abilityScores]);
+
+    const getTotalPointsSpent = useCallback((): number => {
+        return ABILITY_LIST.reduce((total, ability) => {
+            const score = getAbilityScore(ability.id);
+            return total + (score !== null ? GetPointBuyCost(score) : 0);
+        }, 0);
+    }, [getAbilityScore]);
+
+    const getRemainingPoints = useCallback((): number => {
+        return getPointBuyLimit() - getTotalPointsSpent();
+    }, [getPointBuyLimit, getTotalPointsSpent]);
+
+    // Set ability score
+    const setAbilityScore = useCallback((abilityId: number, value: number) => {
+        const updatedAbilityScores = [...character.abilityScores];
+        const existingIndex = updatedAbilityScores.findIndex(attr => attr.abilityId === abilityId);
+
+        if (existingIndex >= 0) {
+            updatedAbilityScores[existingIndex] = {
+                ...updatedAbilityScores[existingIndex],
+                value: value
+            };
+        } else {
+            updatedAbilityScores.push({
+                id: 0,
+                characterId: character.id,
+                abilityId: abilityId,
+                value: value
+            });
+        }
+
+        onUpdate({ abilityScores: updatedAbilityScores });
+    }, [character.abilityScores, character.id, onUpdate]);
+
+    const handleAbilityChange = useCallback((abilityId: number, value: number) => {
+        // Enforce 8-18 range for Point Buy
+        if (generationMethod === 'point-buy') {
+            value = Math.max(8, Math.min(18, value));
+
+            // Check if this would increase the ability score
+            const currentValue = getAbilityScore(abilityId);
+            if (currentValue !== null && value > currentValue) {
+                // Calculate the additional cost
+                const additionalCost = GetPointBuyCost(value) - GetPointBuyCost(currentValue);
+                const remainingPoints = getRemainingPoints();
+
+                // Prevent increase if not enough points
+                if (additionalCost > remainingPoints) {
+                    return; // Don't update if not enough points
+                }
+            }
+        }
+
+        setAbilityScore(abilityId, value);
+    }, [generationMethod, getAbilityScore, getRemainingPoints, setAbilityScore]);
+
     // Set up roll complete callback
     useEffect(() => {
         const unsubscribe = onRollComplete((result) => {
@@ -103,7 +175,7 @@ export function AbilitiesRaceTab({
                     // Check if the group is an ability name (for individual rolls)
                     const abilityId = ABILITY_NAME_MAP[result.group];
                     if (abilityId !== undefined) {
-                        console.log('Manual roll - assigning', result.value, 'to ability', result.group);
+                        console.log('Manual roll - assigning', result.value, 'to ability', result.group, result);
                         handleAbilityChange(abilityId, result.value);
                     }
                 });
@@ -111,61 +183,13 @@ export function AbilitiesRaceTab({
         });
 
         return unsubscribe;
-    }, [onRollComplete, generationMethod, character.abilityScores, rolledValues, onUpdate]);
+    }, [onRollComplete, generationMethod, character.abilityScores, character.id, rolledValues, onUpdate, handleAbilityChange]);
 
-    // Get ability score
-    const getAbilityScore = (abilityId: number): number | null => {
-        const abilityScore = character.abilityScores.find(attr => attr.abilityId === abilityId);
-        return abilityScore?.value ?? null;
-    };
 
-    // Set ability score
-    const setAbilityScore = (abilityId: number, value: number) => {
-        const updatedAbilityScores = [...character.abilityScores];
-        const existingIndex = updatedAbilityScores.findIndex(attr => attr.abilityId === abilityId);
-
-        if (existingIndex >= 0) {
-            updatedAbilityScores[existingIndex] = {
-                ...updatedAbilityScores[existingIndex],
-                value: value
-            };
-        } else {
-            updatedAbilityScores.push({
-                id: 0,
-                characterId: character.id,
-                abilityId: abilityId,
-                value: value
-            });
-        }
-
-        onUpdate({ abilityScores: updatedAbilityScores });
-    };
 
     const handleRollAbility = (abilityId: number) => {
         const abilityName = ABILITY_MAP[abilityId]?.name || `Ability ${abilityId}`;
         rollDice('3d6', abilityName);
-    };
-
-    const handleAbilityChange = (abilityId: number, value: number) => {
-        // Enforce 8-18 range for Point Buy
-        if (generationMethod === 'point-buy') {
-            value = Math.max(8, Math.min(18, value));
-
-            // Check if this would increase the ability score
-            const currentValue = getAbilityScore(abilityId);
-            if (currentValue !== null && value > currentValue) {
-                // Calculate the additional cost
-                const additionalCost = GetPointBuyCost(value) - GetPointBuyCost(currentValue);
-                const remainingPoints = getRemainingPoints();
-
-                // Prevent increase if not enough points
-                if (additionalCost > remainingPoints) {
-                    return; // Don't update if not enough points
-                }
-            }
-        }
-
-        setAbilityScore(abilityId, value);
     };
 
     const handleRaceChange = (raceId: number | null) => {
@@ -404,28 +428,6 @@ export function AbilitiesRaceTab({
             return 'text-red-600 dark:text-red-400';
         }
         return 'text-gray-500 dark:text-gray-400';
-    };
-
-    const getPointBuyLimit = (): number => {
-        switch (pointBuyConfig) {
-            case 'Low-powered': return 15;
-            case 'Challenging': return 22;
-            case 'Tougher': return 28;
-            case 'High-powered': return 32;
-            case 'Custom': return customPointBuy;
-            default: return 22;
-        }
-    };
-
-    const getTotalPointsSpent = (): number => {
-        return ABILITY_LIST.reduce((total, ability) => {
-            const score = getAbilityScore(ability.id);
-            return total + (score !== null ? GetPointBuyCost(score) : 0);
-        }, 0);
-    };
-
-    const getRemainingPoints = (): number => {
-        return getPointBuyLimit() - getTotalPointsSpent();
     };
 
     return (
@@ -745,7 +747,7 @@ export function AbilitiesRaceTab({
                             </div>
                             <button
                                 onClick={() => {
-                                    const resetAbilities: { [key: number]: number } = {};
+                                    const _resetAbilities: { [key: number]: number } = {};
                                     ABILITY_LIST.forEach(ability => {
                                         setAbilityScore(ability.id, 8);
                                     });

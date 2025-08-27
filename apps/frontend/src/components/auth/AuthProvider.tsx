@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 
-import { AuthService } from '@/services/AuthService';
-import { DiceBoxService } from '@/services/DiceBoxService';
-import { UserProfileService } from '@/services/UserProfileService';
+import { AuthApi } from '@/components/auth/AuthApi';
+import { DiceBoxService } from '@/components/dice-box/DiceBoxService';
+import { UserProfileApi } from '@/components/profile/UserProfileApi';
 import {
     LoginUserSchema,
     JwtPayloadSchema,
@@ -137,7 +137,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         }
 
         try {
-            const responseData = await AuthService.refreshToken(undefined);
+            const responseData = await AuthApi.refreshToken(undefined);
             localStorage.setItem('token', responseData.token);
             setUser(responseData.user);
             ScheduleRefreshToken(responseData.token);
@@ -153,7 +153,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token) {
-            AuthService.getMe(undefined)
+            AuthApi.getMe(undefined)
                 .then((responseData) => {
                     setUser(responseData.user);
                     ScheduleRefreshToken(token);
@@ -183,7 +183,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
             // Validate input with Zod
             const loginData = LoginUserSchema.parse({ username, password });
 
-            const responseData = await AuthService.login(loginData);
+            const responseData = await AuthApi.login(loginData);
             localStorage.setItem('token', responseData.token);
             setUser(responseData.user);
             ScheduleRefreshToken(responseData.token);
@@ -196,7 +196,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
 
     const UpdatePreferredEdition = async (editionId: number): Promise<boolean> => {
         try {
-            const responseData = await UserProfileService.updateUserProfile({ preferredEditionId: editionId });
+            const responseData = await UserProfileApi.updateUserProfile({ preferredEditionId: editionId });
             console.log('Response data from updateUserProfile:', responseData);
             const token = responseData.token;
             const user = responseData.user;
@@ -219,7 +219,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
 
     const UpdateUserProfile = async (data: UpdateUserProfileRequest): Promise<boolean> => {
         try {
-            const responseData = await UserProfileService.updateUserProfile(data);
+            const responseData = await UserProfileApi.updateUserProfile(data);
             const token = responseData.token;
             const user = responseData.user;
 
@@ -229,7 +229,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
                 ScheduleRefreshToken(token);
 
                 // If dice configuration was updated, refresh the dice config
-                if (data.diceConfig) {
+                if (data.diceConfigBase !== undefined || data.diceConfigOverrides !== undefined) {
                     await refreshDiceConfig();
                 }
 

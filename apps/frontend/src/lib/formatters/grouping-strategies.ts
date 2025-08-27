@@ -1,23 +1,17 @@
-import type {
-    FeatureModifierInQueryResponse
-} from '@shared/schema';
-import type {
-    FormattedItemWithBreakdown,
-    GroupedResult,
-    GroupingStrategy,
-    FormatterMetadata,
-    DisplayContext
-} from './types';
+
 import {
     ModifierAppliesToType,
     MODIFIER_APPLIES_TO_TYPES,
-    LANGUAGE_MAP,
     SKILL_MAP,
     ABILITY_MAP,
-    SAVING_THROW_MAP,
-    DAMAGE_TYPES,
-    RPG_DICE
+    SAVING_THROW_MAP
 } from '@shared/static-data';
+
+import type {
+    FormattedItemWithBreakdown,
+    GroupedResult,
+    GroupingStrategy
+} from './types';
 
 /**
  * Groups modifiers by appliesTo type and appliesToId, then formats them using the appropriate formatter
@@ -146,7 +140,7 @@ export class EditPageGroupingStrategy implements GroupingStrategy {
         return createGroupedResult(items, ', ');
     }
 
-    validateProgressionBoundary(items: FormattedItemWithBreakdown[]): boolean {
+    validateProgressionBoundary(_items: FormattedItemWithBreakdown[]): boolean {
         // Ensure all items belong to the same FeatureProgression
         // For now, assume they're from the same progression since we're grouping within a single progression
         return true;
@@ -164,7 +158,7 @@ export class DetailPageGroupingStrategy implements GroupingStrategy {
         return createGroupedResult(items, ', ');
     }
 
-    validateFeatureBoundary(items: FormattedItemWithBreakdown[]): boolean {
+    validateFeatureBoundary(_items: FormattedItemWithBreakdown[]): boolean {
         // Ensure all items belong to the same feature
         // This prevents mixing values from different features (e.g., Sneak Attack +5d6 with Trap Sense +3)
         // For now, assume they're from the same feature since we're grouping within a single feature

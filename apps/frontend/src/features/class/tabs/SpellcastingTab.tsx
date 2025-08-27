@@ -3,7 +3,7 @@ import React from 'react';
 import { CustomSelect, CustomCheckbox } from '@/components/forms';
 import { SpellProgressionEditor } from '@/components/spell-progression';
 import type { CreateSpellcastingProgressionRequest } from '@shared/schema';
-import { ABILITY_SELECT_LIST, CASTING_TYPE_SELECT_LIST } from '@shared/static-data';
+import { ABILITY_SELECT_LIST, CASTING_TYPE_SELECT_LIST, CastingType } from '@shared/static-data';
 
 import type { ClassTabProps } from './types';
 
@@ -44,7 +44,7 @@ export function SpellcastingTab({
                             componentExtraClassName="flex items-center gap-2"
                             labelExtraClassName="w-32"
                             value={formData.castingType}
-                            onValueChange={(value) => setFormData({ ...formData, castingType: value as 'Prepared' | 'Spontaneous' | null })}
+                            onValueChange={(value) => setFormData({ ...formData, castingType: value as CastingType | null })}
                             options={CASTING_TYPE_SELECT_LIST}
                             placeholder="Select casting type"
                         />

@@ -34,7 +34,7 @@ export const GetAllSkillsResponseSchema = QueryResponseSchema.extend({
 export const GetSkillResponseSchema = SkillSchema.omit({ id: true });
 
 export type SkillIdParamRequest = z.infer<typeof SkillIdParamSchema>;
-export type SkillInQueryResponse = z.infer<typeof SkillSchema>;
+export type Skill = z.infer<typeof SkillSchema>;
 export type GetAllSkillsResponse = z.infer<typeof GetAllSkillsResponseSchema>;
 export type GetSkillResponse = z.infer<typeof GetSkillResponseSchema>;
 export type CreateSkillRequest = z.infer<typeof CreateSkillSchema>;

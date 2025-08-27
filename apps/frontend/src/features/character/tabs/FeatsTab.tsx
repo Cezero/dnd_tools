@@ -2,24 +2,24 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { z } from 'zod';
 
 import { GenericList } from '@/components/generic-list';
-import { FeatService } from '@/features/feat/FeatService';
+import { FeatApi } from '@/features/feat/FeatApi';
 import { meetsPrerequisites } from '@/lib';
-import { SpecialFeatureId } from '@shared/static-data';
 import type {
     FeatSchema,
-    RaceInQueryResponse,
-    GetRaceResponse,
-    GetClassResponse,
+    RaceSummary,
+    Race,
+    DnDClass,
     CharacterWithAllDetailsResponse,
     CharacterAdvancementWithDetailsResponse
 } from '@shared/schema';
+import { SpecialFeatureId } from '@shared/static-data';
 
 interface FeatsTabProps {
     character: CharacterWithAllDetailsResponse;
     onUpdate: (data: Partial<CharacterWithAllDetailsResponse>) => void;
-    races?: RaceInQueryResponse[];
-    selectedRaceDetails?: GetRaceResponse | null;
-    selectedClassDetails?: GetClassResponse | null;
+    races?: RaceSummary[];
+    selectedRaceDetails?: Race | null;
+    selectedClassDetails?: DnDClass | null;
     targetAdvancement?: CharacterAdvancementWithDetailsResponse;
     onAdvancementUpdate?: (advancement: CharacterAdvancementWithDetailsResponse) => void;
 }
@@ -27,7 +27,7 @@ interface FeatsTabProps {
 export function FeatsTab({
     character,
     onUpdate,
-    races = [],
+    races: _races = [],
     selectedRaceDetails,
     selectedClassDetails,
     targetAdvancement,
@@ -45,7 +45,7 @@ export function FeatsTab({
         const loadFeats = async () => {
             try {
                 setIsLoading(true);
-                const featResponse = await FeatService.featQuery({ queryType: 'all' });
+                const featResponse = await FeatApi.featQuery({ queryType: 'all' });
                 setAllFeats(featResponse.results);
             } catch (error) {
                 console.error('Failed to load feats:', error);
@@ -57,29 +57,29 @@ export function FeatsTab({
         loadFeats();
     }, []);
 
-    // Get feats that the class grants as proficiencies (to exclude from selection)
-    const getClassGrantedFeats = (): Set<number> => {
-        if (!selectedClassDetails?.features) return new Set();
-
-        const excludedFeatIds = new Set<number>();
-
-        // Extract proficiencies from feature progressions
-        selectedClassDetails.features
-            .filter(prog => prog.featureId === SpecialFeatureId.ClassProficiency) // Use SpecialFeatureId instead of appliesToType
-            .forEach(prog => {
-                // If appliesTo is -1, the class grants proficiency with all items of that type
-                if (prog.appliesTo === -1) {
-                    excludedFeatIds.add(prog.featureId);
-                }
-                // If appliesTo is positive, the class only grants proficiency with specific items
-                // So we don't exclude the feat (player might want to take it for other items)
-            });
-
-        return excludedFeatIds;
-    };
-
     // Filter feats that character qualifies for and aren't already granted by class
     const availableFeats = useMemo(() => {
+        // Get feats that the class grants as proficiencies (to exclude from selection)
+        const getClassGrantedFeats = (): Set<number> => {
+            if (!selectedClassDetails?.features) return new Set();
+
+            const excludedFeatIds = new Set<number>();
+
+            // Extract proficiencies from feature progressions
+            selectedClassDetails.features
+                .filter(prog => prog.featureId === SpecialFeatureId.ClassProficiency) // Use SpecialFeatureId instead of appliesToType
+                .forEach(prog => {
+                    // If appliesTo is -1, the class grants proficiency with all items of that type
+                    if (prog.appliesTo === -1) {
+                        excludedFeatIds.add(prog.featureId);
+                    }
+                    // If appliesTo is positive, the class only grants proficiency with specific items
+                    // So we don't exclude the feat (player might want to take it for other items)
+                });
+
+            return excludedFeatIds;
+        };
+
         const classGrantedFeats = getClassGrantedFeats();
 
         return allFeats.filter(feat =>

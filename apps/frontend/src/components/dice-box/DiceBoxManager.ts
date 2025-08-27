@@ -1,9 +1,11 @@
 import DiceBox from '@3d-dice/dice-box';
 import DiceParser from '@3d-dice/dice-parser-interface';
 
-import { DiceBoxService } from '@/services/DiceBoxService';
-import type { DiceBoxAdminConfig, UpdateUserDiceConfigRequest, UserDiceConfigOverride, DiceResult } from '@shared/schema';
+import { DiceBoxService } from '@/components/dice-box/DiceBoxService';
+import type { DiceBoxAdminConfig, UpdateUserDiceConfigRequest, UserDiceConfigOverride } from '@shared/schema';
 import { getSystemNameById } from '@shared/static-data';
+
+import type { DiceResult, DiceBoxConfig, LocalDiceRollResult } from './types';
 
 // Type for dynamic property assignment
 type DiceBoxConfigProperty = keyof DiceBoxAdminConfig;
@@ -12,7 +14,7 @@ type DiceBoxConfigValue = string | number | boolean | null;
 export class DiceBoxManager {
     private instance: DiceBox | null = null;
     private isInitialized = false;
-    private onRollCompleteCallbacks: ((result: DiceResult) => void)[] = [];
+    private onRollCompleteCallbacks: ((result: LocalDiceRollResult) => void)[] = [];
     private diceParser: DiceParser;
     private currentCritHighlight = false;
     private isRolling = false; // Add rolling state tracking
@@ -195,14 +197,11 @@ export class DiceBoxManager {
 
     private handleRollComplete(results: DiceResult | DiceResult[]): void {
         try {
-            console.log('results', results);
-
             // Handle each group result individually
             if (Array.isArray(results)) {
                 results.forEach((groupResult) => {
                     // Parse each individual group result using dice-parser-interface
-                    const parsedResult = this.diceParser.parseFinalResults(groupResult);
-                    console.log('parsedResult', parsedResult);
+                    const parsedResult = this.diceParser.parseFinalResults(groupResult) as LocalDiceRollResult;
 
                     // Preserve the original notation and group from the group result
                     if (parsedResult) {
@@ -218,8 +217,7 @@ export class DiceBoxManager {
                 });
             } else {
                 // Handle single result
-                const parsedResult = this.diceParser.parseFinalResults(results);
-                console.log('parsedResult', parsedResult);
+                const parsedResult = this.diceParser.parseFinalResults(results) as LocalDiceRollResult;
 
                 // Preserve the original notation and group from the result
                 if (parsedResult) {
@@ -282,7 +280,7 @@ export class DiceBoxManager {
         }
     }
 
-    onRollComplete(callback: (result: DiceResult) => void): () => void {
+    onRollComplete(callback: (result: LocalDiceRollResult) => void): () => void {
         this.onRollCompleteCallbacks.push(callback);
 
         // Return cleanup function
@@ -322,7 +320,7 @@ export class DiceBoxManager {
 
         try {
             // Convert theme ID to theme name if present and create proper DiceBox config
-            const diceBoxConfig: Partial<import('@shared/schema').DiceBoxConfig> = {
+            const diceBoxConfig: Partial<DiceBoxConfig> = {
                 ...config,
                 theme: config.theme ? getSystemNameById(config.theme) : undefined,
                 // Convert id from number to string if present

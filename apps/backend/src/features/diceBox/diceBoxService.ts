@@ -24,7 +24,6 @@ export class DiceBoxService {
         const user = await prisma.user.findUnique({
             where: { id: userId },
             include: {
-                diceConfigBaseRef: true,
                 diceConfigOverrides: true
             }
         });
@@ -42,20 +41,19 @@ export class DiceBoxService {
                 }
                 return {
                     diceConfigBase: mostRecentConfig.id,
-                    diceConfigBaseRef: { id: mostRecentConfig.id, name: mostRecentConfig.name },
                     diceConfigOverrides: []
                 };
             }
             return {
                 diceConfigBase: defaultConfig.id,
-                diceConfigBaseRef: { id: defaultConfig.id, name: defaultConfig.name },
                 diceConfigOverrides: []
             };
         }
 
         // Get base config (either user's selected or default)
-        const baseConfig = user.diceConfigBaseRef ||
-            await prisma.diceBoxAdminConfig.findFirst({ where: { isDefault: true } });
+        const baseConfig = user.diceConfigBase
+            ? await prisma.diceBoxAdminConfig.findUnique({ where: { id: user.diceConfigBase } })
+            : await prisma.diceBoxAdminConfig.findFirst({ where: { isDefault: true } });
 
         if (!baseConfig) {
             throw new Error('No dice configuration available');
@@ -71,7 +69,6 @@ export class DiceBoxService {
 
         return {
             diceConfigBase: baseConfig.id,
-            diceConfigBaseRef: { id: baseConfig.id, name: baseConfig.name },
             diceConfigOverrides: overrides
         };
     }

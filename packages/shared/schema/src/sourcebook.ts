@@ -26,7 +26,7 @@ export const SourceBookIdParamSchema = z.object({
     id: z.string().transform((val: string) => parseInt(val)),
 });
 
-export type SourceBookResponse = z.infer<typeof SourceBookSchema>;
+export type SourceBook = z.infer<typeof SourceBookSchema>;
 export type SourceMap = z.infer<typeof SourceMapSchema>;
 export type SourceBookWithSpellsResponse = z.infer<typeof SourceBookWithSpellsSchema>;
 export type SourceBookIdParamRequest = z.infer<typeof SourceBookIdParamSchema>;

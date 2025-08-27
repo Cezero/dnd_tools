@@ -1,8 +1,7 @@
 import { buildValidatedRouter } from '@/lib/buildValidatedRouter.js';
 import {
     FeatIdParamSchema,
-    CreateFeatSchema,
-    UpdateFeatSchema,
+    BaseFeatSchema,
     FeatQuerySchema
 } from '@shared/schema';
 
@@ -22,9 +21,9 @@ get('/', {}, GetAllFeats);
 get('/query', { query: FeatQuerySchema }, GetFeatQuery);
 get('/:id', { params: FeatIdParamSchema }, GetFeatById);
 
-post('/', requireAdmin, { body: CreateFeatSchema }, CreateFeat);
+post('/', requireAdmin, { body: BaseFeatSchema }, CreateFeat);
 
-put('/:id', requireAdmin, { params: FeatIdParamSchema, body: UpdateFeatSchema }, UpdateFeat);
+put('/:id', requireAdmin, { params: FeatIdParamSchema, body: BaseFeatSchema }, UpdateFeat);
 
 deleteRoute('/:id', requireAdmin, { params: FeatIdParamSchema }, DeleteFeat);
 

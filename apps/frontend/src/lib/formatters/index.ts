@@ -1,31 +1,13 @@
-// Export types and interfaces
+// Export the factory for direct strategy access
+export { displayStrategyFactory } from './display-strategies';
+
+// Export types and other components
 export * from './types';
-
-// Export pure formatters
 export * from './pure-formatters';
-
-// Export formatter registry
 export * from './formatter-registry';
-
-// Export calculation components
 export * from './calculators';
 export * from './calculator-registry';
-
-// Export progression generation components
 export * from './progression-generators';
-
-// Export display strategy components
-export * from './display-strategies';
-
-// Export orchestrator
-export * from './formatter-orchestrator';
-
-// Export utilities
-export * from './utilities';
-
-// Export grouping strategies
 export * from './grouping-strategies';
-
-// Re-export the singleton registry instance
 export { formatterRegistry } from './formatter-registry';
-export { formatterOrchestrator } from './formatter-orchestrator';
+

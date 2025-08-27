@@ -1,8 +1,8 @@
 import React from 'react';
 import { z } from 'zod';
 
-import { ItemAssoc } from '@/lib/ItemAssoc';
-import { FeatureSystemService } from '@/services/FeatureSystemService';
+import { ListSelectionDialog } from '@/components/generic-list';
+import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { FeatureSchema } from '@shared/schema';
 
 type RaceFeatureItem = z.infer<typeof FeatureSchema>;
@@ -13,6 +13,7 @@ type SelectedFeatureData = {
     name: string;
     description: string;
     level: number;
+    [key: string]: unknown; // Add index signature to satisfy BaseSelectedItem constraint
 };
 
 // Props interface for RaceFeatureAssoc component
@@ -45,26 +46,23 @@ export function RaceFeatureAssoc({ isOpen, onClose, onSave, initialSelectedFeatu
         }));
     };
 
-    const getMarkdownId = (feature: RaceFeatureItem): string => {
-        return `race-feature-${feature.slug}-description`;
-    };
+
 
     return (
-        <ItemAssoc<RaceFeatureItem, SelectedFeatureData>
+        <ListSelectionDialog<RaceFeatureItem, SelectedFeatureData>
             isOpen={isOpen}
             onClose={onClose}
             onSave={onSave}
             initialSelectedIds={initialSelectedFeatureIds}
             parentId={raceId}
             serviceFunction={async () => {
-                const response = await FeatureSystemService.getFeatures({});
+                const response = await FeatureSystemApi.getFeatures({});
                 return response;
             }}
             storageKey="raceFeatureSelectionList"
             itemDesc="feature"
             createNewRoute="/features/new/edit"
             transformSelectedItems={transformSelectedFeatures}
-            getMarkdownId={getMarkdownId}
             dialogTitle="Select Race Feature(s)"
             createNewButtonText="Create New Feature"
         />

@@ -4,7 +4,7 @@ export { ItemDetail } from './ItemDetail';
 export { ItemEdit } from './ItemEdit';
 
 // Services
-export { ItemService } from './ItemService';
+export { ItemApi } from './ItemApi';
 
 // Configuration
 export * from './ItemConfig';

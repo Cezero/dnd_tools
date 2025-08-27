@@ -4,7 +4,7 @@ export { FeatDetail } from './FeatDetail';
 export { FeatEdit } from './FeatEdit';
 
 // Services
-export { FeatService } from './FeatService';
+export { FeatApi } from './FeatApi';
 
 // Configuration
 export * from './FeatConfig'; 

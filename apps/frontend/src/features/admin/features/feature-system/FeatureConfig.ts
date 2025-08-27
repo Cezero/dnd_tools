@@ -3,12 +3,12 @@ import { ColumnDef } from '@tanstack/react-table';
 import { FeatureDetail, FeatureEdit } from '@/components/feature-system';
 import { createContainsFilter } from '@/components/generic-list/filterFunctions';
 import { RouteConfig, NavigationItem } from '@/types';
-import { FeatureInQueryResponse } from '@shared/schema';
+import { Feature } from '@shared/schema';
 import { FilterType } from '@shared/static-data';
 
 import FeatureList from './FeatureList';
 
-export const FEATURE_COLUMNS: ColumnDef<FeatureInQueryResponse>[] = [
+export const FEATURE_COLUMNS: ColumnDef<Feature>[] = [
     {
         accessorKey: 'name',
         header: 'Name',
@@ -16,7 +16,7 @@ export const FEATURE_COLUMNS: ColumnDef<FeatureInQueryResponse>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 200,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<Feature>(),
         meta: {
             required: true,
             filterType: FilterType.TEXT_INPUT,
@@ -30,7 +30,7 @@ export const FEATURE_COLUMNS: ColumnDef<FeatureInQueryResponse>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 150,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<Feature>(),
         meta: {
             required: true,
             filterType: FilterType.TEXT_INPUT,

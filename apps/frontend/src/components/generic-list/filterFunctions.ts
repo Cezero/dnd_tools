@@ -13,8 +13,8 @@ interface CustomFilterValue {
 
 // Generic filter function for arrays of objects with a specific ID field
 // Also handles single values by treating them as single-element arrays
-export const createArrayIdFilter = (idField: string) => {
-    const filterFn = (row: Row<unknown>, columnId: string, filterValue: TableFilterValue | CustomFilterValue) => {
+export const createArrayIdFilter = <TData extends Record<string, unknown>>(idField: string) => {
+    const filterFn = (row: Row<TData>, columnId: string, filterValue: TableFilterValue | CustomFilterValue) => {
         const value = row.getValue(columnId);
 
         // Handle null/undefined values
@@ -83,8 +83,8 @@ export const createArrayIdFilter = (idField: string) => {
 };
 
 // Generic exact match filter
-export const createEqualsFilter = () => {
-    const filterFn = (row: Row<unknown>, columnId: string, filterValue: TableFilterValue | CustomFilterValue) => {
+export const createEqualsFilter = <TData extends Record<string, unknown>>() => {
+    const filterFn = (row: Row<TData>, columnId: string, filterValue: TableFilterValue | CustomFilterValue) => {
         const value = row.getValue(columnId);
 
         // Handle the custom filter structure
@@ -103,8 +103,8 @@ export const createEqualsFilter = () => {
 };
 
 // Generic case-insensitive contains filter
-export const createContainsFilter = () => {
-    const filterFn = (row: Row<unknown>, columnId: string, filterValue: TableFilterValue | CustomFilterValue) => {
+export const createContainsFilter = <TData extends Record<string, unknown>>() => {
+    const filterFn = (row: Row<TData>, columnId: string, filterValue: TableFilterValue | CustomFilterValue) => {
         const value = row.getValue(columnId);
 
         // Handle the custom filter structure

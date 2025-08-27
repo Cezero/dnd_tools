@@ -1,7 +1,7 @@
 import { PrismaClient } from '@shared/prisma-client';
 import {
     CharacterIdParamRequest,
-    CharacterResponse,
+    Character,
     CreateCharacterRequest,
     CreateResponse,
     GetAllCharactersResponse,
@@ -51,7 +51,7 @@ export const characterService: CharacterService = {
         };
     },
 
-    async getCharacterById(query: CharacterIdParamRequest): Promise<CharacterResponse | null> {
+    async getCharacterById(query: CharacterIdParamRequest): Promise<Character | null> {
         const character = await prisma.userCharacter.findUnique({
             where: { id: query.id },
             include: {
@@ -63,7 +63,7 @@ export const characterService: CharacterService = {
             },
         });
 
-        return character as CharacterResponse;
+        return character as Character;
     },
 
     async getCharacterWithAllDetails(query: CharacterIdParamRequest): Promise<CharacterWithAllDetailsResponse | null> {

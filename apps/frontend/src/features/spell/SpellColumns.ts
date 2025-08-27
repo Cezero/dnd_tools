@@ -1,8 +1,7 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createArrayIdFilter, createEqualsFilter, createContainsFilter } from '@/components/generic-list/filterFunctions';
-
-import { SpellInQueryResponse } from '@shared/schema/spell';
+import { Spell } from '@shared/schema/spell';
 import {
     SPELL_SCHOOL_SELECT_LIST,
     SPELL_DESCRIPTOR_SELECT_LIST,
@@ -18,7 +17,7 @@ import {
 
 import { GetClassDisplay } from './spellUtil';
 
-export const SPELL_COLUMNS: ColumnDef<SpellInQueryResponse, unknown>[] = [
+export const SPELL_COLUMNS: ColumnDef<Spell, unknown>[] = [
     {
         accessorKey: 'name',
         header: 'Name',
@@ -26,7 +25,7 @@ export const SPELL_COLUMNS: ColumnDef<SpellInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 100,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<Spell>(),
         meta: {
             required: true,
             filterType: FilterType.TEXT_INPUT,
@@ -40,7 +39,7 @@ export const SPELL_COLUMNS: ColumnDef<SpellInQueryResponse, unknown>[] = [
         enableResizing: true,
         enableColumnFilter: true,
         size: 40,
-        filterFn: createEqualsFilter(),
+        filterFn: createEqualsFilter<Spell>(),
         meta: {
             filterType: FilterType.SINGLE_SELECT,
             options: [...Array(10).keys()].map(level => ({
@@ -61,7 +60,7 @@ export const SPELL_COLUMNS: ColumnDef<SpellInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         size: 100,
         enableResizing: true,
-        filterFn: createArrayIdFilter('schoolId'),
+        filterFn: createArrayIdFilter<Spell>('schoolId'),
         cell: info => {
             const schools = info.getValue() as { schoolId: number }[];
             const labels = SpellSchoolNameList(schools.map(s => s.schoolId));
@@ -77,7 +76,7 @@ export const SPELL_COLUMNS: ColumnDef<SpellInQueryResponse, unknown>[] = [
         header: 'Descriptors',
         enableColumnFilter: true,
         enableResizing: true,
-        filterFn: createArrayIdFilter('descriptorId'),
+        filterFn: createArrayIdFilter<Spell>('descriptorId'),
         cell: info => {
             const descriptors = info.getValue() as { descriptorId: number }[];
             const labels = SpellDescriptorNameList(descriptors.map(d => d.descriptorId));
@@ -94,7 +93,7 @@ export const SPELL_COLUMNS: ColumnDef<SpellInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 100,
-        filterFn: createArrayIdFilter('componentId'),
+        filterFn: createArrayIdFilter<Spell>('componentId'),
         cell: info => {
             const components = info.getValue() as { componentId: number }[];
             const labels = SpellComponentAbbrList(components.map(c => c.componentId));
@@ -111,7 +110,7 @@ export const SPELL_COLUMNS: ColumnDef<SpellInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 100,
-        filterFn: createArrayIdFilter('sourceBookId'),
+        filterFn: createArrayIdFilter<Spell>('sourceBookId'),
         cell: info => {
             const sources = info.getValue() as { sourceBookId: number, pageNumber: number }[];
             const labels = GetSourceDisplay(sources.map(s => ({ bookId: s.sourceBookId, pageNumber: s.pageNumber })), true);
@@ -127,7 +126,7 @@ export const SPELL_COLUMNS: ColumnDef<SpellInQueryResponse, unknown>[] = [
         header: 'Classes',
         enableColumnFilter: true,
         enableResizing: true,
-        filterFn: createArrayIdFilter('classId'),
+        filterFn: createArrayIdFilter<Spell>('classId'),
         cell: info => {
             const mappings = info.getValue() as { classId: number; level: number }[];
             const labels = GetClassDisplay(mappings, info.row.original.baseLevel);

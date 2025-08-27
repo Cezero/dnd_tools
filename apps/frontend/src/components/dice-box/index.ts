@@ -1,11 +1,9 @@
-export { DiceBoxProvider, useDiceBox } from './DiceBoxProvider';
+export { DiceBoxProvider } from './DiceBoxProvider';
+export { useDiceBox } from './DiceBoxHooks';
 export { DiceBoxManager } from './DiceBoxManager';
 export { DiceResultRenderer } from './DiceResultRenderer';
 export { DiceButton } from './DiceButton';
-export { DiceBoxExample } from './DiceBoxExample';
-export type { DiceResult } from './DiceBoxManager';
-export type { DiceBoxContextType } from './DiceBoxProvider';
-export type { DiceColor } from './types';
+export type { DiceResult, DiceBoxContextType, DiceColor, LocalDiceRollResult } from './types';
 
 export {
     DEFAULT_DICE_COLORS,

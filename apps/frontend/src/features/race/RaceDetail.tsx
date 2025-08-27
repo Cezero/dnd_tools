@@ -2,14 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
-import { GetRaceResponse } from '@shared/schema';
+import { Race } from '@shared/schema';
 
+import { RaceApi } from './RaceApi';
 import { RaceDisplay } from './RaceDisplay';
-import { RaceService } from './RaceService';
 
 export function RaceDetail() {
     const { id } = useParams();
-    const [race, setRace] = useState<GetRaceResponse | null>(null);
+    const [race, setRace] = useState<Race | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const { isAdmin } = useAuthAuto();
     const navigate = useNavigate();
@@ -19,7 +19,7 @@ export function RaceDetail() {
     useEffect(() => {
         const Initialize = async () => {
             try {
-                const data = await RaceService.getRaceById(undefined, { id: parseInt(id!) });
+                const data = await RaceApi.getRaceById(undefined, { id: parseInt(id!) });
                 setRace(data);
                 setIsLoading(false);
             } catch (error) {

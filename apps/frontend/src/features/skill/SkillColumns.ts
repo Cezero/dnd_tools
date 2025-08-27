@@ -1,12 +1,10 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter, createEqualsFilter } from '@/components/generic-list/filterFunctions';
-
-import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { SkillInQueryResponse } from '@shared/schema';
+import { Skill } from '@shared/schema';
 import { ABILITY_SELECT_LIST, ABILITY_MAP, FilterType } from '@shared/static-data';
 
-export const SKILL_COLUMNS: ColumnDef<SkillInQueryResponse, unknown>[] = [
+export const SKILL_COLUMNS: ColumnDef<Skill, unknown>[] = [
     {
         accessorKey: 'name',
         header: 'Skill Name',
@@ -14,7 +12,7 @@ export const SKILL_COLUMNS: ColumnDef<SkillInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 150,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<Skill>(),
         meta: {
             required: true,
             filterType: FilterType.TEXT_INPUT,
@@ -28,7 +26,7 @@ export const SKILL_COLUMNS: ColumnDef<SkillInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 120,
-        filterFn: createEqualsFilter(),
+        filterFn: createEqualsFilter<Skill>(),
         cell: info => {
             const abilityId = info.getValue() as number;
             return ABILITY_MAP[abilityId]?.abbreviation || '';
@@ -45,7 +43,7 @@ export const SKILL_COLUMNS: ColumnDef<SkillInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 100,
-        filterFn: createEqualsFilter(),
+        filterFn: createEqualsFilter<Skill>(),
         cell: info => {
             const trainedOnly = info.getValue() as boolean;
             return trainedOnly ? 'Yes' : 'No';
@@ -65,7 +63,7 @@ export const SKILL_COLUMNS: ColumnDef<SkillInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 120,
-        filterFn: createEqualsFilter(),
+        filterFn: createEqualsFilter<Skill>(),
         cell: info => {
             const affectedByArmor = info.getValue() as boolean;
             return affectedByArmor ? 'Yes' : 'No';
@@ -100,13 +98,28 @@ export const SKILL_COLUMNS: ColumnDef<SkillInQueryResponse, unknown>[] = [
     },
     {
         accessorKey: 'retryTypeId',
-        header: 'Try Again',
+        header: 'Retry',
         enableSorting: true,
+        enableColumnFilter: true,
         enableResizing: true,
         size: 100,
+        filterFn: createEqualsFilter<Skill>(),
         cell: info => {
             const retryTypeId = info.getValue() as number;
-            return retryTypeId ? 'Yes' : 'No';
+            const retryTypes = {
+                0: 'No',
+                1: 'Yes',
+                2: 'Special'
+            };
+            return retryTypes[retryTypeId as keyof typeof retryTypes] || 'Unknown';
+        },
+        meta: {
+            filterType: FilterType.SINGLE_SELECT,
+            options: [
+                { value: 0, label: 'No' },
+                { value: 1, label: 'Yes' },
+                { value: 2, label: 'Special' }
+            ]
         },
     },
     {
@@ -153,7 +166,7 @@ export const SKILL_COLUMNS: ColumnDef<SkillInQueryResponse, unknown>[] = [
         accessorKey: 'description',
         header: 'Description',
         enableResizing: true,
-        size: 200,
+        size: 300,
         meta: {
             isMarkdown: true,
             truncate: 200,

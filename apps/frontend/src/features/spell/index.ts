@@ -4,7 +4,7 @@ export { SpellDetail } from './SpellDetail';
 export { SpellEdit } from './SpellEdit';
 
 // Services
-export { SpellService } from './SpellService';
+export { SpellApi } from './SpellApi';
 
 // Configuration
 export * from './SpellConfig'; 

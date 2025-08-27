@@ -4,8 +4,8 @@ import {
 import React, { useState, useEffect } from 'react';
 
 import { useAuthAuto } from '@/components/auth';
-import { RaceService } from '@/features/race/RaceService';
-import type { RaceInQueryResponse, GetRaceResponse, GetClassResponse, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse } from '@shared/schema';
+import { RaceApi } from '@/features/race/RaceApi';
+import type { Race, RaceSummary, DnDClass, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse } from '@shared/schema';
 
 import {
     AbilitiesRaceTab, ClassTab, SkillsTab, FeatsTab, DescriptionTab, EquipmentTab
@@ -18,10 +18,10 @@ interface TabConfig {
     component: React.ComponentType<{
         character: CharacterWithAllDetailsResponse;
         onUpdate: (data: Partial<CharacterWithAllDetailsResponse>) => void;
-        races?: RaceInQueryResponse[];
-        selectedRaceDetails?: GetRaceResponse | null;
-        selectedClassDetails?: GetClassResponse | null;
-        onClassDetailsChange?: (classDetails: GetClassResponse | null) => void;
+        races?: RaceSummary[];
+        selectedRaceDetails?: Race | null;
+        selectedClassDetails?: DnDClass | null;
+        onClassDetailsChange?: (classDetails: DnDClass | null) => void;
         targetAdvancement?: CharacterAdvancementWithDetailsResponse;
         onAdvancementUpdate?: (advancement: CharacterAdvancementWithDetailsResponse) => void;
     }>;
@@ -32,12 +32,12 @@ export function CharacterEdit(): React.JSX.Element {
     const [activeTab, setActiveTab] = useState<string>('abilities-race');
 
     // Race data state
-    const [races, setRaces] = useState<RaceInQueryResponse[]>([]);
-    const [selectedRaceDetails, setSelectedRaceDetails] = useState<GetRaceResponse | null>(null);
-    const [isLoadingRaces, setIsLoadingRaces] = useState(true);
+    const [races, setRaces] = useState<RaceSummary[]>([]);
+    const [selectedRaceDetails, setSelectedRaceDetails] = useState<Race | null>(null);
+    const [_isLoadingRaces, setIsLoadingRaces] = useState(true);
 
     // Class data state
-    const [selectedClassDetails, setSelectedClassDetails] = useState<GetClassResponse | null>(null);
+    const [selectedClassDetails, setSelectedClassDetails] = useState<DnDClass | null>(null);
 
     const [character, setCharacter] = useState<CharacterWithAllDetailsResponse>({
         id: 0,
@@ -84,7 +84,7 @@ export function CharacterEdit(): React.JSX.Element {
         const fetchRaces = async () => {
             try {
                 setIsLoadingRaces(true);
-                const response = await RaceService.getRaces({});
+                const response = await RaceApi.getRaces({});
                 setRaces(response.results);
             } catch (error) {
                 console.error('Failed to fetch races:', error);
@@ -105,7 +105,7 @@ export function CharacterEdit(): React.JSX.Element {
             }
 
             try {
-                const raceDetails = await RaceService.getRaceById(undefined, { id: character.raceId });
+                const raceDetails = await RaceApi.getRaceById(undefined, { id: character.raceId });
                 setSelectedRaceDetails(raceDetails);
 
                 // Update race name in character
@@ -113,7 +113,7 @@ export function CharacterEdit(): React.JSX.Element {
                     setCharacter(prev => ({
                         ...prev,
                         race: {
-                            id: raceDetails.id,
+                            id: character.raceId,
                             name: raceDetails.name
                         }
                     }));
@@ -131,7 +131,7 @@ export function CharacterEdit(): React.JSX.Element {
         setCharacter(prev => ({ ...prev, ...data }));
     };
 
-    const handleClassDetailsChange = (classDetails: GetClassResponse | null) => {
+    const handleClassDetailsChange = (classDetails: DnDClass | null) => {
         setSelectedClassDetails(classDetails);
     };
 

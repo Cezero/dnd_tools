@@ -5,7 +5,7 @@ import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { FEAT_COLUMNS } from '@/features/feat/FeatColumns';
-import { FeatService } from '@/features/feat/FeatService';
+import { FeatApi } from '@/features/feat/FeatApi';
 import { FeatInQueryResponse } from '@shared/schema';
 
 import { routes } from './FeatConfig';
@@ -39,10 +39,10 @@ export function FeatList(): React.JSX.Element {
             <GenericList<FeatInQueryResponse>
                 storageKey="feats-list"
                 columns={FEAT_COLUMNS}
-                serviceFunction={() => FeatService.getFeats({})}
+                serviceFunction={() => FeatApi.getFeats({})}
                 itemDesc="feat"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction(FeatService.deleteFeat)}
+                deleteServiceFunction={createIdDeleteServiceFunction(FeatApi.deleteFeat)}
             />
         </div>
     );

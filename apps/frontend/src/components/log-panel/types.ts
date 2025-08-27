@@ -1,10 +1,15 @@
+import React from 'react';
+
 export interface LogEntry {
     id: string;
     timestamp: Date;
     message: string;
     type?: 'info' | 'success' | 'warning' | 'error';
     source?: string; // e.g., 'dice-box', 'system', etc.
-    data?: Record<string, unknown>; // Additional structured data
+    data?: {
+        formattedContent?: React.ReactElement;
+        [key: string]: unknown;
+    }
 }
 
 export interface LogPanelContextType {

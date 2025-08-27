@@ -4,7 +4,7 @@ export { SkillDetail } from './SkillDetail';
 export { SkillEdit } from './SkillEdit';
 
 // Services
-export { SkillService } from './SkillService';
+export { SkillApi } from './SkillApi';
 
 // Configuration
 export * from './SkillConfig'; 

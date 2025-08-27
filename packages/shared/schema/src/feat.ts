@@ -21,7 +21,6 @@ export const FeatPrerequisiteMapSchema = z.object({
     typeId: z.number().int().positive('Prerequisite type must be a positive integer'),
     amount: z.number().int().min(0, 'Prerequisite amount must be non-negative').nullable(),
     referenceId: z.number().int('Reference ID must be an integer').nullable(),
-    featureSlug: z.string().max(200, 'Feature slug must be less than 200 characters').nullable(),
 });
 
 export const BaseFeatSchema = z.object({
@@ -55,21 +54,17 @@ export const GetAllFeatsResponseSchema = QueryResponseSchema.extend({
     results: z.array(FeatInQueryResponseSchema),
 });
 
-export const CreateFeatSchema = BaseFeatSchema;
-
-export const GetFeatResponseSchema = BaseFeatSchema;
-
 export const UpdateFeatSchema = BaseFeatSchema.partial();
 
 export type FeatIdParamRequest = z.infer<typeof FeatIdParamSchema>;
 export type FeatInQueryResponse = z.infer<typeof FeatInQueryResponseSchema>;
-export type CreateFeatRequest = z.infer<typeof CreateFeatSchema>;
+export type CreateFeatRequest = z.infer<typeof BaseFeatSchema>;
 export type UpdateFeatRequest = z.infer<typeof UpdateFeatSchema>;
 export type FeatQueryRequest = z.infer<typeof FeatQuerySchema>;
 
 export type GetAllFeatsResponse = z.infer<typeof GetAllFeatsResponseSchema>;
 export type FeatQueryResponse = z.infer<typeof FeatQueryResponseSchema>;
-export type GetFeatResponse = z.infer<typeof GetFeatResponseSchema>;
+export type Feat = z.infer<typeof BaseFeatSchema>;
 
 export type FeatBenefitMap = z.infer<typeof FeatBenefitMapSchema>;
 

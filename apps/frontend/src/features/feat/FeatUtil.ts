@@ -1,9 +1,9 @@
 import ordinal from 'ordinal';
 
-import { FeatureSystemService } from '@/services/FeatureSystemService';
+import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { SAVING_THROW_SELECT_LIST, PROFICIENCY_TYPE_SELECT_LIST, SKILL_SELECT_LIST, FeatBenefitType, SelectOption, FeatPrerequisiteType, ABILITY_SELECT_LIST, FEAT_PREREQ_BY_ID, GetBaseClassesByEdition } from '@shared/static-data';
 
-import { FeatService } from './FeatService';
+import { FeatApi } from './FeatApi';
 
 export const FeatOptions = (benefitType: number): SelectOption[] => {
     switch (benefitType) {
@@ -57,7 +57,7 @@ export const getPrereqDisplayText = async (prereq: { typeId: number; referenceId
         case FeatPrerequisiteType.FEAT: {
             if (prereq.referenceId) {
                 try {
-                    const feat = await FeatService.getFeatById(undefined, { id: prereq.referenceId });
+                    const feat = await FeatApi.getFeatById(undefined, { id: prereq.referenceId });
                     const featName = feat?.name || `Feat ID ${prereq.referenceId}`;
                     return `${typeName}: ${featName}${getAmountText(prereq.amount)}`;
                 } catch (_error) {
@@ -81,21 +81,6 @@ export const getPrereqDisplayText = async (prereq: { typeId: number; referenceId
                 const className = PrereqOptions(prereq.typeId).find(option => option.value === prereq.referenceId)?.label || '';
                 return `${className} Level: ${prereq.amount || 0}`;
             }
-        }
-
-        case FeatPrerequisiteType.CLASSFEATURE: {
-            // For class features, we need to check if there's a featureSlug property
-            const featureSlug = (prereq as { featureSlug?: string | number }).featureSlug || prereq.referenceId;
-            if (featureSlug) {
-                try {
-                    const feature = await FeatureSystemService.getFeatureBySlug(undefined, { slug: featureSlug.toString() });
-                    const featureName = feature?.name || feature?.slug || `Feature ${featureSlug}`;
-                    return `${typeName}: ${featureName}`;
-                } catch (_error) {
-                    return `${typeName}: Feature ${featureSlug}`;
-                }
-            }
-            return typeName;
         }
 
         case FeatPrerequisiteType.ABILITY: {

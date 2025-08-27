@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
@@ -11,7 +11,7 @@ import {
     ARMOR_CATEGORIES
 } from '@shared/static-data';
 
-import { ItemService } from './ItemService';
+import { ItemApi } from './ItemApi';
 import { formatCostAsCurrency } from './utils';
 
 export function ItemDetail(): React.JSX.Element {
@@ -30,7 +30,7 @@ export function ItemDetail(): React.JSX.Element {
 
             try {
                 setIsLoading(true);
-                const fetchedItem = await ItemService.getItemById(undefined, { id: parseInt(id) });
+                const fetchedItem = await ItemApi.getItemById(undefined, { id: parseInt(id) });
                 setItem(fetchedItem);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to fetch item');

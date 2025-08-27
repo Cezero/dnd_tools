@@ -1,18 +1,15 @@
 import { Toast } from '@base-ui-components/react/toast';
-import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import { useLogPanel } from '@/components/log-panel';
-import type { LogPanelContextType } from '@/components/log-panel/types';
-import { useToast } from '@/hooks/useToast';
-import type { DiceBoxAdminConfig, UpdateUserDiceConfigRequest, DiceResult } from '@shared/schema';
+import { useToast } from '@/components/toast/useToast';
+import type { DiceBoxAdminConfig, UpdateUserDiceConfigRequest } from '@shared/schema';
 
+import { DiceBoxContext } from './DiceBoxHooks';
 import { DiceBoxManager } from './DiceBoxManager';
 import { DiceResultRenderer } from './DiceResultRenderer';
-import type { DiceBoxContextType } from './types';
-
-// Create context
-const DiceBoxContext = createContext<DiceBoxContextType | null>(null);
+import { DiceBoxContextType, LocalDiceRollResult } from './types';
 
 // Global DiceBox singleton class
 class DiceBoxSingleton {
@@ -115,7 +112,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
     const location = useLocation();
     const [isReady, setIsReady] = useState(false);
     const [isRolling, setIsRolling] = useState(false);
-    const [lastResult, setLastResult] = useState<DiceResult | null>(null);
+    const [lastResult, setLastResult] = useState<LocalDiceRollResult | null>(null);
     const [isTestingMode, setIsTestingMode] = useState(false);
     const mountedRef = useRef(true);
     const currentUserConfigRef = useRef<UpdateUserDiceConfigRequest | null>(userDiceConfig || null);
@@ -123,13 +120,13 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
     const previousLocationRef = useRef(location.pathname);
     const toastManagerRef = useRef<ReturnType<typeof Toast.useToastManager> | null>(null);
     const groupNameMappingRef = useRef<Map<string, string>>(new Map());
-    const pendingResultsRef = useRef<DiceResult[]>([]);
+    const pendingResultsRef = useRef<LocalDiceRollResult[]>([]);
     const batchTimeoutRef = useRef<number | null>(null);
     const currentCritHighlightRef = useRef<boolean>(false);
-    const batchCallbacksRef = useRef<Set<(results: DiceResult[]) => void>>(new Set());
+    const batchCallbacksRef = useRef<Set<(results: LocalDiceRollResult[]) => void>>(new Set());
 
     // Get the singleton instance
-    const diceBoxSingleton = DiceBoxSingleton.getInstance();
+    const diceBoxSingleton = useRef(DiceBoxSingleton.getInstance());
 
     // Use the app-wide toast system - store in ref to prevent re-renders
     const toastManager = useToast();
@@ -148,20 +145,18 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
         currentUserConfigRef.current = userDiceConfig || null;
 
         // Initialize the singleton
-        diceBoxSingleton.initialize(userDiceConfig || undefined)
+        diceBoxSingleton.current.initialize(userDiceConfig || undefined)
             .then(() => {
                 if (mountedRef.current) {
                     setIsReady(true);
 
                     // Register toast callback for roll completions (only once globally)
-                    const manager = diceBoxSingleton.getManager();
-                    if (manager && !diceBoxSingleton.isToastCallbackRegistered()) {
-                        diceBoxSingleton.setToastCallbackRegistered(true);
+                    const manager = diceBoxSingleton.current.getManager();
+                    if (manager && !diceBoxSingleton.current.isToastCallbackRegistered()) {
+                        diceBoxSingleton.current.setToastCallbackRegistered(true);
 
                         manager.onRollComplete((parsedResult) => {
                             if (mountedRef.current) {
-                                console.log('parsedResult', parsedResult);
-
                                 // Reset rolling state
                                 setIsRolling(false);
 
@@ -229,7 +224,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
                                                     source: 'dice-box',
                                                     data: { formattedContent, results }
                                                 };
-                                                (logPanel as LogPanelContextType).addLogEntry(logData);
+                                                logPanel.addLogEntry(logData);
                                             } catch (error) {
                                                 console.error('Failed to add dice result to log:', error);
                                             }
@@ -256,11 +251,11 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
             }
             // Don't destroy the DiceBox - keep it alive across route changes
         };
-    }, []); // Empty dependency array - only run once
+    },[]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Handle user config changes after initialization
     useEffect(() => {
-        const manager = diceBoxSingleton.getManager();
+        const manager = diceBoxSingleton.current.getManager();
         if (manager && isReady && userDiceConfig && !isTestingMode) {
             const previousConfig = currentUserConfigRef.current;
             currentUserConfigRef.current = userDiceConfig;
@@ -274,7 +269,26 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
                 manager.updateConfigWithUserConfig(userDiceConfig);
             }
         }
-    }, [userDiceConfig, isReady, isTestingMode]);
+    }, [userDiceConfig, isReady, isTestingMode, diceBoxSingleton]);
+
+    // Clear admin test flag and restore user config if needed
+    const clearAdminTestFlag = useCallback(async () => {
+        if (adminTestFlagRef.current) {
+            // Refresh the admin config cache from backend
+            const manager = diceBoxSingleton.current.getManager();
+            if (manager) {
+                try {
+                    await manager.refreshCache();
+                } catch (error) {
+                    console.error('[DiceBoxProvider] Failed to refresh admin config cache:', error);
+                }
+            }
+
+            // Clear the admin test flag
+            adminTestFlagRef.current = false;
+            setIsTestingMode(false);
+        }
+    }, [diceBoxSingleton]);
 
     // Clear admin test flag when navigating away from admin page
     useEffect(() => {
@@ -287,11 +301,11 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
         }
 
         previousLocationRef.current = location.pathname;
-    }, [location.pathname]);
+    }, [location.pathname, clearAdminTestFlag]);
 
     // Roll dice function
     const rollDice = useCallback((notation: string, group?: string, critHighlight?: boolean) => {
-        const manager = diceBoxSingleton.getManager();
+        const manager = diceBoxSingleton.current.getManager();
         if (!manager || !isReady) {
             console.log('Cannot roll - DiceBox not ready');
             return;
@@ -321,7 +335,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
 
     // Roll dice groups function
     const rollDiceGroups = useCallback((notations: string[], groups?: string[], critHighlight?: boolean) => {
-        const manager = diceBoxSingleton.getManager();
+        const manager = diceBoxSingleton.current.getManager();
         if (!manager || !isReady) {
             console.log('Cannot roll - DiceBox not ready');
             return;
@@ -350,15 +364,14 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
     }, [isReady, diceBoxSingleton]);
 
     // Register roll complete callback
-    const onRollComplete = useCallback((callback: (result: DiceResult | DiceResult[]) => void) => {
-        const manager = diceBoxSingleton.getManager();
+    const onRollComplete = useCallback((callback: (result: LocalDiceRollResult | LocalDiceRollResult[]) => void) => {
+        const manager = diceBoxSingleton.current.getManager();
         if (!manager) {
-            console.warn('DiceBox manager not available');
             return () => { };
         }
 
         // Add callback to batch callbacks set - handle both single and array results
-        const batchCallback = (results: DiceResult[]) => {
+        const batchCallback = (results: LocalDiceRollResult[]) => {
             const resultToPass = results.length === 1 ? results[0] : results;
             callback(resultToPass);
         };
@@ -378,8 +391,8 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
     const reinitialize = useCallback(async () => {
         setIsReady(false);
 
-        diceBoxSingleton.destroy();
-        await diceBoxSingleton.initialize(currentUserConfigRef.current || undefined);
+        diceBoxSingleton.current.destroy();
+        await diceBoxSingleton.current.initialize(currentUserConfigRef.current || undefined);
 
         if (mountedRef.current) {
             setIsReady(true);
@@ -406,7 +419,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
         adminTestFlagRef.current = true;
 
         setIsReady(false);
-        diceBoxSingleton.destroy();
+        diceBoxSingleton.current.destroy();
 
         try {
             const manager = new DiceBoxManager();
@@ -429,7 +442,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
 
     // Update config with user config
     const updateConfigWithUserConfig = useCallback(async (userConfig: UpdateUserDiceConfigRequest) => {
-        const manager = diceBoxSingleton.getManager();
+        const manager = diceBoxSingleton.current.getManager();
         if (manager) {
             await manager.updateConfigWithUserConfig(userConfig);
         }
@@ -437,7 +450,7 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
 
     // Update config with admin config
     const updateConfigWithAdminConfig = useCallback((adminConfig: Partial<DiceBoxAdminConfig>) => {
-        const manager = diceBoxSingleton.getManager();
+        const manager = diceBoxSingleton.current.getManager();
         if (manager) {
             manager.updateConfigWithAdminConfig(adminConfig);
         }
@@ -450,36 +463,12 @@ export function DiceBoxProvider({ children, userDiceConfig }: DiceBoxProviderPro
 
     // Get current icon color
     const getCurrentIconColor = useCallback(() => {
-        const manager = diceBoxSingleton.getManager();
+        const manager = diceBoxSingleton.current.getManager();
         if (manager) {
             return manager.getCurrentIconColor();
         }
         return '#3937b8'; // Default fallback
     }, [diceBoxSingleton]);
-
-    // Clear admin test flag and restore user config if needed
-    const clearAdminTestFlag = useCallback(async () => {
-        if (adminTestFlagRef.current) {
-            // Refresh the admin config cache from backend
-            const manager = diceBoxSingleton.getManager();
-            if (manager) {
-                try {
-                    await manager.refreshCache();
-                } catch (error) {
-                    console.error('[DiceBoxProvider] Failed to refresh admin config cache:', error);
-                }
-            }
-
-            // Restore user config if available
-            if (currentUserConfigRef.current) {
-                await updateConfigWithUserConfig(currentUserConfigRef.current);
-            }
-
-            // Clear the admin test flag
-            adminTestFlagRef.current = false;
-            setIsTestingMode(false);
-        }
-    }, [updateConfigWithUserConfig]);
 
     const contextValue: DiceBoxContextType = {
         rollDice,
@@ -514,11 +503,4 @@ function generateTitle(notation: string, group?: string): string {
     return `Dice Roll: ${notation}`;
 }
 
-// Hook to use DiceBox context
-export function useDiceBox(): DiceBoxContextType {
-    const context = useContext(DiceBoxContext);
-    if (!context) {
-        throw new Error('useDiceBox must be used within DiceBoxProvider');
-    }
-    return context;
-} 
+ 

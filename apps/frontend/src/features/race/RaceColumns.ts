@@ -1,7 +1,7 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter, createEqualsFilter, createArrayIdFilter } from '@/components/generic-list/filterFunctions';
-import { RaceInQueryResponse } from '@shared/schema';
+import { RaceSummary } from '@shared/schema';
 import {
     EDITION_SELECT_LIST,
     CLASS_SELECT_LIST,
@@ -12,7 +12,7 @@ import {
     FilterType
 } from '@shared/static-data';
 
-export const RACE_COLUMNS: ColumnDef<RaceInQueryResponse, unknown>[] = [
+export const RACE_COLUMNS: ColumnDef<RaceSummary, unknown>[] = [
     {
         accessorKey: 'name',
         header: 'Name',
@@ -20,7 +20,7 @@ export const RACE_COLUMNS: ColumnDef<RaceInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 150,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<RaceSummary>(),
         meta: {
             required: true,
             filterType: FilterType.TEXT_INPUT,
@@ -34,7 +34,7 @@ export const RACE_COLUMNS: ColumnDef<RaceInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 100,
-        filterFn: createArrayIdFilter('editionId'),
+        filterFn: createArrayIdFilter<RaceSummary>('editionId'),
         cell: info => {
             const editionId = info.getValue() as number;
             return EDITION_MAP[editionId]?.abbreviation || '';
@@ -51,7 +51,7 @@ export const RACE_COLUMNS: ColumnDef<RaceInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 100,
-        filterFn: createEqualsFilter(),
+        filterFn: createEqualsFilter<RaceSummary>(),
         cell: info => {
             const isVisible = info.getValue() as boolean;
             return isVisible ? 'Yes' : 'No';
@@ -81,7 +81,7 @@ export const RACE_COLUMNS: ColumnDef<RaceInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 100,
-        filterFn: createEqualsFilter(),
+        filterFn: createEqualsFilter<RaceSummary>(),
         cell: info => {
             const sizeId = info.getValue() as number;
             return SIZE_MAP[sizeId]?.name || '';
@@ -105,7 +105,7 @@ export const RACE_COLUMNS: ColumnDef<RaceInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 120,
-        filterFn: createEqualsFilter(),
+        filterFn: createEqualsFilter<RaceSummary>(),
         cell: info => {
             const favoredClassId = info.getValue() as number;
             if (favoredClassId === -1) {

@@ -8,11 +8,13 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint:css": "stylelint './src/**/*.{css,scss}'",
-    "lint": "eslint . --ext .ts,.tsx,.js,.jsx --config ../../eslint.config.js --no-cache"
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx --config ../../eslint.config.js --no-cache",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@3d-dice/dice-box": "^1.1.4",
     "@3d-dice/dice-parser-interface": "^0.2.1",
+    "@3d-dice/dice-roller-parser": "^0.2.6",
     "@3d-dice/dice-ui": "^0.5.2",
     "@3d-dice/theme-blue-green-metal": "^0.2.0",
     "@3d-dice/theme-dice-of-rolling": "^0.2.1",

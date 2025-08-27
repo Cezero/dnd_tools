@@ -1,6 +1,6 @@
-import { Checkbox } from '@base-ui-components/react/checkbox';
+
 import { TrashIcon } from '@heroicons/react/24/outline';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 
@@ -12,9 +12,9 @@ import {
     CustomCheckbox
 } from '@/components/forms';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
-import { SpellService } from '@/features/spell/SpellService';
+import { SpellApi } from '@/features/spell/SpellApi';
 import { SpellLevelMapping, GetSpellResponse, UpdateSpellSchema, UpdateSpellRequest, SpellIdParamSchema } from '@shared/schema';
-import { SPELL_DESCRIPTOR_LIST, SPELL_SCHOOL_LIST, SPELL_COMPONENT_LIST, SPELL_RANGE_LIST, SPELL_RANGE_MAP, SPELL_SUBSCHOOL_LIST_BY_SCHOOL_ID, CLASS_LIST, CLASS_MAP, SPELL_SCHOOL_SELECT_LIST, SpellSubschool, SpellSubschoolSelectMap, SelectOption } from '@shared/static-data';
+import { SPELL_DESCRIPTOR_LIST, SPELL_COMPONENT_LIST, SPELL_RANGE_LIST, SPELL_RANGE_MAP, SPELL_SUBSCHOOL_LIST_BY_SCHOOL_ID, CLASS_LIST, CLASS_MAP, SPELL_SCHOOL_SELECT_LIST, SelectOption } from '@shared/static-data';
 
 export function SpellEdit() {
     const { id } = useParams();
@@ -48,7 +48,7 @@ export function SpellEdit() {
             try {
                 setIsLoading(true);
                 const validatedId = SpellIdParamSchema.parse({ id: id });
-                const fetchedSpell = await SpellService.getSpellById(undefined, validatedId);
+                const fetchedSpell = await SpellApi.getSpellById(undefined, validatedId);
                 setSpell(fetchedSpell);
                 setFormData(fetchedSpell);
 
@@ -66,7 +66,7 @@ export function SpellEdit() {
         fetchSpell();
     }, [id]);
 
-    const HandleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | string) => {
+    const _HandleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | string) => {
         let name: string, value: string | number;
 
         // MDEditor passes value directly as the first argument, not an event object
@@ -199,7 +199,7 @@ export function SpellEdit() {
                 levelMapping: classLevelMappings
             };
 
-            await SpellService.updateSpell(submitData as z.infer<typeof UpdateSpellSchema>, { id: parseInt(id) });
+            await SpellApi.updateSpell(submitData as z.infer<typeof UpdateSpellSchema>, { id: parseInt(id) });
             setMessage('Spell updated successfully!');
             navigate(`/spells/${id}`, { state: { fromListParams: fromListParams, refresh: true } });
 

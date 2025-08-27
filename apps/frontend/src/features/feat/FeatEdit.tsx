@@ -1,7 +1,6 @@
 import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { z } from 'zod';
 
 import {
     ValidatedForm,
@@ -10,18 +9,18 @@ import {
 } from '@/components/forms';
 import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
-import { CreateFeatSchema, FeatBenefitMapSchema, FeatPrerequisiteMapSchema, UpdateFeatSchema } from '@shared/schema';
+import { CreateFeatRequest, UpdateFeatRequest, UpdateFeatSchema, FeatBenefitMap, FeatPrerequisiteMap, BaseFeatSchema } from '@shared/schema';
 import { FEAT_BENEFIT_TYPE_BY_ID, FEAT_TYPE_SELECT_LIST, FeatBenefitType } from '@shared/static-data';
 
+import { FeatApi } from './FeatApi';
 import { FeatBenefitEdit } from './FeatBenefitEdit';
 import { FeatPrereqEdit } from './FeatPrereqEdit';
-import { FeatService } from './FeatService';
 import { FeatOptions, getPrereqDisplayText } from './FeatUtil';
 
 // Type definitions for the form state
-type FeatFormData = z.infer<typeof CreateFeatSchema> | z.infer<typeof UpdateFeatSchema>;
-type FeatBenefitFormData = z.infer<typeof FeatBenefitMapSchema>;
-type FeatPrerequisiteFormData = z.infer<typeof FeatPrerequisiteMapSchema>;
+type FeatFormData = CreateFeatRequest | UpdateFeatRequest;
+type FeatBenefitFormData = FeatBenefitMap;
+type FeatPrerequisiteFormData = FeatPrerequisiteMap;
 
 export function FeatEdit() {
     const { id } = useParams<{ id: string }>();
@@ -40,10 +39,10 @@ export function FeatEdit() {
     const fromListParams = location.state?.fromListParams || '';
 
     // Determine which schema to use based on whether we're creating or editing
-    const schema = id === 'new' ? CreateFeatSchema : UpdateFeatSchema;
+    const schema = id === 'new' ? BaseFeatSchema : UpdateFeatSchema;
 
     // Initialize form data with default values
-    const initialFormData: FeatFormData = {
+    const initialFormData: FeatFormData = useMemo(() => ({
         name: '',
         typeId: 1,
         description: '',
@@ -56,7 +55,7 @@ export function FeatEdit() {
         benefits: [],
         prereqs: [],
         ...(id !== 'new' && { id: parseInt(id) })
-    };
+    }), [id]);
 
     const [formData, setFormData] = useState<FeatFormData>(initialFormData);
 
@@ -82,7 +81,7 @@ export function FeatEdit() {
 
             try {
                 setIsLoading(true);
-                const fetchedFeat = await FeatService.getFeatById(undefined, { id: parseInt(id) });
+                const fetchedFeat = await FeatApi.getFeatById(undefined, { id: parseInt(id) });
                 setFeat(fetchedFeat);
                 setFormData(fetchedFeat);
             } catch (err) {
@@ -93,7 +92,7 @@ export function FeatEdit() {
         };
 
         fetchFeat();
-    }, [id]);
+    }, [id, initialFormData]);
 
     // Load prerequisite display texts
     useEffect(() => {
@@ -157,7 +156,7 @@ export function FeatEdit() {
             index: formData.prereqs?.length || 0,
             typeId: null,
             referenceId: null,
-            amount: null
+            amount: null,
         });
         setIsAddPrereqModalOpen(true);
     }, [formData.prereqs]);
@@ -207,7 +206,7 @@ export function FeatEdit() {
         try {
             setIsLoading(true);
             if (id === 'new') {
-                const newFeat = await FeatService.createFeat(formData as z.infer<typeof CreateFeatSchema>);
+                const newFeat = await FeatApi.createFeat(formData as CreateFeatRequest);
                 setMessage('Feat created successfully!');
 
                 // Navigate based on where user came from
@@ -221,7 +220,7 @@ export function FeatEdit() {
                     }
                 }, 1500);
             } else {
-                await FeatService.updateFeat(formData as z.infer<typeof UpdateFeatSchema>, { id: parseInt(id) });
+                await FeatApi.updateFeat(formData as UpdateFeatRequest, { id: parseInt(id) });
                 setMessage('Feat updated successfully!');
 
                 // Navigate based on where user came from

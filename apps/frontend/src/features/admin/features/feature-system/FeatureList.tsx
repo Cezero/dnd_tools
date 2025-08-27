@@ -1,11 +1,10 @@
-import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
+import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { GenericList } from '@/components/generic-list/GenericList';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
-import { FeatureSystemService } from '@/services/FeatureSystemService';
-import { FeatureInQueryResponse } from '@shared/schema';
+import { Feature } from '@shared/schema';
 
 import { FEATURE_COLUMNS, routes } from './FeatureConfig';
 
@@ -38,13 +37,13 @@ export default function FeatureList() {
                     </button>
                 </div>
             )}
-            <GenericList<FeatureInQueryResponse>
+            <GenericList<Feature>
                 storageKey="features-list"
                 columns={FEATURE_COLUMNS}
-                serviceFunction={() => FeatureSystemService.getFeatures({})}
+                serviceFunction={() => FeatureSystemApi.getFeatures({})}
                 itemDesc="feature"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction(FeatureSystemService.deleteFeature)}
+                deleteServiceFunction={createIdDeleteServiceFunction(FeatureSystemApi.deleteFeature)}
             />
         </div>
     );

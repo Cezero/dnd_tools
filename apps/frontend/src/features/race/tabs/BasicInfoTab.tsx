@@ -1,17 +1,15 @@
 import React from 'react';
 
-import { EDITION_SELECT_LIST_FULL, SIZE_SELECT_LIST, GetBaseClassesByEdition } from '@shared/static-data';
-
 import { ValidatedInput } from '@/components/forms';
 import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
+import { EDITION_SELECT_LIST_FULL, SIZE_SELECT_LIST, GetBaseClassesByEdition } from '@shared/static-data';
 
 import type { RaceTabProps } from './types';
 
 export function BasicInfoTab({
     formData,
     setFormData,
-    validation,
-    isLoading = false
+    isLoading: _isLoading = false
 }: RaceTabProps): React.JSX.Element {
     return (
         <div className="p-6 space-y-6">
@@ -40,7 +38,7 @@ export function BasicInfoTab({
                             labelExtraClassName="w-30"
                             itemExtraClassName="w-auto"
                             itemTextExtraClassName="w-16"
-                            onValueChange={(value) => setFormData(prev => ({ ...prev, sizeId: value as number }))}
+                            onValueChange={(value) => setFormData({ ...formData, sizeId: value as number })}
                             placeholder="Select size"
                         />
                         <ValidatedInput
@@ -61,7 +59,7 @@ export function BasicInfoTab({
                             itemExtraClassName="w-full"
                             itemTextExtraClassName="w-24"
                             value={formData.favoredClassId}
-                            onValueChange={(value) => setFormData(prev => ({ ...prev, favoredClassId: value as number }))}
+                            onValueChange={(value) => setFormData({ ...formData, favoredClassId: value as number })}
                             options={[
                                 { value: -1, label: 'Any' },
                                 ...GetBaseClassesByEdition(formData.editionId)
@@ -79,14 +77,14 @@ export function BasicInfoTab({
                                 itemExtraClassName="w-24"
                                 itemTextExtraClassName="w-16"
                                 value={formData.editionId}
-                                onValueChange={(value) => setFormData(prev => ({ ...prev, editionId: value as number }))}
+                                onValueChange={(value) => setFormData({ ...formData, editionId: value as number })}
                                 options={EDITION_SELECT_LIST_FULL}
                                 placeholder="Select edition"
                             />
                             <CustomCheckbox
                                 label="Visible in Lists"
                                 checked={formData.isVisible as boolean}
-                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isVisible: checked }))}
+                                onCheckedChange={(checked) => setFormData({ ...formData, isVisible: checked })}
                             />
                         </div>
                     </div>

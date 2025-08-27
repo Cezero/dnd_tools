@@ -1,11 +1,10 @@
 import { ColumnDef } from '@tanstack/react-table';
-import { z } from 'zod';
 
 import { createContainsFilter } from '@/components/generic-list/filterFunctions';
-import { FeatureSchema } from '@shared/schema';
+import { Feature } from '@shared/schema';
 import { FilterType } from '@shared/static-data';
 
-export const CLASS_FEATURE_COLUMNS: ColumnDef<z.infer<typeof FeatureSchema>, unknown>[] = [
+export const CLASS_FEATURE_COLUMNS: ColumnDef<Feature, unknown>[] = [
     {
         accessorKey: 'id',
         header: 'ID',
@@ -13,7 +12,7 @@ export const CLASS_FEATURE_COLUMNS: ColumnDef<z.infer<typeof FeatureSchema>, unk
         enableColumnFilter: true,
         enableResizing: true,
         size: 80,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<Feature>(),
         meta: {
             required: true,
             filterType: FilterType.TEXT_INPUT,
@@ -27,7 +26,7 @@ export const CLASS_FEATURE_COLUMNS: ColumnDef<z.infer<typeof FeatureSchema>, unk
         enableColumnFilter: true,
         enableResizing: true,
         size: 200,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<Feature>(),
         meta: {
             required: true,
             filterType: FilterType.TEXT_INPUT,
@@ -41,7 +40,7 @@ export const CLASS_FEATURE_COLUMNS: ColumnDef<z.infer<typeof FeatureSchema>, unk
         enableColumnFilter: true,
         enableResizing: true,
         size: 200,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<Feature>(),
     },
     {
         accessorKey: 'description',

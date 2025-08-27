@@ -1,4 +1,5 @@
 import { FilterType } from '@shared/static-data';
+
 import { FilterConfig, FilterValue } from './types';
 
 export const formatFilterTooltip = (

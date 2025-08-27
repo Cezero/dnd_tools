@@ -1,6 +1,6 @@
 import type {
     GetAllCharactersResponse,
-    CharacterResponse,
+    Character,
     CreateCharacterRequest,
     UpdateCharacterRequest,
     CharacterIdParamRequest,
@@ -22,7 +22,7 @@ import type {
 // Service interface
 export interface CharacterService {
     getAllCharacters: (userId: number) => Promise<GetAllCharactersResponse>;
-    getCharacterById: (query: CharacterIdParamRequest) => Promise<CharacterResponse | null>;
+    getCharacterById: (query: CharacterIdParamRequest) => Promise<Character | null>;
     getCharacterWithAllDetails: (query: CharacterIdParamRequest) => Promise<CharacterWithAllDetailsResponse | null>;
     createCharacter: (data: CreateCharacterRequest) => Promise<CreateResponse>;
     updateCharacter: (query: CharacterIdParamRequest, data: UpdateCharacterRequest) => Promise<UpdateResponse>;

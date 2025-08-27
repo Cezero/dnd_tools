@@ -19,7 +19,6 @@ import type { ClassTabProps } from './types';
 export function BasicInfoTab({
     formData,
     setFormData,
-    validation,
     isLoading: _isLoading = false
 }: ClassTabProps): React.JSX.Element {
     const progressionConfig = {
@@ -89,9 +88,6 @@ export function BasicInfoTab({
                             options={BAB_PROGRESSION_SELECT_LIST}
                             placeholder="Select BAB progression"
                         />
-                        {validation?.babProgression && (
-                            <p className="text-red-500 text-sm mt-1">{validation.babProgression}</p>
-                        )}
                         <CustomSelect
                             label="Fortitude Save"
                             required
@@ -104,9 +100,6 @@ export function BasicInfoTab({
                             options={SAVE_PROGRESSION_SELECT_LIST}
                             placeholder="Select Fortitude progression"
                         />
-                        {validation?.fortProgression && (
-                            <p className="text-red-500 text-sm mt-1">{validation.fortProgression}</p>
-                        )}
                         <CustomSelect
                             label="Reflex Save"
                             required
@@ -119,9 +112,6 @@ export function BasicInfoTab({
                             options={SAVE_PROGRESSION_SELECT_LIST}
                             placeholder="Select Reflex progression"
                         />
-                        {validation?.refProgression && (
-                            <p className="text-red-500 text-sm mt-1">{validation.refProgression}</p>
-                        )}
                         <CustomSelect
                             label="Will Save"
                             required
@@ -134,9 +124,6 @@ export function BasicInfoTab({
                             options={SAVE_PROGRESSION_SELECT_LIST}
                             placeholder="Select Will progression"
                         />
-                        {validation?.willProgression && (
-                            <p className="text-red-500 text-sm mt-1">{validation.willProgression}</p>
-                        )}
                     </div>
                 </div>
 

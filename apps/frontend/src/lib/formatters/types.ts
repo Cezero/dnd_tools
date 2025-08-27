@@ -1,9 +1,11 @@
 import type {
-    FeatureModifierInQueryResponse,
-    FeatureChoiceInQueryResponse,
-    FeatureSpecialEffectInQueryResponse
+    FeatureModifier,
+    FeatureChoice,
+    FeatureSpecialEffect,
+    FormulaParamsData,
+    FeatureProgression
 } from '@shared/schema';
-import type { Formula } from '@shared/static-data';
+import type { BreakdownComponentType, Formula } from '@shared/static-data';
 import { ModifierAppliesToType, DisplayType, ModifierType, FeatureSpecialEffectType, FeatureChoiceType } from '@shared/static-data';
 
 // Numeric enum for feature types - moved from formatter-registry.ts
@@ -26,7 +28,7 @@ export interface ProcessingConfig {
 
 // Processing context interface for consolidated processing functions
 export interface ProcessingContext {
-    progression: FeatureProgressionWithRelations;
+    progression: FeatureProgression;
     context?: DisplayContext;
     metadata?: FormatterMetadata;
     conditionPrefix?: string;
@@ -45,8 +47,8 @@ export interface ProcessingResult {
 
 // Strategy interface for processing different types of entities
 export interface ProcessingStrategy {
-    canProcess(entities: Array<FeatureModifierInQueryResponse | FeatureChoiceInQueryResponse | FeatureSpecialEffectInQueryResponse>, context: ProcessingContext): boolean;
-    process(entities: Array<FeatureModifierInQueryResponse | FeatureChoiceInQueryResponse | FeatureSpecialEffectInQueryResponse>, context: ProcessingContext): string;
+    canProcess(entities: Array<FeatureModifier | FeatureChoice | FeatureSpecialEffect>, context: ProcessingContext): boolean;
+    process(entities: Array<FeatureModifier | FeatureChoice | FeatureSpecialEffect>, context: ProcessingContext): string;
     getPriority(): number; // Higher priority strategies are tried first
 }
 
@@ -108,8 +110,8 @@ export interface FormattedItemWithBreakdown {
     breakdown: CalculationBreakdown;
     metadata?: FormatterMetadata;
     // Original data for grouping strategies to access
-    modifier?: FeatureModifierInQueryResponse;
-    choice?: FeatureChoiceInQueryResponse;
+    modifier?: FeatureModifier;
+    choice?: FeatureChoice;
 }
 
 // Grouped result from grouping strategies
@@ -163,7 +165,7 @@ export interface Condition {
 export interface BreakdownComponent {
     source: string;
     value: number | string;
-    type: number; // BreakdownComponentType
+    type: BreakdownComponentType;
     description?: string;
     formula?: string;
     condition?: Condition;
@@ -215,7 +217,7 @@ export interface LevelEntry {
 // Display result for formatter output
 export interface DisplayResult extends BaseDisplayResult {
     showBreakdown: boolean;
-    components: Array<FeatureModifierInQueryResponse | FeatureChoiceInQueryResponse | FeatureSpecialEffectInQueryResponse>;
+    components: Array<FeatureModifier | FeatureChoice | FeatureSpecialEffect>;
     levelEntries?: LevelEntry[];
     conditionalDisplays?: ConditionalDisplay[];
     progressionId?: number; // For xxxEdit page 1:1 relationship
@@ -278,9 +280,9 @@ export interface ProgressionValue {
     value: number;
     breakdown: CalculationBreakdown;
     conditionalValues?: ConditionalValue[];
-    choices?: FeatureChoiceInQueryResponse[];
-    modifiers?: FeatureModifierInQueryResponse[];
-    effects?: FeatureSpecialEffectInQueryResponse[];
+    choices?: FeatureChoice[];
+    modifiers?: FeatureModifier[];
+    effects?: FeatureSpecialEffect[];
 }
 
 // Transition point for progression transitions (Layer 4)
@@ -296,22 +298,21 @@ export interface TransitionPoint {
 export interface BaseFormatter {
     format(
         value: number | string,
-        modifier: FeatureModifierInQueryResponse, // Direct access to modifier data
+        modifier: FeatureModifier, // Direct access to modifier data
         metadata?: FormatterMetadata // Supplementary formatting data
     ): string;
 }
 
 // Choice formatter interface
 export interface ChoiceFormatter {
-    formatChoice(choice: FeatureChoiceInQueryResponse, metadata?: FormatterMetadata): string;
+    formatChoice(choice: FeatureChoice, metadata?: FormatterMetadata): string;
 }
 
 // Effect formatter interface
 export interface EffectFormatter {
-    format(effect: FeatureSpecialEffectInQueryResponse, level: number): string;
+    format(effect: FeatureSpecialEffect, level: number): string;
 }
 
-import type { FormulaParamsData, FeatureProgressionWithRelations } from '@shared/schema';
 
 // Formula calculator interface
 export interface FormulaCalculator {
@@ -347,28 +348,11 @@ export interface TransitionDetector {
 
 // Display strategy interface
 export interface DisplayStrategy {
-    formatProgression?(progression: FeatureProgressionWithRelations, context?: DisplayContext, metadata?: FormatterMetadata): EditPageDisplayResult;
-    formatProgressions?(progressions: FeatureProgressionWithRelations[], context?: DisplayContext, metadata?: FormatterMetadata): DisplayResult;
+    formatProgression?(progression: FeatureProgression, context?: DisplayContext, metadata?: FormatterMetadata): EditPageDisplayResult;
+    formatProgressions?(progressions: FeatureProgression[], context?: DisplayContext, metadata?: FormatterMetadata): DisplayResult;
 }
 
-// Formatter orchestrator interface
-export interface FormatterOrchestrator {
-    formatProgressionForEdit(progression: FeatureProgressionWithRelations, context?: DisplayContext, metadata?: FormatterMetadata): EditPageDisplayResult;
-    formatProgressionForEditDisplay(progression: FeatureProgressionWithRelations, context?: DisplayContext, metadata?: FormatterMetadata): string;
-    formatProgressionsForDetailDisplay(progressions: FeatureProgressionWithRelations[], context?: DisplayContext, metadata?: FormatterMetadata): Map<number, Array<{ formattedValue: string; featureId: number; feature?: { id: number; name: string; description: string; slug: string; prerequisites?: unknown[] } }>>;
-    formatProgressionsForDetail(progressions: FeatureProgressionWithRelations[], context?: DisplayContext, metadata?: FormatterMetadata): DisplayResult;
-    formatProgressionsForCharacterSheet(progressions: FeatureProgressionWithRelations[], context?: DisplayContext, metadata?: FormatterMetadata): DisplayResult;
-    formatProgressions(progressions: FeatureProgressionWithRelations[], displayType: DisplayType, context?: DisplayContext, metadata?: FormatterMetadata): DisplayResult | EditPageDisplayResult[];
-    getDisplayStrategy(displayType: DisplayType): DisplayStrategy;
-    formatValue(value: number | string, appliesToType: ModifierAppliesToType, modifier?: FeatureModifierInQueryResponse, metadata?: FormatterMetadata): string;
-    formatChoice(choice: FeatureChoiceInQueryResponse, metadata?: FormatterMetadata): string;
-    generateProgressionValues(formula: FormulaParamsData, startLevel: number, endLevel: number, context?: CalculationContext): ProgressionValue[];
-    findTransitions(values: ProgressionValue[]): TransitionPoint[];
-    getCurrentValue(progression: FeatureProgressionWithRelations, targetLevel: number, context?: DisplayContext): number;
-    getMaxValue(progression: FeatureProgressionWithRelations, maxLevel: number, context?: DisplayContext): number;
-    hasTransitions(progression: FeatureProgressionWithRelations, maxLevel: number, context?: DisplayContext): boolean;
-    getTransitionLevels(progression: FeatureProgressionWithRelations, maxLevel: number, context?: DisplayContext): number[];
-}
+
 
 // Choice calculator interface
 export interface IChoiceCalculator {
@@ -381,5 +365,5 @@ export interface IChoiceCalculator {
 
 // Conditional value detector interface
 export interface ConditionalValueDetector {
-    detectConditionals(modifiers: FeatureModifierInQueryResponse[], context?: CharacterContext): Array<ConditionalValue>;
+    detectConditionals(modifiers: FeatureModifier[], context?: CharacterContext): Array<ConditionalValue>;
 }

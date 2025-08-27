@@ -4,9 +4,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
+import { SkillApi } from '@/features/skill/SkillApi';
 import { SKILL_COLUMNS } from '@/features/skill/SkillColumns';
-import { SkillService } from '@/features/skill/SkillService';
-import { SkillInQueryResponse } from '@shared/schema';
+import { Skill } from '@shared/schema';
 
 import { routes } from './SkillConfig';
 
@@ -36,13 +36,13 @@ export function SkillList(): React.JSX.Element {
                     </button>
                 </div>
             )}
-            <GenericList<SkillInQueryResponse>
+            <GenericList<Skill>
                 storageKey="skills-list"
                 columns={SKILL_COLUMNS}
-                serviceFunction={() => SkillService.getSkills({})}
+                serviceFunction={() => SkillApi.getSkills({})}
                 itemDesc="skill"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction(SkillService.deleteSkill)}
+                deleteServiceFunction={createIdDeleteServiceFunction(SkillApi.deleteSkill)}
             />
         </div>
     );

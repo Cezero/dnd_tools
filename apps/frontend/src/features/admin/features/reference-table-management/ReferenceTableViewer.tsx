@@ -3,7 +3,7 @@ import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { ReferenceTableService } from '@/features/admin/features/reference-table-management/ReferenceTableService';
+import { ReferenceTableApi } from '@/features/admin/features/reference-table-management/ReferenceTableApi';
 import { ReferenceTableSummary } from '@shared/schema';
 
 export function ReferenceTableViewer() {
@@ -20,7 +20,7 @@ export function ReferenceTableViewer() {
 
     useEffect(() => {
         const Initialize = async () => {
-            const summary = await ReferenceTableService.getReferenceTableSummaryBySlug(undefined, { slug: slug! });
+            const summary = await ReferenceTableApi.getReferenceTableSummaryBySlug(undefined, { slug: slug! });
             setTableSummary(summary);
         };
         Initialize();

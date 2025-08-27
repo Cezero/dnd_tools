@@ -113,8 +113,8 @@ function isDarkColor(hex: string): boolean {
 /**
  * Generate a contrasting color (light or dark based on input)
  */
-function generateContrastingColor(baseColor: string, targetContrast: number = 4.5): string {
-    const baseLuminance = getLuminance(baseColor);
+function generateContrastingColor(baseColor: string, _targetContrast: number = 4.5): string {
+    const _baseLuminance = getLuminance(baseColor);
     const isBaseDark = isDarkColor(baseColor);
     const baseHsl = hexToHsl(baseColor);
 

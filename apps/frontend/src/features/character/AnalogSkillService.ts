@@ -1,4 +1,4 @@
-import type { CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse } from '@shared/schema';
 import { SKILL_MAP, ABILITY_MAP, GetAbilityModifier } from '@shared/static-data';
 
 export interface AnalogSkillInfo {

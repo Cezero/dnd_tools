@@ -1,5 +1,6 @@
 // Main component exports
 export { GenericList } from './GenericList';
+export { ListSelectionDialog } from './ListSelectionDialog';
 
 // Utility components
 export { formatFilterTooltip } from './filterTooltipUtils';

@@ -1,51 +1,6 @@
 import { z } from 'zod';
 import { QueryResponseSchema } from './query.js';
 
-// Dice result interface for callback functions
-export interface DiceResult {
-    notation: string;
-    results: number[];
-    total: number;
-    group?: string;
-    originalNotation?: string;
-    critHighlight?: boolean;
-}
-
-// Full DiceBox configuration type (for internal use)
-export interface DiceBoxConfig {
-    id?: string;
-    assetPath?: string;
-    container?: string | Element;
-    gravity?: number;
-    mass?: number;
-    friction?: number;
-    restitution?: number;
-    angularDamping?: number;
-    linearDamping?: number;
-    spinForce?: number;
-    throwForce?: number;
-    startingHeight?: number;
-    settleTimeout?: number;
-    offscreen?: boolean;
-    delay?: number;
-    lightIntensity?: number;
-    enableShadows?: boolean;
-    shadowTransparency?: number;
-    theme?: string; // 3D dice theme name (not ID)
-    preloadThemes?: string[];
-    externalThemes?: Record<string, string>;
-    themeColor?: string;
-    scale?: number;
-    suspendSimulation?: boolean;
-    origin?: string;
-    onBeforeRoll?: (notation: string) => void;
-    onDieComplete?: (results: DiceResult) => void;
-    onRollComplete?: (results: DiceResult | DiceResult[]) => void;
-    onRemoveComplete?: () => void;
-    onThemeConfigLoaded?: (theme: string) => void;
-    onThemeLoaded?: (theme: string) => void;
-}
-
 // Base DiceBox admin configuration schema (includes id, no createdAt/updatedAt)
 export const DiceBoxAdminConfigSchema = z.object({
     id: z.number().int().positive('Dice configuration ID must be a positive integer'),
@@ -106,7 +61,6 @@ export const UpdateUserDiceConfigOverrideSchema = UserDiceConfigOverrideSchema.p
 
 export type CreateDiceBoxAdminConfigRequest = z.infer<typeof CreateDiceBoxAdminConfigRequestSchema>;
 export type UpdateDiceBoxAdminConfigRequest = z.infer<typeof UpdateDiceBoxAdminConfigRequestSchema>;
-export type DiceBoxAdminConfigInQueryResponse = z.infer<typeof DiceBoxAdminConfigSchema>;
 
 // User dice config override types
 export type UserDiceConfigOverride = z.infer<typeof UserDiceConfigOverrideSchema>;

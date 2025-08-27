@@ -6,10 +6,11 @@ import { ChevronDoubleUpIcon, ChevronDoubleDownIcon, FunnelIcon as FunnelIconSol
 import { flexRender, type Header, type Column } from '@tanstack/react-table';
 import React, { useState, useRef } from 'react';
 
+import { FilterType } from '@shared/static-data';
+
 import { FilterSubmenu } from './FilterSubmenu';
 import { formatFilterTooltip } from './filterTooltipUtils';
 import { FilterConfig, FilterValue, DataItem } from './types';
-import { FilterType } from '@shared/static-data';
 
 interface ColumnHeaderContextMenuProps {
     header: Header<DataItem, unknown>;

@@ -3,7 +3,7 @@ import { QueryResponseSchema } from './query.js';
 import { SourceMapSchema } from './sourcebook.js';
 import { CastingType, ProgressionType } from '@shared/static-data';
 import { CreateFeatureProgressionSchema, FeatureProgressionSchema } from './feature.js';
-import { SpellcastingProgressionSchema, CreateSpellcastingProgressionSchema, SpellcastingProgressionWithSlotsSchema } from './spellcasting.js';
+import { CreateSpellcastingProgressionSchema, SpellcastingProgressionWithSlotsSchema } from './spellcasting.js';
 
 export const BaseClassSchema = z.object({
     name: z.string()
@@ -49,8 +49,6 @@ export const GetAllClassesResponseSchema = QueryResponseSchema.extend({
     results: z.array(ClassSummarySchema),
 });
 
-export const GetClassResponseSchema = BaseClassSchema;
-
 export const UpdateClassSchema = BaseClassSchema.omit({
     features: true,
     spellcastingProgression: true,
@@ -71,9 +69,9 @@ export const CreateClassSchema = BaseClassSchema.omit({
     spellsKnownProgression: z.array(CreateSpellcastingProgressionSchema).nullable(),
 });
 
-export type ClassInQueryResponse = z.infer<typeof ClassSummarySchema>;
+export type ClassSummary = z.infer<typeof ClassSummarySchema>;
 export type ClassIdParamRequest = z.infer<typeof ClassIdParamSchema>;
 export type GetAllClassesResponse = z.infer<typeof GetAllClassesResponseSchema>;
 export type CreateClassRequest = z.infer<typeof CreateClassSchema>;
 export type UpdateClassRequest = z.infer<typeof UpdateClassSchema>;
-export type GetClassResponse = z.infer<typeof GetClassResponseSchema>;
+export type DnDClass = z.infer<typeof BaseClassSchema>;

@@ -1,21 +1,15 @@
 import { UserIcon, Cog6ToothIcon, CubeIcon } from '@heroicons/react/24/outline';
 import React, { useState, useEffect } from 'react';
 
-import type { AuthContextType } from '@/components/auth/types';
-import { withAuthContext } from '@/components/auth/withAuth';
+import { UseAuth } from '@/components/auth';
 import { DiceButton, useDiceBox } from '@/components/dice-box';
+import { DiceBoxService } from '@/components/dice-box/DiceBoxService';
 import { SliderControl } from '@/components/forms';
 import { CustomSelect } from '@/components/forms/FormComponents';
+import { UserProfileApi } from '@/components/profile/UserProfileApi';
 import { ColorPicker } from '@/components/widgets';
-import { DiceBoxService } from '@/services/DiceBoxService';
-import { UserProfileService } from '@/services/UserProfileService';
 import type { UserProfileResponse, UpdateUserProfileRequest, GetAllDiceConfigsResponse, UpdateUserDiceConfigRequest } from '@shared/schema';
 import { THREE_D_DICE_THEME_SELECT_LIST, doesThemeIgnoreColor } from '@shared/static-data';
-
-
-interface ProfilePageProps {
-    auth: AuthContextType;
-}
 
 interface TabConfig {
     id: string;
@@ -45,7 +39,8 @@ const tabs: TabConfig[] = [
     }
 ];
 
-function ProfilePageComponent({ auth: _auth }: ProfilePageProps): React.JSX.Element {
+export function ProfilePage(): React.JSX.Element {
+    const { UpdateUserProfile } = UseAuth();
     const [activeTab, setActiveTab] = useState<string>('identity');
     const [profile, setProfile] = useState<UserProfileResponse | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -59,7 +54,7 @@ function ProfilePageComponent({ auth: _auth }: ProfilePageProps): React.JSX.Elem
         try {
             setIsLoading(true);
             setError(null);
-            const response = await UserProfileService.getUserProfile({});
+            const response = await UserProfileApi.getUserProfile({});
             setProfile(response);
         } catch (err) {
             console.error('Failed to load profile:', err);
@@ -71,17 +66,15 @@ function ProfilePageComponent({ auth: _auth }: ProfilePageProps): React.JSX.Elem
 
     const handleUpdate = async (data: Partial<UpdateUserProfileRequest>): Promise<void> => {
         try {
-            const response = await UserProfileService.updateUserProfile(data);
-            setProfile(response.user);
-
-            // Update auth context with new token and user data
-            if (response.token) {
-                localStorage.setItem('token', response.token);
-                // Note: You might need to add a method to refresh user data in auth context
+            // Use the auth context method instead of calling the service directly
+            const success = await UpdateUserProfile(data);
+            
+            if (success) {
+                // Reload the profile to get the updated data
+                await loadProfile();
+            } else {
+                throw new Error('Failed to update profile');
             }
-
-            // Note: No need to refresh dice config here since the DiceBox is already properly configured
-            // from the test dice interactions on the profile page
         } catch (err) {
             console.error('Failed to update profile:', err);
             throw err;
@@ -190,8 +183,6 @@ function ProfilePageComponent({ auth: _auth }: ProfilePageProps): React.JSX.Elem
         </div>
     );
 }
-
-export const ProfilePage = withAuthContext(ProfilePageComponent);
 
 // Tab Components
 function IdentityTab({ profile, onUpdate: _onUpdate }: { profile: UserProfileResponse | null; onUpdate: (data: Partial<UpdateUserProfileRequest>) => Promise<void> }): React.JSX.Element {

@@ -1,5 +1,5 @@
 import {
-    FeatureProgressionWithRelations,
+    FeatureProgression,
 } from '@shared/schema';
 import {
     ModifierAppliesToType,
@@ -11,7 +11,7 @@ export const ClassSkillService = {
     /**
  * Extract class skills from feature progressions
  */
-    getClassSkills(progressions: FeatureProgressionWithRelations[]): number[] {
+    getClassSkills(progressions: FeatureProgression[]): number[] {
         return progressions
             .filter(prog => prog.featureId === SpecialFeatureId.ClassSkill)
             .flatMap(prog =>
@@ -26,8 +26,8 @@ export const ClassSkillService = {
      * Add a skill to class skills progression
      */
     addSkill(
-        featureProgressions: FeatureProgressionWithRelations[],
-        setFeatureProgressions: (progressions: FeatureProgressionWithRelations[]) => void,
+        featureProgressions: FeatureProgression[],
+        setFeatureProgressions: (progressions: FeatureProgression[]) => void,
         skillId: number,
         classId: number
     ) {
@@ -100,8 +100,8 @@ export const ClassSkillService = {
      * Remove a skill from class skills progression
      */
     removeSkill(
-        featureProgressions: FeatureProgressionWithRelations[],
-        setFeatureProgressions: (progressions: FeatureProgressionWithRelations[]) => void,
+        featureProgressions: FeatureProgression[],
+        setFeatureProgressions: (progressions: FeatureProgression[]) => void,
         skillId: number
     ) {
         const updatedProgressions = featureProgressions.map(prog => {

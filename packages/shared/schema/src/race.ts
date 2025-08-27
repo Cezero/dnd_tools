@@ -29,8 +29,6 @@ export const GetAllRacesResponseSchema = QueryResponseSchema.extend({
     results: z.array(RaceSummarySchema),
 });
 
-export const GetRaceResponseSchema = BaseRaceSchema;
-
 export const UpdateRaceSchema = BaseRaceSchema.omit({
     features: true,
 }).extend({
@@ -46,6 +44,6 @@ export const CreateRaceSchema = BaseRaceSchema.omit({
 export type RaceIdParamRequest = z.infer<typeof RaceIdParamSchema>;
 export type CreateRaceRequest = z.infer<typeof CreateRaceSchema>;
 export type UpdateRaceRequest = z.infer<typeof UpdateRaceSchema>;
-export type RaceInQueryResponse = z.infer<typeof RaceSummarySchema>;
-export type GetRaceResponse = z.infer<typeof GetRaceResponseSchema>;
+export type RaceSummary = z.infer<typeof RaceSummarySchema>;
+export type Race = z.infer<typeof BaseRaceSchema>;
 export type GetAllRacesResponse = z.infer<typeof GetAllRacesResponseSchema>;

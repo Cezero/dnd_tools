@@ -1,10 +1,10 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter } from '@/components/generic-list/filterFunctions';
-import { FeatureInQueryResponse } from '@shared/schema';
+import { Feature } from '@shared/schema';
 import { FilterType } from '@shared/static-data';
 
-export const FEATURE_COLUMNS: ColumnDef<FeatureInQueryResponse, unknown>[] = [
+export const FEATURE_COLUMNS: ColumnDef<Feature, unknown>[] = [
     {
         accessorKey: 'id',
         header: 'ID',
@@ -12,7 +12,7 @@ export const FEATURE_COLUMNS: ColumnDef<FeatureInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 80,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<Feature>(),
         meta: {
             required: true,
             filterType: FilterType.TEXT_INPUT,
@@ -26,7 +26,7 @@ export const FEATURE_COLUMNS: ColumnDef<FeatureInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 200,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<Feature>(),
         meta: {
             required: true,
             filterType: FilterType.TEXT_INPUT,
@@ -40,7 +40,7 @@ export const FEATURE_COLUMNS: ColumnDef<FeatureInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 200,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<Feature>(),
     },
     {
         accessorKey: 'description',

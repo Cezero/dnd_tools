@@ -1,30 +1,35 @@
 import { TrashIcon } from '@heroicons/react/24/outline';
 import React, { useState } from 'react';
 
-import { FeatureSelectionDialog } from '@/components/feature-system';
+import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
+import { ListSelectionDialog } from '@/components/generic-list';
 import { renderCellValue } from '@/components/generic-list/columnUtils';
-import { formatterOrchestrator, formatPrerequisites, formatWildShapeProgressions, expandFormulaProgressions } from '@/lib/formatters';
-import { FeatureProgressionWithRelations } from '@shared/schema';
-
+import { displayStrategyFactory } from '@/lib/formatters';
+import { Feature, FeatureProgression } from '@shared/schema';
+import { DisplayType, FeatureSourceType } from '@shared/static-data';
 
 interface FeaturesTabProps {
     // Common props
-    featureProgressions: FeatureProgressionWithRelations[];
-    onEditProgression: (progression: FeatureProgressionWithRelations) => void;
-    onRemoveProgression: (progressionId: number) => void;
-    onAddFeature: (feature: { id: number; name: string; description: string; slug: string }) => void;
+    featureProgressions?: FeatureProgression[];
+    onEditProgression?: (progression: FeatureProgression) => void;
+    onRemoveProgression?: (progressionId: number) => void;
+    onAddFeature?: (feature: { id: number; name: string; description: string; slug: string }) => void;
 
     // Context-specific props
-    contextType: 'class' | 'race';
+    contextType: FeatureSourceType;
     contextId: number;
+
+    // UI text props
+    title: string;
+    emptyMessage: string;
 
     // Special feature filtering
     excludeSpecialFeatures?: number[];
 
     // Dialog state management
-    setEditingProgression: (progression: FeatureProgressionWithRelations | null) => void;
-    setPreSelectedFeature: (feature: FeatureProgressionWithRelations['feature'] | null) => void;
-    setIsProgressionDialogOpen: (open: boolean) => void;
+    setEditingProgression?: (progression: FeatureProgression | null) => void;
+    setPreSelectedFeature?: (feature: FeatureProgression['feature'] | null) => void;
+    setIsProgressionDialogOpen?: (open: boolean) => void;
 }
 
 export function FeaturesTab({
@@ -34,6 +39,8 @@ export function FeaturesTab({
     onAddFeature,
     contextType,
     contextId,
+    title,
+    emptyMessage,
     excludeSpecialFeatures = [],
     setEditingProgression,
     setPreSelectedFeature,
@@ -54,53 +61,24 @@ export function FeaturesTab({
             }
             acc[featureId].progressions.push(progression);
             return acc;
-        }, {} as Record<number, { feature: FeatureProgressionWithRelations['feature']; progressions: FeatureProgressionWithRelations[] }>);
+        }, {} as Record<number, { feature: FeatureProgression['feature']; progressions: FeatureProgression[] }>);
 
     // Sort features by name
     const sortedFeatures = Object.values(featuresByFeature).sort((a, b) =>
         (a.feature?.name || '').localeCompare(b.feature?.name || '')
     );
 
-    const handleEditProgression = (progression: FeatureProgressionWithRelations) => {
-        if (onEditProgression) {
-            onEditProgression(progression);
-        }
+    const handleEditProgression = (progression: FeatureProgression) => {
+        onEditProgression?.(progression);
     };
 
     const handleRemoveProgression = (progressionId: number) => {
-        if (onRemoveProgression) {
-            onRemoveProgression(progressionId);
-        }
+        onRemoveProgression?.(progressionId);
     };
 
     const handleFeatureSelected = (feature: { id: number; name: string; description: string; slug: string }) => {
-        if (onAddFeature) {
-            onAddFeature(feature);
-        }
+        onAddFeature?.(feature);
     };
-
-    // Get context-specific title and empty state message
-    const getContextSpecificText = () => {
-        switch (contextType) {
-            case 'class':
-                return {
-                    title: 'Class Features',
-                    emptyMessage: 'No features associated with this class'
-                };
-            case 'race':
-                return {
-                    title: 'Race Features',
-                    emptyMessage: 'No features associated with this race'
-                };
-            default:
-                return {
-                    title: 'Features',
-                    emptyMessage: 'No features associated'
-                };
-        }
-    };
-
-    const { title, emptyMessage } = getContextSpecificText();
 
     return (
         <>
@@ -109,10 +87,8 @@ export function FeaturesTab({
                     <h2 className="text-xl font-semibold">{title}</h2>
                     <button
                         type="button"
-                        onClick={() => {
-                            setIsFeatureSelectionOpen(true);
-                        }}
-                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                        onClick={() => setIsFeatureSelectionOpen(true)}
+                        className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
                     >
                         Add Feature
                     </button>
@@ -128,7 +104,7 @@ export function FeaturesTab({
                             const progressionsByLevel = isWildShape ?
                                 (() => {
                                     // Expand formula-based progressions
-                                    const expandedProgressions = expandFormulaProgressions(progressions);
+                                    const expandedProgressions = progressions; // TODO: Implement formula expansion
                                     return expandedProgressions.reduce((acc, progression) => {
                                         const level = progression.level;
                                         if (!acc[level]) {
@@ -136,7 +112,7 @@ export function FeaturesTab({
                                         }
                                         acc[level].push(progression);
                                         return acc;
-                                    }, {} as Record<number, FeatureProgressionWithRelations[]>);
+                                    }, {} as Record<number, FeatureProgression[]>);
                                 })() :
                                 null;
 
@@ -156,7 +132,7 @@ export function FeaturesTab({
                                             {feature.prerequisites && feature.prerequisites.length > 0 && (
                                                 <div className="ml-4 p-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-md flex-shrink-0">
                                                     <p className="text-xs text-slate-700 dark:text-slate-300">
-                                                        <strong>Prerequisites:</strong> {formatPrerequisites(feature.prerequisites)}
+                                                        <strong>Prerequisites:</strong> {feature.prerequisites.length} prerequisite(s)
                                                     </p>
                                                 </div>
                                             )}
@@ -183,7 +159,7 @@ export function FeaturesTab({
                                                 Object.entries(progressionsByLevel)
                                                     .sort(([a], [b]) => parseInt(a) - parseInt(b))
                                                     .map(([level, levelProgressions]) => {
-                                                        const wildShapeDetails = formatWildShapeProgressions(levelProgressions);
+                                                        const wildShapeDetails = ''; // TODO: Implement wild shape formatting
                                                         return (
                                                             <div key={level} className="flex items-start gap-1">
                                                                 <button
@@ -207,7 +183,7 @@ export function FeaturesTab({
                                                     })
                                             ) : (
                                                 // Regular formatting for other features
-                                                progressions.map((progression: FeatureProgressionWithRelations, progIndex: number) => (
+                                                progressions.map((progression: FeatureProgression, progIndex: number) => (
                                                     <div key={progIndex} className="flex items-start gap-1">
                                                         <button
                                                             type="button"
@@ -215,7 +191,11 @@ export function FeaturesTab({
                                                             className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-left"
                                                             title="Edit progression details"
                                                         >
-                                                            {formatterOrchestrator.formatProgressionForEditDisplay(progression)}
+                                                            {(() => {
+                                                                const strategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
+                                                                const result = strategy.formatProgression(progression);
+                                                                return result.formattedValue;
+                                                            })()}
                                                         </button>
                                                         <button
                                                             type="button"
@@ -253,12 +233,32 @@ export function FeaturesTab({
             </div>
 
             {/* Feature Selection Dialog */}
-            <FeatureSelectionDialog
+            <ListSelectionDialog<Feature, { id: number; name: string; description: string; slug: string }>
                 isOpen={isFeatureSelectionOpen}
                 onClose={() => setIsFeatureSelectionOpen(false)}
-                onFeatureSelected={handleFeatureSelected}
-                classId={contextType === 'class' ? contextId : undefined}
-                raceId={contextType === 'race' ? contextId : undefined}
+                onSave={(features) => {
+                    // Handle all selected features - call onAddFeature for each one
+                    features.forEach(feature => {
+                        handleFeatureSelected(feature);
+                    });
+                }}
+                initialSelectedIds={featureProgressions.map(p => p.featureId)}
+                parentId={contextId}
+                serviceFunction={async () => {
+                    const response = await FeatureSystemApi.getFeatures({ sourceType: contextType });
+                    return response;
+                }}
+                storageKey="feature-selection"
+                itemDesc="feature"
+                createNewRoute="/features/new/edit"
+                transformSelectedItems={(features) => features.map(f => ({
+                    id: f.id,
+                    name: f.name,
+                    description: f.description,
+                    slug: f.slug
+                }))}
+                dialogTitle="Select Features"
+                createNewButtonText="Create New Feature"
             />
         </>
     );

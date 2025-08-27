@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 
-import { AuthService } from '@/services/AuthService';
+import { AuthApi } from '@/components/auth/AuthApi';
 import { RegisterUserSchema } from '@shared/schema';
 
 import { UseAuth } from './AuthProvider';
@@ -23,7 +23,7 @@ export function RegisterPage({ redirectTo: _redirectTo = '/' }: RegisterPageProp
             // Validate input with Zod
             const registerData = RegisterUserSchema.parse({ username, password, email });
 
-            await AuthService.register(registerData);
+            await AuthApi.register(registerData);
 
             // Auto-login after registration
             const success = await Login(username, password);

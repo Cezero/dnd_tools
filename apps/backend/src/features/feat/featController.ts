@@ -3,16 +3,15 @@ import { Response } from 'express';
 import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput, ValidatedQueryT } from '@/util/validated-types'
 import {
     FeatIdParamRequest,
-    GetFeatResponse,
     CreateFeatRequest,
     UpdateFeatRequest,
     GetAllFeatsResponse,
     FeatQueryRequest,
     FeatQueryResponse,
+    Feat,
 } from '@shared/schema';
 
 import { featService } from './featService.js';
-
 
 /**
  * Fetches all feats from the database with pagination and filtering.
@@ -22,8 +21,6 @@ export async function GetAllFeats(req: ValidatedNoInput<GetAllFeatsResponse>, re
     res.json(feats);
 }
 
-
-
 export async function GetFeatQuery(req: ValidatedQueryT<FeatQueryRequest, FeatQueryResponse>, res: Response) {
     const feats = await featService.featQuery(req.query);
     res.json(feats);
@@ -32,7 +29,7 @@ export async function GetFeatQuery(req: ValidatedQueryT<FeatQueryRequest, FeatQu
 /**
  * Fetches a single feat by its ID.
  */
-export async function GetFeatById(req: ValidatedParamsT<FeatIdParamRequest, GetFeatResponse>, res: Response) {
+export async function GetFeatById(req: ValidatedParamsT<FeatIdParamRequest, Feat>, res: Response) {
     const feat = await featService.getFeatById(req.params);
 
     if (!feat) {

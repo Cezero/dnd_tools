@@ -5,7 +5,7 @@ import {
     CharacterIdParamRequest,
     CreateCharacterRequest,
     UpdateCharacterRequest,
-    CharacterResponse,
+    Character,
     GetAllCharactersResponse,
     CharacterWithAllDetailsResponse,
     // New types for advancement and spell preparation
@@ -34,7 +34,7 @@ export async function GetAllCharacters(req: ValidatedNoInput<GetAllCharactersRes
     res.json(result);
 }
 
-export async function GetCharacterById(req: ValidatedParamsT<CharacterIdParamRequest, CharacterResponse>, res: Response) {
+export async function GetCharacterById(req: ValidatedParamsT<CharacterIdParamRequest, Character>, res: Response) {
     const character = await characterService.getCharacterById(req.params);
 
     if (!character) {

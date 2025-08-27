@@ -2,10 +2,9 @@ import React from 'react';
 
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
-import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
+import { SpellApi } from '@/features/spell/SpellApi';
 import { SPELL_COLUMNS } from '@/features/spell/SpellColumns';
-import { SpellService } from '@/features/spell/SpellService';
-import { SpellInQueryResponse } from '@shared/schema';
+import { Spell } from '@shared/schema';
 
 import { routes } from './SpellConfig';
 
@@ -19,10 +18,10 @@ export function SpellList(): React.JSX.Element {
     return (
         <div className="p-4">
             <h1 className="text-2xl font-bold mb-4">Spells</h1>
-            <GenericList<SpellInQueryResponse>
+            <GenericList<Spell>
                 storageKey="spells-list"
                 columns={SPELL_COLUMNS}
-                serviceFunction={() => SpellService.getAllSpells({})}
+                serviceFunction={() => SpellApi.getAllSpells({})}
                 itemDesc="spell"
                 routes={routes}
             />

@@ -1,8 +1,8 @@
 import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 
 import { AnalogSkillService } from '@/features/character/AnalogSkillService';
-import type { RaceInQueryResponse, GetRaceResponse, GetClassResponse, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse } from '@shared/schema';
+import type { RaceSummary, Race, DnDClass, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse } from '@shared/schema';
 import {
     SKILL_LIST,
     ABILITY_MAP,
@@ -13,9 +13,9 @@ import {
 interface SkillsTabProps {
     character: CharacterWithAllDetailsResponse;
     onUpdate: (data: Partial<CharacterWithAllDetailsResponse>) => void;
-    races?: RaceInQueryResponse[];
-    selectedRaceDetails?: GetRaceResponse | null;
-    selectedClassDetails?: GetClassResponse | null;
+    races?: RaceSummary[];
+    selectedRaceDetails?: Race | null;
+    selectedClassDetails?: DnDClass | null;
     targetAdvancement?: CharacterAdvancementWithDetailsResponse;
     onAdvancementUpdate?: (advancement: CharacterAdvancementWithDetailsResponse) => void;
 }
@@ -34,18 +34,18 @@ export function SkillsTab({
     const isNewCharacter = !targetAdvancement; // If no target advancement, we're creating a new character
 
     // Check if a skill is a class skill
-    const isSkillClassSkill = (skillId: number): boolean => {
+    const isSkillClassSkill = useCallback((skillId: number): boolean => {
         if (!advancement?.classId || !selectedClassDetails) return false;
 
         // Check if the skill is in the class's skill list
-        return selectedClassDetails.skillList?.some(classSkill => classSkill.id === skillId) || false;
-    };
+        return selectedClassDetails.skills?.some(classSkill => classSkill.skillId === skillId) || false;
+    }, [advancement?.classId, selectedClassDetails]);
 
     // Get ability score
-    const getAbilityScore = (abilityId: number): number => {
+    const getAbilityScore = useCallback((abilityId: number): number => {
         const abilityScore = character.abilityScores.find(attr => attr.abilityId === abilityId);
         return abilityScore?.value ?? 10; // Default to 10 if not set
-    };
+    }, [character.abilityScores]);
 
     // Get skill ranks from advancement
     const getSkillRanks = (skillId: number): number => {
@@ -89,7 +89,7 @@ export function SkillsTab({
 
             return basePoints;
         }
-    }, [advancement?.classId, selectedClassDetails, character.abilityScores, character.raceId, selectedRaceDetails, isNewCharacter]);
+    }, [advancement?.classId, selectedClassDetails, character.raceId, selectedRaceDetails, isNewCharacter, getAbilityScore]);
 
     // Calculate skill points spent
     const skillPointsSpent = useMemo(() => {
@@ -111,7 +111,7 @@ export function SkillsTab({
         });
 
         return totalSpent;
-    }, [advancement?.skills, selectedClassDetails]);
+    }, [advancement?.skills, isSkillClassSkill]);
 
     // Calculate remaining skill points
     const skillPointsRemaining = useMemo(() => {
@@ -121,7 +121,7 @@ export function SkillsTab({
     // Get maximum ranks allowed for a skill
     const getMaxRanks = (skillId: number): number => {
         // Speak Language has no max rank limit
-        if (isSpeakLanguage(skillId)) {
+        if (skillId === 38) { // Speak Language skill ID
             return Infinity;
         }
 
@@ -257,7 +257,7 @@ export function SkillsTab({
     };
 
     // Format skill ranks display (handle half ranks)
-    const formatSkillRanks = (ranks: number): string => {
+    const _formatSkillRanks = (ranks: number): string => {
         if (ranks === Math.floor(ranks)) {
             return ranks.toString();
         }

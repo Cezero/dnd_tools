@@ -12,7 +12,7 @@ export const CHARACTER_COLUMNS: ColumnDef<CharacterWithRaceResponse, unknown>[] 
         enableColumnFilter: true,
         enableResizing: true,
         size: 150,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<CharacterWithRaceResponse>(),
         meta: {
             required: true,
             filterType: FilterType.TEXT_INPUT,
@@ -26,7 +26,7 @@ export const CHARACTER_COLUMNS: ColumnDef<CharacterWithRaceResponse, unknown>[] 
         enableColumnFilter: true,
         enableResizing: true,
         size: 120,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<CharacterWithRaceResponse>(),
         cell: info => {
             const race = info.getValue() as string;
             return race || '-';
@@ -43,7 +43,7 @@ export const CHARACTER_COLUMNS: ColumnDef<CharacterWithRaceResponse, unknown>[] 
         enableColumnFilter: true,
         enableResizing: true,
         size: 120,
-        filterFn: createEqualsFilter(),
+        filterFn: createEqualsFilter<CharacterWithRaceResponse>(),
         cell: info => {
             const alignmentId = info.getValue() as number;
             return ALIGNMENT_MAP[alignmentId]?.name || alignmentId;
@@ -60,7 +60,7 @@ export const CHARACTER_COLUMNS: ColumnDef<CharacterWithRaceResponse, unknown>[] 
         enableColumnFilter: true,
         enableResizing: true,
         size: 80,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<CharacterWithRaceResponse>(),
         cell: info => {
             const age = info.getValue() as number | null;
             return age ? age.toString() : '-';
@@ -77,7 +77,7 @@ export const CHARACTER_COLUMNS: ColumnDef<CharacterWithRaceResponse, unknown>[] 
         enableColumnFilter: true,
         enableResizing: true,
         size: 100,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<CharacterWithRaceResponse>(),
         cell: info => {
             const gender = info.getValue() as string | null;
             return gender || '-';

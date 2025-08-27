@@ -14,7 +14,7 @@ export const ITEM_COLUMNS: ColumnDef<ItemWithDetails, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 200,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<ItemWithDetails>(),
         meta: {
             required: true,
             filterType: FilterType.TEXT_INPUT,
@@ -28,7 +28,7 @@ export const ITEM_COLUMNS: ColumnDef<ItemWithDetails, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 120,
-        filterFn: createEqualsFilter(),
+        filterFn: createEqualsFilter<ItemWithDetails>(),
         cell: info => {
             const typeId = info.getValue() as number;
             return ITEM_TYPES[typeId]?.name || typeId;
@@ -45,7 +45,7 @@ export const ITEM_COLUMNS: ColumnDef<ItemWithDetails, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 100,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<ItemWithDetails>(),
         cell: info => {
             const cost = info.getValue() as number;
             return formatCostAsCurrency(cost);
@@ -62,7 +62,7 @@ export const ITEM_COLUMNS: ColumnDef<ItemWithDetails, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 100,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<ItemWithDetails>(),
         cell: info => {
             const weight = info.getValue() as number | null;
             return weight !== null ? `${weight} lbs` : '-';

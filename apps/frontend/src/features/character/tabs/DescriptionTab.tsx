@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { CustomSelect } from '@/components/forms/FormComponents';
-import type { RaceInQueryResponse, GetRaceResponse, CharacterWithAllDetailsResponse } from '@shared/schema';
+import type { RaceSummary, Race, CharacterWithAllDetailsResponse } from '@shared/schema';
 import {
     ALIGNMENT_LIST,
     CLASS_MAP,
@@ -11,8 +11,8 @@ import {
 interface DescriptionTabProps {
     character: CharacterWithAllDetailsResponse;
     onUpdate: (data: Partial<CharacterWithAllDetailsResponse>) => void;
-    races?: RaceInQueryResponse[];
-    selectedRaceDetails?: GetRaceResponse | null;
+    races?: RaceSummary[];
+    selectedRaceDetails?: Race | null;
 }
 
 export function DescriptionTab({
@@ -58,8 +58,8 @@ export function DescriptionTab({
                             Alignment
                         </h3>
                         <CustomSelect
-                            value={character.alignment}
-                            onValueChange={(value) => onUpdate({ alignment: value })}
+                            value={character.alignmentId}
+                            onValueChange={(value) => onUpdate({ alignmentId: value })}
                             options={alignmentOptions}
                             placeholder="Select alignment..."
                             componentExtraClassName="mb-4"
@@ -74,7 +74,7 @@ export function DescriptionTab({
                         <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                             <p><strong>Race:</strong> {selectedRaceDetails?.name || 'Not selected'}</p>
                             <p><strong>Size:</strong> {getSizeForRace()}</p>
-                            <p><strong>Class:</strong> {character.class ? CLASS_MAP[character.class]?.name : 'Not selected'}</p>
+                            <p><strong>Class:</strong> {character.advancements[0]?.classId ? CLASS_MAP[character.advancements[0]?.classId]?.name : 'Not selected'}</p>
                             <p><strong>Level:</strong> {character.advancements.length}</p>
                         </div>
                     </div>

@@ -1,23 +1,22 @@
 import { Dialog } from '@base-ui-components/react/dialog';
 import React, { useState, useEffect } from 'react';
-import { z } from 'zod';
 
+import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import {
     ValidatedForm,
     ValidatedInput,
     useValidatedForm
 } from '@/components/forms';
 import { CustomSelect } from '@/components/forms/FormComponents';
-import { FeatureSystemService } from '@/services/FeatureSystemService';
-import { FeatPrerequisiteMapSchema } from '@shared/schema';
+import { FeatPrerequisiteMap, FeatPrerequisiteMapSchema } from '@shared/schema';
 import { ABILITY_SELECT_LIST, FEAT_PREREQUISITE_TYPE_SELECT_LIST, FeatPrerequisiteType, SelectOption, FULL_SKILL_SELECT_LIST } from '@shared/static-data';
 
-import { FeatService } from './FeatService';
+import { FeatApi } from './FeatApi';
 import { PrereqOptions } from './FeatUtil';
 
 
 // Type definitions for the form state
-type FeatPrerequisiteFormData = z.infer<typeof FeatPrerequisiteMapSchema>;
+type FeatPrerequisiteFormData = FeatPrerequisiteMap;
 
 interface FeatPrereqEditProps {
     isOpen: boolean;
@@ -40,7 +39,6 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
         typeId: null,
         referenceId: null,
         amount: null,
-        featureSlug: null,
     };
 
     const [formData, setFormData] = useState<FeatPrerequisiteFormData>(initialFormData);
@@ -62,11 +60,11 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
 
     useEffect(() => {
         const fetchFeats = async () => {
-            const response = await FeatService.getFeats(undefined, undefined);
+            const response = await FeatApi.getFeats(undefined, undefined);
             setFeatOptions(response.results.map(feat => ({ value: feat.id, label: feat.name })));
         }
         const fetchClassFeatures = async () => {
-            const response = await FeatureSystemService.getFeatures(undefined, undefined);
+            const response = await FeatureSystemApi.getFeatures(undefined, undefined);
             setClassFeatureOptions(response.results.map(feature => ({ value: feature.id, label: feature.name || feature.slug })));
         }
         fetchFeats();
@@ -78,7 +76,6 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
                 typeId: initialPrereqData.typeId || null,
                 referenceId: initialPrereqData.referenceId || null,
                 amount: initialPrereqData.amount || null,
-                featureSlug: initialPrereqData.featureSlug || null,
             });
         }
     }, [initialPrereqData]);

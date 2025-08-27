@@ -1,9 +1,7 @@
-import React, { createContext, useContext, useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 
+import { LogPanelContext } from './LogPanelContext';
 import type { LogEntry, LogPanelContextType } from './types';
-
-// Create context
-const LogPanelContext = createContext<LogPanelContextType | null>(null);
 
 interface LogPanelProviderProps {
     children: React.ReactNode;
@@ -56,10 +54,4 @@ export function LogPanelProvider({ children, maxEntries = 500 }: LogPanelProvide
     );
 }
 
-export function useLogPanel(): LogPanelContextType {
-    const context = useContext(LogPanelContext);
-    if (!context) {
-        throw new Error('useLogPanel must be used within a LogPanelProvider');
-    }
-    return context;
-} 
+

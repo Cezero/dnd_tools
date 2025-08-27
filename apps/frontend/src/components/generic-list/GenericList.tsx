@@ -689,6 +689,7 @@ export function GenericList<T>({
                                         placeholder="Select number of items per page"
                                     />
                                     <button
+                                        type="button"
                                         onClick={() => table.setPageIndex(0)}
                                         disabled={!table.getCanPreviousPage()}
                                         className="px-2 py-1 border rounded disabled:opacity-50"
@@ -696,6 +697,7 @@ export function GenericList<T>({
                                         First
                                     </button>
                                     <button
+                                        type="button"
                                         onClick={() => table.previousPage()}
                                         disabled={!table.getCanPreviousPage()}
                                         className="px-2 py-1 border rounded disabled:opacity-50"
@@ -708,6 +710,7 @@ export function GenericList<T>({
                                     </span>
 
                                     <button
+                                        type="button"
                                         onClick={() => table.nextPage()}
                                         disabled={!table.getCanNextPage()}
                                         className="px-2 py-1 border rounded disabled:opacity-50"
@@ -715,6 +718,7 @@ export function GenericList<T>({
                                         Next &gt;
                                     </button>
                                     <button
+                                        type="button"
                                         onClick={() => table.setPageIndex(table.getPageCount() - 1)}
                                         disabled={!table.getCanNextPage()}
                                         className="px-2 py-1 border rounded disabled:opacity-50"

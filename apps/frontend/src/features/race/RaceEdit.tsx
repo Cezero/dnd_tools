@@ -1,27 +1,22 @@
-import React, { useState, useEffect, useCallback } from 'react';
-
 import {
     DocumentTextIcon,
     UserIcon,
     AcademicCapIcon,
     SparklesIcon
 } from '@heroicons/react/24/outline';
-import pluralize from 'pluralize';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { z } from 'zod';
 
-import { UpdateRaceSchema, GetRaceResponseSchema, CreateRaceRequest, UpdateRaceRequest, FeatureProgressionWithRelations } from '@shared/schema';
-import { ModifierAppliesToType, SpecialFeatureId, ModifierType, FeatureSourceType } from '@shared/static-data';
-
+import { FeatureProgressionDetailEdit } from '@/components/feature-system';
 import {
     ValidatedForm,
     useValidatedForm
 } from '@/components/forms';
-import { FeatureProgressionDetailEdit } from '@/components/feature-system';
-import { LanguageService } from '../../lib/LanguageService';
+import { UpdateRaceSchema, BaseRaceSchema, FeatureProgression, FeatureModifier, FeatureChoice, FeatureSpecialEffect, CreateRaceRequest, UpdateRaceRequest } from '@shared/schema';
+import { ModifierAppliesToType, SpecialFeatureId, ModifierType, FeatureSourceType } from '@shared/static-data';
 
+import { RaceApi } from './RaceApi';
 import { RaceFeatureAssoc } from './RaceFeatureAssoc';
-import { RaceService } from './RaceService';
 import {
     BasicInfoTab,
     AbilitiesTab,
@@ -48,18 +43,18 @@ export function RaceEdit() {
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<string>('basic');
-    const [isAddFeatureModalOpen, setIsAddFeatureModalOpen] = useState(false);
+    const [isFeatureAssocOpen, setIsFeatureAssocOpen] = useState(false);
     const [isProgressionDialogOpen, setIsProgressionDialogOpen] = useState(false);
-    const [editingProgression, setEditingProgression] = useState<FeatureProgressionWithRelations | null>(null);
+    const [editingProgression, setEditingProgression] = useState<FeatureProgression | null>(null);
     const [preSelectedFeature, setPreSelectedFeature] = useState<{ id: number; name: string; description: string; slug: string } | undefined>(undefined);
-    const [featureProgressions, setFeatureProgressions] = useState<FeatureProgressionWithRelations[]>([]);
+    const [featureProgressions, setFeatureProgressions] = useState<FeatureProgression[]>([]);
     const fromListParams = location.state?.fromListParams || '';
 
     // Determine which schema to use based on whether we're creating or editing
-    const schema = id === 'new' ? GetRaceResponseSchema : UpdateRaceSchema;
+    const schema = id === 'new' ? BaseRaceSchema : UpdateRaceSchema;
 
     // Initialize form data with default values
-    const initialFormData: RaceFormData = {
+    const initialFormData: RaceFormData = useMemo(() => ({
         name: '',
         editionId: 1,
         isVisible: true,
@@ -67,7 +62,7 @@ export function RaceEdit() {
         sizeId: 5, // Default to Medium
         speed: 30, // Default to 30
         favoredClassId: -1,
-    };
+    }), []);
 
     const [formData, setFormData] = useState<RaceFormData>(initialFormData);
 
@@ -103,7 +98,7 @@ export function RaceEdit() {
 
             try {
                 setIsLoading(true);
-                const fetchedRace = await RaceService.getRaceById(undefined, { id: parseInt(id) });
+                const fetchedRace = await RaceApi.getRaceById(undefined, { id: parseInt(id) });
                 setFormData(fetchedRace);
 
                 // Load feature progressions from the race data
@@ -120,7 +115,7 @@ export function RaceEdit() {
         };
 
         fetchRace();
-    }, [id]);
+    }, [id, initialFormData]);
 
     /**
      * Handles adding or updating race features.
@@ -128,7 +123,7 @@ export function RaceEdit() {
     const handleAddOrUpdateFeature = useCallback((selectedFeatureObjects: Array<{ featureId: number; slug: string; name: string; description: string; level: number }>) => {
         setFeatureProgressions(prev => {
             // Create a map of existing features for quick lookup by featureId
-            const existingFeaturesMap = new Map<number, { modifiers?: unknown[]; choices?: unknown[]; effects?: unknown[] }>();
+            const existingFeaturesMap = new Map<number, { modifiers?: FeatureModifier[]; choices?: FeatureChoice[]; effects?: FeatureSpecialEffect[] }>();
             prev.forEach(f => existingFeaturesMap.set(f.featureId, f));
 
             const updatedFeatures = selectedFeatureObjects.map(selectedFeature => {
@@ -139,7 +134,6 @@ export function RaceEdit() {
                     classId: null,
                     level: selectedFeature.level,
                     featureId: selectedFeature.featureId,
-                    // REMOVED: appliesTo and appliesToType - redundant fields removed from schema
                     sourceType: FeatureSourceType.Race,
                     feature: {
                         id: selectedFeature.featureId,
@@ -154,20 +148,20 @@ export function RaceEdit() {
             });
             return updatedFeatures;
         });
-        setIsAddFeatureModalOpen(false);
+        setIsFeatureAssocOpen(false);
     }, [id]);
 
     useEffect(() => {
         if (location.state?.newFeature) {
             handleAddOrUpdateFeature([location.state.newFeature]);
-            setIsAddFeatureModalOpen(true);
+            setIsFeatureAssocOpen(true);
         }
     }, [location.state, handleAddOrUpdateFeature]);
 
     /**
      * Handles the deletion of a race feature from the current race.
      */
-    const handleDeleteFeature = useCallback(async (featureId: number) => {
+    const _handleDeleteFeature = useCallback(async (featureId: number) => {
         if (window.confirm('Are you sure you want to remove this feature from the race?')) {
             setFeatureProgressions(prev => prev.filter(feature => feature.featureId !== featureId));
             setMessage('Feature removed successfully from race!');
@@ -264,7 +258,7 @@ export function RaceEdit() {
      * Handles adding a feature to the race.
      */
     const handleAddFeature = useCallback((feature: { id: number; name: string; description: string; slug: string }) => {
-        const newProgression: FeatureProgressionWithRelations = {
+        const newProgression: FeatureProgression = {
             id: Date.now() + Math.random(), // Temporary ID for frontend
             sourceType: FeatureSourceType.Race,
             classId: null,
@@ -295,7 +289,7 @@ export function RaceEdit() {
     /**
      * Handles updating an existing feature progression.
      */
-    const handleUpdateProgression = useCallback((oldProgression: FeatureProgressionWithRelations, updatedProgression: FeatureProgressionWithRelations) => {
+    const handleUpdateProgression = useCallback((oldProgression: FeatureProgression, updatedProgression: FeatureProgression) => {
         setFeatureProgressions(prev => prev.map(p =>
             p.id === oldProgression.id ? updatedProgression : p
         ));
@@ -304,14 +298,14 @@ export function RaceEdit() {
     /**
      * Handles adding a new feature progression.
      */
-    const handleAddProgression = useCallback((progression: FeatureProgressionWithRelations) => {
+    const handleAddProgression = useCallback((progression: FeatureProgression) => {
         setFeatureProgressions(prev => [...prev, progression]);
     }, []);
 
     /**
      * Handles editing a feature progression.
      */
-    const handleEditProgression = useCallback((progression: FeatureProgressionWithRelations) => {
+    const handleEditProgression = useCallback((progression: FeatureProgression) => {
         setEditingProgression(progression);
         setIsProgressionDialogOpen(true);
     }, []);
@@ -490,11 +484,11 @@ export function RaceEdit() {
             };
 
             if (id === 'new') {
-                const newRace = await RaceService.createRace(raceData as z.infer<typeof GetRaceResponseSchema>);
+                const newRace = await RaceApi.createRace(raceData as CreateRaceRequest);
                 setMessage('Race created successfully!');
                 setTimeout(() => navigate(`/races/${newRace.id}`, { state: { fromListParams: fromListParams, refresh: true } }), 1500);
             } else {
-                await RaceService.updateRace(raceData as z.infer<typeof UpdateRaceSchema>, { id: parseInt(id) });
+                await RaceApi.updateRace(raceData as UpdateRaceRequest, { id: parseInt(id) });
                 setMessage('Race updated successfully!');
                 setTimeout(() => navigate(`/races/${id}`, { state: { fromListParams: fromListParams, refresh: true } }), 1500);
             }
@@ -591,8 +585,8 @@ export function RaceEdit() {
                                 isLoading={isLoading}
                                 featureProgressions={featureProgressions}
                                 setFeatureProgressions={setFeatureProgressions}
-                                isAddFeatureModalOpen={isAddFeatureModalOpen}
-                                setIsAddFeatureModalOpen={setIsAddFeatureModalOpen}
+                                isFeatureAssocOpen={isFeatureAssocOpen}
+                                setIsFeatureAssocOpen={setIsFeatureAssocOpen}
                                 onAddLanguage={handleAddLanguage}
                                 onRemoveLanguage={handleRemoveLanguage}
                                 onAbilityChange={handleAbilityChange}
@@ -626,9 +620,9 @@ export function RaceEdit() {
             </ValidatedForm>
 
             <RaceFeatureAssoc
-                isOpen={isAddFeatureModalOpen}
+                isOpen={isFeatureAssocOpen}
                 onClose={() => {
-                    setIsAddFeatureModalOpen(false);
+                    setIsFeatureAssocOpen(false);
                 }}
                 onSave={handleAddOrUpdateFeature}
                 initialSelectedFeatureIds={featureProgressions.map(f => f.featureId.toString())}

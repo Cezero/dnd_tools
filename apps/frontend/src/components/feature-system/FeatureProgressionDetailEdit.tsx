@@ -1,18 +1,33 @@
 import { Dialog } from '@base-ui-components/react/dialog';
 import { ScrollArea } from '@base-ui-components/react/scroll-area';
 import { TrashIcon } from '@heroicons/react/24/outline';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
-import type { ProficiencyFeat, ProficiencyItem } from '@/components/feature-system/FeatureProficiencyDialog';
+import type { ProficiencyFeat, ProficiencyItem } from '@/components/feature-system';
+import { FeatureSystemApi, FeatureSystemService } from '@/components/feature-system';
 import { ValidatedCustomSelect, ValidatedInput, ValidatedForm, useValidatedForm, useFormContext } from '@/components/forms';
-import { ClassProficiencyService } from '@/features/class/ClassProficiencyService';
-import { FeatService } from '@/features/feat/FeatService';
-import { ItemService } from '@/features/item/ItemService';
-import { formatterOrchestrator } from '@/lib/formatters';
-import { progressionGenerator } from '@/lib/formatters/progression-generators';
-import { ModifierGroupingStrategy } from '@/lib/formatters/grouping-strategies';
-import { FeatureSystemService } from '@/services/FeatureSystemService';
-import { CreateFeatureProgressionSchema, CreateFeatureProgressionFormSchema, FeatureModifierInQueryResponse, FeatureProgressionWithRelations, FeatureSpecialEffectInQueryResponse, FeatureChoiceInQueryResponse } from '@shared/schema';
+import { FeatApi } from '@/features/feat/FeatApi';
+import { ItemApi } from '@/features/item/ItemApi';
+import { displayStrategyFactory } from '@/lib/formatters';
+import {
+    CreateFeatureProgressionSchema,
+    CreateFeatureProgressionFormSchema,
+    FeatureModifier,
+    FeatureSpecialEffect,
+    FeatureChoice,
+    CreateFeatureProgressionRequest,
+    CreateFeatureModifierRequest,
+    CreateFeatureModifierConditionRequest,
+    CreateFeatureFormulaParamsRequest,
+    CreateFeatureSpecialEffectRequest,
+    CreateFeatureChoiceRequest,
+    FeaturePrerequisite,
+    FeatQueryResponse,
+    GetAllFeaturesResponse,
+    FeatureModifierCondition,
+    FeatureProgression,
+    Feature
+} from '@shared/schema';
 import {
     MODIFIER_SELECT_LIST,
     FEATURE_BONUS_SELECT_LIST,
@@ -43,6 +58,9 @@ import {
     FEATURE_CHOICE_BEHAVIOR_SELECT_LIST,
     FeatBenefitType,
     FormulaId,
+    DisplayType,
+    FeatureChoiceType,
+    FeatureChoiceBehavior
 } from '@shared/static-data';
 
 import { ArrayPairEditor } from './ArrayPairEditor';
@@ -50,22 +68,22 @@ import { ArrayPairEditor } from './ArrayPairEditor';
 interface FeatureProgressionDetailEditProps {
     isOpen: boolean;
     onClose: () => void;
-    progression: FeatureProgressionWithRelations | null;
-    onSave: (progression: FeatureProgressionWithRelations) => void;
-    preSelectedFeature?: { id: number; name: string; description: string; slug: string };
+    progression: FeatureProgression | null;
+    onSave: (progression: FeatureProgression) => void;
+    preSelectedFeature?: Feature;
 }
 
 // Formula Preview Component
 function FormulaPreview({
-    item, // Can be either FeatureModifierInQueryResponse or FeatureChoiceInQueryResponse
+    item, // Can be either FeatureModifier or FeatureChoice
     progressionLevel,
     featureName
 }: {
-    item: FeatureModifierInQueryResponse | FeatureChoiceInQueryResponse;
+    item: FeatureModifier | FeatureChoice;
     progressionLevel: number;
     featureName?: string;
 }) {
-    const { formData } = useFormContext();
+    const { formData: _formData } = useFormContext();
 
     // Determine if this is a choice by checking for choice-specific properties
     // Choices have 'behavior' property, modifiers don't
@@ -73,8 +91,8 @@ function FormulaPreview({
 
     // Get formula ID from the appropriate source
     const formulaId = isChoice
-        ? (item as FeatureChoiceInQueryResponse).formulaParams?.formulaId
-        : (item as FeatureModifierInQueryResponse).formulaParams?.formulaId;
+        ? (item as FeatureChoice).formulaParams?.formulaId
+        : (item as FeatureModifier).formulaParams?.formulaId;
 
     if (!formulaId) {
         return null;
@@ -86,138 +104,64 @@ function FormulaPreview({
     }
 
     // Get the choice name for display
-    let choiceName = '';
+    let _choiceName = '';
     if (isChoice) {
-        const choice = item as FeatureChoiceInQueryResponse;
+        const choice = item as FeatureChoice;
         if (choice.feat?.name) {
-            choiceName = choice.feat.name;
+            _choiceName = choice.feat.name;
         } else if (choice.featId && choice.filterType && FEATURE_FEAT_CHOICE_FILTER_TYPES[choice.filterType]) {
-            choiceName = FEATURE_FEAT_CHOICE_FILTER_TYPES[choice.filterType].name;
+            _choiceName = FEATURE_FEAT_CHOICE_FILTER_TYPES[choice.filterType].name;
         } else if (choice.label) {
-            choiceName = choice.label;
+            _choiceName = choice.label;
         } else {
-            choiceName = 'Bonus Feat';
+            _choiceName = 'Bonus Feat';
         }
     }
 
     try {
-        // For choices, we need to generate the progression values directly
-        if (isChoice) {
-            const choice = item as FeatureChoiceInQueryResponse;
-            const formulaParams = choice.formulaParams;
-            
-            if (!formulaParams) {
-                return <p className="text-xs text-gray-600 dark:text-gray-400">No formula parameters</p>;
+        // Create a mock progression for the display strategy to work with
+        const mockProgression: FeatureProgression = {
+            id: 0,
+            sourceType: 1, // Class
+            classId: 0,
+            raceId: null,
+            level: progressionLevel,
+            featureId: 0,
+            feature: {
+                id: 0,
+                name: featureName || 'Preview Feature',
+                description: '',
+                slug: 'preview-feature'
+            },
+            modifiers: isChoice ? [] : [item as FeatureModifier],
+            choices: isChoice ? [item as FeatureChoice] : [],
+            effects: []
+        };
+
+        // Use Display Strategy to properly orchestrate the 6-layer formatting process
+        const editStrategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
+        const displayResult = editStrategy.formatProgression(
+            mockProgression,
+            {
+                displayType: DisplayType.Edit,
+                currentLevel: progressionLevel,
+                showBreakdown: false
             }
+        );
 
-            // Generate progression values for levels 10-20
-            const values = progressionGenerator.generateProgressionValues(
-                formulaParams,
-                progressionLevel,
-                20, // Max level for display
-                undefined, // No character context needed
-                1 // Default value for choices
-            );
+        // For modifiers, use the display strategy result
+        const formattedValue = displayResult.formattedValue || 'No preview available';
 
-            // Format the values based on formula type
-            let formattedValue = '';
-            if (formulaId === FormulaId.EVERY_N_LEVELS) {
-                // For EVERY_N_LEVELS, only show transition points
-                const transitions = [];
-                
-                // Find levels where value changes (transitions)
-                for (let i = 1; i < values.length; i++) {
-                    if (values[i].value !== values[i - 1].value) {
-                        transitions.push(values[i]);
-                    }
-                }
 
-                // Include the first level if it has a non-zero value
-                const firstValue = typeof values[0].value === 'number' ? values[0].value : Number(values[0].value);
-                if (firstValue > 0) {
-                    transitions.unshift(values[0]);
-                }
-
-                formattedValue = transitions.map(val => `Level ${val.level} (${choiceName})`).join(', ');
-            } else {
-                // For other formulas, show all levels
-                formattedValue = values.map(val => `Level ${val.level} (${choiceName})`).join(', ');
-            }
-
-            return (
-                <div className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                    <div className="font-medium mb-1">Formula Preview:</div>
-                    <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded text-xs">
-                        {formattedValue}
-                    </div>
+        return (
+            <div className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                <div className="font-medium mb-1">Formula Preview:</div>
+                <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded text-xs">
+                    {formattedValue}
                 </div>
-            );
-        } else {
-            // For modifiers, generate progression values and format them properly
-            const modifier = item as FeatureModifierInQueryResponse;
-            const formulaParams = modifier.formulaParams;
-            
-            if (!formulaParams) {
-                return <p className="text-xs text-gray-600 dark:text-gray-400">No formula parameters</p>;
-            }
-
-            // Generate progression values for levels 1-20
-            const values = progressionGenerator.generateProgressionValues(
-                formulaParams,
-                progressionLevel,
-                20, // Max level for display
-                undefined, // No character context needed
-                modifier.value // Use the modifier's base value
-            );
-
-            // Format the values using the grouping strategy (same as ClassEdit.tsx)
-            const formattedValues = values.map(val => {
-                // Create a temporary modifier with the calculated value for this level
-                const tempModifier = {
-                    ...modifier,
-                    value: val.value
-                };
-                
-                // Use the grouping strategy to format the value (same as ClassEdit.tsx)
-                const modifierGroupingStrategy = new ModifierGroupingStrategy();
-                const groupedResult = modifierGroupingStrategy.group([{
-                    formattedValue: formatterOrchestrator.formatValue(tempModifier.value, tempModifier.appliesTo, tempModifier, { breakdown: val.breakdown }),
-                    breakdown: val.breakdown,
-                    metadata: { breakdown: val.breakdown },
-                    modifier: tempModifier
-                }]);
-                return groupedResult.formattedValue;
-            });
-
-            // Format the values - ALL formulas should show only transition points
-            const transitions = [];
-            
-            // Find levels where value changes (transitions)
-            for (let i = 1; i < values.length; i++) {
-                if (values[i].value !== values[i - 1].value) {
-                    transitions.push({ level: values[i].level, formattedValue: formattedValues[i] });
-                }
-            }
-
-            // Include the first level if it has a non-zero/non-empty value
-            const firstValue = values[0].value;
-            const shouldIncludeFirst = typeof firstValue === 'number' ? firstValue > 0 : firstValue && firstValue.toString().trim() !== '';
-            if (shouldIncludeFirst) {
-                transitions.unshift({ level: values[0].level, formattedValue: formattedValues[0] });
-            }
-
-            const formattedValue = transitions.map(val => `Level ${val.level}: ${val.formattedValue}`).join('; ');
-
-            return (
-                <div className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                    <div className="font-medium mb-1">Formula Preview:</div>
-                    <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded text-xs">
-                        {formattedValue}
-                    </div>
-                </div>
-            );
-        }
-    } catch (error) {
+            </div>
+        );
+    } catch (_error) {
         return <p className="text-xs text-red-600 dark:text-red-400">Error generating preview</p>;
     }
 }
@@ -249,18 +193,18 @@ export function FeatureProgressionDetailEdit({
     const [featsLoading, setFeatsLoading] = useState(false);
 
     // Load feats for direct feat grants
-    const loadFeats = async () => {
+    const loadFeats = useCallback(async () => {
         if (feats.length > 0) return; // Already loaded
         setFeatsLoading(true);
         try {
-            const response = await FeatService.getFeats({});
+            const response = await FeatApi.getFeats({});
             setFeats(response.results || []);
         } catch (error) {
             console.error('Failed to load feats:', error);
         } finally {
             setFeatsLoading(false);
         }
-    };
+    }, [feats.length]);
 
     // Set up validation - use form schema for new features (featureId = 0), regular schema for existing features
     const schema = (formData.featureId === 0 || !formData.featureId) ? CreateFeatureProgressionFormSchema : CreateFeatureProgressionSchema;
@@ -314,107 +258,119 @@ export function FeatureProgressionDetailEdit({
 
     // Load feats when component mounts or when a feat modifier is added
     useEffect(() => {
-        const modifiers = formData.modifiers as FeatureModifierInQueryResponse[] || [];
+        const modifiers = formData.modifiers as FeatureModifier[] || [];
         const hasFeatModifier = modifiers.some(mod => mod.appliesTo === ModifierAppliesToType.Feat);
         if (hasFeatModifier && feats.length === 0) {
             loadFeats();
         }
-    }, [formData.modifiers, feats.length]);
+    }, [formData.modifiers, feats.length, loadFeats]);
 
     // Load feats when dialog opens to ensure they're available
     useEffect(() => {
         if (isOpen) {
             loadFeats();
         }
-    }, [isOpen]);
+    }, [isOpen, loadFeats]);
 
     // Handle form submission
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Create the updated progression with all details
-        const updatedProgression: FeatureProgressionWithRelations = {
-            ...formData as FeatureProgressionWithRelations,
-            // REMOVED: appliesToType and appliesTo - redundant fields removed from schema
+        // Create the submission data with proper type conversion
+        const submissionData: CreateFeatureProgressionRequest = {
+            sourceType: (formData as FeatureProgression).sourceType,
+            classId: (formData as FeatureProgression).classId || null,
+            raceId: (formData as FeatureProgression).raceId || null,
+            level: (formData as FeatureProgression).level,
+            featureId: (formData as FeatureProgression).featureId,
 
-            // Include feature data for display
-            feature: progression?.feature || preSelectedFeature ? {
-                id: (formData as FeatureProgressionWithRelations).featureId,
-                name: progression?.feature?.name || preSelectedFeature?.name || `Feature ${(formData as FeatureProgressionWithRelations).featureId}`,
-                description: progression?.feature?.description || preSelectedFeature?.description || '',
-                slug: progression?.feature?.slug || preSelectedFeature?.slug || `feature-${(formData as FeatureProgressionWithRelations).featureId}`,
-            } : undefined,
+            modifiers: (formData.modifiers as FeatureModifier[] || []).map(modifier => {
+                const { id: _id, featureProgressionId: _featureProgressionId, ...baseModifier } = modifier;
 
-            modifiers: (formData.modifiers as FeatureModifierInQueryResponse[] || []).map(modifier => {
-                // Remove id and featureProgressionId for bulk creation schema
-                //const { id, featureProgressionId, ...cleanModifier } = modifier;
-
-                // Ensure formulaParams has the correct structure
-                if (modifier.formulaParams && modifier.formulaParams.formulaId) {
-                    // Create a proper formulaParams structure
-                    modifier.formulaParams = {
-                        id: 1, // Temporary ID for frontend state
-                        formulaId: modifier.formulaParams.formulaId,
-                        interval: modifier.formulaParams.interval || 1,
-                        formulaStartLevel: modifier.formulaParams.formulaStartLevel || null,
-                        abilityId: modifier.formulaParams.abilityId || null,
-                        // Only include arrays for CONDITIONAL_SCALING formula
-                        thresholds: modifier.formulaParams.formulaId === 3 ? (modifier.formulaParams.thresholds || []) : null,
-                        values: modifier.formulaParams.formulaId === 3 ? (modifier.formulaParams.values || []) : null,
-                    };
-                    // Set formulaParamsId to indicate this is a formula-based modifier
-                    modifier.formulaParamsId = 1; // Temporary ID for frontend state
-                } else {
-                    // Remove formulaParams if no formula is selected
-                    delete modifier.formulaParams;
-                    modifier.formulaParamsId = null;
+                // Handle conditions conversion
+                let convertedConditions: CreateFeatureModifierConditionRequest[] | undefined;
+                if (baseModifier.conditions) {
+                    convertedConditions = baseModifier.conditions.map(condition => {
+                        const { id: _conditionId, featureModifierId: _featureModifierId, ...cleanCondition } = condition;
+                        return cleanCondition as CreateFeatureModifierConditionRequest;
+                    });
                 }
 
-                return modifier;
-            }),
-            effects: (formData.effects as FeatureSpecialEffectInQueryResponse[] || []).map(effect => {
-                // Remove id and progressionId for bulk creation schema
-                const { id, progressionId, ...cleanEffect } = effect;
-                return cleanEffect;
-            }),
-            choices: (formData.choices as FeatureChoiceInQueryResponse[] || []).map(choice => {
-                // Remove id and progressionId for bulk creation schema
-                const { id, progressionId, ...cleanChoice } = choice;
-
-                // Ensure formulaParams has the correct structure (same logic as modifiers)
-                if (choice.formulaParams && choice.formulaParams.formulaId) {
-                    // Create a proper formulaParams structure
-                    choice.formulaParams = {
-                        id: 1, // Temporary ID for frontend state
-                        formulaId: choice.formulaParams.formulaId,
-                        interval: choice.formulaParams.interval || 1,
-                        formulaStartLevel: choice.formulaParams.formulaStartLevel || null,
-                        abilityId: choice.formulaParams.abilityId || null,
-                        // Only include arrays for CONDITIONAL_SCALING formula
-                        thresholds: choice.formulaParams.formulaId === 3 ? (choice.formulaParams.thresholds || []) : null,
-                        values: choice.formulaParams.formulaId === 3 ? (choice.formulaParams.values || []) : null,
-                    };
-                    // Set formulaParamsId to indicate this is a formula-based choice
-                    choice.formulaParamsId = 1; // Temporary ID for frontend state
-                } else {
-                    // Remove formulaParams if no formula is selected (same as modifiers)
-                    delete choice.formulaParams;
-                    choice.formulaParamsId = null;
+                // Handle formulaParams conversion
+                let convertedFormulaParams: CreateFeatureFormulaParamsRequest | null = null;
+                if (baseModifier.formulaParams && baseModifier.formulaParams.formulaId) {
+                    const { id: _formulaId, ...cleanFormulaParams } = baseModifier.formulaParams;
+                    convertedFormulaParams = cleanFormulaParams as CreateFeatureFormulaParamsRequest;
                 }
 
-                return choice;
+                // Create the final modifier object
+                const finalModifier: CreateFeatureModifierRequest = {
+                    type: baseModifier.type,
+                    value: baseModifier.value,
+                    bonusType: baseModifier.bonusType,
+                    appliesTo: baseModifier.appliesTo,
+                    appliesToId: baseModifier.appliesToId,
+                    conditions: convertedConditions,
+                    formulaParams: convertedFormulaParams,
+                };
+
+                return finalModifier;
             }),
-            // prerequisites removed - now at feature level
+
+            effects: (formData.effects as FeatureSpecialEffect[] || []).map(effect => {
+                const { id: _id, progressionId: _progressionId, feat: _feat, item: _item, ...cleanEffect } = effect;
+                return cleanEffect as CreateFeatureSpecialEffectRequest;
+            }),
+
+            choices: (formData.choices as FeatureChoice[] || []).map(choice => {
+                const { id: _id, progressionId: _progressionId, feat: _feat, feature: _feature, formulaParamsId: _formulaParamsId, ...baseChoice } = choice;
+
+                // Handle formulaParams conversion
+                let convertedFormulaParams: CreateFeatureFormulaParamsRequest | null = null;
+                if (baseChoice.formulaParams && baseChoice.formulaParams.formulaId) {
+                    const { id: _formulaId, ...cleanFormulaParams } = baseChoice.formulaParams;
+                    convertedFormulaParams = cleanFormulaParams as CreateFeatureFormulaParamsRequest;
+                }
+
+                // Create the final choice object
+                const finalChoice: CreateFeatureChoiceRequest = {
+                    label: baseChoice.label,
+                    pickCount: baseChoice.pickCount,
+                    type: baseChoice.type,
+                    behavior: baseChoice.behavior,
+                    featId: baseChoice.featId,
+                    featureId: baseChoice.featureId,
+                    filterType: baseChoice.filterType,
+                    formulaParams: convertedFormulaParams,
+                };
+
+                return finalChoice;
+            }),
         };
 
-        console.log('Submitting progression:', updatedProgression);
-        console.log('Progression JSON:', JSON.stringify(updatedProgression, null, 2));
+        // Create the updated progression for display purposes
+        const updatedProgression: FeatureProgression = {
+            ...formData as FeatureProgression,
+            // Include feature data for display
+            feature: progression?.feature || preSelectedFeature ? {
+                id: (formData as FeatureProgression).featureId,
+                name: progression?.feature?.name || preSelectedFeature?.name || `Feature ${(formData as FeatureProgression).featureId}`,
+                description: progression?.feature?.description || preSelectedFeature?.description || '',
+                slug: progression?.feature?.slug || preSelectedFeature?.slug || `feature-${(formData as FeatureProgression).featureId}`,
+            } : undefined,
+            modifiers: formData.modifiers as FeatureModifier[] || [],
+            effects: formData.effects as FeatureSpecialEffect[] || [],
+            choices: formData.choices as FeatureChoice[] || [],
+        };
+
+        console.log('Submitting progression:', submissionData);
+        console.log('Progression JSON:', JSON.stringify(submissionData, null, 2));
 
         // Validate against the schema directly
         try {
             // Use appropriate schema based on whether this is a new feature (featureId = 0) or existing feature
-            const validationSchema = (updatedProgression.featureId === 0) ? CreateFeatureProgressionFormSchema : CreateFeatureProgressionSchema;
-            const parsed = validationSchema.parse(updatedProgression);
+            const validationSchema = (submissionData.featureId === 0) ? CreateFeatureProgressionFormSchema : CreateFeatureProgressionSchema;
+            const parsed = validationSchema.parse(submissionData);
             console.log('Schema validation passed:', parsed);
             onSave(updatedProgression);
             onClose();
@@ -425,105 +381,105 @@ export function FeatureProgressionDetailEdit({
 
     // Helper functions to manage multiple details
     const addModifier = () => {
-        const newModifier = {
-            type: 0, // ModifierType.Bonus
+        const newModifier: FeatureModifier = {
+            id: 0, // Temporary ID for frontend
+            featureProgressionId: 0, // Will be set on save
+            type: ModifierType.Bonus,
             value: 0,
-            formulaParamsId: null, // Initialize formulaParamsId as null
+            formulaParamsId: null,
             bonusType: null,
             appliesTo: null,
             appliesToId: null,
-            appliesIfChoiceKey: null,
-            appliesIfChoiceValue: null,
             conditions: [],
-            formulaParams: {
-                formulaId: null,
-                interval: 1,
-                formulaStartLevel: null,
-                abilityId: null,
-                thresholds: null,
-                values: null,
-            },
+            formulaParams: null, // Only created when formula is selected
         };
         setFormData(prev => ({
             ...prev,
-            modifiers: [...(prev.modifiers as FeatureModifierInQueryResponse[] || []), newModifier]
+            modifiers: [...(prev.modifiers as FeatureModifier[] || []), newModifier]
         }));
     };
 
     const removeModifier = (index: number) => {
         setFormData(prev => ({
             ...prev,
-            modifiers: (prev.modifiers as FeatureModifierInQueryResponse[] || []).filter((_, i) => i !== index)
+            modifiers: (prev.modifiers as FeatureModifier[] || []).filter((_, i) => i !== index)
         }));
     };
 
     const addEffect = () => {
-        const newEffect = {
-            effectType: 0,
+        const newEffect: FeatureSpecialEffect = {
+            id: 0, // Temporary ID for frontend
+            progressionId: 0, // Will be set on save
+            effectType: FeatureSpecialEffectType.Proficiency,
             key: null,
             value: null,
             numericValue: null,
+            featId: null,
+            itemId: null,
+            feat: null,
+            item: null,
         };
         setFormData(prev => ({
             ...prev,
-            effects: [...(prev.effects as FeatureSpecialEffectInQueryResponse[] || []), newEffect]
+            effects: [...(prev.effects as FeatureSpecialEffect[] || []), newEffect]
         }));
     };
 
     const removeEffect = (index: number) => {
         setFormData(prev => ({
             ...prev,
-            effects: (prev.effects as FeatureSpecialEffectInQueryResponse[] || []).filter((_, i) => i !== index)
+            effects: (prev.effects as FeatureSpecialEffect[] || []).filter((_, i) => i !== index)
         }));
     };
 
     const addChoice = () => {
-        const newChoice = {
+        const newChoice: FeatureChoice = {
+            id: 0, // Temporary ID for frontend
+            progressionId: 0, // Will be set on save
             label: '',
             pickCount: 1,
-            type: 0, // FeatureChoiceType.Feat
-            behavior: 0, // FeatureChoiceBehavior.Single
+            type: FeatureChoiceType.Feat,
+            behavior: FeatureChoiceBehavior.Single,
             featId: null,
             featureId: null,
             filterType: null,
-            formulaParams: {
-                formulaId: null,
-                interval: 1,
-                formulaStartLevel: null,
-                abilityId: null,
-                thresholds: null,
-                values: null,
-            },
+            formulaParamsId: null,
+            feat: null,
+            feature: null,
+            formulaParams: null, // Only created when formula is selected
         };
         setFormData(prev => ({
             ...prev,
-            choices: [...(prev.choices as FeatureChoiceInQueryResponse[] || []), newChoice]
+            choices: [...(prev.choices as FeatureChoice[] || []), newChoice]
         }));
     };
 
     const removeChoice = (index: number) => {
         setFormData(prev => ({
             ...prev,
-            choices: (prev.choices as FeatureChoiceInQueryResponse[] || []).filter((_, i) => i !== index)
+            choices: (prev.choices as FeatureChoice[] || []).filter((_, i) => i !== index)
         }));
     };
 
     // Helper function to format prerequisites for display
-    const formatPrerequisites = (prerequisites: any[]) => {
+    const formatPrerequisites = (prerequisites: FeaturePrerequisite[]) => {
         if (!prerequisites || prerequisites.length === 0) return 'None';
 
         return prerequisites.map((prereq, index) => {
             let text = '';
 
             switch (prereq.type) {
-                case FeaturePrerequisiteType.SkillRanks:
+                case FeaturePrerequisiteType.SkillRanks: {
                     const skillName = FULL_SKILL_SELECT_LIST.find(s => s.value === prereq.skillId)?.label || 'Unknown Skill';
                     text = `${skillName} ${prereq.minValue} ranks`;
                     break;
-                case FeaturePrerequisiteType.AbilityScore:
-                    const abilityName = ABILITY_SELECT_LIST.find(ability => ability.value === prereq.abilityId)?.label || 'Unknown Ability';
+                }
+                case FeaturePrerequisiteType.AbilityScore: {
+                    // For ability score prerequisites, the skillId field contains the ability ID
+                    const abilityName = ABILITY_SELECT_LIST.find(ability => ability.value === prereq.skillId)?.label || 'Unknown Ability';
                     text = `${abilityName} ${prereq.minValue}+`;
                     break;
+                }
                 case FeaturePrerequisiteType.CharacterLevel:
                     text = `Character Level ${prereq.minValue}+`;
                     break;
@@ -546,7 +502,7 @@ export function FeatureProgressionDetailEdit({
 
     // Helper function to get selected formula description
     const getSelectedFormulaDescription = () => {
-        const modifiers = formData.modifiers as FeatureModifierInQueryResponse[] || [];
+        const modifiers = formData.modifiers as FeatureModifier[] || [];
         const formulaModifiers = modifiers.filter(mod =>
             mod.formulaParams?.formulaId !== null && mod.formulaParams?.formulaId !== undefined
         );
@@ -563,9 +519,9 @@ export function FeatureProgressionDetailEdit({
     };
 
     // Get current section states
-    const hasModifiers = (formData.modifiers as FeatureModifierInQueryResponse[] || []).length > 0;
-    const hasEffects = (formData.effects as FeatureSpecialEffectInQueryResponse[] || []).length > 0;
-    const hasChoices = (formData.choices as FeatureChoiceInQueryResponse[] || []).length > 0;
+    const hasModifiers = (formData.modifiers as FeatureModifier[] || []).length > 0;
+    const hasEffects = (formData.effects as FeatureSpecialEffect[] || []).length > 0;
+    const hasChoices = (formData.choices as FeatureChoice[] || []).length > 0;
 
     return (
         <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -600,11 +556,11 @@ export function FeatureProgressionDetailEdit({
                                     </div>
                                 );
                             })()}
-                            {/* Feature Prerequisites Display - Using any to avoid type errors with prerequisites */}
-                            {((progression?.feature as any)?.prerequisites?.length > 0 || (preSelectedFeature as any)?.prerequisites?.length > 0) && (
+                            {/* Feature Prerequisites Display */}
+                            {((progression?.feature as Feature)?.prerequisites?.length > 0 || (preSelectedFeature as Feature)?.prerequisites?.length > 0) && (
                                 <div className="mt-2 inline-block p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-md">
                                     <p className="text-xs text-slate-700 dark:text-slate-300">
-                                        <strong>Feature Prerequisites:</strong> {formatPrerequisites((progression?.feature as any)?.prerequisites || (preSelectedFeature as any)?.prerequisites || [])}
+                                        <strong>Feature Prerequisites:</strong> {formatPrerequisites((progression?.feature as Feature)?.prerequisites || (preSelectedFeature as Feature)?.prerequisites || [])}
                                     </p>
                                 </div>
                             )}
@@ -657,7 +613,7 @@ export function FeatureProgressionDetailEdit({
                                                                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                                             />
                                                             <span className="text-sm font-medium">Modifiers</span>
-                                                            <span className="text-xs text-gray-500">({(formData.modifiers as FeatureModifierInQueryResponse[] || []).length})</span>
+                                                            <span className="text-xs text-gray-500">({(formData.modifiers as FeatureModifier[] || []).length})</span>
                                                         </label>
                                                         <label className="flex items-center gap-2">
                                                             <input
@@ -673,7 +629,7 @@ export function FeatureProgressionDetailEdit({
                                                                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                                             />
                                                             <span className="text-sm font-medium">Special Effects</span>
-                                                            <span className="text-xs text-gray-500">({(formData.effects as FeatureSpecialEffectInQueryResponse[] || []).length})</span>
+                                                            <span className="text-xs text-gray-500">({(formData.effects as FeatureSpecialEffect[] || []).length})</span>
                                                         </label>
                                                         <label className="flex items-center gap-2">
                                                             <input
@@ -689,7 +645,7 @@ export function FeatureProgressionDetailEdit({
                                                                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                                             />
                                                             <span className="text-sm font-medium">Choices</span>
-                                                            <span className="text-xs text-gray-500">({(formData.choices as FeatureChoiceInQueryResponse[] || []).length})</span>
+                                                            <span className="text-xs text-gray-500">({(formData.choices as FeatureChoice[] || []).length})</span>
                                                         </label>
                                                     </div>
                                                 </div>
@@ -708,11 +664,11 @@ export function FeatureProgressionDetailEdit({
                                                             </button>
                                                         </div>
 
-                                                        {(formData.modifiers as FeatureModifierInQueryResponse[] || []).length === 0 ? (
+                                                        {(formData.modifiers as FeatureModifier[] || []).length === 0 ? (
                                                             <p className="text-gray-500 text-sm">No modifiers added</p>
                                                         ) : (
                                                             <div className="space-y-3">
-                                                                {(formData.modifiers as FeatureModifierInQueryResponse[] || []).map((modifier, index) => (
+                                                                {(formData.modifiers as FeatureModifier[] || []).map((modifier, index) => (
                                                                     <div key={index} className="border border-gray-200 rounded-md p-3 dark:border-gray-600">
                                                                         <div className="flex justify-between items-center mb-3">
                                                                             <div className="flex-1">
@@ -754,11 +710,11 @@ export function FeatureProgressionDetailEdit({
                                                             </button>
                                                         </div>
 
-                                                        {(formData.effects as FeatureSpecialEffectInQueryResponse[] || []).length === 0 ? (
+                                                        {(formData.effects as FeatureSpecialEffect[] || []).length === 0 ? (
                                                             <p className="text-gray-500 text-sm">No effects added</p>
                                                         ) : (
                                                             <div className="space-y-3">
-                                                                {(formData.effects as FeatureSpecialEffectInQueryResponse[] || []).map((effect, index) => (
+                                                                {(formData.effects as FeatureSpecialEffect[] || []).map((effect, index) => (
                                                                     <div key={index} className="border border-gray-200 rounded-md p-3 dark:border-gray-600">
                                                                         <div className="flex justify-between items-center mb-2">
                                                                             <span className="text-sm font-medium">Effect {index + 1}</span>
@@ -794,11 +750,11 @@ export function FeatureProgressionDetailEdit({
                                                             </button>
                                                         </div>
 
-                                                        {(formData.choices as FeatureChoiceInQueryResponse[] || []).length === 0 ? (
+                                                        {(formData.choices as FeatureChoice[] || []).length === 0 ? (
                                                             <p className="text-gray-500 text-sm">No choices added</p>
                                                         ) : (
                                                             <div className="space-y-3">
-                                                                {(formData.choices as FeatureChoiceInQueryResponse[] || []).map((choice, index) => (
+                                                                {(formData.choices as FeatureChoice[] || []).map((choice, index) => (
                                                                     <div key={index} className="border border-gray-200 rounded-md p-3 dark:border-gray-600">
                                                                         <div className="flex justify-between items-center mb-2">
                                                                             <span className="text-sm font-medium">Choice {index + 1}</span>
@@ -852,7 +808,7 @@ export function FeatureProgressionDetailEdit({
                                         if (form.validation.validationState.hasErrors) {
                                             console.log('Validation errors:', form.validation.validationState.errors);
                                         }
-                                        handleSubmit(e as any);
+                                        handleSubmit(e as React.FormEvent);
                                     }}
                                     className="px-4 py-2 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                                     disabled={form.validation.validationState.hasErrors}
@@ -874,13 +830,18 @@ interface ModifierDetailFormProps {
     feats: Array<{ id: number; name: string }>;
     featsLoading: boolean;
     preSelectedFeature?: { id: number; name: string; description: string; slug: string };
-    progression?: FeatureProgressionWithRelations | null;
+    progression?: FeatureProgression | null;
 }
 
 function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeature, progression }: ModifierDetailFormProps) {
     const { formData, setFormData } = useFormContext();
-    const modifiers = formData.modifiers as FeatureModifierInQueryResponse[] || [];
-    const modifier = modifiers[index] || { appliesTo: null, appliesToId: null };
+    const modifiers = useMemo(() =>
+        formData.modifiers as FeatureModifier[] || [],
+        [formData.modifiers]
+    );
+    const modifier = modifiers[index];
+
+
     const [showConditional, setShowConditional] = useState(false);
     const [showConditions, setShowConditions] = useState(false);
     const prevAppliesToRef = useRef<number | null>(null);
@@ -889,15 +850,10 @@ function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeature, pr
     useEffect(() => {
         if (modifier.appliesTo === ModifierAppliesToType.Feat && modifier.appliesToId) {
             const selectedFeat = feats.find(feat => feat.id === modifier.appliesToId);
-            if (selectedFeat && !modifier.feat) {
+            if (selectedFeat) {
                 console.log('Setting feat data for modifier:', selectedFeat);
-                // Update the modifier with feat data
-                setFormData(prev => ({
-                    ...prev,
-                    modifiers: (prev.modifiers as FeatureModifierInQueryResponse[] || []).map((mod, i) =>
-                        i === index ? { ...mod, feat: selectedFeat } : mod
-                    )
-                }));
+                // Note: feat property doesn't exist in FeatureModifierInQueryResponse schema
+                // The feat data is handled through appliesToId only
             }
         }
     }, [modifier.appliesTo, modifier.appliesToId, feats, index, setFormData]);
@@ -976,8 +932,6 @@ function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeature, pr
         }
     };
 
-
-
     // Check if this modifier type should show the appliesTo field
     // Most modifier types benefit from specifying what they apply to
     const shouldShowAppliesTo = true; // Always show appliesTo for flexibility
@@ -990,7 +944,7 @@ function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeature, pr
                 // Clear the appliesTo value if it's not valid for the current type
                 setFormData(prev => ({
                     ...prev,
-                    modifiers: (prev.modifiers as FeatureModifierInQueryResponse[] || []).map((mod, i) =>
+                    modifiers: (prev.modifiers as FeatureModifier[] || []).map((mod, i) =>
                         i === index ? { ...mod, appliesTo: null, appliesToId: null } : mod
                     )
                 }));
@@ -1002,14 +956,14 @@ function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeature, pr
                     // Clear the appliesTo value if it's not valid for the current type
                     setFormData(prev => ({
                         ...prev,
-                        modifiers: (prev.modifiers as FeatureModifierInQueryResponse[] || []).map((mod, i) =>
+                        modifiers: (prev.modifiers as FeatureModifier[] || []).map((mod, i) =>
                             i === index ? { ...mod, appliesTo: null, appliesToId: null } : mod
                         )
                     }));
                 }
             }
         }
-    }, [modifier.type, index, modifiers, shouldShowAppliesTo]);
+    }, [modifier.type, index, modifiers, shouldShowAppliesTo, setFormData]);
 
     // Clear appliesToId when appliesTo changes (but not during initial load)
     useEffect(() => {
@@ -1028,13 +982,13 @@ function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeature, pr
             // Clear appliesToId when appliesTo changes to ensure the dropdown updates properly
             setFormData(prev => ({
                 ...prev,
-                modifiers: (prev.modifiers as FeatureModifierInQueryResponse[] || []).map((mod, i) =>
+                modifiers: (prev.modifiers as FeatureModifier[] || []).map((mod, i) =>
                     i === index ? { ...mod, appliesToId: null } : mod
                 )
             }));
         }
         prevAppliesToRef.current = currentAppliesTo;
-    }, [modifier.appliesTo, index]);
+    }, [modifier.appliesTo, index, setFormData]);
 
     // Initialize arrays when formula changes to CONDITIONAL_SCALING
     useEffect(() => {
@@ -1044,7 +998,7 @@ function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeature, pr
             if (!modifier.formulaParams?.thresholds || !modifier.formulaParams?.values) {
                 setFormData(prev => ({
                     ...prev,
-                    modifiers: (prev.modifiers as FeatureModifierInQueryResponse[] || []).map((mod, i) =>
+                    modifiers: (prev.modifiers as FeatureModifier[] || []).map((mod, i) =>
                         i === index ? {
                             ...mod,
                             formulaParams: {
@@ -1057,7 +1011,7 @@ function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeature, pr
                 }));
             }
         }
-    }, [modifier.formulaParams?.formulaId, index]);
+    }, [modifier.formulaParams?.formulaId, index, modifier.formulaParams?.thresholds, modifier.formulaParams?.values, setFormData]);
 
 
 
@@ -1069,7 +1023,7 @@ function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeature, pr
         };
         setFormData(prev => ({
             ...prev,
-            modifiers: (prev.modifiers as FeatureModifierInQueryResponse[] || []).map((mod, i) =>
+            modifiers: (prev.modifiers as FeatureModifier[] || []).map((mod, i) =>
                 i === index ? {
                     ...mod,
                     conditions: [...(mod.conditions || []), newCondition]
@@ -1081,7 +1035,7 @@ function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeature, pr
     const removeCondition = (conditionIndex: number) => {
         setFormData(prev => ({
             ...prev,
-            modifiers: (prev.modifiers as FeatureModifierInQueryResponse[] || []).map((mod, i) =>
+            modifiers: (prev.modifiers as FeatureModifier[] || []).map((mod, i) =>
                 i === index ? {
                     ...mod,
                     conditions: (mod.conditions || []).filter((_, ci) => ci !== conditionIndex)
@@ -1326,7 +1280,7 @@ function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeature, pr
                                             onThresholdsChange={(thresholds) => {
                                                 setFormData(prev => ({
                                                     ...prev,
-                                                    modifiers: (prev.modifiers as any[] || []).map((mod, i) =>
+                                                    modifiers: (prev.modifiers as FeatureModifier[] || []).map((mod, i) =>
                                                         i === index ? {
                                                             ...mod,
                                                             formulaParams: {
@@ -1340,7 +1294,7 @@ function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeature, pr
                                             onValuesChange={(values) => {
                                                 setFormData(prev => ({
                                                     ...prev,
-                                                    modifiers: (prev.modifiers as any[] || []).map((mod, i) =>
+                                                    modifiers: (prev.modifiers as FeatureModifier[] || []).map((mod, i) =>
                                                         i === index ? {
                                                             ...mod,
                                                             formulaParams: {
@@ -1401,16 +1355,8 @@ function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeature, pr
                                 setShowConditional(e.target.checked);
                                 // Clear conditional fields when checkbox is unchecked
                                 if (!e.target.checked) {
-                                    setFormData(prev => ({
-                                        ...prev,
-                                        modifiers: (prev.modifiers as any[] || []).map((mod, i) =>
-                                            i === index ? {
-                                                ...mod,
-                                                appliesIfChoiceKey: null,
-                                                appliesIfChoiceValue: null
-                                            } : mod
-                                        )
-                                    }));
+                                    // Note: appliesIfChoiceKey and appliesIfChoiceValue are not in the schema
+                                    // These fields are handled through other mechanisms
                                 }
                             }}
                             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
@@ -1431,7 +1377,7 @@ function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeature, pr
                                 if (!e.target.checked) {
                                     setFormData(prev => ({
                                         ...prev,
-                                        modifiers: (prev.modifiers as any[] || []).map((mod, i) =>
+                                        modifiers: (prev.modifiers as FeatureModifier[] || []).map((mod, i) =>
                                             i === index ? { ...mod, conditions: [] } : mod
                                         )
                                     }));
@@ -1446,28 +1392,11 @@ function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeature, pr
                 </div>
             </div>
 
-            {/* Conditional fields */}
+            {/* Conditional fields - removed as these properties don't exist in the schema */}
             {showConditional && (
                 <div className="grid grid-cols-2 gap-3">
-                    <div>
-                        <ValidatedInput
-                            field={`modifiers.${index}.appliesIfChoiceKey`}
-                            label="Choice Key"
-                            type="text"
-                            placeholder="e.g., favored_enemy_1"
-                            componentExtraClassName="flex items-center gap-2"
-                            nested
-                        />
-                    </div>
-                    <div>
-                        <ValidatedInput
-                            field={`modifiers.${index}.appliesIfChoiceValue`}
-                            label="Choice Value"
-                            type="text"
-                            placeholder="e.g., humanoid, dragon"
-                            componentExtraClassName="flex items-center gap-2"
-                            nested
-                        />
+                    <div className="text-sm text-gray-500">
+                        Conditional fields are not supported in the current schema
                     </div>
                 </div>
             )}
@@ -1490,7 +1419,7 @@ function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeature, pr
                         <p className="text-gray-500 text-sm">No conditions added</p>
                     ) : (
                         <div className="space-y-2">
-                            {(modifier.conditions || []).map((condition: any, conditionIndex: number) => (
+                            {(modifier.conditions || []).map((condition: FeatureModifierCondition, conditionIndex: number) => (
                                 <div key={conditionIndex} className="flex items-center gap-2 p-2 border border-gray-200 rounded dark:border-gray-600">
                                     <ValidatedCustomSelect
                                         field={`modifiers.${index}.conditions.${conditionIndex}.conditionType`}
@@ -1560,9 +1489,9 @@ interface EffectDetailFormProps {
 }
 
 function EffectDetailForm({ index }: EffectDetailFormProps) {
-    const { formData, setFormData } = useFormContext();
-    const effects = formData.effects as any[] || [];
-    const effect = effects[index] || {};
+    const { formData, setFormData: _setFormData } = useFormContext();
+    const effects = formData.effects as FeatureSpecialEffect[] || [];
+    const effect = effects[index] || null;
 
     // State for proficiency-specific data
     const [proficiencyFeats, setProficiencyFeats] = useState<ProficiencyFeat[]>([]);
@@ -1582,34 +1511,10 @@ function EffectDetailForm({ index }: EffectDetailFormProps) {
     const isProficiencyEffect = effect.effectType === FeatureSpecialEffectType.Proficiency;
     const isWeaponFamiliarityEffect = effect.effectType === FeatureSpecialEffectType.WeaponFamiliarity;
 
-    // Load proficiency feats when component mounts or effect type changes
-    useEffect(() => {
-        if (isProficiencyEffect && proficiencyFeats.length === 0) {
-            loadProficiencyFeats();
-        }
-    }, [isProficiencyEffect]);
-
-    // Load items when feat is selected
-    useEffect(() => {
-        if (isProficiencyEffect && effect.featId) {
-            loadProficiencyItems(effect.featId);
-        } else if (isProficiencyEffect && !effect.featId) {
-            // Clear items when no feat is selected
-            setProficiencyItems([]);
-        }
-    }, [isProficiencyEffect, effect.featId]);
-
-    // Load exotic weapons when weapon familiarity is selected
-    useEffect(() => {
-        if (isWeaponFamiliarityEffect && exoticWeapons.length === 0) {
-            loadExoticWeapons();
-        }
-    }, [isWeaponFamiliarityEffect]);
-
-    const loadProficiencyFeats = async () => {
+    const loadProficiencyFeats = useCallback(async () => {
         setLoadingFeats(true);
         try {
-            const response = await FeatService.featQuery({ queryType: 'proficiency' });
+            const response = await FeatApi.featQuery({ queryType: 'proficiency' });
             const proficiencyFeats = response.results
                 .filter(feat => feat.benefits?.some(benefit =>
                     benefit.typeId === FeatBenefitType.PROFICIENCY
@@ -1625,16 +1530,16 @@ function EffectDetailForm({ index }: EffectDetailFormProps) {
         } finally {
             setLoadingFeats(false);
         }
-    };
+    }, []);
 
-    const loadProficiencyItems = async (featId: number) => {
+    const loadProficiencyItems = useCallback(async (featId: number) => {
         const feat = proficiencyFeats.find(f => f.id === featId);
         if (!feat?.proficiencyTypeId) return;
 
         setLoadingItems(true);
         try {
             // Use the existing ClassProficiencyService method for proper filtering
-            const items = await ClassProficiencyService.getItemsByProficiencyType(feat.proficiencyTypeId);
+            const items = await FeatureSystemService.getItemsByProficiencyType(feat.proficiencyTypeId);
 
             // Sort items alphabetically by name
             const sortedItems = items.sort((a, b) => a.name.localeCompare(b.name));
@@ -1645,12 +1550,12 @@ function EffectDetailForm({ index }: EffectDetailFormProps) {
         } finally {
             setLoadingItems(false);
         }
-    };
+    }, [proficiencyFeats]);
 
-    const loadExoticWeapons = async () => {
+    const loadExoticWeapons = useCallback(async () => {
         setLoadingExoticWeapons(true);
         try {
-            const response = await ItemService.itemQuery({
+            const response = await ItemApi.itemQuery({
                 queryType: 'byCategory',
                 typeId: 1, // ITEM_TYPE_ENUM.WEAPON
                 category: 3 // WEAPON_CATEGORY_ENUM.EXOTIC
@@ -1671,7 +1576,33 @@ function EffectDetailForm({ index }: EffectDetailFormProps) {
         } finally {
             setLoadingExoticWeapons(false);
         }
-    };
+    }, []);
+
+    // Load proficiency feats when component mounts or effect type changes
+    useEffect(() => {
+        if (isProficiencyEffect && proficiencyFeats.length === 0) {
+            loadProficiencyFeats();
+        }
+    }, [isProficiencyEffect, proficiencyFeats.length, loadProficiencyFeats]);
+
+    // Load items when feat is selected
+    useEffect(() => {
+        if (isProficiencyEffect && effect.featId) {
+            loadProficiencyItems(effect.featId);
+        } else if (isProficiencyEffect && !effect.featId) {
+            // Clear items when no feat is selected
+            setProficiencyItems([]);
+        }
+    }, [isProficiencyEffect, effect.featId, loadProficiencyItems]);
+
+    // Load exotic weapons when weapon familiarity is selected
+    useEffect(() => {
+        if (isWeaponFamiliarityEffect && exoticWeapons.length === 0) {
+            loadExoticWeapons();
+        }
+    }, [isWeaponFamiliarityEffect, exoticWeapons.length, loadExoticWeapons]);
+
+
 
     return (
         <div className="space-y-4">
@@ -1798,13 +1729,13 @@ function EffectDetailForm({ index }: EffectDetailFormProps) {
 interface ChoiceDetailFormProps {
     index: number;
     preSelectedFeature?: { id: number; name: string; description: string; slug: string };
-    progression?: FeatureProgressionWithRelations | null;
+    progression?: FeatureProgression | null;
 }
 
 function ChoiceDetailForm({ index, preSelectedFeature, progression }: ChoiceDetailFormProps) {
     const { formData, setFormData } = useFormContext();
-    const choices = formData.choices as any[] || [];
-    const choice = choices[index] || {};
+    const choices = formData.choices as FeatureChoice[] || [];
+    const choice = choices[index] || null;
     const [availableFeats, setAvailableFeats] = useState<Array<{ id: number; name: string }>>([]);
     const [availableFeatures, setAvailableFeatures] = useState<Array<{ id: number; name: string }>>([]);
 
@@ -1813,7 +1744,7 @@ function ChoiceDetailForm({ index, preSelectedFeature, progression }: ChoiceDeta
         if (choice && !choice.formulaParams) {
             setFormData(prev => ({
                 ...prev,
-                choices: (prev.choices as any[] || []).map((c, i) =>
+                choices: (prev.choices as FeatureChoice[] || []).map((c, i) =>
                     i === index ? {
                         ...c,
                         formulaParams: {
@@ -1838,7 +1769,7 @@ function ChoiceDetailForm({ index, preSelectedFeature, progression }: ChoiceDeta
             if (!choice.formulaParams?.thresholds || !choice.formulaParams?.values) {
                 setFormData(prev => ({
                     ...prev,
-                    choices: (prev.choices as any[] || []).map((c, i) =>
+                    choices: (prev.choices as FeatureChoice[] || []).map((c, i) =>
                         i === index ? {
                             ...c,
                             formulaParams: {
@@ -1851,7 +1782,7 @@ function ChoiceDetailForm({ index, preSelectedFeature, progression }: ChoiceDeta
                 }));
             }
         }
-    }, [choice.formulaParams?.formulaId, index]);
+    }, [choice.formulaParams?.formulaId, index, choice.formulaParams?.thresholds, choice.formulaParams?.values, setFormData]);
 
     const choiceTypeOptions = FEATURE_CHOICE_SELECT_LIST;
     const choiceBehaviorOptions = FEATURE_CHOICE_BEHAVIOR_SELECT_LIST;
@@ -1866,8 +1797,8 @@ function ChoiceDetailForm({ index, preSelectedFeature, progression }: ChoiceDeta
     useEffect(() => {
         const loadFeats = async () => {
             try {
-                const featResponse = await FeatService.featQuery({ queryType: 'all' });
-                const feats = featResponse.results.map((feat: any) => ({ id: Number(feat.id), name: feat.name }));
+                const featResponse = await FeatApi.featQuery({ queryType: 'all' });
+                const feats = featResponse.results.map((feat: FeatQueryResponse['results'][0]) => ({ id: Number(feat.id), name: feat.name }));
                 console.log('Loaded feats for choice selection:', feats.length, feats.slice(0, 3));
                 setAvailableFeats(feats);
             } catch (error) {
@@ -1884,8 +1815,8 @@ function ChoiceDetailForm({ index, preSelectedFeature, progression }: ChoiceDeta
     useEffect(() => {
         const loadFeatures = async () => {
             try {
-                const featureResponse = await FeatureSystemService.getFeatures({});
-                const features = featureResponse.results.map((feature: any) => ({ id: Number(feature.id), name: feature.name }));
+                const featureResponse = await FeatureSystemApi.getFeatures({});
+                const features = featureResponse.results.map((feature: GetAllFeaturesResponse['results'][0]) => ({ id: Number(feature.id), name: feature.name }));
                 console.log('Loaded features for choice selection:', features.length, features.slice(0, 3));
                 setAvailableFeatures(features);
             } catch (error) {
@@ -2156,7 +2087,7 @@ function ChoiceDetailForm({ index, preSelectedFeature, progression }: ChoiceDeta
                                             onThresholdsChange={(thresholds) => {
                                                 setFormData(prev => ({
                                                     ...prev,
-                                                    choices: (prev.choices as any[] || []).map((c, i) =>
+                                                    choices: (prev.choices as FeatureChoice[] || []).map((c, i) =>
                                                         i === index ? {
                                                             ...c,
                                                             formulaParams: {
@@ -2170,7 +2101,7 @@ function ChoiceDetailForm({ index, preSelectedFeature, progression }: ChoiceDeta
                                             onValuesChange={(values) => {
                                                 setFormData(prev => ({
                                                     ...prev,
-                                                    choices: (prev.choices as any[] || []).map((c, i) =>
+                                                    choices: (prev.choices as FeatureChoice[] || []).map((c, i) =>
                                                         i === index ? {
                                                             ...c,
                                                             formulaParams: {

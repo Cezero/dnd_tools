@@ -3,6 +3,7 @@ import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import React, { useRef, useEffect, useState } from 'react';
 
 import { FilterType } from '@shared/static-data';
+
 import { ContextMenuMultiSelect } from './ContextMenuMultiSelect';
 import { ContextMenuSingleSelect } from './ContextMenuSingleSelect';
 import { FilterConfig, FilterValue } from './types';

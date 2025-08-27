@@ -47,7 +47,6 @@ export const authService: AuthService = {
                     isAdmin: false
                 },
                 include: {
-                    diceConfigBaseRef: true,
                     diceConfigOverrides: true
                 }
             });
@@ -81,7 +80,6 @@ export const authService: AuthService = {
             const user = await prisma.user.findFirst({
                 where: { username: data.username },
                 include: {
-                    diceConfigBaseRef: true,
                     diceConfigOverrides: true
                 }
             });
@@ -126,7 +124,6 @@ export const authService: AuthService = {
             const user = await prisma.user.findUnique({
                 where: { id: decoded.id },
                 include: {
-                    diceConfigBaseRef: true,
                     diceConfigOverrides: true
                 }
             });

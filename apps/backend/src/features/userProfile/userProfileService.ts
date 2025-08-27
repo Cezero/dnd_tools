@@ -22,7 +22,6 @@ export const userProfileService: UserProfileService = {
             const user = await prisma.user.findUnique({
                 where: { id: userId },
                 include: {
-                    diceConfigBaseRef: true,
                     diceConfigOverrides: true
                 }
             });
@@ -53,7 +52,6 @@ export const userProfileService: UserProfileService = {
             where: { id: userId },
             data: updateData,
             include: {
-                diceConfigBaseRef: true,
                 diceConfigOverrides: true
             }
         });

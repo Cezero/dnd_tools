@@ -1,15 +1,18 @@
 import type {
     FormulaParamsData
 } from '@shared/schema';
-import { FORMULA_MAP } from '@shared/static-data';
+import { FORMULA_MAP, BreakdownComponentType } from '@shared/static-data';
 
-import { calculatorRegistry } from './calculator-registry';
+import { FormulaCalculatorImpl } from './calculators';
+// Remove circular dependency - calculator will be passed as parameter
 import type {
     CalculationContext,
     ProgressionValue,
     TransitionPoint,
     ProgressionGenerator,
-    TransitionDetector
+    TransitionDetector,
+    FormulaCalculator,
+    CalculationBreakdown
 } from './types';
 
 /**
@@ -21,9 +24,20 @@ export class ProgressionGeneratorImpl implements ProgressionGenerator {
         startLevel: number,
         endLevel: number,
         context?: CalculationContext,
-        modifierValue?: number
+        modifierValue?: number,
+        formulaCalculator?: FormulaCalculator
     ): Array<ProgressionValue> {
         const values: Array<ProgressionValue> = [];
+        const formulaDef = FORMULA_MAP[formula.formulaId];
+
+        if (!formulaDef) {
+            return values;
+        }
+
+        // If formula doesn't have progression, don't generate progression values
+        if (!formulaDef.hasProgression) {
+            return values;
+        }
 
         for (let level = startLevel; level <= endLevel; level++) {
             const calculationContext: CalculationContext = {
@@ -33,14 +47,51 @@ export class ProgressionGeneratorImpl implements ProgressionGenerator {
                 character: context?.character
             };
 
-            const formulaCalculator = calculatorRegistry.getDefaultFormulaCalculator();
-            const result = formulaCalculator.calculate(formula, level, calculationContext, modifierValue);
+            let value: number;
+            let breakdown: CalculationBreakdown;
+
+            // Determine whether to use calculate() or getDisplayString() based on formula properties
+            if (formulaDef.isCharacterDependent && !context?.character) {
+                // Character-dependent formula but no character data available
+                // Use getDisplayString() and convert to numeric representation
+                const params = {
+                    level,
+                    startLevel,
+                    interval: formula.interval,
+                    formulaStartLevel: formula.formulaStartLevel,
+                    abilityId: formula.abilityId,
+                    thresholds: formula.thresholds,
+                    values: formula.values
+                };
+
+                const displayString = formulaDef.getDisplayString(params);
+                // Convert display string to numeric value for comparison purposes
+                // This is a simple hash-based approach - in practice, you might want more sophisticated parsing
+                value = displayString.split('').reduce((hash, char) => hash + char.charCodeAt(0), 0);
+                breakdown = {
+                    components: [{
+                        source: formulaDef.name,
+                        value,
+                        type: BreakdownComponentType.formula,
+                        description: displayString,
+                        formula: displayString
+                    }],
+                    formula: formulaDef.name,
+                    explanation: `Display string: ${displayString}`
+                };
+            } else {
+                // Use calculate() - either non-character-dependent or character data is available
+                const calculator = formulaCalculator || new FormulaCalculatorImpl();
+                const result = calculator.calculate(formula, level, calculationContext, modifierValue);
+                value = result.value;
+                breakdown = result.breakdown;
+            }
 
             values.push({
                 level,
-                value: result.value,
-                breakdown: result.breakdown,
-                conditionalValues: result.conditionalValues
+                value,
+                breakdown,
+                conditionalValues: [] // Simplified for now
             });
         }
 
@@ -88,9 +139,10 @@ export class ProgressionGeneratorImpl implements ProgressionGenerator {
         progressionLevel: number,
         maxLevel: number = 20,
         context?: CalculationContext,
-        modifierValue?: number
+        modifierValue?: number,
+        formulaCalculator?: FormulaCalculator
     ): Array<ProgressionValue> {
-        return this.generateValues(formula, progressionLevel, maxLevel, context, modifierValue);
+        return this.generateValues(formula, progressionLevel, maxLevel, context, modifierValue, formulaCalculator);
     }
 
     /**
@@ -157,7 +209,7 @@ export class TransitionDetectorImpl implements TransitionDetector {
      */
     findTransitionsWithContext(
         values: Array<ProgressionValue>,
-        characterContext?: CalculationContext['character']
+        _characterContext?: CalculationContext['character']
     ): Array<TransitionPoint> {
         // For now, character context doesn't affect transition detection
         // In the future, this could be used for conditional transitions

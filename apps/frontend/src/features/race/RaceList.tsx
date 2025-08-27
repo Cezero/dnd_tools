@@ -3,16 +3,15 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { FeatureDetail, FeatureEdit } from '@/components/feature-system';
+import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { GenericList } from '@/components/generic-list/GenericList';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
-import { FeatureSystemService } from '@/services/FeatureSystemService';
-import { RaceInQueryResponse, FeatureInQueryResponse } from '@shared/schema';
+import { RaceSummary, Feature } from '@shared/schema';
 
+import { RaceApi } from './RaceApi';
 import { RACE_COLUMNS } from './RaceColumns';
 import { routes } from './RaceConfig';
-import { RaceService } from './RaceService';
 import { FEATURE_COLUMNS } from '../class/FeatureColumns';
-
 
 export function RaceList(): React.JSX.Element {
     const navigate = useNavigate();
@@ -32,8 +31,6 @@ export function RaceList(): React.JSX.Element {
         });
     };
 
-
-
     if (isAuthLoading) {
         return <div className="p-4">Loading...</div>;
     }
@@ -51,13 +48,13 @@ export function RaceList(): React.JSX.Element {
                     </button>
                 </div>
             )}
-            <GenericList<RaceInQueryResponse>
+            <GenericList<RaceSummary>
                 storageKey="races-list"
                 columns={RACE_COLUMNS}
-                serviceFunction={() => RaceService.getRaces({})}
+                serviceFunction={() => RaceApi.getRaces({})}
                 itemDesc="race"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction(RaceService.deleteRace)}
+                deleteServiceFunction={createIdDeleteServiceFunction(RaceApi.deleteRace)}
             />
 
             {isAdmin && (
@@ -72,10 +69,10 @@ export function RaceList(): React.JSX.Element {
                         </button>
                     </div>
                     <div id="features-list-container">
-                        <GenericList<FeatureInQueryResponse>
+                        <GenericList<Feature>
                             storageKey="features-list"
                             columns={FEATURE_COLUMNS}
-                            serviceFunction={() => FeatureSystemService.getFeatures({ sourceType: 0 })}
+                            serviceFunction={() => FeatureSystemApi.getFeatures({ sourceType: 0 })}
                             itemDesc="feature"
                             routes={[
                                 { path: 'features/:id', component: FeatureDetail, exact: true, requireAuth: true, requireAdmin: true, routeType: 'detail' },
@@ -91,7 +88,7 @@ export function RaceList(): React.JSX.Element {
                                     });
                                 }
                             }}
-                            deleteServiceFunction={createIdDeleteServiceFunction(FeatureSystemService.deleteFeature)}
+                            deleteServiceFunction={createIdDeleteServiceFunction(FeatureSystemApi.deleteFeature)}
                         />
                     </div>
                 </>

@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { FeatureProgressionDetailEdit } from '@/components/feature-system';
+import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import {
     ValidatedForm,
     ValidatedInput,
@@ -10,11 +11,10 @@ import {
     useValidatedForm,
     useFormContext
 } from '@/components/forms';
-import { FeatService } from '@/features/feat/FeatService';
-import { formatterOrchestrator } from '@/lib/formatters';
-import { FeatureSystemService } from '@/services/FeatureSystemService';
-import { CreateFeatureRequest, CreateFeatureSchema, UpdateFeatureRequest, UpdateFeatureSchema, GetFeatureResponse, FeatureProgressionWithRelations, FeaturePrerequisite } from '@shared/schema';
-import { FEATURE_PRE_REQ_SELECT_LIST, FeaturePrerequisiteType, FULL_SKILL_SELECT_LIST, FeatureSourceType, ModifierAppliesToType } from '@shared/static-data';
+import { FeatApi } from '@/features/feat/FeatApi';
+import { displayStrategyFactory } from '@/lib/formatters';
+import { CreateFeatureRequest, CreateFeatureSchema, UpdateFeatureRequest, UpdateFeatureSchema, GetFeatureResponse, FeatureProgression, FeaturePrerequisite } from '@shared/schema';
+import { DisplayType, FEATURE_PRE_REQ_SELECT_LIST, FeaturePrerequisiteType, FULL_SKILL_SELECT_LIST, FeatureSourceType, ModifierAppliesToType } from '@shared/static-data';
 
 type FeatureFormData = CreateFeatureRequest | UpdateFeatureRequest;
 
@@ -31,9 +31,9 @@ export function FeatureEdit() {
     const fromPage = location.state?.fromPage || 'features'; // 'classes', 'races', or 'features'
 
     // FeatureProgression management state
-    const [featureProgressions, setFeatureProgressions] = useState<FeatureProgressionWithRelations[]>([]);
+    const [featureProgressions, setFeatureProgressions] = useState<FeatureProgression[]>([]);
     const [isProgressionDialogOpen, setIsProgressionDialogOpen] = useState(false);
-    const [editingProgression, setEditingProgression] = useState<FeatureProgressionWithRelations | null>(null);
+    const [editingProgression, setEditingProgression] = useState<FeatureProgression | null>(null);
     const [feats, setFeats] = useState<Array<{ id: number; name: string }>>([]);
 
     // Determine which schema to use based on whether we're creating or editing
@@ -90,12 +90,12 @@ export function FeatureEdit() {
 
             try {
                 setIsLoading(true);
-                const fetchedFeature = await FeatureSystemService.getFeatureById(undefined, { id: numericId });
+                const fetchedFeature = await FeatureSystemApi.getFeatureById(undefined, { id: numericId });
                 setFeature(fetchedFeature);
                 setFormData(fetchedFeature);
 
                 // Load feature progressions for this feature
-                const progressions = await FeatureSystemService.getFeatureProgressions(undefined, { id: numericId });
+                const progressions = await FeatureSystemApi.getFeatureProgressions(undefined, { id: numericId });
                 setFeatureProgressions(progressions);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to fetch feature');
@@ -118,7 +118,7 @@ export function FeatureEdit() {
 
             if (hasFeatModifiers && feats.length === 0) {
                 try {
-                    const response = await FeatService.getFeats({});
+                    const response = await FeatApi.getFeats({});
                     setFeats(response.results || []);
                 } catch (error) {
                     console.error('Failed to load feats:', error);
@@ -176,11 +176,11 @@ export function FeatureEdit() {
     };
 
     // FeatureProgression management handlers
-    const handleAddProgression = (progression: FeatureProgressionWithRelations) => {
+    const handleAddProgression = (progression: FeatureProgression) => {
         setFeatureProgressions(prev => [...prev, progression]);
     };
 
-    const handleUpdateProgression = (oldProgression: FeatureProgressionWithRelations, updatedProgression: FeatureProgressionWithRelations) => {
+    const handleUpdateProgression = (oldProgression: FeatureProgression, updatedProgression: FeatureProgression) => {
         setFeatureProgressions(prev => {
             const progressionIndex = prev.findIndex(p => p.id === oldProgression.id);
             if (progressionIndex === -1) {
@@ -196,7 +196,7 @@ export function FeatureEdit() {
         setFeatureProgressions(prev => prev.filter(p => p.id !== progressionId));
     };
 
-    const handleEditProgression = (progression: FeatureProgressionWithRelations) => {
+    const handleEditProgression = (progression: FeatureProgression) => {
         setEditingProgression(progression);
         setIsProgressionDialogOpen(true);
     };
@@ -223,7 +223,7 @@ export function FeatureEdit() {
             setIsLoading(true);
 
             if (id === 'new') {
-                const result = await FeatureSystemService.createFeature(formData as CreateFeatureRequest);
+                const result = await FeatureSystemApi.createFeature(formData as CreateFeatureRequest);
                 setMessage('Feature created successfully');
 
                 // Save FeatureProgressions after feature creation
@@ -250,7 +250,7 @@ export function FeatureEdit() {
                             }) || [],
                         };
                     });
-                    await FeatureSystemService.updateFeatureProgressions({ progressions: progressionsForBackend }, { id: featureId });
+                    await FeatureSystemApi.updateFeatureProgressions({ progressions: progressionsForBackend }, { id: featureId });
                 }
             } else {
                 // Additional safety check to ensure id is a valid number
@@ -258,7 +258,7 @@ export function FeatureEdit() {
                 if (isNaN(numericId)) {
                     throw new Error('Invalid feature ID');
                 }
-                await FeatureSystemService.updateFeature(formData as UpdateFeatureRequest, { id: numericId });
+                await FeatureSystemApi.updateFeature(formData as UpdateFeatureRequest, { id: numericId });
                 setMessage('Feature updated successfully');
 
                 // Save FeatureProgressions after feature update
@@ -283,7 +283,7 @@ export function FeatureEdit() {
                             }) || [],
                         };
                     });
-                    await FeatureSystemService.updateFeatureProgressions({ progressions: progressionsForBackend }, { id: numericId });
+                    await FeatureSystemApi.updateFeatureProgressions({ progressions: progressionsForBackend }, { id: numericId });
                 }
             }
 
@@ -496,7 +496,8 @@ export function FeatureEdit() {
                                                 <h4 className="font-medium">Modifiers:</h4>
                                                 <ul className="text-sm text-gray-600 dark:text-gray-400">
                                                     {progression.modifiers.map((modifier, index) => {
-                                                        const formatter = formatterOrchestrator.formatProgressionForEdit({ ...progression, modifiers: [modifier] });
+                                                        const strategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
+                                                        const formatter = strategy.formatProgression({ ...progression, modifiers: [modifier] });
                                                         return (
                                                             <li key={index}>
                                                                 {formatter.formattedValue}
@@ -605,7 +606,7 @@ interface PrerequisiteDetailFormProps {
 }
 
 function PrerequisiteDetailForm({ index }: PrerequisiteDetailFormProps) {
-    const { formData, setFormData } = useFormContext();
+    const { formData, setFormData: _setFormData } = useFormContext();
     const prerequisites = formData.prerequisites as FeaturePrerequisite[] || [];
     const prerequisite = prerequisites[index] || { type: undefined };
 

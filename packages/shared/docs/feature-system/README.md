@@ -28,6 +28,12 @@
 - **[testing-patterns.md](testing-patterns.md)** — Testing feature implementations (~280 lines)
 - **[formatter-utilities.md](formatter-utilities.md)** — Formatter and utility functions reference (~600 lines)
 
+### **Formatting System**
+- **[formatting/README.md](formatting/README.md)** — Feature formatting system overview and architecture
+- **[formatting/usage-guidelines.md](formatting/usage-guidelines.md)** — Comprehensive guidelines for using the formatting system
+- **[formatting/final-implementation-summary.md](formatting/final-implementation-summary.md)** — Complete implementation overview
+- **[formatting/refactoring-strategy.md](formatting/refactoring-strategy.md)** — Architecture design decisions and patterns
+
 ### **Reference**
 - **[schema-simplifications.md](schema-simplifications.md)** — Recent schema changes and migration (~210 lines)
 

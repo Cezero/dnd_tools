@@ -1,50 +1,30 @@
-import type { FeatureProgressionWithRelations } from '@shared/schema';
+import { useZodValidation } from '@/hooks/useZodValidation';
+import type { CreateRaceRequest, FeatureProgression, UpdateRaceRequest } from '@shared/schema';
 
 // Form data type for race editing
-export interface RaceFormData {
-    id?: number;
-    name: string;
-    editionId: number;
-    isVisible: boolean;
-    description: string;
-    sizeId: number;
-    speed: number;
-    favoredClassId: number;
-}
-
-// Validation state interface
-interface ValidationState {
-    hasErrors: boolean;
-    getError: (field: string) => string | null;
-    validateForm: (data: Record<string, unknown>) => boolean;
-    validationState: {
-        errors: Record<string, string[]>;
-        touched: Record<string, boolean>;
-    };
-    [key: string]: unknown;
-}
+export type RaceFormData = CreateRaceRequest | UpdateRaceRequest;
 
 // Props interface for all tab components
 export interface RaceTabProps {
     formData: RaceFormData;
     setFormData: (data: RaceFormData) => void;
-    validation: ValidationState;
+    validation: ReturnType<typeof useZodValidation>;
     isLoading?: boolean;
-    featureProgressions?: FeatureProgressionWithRelations[];
-    setFeatureProgressions?: (progressions: FeatureProgressionWithRelations[]) => void;
+    featureProgressions?: FeatureProgression[];
+    setFeatureProgressions?: (progressions: FeatureProgression[]) => void;
 
     // Dialog state and handlers
     isFeatureAssocOpen?: boolean;
     setIsFeatureAssocOpen?: (open: boolean) => void;
     isProgressionDialogOpen?: boolean;
     setIsProgressionDialogOpen?: (open: boolean) => void;
-    editingProgression?: FeatureProgressionWithRelations | null;
-    setEditingProgression?: (progression: FeatureProgressionWithRelations | null) => void;
-    preSelectedFeature?: FeatureProgressionWithRelations['feature'] | null;
-    setPreSelectedFeature?: (feature: FeatureProgressionWithRelations['feature'] | null) => void;
+    editingProgression?: FeatureProgression | null;
+    setEditingProgression?: (progression: FeatureProgression | null) => void;
+    preSelectedFeature?: FeatureProgression['feature'] | null;
+    setPreSelectedFeature?: (feature: FeatureProgression['feature'] | null) => void;
 
     // Feature management callbacks
-    onEditProgression?: (progression: FeatureProgressionWithRelations) => void;
+    onEditProgression?: (progression: FeatureProgression) => void;
     onRemoveProgression?: (progressionId: number) => void;
     onAddFeature?: (feature: { id: number; name: string; description: string; slug: string }) => void;
 

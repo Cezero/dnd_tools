@@ -2,14 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
-import { GetClassResponse } from '@shared/schema';
+import { DnDClass } from '@shared/schema';
 
+import { ClassApi } from './ClassApi';
 import { ClassDisplay } from './ClassDisplay';
-import { ClassService } from './ClassService';
 
 export default function ClassDetail() {
     const { id } = useParams();
-    const [cls, setCls] = useState<GetClassResponse | null>(null);
+    const [cls, setCls] = useState<DnDClass | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const { isAdmin } = useAuthAuto();
     const navigate = useNavigate();
@@ -19,7 +19,7 @@ export default function ClassDetail() {
     useEffect(() => {
         const Initialize = async () => {
             try {
-                const data = await ClassService.getClassById(undefined, { id: parseInt(id!) });
+                const data = await ClassApi.getClassById(undefined, { id: parseInt(id!) });
                 setCls(data);
                 setIsLoading(false);
             } catch (error) {

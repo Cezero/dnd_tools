@@ -1,4 +1,5 @@
-export { LogPanelProvider, useLogPanel } from './LogPanelProvider';
+export { LogPanelProvider } from './LogPanelProvider';
+export { useLogPanel } from './LogPanelHooks';
 export { LogPanel } from './LogPanel';
 export { LogEntryComponent } from './LogEntry';
 export { LogPanelTest } from './LogPanelTest';

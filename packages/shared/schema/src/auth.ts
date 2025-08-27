@@ -4,7 +4,6 @@ import { UserDiceConfigOverrideSchema, DiceBoxAdminConfigSchema } from './diceBo
 // User dice configuration schema (aligned with Prisma database structure)
 export const UserDiceConfigSchema = z.object({
     diceConfigBase: z.number().nullable(),
-    diceConfigBaseRef: DiceBoxAdminConfigSchema.pick({ id: true, name: true }).nullable(),
     diceConfigOverrides: z.array(UserDiceConfigOverrideSchema).default([])
 });
 
@@ -38,7 +37,6 @@ export const UserProfileSchema = z.object({
     email: z.string(),
     preferredEditionId: z.number().nullable(),
     diceConfigBase: z.number().nullable(),
-    diceConfigBaseRef: DiceBoxAdminConfigSchema.pick({ id: true, name: true }).nullable(),
     diceConfigOverrides: z.array(UserDiceConfigOverrideSchema).default([]),
 });
 

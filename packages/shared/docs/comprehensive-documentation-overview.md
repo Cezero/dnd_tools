@@ -68,6 +68,12 @@ The D&D Tools project documentation has been reorganized into a functional domai
 - **Coverage**: 90% of frontend component features
 - **Status**: Complete documentation structure
 
+#### **Feature Formatting System** (`feature-system/formatting/`)
+- **Purpose**: 6-layer clean architecture for formatting feature data (tightly coupled to feature system)
+- **Key Files**: README.md, usage-guidelines.md, final-implementation-summary.md, refactoring-strategy.md
+- **Coverage**: 100% of formatter system architecture with proper dependency flow
+- **Status**: Complete implementation with architectural inversion fixes and formula property-based routing
+
 ### **✅ Existing Systems**
 
 #### **Interactions** (`interactions/`)

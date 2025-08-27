@@ -8,12 +8,19 @@ import {
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
+
+import { FeatureProgressionDetailEdit } from '@/components/feature-system';
+import {
+    ValidatedForm,
+    useValidatedForm,
+} from '@/components/forms';
+import { FeatApi } from '@/features/feat/FeatApi';
 import {
     CreateClassSchema,
     UpdateClassSchema,
     CreateClassRequest,
     UpdateClassRequest,
-    FeatureProgressionWithRelations,
+    FeatureProgression,
     SpellcastingProgressionWithSlots
 } from '@shared/schema';
 import {
@@ -22,17 +29,10 @@ import {
     ModifierAppliesToType,
 } from '@shared/static-data';
 
-import { FeatureProgressionDetailEdit, FeatureProficiencyDialog } from '@/components/feature-system';
-import {
-    ValidatedForm,
-    useValidatedForm,
-} from '@/components/forms';
-import { FeatService } from '@/features/feat/FeatService';
-
+import { ClassApi } from './ClassApi';
 import { ClassFeatureAssoc } from './ClassFeatureAssoc';
 import { ClassProficiencyService } from './ClassProficiencyService';
 import { ClassSkillService } from './ClassSkillService';
-import { ClassService } from './ClassService';
 import {
     BasicInfoTab,
     SkillsTab,
@@ -54,12 +54,12 @@ export default function ClassEdit() {
     const [isLoading, setIsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<string>('basic');
     const [isFeatureAssocOpen, setIsFeatureAssocOpen] = useState(false);
-    const [isProficiencyDialogOpen, setIsProficiencyDialogOpen] = useState(false);
-    const [featureProgressions, setFeatureProgressions] = useState<FeatureProgressionWithRelations[]>([]);
+
+    const [featureProgressions, setFeatureProgressions] = useState<FeatureProgression[]>([]);
     const [spellcastingProgression, setSpellcastingProgression] = useState<SpellcastingProgressionWithSlots[]>([]);
     const [spellsKnownProgression, setSpellsKnownProgression] = useState<SpellcastingProgressionWithSlots[]>([]);
     const [isProgressionDialogOpen, setIsProgressionDialogOpen] = useState(false);
-    const [editingProgression, setEditingProgression] = useState<FeatureProgressionWithRelations | null>(null);
+    const [editingProgression, setEditingProgression] = useState<FeatureProgression | null>(null);
     const [preSelectedFeature, setPreSelectedFeature] = useState<{ id: number; name: string; description: string; slug: string } | undefined>(undefined);
     const [feats, setFeats] = useState<Array<{ id: number; name: string }>>([]);
     const [_featsLoaded, setFeatsLoaded] = useState(false);
@@ -80,9 +80,9 @@ export default function ClassEdit() {
     /**
      * Handles adding a class skill via the feature system.
      */
-    const handleAddSkill = (skillId: number) => {
+    const handleAddSkill = useCallback((skillId: number) => {
         ClassSkillService.addSkill(featureProgressions, setFeatureProgressions, skillId, parseInt(id || '0'));
-    };
+    }, [featureProgressions, setFeatureProgressions, id]);
 
     /**
      * Handles removing a class skill via the feature system.
@@ -94,12 +94,8 @@ export default function ClassEdit() {
     /**
      * Handles adding a proficiency via the feature system.
      */
-    const handleAddProficiency = useCallback(async (featId: number, itemId: number) => {
+    const handleAddProficiency = useCallback(async (featId: number, itemId: number, featName: string, itemName: string) => {
         try {
-            // Get the proficiency display info to get proper names
-            const profInfo = await ClassProficiencyService.getProficiencyDisplay([{ featId, itemId }]);
-            const { featName, itemName } = profInfo[0];
-
             setFeatureProgressions(prev => {
                 // Check if class proficiency progression already exists
                 let classProficiencyProgression = prev.find(fp =>
@@ -191,11 +187,9 @@ export default function ClassEdit() {
     /**
      * Handles removing a proficiency via the feature system.
      */
-    const _handleRemoveProficiency = useCallback((featId: number, itemId: number) => {
+    const handleRemoveProficiency = useCallback((featId: number, itemId: number) => {
         ClassProficiencyService.removeProficiency(featureProgressions, setFeatureProgressions, featId, itemId);
     }, [featureProgressions, setFeatureProgressions]);
-
-
 
     // Initialize form data with default values
     const initialFormData = useMemo((): ClassFormData => ({
@@ -234,7 +228,7 @@ export default function ClassEdit() {
     /**
      * Handles adding a feature progression to the class.
      */
-    const handleAddProgression = useCallback((progression: FeatureProgressionWithRelations) => {
+    const handleAddProgression = useCallback((progression: FeatureProgression) => {
         console.log('handleAddProgression called with:', progression);
         setFeatureProgressions(prev => {
             // The progression should now include feature data from FeatureProgressionDetailEdit
@@ -260,7 +254,7 @@ export default function ClassEdit() {
      */
     const handleAddFeature = useCallback((feature: { id: number; name: string; description: string; slug: string }) => {
         console.log('handleAddFeature called with:', feature);
-        const defaultProgression: FeatureProgressionWithRelations = {
+        const defaultProgression: FeatureProgression = {
             id: Date.now() + Math.random(), // Temporary ID for frontend
             sourceType: 1, // 1 for Class
             classId: parseInt(id || '0'),
@@ -291,7 +285,7 @@ export default function ClassEdit() {
     /**
      * Handles updating a feature progression.
      */
-    const handleUpdateProgression = useCallback((oldProgression: FeatureProgressionWithRelations, updatedProgression: FeatureProgressionWithRelations) => {
+    const handleUpdateProgression = useCallback((oldProgression: FeatureProgression, updatedProgression: FeatureProgression) => {
         setFeatureProgressions(prev => {
             const progressionIndex = prev.findIndex(p => p.id === oldProgression.id);
 
@@ -318,7 +312,7 @@ export default function ClassEdit() {
     /**
      * Opens the progression dialog for editing an existing progression.
      */
-    const handleEditProgression = useCallback((progression: FeatureProgressionWithRelations) => {
+    const handleEditProgression = useCallback((progression: FeatureProgression) => {
         setEditingProgression(progression);
         setIsProgressionDialogOpen(true);
     }, []);
@@ -344,7 +338,7 @@ export default function ClassEdit() {
 
             try {
                 setIsLoading(true);
-                const fetchedClass = await ClassService.getClassById(undefined, { id: parseInt(id) });
+                const fetchedClass = await ClassApi.getClassById(undefined, { id: parseInt(id) });
                 setCls(fetchedClass);
                 setFormData(fetchedClass);
 
@@ -391,7 +385,7 @@ export default function ClassEdit() {
 
             if (hasFeatModifiers && feats.length === 0) {
                 try {
-                    const response = await FeatService.getFeats({});
+                    const response = await FeatApi.getFeats({});
                     setFeats(response.results || []);
                 } catch (error) {
                     console.error('Failed to load feats:', error);
@@ -430,7 +424,7 @@ export default function ClassEdit() {
             processedNewFeatureRef.current = true;
 
             // Add the new feature progression to the list
-            const newProgression: FeatureProgressionWithRelations = {
+            const newProgression: FeatureProgression = {
                 id: Date.now(), // Temporary ID for frontend
                 sourceType: 1, // 1 for Class
                 classId: parseInt(id),
@@ -532,12 +526,12 @@ export default function ClassEdit() {
             console.log('Submitting class data:', JSON.stringify(classData, null, 2));
 
             if (id === 'new') {
-                const newClass = await ClassService.createClass(classData as CreateClassRequest);
+                const newClass = await ClassApi.createClass(classData as CreateClassRequest);
                 setMessage('Class created successfully!');
                 setTimeout(() => navigate(`/classes/${newClass.id}`), 1500);
             } else {
                 console.log('Updating class:', classData);
-                await ClassService.updateClass(classData as UpdateClassRequest, { id: parseInt(id) });
+                await ClassApi.updateClass(classData as UpdateClassRequest, { id: parseInt(id) });
                 setMessage('Class updated successfully!');
                 navigate(`/classes/${id}`, { state: { fromListParams: location.state?.fromListParams, refresh: true } });
             }
@@ -602,7 +596,7 @@ export default function ClassEdit() {
         }
         acc[featureId].progressions.push(progression);
         return acc;
-    }, {} as Record<number, { feature: { id: number; name: string; description: string; slug: string }; progressions: FeatureProgressionWithRelations[] }>);
+    }, {} as Record<number, { feature: { id: number; name: string; description: string; slug: string }; progressions: FeatureProgression[] }>);
 
     return (
         <div className="w-4/5 mx-auto p-6">
@@ -672,8 +666,6 @@ export default function ClassEdit() {
                                 setSpellsKnownProgression={setSpellsKnownProgression}
                                 isFeatureAssocOpen={isFeatureAssocOpen}
                                 setIsFeatureAssocOpen={setIsFeatureAssocOpen}
-                                isProficiencyDialogOpen={isProficiencyDialogOpen}
-                                setIsProficiencyDialogOpen={setIsProficiencyDialogOpen}
                                 isProgressionDialogOpen={isProgressionDialogOpen}
                                 setIsProgressionDialogOpen={setIsProgressionDialogOpen}
                                 editingProgression={editingProgression}
@@ -685,6 +677,8 @@ export default function ClassEdit() {
                                 onEditProgression={handleEditProgression}
                                 onAddSkill={handleAddSkill}
                                 onRemoveSkill={handleRemoveSkill}
+                                onAddProficiency={handleAddProficiency}
+                                onRemoveProficiency={handleRemoveProficiency}
                                 classId={id !== 'new' ? parseInt(id) : undefined}
                             />
                         )}
@@ -743,7 +737,7 @@ export default function ClassEdit() {
                         );
 
                         // Add newly selected features
-                        const newProgressions: FeatureProgressionWithRelations[] = selectedFeatures
+                        const newProgressions: FeatureProgression[] = selectedFeatures
                             .filter(feature => featuresToAdd.includes(feature.featureId))
                             .map(feature => ({
                                 id: Date.now() + Math.random(), // Temporary ID for frontend
@@ -778,14 +772,7 @@ export default function ClassEdit() {
                 classId={id !== 'new' ? parseInt(id) : undefined}
             />
 
-            {/* Feature Proficiency Dialog */}
-            <FeatureProficiencyDialog
-                isOpen={isProficiencyDialogOpen}
-                onClose={() => setIsProficiencyDialogOpen(false)}
-                onAddProficiency={handleAddProficiency}
-                existingProficiencies={ClassProficiencyService.getClassProficiencies(featureProgressions)}
-                title="Add Class Proficiency"
-            />
+
 
             {/* Feature Progression Dialog */}
             <FeatureProgressionDetailEdit

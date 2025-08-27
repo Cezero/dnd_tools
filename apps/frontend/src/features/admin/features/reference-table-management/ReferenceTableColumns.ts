@@ -12,7 +12,7 @@ export const REFERENCE_TABLE_COLUMNS: ColumnDef<ReferenceTableSummary, unknown>[
         enableColumnFilter: true,
         enableResizing: true,
         size: 200,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<ReferenceTableSummary>(),
         meta: {
             required: true,
             filterType: FilterType.TEXT_INPUT,
@@ -26,7 +26,7 @@ export const REFERENCE_TABLE_COLUMNS: ColumnDef<ReferenceTableSummary, unknown>[
         enableColumnFilter: true,
         enableResizing: true,
         size: 150,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<ReferenceTableSummary>(),
         meta: {
             required: true,
             filterType: FilterType.TEXT_INPUT,

@@ -8,7 +8,7 @@ import { ItemWithDetails } from '@shared/schema';
 
 import { ITEM_COLUMNS } from './ItemColumns';
 import { routes } from './ItemConfig';
-import { ItemService } from './ItemService';
+import { ItemApi } from './ItemApi';
 
 export function ItemList(): React.JSX.Element {
     const navigate = useNavigate();
@@ -39,10 +39,10 @@ export function ItemList(): React.JSX.Element {
             <GenericList<ItemWithDetails>
                 storageKey="items-list"
                 columns={ITEM_COLUMNS}
-                serviceFunction={() => ItemService.getItems({})}
+                serviceFunction={() => ItemApi.getItems({})}
                 itemDesc="item"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction(ItemService.deleteItem)}
+                deleteServiceFunction={createIdDeleteServiceFunction(ItemApi.deleteItem)}
             />
         </div>
     );

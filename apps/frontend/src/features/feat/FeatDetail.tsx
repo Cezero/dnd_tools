@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { FeatService } from '@/features/feat/FeatService';
-import { GetFeatResponse } from '@shared/schema';
+import { FeatApi } from '@/features/feat/FeatApi';
+import { Feat } from '@shared/schema';
 import { FEAT_TYPES, FEAT_BENEFIT_TYPE_BY_ID, FeatBenefitType } from '@shared/static-data';
 
 import { FeatOptions, getPrereqDisplayText } from './FeatUtil';
 
 export function FeatDetail() {
     const { id } = useParams();
-    const [feat, setFeat] = useState<GetFeatResponse | null>(null);
+    const [feat, setFeat] = useState<Feat | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [prereqDisplayTexts, setPrereqDisplayTexts] = useState<Record<number, string>>({});
     const { isAdmin } = useAuthAuto();
@@ -22,7 +22,7 @@ export function FeatDetail() {
     useEffect(() => {
         const Initialize = async () => {
             try {
-                const data = await FeatService.getFeatById(undefined, { id: parseInt(id!) });
+                const data = await FeatApi.getFeatById(undefined, { id: parseInt(id!) });
                 setFeat(data);
 
                 // Load prerequisite display texts

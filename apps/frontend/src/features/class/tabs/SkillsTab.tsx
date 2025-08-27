@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { CustomSelect } from '@/components/forms';
 import { renderCellValue } from '@/components/generic-list/columnUtils';
 import { ClassSkillService } from '@/features/class/ClassSkillService';
-import { SkillService } from '@/features/skill/SkillService';
-import type { GetSkillResponse, FeatureProgressionWithRelations } from '@shared/schema';
+import { SkillApi } from '@/features/skill/SkillApi';
+import type { GetSkillResponse, FeatureProgression } from '@shared/schema';
 import {
     SKILL_MAP,
     SKILL_SELECT_LIST,
@@ -14,15 +14,12 @@ import {
 
 import type { ClassTabProps } from './types';
 
-
-
 export function SkillsTab({
     formData: _formData,
     setFormData: _setFormData,
     validation: _validation,
     isLoading: _isLoading = false,
     featureProgressions = [],
-    setFeatureProgressions,
     onAddSkill,
     onRemoveSkill
 }: ClassTabProps): React.JSX.Element {
@@ -31,7 +28,7 @@ export function SkillsTab({
 
     // Load skill details for class skills
     useEffect(() => {
-        const classSkills = ClassSkillService.getClassSkills(featureProgressions as FeatureProgressionWithRelations[]);
+        const classSkills = ClassSkillService.getClassSkills(featureProgressions as FeatureProgression[]);
         const skillsToLoad = classSkills.filter(skillId => !skillDetails[skillId] && !loadingSkills.has(skillId));
 
         if (skillsToLoad.length > 0) {
@@ -40,7 +37,7 @@ export function SkillsTab({
             Promise.all(
                 skillsToLoad.map(async (skillId) => {
                     try {
-                        const skill = await SkillService.getSkillById(undefined, { id: skillId });
+                        const skill = await SkillApi.getSkillById(undefined, { id: skillId });
                         return { skillId, skill };
                     } catch (error) {
                         console.error(`Failed to load skill ${skillId}:`, error);
@@ -64,41 +61,7 @@ export function SkillsTab({
         }
     }, [featureProgressions, skillDetails, loadingSkills]);
 
-    const handleAddSkill = (skillId: number) => {
-        if (onAddSkill) {
-            onAddSkill(skillId);
-        } else if (setFeatureProgressions) {
-            // Fallback to direct service call if callback not provided
-            ClassSkillService.addSkill(
-                featureProgressions as FeatureProgressionWithRelations[],
-                setFeatureProgressions,
-                skillId,
-                (_formData as { id?: number }).id || 0
-            );
-        }
-    };
-
-    const handleRemoveSkill = (skillId: number) => {
-        if (onRemoveSkill) {
-            onRemoveSkill(skillId);
-        } else if (setFeatureProgressions) {
-            // Fallback to direct service call if callback not provided
-            ClassSkillService.removeSkill(
-                featureProgressions as FeatureProgressionWithRelations[],
-                setFeatureProgressions,
-                skillId
-            );
-        }
-
-        // Remove skill details from state
-        setSkillDetails(prev => {
-            const newDetails = { ...prev };
-            delete newDetails[skillId];
-            return newDetails;
-        });
-    };
-
-    const classSkills = ClassSkillService.getClassSkills(featureProgressions as FeatureProgressionWithRelations[]);
+    const classSkills = ClassSkillService.getClassSkills(featureProgressions as FeatureProgression[]);
 
     // Filter out skills that are already added as class skills
     const availableSkills = SKILL_SELECT_LIST.filter(skill => !classSkills.includes(skill.value));
@@ -115,7 +78,7 @@ export function SkillsTab({
                         itemTextExtraClassName="w-64"
                         onValueChange={(value) => {
                             if (value) {
-                                handleAddSkill(value as number);
+                                onAddSkill(value as number);
                             }
                         }}
                         options={availableSkills}
@@ -145,7 +108,7 @@ export function SkillsTab({
                                         <h4 className="font-medium text-base flex-1">{headerText}</h4>
                                         <button
                                             type="button"
-                                            onClick={() => handleRemoveSkill(skillId)}
+                                            onClick={() => onRemoveSkill(skillId)}
                                             className="text-red-500 hover:text-red-700 p-1 ml-2 flex-shrink-0"
                                             title="Remove Skill"
                                         >

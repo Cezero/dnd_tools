@@ -4,7 +4,7 @@ export { CharactersPage } from './CharacterPage';
 export { CharacterEdit } from './CharacterEdit';
 
 // Services
-export { CharacterService } from './CharacterService';
+export { CharacterApi } from './CharacterApi';
 
 // Configuration
 export { routes, navigation } from './CharacterConfig';

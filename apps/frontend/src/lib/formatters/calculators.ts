@@ -1,12 +1,13 @@
 import type {
     FormulaParamsData,
-    FeatureModifierInQueryResponse,
-    FeatureModifierConditionInQueryResponse
+    FeatureModifier,
+    FeatureModifierCondition
 } from '@shared/schema';
 import {
     FORMULA_MAP,
     FormulaId,
-    DisplayType
+    DisplayType,
+    BreakdownComponentType
 } from '@shared/static-data';
 
 import { buildFormulaParams } from './formula-utils';
@@ -35,7 +36,7 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
                     components: [{
                         source: 'Formula',
                         value: 0,
-                        type: 1, // BreakdownComponentType.Formula
+                        type: BreakdownComponentType.formula,
                         description: `Unknown formula ID: ${formula.formulaId}`
                     }],
                     explanation: `Formula ID ${formula.formulaId} not found`
@@ -44,14 +45,14 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
         }
 
         const calculationLevel = context?.level || level;
-        const characterLevel = context?.characterLevel || calculationLevel;
+        const _characterLevel = context?.characterLevel || calculationLevel;
         const progressionLevel = context?.progressionLevel || calculationLevel;
 
         let value = 0;
         const components: Array<{
             source: string;
             value: number;
-            type: 1 | 2 | 3 | 4 | 5; // BreakdownComponentType
+            type: BreakdownComponentType;
             description: string;
             formula?: string;
         }> = [];
@@ -81,7 +82,7 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
             components.push({
                 source: formulaDef.name,
                 value: stringHash,
-                type: 1, // BreakdownComponentType.Formula
+                type: BreakdownComponentType.formula,
                 description: `Conditional scaling: ${calculatedValue}`,
                 formula: calculatedValue // Store original string in formula field
             });
@@ -97,7 +98,7 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
             components.push({
                 source: formulaDef.name,
                 value,
-                type: 1, // BreakdownComponentType.Formula
+                type: BreakdownComponentType.formula,
                 description: formulaDef.description,
                 formula: formulaString
             });
@@ -121,7 +122,7 @@ export class ChoiceCalculatorImpl implements IChoiceCalculator {
     calculateChoiceValue(
         choice: ChoiceBasedCalculation,
         selectedValues: SelectedValue[],
-        context?: CalculationContext
+        _context?: CalculationContext
     ): CalculationResult {
         // This is a placeholder for choice-based calculations
         // Will be implemented when we have the choice calculation interfaces defined
@@ -131,7 +132,7 @@ export class ChoiceCalculatorImpl implements IChoiceCalculator {
                 components: [{
                     source: 'Choice',
                     value: selectedValues.length,
-                    type: 2, // BreakdownComponentType.Choice
+                    type: BreakdownComponentType.choice,
                     description: `Selected ${selectedValues.length} choice(s)`
                 }],
                 explanation: 'Choice-based calculation'
@@ -144,13 +145,13 @@ export class ChoiceCalculatorImpl implements IChoiceCalculator {
  * Pure detector for conditional values
  */
 export class ConditionalValueDetectorImpl implements ConditionalValueDetector {
-    detectConditionals(modifiers: FeatureModifierInQueryResponse[], context?: CharacterContext): Array<ConditionalValue> {
+    detectConditionals(modifiers: FeatureModifier[], _context?: CharacterContext): Array<ConditionalValue> {
         const conditionals: Array<ConditionalValue> = [];
 
         for (const modifier of modifiers) {
             if (modifier.conditions && modifier.conditions.length > 0) {
                 for (const condition of modifier.conditions) {
-                    const conditionalValue = this.createConditionalValue(modifier, condition, context);
+                    const conditionalValue = this.createConditionalValue(modifier, condition, _context);
                     if (conditionalValue) {
                         conditionals.push(conditionalValue);
                     }
@@ -162,9 +163,9 @@ export class ConditionalValueDetectorImpl implements ConditionalValueDetector {
     }
 
     private createConditionalValue(
-        modifier: FeatureModifierInQueryResponse,
-        condition: FeatureModifierConditionInQueryResponse,
-        context?: CharacterContext
+        modifier: FeatureModifier,
+        condition: FeatureModifierCondition,
+        _context?: CharacterContext
     ): ConditionalValue | null {
         // This is a placeholder for conditional value creation
         // Will be implemented when we have the condition interfaces defined
@@ -174,7 +175,7 @@ export class ConditionalValueDetectorImpl implements ConditionalValueDetector {
                 components: [{
                     source: 'Conditional',
                     value: modifier.value,
-                    type: 3, // BreakdownComponentType.Conditional
+                    type: BreakdownComponentType.conditional,
                     description: `Conditional bonus: ${modifier.value}`
                 }],
                 explanation: 'Conditional modifier'

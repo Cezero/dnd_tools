@@ -3,7 +3,7 @@ import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { SkillService } from '@/features/skill/SkillService';
+import { SkillApi } from '@/features/skill/SkillApi';
 import { GetSkillResponse } from '@shared/schema';
 import { ABILITY_MAP, SKILL_RETRY_TYPE_MAP } from '@shared/static-data';
 
@@ -19,7 +19,7 @@ export function SkillDetail(): React.JSX.Element {
     useEffect(() => {
         const Initialize = async (): Promise<void> => {
             try {
-                const data = await SkillService.getSkillById(undefined, { id: parseInt(id!) });
+                const data = await SkillApi.getSkillById(undefined, { id: parseInt(id!) });
                 setSkill(data);
                 setIsLoading(false);
             } catch (error) {

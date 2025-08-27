@@ -14,8 +14,3 @@ export function ColorSwatch({ color }: { color: string }): React.ReactElement {
         </div>
     );
 }
-
-// Color formatter function for use in columns
-export function formatColorWithSwatch(color: string): React.ReactElement {
-    return <ColorSwatch color={color} />;
-} 

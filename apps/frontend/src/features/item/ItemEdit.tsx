@@ -20,7 +20,7 @@ import {
     ITEM_TYPE_SELECT_LIST
 } from '@shared/static-data';
 
-import { ItemService } from './ItemService';
+import { ItemApi } from './ItemApi';
 import { formatCostAsCurrency, parseCurrencyInput, parseWeightInput } from './utils';
 
 // Type definitions for the form state
@@ -130,7 +130,7 @@ export function ItemEdit() {
 
             try {
                 setIsLoading(true);
-                const fetchedItem = await ItemService.getItemById(undefined, { id: parseInt(id) });
+                const fetchedItem = await ItemApi.getItemById(undefined, { id: parseInt(id) });
 
                 // Convert cost from decimal string to display string
                 // Convert weight from number to string for display
@@ -224,11 +224,11 @@ export function ItemEdit() {
             }
 
             if (id === 'new') {
-                const newItem = await ItemService.createItem(submitData as unknown as z.infer<typeof CreateItemSchema>);
+                const newItem = await ItemApi.createItem(submitData as unknown as z.infer<typeof CreateItemSchema>);
                 setMessage('Item created successfully!');
                 setTimeout(() => navigate(`/items/${newItem.id}`, { state: { fromListParams: fromListParams, refresh: true } }), 150);
             } else {
-                await ItemService.updateItem(submitData as unknown as z.infer<typeof UpdateItemSchema>, { id: parseInt(id) });
+                await ItemApi.updateItem(submitData as unknown as z.infer<typeof UpdateItemSchema>, { id: parseInt(id) });
                 setMessage('Item updated successfully!');
                 navigate(`/items/${id}`, { state: { fromListParams: fromListParams, refresh: true } });
             }

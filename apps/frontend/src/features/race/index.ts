@@ -4,7 +4,7 @@ export { RaceDetail } from './RaceDetail';
 export { RaceEdit } from './RaceEdit';
 
 // Services
-export { RaceService } from './RaceService';
+export { RaceApi } from './RaceApi';
 
 // Configuration
 export * from './RaceConfig'; 

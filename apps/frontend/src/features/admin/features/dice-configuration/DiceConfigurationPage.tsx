@@ -1,20 +1,18 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 
-import { useDiceBox , DiceButton } from '@/components/dice-box';
+import { useDiceBox, DiceButton } from '@/components/dice-box';
 import { SliderControl } from '@/components/forms';
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { GenericList } from '@/components/generic-list';
 import { ColorPicker } from '@/components/widgets';
+import { DiceConfigurationFacade } from '@/features/admin/features/dice-configuration/DiceConfigurationFacade';
+import { DICE_CONFIGURATION_COLUMNS } from '@/features/admin/features/dice-configuration/DiceConfigurationsColumns';
 import { generateDiceColorScheme } from '@/utils/color-scheme';
 import type { DiceBoxAdminConfig } from '@shared/schema';
-import { doesThemeIgnoreColor , getDiceThemeById, THREE_D_DICE_THEME_SELECT_LIST } from '@shared/static-data';
-
-import { DICE_CONFIGURATION_COLUMNS } from './DiceConfigurationsColumns';
-import { DiceConfigurationService } from './DiceConfigurationService';
-
+import { doesThemeIgnoreColor, getDiceThemeById, THREE_D_DICE_THEME_SELECT_LIST } from '@shared/static-data';
 
 export function DiceConfigurationPage(): React.JSX.Element {
-    const [config, setConfig] = useState<DiceBoxAdminConfig & { id?: number }>(DiceConfigurationService.getDefaultConfig());
+    const [config, setConfig] = useState<DiceBoxAdminConfig & { id?: number }>(DiceConfigurationFacade.getDefaultConfig());
     const [_selectedConfigId, setSelectedConfigId] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -63,7 +61,7 @@ export function DiceConfigurationPage(): React.JSX.Element {
     // Service function for the GenericList
     const getConfigurationsService = async () => {
         try {
-            const response = await DiceConfigurationService.getAvailableConfigs();
+            const response = await DiceConfigurationFacade.getAvailableConfigs();
             return {
                 results: response.results,
                 total: response.total
@@ -160,14 +158,14 @@ export function DiceConfigurationPage(): React.JSX.Element {
     const loadDefaultConfig = async () => {
         try {
             setIsLoading(true);
-            const response = await DiceConfigurationService.getAdminConfig();
+            const response = await DiceConfigurationFacade.getAdminConfig();
             if (response) {
                 setConfig(response);
                 setSelectedConfigId(response.id);
             } else {
                 // No config exists, start with a new one
                 setConfig({
-                    ...DiceConfigurationService.getDefaultConfig(),
+                    ...DiceConfigurationFacade.getDefaultConfig(),
                     name: 'New Configuration',
                     isDefault: true
                 });
@@ -201,7 +199,7 @@ export function DiceConfigurationPage(): React.JSX.Element {
 
     const handleDeleteConfig = async (config: DiceBoxAdminConfig) => {
         try {
-            await DiceConfigurationService.deleteAdminConfig(config.id);
+            await DiceConfigurationFacade.deleteAdminConfig(config.id);
             // Refresh the list after deletion
             setListKey(prev => prev + 1);
         } catch (error) {
@@ -222,7 +220,7 @@ export function DiceConfigurationPage(): React.JSX.Element {
 
     const handleNewConfiguration = () => {
         setConfig({
-            ...DiceConfigurationService.getDefaultConfig(),
+            ...DiceConfigurationFacade.getDefaultConfig(),
             name: 'New Configuration',
             isDefault: false
         });
@@ -239,10 +237,10 @@ export function DiceConfigurationPage(): React.JSX.Element {
 
             if (config.id) {
                 // Update existing configuration
-                await DiceConfigurationService.updateAdminConfig(config);
+                await DiceConfigurationFacade.updateAdminConfig(config);
             } else {
                 // Create new configuration
-                await DiceConfigurationService.createAdminConfig(config);
+                await DiceConfigurationFacade.createAdminConfig(config);
             }
 
             setSaveStatus('success');
@@ -278,7 +276,7 @@ export function DiceConfigurationPage(): React.JSX.Element {
         } else {
             // Reset to default values for new config
             setConfig({
-                ...DiceConfigurationService.getDefaultConfig(),
+                ...DiceConfigurationFacade.getDefaultConfig(),
                 name: 'New Configuration',
                 isDefault: false
             });

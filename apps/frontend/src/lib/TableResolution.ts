@@ -16,7 +16,7 @@ const getReferenceTableBySlug = typedApi<undefined, typeof ReferenceTableDataRes
     responseSchema: ReferenceTableDataResponseSchema,
 });
 
-const TABLE_REGEX = /[\[{]table:\s([\w-]+)[\]}]/gi;
+const TABLE_REGEX = /[[{]table:\s([\w-]+)[\]}]/gi;
 
 export async function preloadTablesFromMarkdown(props: MarkdownComponentProps): Promise<void> {
     // Check if we're already preloading this ID

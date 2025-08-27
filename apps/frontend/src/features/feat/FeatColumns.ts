@@ -12,7 +12,7 @@ export const FEAT_COLUMNS: ColumnDef<FeatInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 150,
-        filterFn: createContainsFilter(),
+        filterFn: createContainsFilter<FeatInQueryResponse>(),
         meta: {
             required: true,
             filterType: FilterType.TEXT_INPUT,
@@ -26,7 +26,7 @@ export const FEAT_COLUMNS: ColumnDef<FeatInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 120,
-        filterFn: createArrayIdFilter('typeId'),
+        filterFn: createArrayIdFilter<FeatInQueryResponse>('typeId'),
         cell: info => {
             const typeId = info.getValue() as number;
             return FEAT_TYPE_SELECT_LIST.find(type => type.value === typeId)?.label || typeId;
@@ -93,7 +93,7 @@ export const FEAT_COLUMNS: ColumnDef<FeatInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 100,
-        filterFn: createEqualsFilter(),
+        filterFn: createEqualsFilter<FeatInQueryResponse>(),
         cell: info => {
             const repeatable = info.getValue() as boolean;
             return repeatable ? 'Yes' : 'No';

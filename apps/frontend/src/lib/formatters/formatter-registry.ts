@@ -1,8 +1,6 @@
+import type { FeatureSpecialEffect } from '@shared/schema';
 import { ModifierAppliesToType, FeatureChoiceType, ModifierType, FeatureSpecialEffectType } from '@shared/static-data';
-import type { FeatureSpecialEffectInQueryResponse } from '@shared/schema';
 
-import type { BaseFormatter, ChoiceFormatter } from './types';
-import { FeatureType } from './types';
 import {
     DamageFormatter,
     HealingFormatter,
@@ -21,12 +19,15 @@ import {
     DamageReductionFormatter,
     SpellResistanceFormatter,
     OtherFormatter,
-    DamageBonusFormatter
+    DamageBonusFormatter,
+    ProficiencyEffectFormatter
 } from './pure-formatters';
+import type { BaseFormatter, ChoiceFormatter } from './types';
+import { FeatureType } from './types';
 
 // Effect formatter interface (to be implemented)
 interface EffectFormatter {
-    format(effect: FeatureSpecialEffectInQueryResponse, level: number): string;
+    format(effect: FeatureSpecialEffect, level: number): string;
 }
 
 // Unified formatter registry interface
@@ -118,17 +119,17 @@ export class FormatterRegistry implements IFormatterRegistry {
     }
 
     // Legacy methods for backward compatibility during transition
-    register(type: ModifierAppliesToType, formatter: BaseFormatter): void {
+    register(_type: ModifierAppliesToType, _formatter: BaseFormatter): void {
         // This will be removed after all callers are updated
         console.warn('Using legacy register method. Please update to use registerFormatter.');
     }
 
-    registerChoice(type: FeatureChoiceType, formatter: ChoiceFormatter): void {
+    registerChoice(_type: FeatureChoiceType, _formatter: ChoiceFormatter): void {
         // This will be removed after all callers are updated
         console.warn('Using legacy registerChoice method. Please update to use registerFormatter.');
     }
 
-    getChoiceFormatter(type: FeatureChoiceType): ChoiceFormatter | undefined {
+    getChoiceFormatter(_type: FeatureChoiceType): ChoiceFormatter | undefined {
         // This will be removed after all callers are updated
         console.warn('Using legacy getChoiceFormatter method. Please update to use getFormatter with FeatureType.');
         return undefined;
@@ -139,7 +140,7 @@ export class FormatterRegistry implements IFormatterRegistry {
         const damageFormatter = new DamageFormatter();
         const healingFormatter = new HealingFormatter();
         const signedValueFormatter = new SignedValueFormatter();
-        const skillFormatter = new SkillFormatter();
+        const _skillFormatter = new SkillFormatter();
         const languageFormatter = new LanguageFormatter();
         const featFormatter = new FeatFormatter();
         const usesFormatter = new UsesFormatter();
@@ -196,9 +197,10 @@ export class FormatterRegistry implements IFormatterRegistry {
         this.registerChoiceFormatter(FeatureChoiceType.Feature, choiceFormatter);
         this.registerChoiceFormatter(FeatureChoiceType.CreatureType, choiceFormatter);
 
-        // TODO: Register effect formatters once EffectFormatter implementations are created
+        // Register effect formatters
+        this.registerEffectFormatter(FeatureSpecialEffectType.Proficiency, new ProficiencyEffectFormatter());
+        // TODO: Register other effect formatters once implementations are created
         // this.registerEffectFormatter(FeatureSpecialEffectType.Other, new OtherEffectFormatter());
-        // this.registerEffectFormatter(FeatureSpecialEffectType.Proficiency, new ProficiencyEffectFormatter());
         // this.registerEffectFormatter(FeatureSpecialEffectType.FavoredEnemy, new FavoredEnemyEffectFormatter());
         // this.registerEffectFormatter(FeatureSpecialEffectType.ConditionalUpgrade, new ConditionalUpgradeEffectFormatter());
         // this.registerEffectFormatter(FeatureSpecialEffectType.TurnUndead, new TurnUndeadEffectFormatter());
