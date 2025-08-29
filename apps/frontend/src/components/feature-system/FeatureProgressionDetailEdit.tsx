@@ -140,7 +140,7 @@ function FormulaPreview({
 
         // Use Display Strategy to properly orchestrate the 6-layer formatting process
         const editStrategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
-        const displayResult = editStrategy.formatProgression(
+        const displayResult = editStrategy.format(
             mockProgression,
             {
                 displayType: DisplayType.Edit,
@@ -150,7 +150,7 @@ function FormulaPreview({
         );
 
         // For modifiers, use the display strategy result
-        const formattedValue = displayResult.formattedValue || 'No preview available';
+        const formattedValue = displayResult[0].items[0].formattedValue || 'No preview available';
 
 
         return (

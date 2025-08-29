@@ -236,13 +236,13 @@ export function ClassDisplay({
                             ) || [];
 
                             if (proficiencyProgressions.length > 0) {
-                                const result = strategy.formatProgressions(proficiencyProgressions, undefined, formatterMetadata);
+                                const result = strategy.format(proficiencyProgressions, undefined, formatterMetadata);
                                 return (
                                     <div className="mt-4">
                                         <h3 className="text-lg font-semibold mb-2">Class Proficiencies</h3>
                                         <div className="flex flex-wrap gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md">
                                             <span className="text-sm">
-                                                {result.formattedValue}
+                                                {result[0].items.length > 0 ? result[0].items[0].formattedValue : result[0].description}
                                             </span>
                                         </div>
                                     </div>
@@ -271,7 +271,7 @@ export function ClassDisplay({
                         if (actualFeatures.length > 0) {
                             // Use display strategy to format features
                             const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
-                            const result = strategy.formatProgressions(actualFeatures, undefined, formatterMetadata);
+                            const result = strategy.format(actualFeatures, undefined, formatterMetadata);
 
                             // Track which features we've already shown descriptions for
                             const _shownFeatureDescriptions = new Set<number>();
@@ -281,8 +281,7 @@ export function ClassDisplay({
                                     <h3 className="text-lg font-semibold mb-2">Class Features</h3>
                                     <div className="space-y-4">
                                         {/* Render level entries from the result */}
-                                        {result.levelEntries?.map(levelEntry => {
-
+                                        {result.map(levelEntry => {
                                             return (
                                                 <div key={levelEntry.level} className="border border-gray-200 dark:border-gray-600 rounded-md p-3">
                                                     <h4 className="text-md font-medium mb-2">Level {levelEntry.level}</h4>

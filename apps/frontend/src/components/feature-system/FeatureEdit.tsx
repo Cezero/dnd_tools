@@ -497,10 +497,10 @@ export function FeatureEdit() {
                                                 <ul className="text-sm text-gray-600 dark:text-gray-400">
                                                     {progression.modifiers.map((modifier, index) => {
                                                         const strategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
-                                                        const formatter = strategy.formatProgression({ ...progression, modifiers: [modifier] });
+                                                        const formatter = strategy.format({ ...progression, modifiers: [modifier] });
                                                         return (
                                                             <li key={index}>
-                                                                {formatter.formattedValue}
+                                                                {formatter[0].items[0].formattedValue}
                                                             </li>
                                                         );
                                                     })}

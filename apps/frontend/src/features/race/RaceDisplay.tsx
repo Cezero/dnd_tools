@@ -184,8 +184,8 @@ export function RaceDisplay({
 
                                                     if (hasDetails) {
                                                         const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
-                                                        const result = strategy.formatProgressions([featureProg], undefined, formatterMetadata);
-                                                        const formattedEntries = result.levelEntries?.find(entry => entry.level === featureProg.level)?.items || [];
+                                                        const result = strategy.format(featureProg, undefined, formatterMetadata);
+                                                        const formattedEntries = result.find(entry => entry.level === featureProg.level)?.items || [];
 
                                                         if (formattedEntries.length > 0) {
                                                             return (

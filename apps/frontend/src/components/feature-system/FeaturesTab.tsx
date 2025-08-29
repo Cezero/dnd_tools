@@ -193,8 +193,8 @@ export function FeaturesTab({
                                                         >
                                                             {(() => {
                                                                 const strategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
-                                                                const result = strategy.formatProgression(progression);
-                                                                return result.formattedValue;
+                                                                const result = strategy.format(progression);
+                                                                return result[0].items.length > 0 ? result[0].items[0].formattedValue : result[0].description;
                                                             })()}
                                                         </button>
                                                         <button

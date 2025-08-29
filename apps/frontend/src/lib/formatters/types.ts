@@ -223,11 +223,6 @@ export interface DisplayResult extends BaseDisplayResult {
     progressionId?: number; // For xxxEdit page 1:1 relationship
 }
 
-// Edit page display result for edit pages
-export interface EditPageDisplayResult extends BaseDisplayResult {
-    progressionId: number;
-}
-
 // Character sheet calculation input
 export interface CharacterSheetCalculationInput {
     choices: Record<string, string | number | boolean>; // Character's actual choices
@@ -263,8 +258,6 @@ export interface FormattedItem {
     progressionId?: number; // For boundary validation
     featureId?: number; // For feature boundary validation
 }
-
-
 
 // Character context for calculations
 export interface CharacterContext {
@@ -348,8 +341,8 @@ export interface TransitionDetector {
 
 // Display strategy interface
 export interface DisplayStrategy {
-    formatProgression?(progression: FeatureProgression, context?: DisplayContext, metadata?: FormatterMetadata): EditPageDisplayResult;
-    formatProgressions?(progressions: FeatureProgression[], context?: DisplayContext, metadata?: FormatterMetadata): DisplayResult;
+    format(input: FeatureProgression | FeatureProgression[], context?: DisplayContext, metadata?: FormatterMetadata): LevelEntry[];
+    formatProgressions?(progressions: FeatureProgression[], context?: DisplayContext, metadata?: FormatterMetadata): LevelEntry[];
 }
 
 
