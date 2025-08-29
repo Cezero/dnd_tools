@@ -1,622 +1,237 @@
 # Character Management Static Data
 
-*Complete documentation for the character management static data, including enums, maps, and reference data structures.*
+*Complete documentation for the character management static data, including enums, types, and reference data structures.*
 
 ## 📋 **Overview**
 
-The character management static data provides essential reference data structures, enums, and constants that support character creation, advancement, and management throughout the application. This data defines the foundational elements that characters are built upon.
+The character management static data provides enums, types, and utility functions that define the behavior and capabilities of the character management system. This includes alignment definitions, ability score types, and various utility functions for character calculations and management.
 
-**Source Files**:
-- **Ability Scores**: `shared/static-data/src/AbilityScoreData.ts`
-- **Alignments**: `shared/static-data/src/AlignmentData.ts`
-- **Character Types**: `shared/static-data/src/CharacterTypeData.ts`
-- **Progression Types**: `shared/static-data/src/ProgressionTypeData.ts`
+The static data layer serves as the foundation for type safety, validation, and consistent behavior across the character management system. It defines the vocabulary and rules that govern how characters interact with other game systems.
 
-## 🏗️ **Static Data Architecture**
+**Source File**: `shared/static-data/src/CommonData.ts`
 
-The character management static data follows the shared **Static Data Patterns** documented in [Static Data Overview](../application-overview/static-data.md).
+## 🏗️ **Core Enums and Types**
 
-### **Data Structure**
+### **Alignment System**
 
-**Enums**: Type-safe enumeration values for character attributes
-**Maps**: Key-value mappings for complex data relationships
-**Constants**: Fixed values used throughout the character system
-**Reference Data**: Lookup tables for character creation and validation
+Defines the different alignments available for characters in the game system.
 
-### **Data Patterns**
-
-**Type Safety**: Comprehensive TypeScript type definitions
-**Immutability**: All static data is read-only and immutable
-**Validation**: Data structures include validation rules
-**Cross-Reference**: Data references other system static data
-
-## 🔧 **Core Static Data Structures**
-
-### **AbilityScoreType**
-
-Defines the six core ability scores used in character creation and advancement.
-
-**Purpose**: Provides the foundational ability score types that all characters possess.
+**Purpose**: Identifies the different character alignments, providing categorization and organizational structure for character moral and ethical positioning.
 
 **Values**:
-- **`STRENGTH`**: Physical power and athletic training
-- **`DEXTERITY`**: Agility, reflexes, balance, and grace
-- **`CONSTITUTION`**: Health, stamina, and vital force
-- **`INTELLIGENCE`**: Mental acuity, accuracy of recall, and analytical skill
-- **`WISDOM`**: Awareness of surroundings and insight
-- **`CHARISMA`**: Ability to interact effectively with others
+- **`LAWFUL_GOOD` (1)**: Lawful Good alignment - follows laws and promotes good
+- **`NEUTRAL_GOOD` (2)**: Neutral Good alignment - promotes good without strict adherence to laws
+- **`CHAOTIC_GOOD` (3)**: Chaotic Good alignment - promotes good while challenging authority
+- **`LAWFUL_NEUTRAL` (4)**: Lawful Neutral alignment - follows laws and order above all
+- **`TRUE_NEUTRAL` (5)**: True Neutral alignment - balanced between law and chaos, good and evil
+- **`CHAOTIC_NEUTRAL` (6)**: Chaotic Neutral alignment - values freedom and spontaneity
+- **`LAWFUL_EVIL` (7)**: Lawful Evil alignment - uses laws and order to promote evil
+- **`NEUTRAL_EVIL` (8)**: Neutral Evil alignment - promotes evil without strict adherence to laws
+- **`CHAOTIC_EVIL` (9)**: Chaotic Evil alignment - promotes evil while destroying order
 
-**Source File**: `shared/static-data/src/AbilityScoreData.ts`
+**Usage**: Used throughout the application for character alignment categorization, filtering, and display.
 
-```typescript
-export enum AbilityScoreType {
-    STRENGTH = 1,
-    DEXTERITY = 2,
-    CONSTITUTION = 3,
-    INTELLIGENCE = 4,
-    WISDOM = 5,
-    CHARISMA = 6,
-}
-```
+**Source File**: `shared/static-data/src/CommonData.ts` (AlignmentId enum and ALIGNMENT_MAP)
 
-**Usage Examples**:
-```typescript
-// Character ability score assignment
-const characterAbilityScores = {
-    [AbilityScoreType.STRENGTH]: 16,
-    [AbilityScoreType.DEXTERITY]: 14,
-    [AbilityScoreType.CONSTITUTION]: 12,
-    [AbilityScoreType.INTELLIGENCE]: 10,
-    [AbilityScoreType.WISDOM]: 8,
-    [AbilityScoreType.CHARISMA]: 6,
-};
+### **Ability Score System**
 
-// Ability modifier calculation
-const getAbilityModifier = (score: number): number => Math.floor((score - 10) / 2);
-```
+Defines the different ability scores that characters possess.
 
-### **AlignmentType**
-
-Defines the nine alignment types used for character moral and ethical orientation.
-
-**Purpose**: Provides the alignment system that defines character personality and behavior.
+**Purpose**: Identifies the different character ability scores, enabling proper ability score classification and usage rules.
 
 **Values**:
-- **`LAWFUL_GOOD`**: Order and good, structured altruism
-- **`NEUTRAL_GOOD`**: Good without strong commitment to order
-- **`CHAOTIC_GOOD`**: Good with personal freedom emphasis
-- **`LAWFUL_NEUTRAL`**: Order and structure without moral bias
-- **`TRUE_NEUTRAL`**: Balance between order and chaos, good and evil
-- **`CHAOTIC_NEUTRAL`**: Personal freedom without moral bias
-- **`LAWFUL_EVIL`**: Order and structure for selfish ends
-- **`NEUTRAL_EVIL`**: Selfishness without commitment to order
-- **`CHAOTIC_EVIL`**: Personal freedom for destructive ends
+- **`STRENGTH` (1)**: Physical power and athletic training
+- **`DEXTERITY` (2)**: Agility, reflexes, balance, and coordination
+- **`CONSTITUTION` (3)**: Health, stamina, and force of personality
+- **`INTELLIGENCE` (4)**: Mental acuity, accuracy of recall, and ability to reason
+- **`WISDOM` (5)**: Awareness of surroundings and intuition
+- **`CHARISMA` (6)**: Ability to interact effectively with others
 
-**Source File**: `shared/static-data/src/AlignmentData.ts`
+**Usage**: Used in character ability score definitions to specify the type of ability and its usage rules.
 
-```typescript
-export enum AlignmentType {
-    LAWFUL_GOOD = 1,
-    NEUTRAL_GOOD = 2,
-    CHAOTIC_GOOD = 3,
-    LAWFUL_NEUTRAL = 4,
-    TRUE_NEUTRAL = 5,
-    CHAOTIC_NEUTRAL = 6,
-    LAWFUL_EVIL = 7,
-    NEUTRAL_EVIL = 8,
-    CHAOTIC_EVIL = 9,
-}
-```
+**Source File**: `shared/static-data/src/CommonData.ts` (AbilityId enum and ABILITY_MAP)
 
-**Usage Examples**:
-```typescript
-// Character alignment assignment
-const characterAlignment = AlignmentType.LAWFUL_GOOD;
+## 🔧 **Character Data Structures**
 
-// Alignment-based feature restrictions
-const canUsePaladinFeatures = (alignment: AlignmentType): boolean => {
-    return alignment === AlignmentType.LAWFUL_GOOD;
-};
-```
+### **Alignment Maps**
 
-### **CharacterType**
+The primary data structures containing alignment definitions with their characteristics.
 
-Defines the types of characters that can be created in the system.
+**Purpose**: Provides comprehensive maps of all alignments with their defining characteristics.
 
-**Purpose**: Provides character type classifications for different character categories.
+**Key Maps**:
 
-**Values**:
-- **`PLAYER_CHARACTER`**: Characters controlled by players
-- **`NON_PLAYER_CHARACTER`**: Characters controlled by the game master
-- **`COMPANION`**: Animal companions, familiars, or mounts
-- **`MONSTER`**: Hostile creatures and enemies
+**ALIGNMENT_MAP**: Complete map of all alignments
+- **Purpose**: Provides complete map of all available alignments
+- **Usage**: Used for alignment selection and display
 
-**Source File**: `shared/static-data/src/CharacterTypeData.ts`
+**ALIGNMENT_BY_ID**: ID to name mapping for alignments
+- **Purpose**: Provides ID to name mapping for alignments
+- **Usage**: Used for alignment lookup and display
 
-```typescript
-export enum CharacterType {
-    PLAYER_CHARACTER = 1,
-    NON_PLAYER_CHARACTER = 2,
-    COMPANION = 3,
-    MONSTER = 4,
-}
-```
+**ALIGNMENT_LIST**: Complete list of all alignments
+- **Purpose**: Provides complete list of all available alignments
+- **Usage**: Used for alignment selection and iteration
 
-**Usage Examples**:
-```typescript
-// Character type validation
-const isValidPlayerCharacter = (characterType: CharacterType): boolean => {
-    return characterType === CharacterType.PLAYER_CHARACTER;
-};
+**ALIGNMENT_SELECT_LIST**: Alignment list for selection components
+- **Purpose**: Provides alignment list formatted for selection components
+- **Usage**: Used in alignment selection dropdowns and lists
 
-// Type-specific feature access
-const canUsePlayerFeatures = (characterType: CharacterType): boolean => {
-    return characterType === CharacterType.PLAYER_CHARACTER;
-};
-```
+**Source File**: `shared/static-data/src/CommonData.ts` (Alignment definitions)
 
-### **ProgressionType**
+### **Ability Score Maps**
 
-Defines the types of character progression and advancement.
+The primary data structures containing ability score definitions with their characteristics.
 
-**Purpose**: Provides progression type classifications for different advancement methods.
+**Purpose**: Provides comprehensive maps of all ability scores with their defining characteristics.
 
-**Values**:
-- **`STANDARD`**: Standard character progression
-- **`GESTALT`**: Gestalt character progression (dual class advancement)
-- **`EPIC`**: Epic level progression (beyond level 20)
-- **`MYTHIC`**: Mythic character progression
+**Key Maps**:
 
-**Source File**: `shared/static-data/src/ProgressionTypeData.ts`
+**ABILITY_MAP**: Complete map of all ability scores
+- **Purpose**: Provides complete map of all available ability scores
+- **Usage**: Used for ability score selection and display
 
-```typescript
-export enum ProgressionType {
-    STANDARD = 1,
-    GESTALT = 2,
-    EPIC = 3,
-    MYTHIC = 4,
-}
-```
+**ABILITY_BY_ID**: ID to name mapping for ability scores
+- **Purpose**: Provides ID to name mapping for ability scores
+- **Usage**: Used for ability score lookup and display
 
-**Usage Examples**:
-```typescript
-// Progression type validation
-const isValidProgressionType = (progressionType: ProgressionType): boolean => {
-    return Object.values(ProgressionType).includes(progressionType);
-};
+**ABILITY_LIST**: Complete list of all ability scores
+- **Purpose**: Provides complete list of all available ability scores
+- **Usage**: Used for ability score selection and iteration
 
-// Type-specific advancement rules
-const getAdvancementRules = (progressionType: ProgressionType) => {
-    switch (progressionType) {
-        case ProgressionType.STANDARD:
-            return standardAdvancementRules;
-        case ProgressionType.GESTALT:
-            return gestaltAdvancementRules;
-        case ProgressionType.EPIC:
-            return epicAdvancementRules;
-        case ProgressionType.MYTHIC:
-            return mythicAdvancementRules;
-        default:
-            return standardAdvancementRules;
-    }
-};
-```
+**ABILITY_SELECT_LIST**: Ability score list for selection components
+- **Purpose**: Provides ability score list formatted for selection components
+- **Usage**: Used in ability score selection dropdowns and lists
 
-## 📊 **Reference Data Maps**
+**Source File**: `shared/static-data/src/CommonData.ts` (Ability score definitions)
 
-### **AbilityScoreMap**
+## 🎯 **Character Calculations**
 
-Provides comprehensive information about each ability score type.
+### **Alignment Integration**
 
-**Purpose**: Maps ability score types to their detailed information and characteristics.
+The alignment integration system for determining character moral and ethical positioning.
 
-**Structure**:
-```typescript
-interface AbilityScoreInfo {
-    id: AbilityScoreType;
-    name: string;
-    abbreviation: string;
-    description: string;
-    keySkills: string[];
-    commonUses: string[];
-}
-```
+**Purpose**: Calculate and validate alignments for character moral and ethical positioning.
 
-**Source File**: `shared/static-data/src/AbilityScoreData.ts`
+**Calculation Pattern**:
+- **Alignment Lookup**: Look up alignment by ID in alignment data
+- **Alignment Reference**: Extract alignment ID from character definition
+- **Alignment Validation**: Validate alignment ID against alignment system
+- **Alignment Calculation**: Use alignment for character moral and ethical positioning
 
-```typescript
-export const AbilityScoreMap: Record<AbilityScoreType, AbilityScoreInfo> = {
-    [AbilityScoreType.STRENGTH]: {
-        id: AbilityScoreType.STRENGTH,
-        name: 'Strength',
-        abbreviation: 'Str',
-        description: 'Physical power and athletic training',
-        keySkills: ['Climb', 'Jump', 'Swim'],
-        commonUses: ['Melee attack rolls', 'Damage rolls', 'Carrying capacity'],
-    },
-    [AbilityScoreType.DEXTERITY]: {
-        id: AbilityScoreType.DEXTERITY,
-        name: 'Dexterity',
-        abbreviation: 'Dex',
-        description: 'Agility, reflexes, balance, and grace',
-        keySkills: ['Balance', 'Escape Artist', 'Hide', 'Move Silently', 'Open Lock', 'Ride', 'Sleight of Hand', 'Tumble', 'Use Rope'],
-        commonUses: ['Ranged attack rolls', 'Armor Class', 'Reflex saves', 'Initiative'],
-    },
-    // ... additional ability scores
-};
-```
+**Example**: Character alignment ID 1 (Lawful Good) indicates a character who follows laws and promotes good
 
-**Usage Examples**:
-```typescript
-// Get ability score information
-const strengthInfo = AbilityScoreMap[AbilityScoreType.STRENGTH];
+**Source File**: `shared/static-data/src/CommonData.ts` (Alignment integration)
 
-// Get all ability score names
-const abilityScoreNames = Object.values(AbilityScoreMap).map(info => info.name);
+### **Ability Score Integration**
 
-// Get skills for an ability score
-const dexteritySkills = AbilityScoreMap[AbilityScoreType.DEXTERITY].keySkills;
-```
+The ability score integration system for determining character capabilities and derived statistics.
 
-### **AlignmentMap**
+**Purpose**: Calculate and validate ability scores for character capabilities and derived statistics.
 
-Provides comprehensive information about each alignment type.
+**Calculation Pattern**:
+- **Ability Lookup**: Look up ability by ID in ability data
+- **Score Reference**: Extract ability score from character definition
+- **Score Validation**: Validate ability score against ability system
+- **Score Calculation**: Use ability score for capability and derived statistic calculations
 
-**Purpose**: Maps alignment types to their detailed descriptions and characteristics.
+**Example**: Ability score ID 1 (Strength) with value 16 provides a +3 modifier for strength-based activities
 
-**Structure**:
-```typescript
-interface AlignmentInfo {
-    id: AlignmentType;
-    name: string;
-    description: string;
-    characteristics: string[];
-    restrictions: string[];
-}
-```
+**Source File**: `shared/static-data/src/CommonData.ts` (Ability score integration)
 
-**Source File**: `shared/static-data/src/AlignmentData.ts`
-
-```typescript
-export const AlignmentMap: Record<AlignmentType, AlignmentInfo> = {
-    [AlignmentType.LAWFUL_GOOD]: {
-        id: AlignmentType.LAWFUL_GOOD,
-        name: 'Lawful Good',
-        description: 'Order and good, structured altruism',
-        characteristics: ['Honorable', 'Compassionate', 'Reliable', 'Organized'],
-        restrictions: ['Cannot commit evil acts', 'Must follow lawful authority'],
-    },
-    [AlignmentType.NEUTRAL_GOOD]: {
-        id: AlignmentType.NEUTRAL_GOOD,
-        name: 'Neutral Good',
-        description: 'Good without strong commitment to order',
-        characteristics: ['Kind', 'Generous', 'Helpful', 'Unpredictable'],
-        restrictions: ['Cannot commit evil acts'],
-    },
-    // ... additional alignments
-};
-```
-
-**Usage Examples**:
-```typescript
-// Get alignment information
-const lawfulGoodInfo = AlignmentMap[AlignmentType.LAWFUL_GOOD];
-
-// Get all alignment names
-const alignmentNames = Object.values(AlignmentMap).map(info => info.name);
-
-// Check alignment restrictions
-const canCommitEvilAct = (alignment: AlignmentType): boolean => {
-    return !AlignmentMap[alignment].restrictions.includes('Cannot commit evil acts');
-};
-```
-
-## 🎯 **Character Creation Constants**
-
-### **Character Creation Limits**
-
-Defines the limits and constraints for character creation.
-
-**Purpose**: Provides validation constants for character creation processes.
-
-**Source File**: `shared/static-data/src/CharacterConstants.ts`
-
-```typescript
-export const CHARACTER_CREATION_LIMITS = {
-    // Name constraints
-    MIN_NAME_LENGTH: 1,
-    MAX_NAME_LENGTH: 100,
-    
-    // Age constraints
-    MIN_AGE: 0,
-    MAX_AGE: 1000,
-    
-    // Physical constraints
-    MIN_HEIGHT: 1,
-    MAX_HEIGHT: 1000,
-    MIN_WEIGHT: 1,
-    MAX_WEIGHT: 10000,
-    
-    // Text field constraints
-    MAX_EYES_LENGTH: 50,
-    MAX_HAIR_LENGTH: 50,
-    MAX_GENDER_LENGTH: 20,
-    MAX_NOTES_LENGTH: 1000,
-    
-    // Ability score constraints
-    MIN_ABILITY_SCORE: 1,
-    MAX_ABILITY_SCORE: 50,
-    
-    // Experience constraints
-    MIN_XP: 0,
-    MAX_XP: 999999999,
-} as const;
-```
-
-**Usage Examples**:
-```typescript
-// Validate character name
-const isValidCharacterName = (name: string): boolean => {
-    return name.length >= CHARACTER_CREATION_LIMITS.MIN_NAME_LENGTH &&
-           name.length <= CHARACTER_CREATION_LIMITS.MAX_NAME_LENGTH;
-};
-
-// Validate ability score
-const isValidAbilityScore = (score: number): boolean => {
-    return score >= CHARACTER_CREATION_LIMITS.MIN_ABILITY_SCORE &&
-           score <= CHARACTER_CREATION_LIMITS.MAX_ABILITY_SCORE;
-};
-```
-
-### **Character Advancement Constants**
-
-Defines the constants for character advancement and leveling.
-
-**Purpose**: Provides progression constants for character advancement processes.
-
-**Source File**: `shared/static-data/src/CharacterConstants.ts`
-
-```typescript
-export const CHARACTER_ADVANCEMENT_CONSTANTS = {
-    // Level constraints
-    MIN_LEVEL: 1,
-    MAX_LEVEL: 20,
-    EPIC_LEVEL_START: 21,
-    MAX_EPIC_LEVEL: 100,
-    
-    // Hit point constraints
-    MIN_HIT_POINTS: 0,
-    MAX_HIT_POINTS: 9999,
-    
-    // Advancement constraints
-    MIN_VERSION: 1,
-    MAX_VERSION: 999,
-    
-    // Experience point requirements (simplified)
-    XP_REQUIREMENTS: {
-        1: 0,
-        2: 1000,
-        3: 3000,
-        4: 6000,
-        5: 10000,
-        // ... additional levels
-    },
-} as const;
-```
-
-**Usage Examples**:
-```typescript
-// Check if level is valid
-const isValidLevel = (level: number): boolean => {
-    return level >= CHARACTER_ADVANCEMENT_CONSTANTS.MIN_LEVEL &&
-           level <= CHARACTER_ADVANCEMENT_CONSTANTS.MAX_LEVEL;
-};
-
-// Get XP required for level
-const getXPRequired = (level: number): number => {
-    return CHARACTER_ADVANCEMENT_CONSTANTS.XP_REQUIREMENTS[level] || 0;
-};
-```
-
-## 🔗 **Cross-System Integration**
-
-### **Race System Integration**
-
-The character management static data integrates with the race system for character creation.
-
-**Integration Points**:
-- **Race Types**: References race types from race system static data
-- **Race Bonuses**: Integrates with race ability score bonuses
-- **Race Features**: References race-specific features and traits
-
-**Source Files**:
-- **Character Data**: `shared/static-data/src/CharacterTypeData.ts`
-- **Race Data**: `shared/static-data/src/RaceData.ts`
+## 🔗 **Integration with Other Systems**
 
 ### **Class System Integration**
 
-The character management static data integrates with the class system for character advancement.
+The character management system integrates with the class system through character advancement:
 
-**Integration Points**:
-- **Class Types**: References class types from class system static data
-- **Class Features**: Integrates with class-specific features and abilities
-- **Multiclassing**: Supports multiclassing rules and restrictions
+**Class Progression**: Characters advance in classes through the advancement system
+**Class Features**: Character feature choices integrate with class feature systems
+**Spellcasting**: Character spell preparation integrates with class spellcasting
+**Proficiency Management**: Character proficiencies integrate with class proficiency systems
 
-**Source Files**:
-- **Character Data**: `shared/static-data/src/ProgressionTypeData.ts`
-- **Class Data**: `shared/static-data/src/ClassData.ts`
+**Integration Pattern**: The character system provides the framework for character class progression, with class features and abilities determining character capabilities.
 
-### **Feat System Integration**
+**Related Documentation**: [Class System Static Data](../class-system/static-data.md)
 
-The character management static data integrates with the feat system for character customization.
+### **Race System Integration**
 
-**Integration Points**:
-- **Feat Types**: References feat types from feat system static data
-- **Feat Prerequisites**: Integrates with feat prerequisite checking
-- **Feat Benefits**: References feat benefit types and effects
+The character management system integrates with the race system through character creation:
 
-**Source Files**:
-- **Character Data**: `shared/static-data/src/CharacterTypeData.ts`
-- **Feat Data**: `shared/static-data/src/FeatData.ts`
+**Race Selection**: Characters are created with specific races
+**Race Features**: Character features integrate with race feature systems
+**Ability Modifiers**: Race ability modifiers integrate with character ability scores
+**Proficiency Grants**: Race proficiency grants integrate with character proficiencies
+
+**Integration Pattern**: The character system provides the framework for character race integration, with race features and abilities determining character capabilities.
+
+**Related Documentation**: [Race System Static Data](../race-system/static-data.md)
+
+### **Feature System Integration**
+
+The character management system integrates with the feature system through character advancement:
+
+**Feature Progression**: Character feature choices integrate with feature progression systems
+**Feature Selection**: Character feature choices integrate with feature choice systems
+**Feature Effects**: Character feature effects integrate with feature effect systems
+
+**Integration Pattern**: The character system provides the framework for character feature integration, with feature choices and effects determining character capabilities.
+
+**Related Documentation**: [Feature System Static Data](../feature-system/static-data.md)
 
 ### **Spell System Integration**
 
-The character management static data integrates with the spell system for spellcasting characters.
+The character management system integrates with the spell system through character spell preparation:
 
-**Integration Points**:
-- **Spell Schools**: References spell schools from spell system static data
-- **Spell Components**: Integrates with spell component types
-- **Spell Descriptors**: References spell descriptor types
+**Spell Selection**: Character spell preparation integrates with spell selection systems
+**Spell Casting**: Character spell casting integrates with spell casting systems
+**Metamagic Integration**: Character metamagic integrates with spell metamagic systems
 
-**Source Files**:
-- **Character Data**: `shared/static-data/src/CharacterTypeData.ts`
-- **Spell Data**: `shared/static-data/src/SpellData.ts`
+**Integration Pattern**: The character system provides the framework for character spell integration, with spell preparation and casting determining character capabilities.
 
-## 📊 **Data Validation and Business Rules**
+**Related Documentation**: [Spell System Static Data](../spell-system/static-data.md)
 
-### **Ability Score Validation**
+### **Equipment System Integration**
 
-Validates that ability scores follow proper rules and constraints.
+The character management system integrates with the equipment system through character equipment:
 
-**Business Rules**:
-- **Score Range**: Ability scores must be between 1-50
-- **Modifier Calculation**: Ability modifiers are calculated as (score - 10) / 2
-- **Score Distribution**: Character creation may have specific score distribution rules
+**Equipment Selection**: Character equipment integrates with equipment selection systems
+**Equipment Usage**: Character equipment usage integrates with equipment usage systems
+**Equipment Effects**: Character equipment effects integrate with equipment effect systems
 
-**Validation Implementation**:
-```typescript
-// Validate ability score range
-const validateAbilityScore = (score: number): boolean => {
-    return score >= CHARACTER_CREATION_LIMITS.MIN_ABILITY_SCORE &&
-           score <= CHARACTER_CREATION_LIMITS.MAX_ABILITY_SCORE;
-};
+**Integration Pattern**: The character system provides the framework for character equipment integration, with equipment selection and usage determining character capabilities.
 
-// Calculate ability modifier
-const calculateAbilityModifier = (score: number): number => {
-    return Math.floor((score - 10) / 2);
-};
-```
+**Related Documentation**: [Equipment System Static Data](../equipment-system/static-data.md)
 
-### **Alignment Validation**
+## 🔧 **Performance Considerations**
 
-Validates that alignments follow proper rules and restrictions.
+### **Data Access Patterns**
 
-**Business Rules**:
-- **Alignment Restrictions**: Certain classes have alignment restrictions
-- **Alignment Changes**: Characters may have restrictions on alignment changes
-- **Alignment Effects**: Alignment affects certain game mechanics
+The character management static data is optimized for efficient access:
 
-**Validation Implementation**:
-```typescript
-// Validate alignment for class
-const validateAlignmentForClass = (alignment: AlignmentType, classId: number): boolean => {
-    const classInfo = ClassMap[classId];
-    return classInfo.allowedAlignments.includes(alignment);
-};
+**Map-based Access**: Direct access to character data by ID
+**Cached Lookups**: Frequently accessed data is cached for performance
+**Lazy Loading**: Data is loaded only when needed
+**Memory Management**: Efficient memory usage for large datasets
 
-// Check alignment change restrictions
-const canChangeAlignment = (currentAlignment: AlignmentType, newAlignment: AlignmentType): boolean => {
-    // Implementation depends on game rules
-    return true; // Simplified for example
-};
-```
+### **Calculation Optimization**
 
-### **Character Type Validation**
+Character calculations are optimized for performance:
 
-Validates that character types follow proper rules and restrictions.
+**Pre-calculated Values**: Common calculations are pre-computed
+**Formula Caching**: Formula results are cached to avoid recalculation
+**Efficient Algorithms**: Optimized algorithms for character calculations
+**Batch Processing**: Multiple calculations are processed in batches
 
-**Business Rules**:
-- **Type Restrictions**: Certain features are restricted by character type
-- **Type Transitions**: Characters may have restrictions on type changes
-- **Type Effects**: Character type affects available features and abilities
+## 🔗 **Related Documentation**
 
-**Validation Implementation**:
-```typescript
-// Validate character type for feature
-const validateCharacterTypeForFeature = (characterType: CharacterType, featureId: number): boolean => {
-    const featureInfo = FeatureMap[featureId];
-    return featureInfo.allowedCharacterTypes.includes(characterType);
-};
-
-// Check if character can use player features
-const canUsePlayerFeatures = (characterType: CharacterType): boolean => {
-    return characterType === CharacterType.PLAYER_CHARACTER;
-};
-```
-
-## 🎯 **Data Access Patterns**
-
-### **Lookup Patterns**
-
-The static data provides efficient lookup patterns for character management.
-
-**Direct Enum Access**:
-```typescript
-// Direct enum value access
-const strengthScore = AbilityScoreType.STRENGTH;
-const lawfulGood = AlignmentType.LAWFUL_GOOD;
-```
-
-**Map Lookup Access**:
-```typescript
-// Map-based information lookup
-const strengthInfo = AbilityScoreMap[AbilityScoreType.STRENGTH];
-const alignmentInfo = AlignmentMap[AlignmentType.LAWFUL_GOOD];
-```
-
-**Array-Based Access**:
-```typescript
-// Array-based iteration
-const allAbilityScores = Object.values(AbilityScoreMap);
-const allAlignments = Object.values(AlignmentMap);
-```
-
-### **Validation Patterns**
-
-The static data provides validation patterns for character data.
-
-**Type Validation**:
-```typescript
-// Validate enum values
-const isValidAbilityScore = (value: number): boolean => {
-    return Object.values(AbilityScoreType).includes(value);
-};
-
-const isValidAlignment = (value: number): boolean => {
-    return Object.values(AlignmentType).includes(value);
-};
-```
-
-**Range Validation**:
-```typescript
-// Validate ranges using constants
-const isValidCharacterName = (name: string): boolean => {
-    return name.length >= CHARACTER_CREATION_LIMITS.MIN_NAME_LENGTH &&
-           name.length <= CHARACTER_CREATION_LIMITS.MAX_NAME_LENGTH;
-};
-```
-
-## 📚 **Related Documentation**
-
-### **System Documentation**
-- **[Database Schema](database-schema.md)** — Prisma models and relationships
-- **[Validation Schemas](validation-schemas.md)** — Zod validation schemas
-- **[Backend Implementation](backend-implementation.md)** — Backend services and API
-- **[Frontend Components](frontend-components.md)** — Frontend React components
-
-### **Application Overview**
-- **[Static Data Overview](../application-overview/static-data.md)** — Shared static data patterns
-- **[Data Validation Patterns](../application-overview/validation-schemas.md)** — Shared validation patterns
-- **[Type Safety Patterns](../application-overview/validation-schemas.md#type-safety)** — Shared type safety patterns
-
-### **Cross-System Integration**
-- **[Race System Static Data](../race-system/static-data.md)** — Race system static data integration
-- **[Class System Static Data](../class-system/static-data.md)** — Class system static data integration
-- **[Feat System Static Data](../feat-system/static-data.md)** — Feat system static data integration
-- **[Spell System Static Data](../spell-system/static-data.md)** — Spell system static data integration
-
-## Summary
-
-The character management static data provides essential reference data structures, enums, and constants that support character creation, advancement, and management throughout the application. The data defines the foundational elements that characters are built upon and ensures consistency across the character management system.
-
-The implementation follows established static data patterns and provides comprehensive validation, ensuring reliable and consistent character management throughout the application.
+- **[Database Schema](database-schema.md)** - Character management database models and relationships
+- **[Validation Schemas](validation-schemas.md)** - Character management validation rules and schemas
+- **[Backend Implementation](backend-implementation.md)** - Character management backend implementation
+- **[Frontend Components](frontend-components.md)** - Character management frontend implementation
+- **[Class System Static Data](../class-system/static-data.md)** - Class system enums and types
+- **[Race System Static Data](../race-system/static-data.md)** - Race system enums and types
+- **[Feature System Static Data](../feature-system/static-data.md)** - Feature system enums and types
+- **[Spell System Static Data](../spell-system/static-data.md)** - Spell system enums and types
+- **[Equipment System Static Data](../equipment-system/static-data.md)** - Equipment system enums and types
+- **[Static Data Patterns](../application-overview/static-data.md)** - Shared static data patterns and conventions

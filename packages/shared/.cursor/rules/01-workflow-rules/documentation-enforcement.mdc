@@ -5,37 +5,6 @@ alwaysApply: true
 
 **CRITICAL**: Documentation updates are MANDATORY for any code changes.
 
-## Documentation Enforcement and Project Management
-
-### Automatic Documentation Triggers
-**ANY** of the following actions MUST trigger documentation updates:
-- Creating new files
-- Modifying existing files
-- Deleting files
-- Changing file structure
-- Adding new features
-- Fixing bugs
-- Refactoring code
-- Updating schemas
-- Changing dependencies
-
-### Required Documentation Actions
-
-#### Before Making Changes
-1. **Always check project-mgmt documentation first**
-   - Read `shared/docs/project-mgmt/README.md` for current status
-   - Check relevant implementation plan documents
-   - Verify current status assessment matches reality
-   - Identify any discrepancies between docs and code
-
-#### During Implementation
-1. **Update status immediately** when you start working on a task
-2. **Mark progress** as you complete sub-tasks
-3. **Document discoveries** as you find them
-4. **Update file references** as you create or modify files
-
-#### After Completing Changes
-1. **Update ALL affected documents** before considering work complete
-2. **Verify accuracy** of all status assessments
-3. **Remove completed tasks** from pending lists
-
+- all documentation is in the packages/shared/docs folder
+- follow the @documentation-standards.md instructions for all documentation
+- update the project-mgmt markdown files to track completed and pending tasks

@@ -6,1192 +6,322 @@
 
 The character management backend implementation provides the server-side functionality for character creation, advancement, ability score management, spell preparation, and equipment management. The implementation follows the established backend patterns with comprehensive validation, error handling, and database integration.
 
-**Source Files**:
-- **Services**: `backend/src/features/character/characterService.ts`
-- **Controllers**: `backend/src/features/character/characterController.ts`
-- **Routes**: `backend/src/features/character/characterRoutes.ts`
-- **Types**: `backend/src/features/character/types.ts`
+The backend implementation follows the shared [Backend Implementation Patterns](../application-overview/backend-implementation.md) with character-specific business logic and integration patterns.
 
-## 🏗️ **Backend Architecture**
+**Source Files**: 
+- Service: `src/features/character/characterService.ts`
+- Controller: `src/features/character/characterController.ts`
+- Routes: `src/features/character/characterRoutes.ts`
+- Types: `src/features/character/types.ts`
 
-The character management backend follows the shared **Backend Implementation Patterns** documented in [Backend Implementation Overview](../application-overview/backend-implementation.md).
+## 🏗️ **Architecture Overview**
 
-### **Service Layer**
+The character management backend follows the shared [Layered Architecture Pattern](../application-overview/backend-implementation.md#layered-architecture-pattern) with character-specific implementations:
 
-**CharacterService**: Core business logic for character operations
-**Database Integration**: Prisma client integration for data persistence
-**Validation**: Zod schema validation for all operations
-**Error Handling**: Comprehensive error handling and logging
+**Routes Layer**: API endpoints for character management and related operations
+**Controller Layer**: Request handling and response formatting for character operations
+**Service Layer**: Character-specific business logic and data operations
+**Database Layer**: Prisma ORM with character system models
 
-### **Controller Layer**
+### **Service Architecture**
 
-**CharacterController**: HTTP request handling and response formatting
-**Authentication**: JWT token validation and user authorization
-**Request Processing**: Request validation and data transformation
-**Response Formatting**: Consistent API response formatting
+The character management system uses a service-oriented architecture following the shared [Service-Oriented Architecture](../application-overview/backend-implementation.md#service-oriented-architecture) patterns:
 
-### **Route Layer**
+**CharacterService**: Central service containing all character management logic
+**Transaction Safety**: Consistent transaction patterns for data integrity
+**Relationship Management**: Complex character relationship handling with advancements, abilities, and equipment
+**Validation**: Comprehensive validation at all levels using Zod schemas
 
-**CharacterRoutes**: RESTful API endpoint definitions
-**Middleware**: Authentication and validation middleware
-**Error Handling**: Route-level error handling and logging
+### **Key Design Principles**
 
-## 🔧 **Service Layer Implementation**
+**Character Management**: Complete CRUD operations for character definitions
+**Advancement System**: Character level progression and advancement tracking
+**Ability Score Management**: Character ability score operations and calculations
+**Spell Preparation**: Character spell preparation and metamagic integration
+**Equipment Integration**: Character equipment and item management
+**Cross-System Integration**: Integration with class, race, feature, spell, and equipment systems
+
+## 🔧 **Core Service Layer**
 
 ### **CharacterService**
 
-The core service for character management operations, providing business logic for all character-related functionality.
+The central service for all character management operations, providing comprehensive character CRUD operations and integration with advancement, ability scores, and equipment systems.
 
-**Purpose**: Handles all character business logic including CRUD operations, advancement management, ability scores, and spell preparation.
+**Purpose**: Provides comprehensive character management capabilities, from basic character CRUD to complex integrations with advancement, ability scores, spell preparation, and equipment systems.
 
-**Key Operations**:
-- **Character CRUD**: Create, read, update, delete character operations
-- **Advancement Management**: Character level progression and advancement tracking
-- **Ability Score Management**: Character ability score operations
-- **Spell Preparation**: Character spell preparation and metamagic integration
-- **Equipment Management**: Character equipment and item management
+**Key Responsibilities**:
+- **Character CRUD**: Create, read, update, and delete character definitions
+- **Advancement Management**: Manage character level progression and advancement data
+- **Ability Score Management**: Manage character ability scores and calculations
+- **Spell Preparation**: Manage character spell preparation and metamagic
+- **Equipment Management**: Manage character equipment and items
+- **Transaction Safety**: Ensure data consistency through proper transaction handling
+- **Validation**: Validate character data and relationships
 
-**Source File**: `backend/src/features/character/characterService.ts`
+**Core Methods**:
 
-```typescript
-export class CharacterService {
-    private prisma: PrismaClient;
+**getAllCharacters**: Retrieves all characters for a user with race information
+- **Parameters**: User ID for character ownership
+- **Business Logic**: Loads all characters owned by the user with race relationships
+- **Returns**: Array of characters with race information and total count
 
-    constructor(prisma: PrismaClient) {
-        this.prisma = prisma;
-    }
+**getCharacterById**: Retrieves a specific character by ID with basic information
+- **Parameters**: Character ID
+- **Business Logic**: Loads character by unique ID with race relationship, returns null if not found
+- **Returns**: Complete character object with race information or null
 
-    // Character CRUD operations
-    async createCharacter(data: CreateCharacterRequest, userId: number): Promise<Character> {
-        // Implementation for character creation
-    }
+**getCharacterWithAllDetails**: Retrieves a character with complete details including advancements, abilities, and equipment
+- **Parameters**: Character ID
+- **Business Logic**: Loads character with all related data including advancements, ability scores, spell preparation, and equipment
+- **Returns**: Complete character object with all relationships or null
 
-    async getCharacterById(id: number, userId: number): Promise<Character | null> {
-        // Implementation for character retrieval
-    }
+**createCharacter**: Creates a new character with validation and relationship management
+- **Parameters**: Complete character creation data including user ID
+- **Business Logic**: Creates character in database with proper user ownership and race relationship
+- **Returns**: Created character ID and success message
 
-    async updateCharacter(id: number, data: UpdateCharacterRequest, userId: number): Promise<Character> {
-        // Implementation for character updates
-    }
+**updateCharacter**: Updates an existing character with relationship management
+- **Parameters**: Character ID and updated data
+- **Business Logic**: Updates character data and manages relationships through transactions
+- **Returns**: Success message
 
-    async deleteCharacter(id: number, userId: number): Promise<void> {
-        // Implementation for character deletion
-    }
+**deleteCharacter**: Deletes a character and all related data
+- **Parameters**: Character ID
+- **Business Logic**: Deletes character and all related data (cascades to relationships)
+- **Returns**: Success message
 
-    // Advancement operations
-    async createAdvancement(data: CreateAdvancementRequest): Promise<CharacterAdvancement> {
-        // Implementation for advancement creation
-    }
+**Source File**: `src/features/character/characterService.ts`
 
-    async updateAdvancement(id: number, data: UpdateAdvancementRequest): Promise<CharacterAdvancement> {
-        // Implementation for advancement updates
-    }
+## 🎯 **Controller Layer**
 
-    // Ability score operations
-    async updateAbilityScore(characterId: number, abilityId: number, value: number): Promise<UserCharacterAbilityScore> {
-        // Implementation for ability score updates
-    }
-
-    // Spell preparation operations
-    async createSpellPreparation(data: CreateSpellPreparationRequest): Promise<CharacterSpellPreparation> {
-        // Implementation for spell preparation creation
-    }
-
-    async updateSpellPreparation(id: number, data: UpdateSpellPreparationRequest): Promise<CharacterSpellPreparation> {
-        // Implementation for spell preparation updates
-    }
-}
-```
-
-### **Character CRUD Operations**
-
-Comprehensive character creation, reading, updating, and deletion operations with proper validation and error handling.
-
-**Create Character**:
-```typescript
-async createCharacter(data: CreateCharacterRequest, userId: number): Promise<Character> {
-    // Validate input data
-    const validatedData = CreateCharacterRequest.parse(data);
-    
-    // Check user ownership and permissions
-    await this.validateUserPermissions(userId);
-    
-    // Create character with default values
-    const character = await this.prisma.userCharacter.create({
-        data: {
-            ...validatedData,
-            userId,
-            xp: 0, // Default starting XP
-        },
-    });
-    
-    // Initialize default ability scores
-    await this.initializeAbilityScores(character.id);
-    
-    return character;
-}
-```
-
-**Get Character**:
-```typescript
-async getCharacterById(id: number, userId: number): Promise<Character | null> {
-    // Validate character ownership
-    const character = await this.prisma.userCharacter.findFirst({
-        where: {
-            id,
-            userId,
-        },
-        include: {
-            race: true,
-            abilityScores: true,
-            advancements: {
-                include: {
-                    skills: true,
-                    feats: true,
-                    spellsKnown: true,
-                    featureChoices: true,
-                },
-            },
-            preparedSpells: {
-                include: {
-                    metamagics: true,
-                },
-            },
-        },
-    });
-    
-    return character;
-}
-```
-
-**Update Character**:
-```typescript
-async updateCharacter(id: number, data: UpdateCharacterRequest, userId: number): Promise<Character> {
-    // Validate character ownership
-    await this.validateCharacterOwnership(id, userId);
-    
-    // Validate input data
-    const validatedData = UpdateCharacterRequest.parse(data);
-    
-    // Update character
-    const character = await this.prisma.userCharacter.update({
-        where: { id },
-        data: validatedData,
-    });
-    
-    return character;
-}
-```
-
-**Delete Character**:
-```typescript
-async deleteCharacter(id: number, userId: number): Promise<void> {
-    // Validate character ownership
-    await this.validateCharacterOwnership(id, userId);
-    
-    // Delete character and all related data
-    await this.prisma.userCharacter.delete({
-        where: { id },
-    });
-}
-```
-
-### **Advancement Management**
-
-Character advancement operations for level progression, skill improvements, feat selection, and spell learning.
-
-**Create Advancement**:
-```typescript
-async createAdvancement(data: CreateAdvancementRequest): Promise<CharacterAdvancement> {
-    // Validate input data
-    const validatedData = CreateAdvancementRequest.parse(data);
-    
-    // Validate character ownership
-    await this.validateCharacterOwnership(validatedData.characterId, userId);
-    
-    // Check advancement prerequisites
-    await this.validateAdvancementPrerequisites(validatedData);
-    
-    // Create advancement record
-    const advancement = await this.prisma.characterAdvancement.create({
-        data: validatedData,
-        include: {
-            skills: true,
-            feats: true,
-            spellsKnown: true,
-            featureChoices: true,
-        },
-    });
-    
-    return advancement;
-}
-```
-
-**Update Advancement**:
-```typescript
-async updateAdvancement(id: number, data: UpdateAdvancementRequest): Promise<CharacterAdvancement> {
-    // Validate advancement ownership
-    await this.validateAdvancementOwnership(id, userId);
-    
-    // Validate input data
-    const validatedData = UpdateAdvancementRequest.parse(data);
-    
-    // Update advancement
-    const advancement = await this.prisma.characterAdvancement.update({
-        where: { id },
-        data: validatedData,
-        include: {
-            skills: true,
-            feats: true,
-            spellsKnown: true,
-            featureChoices: true,
-        },
-    });
-    
-    return advancement;
-}
-```
-
-### **Ability Score Management**
-
-Character ability score operations for updating and managing character attributes.
-
-**Update Ability Score**:
-```typescript
-async updateAbilityScore(characterId: number, abilityId: number, value: number): Promise<UserCharacterAbilityScore> {
-    // Validate character ownership
-    await this.validateCharacterOwnership(characterId, userId);
-    
-    // Validate ability score value
-    if (value < 1 || value > 50) {
-        throw new Error('Ability score must be between 1 and 50');
-    }
-    
-    // Update or create ability score
-    const abilityScore = await this.prisma.userCharacterAbilityScore.upsert({
-        where: {
-            characterId_abilityId: {
-                characterId,
-                abilityId,
-            },
-        },
-        update: { value },
-        create: {
-            characterId,
-            abilityId,
-            value,
-        },
-    });
-    
-    return abilityScore;
-}
-```
-
-### **Spell Preparation Management**
-
-Character spell preparation operations for managing prepared spells and metamagic integration.
-
-**Create Spell Preparation**:
-```typescript
-async createSpellPreparation(data: CreateSpellPreparationRequest): Promise<CharacterSpellPreparation> {
-    // Validate input data
-    const validatedData = CreateSpellPreparationRequest.parse(data);
-    
-    // Validate character ownership
-    await this.validateCharacterOwnership(validatedData.characterId, userId);
-    
-    // Create spell preparation
-    const spellPreparation = await this.prisma.characterSpellPreparation.create({
-        data: validatedData,
-        include: {
-            metamagics: true,
-        },
-    });
-    
-    return spellPreparation;
-}
-```
-
-**Update Spell Preparation**:
-```typescript
-async updateSpellPreparation(id: number, data: UpdateSpellPreparationRequest): Promise<CharacterSpellPreparation> {
-    // Validate spell preparation ownership
-    await this.validateSpellPreparationOwnership(id, userId);
-    
-    // Validate input data
-    const validatedData = UpdateSpellPreparationRequest.parse(data);
-    
-    // Update spell preparation
-    const spellPreparation = await this.prisma.characterSpellPreparation.update({
-        where: { id },
-        data: validatedData,
-        include: {
-            metamagics: true,
-        },
-    });
-    
-    return spellPreparation;
-}
-```
-
-## 🎮 **Controller Layer Implementation**
+The character management controllers follow the shared [Controller Layer Pattern](../application-overview/backend-implementation.md#controller-layer) with character-specific request handling:
 
 ### **CharacterController**
 
-The controller for handling HTTP requests and responses for character management operations.
-
-**Purpose**: Processes HTTP requests, validates input data, calls service methods, and formats responses.
+**Purpose**: Handles HTTP requests and responses for character management operations, delegating business logic to the service layer.
 
 **Key Responsibilities**:
-- **Request Validation**: Validates incoming request data using Zod schemas
-- **Authentication**: Ensures user authentication and authorization
-- **Service Integration**: Calls appropriate service methods for business logic
-- **Response Formatting**: Formats responses according to API standards
-- **Error Handling**: Handles and formats error responses
+- **Request Processing**: Handle incoming HTTP requests with proper validation
+- **Response Formatting**: Format responses according to API standards
+- **Error Handling**: Provide appropriate error responses and status codes
+- **Authentication**: Enforce user authentication for character operations
 
-**Source File**: `backend/src/features/character/characterController.ts`
+**Core Methods**:
 
-```typescript
-export class CharacterController {
-    private characterService: CharacterService;
+**GetAllCharacters**: Retrieves all characters for the authenticated user
+- **Route**: `GET /api/characters`
+- **Authentication**: User authentication required
+- **Response**: Array of characters with race information and total count
 
-    constructor(characterService: CharacterService) {
-        this.characterService = characterService;
-    }
+**GetCharacterById**: Retrieves a specific character by ID
+- **Route**: `GET /api/characters/:id`
+- **Parameters**: Character ID in URL path
+- **Authentication**: User authentication required
+- **Response**: Complete character with race information or 404 error
 
-    // Character CRUD endpoints
-    async createCharacter(req: Request, res: Response): Promise<void> {
-        // Implementation for character creation endpoint
-    }
+**GetCharacterWithAllDetails**: Retrieves a character with complete details
+- **Route**: `GET /api/characters/:id/details`
+- **Parameters**: Character ID in URL path
+- **Authentication**: User authentication required
+- **Response**: Complete character with all relationships or 404 error
 
-    async getCharacter(req: Request, res: Response): Promise<void> {
-        // Implementation for character retrieval endpoint
-    }
+**CreateCharacter**: Creates a new character
+- **Route**: `POST /api/characters`
+- **Authentication**: User authentication required
+- **Body**: Complete character creation data
+- **Response**: Created character ID and success message
 
-    async updateCharacter(req: Request, res: Response): Promise<void> {
-        // Implementation for character update endpoint
-    }
+**UpdateCharacter**: Updates an existing character
+- **Route**: `PUT /api/characters/:id`
+- **Authentication**: User authentication required
+- **Body**: Character update data
+- **Response**: Success message
 
-    async deleteCharacter(req: Request, res: Response): Promise<void> {
-        // Implementation for character deletion endpoint
-    }
+**DeleteCharacter**: Deletes a character
+- **Route**: `DELETE /api/characters/:id`
+- **Authentication**: User authentication required
+- **Response**: Success message
 
-    // Advancement endpoints
-    async createAdvancement(req: Request, res: Response): Promise<void> {
-        // Implementation for advancement creation endpoint
-    }
+**Source File**: `src/features/character/characterController.ts`
 
-    async updateAdvancement(req: Request, res: Response): Promise<void> {
-        // Implementation for advancement update endpoint
-    }
+## 🔗 **Routes Layer**
 
-    // Ability score endpoints
-    async updateAbilityScore(req: Request, res: Response): Promise<void> {
-        // Implementation for ability score update endpoint
-    }
-
-    // Spell preparation endpoints
-    async createSpellPreparation(req: Request, res: Response): Promise<void> {
-        // Implementation for spell preparation creation endpoint
-    }
-
-    async updateSpellPreparation(req: Request, res: Response): Promise<void> {
-        // Implementation for spell preparation update endpoint
-    }
-}
-```
-
-### **Character CRUD Endpoints**
-
-HTTP endpoints for character creation, reading, updating, and deletion operations.
-
-**Create Character Endpoint**:
-```typescript
-async createCharacter(req: Request, res: Response): Promise<void> {
-    try {
-        // Extract user from JWT token
-        const userId = (req.user as JwtPayload).userId;
-        
-        // Validate request body
-        const validatedData = CreateCharacterRequest.parse(req.body);
-        
-        // Create character
-        const character = await this.characterService.createCharacter(validatedData, userId);
-        
-        // Return success response
-        res.status(201).json({
-            success: true,
-            data: character,
-        });
-    } catch (error) {
-        // Handle validation errors
-        if (error instanceof z.ZodError) {
-            res.status(400).json({
-                success: false,
-                error: 'Validation error',
-                details: error.errors,
-            });
-            return;
-        }
-        
-        // Handle other errors
-        res.status(500).json({
-            success: false,
-            error: 'Internal server error',
-        });
-    }
-}
-```
-
-**Get Character Endpoint**:
-```typescript
-async getCharacter(req: Request, res: Response): Promise<void> {
-    try {
-        // Extract user from JWT token
-        const userId = (req.user as JwtPayload).userId;
-        
-        // Validate path parameters
-        const { id } = CharacterIdParamSchema.parse(req.params);
-        
-        // Get character
-        const character = await this.characterService.getCharacterById(id, userId);
-        
-        if (!character) {
-            res.status(404).json({
-                success: false,
-                error: 'Character not found',
-            });
-            return;
-        }
-        
-        // Return success response
-        res.status(200).json({
-            success: true,
-            data: character,
-        });
-    } catch (error) {
-        // Handle validation errors
-        if (error instanceof z.ZodError) {
-            res.status(400).json({
-                success: false,
-                error: 'Validation error',
-                details: error.errors,
-            });
-            return;
-        }
-        
-        // Handle other errors
-        res.status(500).json({
-            success: false,
-            error: 'Internal server error',
-        });
-    }
-}
-```
-
-**Update Character Endpoint**:
-```typescript
-async updateCharacter(req: Request, res: Response): Promise<void> {
-    try {
-        // Extract user from JWT token
-        const userId = (req.user as JwtPayload).userId;
-        
-        // Validate path parameters and request body
-        const { id } = CharacterIdParamSchema.parse(req.params);
-        const validatedData = UpdateCharacterRequest.parse(req.body);
-        
-        // Update character
-        const character = await this.characterService.updateCharacter(id, validatedData, userId);
-        
-        // Return success response
-        res.status(200).json({
-            success: true,
-            data: character,
-        });
-    } catch (error) {
-        // Handle validation errors
-        if (error instanceof z.ZodError) {
-            res.status(400).json({
-                success: false,
-                error: 'Validation error',
-                details: error.errors,
-            });
-            return;
-        }
-        
-        // Handle other errors
-        res.status(500).json({
-            success: false,
-            error: 'Internal server error',
-        });
-    }
-}
-```
-
-**Delete Character Endpoint**:
-```typescript
-async deleteCharacter(req: Request, res: Response): Promise<void> {
-    try {
-        // Extract user from JWT token
-        const userId = (req.user as JwtPayload).userId;
-        
-        // Validate path parameters
-        const { id } = CharacterIdParamSchema.parse(req.params);
-        
-        // Delete character
-        await this.characterService.deleteCharacter(id, userId);
-        
-        // Return success response
-        res.status(204).send();
-    } catch (error) {
-        // Handle validation errors
-        if (error instanceof z.ZodError) {
-            res.status(400).json({
-                success: false,
-                error: 'Validation error',
-                details: error.errors,
-            });
-            return;
-        }
-        
-        // Handle other errors
-        res.status(500).json({
-            success: false,
-            error: 'Internal server error',
-        });
-    }
-}
-```
-
-### **Advancement Endpoints**
-
-HTTP endpoints for character advancement operations.
-
-**Create Advancement Endpoint**:
-```typescript
-async createAdvancement(req: Request, res: Response): Promise<void> {
-    try {
-        // Extract user from JWT token
-        const userId = (req.user as JwtPayload).userId;
-        
-        // Validate request body
-        const validatedData = CreateAdvancementRequest.parse(req.body);
-        
-        // Create advancement
-        const advancement = await this.characterService.createAdvancement(validatedData, userId);
-        
-        // Return success response
-        res.status(201).json({
-            success: true,
-            data: advancement,
-        });
-    } catch (error) {
-        // Handle validation errors
-        if (error instanceof z.ZodError) {
-            res.status(400).json({
-                success: false,
-                error: 'Validation error',
-                details: error.errors,
-            });
-            return;
-        }
-        
-        // Handle other errors
-        res.status(500).json({
-            success: false,
-            error: 'Internal server error',
-        });
-    }
-}
-```
-
-**Update Advancement Endpoint**:
-```typescript
-async updateAdvancement(req: Request, res: Response): Promise<void> {
-    try {
-        // Extract user from JWT token
-        const userId = (req.user as JwtPayload).userId;
-        
-        // Validate path parameters and request body
-        const { id } = AdvancementIdParamSchema.parse(req.params);
-        const validatedData = UpdateAdvancementRequest.parse(req.body);
-        
-        // Update advancement
-        const advancement = await this.characterService.updateAdvancement(id, validatedData, userId);
-        
-        // Return success response
-        res.status(200).json({
-            success: true,
-            data: advancement,
-        });
-    } catch (error) {
-        // Handle validation errors
-        if (error instanceof z.ZodError) {
-            res.status(400).json({
-                success: false,
-                error: 'Validation error',
-                details: error.errors,
-            });
-            return;
-        }
-        
-        // Handle other errors
-        res.status(500).json({
-            success: false,
-            error: 'Internal server error',
-        });
-    }
-}
-```
-
-### **Ability Score Endpoints**
-
-HTTP endpoints for character ability score operations.
-
-**Update Ability Score Endpoint**:
-```typescript
-async updateAbilityScore(req: Request, res: Response): Promise<void> {
-    try {
-        // Extract user from JWT token
-        const userId = (req.user as JwtPayload).userId;
-        
-        // Validate path parameters and request body
-        const { characterId, abilityId } = AbilityScoreParamSchema.parse(req.params);
-        const { value } = UpdateAbilityScoreRequest.parse(req.body);
-        
-        // Update ability score
-        const abilityScore = await this.characterService.updateAbilityScore(characterId, abilityId, value, userId);
-        
-        // Return success response
-        res.status(200).json({
-            success: true,
-            data: abilityScore,
-        });
-    } catch (error) {
-        // Handle validation errors
-        if (error instanceof z.ZodError) {
-            res.status(400).json({
-                success: false,
-                error: 'Validation error',
-                details: error.errors,
-            });
-            return;
-        }
-        
-        // Handle other errors
-        res.status(500).json({
-            success: false,
-            error: 'Internal server error',
-        });
-    }
-}
-```
-
-### **Spell Preparation Endpoints**
-
-HTTP endpoints for character spell preparation operations.
-
-**Create Spell Preparation Endpoint**:
-```typescript
-async createSpellPreparation(req: Request, res: Response): Promise<void> {
-    try {
-        // Extract user from JWT token
-        const userId = (req.user as JwtPayload).userId;
-        
-        // Validate request body
-        const validatedData = CreateSpellPreparationRequest.parse(req.body);
-        
-        // Create spell preparation
-        const spellPreparation = await this.characterService.createSpellPreparation(validatedData, userId);
-        
-        // Return success response
-        res.status(201).json({
-            success: true,
-            data: spellPreparation,
-        });
-    } catch (error) {
-        // Handle validation errors
-        if (error instanceof z.ZodError) {
-            res.status(400).json({
-                success: false,
-                error: 'Validation error',
-                details: error.errors,
-            });
-            return;
-        }
-        
-        // Handle other errors
-        res.status(500).json({
-            success: false,
-            error: 'Internal server error',
-        });
-    }
-}
-```
-
-**Update Spell Preparation Endpoint**:
-```typescript
-async updateSpellPreparation(req: Request, res: Response): Promise<void> {
-    try {
-        // Extract user from JWT token
-        const userId = (req.user as JwtPayload).userId;
-        
-        // Validate path parameters and request body
-        const { id } = SpellPreparationIdParamSchema.parse(req.params);
-        const validatedData = UpdateSpellPreparationRequest.parse(req.body);
-        
-        // Update spell preparation
-        const spellPreparation = await this.characterService.updateSpellPreparation(id, validatedData, userId);
-        
-        // Return success response
-        res.status(200).json({
-            success: true,
-            data: spellPreparation,
-        });
-    } catch (error) {
-        // Handle validation errors
-        if (error instanceof z.ZodError) {
-            res.status(400).json({
-                success: false,
-                error: 'Validation error',
-                details: error.errors,
-            });
-            return;
-        }
-        
-        // Handle other errors
-        res.status(500).json({
-            success: false,
-            error: 'Internal server error',
-        });
-    }
-}
-```
-
-## 🔗 **Route Layer Implementation**
+The character management routes follow the shared [RESTful API Structure](../application-overview/backend-implementation.md#restful-api-structure) with character-specific endpoints:
 
 ### **CharacterRoutes**
 
-RESTful API route definitions for character management operations.
+**Purpose**: Defines API endpoints and request validation for character management operations.
 
-**Purpose**: Defines HTTP endpoints, middleware, and request handling for character management.
+**Route Structure**:
+- **Core Character Routes**: Standard CRUD operations for characters
+- **Character Detail Routes**: Advanced character data retrieval
+- **Character Integration Routes**: Integration with advancement, ability scores, and equipment
 
-**Key Features**:
-- **RESTful Design**: Standard REST API patterns
-- **Authentication**: JWT token validation middleware
-- **Validation**: Request validation middleware
-- **Error Handling**: Comprehensive error handling
+**Route Definitions**:
 
-**Source File**: `backend/src/features/character/characterRoutes.ts`
+**Core Character Routes**:
+- `GET /api/characters` - Retrieve all characters for user
+- `GET /api/characters/:id` - Retrieve specific character by ID
+- `GET /api/characters/:id/details` - Retrieve character with all details
+- `POST /api/characters` - Create new character
+- `PUT /api/characters/:id` - Update existing character
+- `DELETE /api/characters/:id` - Delete character
 
-```typescript
-export class CharacterRoutes {
-    private router: Router;
-    private characterController: CharacterController;
-    private authMiddleware: AuthMiddleware;
+**Authentication**: User authentication required for all operations
+**Validation**: All routes use Zod schemas for request validation
 
-    constructor(characterController: CharacterController, authMiddleware: AuthMiddleware) {
-        this.router = Router();
-        this.characterController = characterController;
-        this.authMiddleware = authMiddleware;
-        this.setupRoutes();
-    }
+**Source File**: `src/features/character/characterRoutes.ts`
 
-    private setupRoutes(): void {
-        // Character CRUD routes
-        this.router.post('/characters', 
-            this.authMiddleware.authenticate,
-            this.characterController.createCharacter.bind(this.characterController)
-        );
-        
-        this.router.get('/characters/:id',
-            this.authMiddleware.authenticate,
-            this.characterController.getCharacter.bind(this.characterController)
-        );
-        
-        this.router.put('/characters/:id',
-            this.authMiddleware.authenticate,
-            this.characterController.updateCharacter.bind(this.characterController)
-        );
-        
-        this.router.delete('/characters/:id',
-            this.authMiddleware.authenticate,
-            this.characterController.deleteCharacter.bind(this.characterController)
-        );
+## 🔧 **Business Logic Patterns**
 
-        // Advancement routes
-        this.router.post('/advancements',
-            this.authMiddleware.authenticate,
-            this.characterController.createAdvancement.bind(this.characterController)
-        );
-        
-        this.router.put('/advancements/:id',
-            this.authMiddleware.authenticate,
-            this.characterController.updateAdvancement.bind(this.characterController)
-        );
+### **Character Advancement Management**
 
-        // Ability score routes
-        this.router.put('/characters/:characterId/ability-scores/:abilityId',
-            this.authMiddleware.authenticate,
-            this.characterController.updateAbilityScore.bind(this.characterController)
-        );
+The character management system handles complex character advancement through a sophisticated level progression system:
 
-        // Spell preparation routes
-        this.router.post('/spell-preparations',
-            this.authMiddleware.authenticate,
-            this.characterController.createSpellPreparation.bind(this.characterController)
-        );
-        
-        this.router.put('/spell-preparations/:id',
-            this.authMiddleware.authenticate,
-            this.characterController.updateSpellPreparation.bind(this.characterController)
-        );
-    }
+**Advancement Structure**: Each character advancement represents a level gain with class progression
+**Version Control**: Multiple versions of the same level for complex advancement scenarios
+**Class Integration**: Primary and secondary class progression support
+**Feature Integration**: Character feature choices and progression tracking
+**Skill Integration**: Skill point allocation and advancement tracking
+**Feat Integration**: Feat selection and advancement tracking
+**Spell Integration**: Spell learning and advancement tracking
 
-    public getRouter(): Router {
-        return this.router;
-    }
-}
-```
+**Integration Pattern**: The character service manages advancement relationships through database transactions, ensuring data consistency and proper relationship handling.
 
-### **Route Definitions**
+**Related Documentation**: [Class System Backend Implementation](../class-system/backend-implementation.md), [Feature System Backend Implementation](../feature-system/backend-implementation.md)
 
-Comprehensive route definitions for all character management operations.
+### **Character Ability Score Management**
 
-**Character CRUD Routes**:
-```typescript
-// Create character
-POST /api/characters
-Content-Type: application/json
-Authorization: Bearer <jwt_token>
+The character management system handles character ability scores through a flexible scoring system:
 
-{
-    "name": "Character Name",
-    "raceId": 1,
-    "alignmentId": 1,
-    "age": 25,
-    "height": 72,
-    "weight": 180,
-    "eyes": "Blue",
-    "hair": "Brown",
-    "gender": "Male",
-    "notes": "Character background notes"
-}
+**Ability Score Structure**: Individual ability scores for each character
+**Score Validation**: Ability score validation and range checking
+**Calculation Integration**: Integration with character calculation systems
+**Modifier Integration**: Integration with ability score modifier systems
 
-// Get character
-GET /api/characters/:id
-Authorization: Bearer <jwt_token>
+**Integration Pattern**: The character service manages ability score relationships through database transactions, ensuring data consistency and proper relationship handling.
 
-// Update character
-PUT /api/characters/:id
-Content-Type: application/json
-Authorization: Bearer <jwt_token>
+**Related Documentation**: [Static Data - Ability Scores](../application-overview/static-data.md#ability-scores)
 
-{
-    "name": "Updated Character Name",
-    "age": 26
-}
+### **Character Spell Preparation Management**
 
-// Delete character
-DELETE /api/characters/:id
-Authorization: Bearer <jwt_token>
-```
+The character management system handles character spell preparation through a sophisticated spellcasting system:
 
-**Advancement Routes**:
-```typescript
-// Create advancement
-POST /api/advancements
-Content-Type: application/json
-Authorization: Bearer <jwt_token>
+**Spell Preparation Structure**: Character spell preparation with class integration
+**Metamagic Integration**: Metamagic feat integration with spell preparation
+**Class Integration**: Class-specific spell preparation and slot management
+**Spell Integration**: Spell selection and preparation tracking
 
-{
-    "characterId": 1,
-    "level": 2,
-    "version": 1,
-    "classId": 1,
-    "secondaryClassId": null,
-    "hitPoints": 8,
-    "abilityId": 1,
-    "notes": "Level 2 advancement notes"
-}
+**Integration Pattern**: The character service manages spell preparation relationships through database transactions, ensuring data consistency and proper relationship handling.
 
-// Update advancement
-PUT /api/advancements/:id
-Content-Type: application/json
-Authorization: Bearer <jwt_token>
+**Related Documentation**: [Spell System Backend Implementation](../spell-system/backend-implementation.md), [Class System Backend Implementation](../class-system/backend-implementation.md)
 
-{
-    "hitPoints": 10,
-    "notes": "Updated advancement notes"
-}
-```
+### **Character Equipment Management**
 
-**Ability Score Routes**:
-```typescript
-// Update ability score
-PUT /api/characters/:characterId/ability-scores/:abilityId
-Content-Type: application/json
-Authorization: Bearer <jwt_token>
+The character management system handles character equipment through an item management system:
 
-{
-    "value": 16
-}
-```
+**Equipment Structure**: Character equipment with base item references
+**Property Integration**: Equipment property application and management
+**Item Integration**: Base item integration and customization
+**Quantity Management**: Equipment quantity tracking and management
 
-**Spell Preparation Routes**:
-```typescript
-// Create spell preparation
-POST /api/spell-preparations
-Content-Type: application/json
-Authorization: Bearer <jwt_token>
+**Integration Pattern**: The character service manages equipment relationships through database transactions, ensuring data consistency and proper relationship handling.
 
-{
-    "characterId": 1,
-    "prepKey": "daily_spells",
-    "spellId": 1,
-    "level": 1,
-    "notes": "Prepared spell notes"
-}
+**Related Documentation**: [Equipment System Backend Implementation](../equipment-system/backend-implementation.md)
 
-// Update spell preparation
-PUT /api/spell-preparations/:id
-Content-Type: application/json
-Authorization: Bearer <jwt_token>
+## 🔗 **Integration Points**
 
-{
-    "level": 2,
-    "notes": "Updated spell preparation notes"
-}
-```
+### **Class System Integration**
 
-## 🔒 **Security and Authorization**
+The character management system integrates with the class system through character advancement:
 
-### **Authentication**
+**Class Progression**: Characters advance in classes through the advancement system
+**Class Features**: Character feature choices integrate with class feature systems
+**Spellcasting**: Character spell preparation integrates with class spellcasting
+**Proficiency Management**: Character proficiencies integrate with class proficiency systems
 
-All character management endpoints require valid JWT authentication.
+**Integration Pattern**: The character system provides the framework for character class progression, with class features and abilities determining character capabilities.
 
-**Authentication Flow**:
-1. **Token Validation**: JWT token is validated on each request
-2. **User Extraction**: User ID is extracted from the token
-3. **Authorization**: User is authorized to access the requested resource
-4. **Ownership Validation**: Character ownership is validated for all operations
+**Related Documentation**: [Class System Backend Implementation](../class-system/backend-implementation.md)
 
-**Implementation**:
-```typescript
-// Authentication middleware
-const authenticate = (req: Request, res: Response, next: NextFunction): void => {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    
-    if (!token) {
-        res.status(401).json({
-            success: false,
-            error: 'Authentication required',
-        });
-        return;
-    }
-    
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-        req.user = decoded;
-        next();
-    } catch (error) {
-        res.status(401).json({
-            success: false,
-            error: 'Invalid token',
-        });
-    }
-};
-```
+### **Race System Integration**
 
-### **Authorization**
+The character management system integrates with the race system through character creation:
 
-Character operations are restricted to the character owner.
+**Race Selection**: Characters are created with specific races
+**Race Features**: Character features integrate with race feature systems
+**Ability Modifiers**: Race ability modifiers integrate with character ability scores
+**Proficiency Grants**: Race proficiency grants integrate with character proficiencies
 
-**Ownership Validation**:
-```typescript
-// Validate character ownership
-async validateCharacterOwnership(characterId: number, userId: number): Promise<void> {
-    const character = await this.prisma.userCharacter.findFirst({
-        where: {
-            id: characterId,
-            userId,
-        },
-    });
-    
-    if (!character) {
-        throw new Error('Character not found or access denied');
-    }
-}
-```
+**Integration Pattern**: The character system provides the framework for character race integration, with race features and abilities determining character capabilities.
+
+**Related Documentation**: [Race System Backend Implementation](../race-system/backend-implementation.md)
+
+### **Feature System Integration**
+
+The character management system integrates with the feature system through character advancement:
+
+**Feature Progression**: Character feature choices integrate with feature progression systems
+**Feature Selection**: Character feature choices integrate with feature choice systems
+**Feature Effects**: Character feature effects integrate with feature effect systems
+
+**Integration Pattern**: The character system provides the framework for character feature integration, with feature choices and effects determining character capabilities.
+
+**Related Documentation**: [Feature System Backend Implementation](../feature-system/backend-implementation.md)
+
+### **Spell System Integration**
+
+The character management system integrates with the spell system through character spell preparation:
+
+**Spell Selection**: Character spell preparation integrates with spell selection systems
+**Spell Casting**: Character spell casting integrates with spell casting systems
+**Metamagic Integration**: Character metamagic integrates with spell metamagic systems
+
+**Integration Pattern**: The character system provides the framework for character spell integration, with spell preparation and casting determining character capabilities.
+
+**Related Documentation**: [Spell System Backend Implementation](../spell-system/backend-implementation.md)
+
+### **Equipment System Integration**
+
+The character management system integrates with the equipment system through character equipment:
+
+**Equipment Selection**: Character equipment integrates with equipment selection systems
+**Equipment Usage**: Character equipment usage integrates with equipment usage systems
+**Equipment Effects**: Character equipment effects integrate with equipment effect systems
+
+**Integration Pattern**: The character system provides the framework for character equipment integration, with equipment selection and usage determining character capabilities.
+
+**Related Documentation**: [Equipment System Backend Implementation](../equipment-system/backend-implementation.md)
 
 ## 📊 **Error Handling**
 
-### **Error Types**
+The character management system follows the shared [Error Handling Patterns](../application-overview/backend-implementation.md#error-handling) with character-specific error scenarios:
 
-The character management backend handles various types of errors.
+**Validation Errors**: Zod schema validation errors with detailed field information
+**Business Logic Errors**: Character-specific business rule violations
+**Database Errors**: Prisma ORM errors with proper error messages
+**Relationship Errors**: Errors from complex character relationship management
+**Authentication Errors**: User authentication and authorization errors
 
-**Validation Errors**: Zod schema validation failures
-**Authentication Errors**: Invalid or missing JWT tokens
-**Authorization Errors**: Insufficient permissions or ownership
-**Database Errors**: Database operation failures
-**Business Logic Errors**: Invalid character operations
+## 🔧 **Performance Considerations**
 
-**Error Handling Implementation**:
-```typescript
-// Centralized error handling
-const handleError = (error: unknown, res: Response): void => {
-    if (error instanceof z.ZodError) {
-        res.status(400).json({
-            success: false,
-            error: 'Validation error',
-            details: error.errors,
-        });
-        return;
-    }
-    
-    if (error instanceof PrismaClientKnownRequestError) {
-        res.status(400).json({
-            success: false,
-            error: 'Database error',
-            details: error.message,
-        });
-        return;
-    }
-    
-    res.status(500).json({
-        success: false,
-        error: 'Internal server error',
-    });
-};
-```
+The character management system implements performance optimizations following the shared [Performance Optimization](../application-overview/performance-optimization.md) patterns:
 
-### **Error Response Format**
+**Efficient Queries**: Optimized Prisma queries with proper includes and where clauses
+**Relationship Loading**: Efficient loading of complex character relationships
+**Caching**: Appropriate caching for frequently accessed character data
+**Pagination**: Proper pagination for large character collections
 
-Consistent error response format across all endpoints.
+## 🔗 **Related Documentation**
 
-**Error Response Structure**:
-```typescript
-interface ErrorResponse {
-    success: false;
-    error: string;
-    details?: unknown;
-}
-```
-
-**Example Error Responses**:
-```json
-// Validation error
-{
-    "success": false,
-    "error": "Validation error",
-    "details": [
-        {
-            "path": ["name"],
-            "message": "Character name is required"
-        }
-    ]
-}
-
-// Authentication error
-{
-    "success": false,
-    "error": "Authentication required"
-}
-
-// Authorization error
-{
-    "success": false,
-    "error": "Character not found or access denied"
-}
-```
-
-## 🔗 **Cross-System Integration**
-
-### **Database Integration**
-
-The character management backend integrates with the database through Prisma.
-
-**Integration Points**:
-- **Character Models**: UserCharacter, UserCharacterAbilityScore, CharacterAdvancement
-- **Related Models**: Race, Class, Spell, Feat, Item
-- **Transaction Support**: Complex operations use database transactions
-- **Query Optimization**: Efficient queries with proper includes and relations
-
-**Database Operations**:
-```typescript
-// Complex character query with all related data
-const character = await this.prisma.userCharacter.findFirst({
-    where: { id: characterId, userId },
-    include: {
-        race: true,
-        alignment: true,
-        abilityScores: true,
-        advancements: {
-            include: {
-                class: true,
-                secondaryClass: true,
-                skills: true,
-                feats: true,
-                spellsKnown: true,
-                featureChoices: true,
-            },
-        },
-        preparedSpells: {
-            include: {
-                spell: true,
-                metamagics: true,
-            },
-        },
-        items: {
-            include: {
-                item: true,
-                properties: true,
-            },
-        },
-    },
-});
-```
-
-### **Validation Integration**
-
-The character management backend integrates with Zod validation schemas.
-
-**Integration Points**:
-- **Request Validation**: All incoming requests are validated
-- **Response Validation**: All outgoing responses are validated
-- **Type Safety**: Full TypeScript type safety throughout
-- **Error Messages**: Clear, user-friendly error messages
-
-**Validation Integration**:
-```typescript
-// Request validation
-const validatedData = CreateCharacterRequest.parse(req.body);
-
-// Response validation
-const response = CharacterWithAllDetailsSchema.parse(character);
-```
-
-## 📚 **Related Documentation**
-
-### **System Documentation**
-- **[Database Schema](database-schema.md)** — Prisma models and relationships
-- **[Validation Schemas](validation-schemas.md)** — Zod validation schemas
-- **[Static Data](static-data.md)** — Static data structures and constants
-- **[Frontend Components](frontend-components.md)** — Frontend React components
-
-### **Application Overview**
-- **[Backend Implementation Overview](../application-overview/backend-implementation.md)** — Shared backend patterns
-- **[Error Handling Patterns](../application-overview/backend-implementation.md#error-handling)** — Shared error handling patterns
-- **[Authentication Patterns](../application-overview/backend-implementation.md#authentication)** — Shared authentication patterns
-
-### **Cross-System Integration**
-- **[Race System Backend](../race-system/backend-implementation.md)** — Race system backend integration
-- **[Class System Backend](../class-system/backend-implementation.md)** — Class system backend integration
-- **[Feat System Backend](../feat-system/backend-implementation.md)** — Feat system backend integration
-- **[Spell System Backend](../spell-system/backend-implementation.md)** — Spell system backend integration
-
-## Summary
-
-The character management backend implementation provides comprehensive server-side functionality for character creation, advancement, ability score management, spell preparation, and equipment management. The implementation follows established backend patterns with robust validation, error handling, and security measures.
-
-The system integrates seamlessly with the database, validation schemas, and other systems, ensuring reliable and secure character management throughout the application.
+- **[Database Schema](database-schema.md)** - Character management database models and relationships
+- **[Validation Schemas](validation-schemas.md)** - Character management validation rules and schemas
+- **[Static Data](static-data.md)** - Character management enums and types
+- **[Frontend Components](frontend-components.md)** - Character management frontend implementation
+- **[Class System Backend Implementation](../class-system/backend-implementation.md)** - Class system integration
+- **[Race System Backend Implementation](../race-system/backend-implementation.md)** - Race system integration
+- **[Feature System Backend Implementation](../feature-system/backend-implementation.md)** - Feature system integration
+- **[Spell System Backend Implementation](../spell-system/backend-implementation.md)** - Spell system integration
+- **[Equipment System Backend Implementation](../equipment-system/backend-implementation.md)** - Equipment system integration
+- **[Backend Implementation Patterns](../application-overview/backend-implementation.md)** - Shared backend patterns and conventions
+- **[Performance Optimization](../application-overview/performance-optimization.md)** - Shared performance optimization strategies

@@ -1,6 +1,0 @@
----
-description: Building controllers, routes and services
-alwaysApply: false
----
-Use buildValidatedRouter to define routes
-Use centralized error-handling middleware for consistent and secure API responses.

@@ -1,6 +1,5 @@
 ---
 description: Import Order and Organization - Enforce consistent import patterns
-globs: ["**/*.ts", "**/*.tsx", "**/*.js"]
 alwaysApply: true
 ---
 
@@ -12,16 +11,9 @@ Organize imports in the following order:
 5. Sibling imports (e.g., ./bar)
 6. Index imports (e.g., ./)
 
-Separate each group with a blank line.
-
-Within each group, sort imports alphabetically (case-insensitive).
-
-Special notes for aliases:
+- Separate each group with a blank line.
+- Within each group, sort imports alphabetically (case-insensitive).
+- Do not add empty lines within a group.
 - Imports starting with @shared/ or @/ are considered internal/aliased and should come after external packages but before parent/sibling/index imports.
 - Alphabetize alias imports with respect to each other and with other internal imports.
-
-Type-only imports:
 - Type-only imports follow the same order and grouping as value imports.
-
-No empty lines:
-- Do not add empty lines within a group.

@@ -1,8 +1,6 @@
 ---
 description: Feature Folder Organization - Consistent Structure Across Monorepo
-globs: ["**/features/**/*", "**/src/features/**/*"]
 alwaysApply: true
-priority: 2
 ---
 
 **CRITICAL**: Feature folders must be organized consistently across the monorepo.
@@ -13,19 +11,20 @@ priority: 2
 Each feature folder should include related files where applicable:
 
 #### Backend Feature Files
-- `routes.ts` - API route definitions
-- `controller.ts` - Request handling logic
-- `service.ts` - Business logic
+- `xxxRoutes.ts` - API route definitions
+- `xxxController.ts` - Request handling logic
+- `xxxService.ts` - Business logic
 - `types.ts` - TypeScript type definitions
-- `validation.ts` - Request/response validation schemas
+- `index.ts` - Exports
 
 #### Frontend Feature Files
 - `index.tsx` - Main component export
-- `Component.tsx` - Primary component
 - `types.ts` - TypeScript type definitions
-- `hooks.ts` - Custom React hooks
-- `utils.ts` - Utility functions
-- `styles.ts` - Styled components or CSS modules
+- `xxxHooks.ts` - Custom React hooks
+- `xxxConfig.ts` - Configuration
+- `xxxApi.ts` - Backend API service routes
+- `xxxService.ts` - Frontend cross-component service routes
+- `xxxColumns.ts` - Column configuration for GenericList (if needed)
 
 ### Organization Principles
 
@@ -42,5 +41,3 @@ Each feature folder should include related files where applicable:
 #### Import Organization
 - Use index files for clean imports
 - Use relative imports within the feature folder
-
-**CRITICAL**: Consistent feature organization enables maintainable and scalable code.

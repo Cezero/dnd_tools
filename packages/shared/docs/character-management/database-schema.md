@@ -1,641 +1,444 @@
 # Character Management Database Schema
 
-*Complete database schema documentation for the character management system, including all Prisma models, relationships, and constraints.*
+*Complete documentation for the character management database schema, including all models, relationships, and constraints.*
 
 ## 📋 **Overview**
 
-The character management database schema defines the foundation for character creation, advancement, and data persistence. This schema provides the data layer that supports all character-related functionality in the application, including character definitions, advancement tracking, and integration with other game systems.
+The character management database schema provides a comprehensive framework for defining characters, their characteristics, and relationships. The schema supports complex character interactions while maintaining data integrity through proper relationships and constraints.
+
+The schema is designed to handle the complexity of D&D character management, including character creation, advancement, ability scores, spell preparation, and equipment management.
 
 **Source File**: `prisma/schema.prisma` (Character-related models)
 
 ## 🏗️ **Core Models**
 
 ### **UserCharacter Model**
-**Database Table**: `UserCharacter`
 
-The primary model for character definitions, containing complete character information including basic attributes, relationships, and user ownership.
+The core character definition containing basic information about characters, their characteristics, and mechanical properties.
 
-#### **Core Attributes**
+**Purpose**: Defines the fundamental characteristics of characters, including their name, race, alignment, experience, and relationships to other systems.
 
-The UserCharacter model follows the standard **Identity and Audit Fields** pattern documented in the [Database Schema Patterns](../application-overview/database-schema.md#identity-and-audit-fields):
+**Key Fields**:
+- **`id`**: Unique identifier for the character
+- **`userId`**: Reference to the user who owns the character
+- **`name`**: Human-readable character name
+- **`raceId`**: Reference to the character's race
+- **`alignmentId`**: Reference to the character's alignment
+- **`xp`**: Character experience points
+- **`age`**: Character age in years
+- **`height`**: Character height in inches
+- **`weight`**: Character weight in pounds
+- **`eyes`**: Character eye color
+- **`hair`**: Character hair color
+- **`gender`**: Character gender
+- **`notes`**: Character notes and background information
 
-- **Identity Fields**: `name` provides the human-readable identifier for the character
-- **User Ownership**: `userId` links characters to specific users
-- **Classification**: `raceId` and `alignmentId` define character categorization
-- **Descriptive Content**: `age`, `height`, `weight`, `eyes`, `hair`, `gender`, `notes` provide character details
-- **Progression Tracking**: `xp` tracks character experience points
+**Relationships**:
+- **`user`**: Links to the user who owns the character
+- **`race`**: Links to the character's race
+- **`abilityScores`**: Links to character ability scores
+- **`characterItems`**: Links to character equipment
+- **`advancements`**: Links to character level advancements
+- **`preparedSpells`**: Links to character spell preparation
 
-#### **Character Properties Fields**
-
-**Basic Information**:
-- **`name`**: String providing the character's name
-- **`userId`**: Integer reference to the character's owner
-- **`raceId`**: Integer reference to the character's race
-- **`alignmentId`**: Integer reference to the character's alignment
-
-**Physical Attributes**:
-- **`age`**: Optional integer for character age
-- **`height`**: Optional integer for character height
-- **`weight`**: Optional integer for character weight
-- **`eyes`**: Optional string for eye color
-- **`hair`**: Optional string for hair color
-- **`gender`**: Optional string for character gender
-
-**Progression and Notes**:
-- **`xp`**: Integer tracking experience points (default: 0)
-- **`notes`**: Optional text for character notes and descriptions
-
-#### **Relationships**
-
-**One-to-Many Relationships**:
-- **`abilityScores`**: Links to `UserCharacterAbilityScore` entries defining character ability scores
-- **`characterItems`**: Links to `CharacterItem` entries defining character equipment
-- **`advancements`**: Links to `CharacterAdvancement` entries defining character progression
-- **`preparedSpells`**: Links to `CharacterSpellPreparation` entries defining prepared spells
-
-**Many-to-One Relationships**:
-- **`race`**: Links to the character's race via `Race` model
-- **`user`**: Links to the character's owner via `User` model
+**Usage**: Core character definitions that are referenced by all other character-related systems.
 
 **Source File**: `prisma/schema.prisma` (UserCharacter model)
 
+## 🔧 **Integration Models**
+
 ### **UserCharacterAbilityScore Model**
-**Database Table**: `UserCharacterAbilityScore`
 
-Defines character ability scores, enabling ability score tracking and calculation of derived statistics.
+Defines character ability scores and their values.
 
-#### **Core Attributes**
+**Purpose**: Links characters to their ability scores for character capability calculations.
 
-**Ability Score Definition**:
-- **`id`**: Auto-incrementing primary key
-- **`characterId`**: Foreign key reference to the parent character
-- **`abilityId`**: Integer reference to the specific ability (Strength, Dexterity, etc.)
-- **`value`**: Integer value of the ability score
+**Key Fields**:
+- **`id`**: Unique identifier for the ability score record
+- **`characterId`**: Reference to the character
+- **`abilityId`**: Reference to the specific ability (Strength, Dexterity, etc.)
+- **`value`**: Numeric value of the ability score
 
-#### **Relationships**
+**Relationships**:
+- **`character`**: Links to the character
 
-**Many-to-One Relationships**:
-- **`character`**: Links to the parent `UserCharacter` model
+**Usage**: Provides ability score data for character capability calculations and derived statistics.
 
 **Source File**: `prisma/schema.prisma` (UserCharacterAbilityScore model)
 
 ### **CharacterAdvancement Model**
-**Database Table**: `CharacterAdvancement`
 
-Defines character level progression and advancement choices, enabling level-by-level character development.
+Defines character level advancement and progression data.
 
-#### **Core Attributes**
+**Purpose**: Links characters to their level advancement data for character progression tracking.
 
-**Advancement Definition**:
-- **`id`**: Auto-incrementing primary key
-- **`characterId`**: Foreign key reference to the parent character
-- **`level`**: Integer indicating the character level
-- **`version`**: Integer for versioning multiple advancement records per level
-- **`classId`**: Integer reference to the primary class
-- **`secondaryClassId`**: Optional integer reference to the secondary class (multiclassing)
-- **`hitPoints`**: Integer for hit points gained at this level
-- **`abilityId`**: Optional integer reference to ability score improved at this level
-- **`notes`**: Optional text for advancement notes
-- **`createdAt`**: Timestamp for when the advancement was created
+**Key Fields**:
+- **`id`**: Unique identifier for the advancement record
+- **`characterId`**: Reference to the character
+- **`level`**: Character level for this advancement
+- **`version`**: Version number for multiple advancements at the same level
+- **`classId`**: Reference to the primary class for this advancement
+- **`secondaryClassId`**: Reference to the secondary class for multiclass characters
+- **`hitPoints`**: Hit points gained at this level
+- **`abilityId`**: Reference to ability score improved at this level
+- **`notes`**: Notes about this advancement
+- **`createdAt`**: Timestamp when this advancement was created
 
-#### **Composite Unique Constraint**
+**Relationships**:
+- **`character`**: Links to the character
+- **`class`**: Links to the primary class
+- **`secondaryClass`**: Links to the secondary class
+- **`skills`**: Links to skill advancement records
+- **`feats`**: Links to feat advancement records
+- **`spellsKnown`**: Links to spell advancement records
+- **`featureChoices`**: Links to feature choice records
 
-The model uses a composite unique constraint combining `characterId`, `level`, and `version`:
-```prisma
-@@unique([characterId, level, version])
-```
-
-This ensures that each character can have multiple advancement records per level with proper versioning.
-
-#### **Relationships**
-
-**Many-to-One Relationships**:
-- **`character`**: Links to the parent `UserCharacter` model
-- **`class`**: Links to the primary class via `Class` model
-- **`secondaryClass`**: Links to the secondary class via `Class` model (multiclassing)
-
-**One-to-Many Relationships**:
-- **`skills`**: Links to `AdvancementSkill` entries defining skill point allocation
-- **`feats`**: Links to `AdvancementFeat` entries defining feat selections
-- **`spellsKnown`**: Links to `AdvancementSpell` entries defining spells known
-- **`featureChoices`**: Links to `CharacterFeatureChoice` entries defining feature choices
+**Usage**: Provides advancement data for character level progression and feature tracking.
 
 **Source File**: `prisma/schema.prisma` (CharacterAdvancement model)
 
 ### **AdvancementSkill Model**
-**Database Table**: `AdvancementSkill`
 
-Defines skill point allocation for character advancement, enabling skill progression tracking.
+Defines skill advancement for character levels.
 
-#### **Core Attributes**
+**Purpose**: Links character advancements to skill point allocation.
 
-**Skill Advancement Definition**:
-- **`advancementId`**: Foreign key reference to the parent advancement
-- **`skillId`**: Integer reference to the specific skill
-- **`pointsSpent`**: Integer indicating skill points spent on this skill
+**Key Fields**:
+- **`advancementId`**: Reference to the character advancement
+- **`skillId`**: Reference to the skill
+- **`pointsSpent`**: Number of skill points spent on this skill
 
-#### **Composite Primary Key**
+**Relationships**:
+- **`advancement`**: Links to the character advancement
+- **`skill`**: Links to the skill
 
-The model uses a composite primary key combining `advancementId` and `skillId`:
-```prisma
-@@id([advancementId, skillId])
-```
-
-This ensures that each advancement can have one skill point allocation per skill.
-
-#### **Relationships**
-
-**Many-to-One Relationships**:
-- **`advancement`**: Links to the parent `CharacterAdvancement` model
-- **`skill`**: Links to the specific skill via `Skill` model
+**Usage**: Provides skill advancement data for character skill progression.
 
 **Source File**: `prisma/schema.prisma` (AdvancementSkill model)
 
 ### **AdvancementFeat Model**
-**Database Table**: `AdvancementFeat`
 
-Defines feat selections for character advancement, enabling feat progression tracking.
+Defines feat advancement for character levels.
 
-#### **Core Attributes**
+**Purpose**: Links character advancements to feat selection.
 
-**Feat Advancement Definition**:
-- **`advancementId`**: Foreign key reference to the parent advancement
-- **`featId`**: Integer reference to the selected feat
+**Key Fields**:
+- **`advancementId`**: Reference to the character advancement
+- **`featId`**: Reference to the feat
 
-#### **Composite Primary Key**
+**Relationships**:
+- **`advancement`**: Links to the character advancement
+- **`feat`**: Links to the feat
 
-The model uses a composite primary key combining `advancementId` and `featId`:
-```prisma
-@@id([advancementId, featId])
-```
-
-This ensures that each advancement can have one feat selection per feat.
-
-#### **Relationships**
-
-**Many-to-One Relationships**:
-- **`advancement`**: Links to the parent `CharacterAdvancement` model
-- **`feat`**: Links to the selected feat via `Feat` model
+**Usage**: Provides feat advancement data for character feat progression.
 
 **Source File**: `prisma/schema.prisma` (AdvancementFeat model)
 
 ### **AdvancementSpell Model**
-**Database Table**: `AdvancementSpell`
 
-Defines spells known for character advancement, enabling spell progression tracking.
+Defines spell advancement for character levels.
 
-#### **Core Attributes**
+**Purpose**: Links character advancements to spell learning.
 
-**Spell Advancement Definition**:
-- **`advancementId`**: Foreign key reference to the parent advancement
-- **`spellId`**: Integer reference to the known spell
+**Key Fields**:
+- **`advancementId`**: Reference to the character advancement
+- **`spellId`**: Reference to the spell
 
-#### **Composite Primary Key**
+**Relationships**:
+- **`advancement`**: Links to the character advancement
+- **`spell`**: Links to the spell
 
-The model uses a composite primary key combining `advancementId` and `spellId`:
-```prisma
-@@id([advancementId, spellId])
-```
-
-This ensures that each advancement can have one spell known per spell.
-
-#### **Relationships**
-
-**Many-to-One Relationships**:
-- **`advancement`**: Links to the parent `CharacterAdvancement` model
-- **`spell`**: Links to the known spell via `Spell` model
+**Usage**: Provides spell advancement data for character spell progression.
 
 **Source File**: `prisma/schema.prisma` (AdvancementSpell model)
 
 ### **CharacterFeatureChoice Model**
-**Database Table**: `CharacterFeatureChoice`
 
-Defines player choices for feature options, enabling feature choice tracking and persistence.
+Defines character feature choices for character advancement.
 
-#### **Core Attributes**
+**Purpose**: Links characters to their feature choices for character progression tracking.
 
-**Feature Choice Definition**:
-- **`id`**: Auto-incrementing primary key
-- **`characterId`**: Foreign key reference to the parent character
-- **`featureChoiceId`**: Integer reference to the specific feature choice
-- **`progressionId`**: Integer reference to the feature progression
-- **`advancementId`**: Integer reference to the character advancement
-- **`key`**: Optional string for choice key/identifier
-- **`value`**: String containing the choice value
-- **`choiceIndex`**: Optional integer for choice ordering
+**Key Fields**:
+- **`id`**: Unique identifier for the feature choice record
+- **`characterId`**: Reference to the character
+- **`featureChoiceId`**: Reference to the feature choice
+- **`progressionId`**: Reference to the feature progression
+- **`advancementId`**: Reference to the character advancement
+- **`key`**: Key for the feature choice
+- **`value`**: Value selected for the feature choice
+- **`choiceIndex`**: Index for the choice if multiple choices are available
 
-#### **Composite Unique Constraint**
+**Relationships**:
+- **`featureProgression`**: Links to the feature progression
+- **`featureChoice`**: Links to the feature choice
+- **`advancement`**: Links to the character advancement
 
-The model uses a composite unique constraint combining `advancementId`, `progressionId`, and `key`:
-```prisma
-@@unique([advancementId, progressionId, key])
-```
-
-This ensures that each advancement can have one choice per feature progression and key.
-
-#### **Relationships**
-
-**Many-to-One Relationships**:
-- **`featureProgression`**: Links to the feature progression via `FeatureProgression` model
-- **`featureChoice`**: Links to the feature choice via `FeatureChoice` model
-- **`advancement`**: Links to the character advancement via `CharacterAdvancement` model
+**Usage**: Provides feature choice data for character feature progression tracking.
 
 **Source File**: `prisma/schema.prisma` (CharacterFeatureChoice model)
 
 ### **CharacterSpellPreparation Model**
-**Database Table**: `CharacterSpellPreparation`
 
-Defines character spell preparation, enabling spell preparation tracking and metamagic integration.
+Defines character spell preparation and casting data.
 
-#### **Core Attributes**
+**Purpose**: Links characters to their spell preparation for spellcasting management.
 
-**Spell Preparation Definition**:
-- **`characterId`**: Foreign key reference to the parent character
-- **`prepKey`**: String key for spell preparation identification
-- **`spellId`**: Integer reference to the prepared spell
-- **`level`**: Integer indicating the spell level
-- **`notes`**: Optional text for preparation notes
+**Key Fields**:
+- **`characterId`**: Reference to the character
+- **`classId`**: Reference to the class whose spell slot was used
+- **`spellId`**: Reference to the spell
+- **`spellLevel`**: Actual spell level used (post-metamagic)
+- **`quantity`**: Number of spells prepared
+- **`prepKey`**: Unique identifier for this exact combination
+- **`slotType`**: Type of spell slot used
 
-#### **Composite Primary Key**
+**Relationships**:
+- **`character`**: Links to the character
+- **`class`**: Links to the class
+- **`spell`**: Links to the spell
+- **`metamagics`**: Links to metamagic feat applications
 
-The model uses a composite primary key combining `characterId` and `prepKey`:
-```prisma
-@@id([characterId, prepKey])
-```
-
-This ensures that each character can have one spell preparation per preparation key.
-
-#### **Relationships**
-
-**Many-to-One Relationships**:
-- **`character`**: Links to the parent `UserCharacter` model
-- **`spell`**: Links to the prepared spell via `Spell` model
-
-**One-to-Many Relationships**:
-- **`metamagics`**: Links to `SpellPreparationMetamagic` entries defining applied metamagic
+**Usage**: Provides spell preparation data for character spellcasting management.
 
 **Source File**: `prisma/schema.prisma` (CharacterSpellPreparation model)
 
-## 🔗 **Cross-System Integration Models**
+### **SpellPreparationMetamagic Model**
 
-### **CharacterItem Model Integration**
-**Database Table**: `CharacterItem`
+Defines metamagic feat applications to spell preparation.
 
-Enables characters to own customized instances of items with applied properties.
+**Purpose**: Links spell preparation to metamagic feat applications.
 
-#### **Character-Related Fields**
+**Key Fields**:
+- **`characterId`**: Reference to the character
+- **`prepKey`**: Reference to the spell preparation
+- **`featId`**: Reference to the metamagic feat
 
-**Character Item Ownership**:
-- **`characterId`**: Foreign key reference to the character owner
-- **`name`**: Custom name for the character's item instance
-- **`quantity`**: Optional integer for item quantity
-- **`baseItemId`**: Foreign key reference to the base item template
+**Relationships**:
+- **`feat`**: Links to the metamagic feat
+- **`preparation`**: Links to the spell preparation
 
-#### **Relationships**
+**Usage**: Provides metamagic data for character spell preparation.
 
-**Many-to-One Relationships**:
-- **`character`**: Links to the character owner via `UserCharacter` model
-- **`baseItem`**: Links to the base item template via `Item` model
+**Source File**: `prisma/schema.prisma` (SpellPreparationMetamagic model)
 
-**One-to-Many Relationships**:
-- **`characterItemProperties`**: Links to `CharacterItemProperty` entries defining applied properties
-
-**Source File**: `prisma/schema.prisma` (CharacterItem model)
-
-### **CharacterItemProperty Model Integration**
-**Database Table**: `CharacterItemProperty`
-
-Enables properties to be applied to character equipment, integrating the character system with the equipment system.
-
-#### **Character-Related Fields**
-
-**Property Application**:
-- **`characterItemId`**: Foreign key reference to the character item
-- **`propertyId`**: Foreign key reference to the applied property
-
-#### **Relationships**
-
-**Many-to-One Relationships**:
-- **`characterItem`**: Links to the character item via `CharacterItem` model
-- **`property`**: Links to the applied property via `ItemProperty` model
-
-**Source File**: `prisma/schema.prisma` (CharacterItemProperty model)
-
-## 📊 **Data Relationships**
-
-### **Character System Relationships**
-
-**Core Character Relationships**:
-```
-UserCharacter (1) ←→ (N) UserCharacterAbilityScore
-UserCharacter (1) ←→ (N) CharacterAdvancement
-UserCharacter (1) ←→ (N) CharacterItem
-UserCharacter (1) ←→ (N) CharacterSpellPreparation
-```
-
-**Advancement Relationships**:
-```
-CharacterAdvancement (1) ←→ (N) AdvancementSkill
-CharacterAdvancement (1) ←→ (N) AdvancementFeat
-CharacterAdvancement (1) ←→ (N) AdvancementSpell
-CharacterAdvancement (1) ←→ (N) CharacterFeatureChoice
-```
-
-**Equipment Relationships**:
-```
-CharacterItem (1) ←→ (N) CharacterItemProperty
-```
-
-### **Cross-System Integration Relationships**
-
-**Race System Integration**:
-```
-UserCharacter (N) ←→ (1) Race
-```
-
-**Class System Integration**:
-```
-CharacterAdvancement (N) ←→ (1) Class
-CharacterAdvancement (N) ←→ (1) Class (SecondaryClass)
-```
-
-**Feat System Integration**:
-```
-AdvancementFeat (N) ←→ (1) Feat
-```
-
-**Feature System Integration**:
-```
-CharacterFeatureChoice (N) ←→ (1) FeatureProgression
-CharacterFeatureChoice (N) ←→ (1) FeatureChoice
-```
-
-**Spell System Integration**:
-```
-AdvancementSpell (N) ←→ (1) Spell
-CharacterSpellPreparation (N) ←→ (1) Spell
-```
-
-**Equipment System Integration**:
-```
-CharacterItem (N) ←→ (1) Item
-CharacterItemProperty (N) ←→ (1) ItemProperty
-```
-
-**User System Integration**:
-```
-UserCharacter (N) ←→ (1) User
-```
-
-## 🔒 **Database Constraints**
-
-### **Primary Key Constraints**
-
-**UserCharacter Model**:
-- **`id`**: Auto-incrementing primary key
-
-**UserCharacterAbilityScore Model**:
-- **`id`**: Auto-incrementing primary key
-
-**CharacterAdvancement Model**:
-- **`id`**: Auto-incrementing primary key
-
-**CharacterFeatureChoice Model**:
-- **`id`**: Auto-incrementing primary key
-
-### **Composite Primary Key Constraints**
-
-**AdvancementSkill Model**:
-- **Composite Primary Key**: `[advancementId, skillId]` ensures unique skill allocation per advancement
-
-**AdvancementFeat Model**:
-- **Composite Primary Key**: `[advancementId, featId]` ensures unique feat selection per advancement
-
-**AdvancementSpell Model**:
-- **Composite Primary Key**: `[advancementId, spellId]` ensures unique spell known per advancement
-
-**CharacterSpellPreparation Model**:
-- **Composite Primary Key**: `[characterId, prepKey]` ensures unique spell preparation per character
-
-### **Unique Constraints**
-
-**CharacterAdvancement Model**:
-- **Composite Unique**: `[characterId, level, version]` ensures proper versioning of advancement records
-
-**CharacterFeatureChoice Model**:
-- **Composite Unique**: `[advancementId, progressionId, key]` ensures unique choices per advancement and progression
-
-### **Foreign Key Constraints**
-
-**UserCharacter**:
-- **`userId`**: References `User.id` with cascade delete
-- **`raceId`**: References `Race.id` with cascade delete
-
-**UserCharacterAbilityScore**:
-- **`characterId`**: References `UserCharacter.id` with cascade delete
-
-**CharacterAdvancement**:
-- **`characterId`**: References `UserCharacter.id` with cascade delete
-- **`classId`**: References `Class.id` with cascade delete
-- **`secondaryClassId`**: References `Class.id` with cascade delete (SET NULL on delete)
-
-**AdvancementSkill**:
-- **`advancementId`**: References `CharacterAdvancement.id` with cascade delete
-- **`skillId`**: References `Skill.id` with cascade delete
-
-**AdvancementFeat**:
-- **`advancementId`**: References `CharacterAdvancement.id` with cascade delete
-- **`featId`**: References `Feat.id` with cascade delete
-
-**AdvancementSpell**:
-- **`advancementId`**: References `CharacterAdvancement.id` with cascade delete
-- **`spellId`**: References `Spell.id` with cascade delete
-
-**CharacterFeatureChoice**:
-- **`characterId`**: References `UserCharacter.id` with cascade delete
-- **`featureChoiceId`**: References `FeatureChoice.id` with cascade delete
-- **`progressionId`**: References `FeatureProgression.id` with cascade delete
-- **`advancementId`**: References `CharacterAdvancement.id` with cascade delete
-
-**CharacterSpellPreparation**:
-- **`characterId`**: References `UserCharacter.id` with cascade delete
-- **`spellId`**: References `Spell.id` with cascade delete
-
-### **Data Integrity Constraints**
-
-**Character Ownership**:
-- **User Ownership**: Characters must belong to valid users
-- **Access Control**: Character access is controlled through user ownership
-
-**Advancement Integrity**:
-- **Level Progression**: Advancement levels must be sequential
-- **Version Control**: Multiple advancement records per level are properly versioned
-- **Choice Uniqueness**: Feature choices must be unique per advancement and progression
-
-**Equipment Integrity**:
-- **Item Ownership**: Character items must belong to valid characters
-- **Property Application**: Item properties must be applied to valid character items
-
-## 📋 **Data Access Patterns**
-
-### **Common Query Patterns**
-
-**Character Retrieval**:
-```sql
--- Get character with all details
-SELECT uc.*, uca.*, ca.*, as.*, af.*, asp.*, cfc.*
-FROM UserCharacter uc
-LEFT JOIN UserCharacterAbilityScore uca ON uc.id = uca.characterId
-LEFT JOIN CharacterAdvancement ca ON uc.id = ca.characterId
-LEFT JOIN AdvancementSkill as ON ca.id = as.advancementId
-LEFT JOIN AdvancementFeat af ON ca.id = af.advancementId
-LEFT JOIN AdvancementSpell asp ON ca.id = asp.advancementId
-LEFT JOIN CharacterFeatureChoice cfc ON ca.id = cfc.advancementId
-WHERE uc.id = ?
-ORDER BY ca.level, ca.version;
-```
-
-**Character List**:
-```sql
--- Get all characters for a user
-SELECT uc.*, r.name as raceName
-FROM UserCharacter uc
-JOIN Race r ON uc.raceId = r.id
-WHERE uc.userId = ?
-ORDER BY uc.name;
-```
-
-**Advancement Tracking**:
-```sql
--- Get character advancement by level
-SELECT ca.*, c.name as className
-FROM CharacterAdvancement ca
-JOIN Class c ON ca.classId = c.id
-WHERE ca.characterId = ?
-ORDER BY ca.level, ca.version;
-```
-
-### **Performance Considerations**
-
-**Indexing Strategy**:
-- **Primary Keys**: All primary keys are automatically indexed
-- **Foreign Keys**: All foreign key relationships are indexed for efficient joins
-- **Composite Indexes**: Composite primary keys provide efficient ordering queries
-- **User Queries**: Indexed on `userId` for efficient character list queries
-
-**Query Optimization**:
-- **Eager Loading**: Relationships loaded with characters for efficient display
-- **Ordering**: Index-based ordering for consistent advancement display
-- **Filtering**: Efficient filtering by user ownership and character attributes
-
-## 🔗 **Cross-System Integration**
-
-### **Race System Integration**
-
-The character system integrates with the race system through character creation:
-
-**Integration Points**:
-- **Race Selection**: Characters select races during creation
-- **Racial Abilities**: Race features are applied through the feature system
-- **Racial Bonuses**: Ability score bonuses and other racial traits are calculated
-
-**Source Files**:
-- Database: `prisma/schema.prisma` (UserCharacter.raceId relationship)
-- Backend: `backend/src/features/character/` (race integration services)
-- Frontend: `frontend/src/features/character/tabs/` (race selection UI)
+## 🔗 **Cross-System Relationships**
 
 ### **Class System Integration**
 
-The character system integrates with the class system through character advancement:
+The character management system integrates with the class system through character advancement:
 
-**Integration Points**:
-- **Class Selection**: Characters select classes during advancement
-- **Class Features**: Class features are applied through the feature system
-- **Multiclassing**: Support for multiple classes per character
+**Class Progression**: Characters advance in classes through the advancement system
+**Class Features**: Character feature choices integrate with class feature systems
+**Spellcasting**: Character spell preparation integrates with class spellcasting
+**Proficiency Management**: Character proficiencies integrate with class proficiency systems
 
-**Source Files**:
-- Database: `prisma/schema.prisma` (CharacterAdvancement.classId relationship)
-- Backend: `backend/src/features/character/` (class integration services)
-- Frontend: `frontend/src/features/character/tabs/` (class selection UI)
+**Integration Pattern**: The character system provides the framework for character class progression, with class features and abilities determining character capabilities.
 
-### **Feat System Integration**
+**Related Documentation**: [Class System Database Schema](../class-system/database-schema.md)
 
-The character system integrates with the feat system through character advancement:
+### **Race System Integration**
 
-**Integration Points**:
-- **Feat Selection**: Characters select feats during advancement
-- **Prerequisite Validation**: Automatic validation of feat prerequisites
-- **Feat Benefits**: Feat benefits are applied to character statistics
+The character management system integrates with the race system through character creation:
 
-**Source Files**:
-- Database: `prisma/schema.prisma` (AdvancementFeat relationship)
-- Backend: `backend/src/features/character/` (feat integration services)
-- Frontend: `frontend/src/features/character/tabs/` (feat selection UI)
+**Race Selection**: Characters are created with specific races
+**Race Features**: Character features integrate with race feature systems
+**Ability Modifiers**: Race ability modifiers integrate with character ability scores
+**Proficiency Grants**: Race proficiency grants integrate with character proficiencies
+
+**Integration Pattern**: The character system provides the framework for character race integration, with race features and abilities determining character capabilities.
+
+**Related Documentation**: [Race System Database Schema](../race-system/database-schema.md)
 
 ### **Feature System Integration**
 
-The character system integrates with the feature system through character choices:
+The character management system integrates with the feature system through character advancement:
 
-**Integration Points**:
-- **Feature Choices**: Characters make choices for features during advancement
-- **Feature Application**: Features are applied to characters through the feature system
-- **Choice Tracking**: All player choices are persisted and tracked
+**Feature Progression**: Character feature choices integrate with feature progression systems
+**Feature Selection**: Character feature choices integrate with feature choice systems
+**Feature Effects**: Character feature effects integrate with feature effect systems
 
-**Source Files**:
-- Database: `prisma/schema.prisma` (CharacterFeatureChoice relationship)
-- Backend: `backend/src/features/character/` (feature integration services)
-- Frontend: `frontend/src/features/character/tabs/` (feature choice UI)
+**Integration Pattern**: The character system provides the framework for character feature integration, with feature choices and effects determining character capabilities.
 
-### **Equipment System Integration**
-
-The character system integrates with the equipment system through character items:
-
-**Integration Points**:
-- **Equipment Ownership**: Characters own customized instances of items
-- **Property Application**: Item properties are applied to character equipment
-- **Equipment Management**: Character equipment is tracked and managed
-
-**Source Files**:
-- Database: `prisma/schema.prisma` (CharacterItem relationship)
-- Backend: `backend/src/features/character/` (equipment integration services)
-- Frontend: `frontend/src/features/character/tabs/` (equipment management UI)
+**Related Documentation**: [Feature System Database Schema](../feature-system/database-schema.md)
 
 ### **Spell System Integration**
 
-The character system integrates with the spell system through spell preparation:
+The character management system integrates with the spell system through character spell preparation:
 
-**Integration Points**:
-- **Spell Preparation**: Characters prepare spells for casting
-- **Metamagic Integration**: Metamagic feats are applied to prepared spells
-- **Spellcasting Progression**: Class spellcasting progression is tracked
+**Spell Selection**: Character spell preparation integrates with spell selection systems
+**Spell Casting**: Character spell casting integrates with spell casting systems
+**Metamagic Integration**: Character metamagic integrates with spell metamagic systems
 
-**Source Files**:
-- Database: `prisma/schema.prisma` (CharacterSpellPreparation relationship)
-- Backend: `backend/src/features/character/` (spell integration services)
-- Frontend: `frontend/src/features/character/tabs/` (spell management UI)
+**Integration Pattern**: The character system provides the framework for character spell integration, with spell preparation and casting determining character capabilities.
 
-## 📚 **Related Documentation**
+**Related Documentation**: [Spell System Database Schema](../spell-system/database-schema.md)
 
-### **System Documentation**
-- **[Validation Schemas](validation-schemas.md)** — Zod validation rules
-- **[Backend Implementation](backend-implementation.md)** — Backend services and API
-- **[Frontend Components](frontend-components.md)** — Frontend React components
+### **Equipment System Integration**
 
-### **Application Overview**
-- **[Database Schema Patterns](../application-overview/database-schema.md)** — Shared database patterns
-- **[Identity and Audit Fields](../application-overview/database-schema.md#identity-and-audit-fields)** — Standard field patterns
-- **[Source Attribution Pattern](../application-overview/database-schema.md#source-attribution-pattern)** — Source tracking patterns
+The character management system integrates with the equipment system through character equipment:
 
-### **Cross-System Integration**
-- **[Race System Database](../race-system/database-schema.md)** — Race system database integration
-- **[Class System Database](../class-system/database-schema.md)** — Class system database integration
-- **[Feat System Database](../feat-system/database-schema.md)** — Feat system database integration
-- **[Feature System Database](../feature-system/database-schema.md)** — Feature system database integration
-- **[Equipment System Database](../equipment-system/database-schema.md)** — Equipment system database integration
-- **[Spell System Database](../spell-system/database-schema.md)** — Spell system database integration
+**Equipment Selection**: Character equipment integrates with equipment selection systems
+**Equipment Usage**: Character equipment usage integrates with equipment usage systems
+**Equipment Effects**: Character equipment effects integrate with equipment effect systems
 
-## Summary
+**Integration Pattern**: The character system provides the framework for character equipment integration, with equipment selection and usage determining character capabilities.
 
-The character management database schema provides a comprehensive foundation for character creation, advancement, and data persistence. The schema supports complex character progression, multiclassing, choice tracking, and seamless integration with all other game systems.
+**Related Documentation**: [Equipment System Database Schema](../equipment-system/database-schema.md)
 
-The implementation follows established database patterns and provides efficient data access patterns for all character-related operations, ensuring data integrity and performance across the application.
+## 📊 **Database Relationships Diagram**
+
+```mermaid
+erDiagram
+    UserCharacter {
+        int id PK
+        int userId FK
+        string name
+        int raceId FK
+        int alignmentId FK
+        int xp
+        int age
+        int height
+        int weight
+        string eyes
+        string hair
+        string gender
+        text notes
+    }
+    
+    UserCharacterAbilityScore {
+        int id PK
+        int characterId FK
+        int abilityId FK
+        int value
+    }
+    
+    CharacterAdvancement {
+        int id PK
+        int characterId FK
+        int level
+        int version
+        int classId FK
+        int secondaryClassId FK
+        int hitPoints
+        int abilityId FK
+        text notes
+        datetime createdAt
+    }
+    
+    AdvancementSkill {
+        int advancementId FK
+        int skillId FK
+        int pointsSpent
+    }
+    
+    AdvancementFeat {
+        int advancementId FK
+        int featId FK
+    }
+    
+    AdvancementSpell {
+        int advancementId FK
+        int spellId FK
+    }
+    
+    CharacterFeatureChoice {
+        int id PK
+        int characterId FK
+        int featureChoiceId FK
+        int progressionId FK
+        int advancementId FK
+        string key
+        string value
+        int choiceIndex
+    }
+    
+    CharacterSpellPreparation {
+        int characterId FK
+        int classId FK
+        int spellId FK
+        int spellLevel
+        int quantity
+        string prepKey
+        int slotType
+    }
+    
+    SpellPreparationMetamagic {
+        int characterId FK
+        string prepKey FK
+        int featId FK
+    }
+    
+    UserCharacter ||--o{ UserCharacterAbilityScore : "has"
+    UserCharacter ||--o{ CharacterAdvancement : "advances"
+    UserCharacter ||--o{ CharacterFeatureChoice : "chooses"
+    UserCharacter ||--o{ CharacterSpellPreparation : "prepares"
+    
+    CharacterAdvancement ||--o{ AdvancementSkill : "allocates"
+    CharacterAdvancement ||--o{ AdvancementFeat : "selects"
+    CharacterAdvancement ||--o{ AdvancementSpell : "learns"
+    CharacterAdvancement ||--o{ CharacterFeatureChoice : "includes"
+    
+    CharacterSpellPreparation ||--o{ SpellPreparationMetamagic : "applies"
+```
+
+## 📊 **Data Integrity Constraints**
+
+### **Primary Key Constraints**
+
+**UserCharacter Model**: `id` field is the primary key with auto-increment
+**UserCharacterAbilityScore Model**: `id` field is the primary key with auto-increment
+**CharacterAdvancement Model**: `id` field is the primary key with auto-increment
+**CharacterFeatureChoice Model**: `id` field is the primary key with auto-increment
+
+### **Foreign Key Constraints**
+
+**Character Relationships**: All foreign key relationships are properly defined with cascade options
+**User Integration**: Character user relationships maintain referential integrity
+**Race Integration**: Character race relationships maintain proper data consistency
+**Alignment Integration**: Character alignment relationships maintain proper data consistency
+**Class Integration**: Character class relationships maintain proper data consistency
+**Ability Integration**: Character ability score relationships maintain proper data consistency
+
+### **Unique Constraints**
+
+**Character Advancement**: Unique constraint on `(characterId, level, version)` for multiple advancement versions
+**Character Feature Choice**: Unique constraint on `(advancementId, progressionId, key)` for feature choice tracking
+**Character Spell Preparation**: Primary key on `(characterId, prepKey)` for spell preparation tracking
+**Spell Preparation Metamagic**: Primary key on `(characterId, prepKey, featId)` for metamagic tracking
+
+### **Validation Constraints**
+
+**Numeric Ranges**: Level values are constrained to valid ranges (1-100)
+**Reference Validation**: All foreign key references must be valid
+**String Lengths**: Name and description fields have appropriate length constraints
+**Experience Points**: Experience points must be non-negative
+
+## 🔧 **Performance Considerations**
+
+### **Indexing Strategy**
+
+**Primary Keys**: All primary keys are automatically indexed
+**Foreign Keys**: All foreign key fields are indexed for efficient joins
+**Lookup Fields**: Frequently queried fields like `name`, `userId`, and `raceId` are indexed
+**Composite Indexes**: Composite indexes on frequently queried combinations
+**Unique Constraints**: Unique constraints provide additional indexing benefits
+
+### **Query Optimization**
+
+**Eager Loading**: Related data is loaded efficiently using Prisma includes
+**Selective Loading**: Only required fields are loaded for performance
+**Pagination**: Large result sets are properly paginated
+**Caching**: Frequently accessed data is cached appropriately
+
+## 🔗 **Related Documentation**
+
+- **[Validation Schemas](validation-schemas.md)** - Character management validation rules and schemas
+- **[Static Data](static-data.md)** - Character management enums and types
+- **[Backend Implementation](backend-implementation.md)** - Character management backend implementation
+- **[Frontend Components](frontend-components.md)** - Character management frontend implementation
+- **[Class System Database Schema](../class-system/database-schema.md)** - Class system database models
+- **[Race System Database Schema](../race-system/database-schema.md)** - Race system database models
+- **[Feature System Database Schema](../feature-system/database-schema.md)** - Feature system database models
+- **[Spell System Database Schema](../spell-system/database-schema.md)** - Spell system database models
+- **[Equipment System Database Schema](../equipment-system/database-schema.md)** - Equipment system database models
+- **[Database Schema Patterns](../application-overview/database-schema.md)** - Shared database patterns and conventions

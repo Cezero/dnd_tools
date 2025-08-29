@@ -164,45 +164,11 @@ erDiagram
         int raceId FK
     }
     
-    RaceSourceMap {
-        int raceId FK
-        int sourceBookId FK
-        int pageNumber
-    }
-    
     UserCharacter {
         int id PK
         int raceId FK
         string name
         int level
-    }
-    
-    FeatureModifier {
-        int id PK
-        int featureProgressionId FK
-        int type
-        int value
-        int appliesTo
-        int appliesToId
-        int bonusType
-    }
-    
-    FeatureChoice {
-        int id PK
-        int progressionId FK
-        int type
-        int behavior
-        int pickCount
-        string label
-    }
-    
-    FeatureSpecialEffect {
-        int id PK
-        int featureProgressionId FK
-        int effectType
-        int numericValue
-        string key
-        string value
     }
 ```
 
