@@ -65,19 +65,24 @@ conditions: [
 
 ### **❌ Missing Choice Validation**
 ```typescript
+// Choice-based modifiers should be properly linked to choices
 {
-    appliesIfChoiceKey: "favored_enemy",
-    appliesIfChoiceValue: "dragon" // Hard-coded value
+    // Modifier that depends on a choice but no proper linkage
+    appliesTo: ModifierAppliesToType.Attack,
+    value: 2,
+    // Missing connection to the choice that enables this bonus
 }
-// What if player chooses "goblin" instead?
+// What if player chooses a different option?
 ```
 
 ### **✅ Proper Choice Handling**
 ```typescript
+// Use FeatureChoice with proper type and behavior
 {
-    appliesIfChoiceKey: "favored_enemy_1",
-    // Value determined by player choice at runtime
-    // appliesIfChoiceValue will be set based on actual choice
+    type: FeatureChoiceType.CreatureType,
+    behavior: FeatureChoiceBehavior.Allocation,
+    label: "Choose favored enemy type",
+    // Modifiers will be applied based on the actual choice made
 }
 ```
 

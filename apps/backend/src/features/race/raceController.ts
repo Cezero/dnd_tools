@@ -7,7 +7,7 @@ import {
     ValidatedNoInput
 } from '@/util/validated-types'
 import {
-    GetRaceResponse,
+    Race,
     RaceIdParamRequest,
     CreateRaceRequest,
     UpdateRaceRequest,
@@ -28,7 +28,7 @@ export async function GetAllRaces(req: ValidatedNoInput<GetAllRacesResponse>, re
 /**
  * Fetches a single race by its ID.
  */
-export async function GetRaceById(req: ValidatedParamsT<RaceIdParamRequest, GetRaceResponse>, res: Response) {
+export async function GetRaceById(req: ValidatedParamsT<RaceIdParamRequest, Race>, res: Response) {
     const race = await raceService.getRaceById(req.params);
 
     if (!race) {

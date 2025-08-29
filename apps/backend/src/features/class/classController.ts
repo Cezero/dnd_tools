@@ -11,7 +11,7 @@ import {
     CreateClassRequest,
     UpdateClassRequest,
     GetAllClassesResponse,
-    GetClassResponse,
+    DnDClass,
     UpdateResponse
 } from '@shared/schema';
 
@@ -27,7 +27,7 @@ export async function GetAllClasses(req: ValidatedNoInput<GetAllClassesResponse>
 /**
  * Fetches a single class by its ID.
  */
-export async function GetClassById(req: ValidatedParamsT<ClassIdParamRequest, GetClassResponse>, res: Response) {
+export async function GetClassById(req: ValidatedParamsT<ClassIdParamRequest, DnDClass>, res: Response) {
     const cls = await classService.getClassById(req.params);
 
     if (!cls) {

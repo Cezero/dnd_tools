@@ -36,19 +36,26 @@ The backend uses a consolidated approach to eliminate duplicate FeatureProgressi
 - **Single Source of Truth**: All FeatureProgression creation/deletion goes through FeatureSystemService
 
 ### **Consolidated Methods**
-```typescript
-// Create multiple FeatureProgressions for class/race creation
-createMultipleFeatureProgressions(progressions: CreateFeatureProgressionRequest[], context: { classId?: number; raceId?: number }): Promise<void>
 
-// Delete FeatureProgressions for a specific class or race
-deleteFeatureProgressionsForContext(context: { classId?: number; raceId?: number }): Promise<void>
+**createMultipleFeatureProgressions**: Creates multiple FeatureProgressions for class/race creation
+- **Parameters**: Array of progression data, context (classId/raceId), optional transaction
+- **Purpose**: Bulk creation of feature progressions with full relationship data
+- **Usage**: Called by ClassService and RaceService during class/race creation
 
-// Update FeatureProgressions for individual features
-updateFeatureProgressions(featureId: number, progressions: FeatureProgressionWithRelations[]): Promise<UpdateResponse>
+**deleteFeatureProgressionsForContext**: Deletes all FeatureProgressions for a specific class or race
+- **Parameters**: Context (classId/raceId), optional transaction
+- **Purpose**: Bulk deletion of feature progressions and all related data
+- **Usage**: Called by ClassService and RaceService during class/race deletion
 
-// Get FeatureProgressions for individual features
-getFeatureProgressions(featureId: number): Promise<FeatureProgressionWithRelations[]>
-```
+**updateFeatureProgressions**: Updates FeatureProgressions for individual features
+- **Parameters**: Feature ID and array of updated progression data
+- **Purpose**: Updates existing feature progressions with new data
+- **Usage**: Called for individual feature progression management
+
+**getFeatureProgressions**: Gets FeatureProgressions for individual features
+- **Parameters**: Feature ID
+- **Purpose**: Retrieves all progressions for a specific feature
+- **Usage**: Called for feature progression display and editing
 
 ### **Service Integration**
 - **ClassService**: Uses `createMultipleFeatureProgressions()` and `deleteFeatureProgressionsForContext()` for class feature management
@@ -63,35 +70,39 @@ getFeatureProgressions(featureId: number): Promise<FeatureProgressionWithRelatio
 ## API Endpoints
 
 ### **Individual Feature Management**
-```typescript
-// Get all progressions for a specific feature
-GET /features/:id/progressions
 
-// Update progressions for a specific feature
-PUT /features/:id/progressions
-```
+**Get Feature Progressions**: Retrieves all progressions for a specific feature
+- **Route**: `GET /features/:id/progressions`
+- **Purpose**: Load existing progressions for feature editing
+- **Response**: Array of feature progressions with full relationship data
+
+**Update Feature Progressions**: Updates progressions for a specific feature
+- **Route**: `PUT /features/:id/progressions`
+- **Purpose**: Update existing feature progressions
+- **Body**: Array of updated progression data
 
 ### **Bulk Operations (Class/Race Management)**
-```typescript
-// Create progressions for class/race creation
-POST /features/progressions/bulk
-```
+
+**Create Feature Progressions**: Creates progressions for class/race creation
+- **Route**: `POST /features/progressions/bulk`
+- **Purpose**: Bulk creation of feature progressions during class/race creation
+- **Body**: Complete feature progression data with relationships
 
 ## Usage Patterns
 
 ### **Pattern 1: Standalone Feature Creation**
-1. Create the feature using `POST /features`
-2. Add progressions using `PUT /features/:id/progressions`
+1. Create the feature using the feature creation endpoint
+2. Add progressions using the feature progression update endpoint
 
 ### **Pattern 2: Class/Race Integration**
 1. Create class/race with features using bulk operations
 2. FeatureProgressions are created automatically as part of the class/race creation
 
 ### **Pattern 3: Feature Editing**
-1. Load existing feature using `GET /features/:id`
-2. Load existing progressions using `GET /features/:id/progressions`
-3. Update feature using `PUT /features/:id`
-4. Update progressions using `PUT /features/:id/progressions`
+1. Load existing feature using the feature retrieval endpoint
+2. Load existing progressions using the progression retrieval endpoint
+3. Update feature using the feature update endpoint
+4. Update progressions using the progression update endpoint
 
 ## Frontend Integration
 
@@ -111,13 +122,16 @@ The `FeatureEdit` component now includes full FeatureProgression management:
 ## Backend Implementation
 
 ### **Service Methods**
-```typescript
-// Update progressions for a specific feature
-updateFeatureProgressions(featureId: number, progressions: FeatureProgressionWithRelations[]): Promise<UpdateResponse>
 
-// Get progressions for a specific feature
-getFeatureProgressions(featureId: number): Promise<FeatureProgressionWithRelations[]>
-```
+**updateFeatureProgressions**: Updates progressions for a specific feature
+- **Parameters**: Feature ID and array of updated progression data
+- **Purpose**: Replaces existing progressions with new data
+- **Returns**: Success response with operation status
+
+**getFeatureProgressions**: Gets progressions for a specific feature
+- **Parameters**: Feature ID
+- **Purpose**: Retrieves all progressions with full relationship data
+- **Returns**: Array of feature progressions
 
 ### **Transaction Safety**
 - **Full Cleanup**: Deletes existing progressions and all related entities before creating new ones
@@ -132,57 +146,40 @@ getFeatureProgressions(featureId: number): Promise<FeatureProgressionWithRelatio
 ## Schema Definitions
 
 ### **Request Schemas**
-```typescript
-// For updating progressions
-const UpdateFeatureProgressionsRequestSchema = z.object({
-    progressions: z.array(CreateFeatureProgressionSchema),
-});
-```
+
+**UpdateFeatureProgressionsRequestSchema**: Schema for updating feature progressions
+- **Structure**: Contains array of feature progression data
+- **Validation**: Validates all progression data using CreateFeatureProgressionSchema
+- **Usage**: Used for feature progression update requests
 
 ### **Response Schemas**
-```typescript
-// For getting progressions
-const GetFeatureProgressionsResponseSchema = z.array(FeatureProgressionSchema);
-```
 
-## Error Handling
+**FeatureProgressionResponseSchema**: Schema for feature progression responses
+- **Structure**: Contains progression data with full relationship information
+- **Includes**: Modifiers, choices, effects, and formula parameters
+- **Usage**: Used for feature progression retrieval responses
 
-### **Common Error Scenarios**
-1. **Invalid Feature ID**: Returns 404 if feature doesn't exist
-2. **Validation Errors**: Returns 400 for invalid progression data
-3. **Database Errors**: Returns 500 for transaction failures
+## Integration Benefits
 
-### **Recovery Strategies**
-1. **Transaction Rollback**: Automatic rollback on any error
-2. **Partial Updates**: Not supported - all progressions are replaced atomically
-3. **Data Validation**: Comprehensive validation before database operations
+### **Consolidated Logic**
+- **Single Source of Truth**: All FeatureProgression logic centralized in FeatureSystemService
+- **Reduced Duplication**: No duplicate logic across ClassService and RaceService
+- **Consistent Behavior**: Same patterns used for all feature progression operations
 
-## Best Practices
+### **Transaction Safety**
+- **Shared Transactions**: ClassService and RaceService can pass transactions to feature system methods
+- **Data Consistency**: All operations maintain referential integrity
+- **Rollback Support**: Failed operations properly rollback all changes
 
-### **Performance Considerations**
-- **Batch Operations**: Use bulk endpoints for class/race creation
-- **Lazy Loading**: Load progressions only when needed
-- **Caching**: Consider caching for frequently accessed features
+### **Maintainability**
+- **Centralized Updates**: Changes to feature progression logic only need to be made in one place
+- **Consistent API**: Same interface used for all feature progression operations
+- **Clear Responsibilities**: Each service has well-defined responsibilities
 
-### **Data Management**
-- **Atomic Updates**: Always update all progressions together
-- **Validation**: Validate data before sending to backend
-- **Backup**: Consider backing up feature data before major updates
+## Related Documentation
 
-### **UI/UX Guidelines**
-- **Clear Feedback**: Show loading states and success/error messages
-- **Confirmation**: Ask for confirmation before deleting progressions
-- **Progressive Disclosure**: Show basic info first, details on demand
-
-## Future Enhancements
-
-### **Planned Features**
-1. **Progression Templates**: Reusable progression patterns
-2. **Bulk Import/Export**: CSV/JSON import/export for progressions
-3. **Version Control**: Track changes to feature progressions
-4. **Advanced Validation**: Rule-based validation for progression combinations
-
-### **Integration Opportunities**
-1. **Character System**: Connect progressions to character calculations
-2. **Rule Engine**: Integrate with D&D 3.5 rule validation
-3. **Analytics**: Track feature usage and progression patterns
+- **[Backend Implementation](backend-implementation.md)** - Complete backend implementation details
+- **[Database Schema](database-schema.md)** - Database models and relationships
+- **[Validation Schemas](validation-schemas.md)** - Request/response validation rules
+- **[Class System Feature Integration](../class-system/feature-integration.md)** - Class system integration details
+- **[Race System Feature Integration](../race-system/race-integration.md)** - Race system integration details

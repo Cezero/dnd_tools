@@ -77,22 +77,16 @@ The system intelligently routes formula calls based on formula properties:
 
 ## Usage Patterns
 
-### **Using Display Strategies (Recommended)**
+For comprehensive usage patterns, examples, and guidelines, see **[usage-guidelines.md](./usage-guidelines.md)**.
+
+### **Quick Start**
 ```typescript
 import { displayStrategyFactory } from '@/lib/formatters';
 import { DisplayType } from '@shared/static-data';
 
-// Edit page formatting
-const editStrategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
-const editResult = editStrategy.formatProgression(progression, context, metadata);
-
-// Detail page formatting
-const detailStrategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
-const detailResult = detailStrategy.formatProgressions(progressions, context, metadata);
-
-// Character sheet formatting
-const characterStrategy = displayStrategyFactory.createStrategy(DisplayType.CharacterSheet);
-const characterResult = characterStrategy.formatProgressions(progressions, context, metadata);
+// Get appropriate strategy for your use case
+const strategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
+const result = strategy.formatProgression(progression, context, metadata);
 ```
 
 ### **Display Types**
@@ -111,8 +105,9 @@ The formatting system is tightly integrated with the feature system:
 
 ## Recent Refactoring
 
-The formatting system underwent a major refactoring to fix architectural inversions:
+The formatting system underwent a major refactoring to fix architectural inversions. For detailed implementation status and current issues, see **[final-implementation-summary.md](./final-implementation-summary.md)**.
 
+**Key Changes**:
 1. **Removed FormatterOrchestrator** - Eliminated the incorrect Layer 7
 2. **Enhanced Display Strategies** - Made them true orchestrators of all 6 layers
 3. **Fixed Formula Routing** - Implemented intelligent routing based on formula properties
@@ -120,16 +115,18 @@ The formatting system underwent a major refactoring to fix architectural inversi
 
 ## Testing
 
-The formatting system includes comprehensive testing patterns:
+For comprehensive testing guidelines and debugging patterns, see **[usage-guidelines.md](./usage-guidelines.md)**.
 
+**Testing Approach**:
 - **Unit Testing** - Test each layer independently
 - **Integration Testing** - Test display strategy orchestration
 - **Formula Testing** - Test formula property-based routing
 
 ## Contributing
 
-When contributing to the formatting system:
+For comprehensive contributing guidelines and anti-patterns to avoid, see **[usage-guidelines.md](./usage-guidelines.md)**.
 
+**Key Principles**:
 1. **Follow the 6-layer architecture** - Don't create layers above Display Strategies
 2. **Use the factory pattern** - Access strategies through `displayStrategyFactory`
 3. **Respect formula properties** - Use `isCharacterDependent` and `hasProgression` for routing
@@ -137,6 +134,9 @@ When contributing to the formatting system:
 
 ## Related Documentation
 
+- **[Usage Guidelines](./usage-guidelines.md)** - Comprehensive usage patterns and guidelines
+- **[Final Implementation Summary](./final-implementation-summary.md)** - Current implementation status
+- **[Refactoring Strategy](./refactoring-strategy.md)** - Design decisions and architecture rationale
 - **[Feature System Overview](../README.md)** - Main feature system documentation
-- **[Formula System Analysis](../formula-system-analysis.md)** - Formula system details
+- **[Formula System](../formula-system.md)** - Formula system details
 - **[Feature Progression Management](../feature-progression-management.md)** - Progression system details

@@ -26,16 +26,8 @@ async function calculateCharacterModifiers(
         
         for (const modifier of modifiers) {
             // Check choice dependencies
-            if (modifier.appliesIfChoiceKey) {
-                const choice = await getCharacterChoice(
-                    characterId, 
-                    progression.id, 
-                    modifier.appliesIfChoiceKey
-                );
-                if (!choice || choice.value !== modifier.appliesIfChoiceValue) {
-                    continue;
-                }
-            }
+            // Note: Choice dependencies are handled through FeatureChoice system
+            // Modifiers are applied based on the choices made in the FeatureChoice
             
             // Check runtime conditions
             if (!evaluateConditions(modifier.conditions, context)) {

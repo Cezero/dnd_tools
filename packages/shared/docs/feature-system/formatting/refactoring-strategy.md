@@ -4,6 +4,8 @@
 
 This document outlines the strategy for refactoring the formatter system to address the identified pain points and create a clean, maintainable, and extensible architecture.
 
+**Note**: For current implementation status and known issues, see **[final-implementation-summary.md](./final-implementation-summary.md)**.
+
 ## Core Principles
 
 ### 1. Single Responsibility Principle
@@ -1576,6 +1578,8 @@ class CalculationCache {
 
 ## Success Criteria
 
+For current implementation status and success metrics, see **[final-implementation-summary.md](./final-implementation-summary.md)**.
+
 ### 1. Code Quality
 - [ ] Each layer has single responsibility
 - [ ] No mixed responsibilities
@@ -1632,3 +1636,9 @@ This refactoring strategy addresses the identified pain points by:
 7. **Performance Optimization**: Caching and efficient calculations
 
 The phased approach ensures minimal risk while delivering significant improvements to code quality, maintainability, and developer experience.
+
+## Related Documentation
+
+- **[README.md](./README.md)** - Architecture overview and navigation
+- **[Usage Guidelines](./usage-guidelines.md)** - Development guidelines and patterns
+- **[Final Implementation Summary](./final-implementation-summary.md)** - Current implementation status

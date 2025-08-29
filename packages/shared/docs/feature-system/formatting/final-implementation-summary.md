@@ -8,7 +8,9 @@ The formatter system refactoring has **successfully implemented all 6 layers of 
 
 ## Executive Summary
 
-This document provides the final implementation plan for refactoring the formatter system to achieve clean separation of concerns, proper name resolution, and support for future character sheet integration.
+This document provides the final implementation status for the formatter system refactoring. For usage guidelines and development patterns, see **[usage-guidelines.md](./usage-guidelines.md)**.
+
+The refactoring achieved clean separation of concerns, proper name resolution, and support for future character sheet integration.
 
 ## Key Decisions Made
 
@@ -369,6 +371,8 @@ private formatSingleProgression(progression: FeatureProgressionWithRelations, co
 
 The formatter system refactoring has **successfully implemented all 6 layers** of the clean architecture but has **critical integration issues** that prevent proper functionality. The immediate priority is to **fix the layer integration** in the display strategies to connect pure formatters with the display logic.
 
+For development guidelines and usage patterns, see **[usage-guidelines.md](./usage-guidelines.md)**.
+
 Once the integration issues are resolved, the system will provide:
 - **Clean separation of concerns** between formatting and display logic
 - **Consistent formatting** across all modifier types
@@ -377,3 +381,9 @@ Once the integration issues are resolved, the system will provide:
 - **Robust error handling** with fallbacks to raw values
 
 The foundation is solid - only the final integration step remains to complete the refactoring.
+
+## Related Documentation
+
+- **[README.md](./README.md)** - Architecture overview and navigation
+- **[Usage Guidelines](./usage-guidelines.md)** - Development guidelines and patterns
+- **[Refactoring Strategy](./refactoring-strategy.md)** - Design decisions and architecture rationale

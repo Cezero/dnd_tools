@@ -1,41 +1,118 @@
 # Reference Data System
 
-*Complete documentation for skills, feats, source books, and reference tables in D&D Tools.*
+*Database schema and system for managing reference tables, source books, and static game data.*
 
-## 📋 **Quick Navigation**
+## Core Reference Models
 
-### **Getting Started**
-- **[skill-system.md](skill-system.md)** — Skills, skill checks, and skill mechanics
-- **[feat-system.md](feat-system.md)** — Feats, prerequisites, and feat mechanics
-- **[source-books.md](source-books.md)** — Source book management and attribution
-- **[reference-tables.md](reference-tables.md)** — Reference tables and lookup data
+### **SourceBook Model**
+**Database Table**: `SourceBook`
 
-### **Database Schema**
-- **[schema-reference.md](schema-reference.md)** — Reference data database models and relationships
+Defines source books and publications that contain game content, including books, magazines, and other reference materials.
 
-## 🎯 **System Overview**
+**Database Fields**:
+- `id`: Primary key (auto-increment)
+- `name`: Source book name (String)
+- `abbreviation`: Short abbreviation (String)
+- `releaseDate`: Publication date (DateTime, nullable)
+- `editionId`: Reference to D&D edition (Int, nullable)
+- `description`: Book description (String, nullable, Text)
+- `isVisible`: Display flag (Boolean, default: true)
 
-The reference data system manages all the foundational game data in D&D Tools, including skills, feats, source books, and reference tables. This system provides the building blocks that other systems reference for game mechanics and content attribution.
+**Database Relationships**:
+- `classes`: One-to-many with `ClassSourceMap`
+- `races`: One-to-many with `RaceSourceMap`
+- `spells`: One-to-many with `SpellSourceMap`
 
-> **💡 See [System Overview](../system-overview.md) for how the Reference Data System provides foundational data for all other game systems.**
+## Reference Table Models
 
-### **Core Architecture**
+### **ReferenceTable Model**
+**Database Table**: `ReferenceTable`
+
+Defines reference tables that contain structured data for game rules, such as random encounter tables, treasure tables, and other lookup data.
+
+**Database Fields**:
+- `slug`: Primary key (String)
+- `name`: Table name (String)
+- `description`: Table description (String, nullable, Text)
+
+**Database Relationships**:
+- `columns`: One-to-many with `ReferenceTableColumn`
+- `rows`: One-to-many with `ReferenceTableRow`
+- `cells`: One-to-many with `ReferenceTableCell`
+
+### **ReferenceTableColumn Model**
+**Database Table**: `ReferenceTableColumn`
+
+Defines the columns in reference tables, including headers and formatting information.
+
+**Database Fields**:
+- `tableSlug`: Reference to table (String)
+- `index`: Column index (Int)
+- `header`: Column header text (String)
+- `span`: Column span for merged cells (Int, nullable)
+- `alignment`: Text alignment (TextAlignment enum, nullable)
+
+**Database Relationships**:
+- `cells`: One-to-many with `ReferenceTableCell`
+- `table`: Many-to-one with `ReferenceTable`
+
+**Database Constraints**:
+- Primary key: `[tableSlug, index]`
+
+### **ReferenceTableRow Model**
+**Database Table**: `ReferenceTableRow`
+
+Defines the rows in reference tables.
+
+**Database Fields**:
+- `tableSlug`: Reference to table (String)
+- `index`: Row index (Int)
+
+**Database Relationships**:
+- `cells`: One-to-many with `ReferenceTableCell`
+- `table`: Many-to-one with `ReferenceTable`
+
+**Database Constraints**:
+- Primary key: `[tableSlug, index]`
+
+### **ReferenceTableCell Model**
+**Database Table**: `ReferenceTableCell`
+
+Defines individual cells in reference tables, containing the actual data values.
+
+**Database Fields**:
+- `tableSlug`: Reference to table (String)
+- `columnIndex`: Column index (Int)
+- `rowIndex`: Row index (Int)
+- `value`: Cell value (String, nullable, Text)
+- `colSpan`: Column span for merged cells (Int, nullable)
+- `rowSpan`: Row span for merged cells (Int, nullable)
+
+**Database Relationships**:
+- `column`: Many-to-one with `ReferenceTableColumn`
+- `row`: Many-to-one with `ReferenceTableRow`
+- `table`: Many-to-one with `ReferenceTable`
+
+**Database Constraints**:
+- Primary key: `[tableSlug, columnIndex, rowIndex]`
+
+## Enums
+
+### **TextAlignment Enum**
+Defines text alignment options for table columns:
+
+- **left**: Left-aligned text
+- **center**: Center-aligned text
+- **right**: Right-aligned text
+
+## Key Relationships
+
+### **Reference Data Flow**
 ```
-Skill (Skill Definitions)
-├── AdvancementSkill (Character Skill Points)
-└── FeaturePrerequisite (Skill Prerequisites)
-
-Feat (Feat Definitions)
-├── FeatBenefitMap (Feat Benefits)
-├── FeatPrerequisiteMap (Feat Prerequisites)
-├── AdvancementFeat (Character Feats)
-└── FeatureChoice (Feat Choices)
-
-SourceBook (Source Book Information)
-├── ClassSourceMap (Class Sources)
-├── RaceSourceMap (Race Sources)
-├── SpellSourceMap (Spell Sources)
-└── ReferenceTable (Reference Data)
+SourceBook (Source Publications)
+├── ClassSourceMap (Class References)
+├── RaceSourceMap (Race References)
+└── SpellSourceMap (Spell References)
 
 ReferenceTable (Reference Tables)
 ├── ReferenceTableColumn (Table Columns)
@@ -43,98 +120,195 @@ ReferenceTable (Reference Tables)
 └── ReferenceTableCell (Table Data)
 ```
 
-### **Key Principles**
-- **Foundation Data**: Provides core game mechanics and definitions
-- **Content Attribution**: All game content is properly attributed to sources
-- **Flexible Tables**: Reference tables support dynamic game data
-- **System Integration**: All other systems reference this foundational data
-
-## 🚀 **Getting Started**
-
-### **For New Team Members**
-1. Start with **[skill-system.md](skill-system.md)** for skill mechanics
-2. Review **[schema-reference.md](schema-reference.md)** for database structure
-3. Study **[feat-system.md](feat-system.md)** for feat implementation
-4. Use **[source-books.md](source-books.md)** for content attribution
-
-### **For Reference Data Implementation**
-1. **Create skills** following **[skill-system.md](skill-system.md)**
-2. **Implement feats** using **[feat-system.md](feat-system.md)**
-3. **Set up source books** as shown in **[source-books.md](source-books.md)**
-4. **Configure reference tables** using **[reference-tables.md](reference-tables.md)**
-
-## 📚 **Documentation Structure**
-
-### **Functional Guides** (~200-300 lines each)
-| Document | Purpose | Lines |
-|----------|---------|-------|
-| **[skill-system.md](skill-system.md)** | Skills and skill mechanics | ~250 |
-| **[feat-system.md](feat-system.md)** | Feats and feat mechanics | ~300 |
-| **[source-books.md](source-books.md)** | Source book management | ~200 |
-| **[reference-tables.md](reference-tables.md)** | Reference tables and data | ~250 |
-
-### **Schema Reference** (~150-200 lines each)
-| Document | Purpose | Lines |
-|----------|---------|-------|
-| **[schema-reference.md](schema-reference.md)** | Reference data database models and relationships | ~200 |
-
-## 🎯 **Key Capabilities**
-
-- ✅ **Complete skill system** with all skill definitions and mechanics
-- ✅ **Comprehensive feat system** with benefits and prerequisites
-- ✅ **Source book attribution** for all game content
-- ✅ **Flexible reference tables** for dynamic game data
-- ✅ **System integration** with all other game systems
-- ✅ **Content validation** and prerequisite checking
-
-## 📈 **System Status**
-
-- **Current Coverage**: 95% of reference data features
-- **Target Coverage**: 98%+ with planned enhancements
-- **Schema Status**: Complete and optimized
-- **API Status**: Full CRUD operations implemented
-- **Documentation Status**: Comprehensive and AI-friendly
-
-## 🔧 **Quick Examples**
-
-### **Skill Definition**
-```typescript
-const climbSkill = {
-    name: "Climb",
-    abilityId: ABILITY_MAP.STR,
-    checkDescription: "Use this skill to climb walls, cliffs, and other steep surfaces...",
-    actionDescription: "Climbing is part of movement, so it's generally a move action...",
-    retryTypeId: RETRY_TYPE_MAP.ALLOWED,
-    retryDescription: "You can try again if you fail...",
-    affectedByArmor: true,
-    trainedOnly: false,
-    isAnalog: false
-};
+### **Source Attribution Flow**
+```
+Game Content → SourceBook
+├── Class Definitions
+├── Race Definitions
+├── Spell Definitions
+└── Page References
 ```
 
-### **Feat Definition**
-```typescript
-const powerAttackFeat = {
-    name: "Power Attack",
-    typeId: FEAT_TYPE_MAP.COMBAT,
-    description: "You can make exceptionally powerful melee attacks...",
-    benefit: "On your action, before making attack rolls for a round...",
-    prerequisites: "Str 13, base attack bonus +1",
-    repeatable: false,
-    fighterBonus: true
-};
+### **Table Structure Flow**
+```
+ReferenceTable → ReferenceTableColumn
+├── Column Headers
+├── Column Formatting
+└── Cell Spanning
+
+ReferenceTable → ReferenceTableRow
+└── Row Data
+
+ReferenceTableColumn + ReferenceTableRow → ReferenceTableCell
+└── Cell Values
 ```
 
-### **Source Book**
-```typescript
-const playerHandbook = {
-    name: "Player's Handbook",
-    abbreviation: "PHB",
-    releaseDate: "2000-08-01",
-    editionId: 1,
-    description: "The core rulebook for D&D 3.5...",
-    isVisible: true
-};
+## Database Constraints
+
+### **Unique Constraints**
+- `ReferenceTableColumn`: `[tableSlug, index]` - Ensures unique column indices per table
+- `ReferenceTableRow`: `[tableSlug, index]` - Ensures unique row indices per table
+- `ReferenceTableCell`: `[tableSlug, columnIndex, rowIndex]` - Ensures unique cell positions
+
+### **Foreign Key Relationships**
+- `SourceBook.editionId` references edition information
+- `ReferenceTableColumn.tableSlug` references `ReferenceTable.slug`
+- `ReferenceTableRow.tableSlug` references `ReferenceTable.slug`
+- `ReferenceTableCell.tableSlug` references `ReferenceTable.slug`
+- `ReferenceTableCell.columnIndex` references `ReferenceTableColumn.index`
+- `ReferenceTableCell.rowIndex` references `ReferenceTableRow.index`
+
+## Data Validation Rules
+
+### **SourceBook Creation**
+- Source book must have valid `name` and `abbreviation`
+- `editionId` must reference valid edition if provided
+- `releaseDate` must be valid date if provided
+- `isVisible` must be boolean
+
+### **Reference Table Creation**
+- Table must have valid `slug` and `name`
+- Slug must be URL-friendly and unique
+- Description can be null for simple tables
+
+### **Table Structure**
+- Columns must have unique indices within table
+- Rows must have unique indices within table
+- Cells must reference valid column and row indices
+- Cell spans must be positive integers
+
+## Common Reference Patterns
+
+### **Source Book Creation**
+```sql
+INSERT INTO SourceBook (name, abbreviation, editionId, description) VALUES
+('Player\'s Handbook', 'PHB', 1, 'Core rulebook for D&D 3.5');
 ```
 
-For complete examples, see **[skill-system.md](skill-system.md)** and **[feat-system.md](feat-system.md)**.
+### **Reference Table Creation**
+```sql
+INSERT INTO ReferenceTable (slug, name, description) VALUES
+('random-encounters', 'Random Encounters', 'Random encounter tables by terrain type');
+
+INSERT INTO ReferenceTableColumn (tableSlug, index, header, alignment) VALUES
+('random-encounters', 0, 'Roll', 'right'),
+('random-encounters', 1, 'Encounter', 'left');
+
+INSERT INTO ReferenceTableRow (tableSlug, index) VALUES
+('random-encounters', 0),
+('random-encounters', 1),
+('random-encounters', 2);
+
+INSERT INTO ReferenceTableCell (tableSlug, columnIndex, rowIndex, value) VALUES
+('random-encounters', 0, 0, '1-2'),
+('random-encounters', 1, 0, 'Goblin raiding party'),
+('random-encounters', 0, 1, '3-4'),
+('random-encounters', 1, 1, 'Merchant caravan');
+```
+
+### **Source Attribution**
+```sql
+INSERT INTO ClassSourceMap (classId, sourceBookId, pageNumber) VALUES
+(1, 1, 25); -- Fighter class, PHB, page 25
+
+INSERT INTO SpellSourceMap (spellId, sourceBookId, pageNumber) VALUES
+(1, 1, 232); -- Fireball spell, PHB, page 232
+```
+
+## Reference Data Mechanics
+
+### **Source Attribution**
+- All game content is attributed to source books
+- Page numbers provide quick reference
+- Edition information helps with compatibility
+- Source books can be marked as visible/hidden
+
+### **Reference Tables**
+- Tables contain structured game data
+- Tables can have complex layouts with merged cells
+- Column alignment controls text formatting
+- Tables are identified by unique slugs
+
+### **Table Navigation**
+- Tables are accessed by slug
+- Rows and columns are indexed numerically
+- Cells are positioned by row and column indices
+- Merged cells use span properties
+
+## Integration with Other Systems
+
+### **Class System Integration**
+- Classes are attributed to source books
+- Class features reference source pages
+- Class variants can have different sources
+- Source information helps with rules lookup
+
+### **Race System Integration**
+- Races are attributed to source books
+- Racial variants can have different sources
+- Source information helps with rules lookup
+- Race descriptions reference source material
+
+### **Spell System Integration**
+- Spells are attributed to source books
+- Spell descriptions reference source pages
+- Spell variants can have different sources
+- Source information helps with rules lookup
+
+### **Equipment System Integration**
+- Equipment can be attributed to source books
+- Equipment variants can have different sources
+- Source information helps with rules lookup
+- Equipment descriptions reference source material
+
+## Reference Data Special Cases
+
+### **Core Rulebooks**
+- Core rulebooks are primary sources
+- Core rulebooks are always visible
+- Core rulebooks have edition associations
+- Core rulebooks contain fundamental rules
+
+### **Supplemental Books**
+- Supplemental books add optional content
+- Supplemental books can be edition-specific
+- Supplemental books may have prerequisites
+- Supplemental books expand available options
+
+### **Magazine Articles**
+- Magazine articles provide additional content
+- Magazine articles have publication dates
+- Magazine articles may be limited availability
+- Magazine articles can provide unique content
+
+### **Online Sources**
+- Online sources provide digital content
+- Online sources may have different formats
+- Online sources can be updated frequently
+- Online sources may require special handling
+
+## Reference Table Examples
+
+### **Random Encounter Tables**
+- Terrain-based encounter tables
+- Level-appropriate encounters
+- Weather-based modifications
+- Time-of-day variations
+
+### **Treasure Tables**
+- CR-appropriate treasure
+- Treasure type variations
+- Magic item distributions
+- Currency and gem tables
+
+### **NPC Tables**
+- Random NPC generation
+- Personality trait tables
+- Background tables
+- Profession tables
+
+### **Weather Tables**
+- Climate-based weather
+- Seasonal variations
+- Weather effects on travel
+- Weather effects on encounters

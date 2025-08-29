@@ -4,7 +4,7 @@ import {
     CreateClassRequest,
     UpdateClassRequest,
     ClassIdParamRequest,
-    GetClassResponse,
+    DnDClass,
     CreateResponse,
     CreateSpellcastingProgressionRequest,
     CreateSpellcastingSlotRequest,
@@ -129,7 +129,7 @@ export const classService: ClassService = {
             spellsKnownProgression: classData?.classSpellsKnown ?? null,
         };
 
-        return transformedClassData as GetClassResponse;
+        return transformedClassData as DnDClass;
     },
 
     async createClass(data: CreateClassRequest): Promise<CreateResponse> {

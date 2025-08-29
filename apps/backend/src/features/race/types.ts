@@ -3,7 +3,7 @@ import {
     CreateRaceRequest,
     RaceIdParamRequest,
     GetAllRacesResponse,
-    GetRaceResponse,
+    Race,
     UpdateResponse,
     CreateResponse,
 } from '@shared/schema';
@@ -11,7 +11,7 @@ import {
 // Service interface
 export interface RaceService {
     getAllRaces: () => Promise<GetAllRacesResponse>;
-    getRaceById: (id: RaceIdParamRequest) => Promise<GetRaceResponse | null>;
+    getRaceById: (id: RaceIdParamRequest) => Promise<Race | null>;
     createRace: (data: CreateRaceRequest) => Promise<CreateResponse>;
     updateRace: (id: RaceIdParamRequest, data: UpdateRaceRequest) => Promise<UpdateResponse>;
     deleteRace: (id: RaceIdParamRequest) => Promise<UpdateResponse>;

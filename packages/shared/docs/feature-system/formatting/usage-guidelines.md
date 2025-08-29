@@ -6,36 +6,7 @@ This document provides comprehensive guidelines for agents working with the D&D 
 
 ## 🏗️ **Architecture Principles**
 
-### **6-Layer Clean Architecture**
-```
-Layer 6: Display Strategies (Highest Layer - Orchestrators)
-├── EditPageDisplayStrategy (orchestrates all layers for edit pages)
-├── DetailPageDisplayStrategy (orchestrates all layers for detail pages)
-├── CharacterSheetDisplayStrategy (orchestrates all layers for character sheets)
-└── DisplayStrategyFactory (creates strategy instances)
-
-Layer 5: Grouping Strategies
-├── ModifierGroupingStrategy
-├── PipeGroupingStrategy
-└── Other grouping strategies
-
-Layer 4: Transition Detection
-├── TransitionDetector
-└── Progression value analysis
-
-Layer 3: Progression Generation
-├── ProgressionGenerator
-└── Formula-based value generation
-
-Layer 2: Value Calculation
-├── FormulaCalculator
-└── Calculation breakdown generation
-
-Layer 1: Pure Formatters (Lowest Layer)
-├── BaseFormatter implementations
-├── ChoiceFormatter implementations
-└── EffectFormatter implementations
-```
+For complete architecture overview and layer descriptions, see **[README.md](./README.md)**.
 
 ### **Critical Architecture Rules**
 
@@ -273,6 +244,7 @@ console.log('Display strategy result:', result);
 
 ## 📚 **Reference Links**
 
+- **[README.md](./README.md)** - Architecture overview and navigation
 - **[Final Implementation Summary](./final-implementation-summary.md)** - Complete implementation overview
 - **[Refactoring Strategy](./refactoring-strategy.md)** - Architecture design decisions
 - **[Feature System Overview](../README.md)** - Main feature system documentation

@@ -1,137 +1,173 @@
 # Equipment System
 
-*Complete documentation for items, weapons, armor, and equipment management in D&D Tools.*
+*Complete documentation for the equipment system, including items, weapons, armor, properties, and character equipment management.*
 
-## 📋 **Quick Navigation**
+## 📋 **Overview**
 
-### **Getting Started**
-- **[item-definitions.md](item-definitions.md)** — Item creation and management
-- **[weapon-system.md](weapon-system.md)** — Weapons, damage, and combat properties
-- **[armor-system.md](armor-system.md)** — Armor, shields, and protection
-- **[item-properties.md](item-properties.md)** — Item enhancements and special abilities
-- **[character-equipment.md](character-equipment.md)** — Character inventory and equipment
+The equipment system provides comprehensive support for D&D 3.5 equipment management, including base items, weapons, armor, item properties, and character equipment. This system enables the creation, management, and customization of equipment with complex property systems and character integration.
 
-### **Database Schema**
-- **[schema-reference.md](schema-reference.md)** — Equipment-related database models and relationships
+**Source Files**:
+- **Database Schema**: `prisma/schema.prisma` (Item-related models)
+- **Validation Schemas**: `shared/schema/src/item.ts`
+- **Static Data**: `shared/static-data/src/ItemData.ts`
+- **Backend Implementation**: `backend/src/features/item/`
+- **Frontend Components**: `frontend/src/features/item/`
 
-## 🎯 **System Overview**
+## 🏗️ **System Architecture**
 
-The equipment system manages all aspects of items, weapons, armor, and character equipment in D&D Tools. This includes base item definitions, item properties and enhancements, character inventory management, and equipment templates.
+### **Core Components**
 
-> **💡 See [System Overview](../system-overview.md) for how the Equipment System integrates with Character Management and the Feature System.**
+The equipment system consists of several interconnected components:
 
-### **Core Architecture**
-```
-Item (Base Item Definition)
-├── ItemType (Item Categories)
-├── Weapon (Weapon Properties)
-├── Armor (Armor Properties)
-├── ItemProperty (Item Enhancements)
-│   ├── ItemPropertyAppliesTo (Property Compatibility)
-│   └── ItemPropertyIncompatibility (Property Conflicts)
-├── ItemTemplate (Item Templates)
-└── CharacterItem (Character Equipment)
-    └── CharacterItemProperty (Applied Properties)
-```
+- **Base Items**: Foundation items with basic properties (name, description, cost, weight)
+- **Weapons**: Specialized items with combat properties (damage, critical, range, type)
+- **Armor**: Protective items with defense properties (bonus, penalties, spell failure)
+- **Item Properties**: Modular properties that can be applied to items (materials, enhancements, special abilities)
+- **Character Equipment**: Character-specific instances of items with applied properties
+- **Item Templates**: Pre-configured item-property combinations
 
 ### **Key Principles**
-- **Base Item System**: All items start as base definitions with type categorization
-- **Property System**: Items can have multiple properties and enhancements
-- **Template System**: Pre-configured item combinations for common equipment
-- **Character Integration**: Characters own specific instances of items with properties
-- **Validation System**: Property compatibility and conflict checking
 
-## 🚀 **Getting Started**
-
-### **For New Team Members**
-1. Start with **[item-definitions.md](item-definitions.md)** for item creation
-2. Review **[schema-reference.md](schema-reference.md)** for database structure
-3. Study **[weapon-system.md](weapon-system.md)** for weapon mechanics
-4. Use **[armor-system.md](armor-system.md)** for armor and protection
-
-### **For Equipment Implementation**
-1. **Create base items** following **[item-definitions.md](item-definitions.md)**
-2. **Configure weapons** using **[weapon-system.md](weapon-system.md)**
-3. **Set up armor** as shown in **[armor-system.md](armor-system.md)**
-4. **Implement properties** using **[item-properties.md](item-properties.md)**
+- **Modular Design**: Items are composed of base properties plus optional weapon/armor details
+- **Property System**: Flexible property system allows for complex item customization
+- **Character Integration**: Character equipment links to base items with applied properties
+- **D&D 3.5 Compliance**: Complete adherence to D&D 3.5 equipment rules and mechanics
+- **Type Safety**: Full TypeScript and Zod validation throughout the system
 
 ## 📚 **Documentation Structure**
 
-### **Functional Guides** (~200-300 lines each)
-| Document | Purpose | Lines |
-|----------|---------|-------|
-| **[item-definitions.md](item-definitions.md)** | Item creation and management | ~250 |
-| **[weapon-system.md](weapon-system.md)** | Weapons and combat properties | ~300 |
-| **[armor-system.md](armor-system.md)** | Armor and protection | ~250 |
-| **[item-properties.md](item-properties.md)** | Item enhancements and abilities | ~300 |
-| **[character-equipment.md](character-equipment.md)** | Character inventory management | ~200 |
+### **Core Documentation**
+- **[Database Schema](database-schema.md)**: Complete Prisma model documentation
+- **[Validation Schemas](validation-schemas.md)**: Zod validation rules and type safety
+- **[Static Data](static-data.md)**: Enums, reference tables, and utility functions
+- **[Backend Implementation](backend-implementation.md)**: Services, controllers, and API
+- **[Frontend Components](frontend-components.md)**: React components and UI patterns
 
-### **Schema Reference** (~150-200 lines each)
-| Document | Purpose | Lines |
-|----------|---------|-------|
-| **[schema-reference.md](schema-reference.md)** | Equipment-related database models and relationships | ~200 |
+### **Specialized Documentation**
+- **[Item Properties](item-properties.md)**: Property system mechanics and rules
+- **[Weapon System](weapon-system.md)**: Weapon categories, types, and combat mechanics
+- **[Armor System](armor-system.md)**: Armor categories, bonuses, and penalties
+- **[Character Equipment](character-equipment.md)**: Character equipment management
+- **[Item Templates](item-templates.md)**: Template system for pre-configured items
 
-## 🎯 **Key Capabilities**
+## 🎯 **Getting Started**
 
-- ✅ **Complete item definitions** with all mechanical properties
-- ✅ **Weapon system** with damage, critical hits, and special properties
-- ✅ **Armor system** with AC bonuses, penalties, and restrictions
-- ✅ **Item property system** with enhancements and special abilities
-- ✅ **Template system** for pre-configured item combinations
-- ✅ **Character inventory** with property tracking
-- ✅ **Property compatibility** and conflict validation
+### **For New Team Members**
+1. **Start with [Database Schema](database-schema.md)** to understand the data structure
+2. **Review [Static Data](static-data.md)** to understand equipment categories and types
+3. **Examine [Backend Implementation](backend-implementation.md)** for API patterns
+4. **Study [Frontend Components](frontend-components.md)** for UI patterns
 
-## 📈 **System Status**
+### **For Developers**
+- **Item Creation**: Use the property system to create complex items
+- **Character Equipment**: Link items to characters with applied properties
+- **API Integration**: Use the RESTful API for equipment management
+- **Validation**: Leverage Zod schemas for type safety
 
-- **Current Coverage**: 85% of equipment system features
-- **Target Coverage**: 95%+ with planned enhancements
-- **Schema Status**: Complete and optimized
-- **API Status**: Full CRUD operations implemented
-- **Documentation Status**: Comprehensive and AI-friendly
+### **For System Integration**
+- **Character System**: Equipment integrates with character inventory and stats
+- **Feature System**: Equipment properties can be granted by features
+- **Spell System**: Equipment can have spell-related properties
+- **Reference System**: Equipment can reference source books and tables
 
-## 🔧 **Quick Examples**
+## 🔗 **Cross-System Integration**
 
-### **Base Item Definition**
-```typescript
-const longswordItem = {
-    name: "Longsword",
-    description: "A well-balanced steel sword...",
-    typeId: ITEM_TYPE_MAP.WEAPON,
-    cost: 15.00, // 15 gold pieces
-    weight: 4.0  // 4 pounds
-};
-```
+### **Character System Integration**
+- **Character Equipment**: Characters own instances of items with properties
+- **Equipment Effects**: Equipment properties affect character statistics
+- **Inventory Management**: Character inventory and equipment slots
+- **Equipment Choices**: Character feature choices can grant equipment
 
-### **Weapon Properties**
-```typescript
-const longswordWeapon = {
-    id: ITEM_MAP.LONGSWORD,
-    category: WEAPON_CATEGORY_MAP.SWORD,
-    type: WEAPON_TYPE_MAP.MARTIAL,
-    attackBonus: 0,
-    damageSmall: "1d6",
-    damageMedium: "1d8",
-    critical: "19-20/x2",
-    range: null,
-    damageType: "slashing",
-    reach: false,
-    double: false,
-    nonlethal: false
-};
-```
+**Related Documentation**: [Character System](../character-system/README.md)
 
-### **Item with Properties**
-```typescript
-const vorpalLongsword = {
-    name: "Vorpal Dragonbane Longsword",
-    quantity: 1,
-    characterId: 1,
-    baseItemId: ITEM_MAP.LONGSWORD,
-    characterItemProperties: [
-        { propertyId: ITEM_PROPERTY_MAP.VORPAL },
-        { propertyId: ITEM_PROPERTY_MAP.DRAGONBANE }
-    ]
-};
-```
+### **Feature System Integration**
+- **Equipment Features**: Features can grant equipment or equipment properties
+- **Property Modifiers**: Features can modify equipment properties
+- **Equipment Choices**: Feature choices can include equipment selection
 
-For complete examples, see **[item-definitions.md](item-definitions.md)** and **[weapon-system.md](weapon-system.md)**.
+**Related Documentation**: [Feature System](../feature-system/README.md)
+
+### **Reference System Integration**
+- **Source Attribution**: Equipment references source books and page numbers
+- **Reference Tables**: Equipment can use reference table data
+- **Edition Support**: Equipment supports multiple D&D editions
+
+**Related Documentation**: [Reference Data System](../reference-data-system/README.md)
+
+## 📊 **Implementation Status**
+
+### **Complete Infrastructure**
+- ✅ **Database Schema**: All equipment models implemented
+- ✅ **Validation Schemas**: Complete Zod validation rules
+- ✅ **Static Data**: All equipment categories and types
+- ✅ **Backend API**: Full CRUD operations for equipment
+- ✅ **Frontend Components**: Complete equipment management UI
+
+### **Implementation Gaps**
+- 🔄 **Property System**: Advanced property interactions and incompatibilities
+- 🔄 **Character Equipment**: Character equipment management interface
+- 🔄 **Item Templates**: Template system for pre-configured items
+- 🔄 **Equipment Effects**: Real-time equipment effect calculations
+
+## 🎮 **Quick Reference**
+
+### **Equipment Categories**
+- **Weapons**: Simple, Martial, Exotic weapons with combat properties
+- **Armor**: Light, Medium, Heavy armor with defense properties
+- **Shields**: Defensive equipment with special properties
+- **General Items**: Miscellaneous equipment and tools
+
+### **Property Types**
+- **Materials**: Base materials (steel, mithral, adamantine)
+- **Enhancements**: Magical enhancements (+1, +2, etc.)
+- **Special Abilities**: Unique abilities (vorpal, flaming, etc.)
+- **Structural**: Physical modifications (masterwork, etc.)
+
+### **Common Operations**
+- **Create Item**: Create base items with optional weapon/armor details
+- **Apply Properties**: Add properties to items with cost calculations
+- **Character Equipment**: Assign items to characters with properties
+- **Equipment Queries**: Search and filter equipment by various criteria
+
+## 📋 **Development Guidelines**
+
+### **Adding New Equipment**
+1. **Create Base Item**: Add item with basic properties
+2. **Add Specialization**: Add weapon or armor details if needed
+3. **Apply Properties**: Add relevant properties with cost calculations
+4. **Update Static Data**: Add new categories or types if needed
+5. **Test Integration**: Verify character system integration
+
+### **Property System Extensions**
+1. **Define Property**: Create new property with type and effects
+2. **Set Applicability**: Define which item types can use the property
+3. **Configure Costs**: Set cost modifiers and multipliers
+4. **Handle Incompatibilities**: Define property incompatibilities
+5. **Update Validation**: Add validation rules for new properties
+
+### **Character Equipment Management**
+1. **Equipment Assignment**: Assign items to character equipment slots
+2. **Property Application**: Apply properties to character equipment
+3. **Effect Calculation**: Calculate equipment effects on character stats
+4. **Inventory Management**: Manage character inventory and encumbrance
+5. **Equipment Choices**: Handle equipment choices from features
+
+## 📖 **Related Documentation**
+
+### **System Documentation**
+- **[Class System](../class-system/README.md)**: Character classes and equipment proficiency
+- **[Feature System](../feature-system/README.md)**: Equipment-related features
+- **[Character System](../character-system/README.md)**: Character equipment management
+- **[Reference Data System](../reference-data-system/README.md)**: Equipment source attribution
+
+### **Application Overview**
+- **[Database Schema Patterns](../application-overview/database-schema.md)**: Shared database patterns
+- **[Validation Patterns](../application-overview/validation-schemas.md)**: Shared validation patterns
+- **[Backend Implementation](../application-overview/backend-implementation.md)**: Shared backend patterns
+- **[Frontend Components](../application-overview/frontend-components.md)**: Shared frontend patterns
+
+## Summary
+
+The equipment system provides a comprehensive foundation for D&D 3.5 equipment management, with a flexible property system that enables complex item customization. The system integrates with character management, feature systems, and reference data to provide a complete equipment experience.
+
+For detailed implementation information, refer to the individual documentation files and always consult the source files for the most current implementation details.

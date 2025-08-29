@@ -1,7 +1,7 @@
 import { PrismaClient } from '@shared/prisma-client';
 import {
     GetAllRacesResponse,
-    GetRaceResponse,
+    Race,
     CreateRaceRequest,
     UpdateRaceRequest,
     RaceIdParamRequest,
@@ -102,7 +102,7 @@ export const raceService: RaceService = {
         };
     },
 
-    async getRaceById(id: RaceIdParamRequest): Promise<GetRaceResponse | null> {
+    async getRaceById(id: RaceIdParamRequest): Promise<Race | null> {
         const race = await prisma.race.findUnique({
             where: { id: id.id },
             include: {
@@ -176,7 +176,7 @@ export const raceService: RaceService = {
             })) || null
         };
 
-        return transformedRace as GetRaceResponse;
+        return transformedRace as Race;
     },
 
     async createRace(data: CreateRaceRequest): Promise<CreateResponse> {

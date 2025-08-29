@@ -10,7 +10,14 @@
 - **[race-integration.md](race-integration.md)** — Integration with character creation
 
 ### **Database Schema**
-- **[schema-reference.md](schema-reference.md)** — Race-related database models and relationships
+- **[database-schema.md](database-schema.md)** — Race-related database models and relationships
+- **[validation-schemas.md](validation-schemas.md)** — Zod validation schemas and type safety
+- **[static-data.md](static-data.md)** — Race-related static data and reference tables
+
+### **Implementation**
+- **[backend-implementation.md](backend-implementation.md)** — Backend services, controllers, and API endpoints
+- **[frontend-components.md](frontend-components.md)** — Frontend React components and user interfaces
+- **[architecture-principles.md](architecture-principles.md)** — System architecture and design principles
 
 ## 🎯 **System Overview**
 
@@ -64,17 +71,26 @@ The race system integrates with the feature system through a consolidated backen
 
 ## 📚 **Documentation Structure**
 
+### **Architecture and Design** (~200-400 lines each)
+| Document | Purpose | Lines |
+|----------|---------|-------|
+| **[architecture-principles.md](architecture-principles.md)** | System architecture and design principles | ~350 |
+| **[database-schema.md](database-schema.md)** | Database models and relationships | ~200 |
+| **[validation-schemas.md](validation-schemas.md)** | Zod validation schemas and type safety | ~150 |
+| **[static-data.md](static-data.md)** | Static data and reference tables | ~180 |
+
+### **Implementation Documentation** (~200-400 lines each)
+| Document | Purpose | Lines |
+|----------|---------|-------|
+| **[backend-implementation.md](backend-implementation.md)** | Backend services, controllers, and API | ~250 |
+| **[frontend-components.md](frontend-components.md)** | Frontend React components and UI | ~400 |
+
 ### **Functional Guides** (~200-300 lines each)
 | Document | Purpose | Lines |
 |----------|---------|-------|
 | **[race-definitions.md](race-definitions.md)** | Race creation and management | ~250 |
 | **[racial-features.md](racial-features.md)** | Racial traits and abilities | ~300 |
 | **[race-integration.md](race-integration.md)** | Character creation integration | ~200 |
-
-### **Schema Reference** (~150-200 lines each)
-| Document | Purpose | Lines |
-|----------|---------|-------|
-| **[schema-reference.md](schema-reference.md)** | Race-related database models and relationships | ~200 |
 
 ## 🎯 **Key Capabilities**
 

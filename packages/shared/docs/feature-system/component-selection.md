@@ -49,103 +49,47 @@ graph TD
 ### **Modifier Types**
 ```typescript
 enum ModifierType {
-    Bonus = 'bonus',           // +2 to attack
-    Penalty = 'penalty',       // -2 to AC
-    Quantity = 'quantity',     // +1d6 damage, extra attacks
-    Uses = 'uses'              // 3/day
+    Bonus = 0,           // +2 to attack
+    Quantity = 1,        // +1d6 damage, extra attacks, uses per day
+    Replacement = 2,     // Replace existing values
+    Other = 3            // Special cases, complex effects
 }
 ```
 
 ### **Bonus Types (Stacking Rules)**
 ```typescript
 enum FeatureBonusType {
-    Circumstance = 'circumstance',   // Stack with everything
-    Competence = 'competence',       // Don't stack with other competence
-    Dodge = 'dodge',                 // Don't stack with other dodge
-    Enhancement = 'enhancement',     // Don't stack with other enhancement
-    Insight = 'insight',             // Don't stack with other insight
-    Luck = 'luck',                   // Don't stack with other luck
-    Morale = 'morale',               // Don't stack with other morale
-    Profane = 'profane',             // Don't stack with other profane
-    Racial = 'racial',               // Don't stack with other racial
-    Sacred = 'sacred',               // Don't stack with other sacred
-    Size = 'size',                   // Don't stack with other size
-    Other = 'other'                  // Custom stacking rules
+    Dodge = 0,           // Stack with other dodge bonuses
+    Circumstance = 1,    // Stack with everything
+    Enhancement = 2,     // Don't stack with other enhancement
+    Morale = 3,          // Don't stack with other morale
+    Competence = 4,      // Don't stack with other competence
+    Alchemical = 5,      // Don't stack with other alchemical
+    Armor = 6,           // Don't stack with other armor
+    Deflection = 7,      // Don't stack with other deflection
+    Insight = 8,         // Don't stack with other insight
+    Luck = 9,            // Don't stack with other luck
+    NaturalArmor = 10,   // Don't stack with other natural armor
+    Profane = 11,        // Don't stack with other profane
+    Racial = 12,         // Don't stack with other racial
+    Resistance = 13,     // Don't stack with other resistance
+    Sacred = 14,         // Don't stack with other sacred
+    Shield = 15,         // Don't stack with other shield
+    Size = 16,           // Don't stack with other size
+    Other = 17           // Custom stacking rules
 }
 ```
 
 ### **Modifier Examples**
-```typescript
-// Simple ability bonus
-{
-    type: ModifierType.Bonus,
-    appliesTo: ModifierAppliesToType.Attribute,
-    appliesToId: ABILITY_MAP.STR,
-    value: 2,
-    bonusType: FeatureBonusType.Racial
-}
 
-// Conditional attack penalty (Monk Flurry of Blows)
-{
-    type: ModifierType.Penalty,
-    appliesTo: ModifierAppliesToType.Attack,
-    value: 0, // Base value (not used in conditional scaling)
-    bonusType: FeatureBonusType.Other,
-    formulaParams: {
-        formulaId: FormulaId.CONDITIONAL_SCALING,
-        thresholds: "1,4,8", // Level thresholds
-        values: "-2,-1,0"    // Corresponding penalty values
-    }
-}
+For complete modifier examples including:
+- **Simple ability bonuses** (racial traits)
+- **Conditional modifiers** (rage, flurry of blows)
+- **Formula-based scaling** (level-dependent bonuses)
+- **Resource tracking** (uses per day)
+- **Container patterns** (class skills, languages)
 
-// Extra attacks (Monk Flurry of Blows)
-{
-    type: ModifierType.Quantity,
-    appliesTo: ModifierAppliesToType.ExtraAttacks,
-    value: 0, // Base value (not used in conditional scaling)
-    bonusType: FeatureBonusType.Other,
-    formulaParams: {
-        formulaId: FormulaId.CONDITIONAL_SCALING,
-        thresholds: "1,11", // Level thresholds
-        values: "1,2"       // Corresponding extra attack values
-    }
-}
-
-// Conditional attack bonus
-{
-    type: ModifierType.Bonus,
-    appliesTo: ModifierAppliesToType.Attack,
-    value: 2,
-    bonusType: FeatureBonusType.Other,
-    conditions: [{ type: 'other', value: 'target_is_favored_enemy' }]
-}
-
-// Resource tracking
-{
-    type: ModifierType.Uses,
-    value: 3,
-    bonusType: FeatureBonusType.Other
-    // Character sheet shows: "Rage: 3/day"
-}
-
-// Class skill (special container pattern)
-{
-    type: ModifierType.Other,
-    appliesTo: ModifierAppliesToType.Skill,
-    appliesToId: SKILL_MAP.CLIMB,
-    value: 0, // No bonus, just marking as class skill
-    bonusType: null
-}
-
-// Language grant (container pattern)
-{
-    type: ModifierType.Other,
-    appliesTo: ModifierAppliesToType.Language,
-    appliesToId: LANGUAGE_MAP.COMMON,
-    value: 0, // No bonus, just granting language
-    bonusType: null
-}
-```
+See **[examples.md](./examples.md)** for comprehensive implementation details.
 
 ## FeatureChoice Usage
 
@@ -246,59 +190,25 @@ enum FeatureSpecialEffectType {
 - **Attribute-dependent** calculations (bonuses based on ability scores)
 
 ### **Formula Examples**
+
+For complete formula examples and implementation details, see **[formula-system.md](./formula-system.md)**.
+
+**Common Formula Types**:
+- **Linear Scaling**: Features that scale linearly with level
+- **Every N Levels**: Features that increase at specific intervals
+- **Conditional Scaling**: Features with level-based thresholds
+- **Attribute-Based**: Features dependent on ability scores
+- **Value Plus Level**: Features with fixed value plus level
+- **Level Times Value**: Features that multiply level by a value
+
+**Formula Integration Pattern**:
 ```typescript
-// Linear scaling (Barbarian Rage bonus)
 {
     type: ModifierType.Bonus,
     appliesTo: ModifierAppliesToType.Attribute,
-    appliesToId: ABILITY_MAP.STR,
-    value: 2, // Base bonus
+    value: 2, // Base value
     bonusType: FeatureBonusType.Morale,
-    formulaParams: {
-        formulaId: FormulaId.LINEAR_SCALING,
-        // Scales linearly: +2 at level 1, +4 at level 2, etc.
-    }
-}
-
-// Every N levels (Fighter bonus feats)
-{
-    type: ModifierType.Other,
-    appliesTo: ModifierAppliesToType.Choice,
-    value: 1, // Base choice
-    bonusType: null,
-    formulaParams: {
-        formulaId: FormulaId.EVERY_N_LEVELS,
-        interval: 2, // Every 2 levels
-        // Results in: 1 choice at level 1, 2 at level 3, 3 at level 5, etc.
-    }
-}
-
-// Conditional scaling (Monk Flurry of Blows)
-{
-    type: ModifierType.Penalty,
-    appliesTo: ModifierAppliesToType.Attack,
-    value: 0, // Base value (not used)
-    bonusType: FeatureBonusType.Other,
-    formulaParams: {
-        formulaId: FormulaId.CONDITIONAL_SCALING,
-        thresholds: "1,4,8", // Level thresholds
-        values: "-2,-1,0"    // Penalty values
-        // Results in: -2 penalty at levels 1-3, -1 at levels 4-7, 0 at level 8+
-    }
-}
-
-// Attribute-dependent (Wild Empathy)
-{
-    type: ModifierType.Bonus,
-    appliesTo: ModifierAppliesToType.Skill,
-    appliesToId: SKILL_MAP.HANDLE_ANIMAL,
-    value: 3, // Base bonus
-    bonusType: FeatureBonusType.Other,
-    formulaParams: {
-        formulaId: FormulaId.ATTRIBUTE_BASED,
-        abilityId: ABILITY_MAP.CHA, // Add Charisma modifier
-        // Results in: 3 + CHA modifier
-    }
+    formulaParamsId: 123 // Links to FeatureFormulaParams
 }
 ```
 
@@ -345,4 +255,4 @@ Before implementing a feature, ask:
 7. **Use formulas for level-based scaling**
 8. **Use conditional scaling for complex progressions**
 
-For complete examples, see **[class-features.md](class-features.md)** and **[racial-features.md](racial-features.md)**.
+For complete examples, see **[examples.md](./examples.md)**.

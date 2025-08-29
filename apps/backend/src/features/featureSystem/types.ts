@@ -7,7 +7,7 @@ import type {
     CreateResponse,
     UpdateResponse,
     CreateFeatureProgressionRequest,
-    FeatureProgressionWithRelations,
+    FeatureProgression,
 } from '@shared/schema';
 
 export interface FeatureSystemService {
@@ -20,5 +20,5 @@ export interface FeatureSystemService {
     createMultipleFeatureProgressions(progressions: CreateFeatureProgressionRequest[], context: { classId?: number; raceId?: number }, tx?: Prisma.TransactionClient): Promise<void>;
     deleteFeatureProgressionsForContext(context: { classId?: number; raceId?: number }, tx?: Prisma.TransactionClient): Promise<void>;
     updateFeatureProgressions(featureId: number, progressions: CreateFeatureProgressionRequest[]): Promise<UpdateResponse>;
-    getFeatureProgressions(featureId: number): Promise<FeatureProgressionWithRelations[]>;
+    getFeatureProgressions(featureId: number): Promise<FeatureProgression[]>;
 } 

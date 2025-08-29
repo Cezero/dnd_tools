@@ -1,14 +1,60 @@
 # Bulk Operations Guide
 
-*Creating, updating, and reading class/race data with features using bulk operations.*
+*Creating, updating, and reading class/race data with features using both individual and bulk operations.*
 
-## Core Principle: Bulk Operations Only
+## Core Principle: Flexible Operations
 
-The feature system is designed for **bulk operations only**. All feature data (modifiers, choices, effects) is sent in single API calls when creating or updating classes or races. Individual CRUD operations on sub-entities are not supported.
+The feature system supports both **individual CRUD operations** for standalone features and **bulk operations** for class/race feature progressions. The system is designed to handle both patterns efficiently.
 
-## Creating a Class with Features
+## Individual Feature Operations
 
-### **Complete Class Creation**
+### **Creating Standalone Features**
+```typescript
+// Create a new feature with prerequisites
+const featureData = {
+    name: "Weapon Focus",
+    slug: "weapon-focus",
+    description: "Provides +1 bonus to attack rolls with a specific weapon",
+    prerequisites: [
+        {
+            type: FeaturePrerequisiteType.Feat,
+            minValue: 1 // Requires at least 1 feat
+        }
+    ]
+};
+
+const result = await FeatureSystemApi.createFeature(featureData);
+console.log(`Created feature with ID: ${result.id}`);
+```
+
+### **Updating Standalone Features**
+```typescript
+// Update an existing feature
+const updatedFeature = {
+    name: "Weapon Focus (Longsword)",
+    description: "Provides +1 bonus to attack rolls with longsword",
+    prerequisites: []
+};
+
+await FeatureSystemApi.updateFeature(featureId, updatedFeature);
+```
+
+### **Reading Standalone Features**
+```typescript
+// Get all features
+const features = await FeatureSystemApi.getAllFeatures();
+
+// Get features by source type (0=class, 1=race)
+const classFeatures = await FeatureSystemApi.getAllFeatures(0);
+const raceFeatures = await FeatureSystemApi.getAllFeatures(1);
+
+// Get specific feature
+const feature = await FeatureSystemApi.getFeatureById(featureId);
+```
+
+## Bulk Operations for Class/Race Features
+
+### **Creating a Class with Features**
 ```typescript
 const classData = {
     name: "Fighter",
@@ -17,11 +63,9 @@ const classData = {
     features: [
         // Class skills (special container pattern)
         {
-            sourceType: 1, // Class
+            sourceType: 0, // Class
             level: 1,
             featureId: SpecialFeatureId.ClassSkill,
-            appliesToType: FeatureAppliesToType.Skill,
-            appliesTo: null,
             modifiers: [
                 {
                     type: ModifierType.Other,
@@ -41,22 +85,23 @@ const classData = {
         },
         // Fighter bonus feat
         {
-            sourceType: 1, // Class
+            sourceType: 0, // Class
             level: 1,
             featureId: FIGHTER_BONUS_FEAT_FEATURE_ID,
             modifiers: [],
             choices: [
                 {
-                    choiceType: ChoiceType.Feat,
-                    choiceBehavior: ChoiceBehavior.Single,
-                    label: "Choose a fighter bonus feat"
+                    type: ChoiceType.Feat,
+                    behavior: ChoiceBehavior.Single,
+                    label: "Choose a fighter bonus feat",
+                    filterType: FeatureFeatChoiceFilter.FighterBonus
                 }
             ],
             effects: []
         },
         // Weapon specialization
         {
-            sourceType: 1, // Class
+            sourceType: 0, // Class
             level: 4,
             featureId: WEAPON_SPECIALIZATION_FEATURE_ID,
             modifiers: [
@@ -64,16 +109,13 @@ const classData = {
                     type: ModifierType.Bonus,
                     appliesTo: ModifierAppliesToType.Damage,
                     value: 2,
-                    bonusType: FeatureBonusType.Other,
-                    appliesIfChoiceKey: "weapon_specialization",
-                    conditions: [{ type: 'other', value: 'using_chosen_weapon' }]
+                    bonusType: FeatureBonusType.Feat
                 }
             ],
             choices: [
                 {
-                    choiceType: ChoiceType.Feature,
-                    choiceBehavior: ChoiceBehavior.Single,
-                    appliesToType: FeatureAppliesToType.Item,
+                    type: ChoiceType.Feature,
+                    behavior: ChoiceBehavior.Single,
                     label: "Choose weapon for specialization"
                 }
             ],
@@ -92,7 +134,7 @@ const barbarianClass = {
     hitDie: 12,
     features: [
         {
-            sourceType: 1, // Class
+            sourceType: 0, // Class
             level: 1,
             featureId: BARBARIAN_RAGE_FEATURE_ID,
             modifiers: [
@@ -101,11 +143,11 @@ const barbarianClass = {
                     appliesTo: ModifierAppliesToType.Attribute,
                     appliesToId: ABILITY_MAP.STR,
                     value: 4,
-                    bonusType: FeatureBonusType.Morale,
-                    conditions: [{ type: 'trigger', value: 'rage_active' }]
+                    bonusType: FeatureBonusType.Morale
                 },
                 {
-                    type: ModifierType.Uses,
+                    type: ModifierType.Quantity,
+                    appliesTo: ModifierAppliesToType.Uses,
                     value: 1,
                     bonusType: FeatureBonusType.Other
                 }
@@ -119,7 +161,7 @@ const barbarianClass = {
 await ClassService.createClass(barbarianClass);
 ```
 
-## Updating a Class with Features
+## Updating Class/Race Features
 
 ### **Complete Class Update**
 ```typescript
@@ -132,15 +174,16 @@ const updatedClassData = {
     features: [
         // Complete feature progression data
         {
-            sourceType: 1,
+            sourceType: 0,
             level: 1,
             featureId: FIGHTER_BONUS_FEAT_FEATURE_ID,
             modifiers: [],
             choices: [
                 {
-                    choiceType: ChoiceType.Feat,
-                    choiceBehavior: ChoiceBehavior.Single,
-                    label: "Choose a fighter bonus feat"
+                    type: ChoiceType.Feat,
+                    behavior: ChoiceBehavior.Single,
+                    label: "Choose a fighter bonus feat",
+                    filterType: FeatureFeatChoiceFilter.FighterBonus
                 }
             ],
             effects: []
@@ -152,13 +195,13 @@ const updatedClassData = {
 await ClassService.updateClass(updatedClassData, { id: 123 });
 ```
 
-### **Important: Complete Replacement**
+### **Important: Complete Replacement for Bulk Operations**
 - **All existing features are deleted** and replaced
 - **No partial updates** - send complete feature data
 - **Backend handles cleanup** of old feature data
 - **Atomic operation** - all or nothing
 
-## Reading Class Data
+## Reading Class/Race Data
 
 ### **Get Complete Class with Features**
 ```typescript
@@ -190,7 +233,7 @@ const dwarfRace = {
     name: "Dwarf",
     features: [
         {
-            sourceType: 2, // Race
+            sourceType: 1, // Race
             level: 1,
             featureId: DWARF_TRAITS_FEATURE_ID,
             modifiers: [
@@ -213,8 +256,7 @@ const dwarfRace = {
             effects: [
                 {
                     effectType: FeatureSpecialEffectType.Proficiency,
-                    featId: WEAPON_ID.DWARVEN_WARAXE,
-                    description: "Proficient with dwarven waraxe"
+                    featId: WEAPON_ID.DWARVEN_WARAXE
                 }
             ]
         }
@@ -225,6 +267,23 @@ await RaceService.createRace(dwarfRace);
 ```
 
 ## Frontend Integration
+
+### **Feature Edit Component**
+```typescript
+// For standalone feature editing
+const handleSave = async () => {
+    try {
+        if (isNewFeature) {
+            await FeatureSystemApi.createFeature(formData);
+        } else {
+            await FeatureSystemApi.updateFeature(featureId, formData);
+        }
+        // Handle success
+    } catch (error) {
+        // Handle error
+    }
+};
+```
 
 ### **Class Edit Component**
 ```typescript
@@ -261,6 +320,23 @@ await ClassService.createClass(classData);
 ### **Validation Errors**
 ```typescript
 try {
+    await FeatureSystemApi.createFeature(featureData);
+} catch (error) {
+    if (error.validationErrors) {
+        // Handle schema validation errors
+        error.validationErrors.forEach(err => {
+            console.error(`Validation error: ${err.path} - ${err.message}`);
+        });
+    } else {
+        // Handle other errors
+        console.error('Failed to create feature:', error.message);
+    }
+}
+```
+
+### **Bulk Operation Errors**
+```typescript
+try {
     await ClassService.createClass(classData);
 } catch (error) {
     if (error.validationErrors) {
@@ -277,21 +353,23 @@ try {
 
 ## Key Patterns
 
-1. **Complete Data**: Send full nested feature data
-2. **No Individual CRUD**: Don't try to update individual modifiers/choices/effects
-3. **Atomic Operations**: All features are created/updated together
-4. **Backend Cleanup**: Backend handles deletion of old data
-5. **Validation**: Use Zod schemas for validation
-6. **Error Handling**: Handle validation and other errors gracefully
-7. **Class Skills**: Use special container pattern with `SpecialFeatureId.ClassSkill`
+1. **Individual Operations**: Use for standalone feature management
+2. **Bulk Operations**: Use for class/race feature progressions
+3. **Complete Data**: Send full nested feature data for bulk operations
+4. **Atomic Operations**: All features are created/updated together in bulk operations
+5. **Backend Cleanup**: Backend handles deletion of old data in bulk operations
+6. **Validation**: Use Zod schemas for validation
+7. **Error Handling**: Handle validation and other errors gracefully
+8. **Class Skills**: Use special container pattern with `SpecialFeatureId.ClassSkill`
 
 ## Best Practices
 
-1. **Prepare complete data** before sending to backend
-2. **Remove temporary IDs** from nested entities
-3. **Validate data** before sending
-4. **Handle errors** appropriately
-5. **Cache results** when reading data
-6. **Document complex features** clearly
+1. **Choose the right operation type**: Individual for standalone features, bulk for class/race features
+2. **Prepare complete data** before sending to backend for bulk operations
+3. **Remove temporary IDs** from nested entities
+4. **Validate data** before sending
+5. **Handle errors** appropriately
+6. **Cache results** when reading data
+7. **Document complex features** clearly
 
 For more details, see **[class-features.md](class-features.md)**, **[class-skills.md](class-skills.md)**, and **[racial-features.md](racial-features.md)**.

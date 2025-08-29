@@ -2,6 +2,8 @@
 
 A comprehensive, reusable list component with filtering, sorting, pagination, and column configuration capabilities.
 
+**Note**: This README contains legacy documentation. For the most up-to-date and comprehensive documentation, see [GenericList Component Documentation](../../../packages/shared/docs/application-overview/generic-list.md) in the application overview.
+
 ## Structure
 
 ```
