@@ -1,7 +1,7 @@
 import type {
     FormulaParamsData
 } from '@shared/schema';
-import { FORMULA_MAP, BreakdownComponentType } from '@shared/static-data';
+import { FORMULA_MAP, BreakdownComponentType, FeatureType, ModifierType } from '@shared/static-data';
 
 import { FormulaCalculatorImpl } from './calculators';
 // Remove circular dependency - calculator will be passed as parameter
@@ -14,6 +14,15 @@ import type {
     FormulaCalculator,
     CalculationBreakdown
 } from './types';
+
+// Constants
+const MAX_CHARACTER_LEVEL = 20; // D&D standard maximum character level
+
+// Transition types
+const TRANSITION_TYPE = {
+    START: 0,
+    TRANSITION: 1
+} as const;
 
 /**
  * Pure generator for progression values across level ranges
@@ -179,10 +188,12 @@ export class TransitionDetectorImpl implements TransitionDetector {
             if (current.value !== previous.value) {
                 transitions.push({
                     level: current.level,
-                    type: 1, // TransitionPointType.ValueChange
+                    type: TRANSITION_TYPE.TRANSITION,
                     description: `Value changes from ${previous.value} to ${current.value}`,
                     value: current.value,
-                    previousValue: previous.value
+                    previousValue: previous.value,
+                    entityType: FeatureType.Modifier,
+                    entitySubType: ModifierType.Bonus
                 });
             }
         }
@@ -282,7 +293,5 @@ export class ProgressionAnalysisUtils {
     }
 }
 
-// Export singleton instances
-export const progressionGenerator = new ProgressionGeneratorImpl();
-export const transitionDetector = new TransitionDetectorImpl();
+// Export utility functions
 export const progressionAnalysis = ProgressionAnalysisUtils;

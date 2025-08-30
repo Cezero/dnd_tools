@@ -273,30 +273,46 @@ export function ClassDisplay({
                             const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
                             const result = strategy.format(actualFeatures, undefined, formatterMetadata);
 
-                            // Track which features we've already shown descriptions for
-                            const _shownFeatureDescriptions = new Set<number>();
-
                             return (
                                 <div className="mt-4">
                                     <h3 className="text-lg font-semibold mb-2">Class Features</h3>
                                     <div className="space-y-4">
-                                        {/* Render level entries from the result */}
-                                        {result.map(levelEntry => {
-                                            return (
-                                                <div key={levelEntry.level} className="border border-gray-200 dark:border-gray-600 rounded-md p-3">
-                                                    <h4 className="text-md font-medium mb-2">Level {levelEntry.level}</h4>
-                                                    <div className="space-y-2">
-                                                        {levelEntry.items?.map((entry, index) => (
-                                                            <div key={`entry-${index}`} className="p-2">
+                                        {/* Render level entries */}
+                                        {result.map((levelEntry) => (
+                                            <div key={levelEntry.level} className="border border-gray-200 dark:border-gray-600 rounded-md p-3">
+                                                <h4 className="text-md font-medium mb-2">Level {levelEntry.level}</h4>
+                                                <div className="space-y-2">
+                                                    {levelEntry.items?.map((item, index) => {
+                                                        // Find the corresponding feature for this item
+                                                        const feature = actualFeatures.find(f => f.featureId === item.featureId);
+                                                        
+                                                        if (!feature) {
+                                                            return null;
+                                                        }
+
+                                                        // Determine whether to show description or name
+                                                        const shouldShowDescription = item.descriptionLevel === levelEntry.level;
+                                                        
+                                                        return (
+                                                            <div key={`item-${index}`} className="p-2">
                                                                 <div className="text-sm">
-                                                                    {entry.formattedValue}
+                                                                    {shouldShowDescription ? (
+                                                                        // Show full description for first occurrence
+                                                                        <ProcessMarkdown markdown={feature.feature.description} id={`feature-${feature.featureId}`} />
+                                                                    ) : (
+                                                                        // Show just the feature name for subsequent occurrences
+                                                                        <strong>{feature.feature.name}</strong>
+                                                                    )}
+                                                                    {item.formattedValue && (
+                                                                        <span className="ml-2">{item.formattedValue}</span>
+                                                                    )}
                                                                 </div>
                                                             </div>
-                                                        ))}
-                                                    </div>
+                                                        );
+                                                    })}
                                                 </div>
-                                            );
-                                        })}
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             );

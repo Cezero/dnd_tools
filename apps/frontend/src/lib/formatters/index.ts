@@ -9,5 +9,6 @@ export * from './calculators';
 export * from './calculator-registry';
 export * from './progression-generators';
 export * from './grouping-strategies';
+export * from './formula-utils';
 export { formatterRegistry } from './formatter-registry';
 

@@ -1,5 +1,13 @@
-import { AppliesToType, BaseMap, CoreComponent } from "./types";
+import { AppliesToType, BaseMap, CoreComponent, ConditionType } from "./types";
 import { NameSelectOptionList } from "./Util";
+
+export const FeatureType = {
+    Modifier: 0,
+    Effect: 1,
+    Choice: 2,
+} as const;
+
+export type FeatureType = typeof FeatureType[keyof typeof FeatureType];
 
 export const SpecialFeatureId = {
     ClassSkill: 1,
@@ -329,13 +337,13 @@ export const FeatureModifierConditionType = {
 
 export type FeatureModifierConditionType = typeof FeatureModifierConditionType[keyof typeof FeatureModifierConditionType];
 
-export const FEATURE_MODIFIER_CONDITION_TYPES: BaseMap<CoreComponent> = {
-    [FeatureModifierConditionType.trigger]: { id: FeatureModifierConditionType.trigger, name: 'Trigger' },
-    [FeatureModifierConditionType.attack_type]: { id: FeatureModifierConditionType.attack_type, name: 'Attack Type' },
-    [FeatureModifierConditionType.character_size]: { id: FeatureModifierConditionType.character_size, name: 'Character Size' },
-    [FeatureModifierConditionType.other]: { id: FeatureModifierConditionType.other, name: 'Other' },
-    [FeatureModifierConditionType.feature]: { id: FeatureModifierConditionType.feature, name: 'Feature' },
-    [FeatureModifierConditionType.spell_school]: { id: FeatureModifierConditionType.spell_school, name: 'Spell School' },
+export const FEATURE_MODIFIER_CONDITION_TYPES: BaseMap<ConditionType> = {
+    [FeatureModifierConditionType.trigger]: { id: FeatureModifierConditionType.trigger, name: 'Trigger', displayName: 'Trigger' },
+    [FeatureModifierConditionType.attack_type]: { id: FeatureModifierConditionType.attack_type, name: 'Attack Type', displayName: '' },
+    [FeatureModifierConditionType.character_size]: { id: FeatureModifierConditionType.character_size, name: 'Character Size', displayName: '' },
+    [FeatureModifierConditionType.other]: { id: FeatureModifierConditionType.other, name: 'Other', displayName: 'Other' },
+    [FeatureModifierConditionType.feature]: { id: FeatureModifierConditionType.feature, name: 'Feature', displayName: 'Feature' },
+    [FeatureModifierConditionType.spell_school]: { id: FeatureModifierConditionType.spell_school, name: 'Spell School', displayName: '' },
 }
 
 export const FEATURE_MODIFIER_CONDITION_LIST = Object.values(FEATURE_MODIFIER_CONDITION_TYPES);

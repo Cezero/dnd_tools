@@ -47,7 +47,8 @@ export const SKILL_MAP: SkillMap = {
     43: { id: 43, name: 'Tumble', abilityId: 2, trainedOnly: true, isAnalog: false },
     44: { id: 44, name: 'Use Magic Device', abilityId: 6, trainedOnly: true, isAnalog: false },
     45: { id: 45, name: 'Use Rope', abilityId: 2, trainedOnly: false, isAnalog: false },
-    46: { id: 46, name: 'Wild Empathy', abilityId: 6, trainedOnly: true, isAnalog: true },
+    48: { id: 48, name: 'Wild Empathy', abilityId: 6, trainedOnly: true, isAnalog: true },
+    49: { id: 49, name: 'Bardic Knowledge', abilityId: 4, trainedOnly: true, isAnalog: true },
 };
 
 export const SKILL_LIST = Object.values(SKILL_MAP);

@@ -1,5 +1,5 @@
 import type { FeatureSpecialEffect } from '@shared/schema';
-import { ModifierAppliesToType, FeatureChoiceType, ModifierType, FeatureSpecialEffectType } from '@shared/static-data';
+import { ModifierAppliesToType, FeatureChoiceType, ModifierType, FeatureSpecialEffectType, FeatureType } from '@shared/static-data';
 
 import {
     DamageFormatter,
@@ -23,7 +23,6 @@ import {
     ProficiencyEffectFormatter
 } from './pure-formatters';
 import type { BaseFormatter, ChoiceFormatter } from './types';
-import { FeatureType } from './types';
 
 // Effect formatter interface (to be implemented)
 interface EffectFormatter {
@@ -118,22 +117,7 @@ export class FormatterRegistry implements IFormatterRegistry {
         return `${featureType}:${featureSubType}`;
     }
 
-    // Legacy methods for backward compatibility during transition
-    register(_type: ModifierAppliesToType, _formatter: BaseFormatter): void {
-        // This will be removed after all callers are updated
-        console.warn('Using legacy register method. Please update to use registerFormatter.');
-    }
 
-    registerChoice(_type: FeatureChoiceType, _formatter: ChoiceFormatter): void {
-        // This will be removed after all callers are updated
-        console.warn('Using legacy registerChoice method. Please update to use registerFormatter.');
-    }
-
-    getChoiceFormatter(_type: FeatureChoiceType): ChoiceFormatter | undefined {
-        // This will be removed after all callers are updated
-        console.warn('Using legacy getChoiceFormatter method. Please update to use getFormatter with FeatureType.');
-        return undefined;
-    }
 
     private initializeDefaultFormatters(): void {
         // Create formatter instances

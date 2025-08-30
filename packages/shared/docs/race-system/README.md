@@ -55,6 +55,19 @@ The race system integrates with the feature system through a consolidated backen
 - [FeatureProgression Management](../feature-system/feature-progression-management.md) - Detailed FeatureProgression management
 - [Schema Reference](../feature-system/schema-reference.md) - Feature system schema definitions
 
+### **Feature Formatting Integration**
+
+The Race System integrates with the [Feature Formatting System](../feature-system/formatting/README.md) to display racial feature progressions consistently across all user interfaces. Racial features with level-based scaling and conditional modifiers are formatted using the same patterns as class features.
+
+**Integration Points**:
+- **Racial Feature Display**: Uses `DisplayType.Detail` for racial feature progression displays
+- **Feature Progression Formatting**: Leverages the formatting system's registry pattern for consistent display
+- **Cross-System Consistency**: Ensures racial features are formatted the same way as class features and standalone features
+
+**Related Documentation**:
+- [Feature Formatting System](../feature-system/formatting/README.md) - Complete formatting system overview
+- [Feature System Documentation](../feature-system/README.md) - Main feature system documentation
+
 ## 🚀 **Getting Started**
 
 ### **For New Team Members**

@@ -76,7 +76,7 @@ export class ModifierGroupingStrategy implements GroupingStrategy {
      * Get the specific name for a given appliesTo type and ID
      */
     private getSpecificName(appliesToType: ModifierAppliesToType, appliesToId: number): string | null {
-        // Handle "any" cases generically (appliesToId = -1)
+        // Handle "any" cases generically (appliesToId = -1 indicates "all items of this type")
         if (appliesToId === -1) {
             return this.getAnyLabel(appliesToType);
         }

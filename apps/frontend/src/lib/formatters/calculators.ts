@@ -74,7 +74,8 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
         if (formula.formulaId === FormulaId.CONDITIONAL_SCALING && typeof calculatedValue === 'string') {
             // For string values (like "1d6"), we need to convert them to a numeric representation
             // that can be used by the formatter system, but preserve the original string for display
-            // Use a hash of the string as the numeric value for comparison purposes
+            // Use a simple hash of the string as the numeric value for comparison purposes
+            // TODO: Consider a more sophisticated approach for string-to-number conversion
             const stringHash = calculatedValue.split('').reduce((hash, char) => hash + char.charCodeAt(0), 0);
             value = stringHash;
 

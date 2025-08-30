@@ -15198,7 +15198,7 @@ export namespace Prisma {
     id: number
     featureProgressionId: number
     type: number
-    value: number
+    value: number | null
     bonusType: number | null
     appliesTo: number | null
     appliesToId: number | null
@@ -15271,7 +15271,7 @@ export namespace Prisma {
       id: number
       featureProgressionId: number
       type: number
-      value: number
+      value: number | null
       bonusType: number | null
       appliesTo: number | null
       appliesToId: number | null
@@ -63824,7 +63824,7 @@ export namespace Prisma {
     id?: IntFilter<"FeatureModifier"> | number
     featureProgressionId?: IntFilter<"FeatureModifier"> | number
     type?: IntFilter<"FeatureModifier"> | number
-    value?: IntFilter<"FeatureModifier"> | number
+    value?: IntNullableFilter<"FeatureModifier"> | number | null
     bonusType?: IntNullableFilter<"FeatureModifier"> | number | null
     appliesTo?: IntNullableFilter<"FeatureModifier"> | number | null
     appliesToId?: IntNullableFilter<"FeatureModifier"> | number | null
@@ -63838,7 +63838,7 @@ export namespace Prisma {
     id?: SortOrder
     featureProgressionId?: SortOrder
     type?: SortOrder
-    value?: SortOrder
+    value?: SortOrderInput | SortOrder
     bonusType?: SortOrderInput | SortOrder
     appliesTo?: SortOrderInput | SortOrder
     appliesToId?: SortOrderInput | SortOrder
@@ -63855,7 +63855,7 @@ export namespace Prisma {
     NOT?: FeatureModifierWhereInput | FeatureModifierWhereInput[]
     featureProgressionId?: IntFilter<"FeatureModifier"> | number
     type?: IntFilter<"FeatureModifier"> | number
-    value?: IntFilter<"FeatureModifier"> | number
+    value?: IntNullableFilter<"FeatureModifier"> | number | null
     bonusType?: IntNullableFilter<"FeatureModifier"> | number | null
     appliesTo?: IntNullableFilter<"FeatureModifier"> | number | null
     appliesToId?: IntNullableFilter<"FeatureModifier"> | number | null
@@ -63869,7 +63869,7 @@ export namespace Prisma {
     id?: SortOrder
     featureProgressionId?: SortOrder
     type?: SortOrder
-    value?: SortOrder
+    value?: SortOrderInput | SortOrder
     bonusType?: SortOrderInput | SortOrder
     appliesTo?: SortOrderInput | SortOrder
     appliesToId?: SortOrderInput | SortOrder
@@ -63888,7 +63888,7 @@ export namespace Prisma {
     id?: IntWithAggregatesFilter<"FeatureModifier"> | number
     featureProgressionId?: IntWithAggregatesFilter<"FeatureModifier"> | number
     type?: IntWithAggregatesFilter<"FeatureModifier"> | number
-    value?: IntWithAggregatesFilter<"FeatureModifier"> | number
+    value?: IntNullableWithAggregatesFilter<"FeatureModifier"> | number | null
     bonusType?: IntNullableWithAggregatesFilter<"FeatureModifier"> | number | null
     appliesTo?: IntNullableWithAggregatesFilter<"FeatureModifier"> | number | null
     appliesToId?: IntNullableWithAggregatesFilter<"FeatureModifier"> | number | null
@@ -67504,7 +67504,7 @@ export namespace Prisma {
 
   export type FeatureModifierCreateInput = {
     type: number
-    value: number
+    value?: number | null
     bonusType?: number | null
     appliesTo?: number | null
     appliesToId?: number | null
@@ -67517,7 +67517,7 @@ export namespace Prisma {
     id?: number
     featureProgressionId: number
     type: number
-    value: number
+    value?: number | null
     bonusType?: number | null
     appliesTo?: number | null
     appliesToId?: number | null
@@ -67527,7 +67527,7 @@ export namespace Prisma {
 
   export type FeatureModifierUpdateInput = {
     type?: IntFieldUpdateOperationsInput | number
-    value?: IntFieldUpdateOperationsInput | number
+    value?: NullableIntFieldUpdateOperationsInput | number | null
     bonusType?: NullableIntFieldUpdateOperationsInput | number | null
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
@@ -67540,7 +67540,7 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     featureProgressionId?: IntFieldUpdateOperationsInput | number
     type?: IntFieldUpdateOperationsInput | number
-    value?: IntFieldUpdateOperationsInput | number
+    value?: NullableIntFieldUpdateOperationsInput | number | null
     bonusType?: NullableIntFieldUpdateOperationsInput | number | null
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
@@ -67552,7 +67552,7 @@ export namespace Prisma {
     id?: number
     featureProgressionId: number
     type: number
-    value: number
+    value?: number | null
     bonusType?: number | null
     appliesTo?: number | null
     appliesToId?: number | null
@@ -67561,7 +67561,7 @@ export namespace Prisma {
 
   export type FeatureModifierUpdateManyMutationInput = {
     type?: IntFieldUpdateOperationsInput | number
-    value?: IntFieldUpdateOperationsInput | number
+    value?: NullableIntFieldUpdateOperationsInput | number | null
     bonusType?: NullableIntFieldUpdateOperationsInput | number | null
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
@@ -67571,7 +67571,7 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     featureProgressionId?: IntFieldUpdateOperationsInput | number
     type?: IntFieldUpdateOperationsInput | number
-    value?: IntFieldUpdateOperationsInput | number
+    value?: NullableIntFieldUpdateOperationsInput | number | null
     bonusType?: NullableIntFieldUpdateOperationsInput | number | null
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
@@ -80226,7 +80226,7 @@ export namespace Prisma {
 
   export type FeatureModifierCreateWithoutFeatureProgressionInput = {
     type: number
-    value: number
+    value?: number | null
     bonusType?: number | null
     appliesTo?: number | null
     appliesToId?: number | null
@@ -80237,7 +80237,7 @@ export namespace Prisma {
   export type FeatureModifierUncheckedCreateWithoutFeatureProgressionInput = {
     id?: number
     type: number
-    value: number
+    value?: number | null
     bonusType?: number | null
     appliesTo?: number | null
     appliesToId?: number | null
@@ -80505,7 +80505,7 @@ export namespace Prisma {
     id?: IntFilter<"FeatureModifier"> | number
     featureProgressionId?: IntFilter<"FeatureModifier"> | number
     type?: IntFilter<"FeatureModifier"> | number
-    value?: IntFilter<"FeatureModifier"> | number
+    value?: IntNullableFilter<"FeatureModifier"> | number | null
     bonusType?: IntNullableFilter<"FeatureModifier"> | number | null
     appliesTo?: IntNullableFilter<"FeatureModifier"> | number | null
     appliesToId?: IntNullableFilter<"FeatureModifier"> | number | null
@@ -80715,7 +80715,7 @@ export namespace Prisma {
 
   export type FeatureModifierCreateWithoutFormulaParamsInput = {
     type: number
-    value: number
+    value?: number | null
     bonusType?: number | null
     appliesTo?: number | null
     appliesToId?: number | null
@@ -80727,7 +80727,7 @@ export namespace Prisma {
     id?: number
     featureProgressionId: number
     type: number
-    value: number
+    value?: number | null
     bonusType?: number | null
     appliesTo?: number | null
     appliesToId?: number | null
@@ -80813,7 +80813,7 @@ export namespace Prisma {
 
   export type FeatureModifierCreateWithoutConditionsInput = {
     type: number
-    value: number
+    value?: number | null
     bonusType?: number | null
     appliesTo?: number | null
     appliesToId?: number | null
@@ -80825,7 +80825,7 @@ export namespace Prisma {
     id?: number
     featureProgressionId: number
     type: number
-    value: number
+    value?: number | null
     bonusType?: number | null
     appliesTo?: number | null
     appliesToId?: number | null
@@ -80850,7 +80850,7 @@ export namespace Prisma {
 
   export type FeatureModifierUpdateWithoutConditionsInput = {
     type?: IntFieldUpdateOperationsInput | number
-    value?: IntFieldUpdateOperationsInput | number
+    value?: NullableIntFieldUpdateOperationsInput | number | null
     bonusType?: NullableIntFieldUpdateOperationsInput | number | null
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
@@ -80862,7 +80862,7 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     featureProgressionId?: IntFieldUpdateOperationsInput | number
     type?: IntFieldUpdateOperationsInput | number
-    value?: IntFieldUpdateOperationsInput | number
+    value?: NullableIntFieldUpdateOperationsInput | number | null
     bonusType?: NullableIntFieldUpdateOperationsInput | number | null
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
@@ -88413,7 +88413,7 @@ export namespace Prisma {
   export type FeatureModifierCreateManyFeatureProgressionInput = {
     id?: number
     type: number
-    value: number
+    value?: number | null
     bonusType?: number | null
     appliesTo?: number | null
     appliesToId?: number | null
@@ -88498,7 +88498,7 @@ export namespace Prisma {
 
   export type FeatureModifierUpdateWithoutFeatureProgressionInput = {
     type?: IntFieldUpdateOperationsInput | number
-    value?: IntFieldUpdateOperationsInput | number
+    value?: NullableIntFieldUpdateOperationsInput | number | null
     bonusType?: NullableIntFieldUpdateOperationsInput | number | null
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
@@ -88509,7 +88509,7 @@ export namespace Prisma {
   export type FeatureModifierUncheckedUpdateWithoutFeatureProgressionInput = {
     id?: IntFieldUpdateOperationsInput | number
     type?: IntFieldUpdateOperationsInput | number
-    value?: IntFieldUpdateOperationsInput | number
+    value?: NullableIntFieldUpdateOperationsInput | number | null
     bonusType?: NullableIntFieldUpdateOperationsInput | number | null
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
@@ -88520,7 +88520,7 @@ export namespace Prisma {
   export type FeatureModifierUncheckedUpdateManyWithoutFeatureProgressionInput = {
     id?: IntFieldUpdateOperationsInput | number
     type?: IntFieldUpdateOperationsInput | number
-    value?: IntFieldUpdateOperationsInput | number
+    value?: NullableIntFieldUpdateOperationsInput | number | null
     bonusType?: NullableIntFieldUpdateOperationsInput | number | null
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
@@ -88583,7 +88583,7 @@ export namespace Prisma {
     id?: number
     featureProgressionId: number
     type: number
-    value: number
+    value?: number | null
     bonusType?: number | null
     appliesTo?: number | null
     appliesToId?: number | null
@@ -88603,7 +88603,7 @@ export namespace Prisma {
 
   export type FeatureModifierUpdateWithoutFormulaParamsInput = {
     type?: IntFieldUpdateOperationsInput | number
-    value?: IntFieldUpdateOperationsInput | number
+    value?: NullableIntFieldUpdateOperationsInput | number | null
     bonusType?: NullableIntFieldUpdateOperationsInput | number | null
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
@@ -88615,7 +88615,7 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     featureProgressionId?: IntFieldUpdateOperationsInput | number
     type?: IntFieldUpdateOperationsInput | number
-    value?: IntFieldUpdateOperationsInput | number
+    value?: NullableIntFieldUpdateOperationsInput | number | null
     bonusType?: NullableIntFieldUpdateOperationsInput | number | null
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
@@ -88626,7 +88626,7 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     featureProgressionId?: IntFieldUpdateOperationsInput | number
     type?: IntFieldUpdateOperationsInput | number
-    value?: IntFieldUpdateOperationsInput | number
+    value?: NullableIntFieldUpdateOperationsInput | number | null
     bonusType?: NullableIntFieldUpdateOperationsInput | number | null
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null

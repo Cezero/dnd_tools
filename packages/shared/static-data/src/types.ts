@@ -29,6 +29,11 @@ export interface AppliesToType extends CoreComponent {
     displayName?: string | null;
 }
 
+// Extended type for condition types with optional display names
+export interface ConditionType extends CoreComponent {
+    displayName?: string | null;
+}
+
 export interface CoreComponentAbbreviation extends CoreComponent {
     abbreviation: string;
 }

@@ -56,13 +56,13 @@ This documentation follows a layered approach, with each layer building upon the
 
 ### **Troubleshooting and Best Practices**
 - **[Common Pitfalls](common-pitfalls.md)** - Common issues and how to avoid them
-- **[Formatter Utilities](formatter-utilities.md)** - Formatter system integration and utilities
 
 ### **Formatter System Integration**
 - **[Formatting README](formatting/README.md)** - Overview of the formatter system integration
 - **[Formatting Usage Guidelines](formatting/usage-guidelines.md)** - Guidelines for using the formatter system
 - **[Formatting Refactoring Strategy](formatting/refactoring-strategy.md)** - Strategy for refactoring the formatter system
 - **[Formatting Final Implementation Summary](formatting/final-implementation-summary.md)** - Summary of formatter system implementation
+- **[Formatting Architecture Decisions](formatting/architecture-decisions.md)** - Key architectural decisions and future extensibility
 
 ## 🎯 **Key Concepts**
 

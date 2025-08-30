@@ -151,6 +151,14 @@ function FormulaPreview({
 
         // For modifiers, use the display strategy result
         const formattedValue = displayResult[0].items[0].formattedValue || 'No preview available';
+        console.log('Formula Preview Debug:', {
+            formulaId,
+            formulaName: formula.name,
+            isCharacterDependent: formula.isCharacterDependent,
+            hasProgression: formula.hasProgression,
+            formattedValue,
+            displayResult: displayResult[0]
+        });
 
 
         return (
@@ -226,12 +234,13 @@ export function FeatureProgressionDetailEdit({
             // Multi-section approach - remove progressionType
             modifiers: (progression?.modifiers || []).map(modifier => ({
                 ...modifier,
-                formulaParams: modifier.formulaParams ? {
+                formulaParams: modifier.formulaParams && modifier.formulaParams.formulaId ? {
                     ...modifier.formulaParams,
                     // Only initialize arrays for CONDITIONAL_SCALING formula
                     thresholds: modifier.formulaParams.formulaId === 3 ? (modifier.formulaParams.thresholds || []) : null,
                     values: modifier.formulaParams.formulaId === 3 ? (modifier.formulaParams.values || []) : null,
                 } : {
+                    id: 0,
                     formulaId: null,
                     interval: 1,
                     formulaStartLevel: null,
@@ -240,7 +249,23 @@ export function FeatureProgressionDetailEdit({
                     values: null,
                 }
             })),
-            choices: progression?.choices || [],
+            choices: (progression?.choices || []).map(choice => ({
+                ...choice,
+                formulaParams: choice.formulaParams && choice.formulaParams.formulaId ? {
+                    ...choice.formulaParams,
+                    // Only initialize arrays for CONDITIONAL_SCALING formula
+                    thresholds: choice.formulaParams.formulaId === 3 ? (choice.formulaParams.thresholds || []) : null,
+                    values: choice.formulaParams.formulaId === 3 ? (choice.formulaParams.values || []) : null,
+                } : {
+                    id: 0,
+                    formulaId: null,
+                    interval: 1,
+                    formulaStartLevel: null,
+                    abilityId: null,
+                    thresholds: null,
+                    values: null,
+                }
+            })),
             effects: progression?.effects || [],
             // prerequisites removed - now at feature level
         };
@@ -301,6 +326,11 @@ export function FeatureProgressionDetailEdit({
                 if (baseModifier.formulaParams && baseModifier.formulaParams.formulaId) {
                     const { id: _formulaId, ...cleanFormulaParams } = baseModifier.formulaParams;
                     convertedFormulaParams = cleanFormulaParams as CreateFeatureFormulaParamsRequest;
+                    console.log(`Modifier has formula ${baseModifier.formulaParams.formulaId}, including formulaParams`);
+                } else {
+                    // Explicitly set to null if no formula is selected
+                    convertedFormulaParams = null;
+                    console.log('Modifier has no formula, setting formulaParams to null');
                 }
 
                 // Create the final modifier object
@@ -330,6 +360,11 @@ export function FeatureProgressionDetailEdit({
                 if (baseChoice.formulaParams && baseChoice.formulaParams.formulaId) {
                     const { id: _formulaId, ...cleanFormulaParams } = baseChoice.formulaParams;
                     convertedFormulaParams = cleanFormulaParams as CreateFeatureFormulaParamsRequest;
+                    console.log(`Choice has formula ${baseChoice.formulaParams.formulaId}, including formulaParams`);
+                } else {
+                    // Explicitly set to null if no formula is selected
+                    convertedFormulaParams = null;
+                    console.log('Choice has no formula, setting formulaParams to null');
                 }
 
                 // Create the final choice object
@@ -391,7 +426,15 @@ export function FeatureProgressionDetailEdit({
             appliesTo: null,
             appliesToId: null,
             conditions: [],
-            formulaParams: null, // Only created when formula is selected
+            formulaParams: {
+                id: 0,
+                formulaId: null, // No formula selected by default
+                interval: 1,
+                formulaStartLevel: null,
+                abilityId: null,
+                thresholds: null,
+                values: null,
+            },
         };
         setFormData(prev => ({
             ...prev,
@@ -446,7 +489,15 @@ export function FeatureProgressionDetailEdit({
             formulaParamsId: null,
             feat: null,
             feature: null,
-            formulaParams: null, // Only created when formula is selected
+            formulaParams: {
+                id: 0,
+                formulaId: null, // No formula selected by default
+                interval: 1,
+                formulaStartLevel: null,
+                abilityId: null,
+                thresholds: null,
+                values: null,
+            },
         };
         setFormData(prev => ({
             ...prev,
@@ -846,6 +897,10 @@ function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeature, pr
     const [showConditions, setShowConditions] = useState(false);
     const prevAppliesToRef = useRef<number | null>(null);
 
+
+
+
+
     // Update modifier with feat data when a feat is selected
     useEffect(() => {
         if (modifier.appliesTo === ModifierAppliesToType.Feat && modifier.appliesToId) {
@@ -1081,7 +1136,6 @@ function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeature, pr
                             field={`modifiers.${index}.value`}
                             label="Value"
                             type="number"
-                            required
                             componentExtraClassName="flex items-center gap-2"
                             inputExtraClassName="w-20"
                             nested
@@ -1739,27 +1793,7 @@ function ChoiceDetailForm({ index, preSelectedFeature, progression }: ChoiceDeta
     const [availableFeats, setAvailableFeats] = useState<Array<{ id: number; name: string }>>([]);
     const [availableFeatures, setAvailableFeatures] = useState<Array<{ id: number; name: string }>>([]);
 
-    // Ensure formulaParams is properly initialized
-    useEffect(() => {
-        if (choice && !choice.formulaParams) {
-            setFormData(prev => ({
-                ...prev,
-                choices: (prev.choices as FeatureChoice[] || []).map((c, i) =>
-                    i === index ? {
-                        ...c,
-                        formulaParams: {
-                            formulaId: null,
-                            interval: 1,
-                            formulaStartLevel: null,
-                            abilityId: null,
-                            thresholds: null,
-                            values: null,
-                        }
-                    } : c
-                )
-            }));
-        }
-    }, [choice, index, setFormData]);
+
 
     // Initialize arrays when formula changes to CONDITIONAL_SCALING
     useEffect(() => {

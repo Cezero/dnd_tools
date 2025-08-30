@@ -190,7 +190,7 @@ export function FeatureDetail() {
                                                     <h4 className="font-medium">Modifiers:</h4>
                                                     <ul className="text-sm text-gray-600 dark:text-gray-400">
                                                         {progression.modifiers.map((modifier, index) => {
-                                                            const strategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
+                                                            const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
                                                             const formatter = strategy.format({ ...progression, modifiers: [modifier] });
                                                             return (
                                                                 <li key={index}>

@@ -31,6 +31,19 @@ The class system is built around a central `Class` entity that defines the funda
 - **Source Attribution**: Links classes to their source books and page references
 - **Spell Lists**: Defines which spells are available to each class
 
+### **Feature Formatting Integration**
+
+The Class System integrates with the [Feature Formatting System](../feature-system/formatting/README.md) to display class feature progressions consistently across all user interfaces. Class features with multiple levels and complex progression patterns are formatted using the 6-phase formatting process.
+
+**Integration Points**:
+- **Class Feature Display**: Uses `DisplayType.Detail` for class feature progression displays
+- **Feature Progression Formatting**: Leverages the formatting system's registry pattern for consistent display
+- **Cross-System Consistency**: Ensures class features are formatted the same way as race features and standalone features
+
+**Related Documentation**:
+- [Feature Formatting System](../feature-system/formatting/README.md) - Complete formatting system overview
+- [Feature System Documentation](../feature-system/README.md) - Main feature system documentation
+
 ### **Layered Implementation**
 
 The system follows a five-layer architecture:

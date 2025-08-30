@@ -47,7 +47,7 @@ export const FeatureModifierSchema = z.object({
     id: z.number().int().positive('Modifier ID must be a positive integer'),
     featureProgressionId: z.number().int().positive('Feature progression ID must be a positive integer'),
     type: z.nativeEnum(ModifierType),
-    value: z.number().int(),
+    value: z.number().int().nullable(),
     formulaParamsId: z.number().int().nullable(), // References FeatureFormulaParams
     bonusType: z.nativeEnum(FeatureBonusType).nullable(),
     appliesTo: z.nativeEnum(ModifierAppliesToType).nullable(),

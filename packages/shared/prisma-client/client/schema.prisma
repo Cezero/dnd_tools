@@ -135,7 +135,7 @@ model FeatureModifier {
   id                   Int  @id @default(autoincrement())
   featureProgressionId Int
   type                 Int
-  value                Int
+  value                Int?
   bonusType            Int? // dodge, enhancement, etc.
   appliesTo            Int?
   appliesToId          Int?

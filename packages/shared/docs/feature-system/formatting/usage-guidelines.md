@@ -2,7 +2,9 @@
 
 ## Overview
 
-This document provides comprehensive guidelines for agents working with the D&D Tools formatter system. The formatter system implements a 6-layer clean architecture that must be used correctly to maintain proper separation of concerns and avoid architectural violations.
+This document provides comprehensive guidelines for agents working with the D&D Tools formatter system. The formatter system implements a **6-layer clean architecture** with **registry pattern** that must be used correctly to maintain proper separation of concerns and avoid architectural violations.
+
+The formatting system is used by multiple other systems in the D&D Tools project, including the [Class System](../class-system/README.md) and [Race System](../race-system/README.md), to display feature progressions in a consistent and user-friendly manner.
 
 ## 🏗️ **Architecture Principles**
 
@@ -13,8 +15,8 @@ For complete architecture overview and layer descriptions, see **[README.md](./R
 #### ✅ **CORRECT: Proper Dependency Flow**
 - **High-level layers** (6) depend on **abstractions** (interfaces)
 - **Low-level layers** (1-5) implement **abstractions**
-- **Display Strategies orchestrate** all lower layers through the 6-layer process
-- **Factory pattern** handles strategy creation when needed
+- **Display Strategies orchestrate** all lower layers through the 6-phase process
+- **Registry pattern** handles calculator and formatter access
 - **Display Strategies handle workflow** - input validation, layer coordination, result processing
 - **Each layer has single responsibility** - pure formatting, calculation, grouping, etc.
 
@@ -25,247 +27,171 @@ For complete architecture overview and layer descriptions, see **[README.md](./R
 - **Never** violate single responsibility principle
 - **Never** create wrapper functions that bypass display strategies
 - **Never** access lower layers directly from consumer code
+- **Never** use direct imports of calculator instances
 
 ## 🎯 **Usage Patterns**
 
 ### **1. Using Display Strategies Directly**
 
 #### ✅ **CORRECT: Use display strategies for complete formatting workflow**
-```typescript
-import { displayStrategyFactory } from '@/lib/formatters';
-import { DisplayType } from '@shared/static-data';
+The formatting system provides a factory pattern for accessing display strategies. Each display type (Edit, Detail, CharacterSheet) has its own strategy that orchestrates the complete 6-phase formatting process.
 
-// ✅ CORRECT: Use display strategies that orchestrate the complete 6-layer process
-const editStrategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
-const editResult = editStrategy.formatProgression(progression, context, metadata);
-
-const detailStrategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
-const detailResult = detailStrategy.formatProgressions(progressions, context, metadata);
-
-const characterStrategy = displayStrategyFactory.createStrategy(DisplayType.CharacterSheet);
-const characterResult = characterStrategy.formatProgressions(progressions, context, metadata);
-```
+Display strategies handle the complete workflow from input validation through final result processing, ensuring proper separation of concerns and maintaining the architectural integrity of the system.
 
 #### ❌ **WRONG: Don't create wrapper functions or orchestrators**
-```typescript
-// ❌ WRONG: Don't create wrapper functions
-function formatProgressionForEdit(progression, context, metadata) {
-    const strategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
-    return strategy.formatProgression(progression, context, metadata);
-}
+Avoid creating wrapper functions that simply call display strategies, as this adds unnecessary layers and violates the single responsibility principle. Display strategies are already designed to handle the complete formatting workflow.
 
-// ❌ WRONG: Don't create orchestrators above display strategies
-class FormatterOrchestrator {
-    formatProgressionForEdit(progression, context, metadata) {
-        // This violates the 6-layer architecture
-    }
-}
+Similarly, avoid creating orchestrators above display strategies, as this violates the 6-layer architecture and creates circular dependencies.
 
-// ❌ WRONG: Don't access lower layers directly
-import { formatterRegistry } from '@/lib/formatters';
-const formatter = formatterRegistry.getFormatter(FeatureType.Modifier, ModifierType.Bonus, ModifierAppliesToType.Damage);
-```
+### **2. Using Registry Pattern (Internal Use Only)**
 
-### **2. Using Pure Formatters (Internal Use Only)**
+#### ✅ **CORRECT: Use registry pattern for internal calculator and formatter access**
+The registry pattern provides centralized management of all calculator and formatter implementations. This approach ensures consistency, type safety, and extensibility while maintaining proper separation of concerns.
 
-#### ✅ **CORRECT: Use formatter registry for internal formatter access**
-```typescript
-import { formatterRegistry } from '@/lib/formatters';
+For internal use within display strategies, calculators and formatters should be accessed through their respective registries. This provides several benefits including centralized management, easy testing through mocking, and support for multiple implementations per type.
 
-// ✅ CORRECT: Get formatter from registry (for internal use within display strategies)
-const formatter = formatterRegistry.getFormatter(FeatureType.Modifier, ModifierType.Bonus, ModifierAppliesToType.Damage);
-const formattedValue = formatter.format(value, modifier, metadata);
-```
+#### ❌ **WRONG: Don't access calculators or formatters from consumer code**
+Consumer code should never directly access calculators or formatters through the registry. This bypasses the display strategy orchestration and violates the architectural principles of the system.
 
-#### ❌ **WRONG: Don't access formatters from consumer code**
-```typescript
-// ❌ WRONG: Don't access formatters directly from components
-import { formatterRegistry } from '@/lib/formatters';
-const formatter = formatterRegistry.getFormatter(FeatureType.Modifier, ModifierType.Bonus, ModifierAppliesToType.Damage);
-// This bypasses the display strategy orchestration
-```
+All formatting operations should go through display strategies, which handle the complete 6-phase process including proper error handling, context management, and result formatting.
 
-### **3. Using Pure Formatters (Internal Use Only)**
+### **3. Type System Usage**
 
-#### ✅ **CORRECT: Use formatter registry for internal access**
-```typescript
-import { formatterRegistry } from '@/lib/formatters';
+#### ✅ **CORRECT: Use consolidated types and base interfaces**
+The formatting system uses a clean type hierarchy with base interfaces that provide common properties for all related types. This approach eliminates duplication and ensures consistency across the type system.
 
-// ✅ CORRECT: Get formatter from registry (for internal use within display strategies)
-const formatter = formatterRegistry.getFormatter(FeatureType.Modifier, ModifierType.Bonus, ModifierAppliesToType.Damage);
-const formattedValue = formatter.format(value, modifier, metadata);
-```
+When working with formatted items, use the consolidated types that extend base interfaces. This provides type safety, consistency, and maintainability while avoiding the deprecated duplicate interfaces that were eliminated during the refactoring.
 
-#### ❌ **WRONG: Don't use convenience methods from consumer code**
-```typescript
-// ❌ WRONG: Don't access formatters directly from components
-// All formatting should go through display strategies
-```
+#### ❌ **WRONG: Don't use deprecated or duplicate types**
+Avoid using the deprecated types that were consolidated during the refactoring. These include the old transition detection input types, grouped item types, and progression grouped item types that have been replaced with unified interfaces.
 
-## 🔧 **Implementation Guidelines**
+Similarly, avoid creating new duplicate interfaces that replicate functionality already provided by the base interfaces. Instead, extend the existing base interfaces to add new functionality.
 
-### **When Adding New Formatters**
+### **4. Enum Usage**
 
-#### ✅ **CORRECT: Register in formatter registry**
-```typescript
-// ✅ CORRECT: Register new formatter
-formatterRegistry.registerBonusFormatter(ModifierAppliesToType.Damage, new DamageBonusFormatter());
-formatterRegistry.registerEffectFormatter(FeatureSpecialEffectType.Other, new OtherEffectFormatter());
-```
+#### ✅ **CORRECT: Use proper enums instead of magic numbers**
+The formatting system uses proper TypeScript enums for all constants and type identifiers. This provides type safety, prevents invalid values, and improves code readability and maintainability.
 
-#### ❌ **WRONG: Don't create wrapper functions**
-```typescript
-// ❌ WRONG: Don't add formatter logic to wrapper functions
-function formatDamageBonus() { /* Don't add specific formatter logic here */ }
-```
+When working with calculator types, transition types, or other constants, use the appropriate enums rather than hardcoded numeric values. This ensures consistency and prevents errors from typos or incorrect values.
 
-### **When Adding New Display Strategies**
+#### ❌ **WRONG: Don't use magic numbers**
+Avoid using hardcoded numeric values for calculator types, transition types, or other constants. These magic numbers make the code difficult to maintain, prone to errors, and violate the principle of self-documenting code.
 
-#### ✅ **CORRECT: Extend base class and register**
-```typescript
-// ✅ CORRECT: Extend DisplayStrategyBase
-class NewDisplayStrategy extends DisplayStrategyBase {
-    formatProgressions(progressions, context, metadata) {
-        // Implementation that orchestrates all 6 layers
-    }
-}
+## 🔧 **Development Patterns**
 
-// ✅ CORRECT: Create singleton instance and add to factory
-const newStrategy = new NewDisplayStrategy();
+### **1. Adding New Calculator Types**
 
-export class DisplayStrategyFactory {
-    static createStrategy(displayType: DisplayType): DisplayStrategy {
-        switch (displayType) {
-            case DisplayType.New:
-                return newStrategy; // Return singleton instance
-            // ... existing cases
-        }
-    }
-}
-```
+#### ✅ **CORRECT: Use registry pattern for new calculator types**
+When adding new calculator implementations, use the registry pattern to register them with unique type identifiers. This ensures proper integration with the existing system while maintaining extensibility.
 
-#### ❌ **WRONG: Don't create orchestrators above display strategies**
-```typescript
-// ❌ WRONG: Don't create layers above display strategies
-class FormatterOrchestrator {
-    getNewDisplayStrategy() { /* This violates the 6-layer architecture */ }
-}
-```
+New calculator implementations should implement the appropriate interface and be registered with a unique type ID to avoid conflicts with existing implementations. This approach allows for specialized calculators for specific use cases while maintaining the overall architecture.
 
-## 🚨 **Common Anti-Patterns to Avoid**
+#### ❌ **WRONG: Don't replace default implementations without proper consideration**
+Avoid replacing the default implementations (registered with type `0`) without thorough testing and consideration of the impact on existing functionality. Default implementations are used throughout the system and changing them can have widespread effects.
 
-### **1. Architecture Inversion**
-```typescript
-// ❌ ANTI-PATTERN: Creating layers above display strategies
-class FormatterOrchestrator {
-    formatProgressionForEdit(progression, context, metadata) {
-        // This violates the 6-layer architecture
-        const strategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
-        return strategy.formatProgression(progression, context, metadata);
-    }
-}
-```
+### **2. Adding New Formatter Types**
 
-### **2. Wrapper Functions**
-```typescript
-// ❌ ANTI-PATTERN: Creating wrapper functions
-function formatProgressionForEdit(progression, context, metadata) {
-    const strategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
-    return strategy.formatProgression(progression, context, metadata);
-}
-```
+#### ✅ **CORRECT: Use formatter registry for new formatter types**
+New formatters should be implemented according to the appropriate interface and registered through the formatter registry. This ensures consistency with existing formatters and proper integration with the display strategy orchestration.
 
-### **3. Direct Lower Layer Access**
-```typescript
-// ❌ ANTI-PATTERN: Accessing lower layers directly from consumer code
-import { formatterRegistry } from '@/lib/formatters';
-const formatter = formatterRegistry.getFormatter(FeatureType.Modifier, ModifierType.Bonus, ModifierAppliesToType.Damage);
-// This bypasses the display strategy orchestration
-```
+### **3. Error Handling**
 
-### **4. Mixed Responsibilities**
-```typescript
-// ❌ ANTI-PATTERN: Display strategies doing pure formatting
-class EditPageDisplayStrategy extends DisplayStrategyBase {
-    formatProgression(progression, context, metadata) {
-        // Don't put specific formatting logic here
-        return `${value}d6`; // Should use pure formatters
-    }
-}
-```
+#### ✅ **CORRECT: Handle missing calculators and formatters gracefully**
+Always check for missing calculators and formatters before using them. The registry pattern may return undefined for unregistered types, so proper null checking is essential for robust error handling.
 
-## 📋 **Testing Guidelines**
+When calculators or formatters are missing, provide meaningful error messages and appropriate fallback behavior. This ensures the system continues to function even when expected components are not available.
 
-### **Unit Testing**
-```typescript
-// ✅ CORRECT: Test each layer independently
-describe('DamageFormatter', () => {
-    it('should format damage values correctly', () => {
-        const formatter = new DamageFormatter();
-        const result = formatter.format(5, modifier, metadata);
-        expect(result).toBe('5d6');
-    });
-});
-```
+#### ❌ **WRONG: Don't assume calculators or formatters exist**
+Never assume that a calculator or formatter exists without checking. This can lead to runtime errors and poor user experience when expected components are not available.
 
-### **Integration Testing**
-```typescript
-// ✅ CORRECT: Test display strategy orchestration
-describe('DisplayStrategy Integration', () => {
-    it('should orchestrate all layers correctly', () => {
-        const strategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
-        const result = strategy.formatProgression(progression, context, metadata);
-        expect(result.formattedValue).toBeDefined();
-    });
-});
-```
+## 🧪 **Testing Patterns**
 
-## 🔍 **Debugging Guidelines**
+### **1. Unit Testing**
 
-### **When Formatting Issues Occur**
+#### ✅ **CORRECT: Test individual components with proper mocking**
+The registry pattern makes unit testing straightforward by allowing easy mocking of calculator and formatter implementations. Mock implementations can be registered with the registry to test specific scenarios without affecting the overall system.
 
-1. **Check layer responsibility**: Ensure each layer is doing its job
-2. **Verify dependency flow**: Ensure no circular dependencies
-3. **Check formatter registry**: Ensure formatters are properly registered
-4. **Validate context**: Ensure proper context is passed through layers
-5. **Check metadata**: Ensure metadata contains required information
+When testing display strategies, mock the calculators and formatters they depend on to isolate the strategy logic from the implementation details of the calculators and formatters.
 
-### **Common Debugging Patterns**
-```typescript
-// ✅ CORRECT: Debug individual layers
-const formatter = formatterRegistry.getFormatter(FeatureType.Modifier, ModifierType.Bonus, ModifierAppliesToType.Damage);
-console.log('Formatter found:', !!formatter);
+### **2. Integration Testing**
 
-// ✅ CORRECT: Debug display strategy orchestration
-const strategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
-const result = strategy.formatProgression(progression, context, metadata);
-console.log('Display strategy result:', result);
-```
+#### ✅ **CORRECT: Test complete workflow with real data**
+Integration testing should verify that the complete formatting workflow functions correctly with real data. This includes testing the 6-phase process, proper error handling, and correct output formatting.
 
-## 📚 **Reference Links**
+Test with actual feature progressions from the [Class System](../class-system/README.md) and [Race System](../race-system/README.md) to ensure the formatting system works correctly with real-world data.
+
+## 🚫 **Anti-Patterns to Avoid**
+
+### **1. Architecture Violations**
+
+#### ❌ **WRONG: Creating layers above Display Strategies**
+Avoid creating orchestrators or wrapper functions above display strategies. Display strategies are the highest layer in the 6-layer architecture and should not be wrapped by additional layers.
+
+#### ❌ **WRONG: Direct access to lower layers**
+Consumer code should never directly access calculators or formatters. All formatting operations should go through display strategies to maintain proper architectural boundaries.
+
+### **2. Type System Violations**
+
+#### ❌ **WRONG: Using deprecated types**
+Avoid using the deprecated types that were consolidated during the refactoring. These types have been replaced with unified interfaces that provide better type safety and consistency.
+
+#### ❌ **WRONG: Creating duplicate interfaces**
+Avoid creating new interfaces that duplicate functionality already provided by the base interfaces. Instead, extend the existing base interfaces to add new functionality.
+
+### **3. Registry Pattern Violations**
+
+#### ❌ **WRONG: Direct imports of calculator instances**
+Avoid importing calculator instances directly from their source files. All calculator access should go through the registry to maintain consistency and support the extensibility features.
+
+#### ❌ **WRONG: Replacing default implementations without testing**
+Avoid replacing default implementations without thorough testing. Default implementations are used throughout the system and changing them can have widespread effects.
+
+## 📋 **Best Practices**
+
+### **1. Registry Usage**
+- **Always use registry pattern** for calculator and formatter access
+- **Check for missing calculators/formatters** before using them
+- **Use unique type IDs** for new implementations
+- **Test thoroughly** before replacing default implementations
+
+### **2. Type System**
+- **Use consolidated types** that extend base interfaces
+- **Extend base interfaces** for new types rather than creating duplicates
+- **Use proper enums** instead of magic numbers
+- **Avoid deprecated types**
+
+### **3. Error Handling**
+- **Handle missing calculators/formatters** gracefully
+- **Provide meaningful error messages**
+- **Use fallback values** when appropriate
+- **Log warnings** for debugging
+
+### **4. Testing**
+- **Mock registry** for unit testing
+- **Test complete workflows** for integration testing
+- **Test error conditions** thoroughly
+- **Use real data** for integration tests
+
+## Integration with Other Systems
+
+The formatting system is used by multiple other systems in the D&D Tools project:
+
+### **Class System Integration**
+The [Class System](../class-system/README.md) uses the formatting system to display class feature progressions. Class features with multiple levels and complex progression patterns are formatted consistently using the 6-phase process.
+
+### **Race System Integration**
+The [Race System](../race-system/README.md) uses the formatting system to display racial feature progressions. Racial features with level-based scaling and conditional modifiers are formatted using the same patterns as class features.
+
+### **Feature System Integration**
+The main [Feature System](../README.md) uses the formatting system for feature detail displays and editing interfaces. This ensures consistent formatting across all feature-related displays in the application.
+
+## Related Documentation
 
 - **[README.md](./README.md)** - Architecture overview and navigation
-- **[Final Implementation Summary](./final-implementation-summary.md)** - Complete implementation overview
-- **[Refactoring Strategy](./refactoring-strategy.md)** - Architecture design decisions
+- **[Final Implementation Summary](./final-implementation-summary.md)** - Current implementation status
+- **[Refactoring Strategy](./refactoring-strategy.md)** - Design decisions and architecture rationale
+- **[Architecture Decisions](./architecture-decisions.md)** - Key architectural decisions and future extensibility
+- **[Class System](../class-system/README.md)** - Class system documentation
+- **[Race System](../race-system/README.md)** - Race system documentation
 - **[Feature System Overview](../README.md)** - Main feature system documentation
-- **[Formula System Analysis](../formula-system-analysis.md)** - Formula system details
-
-## 🎯 **Quick Reference**
-
-### **Key Files**
-- `display-strategies.ts` - Display strategy implementations (Layer 6 - highest layer)
-- `formatter-registry.ts` - Formatter registration and lookup (Layer 1)
-- `types.ts` - Type definitions and interfaces
-- `pure-formatters.ts` - Pure formatter implementations (Layer 1)
-
-### **Key Exports**
-- `displayStrategyFactory` - Strategy creation factory (returns singletons)
-- `formatterRegistry` - Formatter registration system (for internal use)
-
-### **Key Methods**
-- `displayStrategyFactory.createStrategy(DisplayType.Edit)` - Get edit page strategy
-- `displayStrategyFactory.createStrategy(DisplayType.Detail)` - Get detail page strategy
-- `displayStrategyFactory.createStrategy(DisplayType.CharacterSheet)` - Get character sheet strategy
-- `strategy.formatProgression()` - Format single progression (edit pages)
-- `strategy.formatProgressions()` - Format multiple progressions (detail/character sheets)
 

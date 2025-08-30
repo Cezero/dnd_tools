@@ -268,10 +268,11 @@ export class OtherFormatter implements BaseFormatter {
 export class ProficiencyEffectFormatter implements EffectFormatter {
     format(effect: FeatureSpecialEffect, _level: number): string {
         const featName = effect.feat?.name || `Feat ${effect.featId}`;
-        const itemId = effect.itemId || -1;
+        const itemId = effect.itemId ?? -1; // Use nullish coalescing for clarity
         const itemName = effect.item?.name;
 
-        const proficiencyNameMap = {
+        // TODO: Replace hardcoded mapping with proper enum-based lookup
+        const proficiencyNameMap: Record<string, string> = {
             "Armor Proficiency (Light)": "light armor",
             "Armor Proficiency (Medium)": "medium armor",
             "Armor Proficiency (Heavy)": "heavy armor",
@@ -282,6 +283,7 @@ export class ProficiencyEffectFormatter implements EffectFormatter {
             "Exotic Weapon Proficiency": "exotic weapons",
         };
 
+        // Check for "any" case (itemId === -1 indicates "all items of this type")
         if (itemId === -1) {
             const mapping = proficiencyNameMap[featName];
             if (!mapping) return featName; // fallback
