@@ -16,7 +16,7 @@ import type {
     ConditionalValueDetector,
     IChoiceCalculator,
 } from './types';
-import { CalculatorType } from './types';
+import { CalculatorType, ProgressionGeneratorType, TransitionDetectorType } from './types';
 
 // Unified calculator registry interface
 interface ICalculatorRegistry {
@@ -100,8 +100,16 @@ export class CalculatorRegistry implements ICalculatorRegistry {
         return this.getCalculator(CalculatorType.Progression, progressionType) as ProgressionGenerator | undefined;
     }
 
+    getDefaultProgressionGenerator(): ProgressionGenerator | undefined {
+        return this.getProgressionGenerator(ProgressionGeneratorType.default);
+    }
+
     getTransitionDetector(transitionType: number): TransitionDetector | undefined {
         return this.getCalculator(CalculatorType.Transition, transitionType) as TransitionDetector | undefined;
+    }
+
+    getDefaultTransitionDetector(): TransitionDetector | undefined {
+        return this.getTransitionDetector(TransitionDetectorType.default);
     }
 
     getConditionalValueDetector(conditionType: number): ConditionalValueDetector | undefined {
@@ -132,8 +140,8 @@ export class CalculatorRegistry implements ICalculatorRegistry {
         this.registerFormulaCalculator(FormulaId.LEVEL_PLUS_ABILITY, formulaCalculator);
 
         // Register progression generators and transition detectors
-        this.registerProgressionGenerator(0, progressionGenerator); // Default progression generator
-        this.registerTransitionDetector(0, transitionDetector); // Default transition detector
+        this.registerProgressionGenerator(ProgressionGeneratorType.default, progressionGenerator); // Default progression generator
+        this.registerTransitionDetector(TransitionDetectorType.default, transitionDetector); // Default transition detector
     }
 }
 

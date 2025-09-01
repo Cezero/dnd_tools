@@ -193,13 +193,14 @@ exports.Prisma.FeatureProgressionScalarFieldEnum = {
 
 exports.Prisma.FeatureModifierScalarFieldEnum = {
   id: 'id',
-  featureProgressionId: 'featureProgressionId',
+  progressionId: 'progressionId',
   type: 'type',
   value: 'value',
   bonusType: 'bonusType',
   appliesTo: 'appliesTo',
   appliesToId: 'appliesToId',
-  formulaParamsId: 'formulaParamsId'
+  formulaParamsId: 'formulaParamsId',
+  groupingId: 'groupingId'
 };
 
 exports.Prisma.FeatureFormulaParamsScalarFieldEnum = {
@@ -226,6 +227,7 @@ exports.Prisma.FeatureSpecialEffectScalarFieldEnum = {
   key: 'key',
   value: 'value',
   numericValue: 'numericValue',
+  groupingId: 'groupingId',
   featId: 'featId',
   itemId: 'itemId'
 };
@@ -240,7 +242,8 @@ exports.Prisma.FeatureChoiceScalarFieldEnum = {
   featId: 'featId',
   featureId: 'featureId',
   formulaParamsId: 'formulaParamsId',
-  filterType: 'filterType'
+  filterType: 'filterType',
+  groupingId: 'groupingId'
 };
 
 exports.Prisma.FeaturePrerequisiteScalarFieldEnum = {

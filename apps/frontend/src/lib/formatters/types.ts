@@ -362,8 +362,6 @@ export interface FormulaParameter {
 // Progression generator interface
 export interface ProgressionGenerator {
     generateValues(formula: FormulaParamsData, startLevel: number, endLevel: number, context?: CalculationContext, modifierValue?: number, formulaCalculator?: FormulaCalculator): Array<ProgressionValue>;
-    generateProgressionValues(formula: FormulaParamsData, progressionLevel: number, maxLevel?: number, context?: CalculationContext, modifierValue?: number, formulaCalculator?: FormulaCalculator): Array<ProgressionValue>;
-    generateDisplayStrings(formula: FormulaParamsData, startLevel: number, endLevel: number): Array<string>;
 }
 
 // Calculator type enum
@@ -373,6 +371,14 @@ export enum CalculatorType {
     Progression = 2,
     Transition = 3,
     Conditional = 4
+}
+
+export enum ProgressionGeneratorType {
+    default = 0,
+}
+
+export enum TransitionDetectorType {
+    default = 0,
 }
 
 // Transition detector interface

@@ -279,7 +279,7 @@ export function FeatureProgressionDetailEdit({
             featureId: (formData as FeatureProgression).featureId,
 
             modifiers: (formData.modifiers as FeatureModifier[] || []).map(modifier => {
-                const { id: _id, featureProgressionId: _featureProgressionId, ...baseModifier } = modifier;
+                const { id: _id, progressionId: _progressionId, ...baseModifier } = modifier;
 
                 // Handle conditions conversion
                 let convertedConditions: CreateFeatureModifierConditionRequest[] | undefined;
@@ -387,7 +387,7 @@ export function FeatureProgressionDetailEdit({
     const addModifier = () => {
         const newModifier: FeatureModifier = {
             id: 0, // Temporary ID for frontend
-            featureProgressionId: 0, // Will be set on save
+            progressionId: 0, // Will be set on save
             type: ModifierType.Bonus,
             value: 0,
             formulaParamsId: null,

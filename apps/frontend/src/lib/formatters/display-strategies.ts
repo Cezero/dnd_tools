@@ -47,7 +47,6 @@ import type {
     GroupedLevelItem
 } from './types';
 
-
 // Constants
 const MAX_CHARACTER_LEVEL = 20; // D&D standard maximum character level
 
@@ -146,7 +145,7 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
             const formulaModifiers = progression.modifiers?.filter(m => m.formulaParams) || [];
 
             for (const formulaModifier of formulaModifiers) {
-                const progressionValues = this.generateProgressionValuesForModifier(formulaModifier, progression, context);
+                const progressionValues = this.generateProgressionValuesForSingleModifier(formulaModifier, progression, context);
 
                 // Process all progression values for this modifier
                 for (const progressionValue of progressionValues) {
@@ -262,7 +261,7 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
                         });
                     } else {
                         // Formula-based calculation for single level
-                        const calculatedValue = this.calculateFormulaValue(modifier.formulaParams, level, undefined, progression.level);
+                        const calculatedValue = this.calculateFormulaValue(modifier.formulaParams, level, undefined, progression.level, modifier.value);
                         results.push({
                             value: calculatedValue.value,
                             breakdown: calculatedValue.breakdown,
@@ -385,7 +384,7 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
         // For regular entities, we need to find the feature ID
         // This is a simplified approach - in a more robust implementation, we'd track this explicitly
         if ('appliesTo' in entity) {
-            return entity.featureProgressionId;
+            return entity.progressionId;
         } else if ('behavior' in entity) {
             return entity.featureId;
         } else if ('effectType' in entity) {
@@ -632,86 +631,10 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     }
 
     /**
-     * Phase 1: Progression Generation
-     * Generate progression values for formula-based modifiers with hasProgression: true
-     */
-    protected generateProgressionValues(
-        progression: FeatureProgression,
-        context?: DisplayContext
-    ): ProgressionValue[] {
-        // Check if progression generation is needed
-        if (!this.shouldGenerateProgression(progression, context)) {
-            return [];
-        }
-
-        const formulaModifier = progression.modifiers?.find(m => m.formulaParams);
-        if (!formulaModifier?.formulaParams) {
-            return [];
-        }
-
-        const formulaDef = FORMULA_MAP[formulaModifier.formulaParams.formulaId];
-        if (!formulaDef) {
-            return [];
-        }
-
-        // For character-dependent formulas without character context, use display strings
-        if (formulaDef.isCharacterDependent && !context?.character) {
-            const progressionGenerator = calculatorRegistry.getProgressionGenerator(0);
-            if (!progressionGenerator) {
-                return [];
-            }
-            const displayStrings = progressionGenerator.generateDisplayStrings(
-                formulaModifier.formulaParams,
-                progression.level,
-                MAX_CHARACTER_LEVEL
-            );
-
-            // Convert display strings to ProgressionValue objects
-            return displayStrings.map((displayString, index) => ({
-                level: progression.level + index,
-                value: progression.level + index, // Use level as value for display purposes
-                breakdown: {
-                    components: [{
-                        source: formulaDef.name,
-                        value: progression.level + index,
-                        type: BreakdownComponentType.formula,
-                        description: displayString,
-                        formula: displayString
-                    }]
-                },
-                conditionalValues: []
-            }));
-        } else {
-            // For non-character-dependent formulas or when character context is available
-            const calculationContext: CalculationContext = {
-                level: progression.level,
-                progressionLevel: progression.level,
-                characterLevel: context?.currentLevel,
-                character: context?.character
-            };
-
-            // Use registry to get progression generator and formula calculator
-            const progressionGenerator = calculatorRegistry.getProgressionGenerator(0);
-            const formulaCalculator = calculatorRegistry.getFormulaCalculator(formulaModifier.formulaParams.formulaId);
-            if (!progressionGenerator) {
-                return [];
-            }
-            return progressionGenerator.generateProgressionValues(
-                formulaModifier.formulaParams,
-                progression.level,
-                MAX_CHARACTER_LEVEL,
-                calculationContext,
-                undefined, // modifierValue
-                formulaCalculator
-            );
-        }
-    }
-
-    /**
      * Phase 1: Progression Generation for a specific modifier
      * Generate progression values for a single formula-based modifier
      */
-    protected generateProgressionValuesForModifier(
+    protected generateProgressionValuesForSingleModifier(
         formulaModifier: FeatureModifier,
         progression: FeatureProgression,
         context?: DisplayContext
@@ -720,66 +643,30 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
             return [];
         }
 
-        const formulaDef = FORMULA_MAP[formulaModifier.formulaParams.formulaId];
-        if (!formulaDef) {
+        const calculationContext: CalculationContext = {
+            level: progression.level,
+            progressionLevel: progression.level,
+            characterLevel: context?.currentLevel,
+            character: context?.character
+        };
+
+        // Use registry to get progression generator and formula calculator
+        const progressionGenerator = calculatorRegistry.getDefaultProgressionGenerator();
+        const formulaCalculator = calculatorRegistry.getFormulaCalculator(formulaModifier.formulaParams.formulaId);
+        if (!progressionGenerator) {
             return [];
         }
 
-        // For character-dependent formulas without character context, use display strings
-        if (formulaDef.isCharacterDependent && !context?.character) {
-            const progressionGenerator = calculatorRegistry.getProgressionGenerator(0);
-            if (!progressionGenerator) {
-                return [];
-            }
-            const displayStrings = progressionGenerator.generateDisplayStrings(
-                formulaModifier.formulaParams,
-                progression.level,
-                MAX_CHARACTER_LEVEL
-            );
-
-            // Convert display strings to ProgressionValue objects
-            return displayStrings.map((displayString, index) => ({
-                level: progression.level + index,
-                value: progression.level + index, // Use level as value for display purposes
-                breakdown: {
-                    components: [{
-                        source: formulaDef.name,
-                        value: progression.level + index,
-                        type: BreakdownComponentType.formula,
-                        description: displayString,
-                        formula: displayString
-                    }]
-                },
-                conditionalValues: []
-            }));
-        } else {
-            // For non-character-dependent formulas or when character context is available
-            const calculationContext: CalculationContext = {
-                level: progression.level,
-                progressionLevel: progression.level,
-                characterLevel: context?.currentLevel,
-                character: context?.character
-            };
-
-            // Use registry to get progression generator and formula calculator
-            const progressionGenerator = calculatorRegistry.getProgressionGenerator(0);
-            const formulaCalculator = calculatorRegistry.getFormulaCalculator(formulaModifier.formulaParams.formulaId);
-            if (!progressionGenerator) {
-                return [];
-            }
-
-            // First, generate all values to find transition points
-            const allValues = progressionGenerator.generateProgressionValues(
-                formulaModifier.formulaParams,
-                progression.level,
-                MAX_CHARACTER_LEVEL,
-                calculationContext,
-                undefined, // modifierValue
-                formulaCalculator
-            );
-
-            return allValues;
-        }
+        // Generate all values using the progression generator
+        // The progression generator handles character-dependent formulas internally
+        return progressionGenerator.generateValues(
+            formulaModifier.formulaParams,
+            progression.level,
+            MAX_CHARACTER_LEVEL,
+            calculationContext,
+            formulaModifier.value, // Pass the actual modifier value for proper scaling
+            formulaCalculator
+        );
     }
 
     /**
@@ -791,94 +678,133 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
             return [];
         }
 
-        // Group by level and entity type to detect transitions separately
-        const groupedByLevelAndType = new Map<number, Map<ModifierType | FeatureSpecialEffectType | FeatureChoiceType, GroupedLevelItem[]>>();
+        // Step 1: Flatten and sort by level, then by entity type
+        const levelEntityGroups = this.flattenToLevelEntityGroups(withinLevelGrouped);
+
+        // Step 2: Single-pass transition detection
+        const transitions: TransitionPoint[] = [];
+        const previousValues = new Map<string, string>();
+
+        // Always include start level
+        const startGroup = levelEntityGroups[0];
+        transitions.push(this.createStartTransition(startGroup));
+
+        // Detect transitions for each group
+        for (const group of levelEntityGroups) {
+            const key = `${group.entityType}-${group.entitySubType}`;
+            const previousValue = previousValues.get(key);
+
+            if (group.formattedValue !== previousValue) {
+                transitions.push(this.createTransition(group));
+                previousValues.set(key, group.formattedValue);
+            }
+        }
+
+        return transitions.sort((a, b) => a.level - b.level);
+    }
+
+    /**
+     * Helper method to flatten grouped items into a simple structure for transition detection
+     */
+    private flattenToLevelEntityGroups(withinLevelGrouped: GroupedLevelItem[]): Array<{
+        level: number;
+        entityType: FeatureType;
+        entitySubType: ModifierType | FeatureSpecialEffectType | FeatureChoiceType;
+        formattedValue: string;
+        items: GroupedLevelItem[];
+    }> {
+        // Group by level first, then by entity type
+        const groupedByLevel = new Map<number, GroupedLevelItem[]>();
 
         for (const item of withinLevelGrouped) {
-            if (!groupedByLevelAndType.has(item.level)) {
-                groupedByLevelAndType.set(item.level, new Map());
+            if (!groupedByLevel.has(item.level)) {
+                groupedByLevel.set(item.level, []);
             }
-
-            // Create a key that identifies the entity type based on the actual item
-            const entityTypeKey = item.entitySubType;
-
-            if (!groupedByLevelAndType.get(item.level)!.has(entityTypeKey)) {
-                groupedByLevelAndType.get(item.level)!.set(entityTypeKey, []);
-            }
-
-            groupedByLevelAndType.get(item.level)!.get(entityTypeKey)!.push(item);
+            groupedByLevel.get(item.level)!.push(item);
         }
 
-        // Get all levels and entity types
-        const sortedLevels = Array.from(groupedByLevelAndType.keys()).sort((a, b) => a - b);
-        const allEntityTypes = new Set<ModifierType | FeatureSpecialEffectType | FeatureChoiceType>();
+        const result: Array<{
+            level: number;
+            entityType: FeatureType;
+            entitySubType: ModifierType | FeatureSpecialEffectType | FeatureChoiceType;
+            formattedValue: string;
+            items: GroupedLevelItem[];
+        }> = [];
 
-        for (const level of sortedLevels) {
-            const entityTypes = groupedByLevelAndType.get(level)!;
-            for (const entityType of entityTypes.keys()) {
-                allEntityTypes.add(entityType);
-            }
-        }
+        // For each level, group by entity type and create flattened structure
+        for (const [level, items] of groupedByLevel) {
+            const groupedByType = new Map<string, GroupedLevelItem[]>();
 
-        const transitions: TransitionPoint[] = [];
-
-        // Always include the start level
-        if (sortedLevels.length > 0) {
-            const startLevel = sortedLevels[0];
-            const startValues = Array.from(groupedByLevelAndType.get(startLevel)!.values()).flat();
-            transitions.push({
-                level: startLevel,
-                type: TRANSITION_TYPE.START,
-                description: startValues.map(item => item.formattedValue).join(', '),
-                value: 0,
-                previousValue: undefined,
-                entityType: FeatureType.Modifier,
-                entitySubType: ModifierType.Bonus,
-            });
-        }
-
-        // Detect transitions for each entity type separately
-        for (const entityType of allEntityTypes) {
-            let previousValue: string | undefined;
-
-            for (const level of sortedLevels) {
-                const currentValues = groupedByLevelAndType.get(level)!.get(entityType);
-
-                if (currentValues && currentValues.length > 0) {
-                    // Combine all values at this level for the entity type
-                    const currentValue = currentValues.map(item => item.formattedValue).join(', ');
-
-                    if (currentValue !== previousValue) {
-                        // Determine the entity type and subtype for the transition
-                        const firstItem = currentValues[0];
-                        transitions.push({
-                            level,
-                            type: TRANSITION_TYPE.TRANSITION,
-                            description: currentValue,
-                            value: 0,
-                            previousValue: 0,
-                            entityType: firstItem.entityType,
-                            entitySubType: firstItem.entitySubType,
-                        });
-                        previousValue = currentValue;
-                    }
+            for (const item of items) {
+                const typeKey = `${item.entityType}-${item.entitySubType}`;
+                if (!groupedByType.has(typeKey)) {
+                    groupedByType.set(typeKey, []);
                 }
+                groupedByType.get(typeKey)!.push(item);
+            }
+
+            // Create flattened groups for each entity type at this level
+            for (const [typeKey, typeItems] of groupedByType) {
+                const [entityType, entitySubType] = typeKey.split('-').map(Number);
+                const formattedValue = typeItems.map(item => item.formattedValue).join(', ');
+
+                result.push({
+                    level,
+                    entityType: entityType as FeatureType,
+                    entitySubType: entitySubType as ModifierType | FeatureSpecialEffectType | FeatureChoiceType,
+                    formattedValue,
+                    items: typeItems
+                });
             }
         }
 
-        // Sort transitions by level and remove duplicates
-        const uniqueTransitions = new Map<number, TransitionPoint>();
-        for (const transition of transitions) {
-            if (!uniqueTransitions.has(transition.level)) {
-                uniqueTransitions.set(transition.level, transition);
-            } else {
-                // Merge descriptions for transitions at the same level
-                const existing = uniqueTransitions.get(transition.level)!;
-                existing.description = `${existing.description}, ${transition.description}`;
-            }
-        }
+        // Sort by level, then by entity type for consistent processing
+        return result.sort((a, b) => {
+            if (a.level !== b.level) return a.level - b.level;
+            return a.entitySubType - b.entitySubType;
+        });
+    }
 
-        return Array.from(uniqueTransitions.values()).sort((a, b) => a.level - b.level);
+    /**
+     * Helper method to create a start transition
+     */
+    private createStartTransition(group: {
+        level: number;
+        entityType: FeatureType;
+        entitySubType: ModifierType | FeatureSpecialEffectType | FeatureChoiceType;
+        formattedValue: string;
+        items: GroupedLevelItem[];
+    }): TransitionPoint {
+        return {
+            level: group.level,
+            type: TRANSITION_TYPE.START,
+            description: group.formattedValue,
+            value: 0,
+            previousValue: undefined,
+            entityType: group.entityType,
+            entitySubType: group.entitySubType,
+        };
+    }
+
+    /**
+     * Helper method to create a regular transition
+     */
+    private createTransition(group: {
+        level: number;
+        entityType: FeatureType;
+        entitySubType: ModifierType | FeatureSpecialEffectType | FeatureChoiceType;
+        formattedValue: string;
+        items: GroupedLevelItem[];
+    }): TransitionPoint {
+        return {
+            level: group.level,
+            type: TRANSITION_TYPE.TRANSITION,
+            description: group.formattedValue,
+            value: 0,
+            previousValue: 0,
+            entityType: group.entityType,
+            entitySubType: group.entitySubType,
+        };
     }
 
     /**
@@ -899,46 +825,49 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
         formulaParams: FormulaParamsData,
         level: number,
         context?: DisplayContext,
-        progressionLevel?: number
+        progressionLevel?: number,
+        modifierValue?: number
     ): { value: number; breakdown: CalculationBreakdown } {
-        const formulaDef = FORMULA_MAP[formulaParams.formulaId];
-        if (!formulaDef) {
+        const calculationContext: CalculationContext = {
+            level,
+            progressionLevel: progressionLevel || level,
+            characterLevel: context?.currentLevel,
+            character: context?.character
+        };
+
+        // Use the progression generator to calculate a single value
+        const progressionGenerator = calculatorRegistry.getDefaultProgressionGenerator();
+        const formulaCalculator = calculatorRegistry.getFormulaCalculator(formulaParams.formulaId);
+
+        if (!progressionGenerator) {
             return {
                 value: 0,
-                breakdown: { components: [{ source: 'Formula', value: 0, type: BreakdownComponentType.formula, description: `Unknown formula ID: ${formulaParams.formulaId}` }] }
+                breakdown: { components: [{ source: 'Formula', value: 0, type: BreakdownComponentType.formula, description: `No progression generator available` }] }
             };
         }
 
-        // Build parameters for formula calculation
-        const params = this.buildFormulaParams(formulaParams, level, progressionLevel || level, context);
+        // Generate values for just this level
+        const values = progressionGenerator.generateValues(
+            formulaParams,
+            level,
+            level, // Only generate for this specific level
+            calculationContext,
+            modifierValue,
+            formulaCalculator
+        );
 
-        // Calculate the value using the formula
-        let calculatedValue: number | string;
-        let numericValue: number;
-
-        if (formulaDef.isCharacterDependent && !context?.character) {
-            // For character-dependent formulas without character context, use display string
-            calculatedValue = formulaDef.getDisplayString(params);
-            numericValue = 0; // Display strings don't have numeric values
-        } else {
-            // For non-character-dependent formulas or when character context is available
-            calculatedValue = formulaDef.calculate(params);
-            numericValue = typeof calculatedValue === 'string' ? 0 : calculatedValue;
+        if (values.length === 0) {
+            return {
+                value: 0,
+                breakdown: { components: [{ source: 'Formula', value: 0, type: BreakdownComponentType.formula, description: `No values generated for formula` }] }
+            };
         }
 
+        // Return the first (and only) value
+        const result = values[0];
         return {
-            value: numericValue,
-            breakdown: {
-                components: [{
-                    source: formulaDef.name,
-                    value: numericValue,
-                    type: BreakdownComponentType.formula,
-                    description: formulaDef.isCharacterDependent && !context?.character
-                        ? `Formula display: ${calculatedValue}`
-                        : `Formula calculation: ${calculatedValue}`,
-                    formula: typeof calculatedValue === 'string' ? calculatedValue : undefined
-                }]
-            }
+            value: result.value,
+            breakdown: result.breakdown
         };
     }
 
@@ -1056,53 +985,6 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     }
 
     /**
-     * Enhanced formatting for formula-based progressions with transition detection
-     * This provides a unified way for all display strategies to handle transitions
-     */
-    protected formatFormulaProgressionWithTransitions(
-        progression: FeatureProgression,
-        baseResult: string,
-        context?: DisplayContext,
-        metadata?: FormatterMetadata
-    ): string {
-        const formulaModifier = progression.modifiers?.find(m => m.formulaParams?.formulaId);
-        if (!formulaModifier?.formulaParams) {
-            return baseResult;
-        }
-
-        const progressionGenerator = calculatorRegistry.getProgressionGenerator(0);
-        const transitionDetector = calculatorRegistry.getTransitionDetector(0);
-        const formulaCalculator = calculatorRegistry.getFormulaCalculator(formulaModifier.formulaParams.formulaId);
-        const calculationContext: CalculationContext = {
-            level: progression.level,
-            progressionLevel: progression.level,
-            characterLevel: context?.currentLevel || progression.level,
-            character: context?.character
-        };
-
-        if (!progressionGenerator || !transitionDetector) {
-            return baseResult;
-        }
-
-        const values = progressionGenerator.generateProgressionValues(
-            formulaModifier.formulaParams,
-            progression.level,
-            MAX_CHARACTER_LEVEL,
-            calculationContext,
-            undefined, // modifierValue
-            formulaCalculator
-        );
-        const transitions = transitionDetector.findTransitions(values);
-
-        if (transitions.length === 0) {
-            return baseResult;
-        }
-
-        // Let subclasses customize how they want to display transition information
-        return this.formatTransitionInfo(baseResult, transitions, progression, context, metadata);
-    }
-
-    /**
      * Template method for formatting transition information
      * Subclasses can override this to customize transition display
      */
@@ -1116,47 +998,6 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
         // Default implementation: append transition levels in parentheses
         const transitionLevels = transitions.map(t => t.level).join(', ');
         return `${baseResult} (transitions at levels: ${transitionLevels})`;
-    }
-
-    /**
-     * Get current value and transition information for character sheet display
-     */
-    protected getCurrentValueWithTransitions(
-        progression: FeatureProgression,
-        currentLevel: number,
-        _context?: DisplayContext,
-        _metadata?: FormatterMetadata
-    ): string {
-        const formulaModifier = progression.modifiers?.find(m => m.formulaParams?.formulaId);
-        if (!formulaModifier?.formulaParams) {
-            return '';
-        }
-
-        const progressionGenerator = calculatorRegistry.getProgressionGenerator(0);
-        const transitionDetector = calculatorRegistry.getTransitionDetector(0);
-        const formulaCalculator = calculatorRegistry.getFormulaCalculator(formulaModifier.formulaParams.formulaId);
-
-        if (!progressionGenerator || !transitionDetector) {
-            return '';
-        }
-
-        const values = progressionGenerator.generateProgressionValues(
-            formulaModifier.formulaParams,
-            progression.level,
-            currentLevel,
-            undefined, // context
-            undefined, // modifierValue
-            formulaCalculator
-        );
-        const transitions = transitionDetector.findTransitions(values);
-        const currentValue = values[values.length - 1]?.value || 0;
-
-        if (transitions.length > 0) {
-            const transitionLevels = transitions.map(t => t.level).join(', ');
-            return `+${currentValue} (changes at levels: ${transitionLevels})`;
-        } else {
-            return `+${currentValue}`;
-        }
     }
 }
 

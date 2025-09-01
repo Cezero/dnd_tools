@@ -45,7 +45,7 @@ export const FeatureFormulaParamsSchema = z.object({
 // Feature Modifier Schema
 export const FeatureModifierSchema = z.object({
     id: z.number().int().positive('Modifier ID must be a positive integer'),
-    featureProgressionId: z.number().int().positive('Feature progression ID must be a positive integer'),
+    progressionId: z.number().int().positive('Progression ID must be a positive integer'),
     type: z.nativeEnum(ModifierType),
     value: z.number().int().nullable(),
     formulaParamsId: z.number().int().nullable(), // References FeatureFormulaParams
@@ -54,6 +54,7 @@ export const FeatureModifierSchema = z.object({
     appliesToId: z.number().int().nullable(),
     conditions: z.array(FeatureModifierConditionSchema).optional(),
     formulaParams: FeatureFormulaParamsSchema.optional().nullable(),
+    groupingId: z.number().int().default(0),
 });
 
 // Feature Special Effect Schema
@@ -68,6 +69,7 @@ export const FeatureSpecialEffectSchema = z.object({
     itemId: z.number().int().nullable(),
     feat: FeatSchema.nullable(),
     item: ItemSchema.nullable(),
+    groupingId: z.number().int().default(0),
 });
 
 // Feature Choice Schema
@@ -82,16 +84,10 @@ export const FeatureChoiceSchema = z.object({
     featureId: z.number().int().positive('Feature ID must be a positive integer').nullable(),
     formulaParamsId: z.number().int().nullable(),
     filterType: z.number().int().nullable(),
-    feat: z.object({
-        id: z.number().int().positive('Feat ID must be a positive integer'),
-        name: z.string().min(1, 'Feat name is required'),
-    }).nullable(),
-    feature: z.object({
-        id: z.number().int().positive('Feature ID must be a positive integer'),
-        name: z.string().min(1, 'Feature name is required'),
-        slug: z.string().min(1, 'Feature slug is required'),
-    }).nullable(),
+    feat: FeatSchema.nullable(),
+    feature: FeatureSchema.nullable(),
     formulaParams: FeatureFormulaParamsSchema.optional().nullable(),
+    groupingId: z.number().int().default(0),
 });
 
 // Feature Progression Schema (the main one used for bulk operations)
@@ -134,7 +130,7 @@ export const CreateFeatureFormulaParamsSchema = FeatureFormulaParamsSchema.omit(
 
 export const CreateFeatureModifierSchema = FeatureModifierSchema.omit({
     id: true,
-    featureProgressionId: true,
+    progressionId: true,
     conditions: true,
     formulaParams: true,
     formulaParamsId: true,

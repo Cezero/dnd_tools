@@ -133,15 +133,16 @@ model FeatureProgression {
 
 model FeatureModifier {
     id                   Int  @id @default(autoincrement())
-    featureProgressionId Int
+    progressionId        Int
     type                 Int
     value                Int?
     bonusType            Int? // dodge, enhancement, etc.
     appliesTo            Int?
     appliesToId          Int?
     formulaParamsId      Int?
+    groupingId              Int @default(0)
 
-    featureProgression FeatureProgression         @relation(fields: [featureProgressionId], references: [id])
+    featureProgression FeatureProgression         @relation(fields: [progressionId], references: [id])
     conditions         FeatureModifierCondition[]
     formulaParams      FeatureFormulaParams?      @relation(fields: [formulaParamsId], references: [id])
 }
@@ -175,6 +176,7 @@ model FeatureSpecialEffect {
     key           String?
     value         String?
     numericValue  Int?
+    groupingId    Int @default(0)
 
     featId Int?
     itemId Int?
@@ -195,6 +197,7 @@ model FeatureChoice {
     featureId       Int?
     formulaParamsId Int?
     filterType      Int?
+    groupingId      Int @default(0)
 
     featureProgression     FeatureProgression       @relation(fields: [progressionId], references: [id])
     feat                   Feat?                    @relation(fields: [featId], references: [id])

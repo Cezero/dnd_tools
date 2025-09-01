@@ -471,7 +471,7 @@ export default function ClassEdit() {
                         ...progressionData,
                         // Remove temporary IDs from related entities
                         modifiers: prog.modifiers?.map(mod => {
-                            const { id: _, featureProgressionId: __, ...modData } = mod;
+                            const { id: _, progressionId: __, ...modData } = mod;
                             // Ensure formulaParams is properly structured for backend
                             if (modData.formulaParams && modData.formulaParams.formulaId) {
                                 // Keep the formulaParams data but remove any temporary IDs

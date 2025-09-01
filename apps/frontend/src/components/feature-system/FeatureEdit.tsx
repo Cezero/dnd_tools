@@ -237,7 +237,7 @@ export function FeatureEdit() {
                             featureId: featureId,
                             // Remove temporary IDs from related entities
                             modifiers: progression.modifiers?.map(mod => {
-                                const { id: _, featureProgressionId: __, ...modData } = mod;
+                                const { id: _, progressionId: __, ...modData } = mod;
                                 return modData;
                             }) || [],
                             choices: progression.choices?.map(choice => {
@@ -270,7 +270,7 @@ export function FeatureEdit() {
                             ...progressionData,
                             // Remove temporary IDs from related entities
                             modifiers: progression.modifiers?.map(mod => {
-                                const { id: _, featureProgressionId: __, ...modData } = mod;
+                                const { id: _, progressionId: __, ...modData } = mod;
                                 return modData;
                             }) || [],
                             choices: progression.choices?.map(choice => {

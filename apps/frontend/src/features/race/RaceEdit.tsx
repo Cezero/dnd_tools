@@ -221,7 +221,7 @@ export function RaceEdit() {
             // Add language modifier
             const languageModifier = {
                 id: Date.now() + Math.random(),
-                featureProgressionId: languageProgression.id,
+                progressionId: languageProgression.id,
                 type: ModifierType.Other,
                 value: 0,
                 bonusType: null,
@@ -379,7 +379,7 @@ export function RaceEdit() {
                                 ...fp,
                                 modifiers: [...(fp.modifiers || []), {
                                     id: Date.now() + Math.random(),
-                                    featureProgressionId: fp.id,
+                                    progressionId: fp.id,
                                     type: ModifierType.Bonus,
                                     value: parsedValue,
                                     bonusType: null,
@@ -426,7 +426,7 @@ export function RaceEdit() {
                     },
                     modifiers: [{
                         id: Date.now() + Math.random(),
-                        featureProgressionId: 0,
+                        progressionId: 0,
                         type: ModifierType.Bonus,
                         value: parsedValue,
                         bonusType: null,
@@ -468,7 +468,7 @@ export function RaceEdit() {
                         ...progressionData,
                         // Remove temporary IDs from related entities
                         modifiers: prog.modifiers?.map(mod => {
-                            const { id: _, featureProgressionId: __, ...modData } = mod;
+                            const { id: _, progressionId: __, ...modData } = mod;
                             return modData;
                         }) || [],
                         choices: prog.choices?.map(choice => {

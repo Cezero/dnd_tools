@@ -174,7 +174,7 @@ export const featureSystemService: FeatureSystemService = {
                     const createdModifier = await tx.featureModifier.create({
                         data: {
                             ...modifierData,
-                            featureProgressionId: featureProgression.id,
+                            progressionId: featureProgression.id,
                         },
                     });
 
@@ -292,7 +292,7 @@ export const featureSystemService: FeatureSystemService = {
                         const createdModifier = await transactionClient.featureModifier.create({
                             data: {
                                 ...modifierData,
-                                featureProgressionId: featureProgression.id,
+                                progressionId: featureProgression.id,
                                 formulaParamsId: formulaParamsId,
                             },
                         });
@@ -395,7 +395,7 @@ export const featureSystemService: FeatureSystemService = {
 
                 // Collect existing formula params before deleting modifiers and choices
                 const existingModifiers = await transactionClient.featureModifier.findMany({
-                    where: { featureProgressionId: { in: progressionIds } },
+                    where: { progressionId: { in: progressionIds } },
                     select: { formulaParamsId: true }
                 });
 
@@ -412,7 +412,7 @@ export const featureSystemService: FeatureSystemService = {
                 // Delete related entities first (in correct order to respect foreign key constraints)
                 // First, get the modifier IDs to delete their conditions
                 const modifierIds = await transactionClient.featureModifier.findMany({
-                    where: { featureProgressionId: { in: progressionIds } },
+                    where: { progressionId: { in: progressionIds } },
                     select: { id: true }
                 });
 
@@ -427,7 +427,7 @@ export const featureSystemService: FeatureSystemService = {
 
                 // Then delete modifiers
                 await transactionClient.featureModifier.deleteMany({
-                    where: { featureProgressionId: { in: progressionIds } }
+                    where: { progressionId: { in: progressionIds } }
                 });
                 await transactionClient.featureChoice.deleteMany({
                     where: { progressionId: { in: progressionIds } }
@@ -474,7 +474,7 @@ export const featureSystemService: FeatureSystemService = {
 
                 // Collect existing formula params before deleting modifiers
                 const existingModifiers = await tx.featureModifier.findMany({
-                    where: { featureProgressionId: { in: progressionIds } },
+                    where: { progressionId: { in: progressionIds } },
                     select: { formulaParamsId: true }
                 });
 
@@ -485,7 +485,7 @@ export const featureSystemService: FeatureSystemService = {
                 // Delete related entities first (in correct order to respect foreign key constraints)
                 // First, get the modifier IDs to delete their conditions
                 const modifierIds = await tx.featureModifier.findMany({
-                    where: { featureProgressionId: { in: progressionIds } },
+                    where: { progressionId: { in: progressionIds } },
                     select: { id: true }
                 });
 
@@ -500,7 +500,7 @@ export const featureSystemService: FeatureSystemService = {
 
                 // Then delete modifiers
                 await tx.featureModifier.deleteMany({
-                    where: { featureProgressionId: { in: progressionIds } }
+                    where: { progressionId: { in: progressionIds } }
                 });
                 await tx.featureChoice.deleteMany({
                     where: { progressionId: { in: progressionIds } }
@@ -558,7 +558,7 @@ export const featureSystemService: FeatureSystemService = {
                             const createdModifier = await tx.featureModifier.create({
                                 data: {
                                     ...modifierData,
-                                    featureProgressionId: featureProgression.id,
+                                    progressionId: featureProgression.id,
                                     formulaParamsId,
                                 },
                             });

@@ -71,7 +71,7 @@ export const ClassSkillService = {
         // Add the skill as a modifier to the progression
         const newModifier = {
             id: Date.now() + Math.random(), // Temporary ID
-            featureProgressionId: classSkillsProgression.id,
+            progressionId: classSkillsProgression.id,
             type: ModifierType.Other, // Not a bonus, just marking as class skill
             appliesTo: ModifierAppliesToType.Skill,
             appliesToId: skillId,

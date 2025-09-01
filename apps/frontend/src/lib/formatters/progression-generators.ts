@@ -15,9 +15,6 @@ import type {
     CalculationBreakdown
 } from './types';
 
-// Constants
-const MAX_CHARACTER_LEVEL = 20; // D&D standard maximum character level
-
 // Transition types
 const TRANSITION_TYPE = {
     START: 0,
@@ -105,53 +102,6 @@ export class ProgressionGeneratorImpl implements ProgressionGenerator {
         }
 
         return values;
-    }
-
-    /**
-     * Generate display strings for character-dependent formulas without character context
-     */
-    generateDisplayStrings(
-        formula: FormulaParamsData,
-        startLevel: number,
-        endLevel: number
-    ): Array<string> {
-        const displayStrings: Array<string> = [];
-        const formulaDef = FORMULA_MAP[formula.formulaId];
-
-        if (!formulaDef) {
-            return displayStrings;
-        }
-
-        for (let level = startLevel; level <= endLevel; level++) {
-            const params = {
-                level,
-                startLevel,
-                interval: formula.interval,
-                formulaStartLevel: formula.formulaStartLevel,
-                abilityId: formula.abilityId,
-                thresholds: formula.thresholds,
-                values: formula.values
-            };
-
-            const displayString = formulaDef.getDisplayString(params);
-            displayStrings.push(displayString);
-        }
-
-        return displayStrings;
-    }
-
-    /**
-     * Generate progression values for a specific feature progression
-     */
-    generateProgressionValues(
-        formula: FormulaParamsData,
-        progressionLevel: number,
-        maxLevel: number = 20,
-        context?: CalculationContext,
-        modifierValue?: number,
-        formulaCalculator?: FormulaCalculator
-    ): Array<ProgressionValue> {
-        return this.generateValues(formula, progressionLevel, maxLevel, context, modifierValue, formulaCalculator);
     }
 
     /**
