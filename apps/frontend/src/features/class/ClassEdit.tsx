@@ -480,9 +480,10 @@ export default function ClassEdit() {
                                 modData.formulaParams = formulaParamsData;
                                 // Remove formulaParamsId as it will be set by the backend
                                 delete modData.formulaParamsId;
-                            } else if (modData.formulaParamsId) {
-                                // If we have formulaParamsId but no formulaParams, this is an error
-                                console.error('Modifier has formulaParamsId but no formulaParams:', modData);
+                            } else {
+                                // If no formula is selected, remove formulaParams entirely
+                                delete modData.formulaParams;
+                                delete modData.formulaParamsId;
                             }
                             // Preserve feat data for feat modifiers
                             if (modData.appliesTo === ModifierAppliesToType.Feat) {

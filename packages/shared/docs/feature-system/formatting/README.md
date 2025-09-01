@@ -100,6 +100,8 @@ graph TD
 
 **Grouping Activity Details:**
 
+- Apples to DisplayType.Edit and DisplayType.Detail only, there is no grouping for DisplayType.CharacterSheet
+
 #### **Grouping Activity 1: Within-Level Grouping (Pre-Transition)**
 - **Purpose**: Group entities of the same type within a single level
 - **Scope**: Single level of single FeatureProgression
@@ -115,14 +117,14 @@ graph TD
 - **Delimiter**: `', '` (regardless of entity type)
 - **Rules**: Concatenate all entity types for each transition level
 
-#### **Grouping Activity 3: Display-Specific Progression Grouping**
+#### **Grouping Activity 3: DisplayType.Edit Progression Grouping**
 - **Purpose**: Format progression transitions based on display type
-- **DisplayType.Edit**: Prefix with `'Level X: '` and join with `'; '`
-- **DisplayType.Detail**: Pass through unchanged
-- **DisplayType.CharacterSheet**: Filter to current character level
+- **Scope**: Single FeatureProgression across all transition levels
+- **Delimiters**: Prefix each transition with `'Level X: '` and then join *all* transitions with `'; '`
+- **Rules**: Concatenate the full set of transitions for all entities on a single FeatureProgression
 
-#### **Grouping Activity 4: Multi-Progression Level Grouping**
-- **Purpose**: Group multiple FeatureProgressions by level (Detail only)
+#### **Grouping Activity 4: DisplayType.Detail Multi-Progression Level Grouping**
+- **Purpose**: Group multiple FeatureProgressions by level
 - **Scope**: Multiple FeatureProgressions
 - **Rules**: Union by level, preserving individual feature entries
 

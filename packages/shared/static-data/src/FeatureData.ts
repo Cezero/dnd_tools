@@ -80,8 +80,8 @@ export type ModifierAppliesToType = typeof ModifierAppliesToType[keyof typeof Mo
 export const MODIFIER_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
     // Bonus-compatible types
     [ModifierAppliesToType.Ability]: { id: ModifierAppliesToType.Ability, name: 'Ability', displayName: null },
-    [ModifierAppliesToType.Skill]: { id: ModifierAppliesToType.Skill, name: 'Skill', displayName: 'Skill' },
-    [ModifierAppliesToType.SavingThrow]: { id: ModifierAppliesToType.SavingThrow, name: 'Saving Throw', displayName: 'Save' },
+    [ModifierAppliesToType.Skill]: { id: ModifierAppliesToType.Skill, name: 'Skill', displayName: '' },
+    [ModifierAppliesToType.SavingThrow]: { id: ModifierAppliesToType.SavingThrow, name: 'Saving Throw', displayName: '' },
     [ModifierAppliesToType.AC]: { id: ModifierAppliesToType.AC, name: 'Armor Class', displayName: 'AC' },
     [ModifierAppliesToType.Attack]: { id: ModifierAppliesToType.Attack, name: 'Attack', displayName: 'Atk' },
     [ModifierAppliesToType.Damage]: { id: ModifierAppliesToType.Damage, name: 'Damage', displayName: 'Dmg' },
@@ -92,7 +92,7 @@ export const MODIFIER_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
     [ModifierAppliesToType.MovementSpeed]: { id: ModifierAppliesToType.MovementSpeed, name: 'Movement Speed', displayName: 'Move Speed' },
     [ModifierAppliesToType.HitDice]: { id: ModifierAppliesToType.HitDice, name: 'Hit Dice', displayName: 'HD' },
     [ModifierAppliesToType.Uses]: { id: ModifierAppliesToType.Uses, name: 'Uses', displayName: 'Uses' },
-    [ModifierAppliesToType.Targets]: { id: ModifierAppliesToType.Targets, name: 'Targets', displayName: 'Targets' },
+    [ModifierAppliesToType.Targets]: { id: ModifierAppliesToType.Targets, name: 'Targets', displayName: '' },
     [ModifierAppliesToType.Distance]: { id: ModifierAppliesToType.Distance, name: 'Distance', displayName: 'Distance' },
     [ModifierAppliesToType.ExtraAttacks]: { id: ModifierAppliesToType.ExtraAttacks, name: 'Extra Attacks', displayName: 'Extra Attacks' },
     [ModifierAppliesToType.Healing]: { id: ModifierAppliesToType.Healing, name: 'Healing', displayName: 'Healing' },

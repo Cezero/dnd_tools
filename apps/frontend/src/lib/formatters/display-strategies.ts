@@ -66,16 +66,20 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
         input: FeatureProgression | FeatureProgression[],
         context?: DisplayContext,
         metadata?: FormatterMetadata
-    ): LevelEntry[] {
+    ): DisplayResult {
         const progressions = Array.isArray(input) ? input : [input];
         return this.formatProgressions(progressions, context, metadata);
     }
 
-    abstract formatProgressions(
+    /**
+     * Protected method for subclasses to implement their specific formatting logic
+     * This is called internally by format() and should not be called directly by external code
+     */
+    protected abstract formatProgressions(
         progressions: FeatureProgression[],
         context?: DisplayContext,
         metadata?: FormatterMetadata
-    ): LevelEntry[];
+    ): DisplayResult;
 
     /**
      * Orchestrate the complete 6-phase formatting process for a single progression
@@ -102,9 +106,7 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
         const withinProgressionGrouped = this.groupWithinProgression(withinLevelGrouped, transitions);
 
         // Phase 6: Display-Specific Final Grouping
-        const result = this.createDisplayResult(withinProgressionGrouped, context);
-
-
+        const result = this.createDisplayResult(withinProgressionGrouped, context, progression);
 
         return result;
     }
@@ -140,52 +142,100 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
 
         // For formula-based progressions: use ProgressionGenerator
         if (this.shouldGenerateProgression(progression, context)) {
-            const progressionValues = this.generateProgressionValues(progression, context);
+            // Process ALL formula modifiers, not just one
+            const formulaModifiers = progression.modifiers?.filter(m => m.formulaParams) || [];
 
-            // Process all progression values
-            for (const progressionValue of progressionValues) {
-                this.processEntitiesAtLevel(progression, progressionValue.level, results, {
-                    value: progressionValue.value,
-                    breakdown: progressionValue.breakdown
-                });
+            for (const formulaModifier of formulaModifiers) {
+                const progressionValues = this.generateProgressionValuesForModifier(formulaModifier, progression, context);
+
+                // Process all progression values for this modifier
+                for (const progressionValue of progressionValues) {
+                    results.push({
+                        value: progressionValue.value,
+                        breakdown: progressionValue.breakdown,
+                        entity: formulaModifier,
+                        level: progressionValue.level
+                    });
+                }
             }
+
+            // Also process static modifiers at the progression level
+            this.processStaticModifiersAtLevel(progression, progression.level, results);
         } else {
             // For direct entities: extract values directly
             this.processEntitiesAtLevel(progression, progression.level, results);
         }
 
-        // If no entities were processed, add a placeholder for the feature itself
-        if (results.length === 0) {
-            // Create a dummy modifier to represent the feature itself
-            const dummyModifier: FeatureModifier = {
-                id: progression.id,
-                featureProgressionId: progression.id,
-                type: ModifierType.Bonus,
-                value: 0,
-                bonusType: null,
-                appliesTo: ModifierAppliesToType.Ability,
-                appliesToId: 0,
-                conditions: [],
-                formulaParamsId: null,
-                formulaParams: null
-            };
+        return results;
+    }
 
-            results.push({
-                value: 0,
-                breakdown: {
-                    components: [{
-                        source: 'Feature',
-                        value: 0,
-                        type: BreakdownComponentType.base,
-                        description: '' // Empty string for features without entities
-                    }]
-                },
-                entity: dummyModifier,
-                level: progression.level
-            });
+    /**
+     * Helper method to process only static modifiers (without formulas) at a specific level
+     */
+    private processStaticModifiersAtLevel(
+        progression: FeatureProgression,
+        level: number,
+        results: CalculatedValueWithLevel[]
+    ): void {
+        // Process only static modifiers (those without formulas)
+        if (progression.modifiers) {
+            for (const modifier of progression.modifiers) {
+                if (!modifier.formulaParams) {
+                    // Direct value - static modifier
+                    results.push({
+                        value: modifier.value,
+                        breakdown: {
+                            components: [{
+                                source: 'Direct Value',
+                                value: modifier.value,
+                                type: BreakdownComponentType.base,
+                                description: 'Direct modifier value'
+                            }]
+                        },
+                        entity: modifier,
+                        level
+                    });
+                }
+            }
         }
 
-        return results;
+        // Process choices
+        if (progression.choices) {
+            for (const choice of progression.choices) {
+                results.push({
+                    value: 0, // Choices don't have numeric values
+                    breakdown: {
+                        components: [{
+                            source: 'Choice',
+                            value: 0,
+                            type: BreakdownComponentType.choice,
+                            description: `Choice: ${choice.type}`
+                        }]
+                    },
+                    entity: choice,
+                    level
+                });
+            }
+        }
+
+        // Process effects
+        if (progression.effects) {
+            for (const effect of progression.effects) {
+                results.push({
+                    value: 0, // Effects don't have numeric values
+                    breakdown: {
+                        components: [{
+                            source: 'Effect',
+                            value: 0,
+                            type: BreakdownComponentType.base,
+                            description: `Effect: ${effect.effectType}`
+                        }]
+                    },
+                    entity: effect,
+                    level
+                });
+            }
+        }
     }
 
     /**
@@ -277,8 +327,6 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
             }
         }
     }
-
-
 
     /**
      * Get entity type from entity information
@@ -479,8 +527,6 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
                             } else {
                                 formattedValue = groupedResult.formattedValue;
                             }
-
-
                             break;
                         }
                         case FeatureType.Choice: {
@@ -520,7 +566,7 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
 
     /**
      * Phase 5: Within-Progression Grouping (Post-Transition)
-     * Group entities that actually transition at each level
+     * Group all entities for each transition level within a single progression
      */
     protected groupWithinProgression(
         withinLevelGrouped: GroupedLevelItem[],
@@ -537,14 +583,47 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
 
         const results: GroupedLevelItem[] = [];
 
-        // For each transition level, include entities at that level
+        // For each transition level, only include entities that actually changed
         for (const level of Array.from(transitionLevels).sort((a, b) => a - b)) {
             const levelItems = withinLevelGrouped.filter(item => item.level === level);
 
             if (levelItems.length > 0) {
-                // Include all items at this level
+                // Find which entities actually changed at this level
+                const changedEntities: GroupedLevelItem[] = [];
+
                 for (const item of levelItems) {
-                    results.push(item);
+                    // Check if this entity type has a transition at this level
+                    const hasTransition = transitions.some(t =>
+                        t.level === level &&
+                        t.entityType === item.entityType &&
+                        t.entitySubType === item.entitySubType
+                    );
+
+                    // Also include if this is the start level (first transition)
+                    const isStartLevel = level === Array.from(transitionLevels).sort((a, b) => a - b)[0];
+
+                    if (hasTransition || isStartLevel) {
+                        changedEntities.push(item);
+                    }
+                }
+
+                if (changedEntities.length > 0) {
+                    // Combine only the entities that changed at this level
+                    const combinedValue = changedEntities.map(item => item.formattedValue).join(', ');
+
+                    // Use the first changed item's properties as the base
+                    const firstItem = changedEntities[0];
+                    results.push({
+                        level,
+                        featureId: firstItem.featureId,
+                        formattedValue: combinedValue, // Only changed entities combined
+                        breakdown: { components: [] }, // Simplified for now
+                        descriptionLevel: firstItem.descriptionLevel,
+                        progressionId: firstItem.progressionId,
+                        entityType: FeatureType.Modifier, // Default type since we're combining all
+                        entitySubType: ModifierType.Bonus, // Default subtype
+                        entityAppliesTo: undefined
+                    });
                 }
             }
         }
@@ -590,11 +669,11 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
             // Convert display strings to ProgressionValue objects
             return displayStrings.map((displayString, index) => ({
                 level: progression.level + index,
-                value: 0, // Display strings don't have numeric values
+                value: progression.level + index, // Use level as value for display purposes
                 breakdown: {
                     components: [{
                         source: formulaDef.name,
-                        value: 0,
+                        value: progression.level + index,
                         type: BreakdownComponentType.formula,
                         description: displayString,
                         formula: displayString
@@ -625,6 +704,81 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
                 undefined, // modifierValue
                 formulaCalculator
             );
+        }
+    }
+
+    /**
+     * Phase 1: Progression Generation for a specific modifier
+     * Generate progression values for a single formula-based modifier
+     */
+    protected generateProgressionValuesForModifier(
+        formulaModifier: FeatureModifier,
+        progression: FeatureProgression,
+        context?: DisplayContext
+    ): ProgressionValue[] {
+        if (!formulaModifier.formulaParams) {
+            return [];
+        }
+
+        const formulaDef = FORMULA_MAP[formulaModifier.formulaParams.formulaId];
+        if (!formulaDef) {
+            return [];
+        }
+
+        // For character-dependent formulas without character context, use display strings
+        if (formulaDef.isCharacterDependent && !context?.character) {
+            const progressionGenerator = calculatorRegistry.getProgressionGenerator(0);
+            if (!progressionGenerator) {
+                return [];
+            }
+            const displayStrings = progressionGenerator.generateDisplayStrings(
+                formulaModifier.formulaParams,
+                progression.level,
+                MAX_CHARACTER_LEVEL
+            );
+
+            // Convert display strings to ProgressionValue objects
+            return displayStrings.map((displayString, index) => ({
+                level: progression.level + index,
+                value: progression.level + index, // Use level as value for display purposes
+                breakdown: {
+                    components: [{
+                        source: formulaDef.name,
+                        value: progression.level + index,
+                        type: BreakdownComponentType.formula,
+                        description: displayString,
+                        formula: displayString
+                    }]
+                },
+                conditionalValues: []
+            }));
+        } else {
+            // For non-character-dependent formulas or when character context is available
+            const calculationContext: CalculationContext = {
+                level: progression.level,
+                progressionLevel: progression.level,
+                characterLevel: context?.currentLevel,
+                character: context?.character
+            };
+
+            // Use registry to get progression generator and formula calculator
+            const progressionGenerator = calculatorRegistry.getProgressionGenerator(0);
+            const formulaCalculator = calculatorRegistry.getFormulaCalculator(formulaModifier.formulaParams.formulaId);
+            if (!progressionGenerator) {
+                return [];
+            }
+
+            // First, generate all values to find transition points
+            const allValues = progressionGenerator.generateProgressionValues(
+                formulaModifier.formulaParams,
+                progression.level,
+                MAX_CHARACTER_LEVEL,
+                calculationContext,
+                undefined, // modifierValue
+                formulaCalculator
+            );
+
+            return allValues;
         }
     }
 
@@ -675,7 +829,7 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
             transitions.push({
                 level: startLevel,
                 type: TRANSITION_TYPE.START,
-                description: startValues.join(', '),
+                description: startValues.map(item => item.formattedValue).join(', '),
                 value: 0,
                 previousValue: undefined,
                 entityType: FeatureType.Modifier,
@@ -730,54 +884,13 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     /**
      * Phase 6: Display-Specific Final Grouping
      * Apply display-specific final grouping logic
+     * This method must be overridden by display type specific strategies
      */
-    protected createDisplayResult(
+    protected abstract createDisplayResult(
         withinProgressionGrouped: GroupedLevelItem[],
-        context?: DisplayContext
-    ): DisplayResult {
-        if (withinProgressionGrouped.length === 0) {
-            return {
-                formattedValue: '',
-                breakdown: { components: [] },
-                showBreakdown: context?.showBreakdown || false,
-                components: [],
-                levelEntries: []
-            };
-        }
-
-        // Group by level to create one LevelEntry per level
-        const groupedByLevel = new Map<number, Array<GroupedLevelItem>>();
-
-        for (const item of withinProgressionGrouped) {
-            if (!groupedByLevel.has(item.level)) {
-                groupedByLevel.set(item.level, []);
-            }
-            groupedByLevel.get(item.level)!.push(item);
-        }
-
-        // Create LevelEntry objects for each level
-        const levelEntries: LevelEntry[] = Array.from(groupedByLevel.entries())
-            .sort(([a], [b]) => a - b)
-            .map(([level, items]: [number, GroupedLevelItem[]]) => ({
-                level,
-                description: `Level ${level}`,
-                items: items
-            }));
-
-        // For DisplayType.Edit, create the formatted string
-        const transitionStrings = withinProgressionGrouped.map(item =>
-            `Level ${item.level}: ${item.formattedValue}`
-        );
-        const formattedValue = transitionStrings.join('; ');
-
-        return {
-            formattedValue,
-            breakdown: { components: [] }, // Simplified for now
-            showBreakdown: context?.showBreakdown || false,
-            components: [],
-            levelEntries
-        };
-    }
+        context?: DisplayContext,
+        progression?: FeatureProgression
+    ): DisplayResult;
 
     /**
      * Calculate formula value using Layer 2 logic
@@ -1048,28 +1161,13 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
 }
 
 export class EditPageDisplayStrategy extends DisplayStrategyBase {
-    formatProgressions(
+    protected formatProgressions(
         progressions: FeatureProgression[],
         context?: DisplayContext,
         metadata?: FormatterMetadata
-    ): LevelEntry[] {
-        // Edit page processes each progression individually using orchestration
-        const levelEntries: LevelEntry[] = [];
-
-        for (const progression of progressions) {
-            const result = this.orchestrateFormatting(progression, context, metadata);
-            if (result.levelEntries && result.levelEntries.length > 0) {
-                levelEntries.push(...result.levelEntries);
-            } else {
-                levelEntries.push({
-                    level: progression.level,
-                    description: `Level ${progression.level}`,
-                    items: []
-                });
-            }
-        }
-
-        return levelEntries;
+    ): DisplayResult {
+        // just use the first progression
+        return this.orchestrateFormatting(progressions[0], context, metadata);
     }
 
     /**
@@ -1077,11 +1175,12 @@ export class EditPageDisplayStrategy extends DisplayStrategyBase {
      */
     protected createDisplayResult(
         withinProgressionGrouped: GroupedLevelItem[],
-        context?: DisplayContext
+        context?: DisplayContext,
+        progression?: FeatureProgression
     ): DisplayResult {
         if (withinProgressionGrouped.length === 0) {
             return {
-                formattedValue: '',
+                formattedValue: `Level ${progression.level}`,
                 breakdown: { components: [] },
                 showBreakdown: context?.showBreakdown || false,
                 components: [],
@@ -1089,10 +1188,30 @@ export class EditPageDisplayStrategy extends DisplayStrategyBase {
             };
         }
 
-        // DisplayType.Edit: prefix with Level X: and join with ;
-        const transitionStrings = withinProgressionGrouped.map(item =>
-            `Level ${item.level}: ${item.formattedValue}`
-        );
+        // Group by level to create one LevelEntry per level
+        const groupedByLevel = new Map<number, Array<GroupedLevelItem>>();
+
+        for (const item of withinProgressionGrouped) {
+            if (!groupedByLevel.has(item.level)) {
+                groupedByLevel.set(item.level, []);
+            }
+            groupedByLevel.get(item.level)!.push(item);
+        }
+
+        // Create LevelEntry objects for each level
+        const levelEntries: LevelEntry[] = Array.from(groupedByLevel.entries())
+            .sort(([a], [b]) => a - b)
+            .map(([level, items]: [number, GroupedLevelItem[]]) => ({
+                level,
+                description: `Level ${level}`,
+                items: items
+            }));
+
+        // DisplayType.Edit: Phase 5 already combined all entities at each level
+        // Now just add "Level X:" prefix and join with "; "
+        const transitionStrings = withinProgressionGrouped
+            .map(item => `Level ${item.level}: ${item.formattedValue}`);
+
         const formattedValue = transitionStrings.join('; ');
 
         return {
@@ -1100,81 +1219,18 @@ export class EditPageDisplayStrategy extends DisplayStrategyBase {
             breakdown: { components: [] }, // Simplified for now
             showBreakdown: context?.showBreakdown || false,
             components: [],
-            levelEntries: []
+            levelEntries
         };
     }
 }
 
 export class DetailPageDisplayStrategy extends DisplayStrategyBase {
-    formatProgressions(
+    protected formatProgressions(
         progressions: FeatureProgression[],
         context?: DisplayContext,
         metadata?: FormatterMetadata
-    ): LevelEntry[] {
-        // Process each progression individually through Phase 1-5
-        const progressionResults: GroupedLevelItem[][] = [];
-
-        for (const progression of progressions) {
-            // Phase 1-5 processing for each progression
-            const calculatedValues = this.generateValues(progression, context, metadata);
-            const formattedItems = this.formatItems(calculatedValues, metadata, progression.level);
-            const withinLevelGrouped = this.groupWithinLevel(formattedItems, progression);
-            const transitions = this.detectTransitions(withinLevelGrouped);
-            const withinProgressionGrouped = this.groupWithinProgression(withinLevelGrouped, transitions);
-
-            progressionResults.push(withinProgressionGrouped);
-        }
-
-        // Phase 6: Multi-Progression Level Grouping (Detail only)
-        return this.groupMultiProgressionByLevel(progressionResults);
-    }
-
-    /**
-     * Phase 6: Multi-Progression Level Grouping (Detail only)
-     * Group multiple FeatureProgressions by level
-     */
-    private groupMultiProgressionByLevel(
-        progressionResults: GroupedLevelItem[][]
-    ): LevelEntry[] {
-        // Flatten all progression results
-        const allItems: GroupedLevelItem[] = [];
-        for (const progression of progressionResults) {
-            allItems.push(...progression);
-        }
-
-        // Group by level
-        const groupedByLevel = new Map<number, GroupedLevelItem[]>();
-
-        for (const item of allItems) {
-            if (!groupedByLevel.has(item.level)) {
-                groupedByLevel.set(item.level, []);
-            }
-            groupedByLevel.get(item.level)!.push(item);
-        }
-
-        // Create LevelEntry[] for each level
-        const levelEntries: LevelEntry[] = [];
-        for (const [level, items] of groupedByLevel) {
-            levelEntries.push({
-                level,
-                description: `Level ${level}`,
-                items: items
-            });
-        }
-
-        // Sort by level
-        return levelEntries.sort((a, b) => a.level - b.level);
-    }
-
-    /**
-     * Override Phase 6 to implement DisplayType.Detail specific logic
-     */
-    protected createDisplayResult(
-        withinProgressionGrouped: GroupedLevelItem[],
-        context?: DisplayContext
     ): DisplayResult {
-        // DisplayType.Detail: pass through unchanged (handled by groupMultiProgressionByLevel)
-        if (withinProgressionGrouped.length === 0) {
+        if (!progressions || progressions.length === 0) {
             return {
                 formattedValue: '',
                 breakdown: { components: [] },
@@ -1184,24 +1240,123 @@ export class DetailPageDisplayStrategy extends DisplayStrategyBase {
             };
         }
 
-        // For single progression, just return the first item
-        const firstItem = withinProgressionGrouped[0];
+        // Process each progression individually using the base orchestration
+        const progressionResults: DisplayResult[] = [];
+
+        for (const progression of progressions) {
+            // Use orchestrateFormatting for Phases 1-5 (same as EditPageDisplayStrategy)
+            const result = this.orchestrateFormatting(progression, context, metadata);
+            progressionResults.push(result);
+        }
+
+        // Phase 6: Multi-Progression Level Grouping (Detail only)
+        const levelEntries = this.groupMultiProgressionByLevel(progressionResults);
+
         return {
-            formattedValue: firstItem.formattedValue,
+            formattedValue: 'Full Progression',
             breakdown: { components: [] },
             showBreakdown: context?.showBreakdown || false,
             components: [],
-            levelEntries: []
+            levelEntries
         };
+    }
+
+    /**
+     * Override Phase 6 to implement DisplayType.Detail specific logic
+     * This is a no-op since DetailPageDisplayStrategy handles Phase 6 in groupMultiProgressionByLevel
+     */
+    protected createDisplayResult(
+        withinProgressionGrouped: GroupedLevelItem[],
+        context?: DisplayContext,
+        progression?: FeatureProgression
+    ): DisplayResult {
+        // DisplayType.Detail: This method is a no-op - pass through the data unchanged
+        // The actual Phase 6 logic is handled in groupMultiProgressionByLevel
+        if (withinProgressionGrouped.length === 0) {
+            // for progressions with no items, return a level entry with an empty item so the feature still displays
+            return {
+                formattedValue: '',
+                breakdown: { components: [] },
+                showBreakdown: context?.showBreakdown || false,
+                components: [],
+                levelEntries: [{
+                    level: progression.level,
+                    description: `Level ${progression.level}`,
+                    items: [{
+                        level: progression.level,
+                        featureId: progression.featureId,
+                        formattedValue: '',
+                        breakdown: { components: [] },
+                        descriptionLevel: progression.level,
+                        progressionId: progression.id,
+                        entityType: FeatureType.Modifier,
+                        entitySubType: 0,
+                        entityAppliesTo: undefined
+                    }]
+                }]
+            };
+        }
+
+        // Create a simple DisplayResult that preserves the data without transformation
+        const levelEntries: LevelEntry[] = withinProgressionGrouped.map(item => ({
+            level: item.level,
+            description: `Level ${item.level}`,
+            items: [item]
+        }));
+
+        return {
+            formattedValue: withinProgressionGrouped.map(item => item.formattedValue).join(', '),
+            breakdown: { components: [] },
+            showBreakdown: context?.showBreakdown || false,
+            components: [],
+            levelEntries
+        };
+    }
+
+    /**
+     * Phase 6: Multi-Progression Level Grouping (Detail only)
+     * Group multiple FeatureProgressions by level
+     */
+    private groupMultiProgressionByLevel(
+        progressionResults: DisplayResult[]
+    ): LevelEntry[] {
+        // Group by level
+        const groupedByLevel = new Map<number, LevelEntry[]>();
+
+        for (const item of progressionResults) {
+            console.log('item: ', item);
+            for (const levelEntry of item.levelEntries) {
+                if (!groupedByLevel.has(levelEntry.level)) {
+                    groupedByLevel.set(levelEntry.level, []);
+                }
+                groupedByLevel.get(levelEntry.level)!.push(levelEntry);
+            }
+        }
+
+        // Create LevelEntry[] for each level
+        const levelEntries: LevelEntry[] = [];
+        for (const [level, items] of groupedByLevel) {
+            for (const item of items) {
+                console.log('level: ', level, 'item: ', item);
+            }
+            levelEntries.push({
+                level,
+                description: `Level ${level}`,
+                items: items.flatMap(item => item.items)
+            });
+        }
+
+        // Sort by level
+        return levelEntries.sort((a, b) => a.level - b.level);
     }
 }
 
 export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
-    formatProgressions(
+    protected formatProgressions(
         progressions: FeatureProgression[],
         context?: DisplayContext,
         metadata?: FormatterMetadata
-    ): LevelEntry[] {
+    ): DisplayResult {
         // Character sheet shows current level values only
         const currentLevel = context?.character?.classLevels ?
             Math.max(...Object.values(context.character.classLevels)) : 1;
@@ -1226,11 +1381,22 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             }
         }
 
-        return [{
+        const levelEntries = [{
             level: currentLevel,
             description: `Level ${currentLevel}`,
             items: formattedItems
         }];
+
+        // Create a DisplayResult from the levelEntries
+        const formattedValue = formattedItems.map(item => item.formattedValue).join(', ');
+
+        return {
+            formattedValue,
+            breakdown: { components: [] },
+            showBreakdown: context?.showBreakdown || false,
+            components: [],
+            levelEntries
+        };
     }
 
     /**
@@ -1238,7 +1404,8 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
      */
     protected createDisplayResult(
         withinProgressionGrouped: GroupedLevelItem[],
-        context?: DisplayContext
+        context?: DisplayContext,
+        progression?: FeatureProgression
     ): DisplayResult {
         // DisplayType.CharacterSheet: filter to current character level only
         const currentLevel = context?.character?.classLevels ?

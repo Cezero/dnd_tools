@@ -96,134 +96,84 @@ export function FeaturesTab({
 
                 {sortedFeatures.length > 0 ? (
                     <div className="space-y-4">
-                        {sortedFeatures.map(({ feature, progressions }) => {
-                            // Check if this is a wild shape feature
-                            const isWildShape = feature?.name?.toLowerCase().includes('wild shape');
-
-                            // Group progressions by level for wild shape features
-                            const progressionsByLevel = isWildShape ?
-                                (() => {
-                                    // Expand formula-based progressions
-                                    const expandedProgressions = progressions; // TODO: Implement formula expansion
-                                    return expandedProgressions.reduce((acc, progression) => {
-                                        const level = progression.level;
-                                        if (!acc[level]) {
-                                            acc[level] = [];
-                                        }
-                                        acc[level].push(progression);
-                                        return acc;
-                                    }, {} as Record<number, FeatureProgression[]>);
-                                })() :
-                                null;
-
-                            return (
-                                <div key={feature?.id || 'unknown'} className="border border-gray-200 rounded-md dark:border-gray-600">
-                                    <div className="p-3 bg-gray-50 dark:bg-gray-700">
-                                        <div className="flex justify-between items-start">
-                                            <div className="flex-1">
-                                                <div className="text-lg font-medium">
-                                                    {feature?.name || `Feature ${feature?.id || 'Unknown'}`}
-                                                    <span className="text-sm text-gray-600 dark:text-gray-400 ml-2">
-                                                        ({feature?.slug || `feature-${feature?.id || 'unknown'}`})
-                                                    </span>
-                                                </div>
+                        {sortedFeatures.map(({ feature, progressions }) => (
+                            <div key={feature?.id || 'unknown'} className="border border-gray-200 rounded-md dark:border-gray-600">
+                                <div className="p-3 bg-gray-50 dark:bg-gray-700">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex-1">
+                                            <div className="text-lg font-medium">
+                                                {feature?.name || `Feature ${feature?.id || 'Unknown'}`}
+                                                <span className="text-sm text-gray-600 dark:text-gray-400 ml-2">
+                                                    ({feature?.slug || `feature-${feature?.id || 'unknown'}`})
+                                                </span>
                                             </div>
-                                            {/* Show prerequisites if they exist */}
-                                            {feature.prerequisites && feature.prerequisites.length > 0 && (
-                                                <div className="ml-4 p-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-md flex-shrink-0">
-                                                    <p className="text-xs text-slate-700 dark:text-slate-300">
-                                                        <strong>Prerequisites:</strong> {feature.prerequisites.length} prerequisite(s)
-                                                    </p>
-                                                </div>
-                                            )}
                                         </div>
-                                        {/* Show feature description */}
-                                        {feature?.description && (
-                                            <div className="mt-2">
-                                                <div className="text-sm text-gray-700 dark:text-gray-300">
-                                                    {renderCellValue(
-                                                        feature.description,
-                                                        { truncate: 300, isMarkdown: true },
-                                                        `feature-${feature?.id || 'unknown'}-description`
-                                                    )}
-                                                </div>
+                                        {/* Show prerequisites if they exist */}
+                                        {feature.prerequisites && feature.prerequisites.length > 0 && (
+                                            <div className="ml-4 p-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-md flex-shrink-0">
+                                                <p className="text-xs text-slate-700 dark:text-slate-300">
+                                                    <strong>Prerequisites:</strong> {feature.prerequisites.length} prerequisite(s)
+                                                </p>
                                             </div>
                                         )}
                                     </div>
-
-                                    {/* Feature Progressions */}
-                                    <div className="p-2">
-                                        <div className="flex flex-wrap gap-2 items-start">
-                                            {isWildShape && progressionsByLevel ? (
-                                                // Special formatting for wild shape features
-                                                Object.entries(progressionsByLevel)
-                                                    .sort(([a], [b]) => parseInt(a) - parseInt(b))
-                                                    .map(([level, levelProgressions]) => {
-                                                        const wildShapeDetails = ''; // TODO: Implement wild shape formatting
-                                                        return (
-                                                            <div key={level} className="flex items-start gap-1">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => handleEditProgression(levelProgressions[0])}
-                                                                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-left"
-                                                                    title="Edit progression details"
-                                                                >
-                                                                    Level {level}{wildShapeDetails ? ` (${wildShapeDetails})` : ''}
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => handleRemoveProgression(levelProgressions[0].id)}
-                                                                    className="text-red-500 hover:text-red-700"
-                                                                    title="Remove Progression"
-                                                                >
-                                                                    <TrashIcon className="h-4 w-4" />
-                                                                </button>
-                                                            </div>
-                                                        );
-                                                    })
-                                            ) : (
-                                                // Regular formatting for other features
-                                                progressions.map((progression: FeatureProgression, progIndex: number) => (
-                                                    <div key={progIndex} className="flex items-start gap-1">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleEditProgression(progression)}
-                                                            className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-left"
-                                                            title="Edit progression details"
-                                                        >
-                                                            {(() => {
-                                                                const strategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
-                                                                const result = strategy.format(progression);
-                                                                return result[0].items.length > 0 ? result[0].items[0].formattedValue : result[0].description;
-                                                            })()}
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleRemoveProgression(progression.id)}
-                                                            className="text-red-500 hover:text-red-700"
-                                                            title="Remove Progression"
-                                                        >
-                                                            <TrashIcon className="h-4 w-4" />
-                                                        </button>
-                                                    </div>
-                                                ))
-                                            )}
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setEditingProgression?.(null);
-                                                    setPreSelectedFeature?.(feature);
-                                                    setIsProgressionDialogOpen?.(true);
-                                                }}
-                                                className="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                                            >
-                                                Add Progression
-                                            </button>
+                                    {/* Show feature description */}
+                                    {feature?.description && (
+                                        <div className="mt-2">
+                                            <div className="text-sm text-gray-700 dark:text-gray-300">
+                                                {renderCellValue(
+                                                    feature.description,
+                                                    { truncate: 300, isMarkdown: true },
+                                                    `feature-${feature?.id || 'unknown'}-description`
+                                                )}
+                                            </div>
                                         </div>
+                                    )}
+                                </div>
+
+                                {/* Feature Progressions */}
+                                <div className="p-2">
+                                    <div className="flex flex-wrap gap-2 items-start">
+                                        {/* Use display strategy for ALL progressions */}
+                                        {progressions.map((progression: FeatureProgression, progIndex: number) => (
+                                            <div key={progIndex} className="flex items-start gap-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleEditProgression(progression)}
+                                                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-left"
+                                                    title="Edit progression details"
+                                                >
+                                                    {(() => {
+                                                        const strategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
+                                                        const result = strategy.format(progression);
+                                                        return result.formattedValue || 'No preview';
+                                                    })()}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveProgression(progression.id)}
+                                                    className="text-red-500 hover:text-red-700"
+                                                    title="Remove Progression"
+                                                >
+                                                    <TrashIcon className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setEditingProgression?.(null);
+                                                setPreSelectedFeature?.(feature);
+                                                setIsProgressionDialogOpen?.(true);
+                                            }}
+                                            className="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                        >
+                                            Add Progression
+                                        </button>
                                     </div>
                                 </div>
-                            );
-                        })}
+                            </div>
+                        ))}
                     </div>
                 ) : (
                     <div className="text-gray-500 text-center py-4 border border-dashed border-gray-300 rounded-md dark:border-gray-600">

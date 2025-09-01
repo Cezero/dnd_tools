@@ -500,7 +500,7 @@ export function FeatureEdit() {
                                                         const formatter = strategy.format({ ...progression, modifiers: [modifier] });
                                                         return (
                                                             <li key={index}>
-                                                                {formatter[0].items[0].formattedValue}
+                                                                {formatter.levelEntries[0]?.items[0]?.formattedValue || 'No preview'}
                                                             </li>
                                                         );
                                                     })}

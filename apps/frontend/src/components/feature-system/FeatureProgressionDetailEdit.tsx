@@ -150,16 +150,7 @@ function FormulaPreview({
         );
 
         // For modifiers, use the display strategy result
-        const formattedValue = displayResult[0].items[0].formattedValue || 'No preview available';
-        console.log('Formula Preview Debug:', {
-            formulaId,
-            formulaName: formula.name,
-            isCharacterDependent: formula.isCharacterDependent,
-            hasProgression: formula.hasProgression,
-            formattedValue,
-            displayResult: displayResult[0]
-        });
-
+        const formattedValue = displayResult.formattedValue || 'No preview available';
 
         return (
             <div className="text-xs text-gray-600 dark:text-gray-400 mt-2">
@@ -169,8 +160,9 @@ function FormulaPreview({
                 </div>
             </div>
         );
-    } catch (_error) {
-        return <p className="text-xs text-red-600 dark:text-red-400">Error generating preview</p>;
+    } catch (error) {
+        console.error('Formula Preview Error:', error);
+        return <p className="text-xs text-red-600 dark:text-red-400">Error generating preview: {error instanceof Error ? error.message : 'Unknown error'}</p>;
     }
 }
 
@@ -239,15 +231,7 @@ export function FeatureProgressionDetailEdit({
                     // Only initialize arrays for CONDITIONAL_SCALING formula
                     thresholds: modifier.formulaParams.formulaId === 3 ? (modifier.formulaParams.thresholds || []) : null,
                     values: modifier.formulaParams.formulaId === 3 ? (modifier.formulaParams.values || []) : null,
-                } : {
-                    id: 0,
-                    formulaId: null,
-                    interval: 1,
-                    formulaStartLevel: null,
-                    abilityId: null,
-                    thresholds: null,
-                    values: null,
-                }
+                } : undefined
             })),
             choices: (progression?.choices || []).map(choice => ({
                 ...choice,
@@ -256,28 +240,13 @@ export function FeatureProgressionDetailEdit({
                     // Only initialize arrays for CONDITIONAL_SCALING formula
                     thresholds: choice.formulaParams.formulaId === 3 ? (choice.formulaParams.thresholds || []) : null,
                     values: choice.formulaParams.formulaId === 3 ? (choice.formulaParams.values || []) : null,
-                } : {
-                    id: 0,
-                    formulaId: null,
-                    interval: 1,
-                    formulaStartLevel: null,
-                    abilityId: null,
-                    thresholds: null,
-                    values: null,
-                }
+                } : undefined
             })),
             effects: progression?.effects || [],
             // prerequisites removed - now at feature level
         };
 
         console.log('Setting form data:', newFormData);
-        console.log('Modifiers with formula params:', newFormData.modifiers?.map(m => ({
-            formulaId: m.formulaParams?.formulaId,
-            thresholds: m.formulaParams?.thresholds,
-            values: m.formulaParams?.values,
-            valueTypes: m.formulaParams?.values?.map(v => typeof v),
-            rawValues: m.formulaParams?.values
-        })));
         setFormData(newFormData);
     }, [progression, preSelectedFeature]);
 
@@ -328,9 +297,9 @@ export function FeatureProgressionDetailEdit({
                     convertedFormulaParams = cleanFormulaParams as CreateFeatureFormulaParamsRequest;
                     console.log(`Modifier has formula ${baseModifier.formulaParams.formulaId}, including formulaParams`);
                 } else {
-                    // Explicitly set to null if no formula is selected
-                    convertedFormulaParams = null;
-                    console.log('Modifier has no formula, setting formulaParams to null');
+                    // If no formula is selected, don't include formulaParams at all
+                    convertedFormulaParams = undefined;
+                    console.log('Modifier has no formula, excluding formulaParams');
                 }
 
                 // Create the final modifier object
@@ -341,7 +310,7 @@ export function FeatureProgressionDetailEdit({
                     appliesTo: baseModifier.appliesTo,
                     appliesToId: baseModifier.appliesToId,
                     conditions: convertedConditions,
-                    formulaParams: convertedFormulaParams,
+                    ...(convertedFormulaParams !== undefined && { formulaParams: convertedFormulaParams }),
                 };
 
                 return finalModifier;
@@ -362,9 +331,9 @@ export function FeatureProgressionDetailEdit({
                     convertedFormulaParams = cleanFormulaParams as CreateFeatureFormulaParamsRequest;
                     console.log(`Choice has formula ${baseChoice.formulaParams.formulaId}, including formulaParams`);
                 } else {
-                    // Explicitly set to null if no formula is selected
-                    convertedFormulaParams = null;
-                    console.log('Choice has no formula, setting formulaParams to null');
+                    // If no formula is selected, don't include formulaParams at all
+                    convertedFormulaParams = undefined;
+                    console.log('Choice has no formula, excluding formulaParams');
                 }
 
                 // Create the final choice object
@@ -376,7 +345,7 @@ export function FeatureProgressionDetailEdit({
                     featId: baseChoice.featId,
                     featureId: baseChoice.featureId,
                     filterType: baseChoice.filterType,
-                    formulaParams: convertedFormulaParams,
+                    ...(convertedFormulaParams !== undefined && { formulaParams: convertedFormulaParams }),
                 };
 
                 return finalChoice;
@@ -426,15 +395,7 @@ export function FeatureProgressionDetailEdit({
             appliesTo: null,
             appliesToId: null,
             conditions: [],
-            formulaParams: {
-                id: 0,
-                formulaId: null, // No formula selected by default
-                interval: 1,
-                formulaStartLevel: null,
-                abilityId: null,
-                thresholds: null,
-                values: null,
-            },
+            formulaParams: undefined, // No formula selected by default
         };
         setFormData(prev => ({
             ...prev,
@@ -489,15 +450,7 @@ export function FeatureProgressionDetailEdit({
             formulaParamsId: null,
             feat: null,
             feature: null,
-            formulaParams: {
-                id: 0,
-                formulaId: null, // No formula selected by default
-                interval: 1,
-                formulaStartLevel: null,
-                abilityId: null,
-                thresholds: null,
-                values: null,
-            },
+            formulaParams: undefined, // No formula selected by default
         };
         setFormData(prev => ({
             ...prev,

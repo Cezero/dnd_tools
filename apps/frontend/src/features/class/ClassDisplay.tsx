@@ -242,7 +242,7 @@ export function ClassDisplay({
                                         <h3 className="text-lg font-semibold mb-2">Class Proficiencies</h3>
                                         <div className="flex flex-wrap gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md">
                                             <span className="text-sm">
-                                                {result[0].items.length > 0 ? result[0].items[0].formattedValue : result[0].description}
+                                                {result.levelEntries[0]?.items.length > 0 ? result.levelEntries[0].items[0].formattedValue : result.levelEntries[0]?.description}
                                             </span>
                                         </div>
                                     </div>
@@ -278,7 +278,7 @@ export function ClassDisplay({
                                     <h3 className="text-lg font-semibold mb-2">Class Features</h3>
                                     <div className="space-y-4">
                                         {/* Render level entries */}
-                                        {result.map((levelEntry) => (
+                                        {result.levelEntries.map((levelEntry) => (
                                             <div key={levelEntry.level} className="border border-gray-200 dark:border-gray-600 rounded-md p-3">
                                                 <h4 className="text-md font-medium mb-2">Level {levelEntry.level}</h4>
                                                 <div className="space-y-2">

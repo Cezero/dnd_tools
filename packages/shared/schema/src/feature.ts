@@ -127,6 +127,9 @@ export const CreateFeatureModifierConditionSchema = FeatureModifierConditionSche
 
 export const CreateFeatureFormulaParamsSchema = FeatureFormulaParamsSchema.omit({
     id: true,
+}).extend({
+    thresholds: z.array(z.number().int()).nullable().optional(),
+    values: z.array(z.union([z.string(), z.number()])).nullable().optional(),
 });
 
 export const CreateFeatureModifierSchema = FeatureModifierSchema.omit({

@@ -5,7 +5,7 @@ import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { displayStrategyFactory, FormatterMetadata } from '@/lib/formatters';
 import { LanguageService } from '@/lib/LanguageService';
 import { Race } from '@shared/schema';
-import { DisplayType , SIZE_MAP, LANGUAGE_MAP, EDITION_MAP, ABILITY_MAP, CLASS_MAP, ModifierAppliesToType, ABILITY_LIST, SpecialFeatureId } from '@shared/static-data';
+import { DisplayType, SIZE_MAP, LANGUAGE_MAP, EDITION_MAP, ABILITY_MAP, CLASS_MAP, ModifierAppliesToType, ABILITY_LIST, SpecialFeatureId } from '@shared/static-data';
 
 interface RaceDisplayProps {
     race: Race;
@@ -185,7 +185,7 @@ export function RaceDisplay({
                                                     if (hasDetails) {
                                                         const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
                                                         const result = strategy.format(featureProg, undefined, formatterMetadata);
-                                                        const formattedEntries = result.find(entry => entry.level === featureProg.level)?.items || [];
+                                                        const formattedEntries = result.levelEntries.find(entry => entry.level === featureProg.level)?.items || [];
 
                                                         if (formattedEntries.length > 0) {
                                                             return (

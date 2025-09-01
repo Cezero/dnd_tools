@@ -314,7 +314,7 @@ export const FORMULA_MAP: BaseMap<Formula> = {
         },
         getDisplayString: (params) => {
             // Always return formula structure, no context needed
-            const abilityName = ABILITY_MAP[params.abilityId]?.abbreviation || 'ability';
+            const abilityName = params.abilityId && ABILITY_MAP[params.abilityId] ? ABILITY_MAP[params.abilityId].abbreviation : '[ability]';
             return `${params.level} + ${abilityName}`;
         },
         hasProgression: true,

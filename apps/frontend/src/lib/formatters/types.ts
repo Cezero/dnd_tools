@@ -202,8 +202,7 @@ export interface DisplayResult extends BaseFormattedValue {
     showBreakdown: boolean;
     components: Array<FeatureModifier | FeatureChoice | FeatureSpecialEffect>;
     levelEntries?: LevelEntry[];
-    conditionalDisplays?: ConditionalDisplay[];
-    progressionId?: number; // For xxxEdit page 1:1 relationship
+    conditionalDisplays?: ConditionalDisplay[]; // For xxxEdit page 1:1 relationship
 }
 
 // Character sheet calculation input
@@ -383,8 +382,7 @@ export interface TransitionDetector {
 
 // Display strategy interface
 export interface DisplayStrategy {
-    format(input: FeatureProgression | FeatureProgression[], context?: DisplayContext, metadata?: FormatterMetadata): LevelEntry[];
-    formatProgressions?(progressions: FeatureProgression[], context?: DisplayContext, metadata?: FormatterMetadata): LevelEntry[];
+    format(input: FeatureProgression | FeatureProgression[], context?: DisplayContext, metadata?: FormatterMetadata): DisplayResult;
 }
 
 // Choice calculator interface
