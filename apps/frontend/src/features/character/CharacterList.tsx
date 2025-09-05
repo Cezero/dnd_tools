@@ -4,8 +4,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
-import { CHARACTER_COLUMNS } from '@/features/character/CharacterColumns';
 import { CharacterApi } from '@/features/character/CharacterApi';
+import { CHARACTER_COLUMNS } from '@/features/character/CharacterColumns';
 import { CharacterWithRaceResponse } from '@shared/schema';
 
 import { routes } from './CharacterConfig';

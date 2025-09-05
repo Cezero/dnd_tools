@@ -199,6 +199,7 @@ exports.Prisma.FeatureModifierScalarFieldEnum = {
   bonusType: 'bonusType',
   appliesTo: 'appliesTo',
   appliesToId: 'appliesToId',
+  itemId: 'itemId',
   formulaParamsId: 'formulaParamsId',
   groupingId: 'groupingId'
 };
@@ -218,18 +219,6 @@ exports.Prisma.FeatureModifierConditionScalarFieldEnum = {
   featureModifierId: 'featureModifierId',
   conditionType: 'conditionType',
   conditionValue: 'conditionValue'
-};
-
-exports.Prisma.FeatureSpecialEffectScalarFieldEnum = {
-  id: 'id',
-  progressionId: 'progressionId',
-  effectType: 'effectType',
-  key: 'key',
-  value: 'value',
-  numericValue: 'numericValue',
-  groupingId: 'groupingId',
-  featId: 'featId',
-  itemId: 'itemId'
 };
 
 exports.Prisma.FeatureChoiceScalarFieldEnum = {
@@ -646,11 +635,6 @@ exports.Prisma.FeatureFormulaParamsOrderByRelevanceFieldEnum = {
   values: 'values'
 };
 
-exports.Prisma.FeatureSpecialEffectOrderByRelevanceFieldEnum = {
-  key: 'key',
-  value: 'value'
-};
-
 exports.Prisma.FeatureChoiceOrderByRelevanceFieldEnum = {
   label: 'label'
 };
@@ -826,7 +810,6 @@ exports.Prisma.ModelName = {
   FeatureModifier: 'FeatureModifier',
   FeatureFormulaParams: 'FeatureFormulaParams',
   FeatureModifierCondition: 'FeatureModifierCondition',
-  FeatureSpecialEffect: 'FeatureSpecialEffect',
   FeatureChoice: 'FeatureChoice',
   FeaturePrerequisite: 'FeaturePrerequisite',
   Spell: 'Spell',

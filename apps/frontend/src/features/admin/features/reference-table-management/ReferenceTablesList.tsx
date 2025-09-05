@@ -4,8 +4,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
 import { createSlugDeleteServiceFunction } from '@/components/generic-list/types';
-import { REFERENCE_TABLE_COLUMNS } from '@/features/admin/features/reference-table-management/ReferenceTableColumns';
 import { ReferenceTableApi } from '@/features/admin/features/reference-table-management/ReferenceTableApi';
+import { REFERENCE_TABLE_COLUMNS } from '@/features/admin/features/reference-table-management/ReferenceTableColumns';
 import { ReferenceTableSummary } from '@shared/schema';
 
 import { routes } from './ReferenceTableConfig';

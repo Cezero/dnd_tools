@@ -17,7 +17,6 @@ export function SpellcastingTab({
     spellsKnownProgression = [],
     setSpellsKnownProgression
 }: ClassTabProps): React.JSX.Element {
-    console.log('SpellcastingTab received progression:', spellcastingProgression);
     return (
         <div className="p-6 space-y-6">
             {/* Casting Configuration */}

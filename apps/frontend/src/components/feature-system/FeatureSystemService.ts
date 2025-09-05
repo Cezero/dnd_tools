@@ -1,9 +1,9 @@
-import type { ProficiencyItem } from '@/components/feature-system';
 import { ItemApi } from '@/features/item/ItemApi';
+import type { ItemWithDetails } from '@shared/schema';
 import { PROFICIENCY_TYPES } from '@shared/static-data';
 
 export const FeatureSystemService = {
-    async getItemsByProficiencyType(proficiencyTypeId: number): Promise<ProficiencyItem[]> {
+    async getItemsByProficiencyType(proficiencyTypeId: number): Promise<ItemWithDetails[]> {
         try {
             // Get proficiency info from the enhanced PROFICIENCY_TYPES
             const proficiencyInfo = PROFICIENCY_TYPES[proficiencyTypeId];
@@ -27,13 +27,7 @@ export const FeatureSystemService = {
                 );
             }
 
-            return filteredItems.map(item => ({
-                id: item.id,
-                name: item.name,
-                typeId: item.typeId,
-                weapon: item.weapon,
-                armor: item.armor
-            }));
+            return filteredItems;
         } catch (error) {
             console.error('Failed to fetch items by proficiency type:', error);
             return [];

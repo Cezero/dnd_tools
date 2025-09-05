@@ -3,7 +3,6 @@ import pluralize from 'pluralize';
 import type {
     FeatureModifier,
     FeatureChoice,
-    FeatureSpecialEffect
 } from '@shared/schema';
 import {
     FeatureChoiceType,
@@ -12,10 +11,11 @@ import {
     LANGUAGE_MAP,
     FEATURE_BONUS_TYPES,
     RPG_DICE,
-    DAMAGE_TYPES
+    DAMAGE_TYPES,
+    USES_FREQUENCIES
 } from '@shared/static-data';
 
-import type { BaseFormatter, ChoiceFormatter, EffectFormatter, FormatterMetadata } from './types';
+import type { BaseFormatter, ChoiceFormatter, FormatterMetadata } from './types';
 
 export class DamageFormatter implements BaseFormatter {
     format(value: number, _modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
@@ -46,7 +46,12 @@ export class HealingFormatter implements BaseFormatter {
 }
 
 export class SignedValueFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(value: number | string, modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+        // Handle string values (formula breakdown strings) by returning them as-is
+        if (typeof value === 'string') {
+            return value;
+        }
+
         const baseValue = formatSignedValue(value);
 
         // Include bonus type if present
@@ -59,9 +64,9 @@ export class SignedValueFormatter implements BaseFormatter {
     }
 }
 
-export class SkillFormatter implements BaseFormatter {
-    format(value: number, _modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
-        return formatSignedValue(value);
+export class EmptyStringFormatter implements BaseFormatter {
+    format(_value: number, _modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+        return '';
     }
 }
 
@@ -77,6 +82,17 @@ export class LanguageFormatter implements BaseFormatter {
 
 export class FeatFormatter implements BaseFormatter {
     format(value: number, modifier: FeatureModifier, metadata?: FormatterMetadata): string {
+        // Handle proficiencies (which have itemId) vs general feats
+        if (modifier.itemId !== null && modifier.itemId !== undefined) {
+            // This is a proficiency - return the item name
+            const itemName = modifier.item?.name;
+            if (itemName) {
+                return itemName.toLowerCase();
+            }
+            return `item ${modifier.itemId}`;
+        }
+
+        // Handle general feats
         const featId = modifier.appliesToId;
         if (featId && metadata?.featNames) {
             const featName = metadata.featNames.find(f => f.id === featId)?.name;
@@ -89,9 +105,10 @@ export class FeatFormatter implements BaseFormatter {
 }
 
 export class UsesFormatter implements BaseFormatter {
-    format(value: number, _modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
-        // For now, use default frequency since useType isn't in the current schema
-        const frequency = 'day';
+    format(value: number | string, modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+        const frequencyInfo = USES_FREQUENCIES[modifier.appliesToId || 1];
+        const frequency = frequencyInfo?.name || 'day';
+
         return `${value}/${frequency}`;
     }
 }
@@ -261,46 +278,6 @@ export class OtherFormatter implements BaseFormatter {
     }
 }
 
-/**
- * Formatter for proficiency effects (FeatureSpecialEffectType.Proficiency)
- * Handles featId/itemId resolution and "all X" vs specific item display
- */
-export class ProficiencyEffectFormatter implements EffectFormatter {
-    format(effect: FeatureSpecialEffect, _level: number): string {
-        const featName = effect.feat?.name || `Feat ${effect.featId}`;
-        const itemId = effect.itemId ?? -1; // Use nullish coalescing for clarity
-        const itemName = effect.item?.name;
-
-        // TODO: Replace hardcoded mapping with proper enum-based lookup
-        const proficiencyNameMap: Record<string, string> = {
-            "Armor Proficiency (Light)": "light armor",
-            "Armor Proficiency (Medium)": "medium armor",
-            "Armor Proficiency (Heavy)": "heavy armor",
-            "Shield Proficiency": "shields",
-            "Tower Shield Proficiency": "tower shields",
-            "Simple Weapon Proficiency": "simple weapons",
-            "Martial Weapon Proficiency": "martial weapons",
-            "Exotic Weapon Proficiency": "exotic weapons",
-        };
-
-        // Check for "any" case (itemId === -1 indicates "all items of this type")
-        if (itemId === -1) {
-            const mapping = proficiencyNameMap[featName];
-            if (!mapping) return featName; // fallback
-
-            if (
-                featName.startsWith("Armor Proficiency") ||
-                featName.startsWith("Shield Proficiency")
-            ) {
-                return mapping;
-            } else {
-                return `all ${mapping}`;
-            }
-        } else {
-            return itemName?.toLowerCase() || `item ${itemId}`;
-        }
-    }
-}
 
 // Utility function for formatting signed values
 function formatSignedValue(value: number): string {
@@ -312,3 +289,4 @@ function formatSignedValue(value: number): string {
         return '0';
     }
 }
+

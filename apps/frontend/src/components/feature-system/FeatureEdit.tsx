@@ -244,10 +244,6 @@ export function FeatureEdit() {
                                 const { id: _, progressionId: __, ...choiceData } = choice;
                                 return choiceData;
                             }) || [],
-                            effects: progression.effects?.map(effect => {
-                                const { id: _, progressionId: __, ...effectData } = effect;
-                                return effectData;
-                            }) || [],
                         };
                     });
                     await FeatureSystemApi.updateFeatureProgressions({ progressions: progressionsForBackend }, { id: featureId });
@@ -276,10 +272,6 @@ export function FeatureEdit() {
                             choices: progression.choices?.map(choice => {
                                 const { id: _, progressionId: __, ...choiceData } = choice;
                                 return choiceData;
-                            }) || [],
-                            effects: progression.effects?.map(effect => {
-                                const { id: _, progressionId: __, ...effectData } = effect;
-                                return effectData;
                             }) || [],
                         };
                     });
@@ -514,18 +506,6 @@ export function FeatureEdit() {
                                                     {progression.choices.map((choice, index) => (
                                                         <li key={index}>
                                                             {choice.label}: {choice.type} ({choice.behavior})
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
-                                        {progression.effects && progression.effects.length > 0 && (
-                                            <div>
-                                                <h4 className="font-medium">Effects:</h4>
-                                                <ul className="text-sm text-gray-600 dark:text-gray-400">
-                                                    {progression.effects.map((effect, index) => (
-                                                        <li key={index}>
-                                                            {effect.effectType}: {effect.key} = {effect.value}
                                                         </li>
                                                     ))}
                                                 </ul>

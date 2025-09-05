@@ -12,7 +12,7 @@ import type {
     CharacterWithAllDetailsResponse,
     CharacterAdvancementWithDetailsResponse
 } from '@shared/schema';
-import { SpecialFeatureId } from '@shared/static-data';
+import { ModifierAppliesToType, SpecialFeatureId } from '@shared/static-data';
 
 interface FeatsTabProps {
     character: CharacterWithAllDetailsResponse;
@@ -59,22 +59,19 @@ export function FeatsTab({
 
     // Filter feats that character qualifies for and aren't already granted by class
     const availableFeats = useMemo(() => {
-        // Get feats that the class grants as proficiencies (to exclude from selection)
         const getClassGrantedFeats = (): Set<number> => {
             if (!selectedClassDetails?.features) return new Set();
 
             const excludedFeatIds = new Set<number>();
 
-            // Extract proficiencies from feature progressions
             selectedClassDetails.features
-                .filter(prog => prog.featureId === SpecialFeatureId.ClassProficiency) // Use SpecialFeatureId instead of appliesToType
+                .filter(prog => prog.featureId === SpecialFeatureId.ClassProficiency)
                 .forEach(prog => {
-                    // If appliesTo is -1, the class grants proficiency with all items of that type
-                    if (prog.appliesTo === -1) {
-                        excludedFeatIds.add(prog.featureId);
-                    }
-                    // If appliesTo is positive, the class only grants proficiency with specific items
-                    // So we don't exclude the feat (player might want to take it for other items)
+                    prog.modifiers?.forEach(modifier => {
+                        if (modifier.appliesTo === ModifierAppliesToType.Feat && modifier.itemId === -1) {
+                            excludedFeatIds.add(modifier.appliesToId || 0);
+                        }
+                    });
                 });
 
             return excludedFeatIds;

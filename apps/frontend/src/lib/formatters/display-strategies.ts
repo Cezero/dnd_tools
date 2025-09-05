@@ -2,28 +2,27 @@ import type {
     FeatureProgression,
     FeatureModifier,
     FeatureChoice,
-    FormulaParamsData,
-    FeatureSpecialEffect
+    FormulaParamsData
 } from '@shared/schema';
 import {
     DisplayType,
-    FORMULA_MAP,
     FEATURE_MODIFIER_CONDITION_TYPES,
     SIZE_MAP,
     SPELL_SCHOOL_MAP,
     ATTACK_TYPES,
+    CREATURE_TYPES,
     FeatureModifierConditionType,
     BreakdownComponentType,
     ModifierType,
     ModifierAppliesToType,
     FeatureType,
-    FeatureSpecialEffectType,
     FeatureChoiceType
 } from '@shared/static-data';
 
 import { calculatorRegistry } from './calculator-registry';
 import { formatterRegistry } from './formatter-registry';
-import { ModifierGroupingStrategy } from './grouping-strategies';
+import { ModifierGroupingStrategy, ChoiceGroupingStrategy } from './grouping-strategies';
+import { labelerRegistry } from './labeler-registry';
 import type {
     DisplayContext,
     DisplayResult,
@@ -31,19 +30,16 @@ import type {
     DisplayStrategy,
     ProgressionValue,
     FormatterMetadata,
-    FormulaDefinition,
     ProcessingConfig,
     ProcessingContext,
     ProcessingResult,
     BaseFormatter,
     ChoiceFormatter,
-    EffectFormatter,
     CalculationBreakdown,
     TransitionPoint,
     CalculationContext,
     FormattedItemWithLevel,
     CalculatedValueWithLevel,
-    EntityGroupKey,
     GroupedLevelItem
 } from './types';
 
@@ -64,10 +60,11 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     format(
         input: FeatureProgression | FeatureProgression[],
         context?: DisplayContext,
-        metadata?: FormatterMetadata
+        metadata?: FormatterMetadata,
+        showLabels: boolean = true
     ): DisplayResult {
         const progressions = Array.isArray(input) ? input : [input];
-        return this.formatProgressions(progressions, context, metadata);
+        return this.formatProgressions(progressions, context, metadata, showLabels);
     }
 
     /**
@@ -77,7 +74,8 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     protected abstract formatProgressions(
         progressions: FeatureProgression[],
         context?: DisplayContext,
-        metadata?: FormatterMetadata
+        metadata?: FormatterMetadata,
+        showLabels?: boolean
     ): DisplayResult;
 
     /**
@@ -87,13 +85,14 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     protected orchestrateFormatting(
         progression: FeatureProgression,
         context?: DisplayContext,
-        metadata?: FormatterMetadata
+        metadata?: FormatterMetadata,
+        showLabels: boolean = true
     ): DisplayResult {
         // Phase 1: Value Generation & Calculation
         const calculatedValues = this.generateValues(progression, context, metadata);
 
         // Phase 2: Pure Formatting - Format individual calculated values
-        const formattedItems = this.formatItems(calculatedValues, metadata, progression.level);
+        const formattedItems = this.formatItems(calculatedValues, metadata, progression.level, showLabels);
 
         // Phase 3: Within-Level Grouping (Pre-Transition)
         const withinLevelGrouped = this.groupWithinLevel(formattedItems, progression);
@@ -113,16 +112,14 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     /**
      * Determine if progression generation is needed based on formula properties
      */
-    protected shouldGenerateProgression(progression: FeatureProgression, context?: DisplayContext): boolean {
-        // Check if any modifier has a formula with hasProgression: true
+    protected shouldGenerateProgression(progression: FeatureProgression, _context?: DisplayContext): boolean {
         const hasProgressionModifiers = progression.modifiers?.some(m =>
-            m.formulaParams && FORMULA_MAP[m.formulaParams.formulaId]?.hasProgression
+            m.formulaParams
         );
 
         // Check if any choice has progression (if applicable)
         const hasProgressionChoices = progression.choices?.some(c =>
-            // TODO: Implement choice progression logic when needed
-            false
+            c.formulaParams
         );
 
         return hasProgressionModifiers || hasProgressionChoices;
@@ -135,7 +132,7 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     protected generateValues(
         progression: FeatureProgression,
         context?: DisplayContext,
-        metadata?: FormatterMetadata
+        _metadata?: FormatterMetadata
     ): CalculatedValueWithLevel[] {
         const results: CalculatedValueWithLevel[] = [];
 
@@ -216,25 +213,6 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
                 });
             }
         }
-
-        // Process effects
-        if (progression.effects) {
-            for (const effect of progression.effects) {
-                results.push({
-                    value: 0, // Effects don't have numeric values
-                    breakdown: {
-                        components: [{
-                            source: 'Effect',
-                            value: 0,
-                            type: BreakdownComponentType.base,
-                            description: `Effect: ${effect.effectType}`
-                        }]
-                    },
-                    entity: effect,
-                    level
-                });
-            }
-        }
     }
 
     /**
@@ -306,37 +284,16 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
                 });
             }
         }
-
-        // Process effects
-        if (progression.effects) {
-            for (const effect of progression.effects) {
-                results.push({
-                    value: 0, // Effects don't have numeric values
-                    breakdown: {
-                        components: [{
-                            source: 'Effect',
-                            value: 0,
-                            type: BreakdownComponentType.base,
-                            description: `Effect: ${effect.effectType}`
-                        }]
-                    },
-                    entity: effect,
-                    level
-                });
-            }
-        }
     }
 
     /**
      * Get entity type from entity information
      */
-    private getEntityType(entity: FeatureModifier | FeatureChoice | FeatureSpecialEffect): FeatureType {
+    private getEntityType(entity: FeatureModifier | FeatureChoice): FeatureType {
         if ('appliesTo' in entity) {
             return FeatureType.Modifier;
         } else if ('behavior' in entity) {
             return FeatureType.Choice;
-        } else if ('effectType' in entity) {
-            return FeatureType.Effect;
         } else {
             return FeatureType.Modifier; // Default fallback
         }
@@ -345,37 +302,20 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     /**
      * Get entity sub type from entity information
      */
-    private getEntitySubType(entity: FeatureModifier | FeatureChoice | FeatureSpecialEffect): ModifierType | FeatureSpecialEffectType | FeatureChoiceType {
+    private getEntitySubType(entity: FeatureModifier | FeatureChoice): ModifierType | FeatureChoiceType {
         if ('appliesTo' in entity) {
             return entity.type as ModifierType;
         } else if ('behavior' in entity) {
             return entity.type as FeatureChoiceType;
-        } else if ('effectType' in entity) {
-            return entity.effectType as FeatureSpecialEffectType;
         } else {
             return ModifierType.Bonus; // Default fallback
         }
     }
 
     /**
-     * Helper method to create entity group key
-     */
-    private createEntityGroupKey(entity: FeatureModifier | FeatureChoice | FeatureSpecialEffect): EntityGroupKey {
-        if ('appliesTo' in entity) {
-            return { type: FeatureType.Modifier, subType: entity.type };
-        } else if ('behavior' in entity) {
-            return { type: FeatureType.Choice, subType: entity.type };
-        } else if ('effectType' in entity) {
-            return { type: FeatureType.Effect, subType: entity.effectType };
-        }
-        // Default fallback
-        return { type: FeatureType.Modifier, subType: ModifierType.Bonus };
-    }
-
-    /**
      * Helper method to get the feature ID for an entity
      */
-    private getFeatureId(entity: FeatureModifier | FeatureChoice | FeatureSpecialEffect): number {
+    private getFeatureId(entity: FeatureModifier | FeatureChoice): number {
         // For dummy modifiers representing features without entities, use the id as the feature ID
         if ('appliesTo' in entity && entity.appliesTo === ModifierAppliesToType.Ability && entity.type === ModifierType.Bonus && entity.value === 0 && !entity.formulaParams) {
             return entity.id; // This is actually the feature ID
@@ -387,8 +327,6 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
             return entity.progressionId;
         } else if ('behavior' in entity) {
             return entity.featureId;
-        } else if ('effectType' in entity) {
-            return entity.progressionId; // Effects don't have featureId, use progressionId
         }
         return 0;
     }
@@ -400,45 +338,21 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     protected formatItems(
         calculatedValues: CalculatedValueWithLevel[],
         metadata?: FormatterMetadata,
-        progressionLevel?: number
+        progressionLevel?: number,
+        showLabels: boolean = true
     ): FormattedItemWithLevel[] {
         return calculatedValues.map(({ value, breakdown, entity, level }) => {
             let formattedValue: string;
 
-            if ('appliesTo' in entity) {
-                // Check if this is a dummy modifier representing a feature without entities
-                if (entity.appliesTo === ModifierAppliesToType.Ability && entity.type === ModifierType.Bonus && entity.value === 0 && !entity.formulaParams) {
-                    // This is a dummy modifier for a feature without entities
-                    formattedValue = ''; // Empty string for features without entities
-                } else {
-                    // Regular modifier
-                    // Check if this is a character-dependent formula with display string in breakdown
-                    if (breakdown?.components?.[0]?.formula && entity.formulaParams?.formulaId) {
-                        const formulaDef = FORMULA_MAP[entity.formulaParams.formulaId];
-                        if (formulaDef?.isCharacterDependent) {
-                            // Use the display string from the breakdown
-                            formattedValue = breakdown.components[0].formula;
-                        } else {
-                            // Use regular formatter
-                            const formatter = formatterRegistry.getFormatter(FeatureType.Modifier, entity.type, entity.appliesTo) as BaseFormatter;
-                            formattedValue = formatter ? formatter.format(value, entity, metadata) : `${value}`;
-                        }
-                    } else {
-                        // Use regular formatter
-                        const formatter = formatterRegistry.getFormatter(FeatureType.Modifier, entity.type, entity.appliesTo) as BaseFormatter;
-                        formattedValue = formatter ? formatter.format(value, entity, metadata) : `${value}`;
-                    }
-                }
-            } else if ('behavior' in entity) {
-                // Choice
-                const formatter = formatterRegistry.getFormatter(FeatureType.Choice, entity.type) as ChoiceFormatter;
-                formattedValue = formatter ? formatter.formatChoice(entity, metadata) : `Choice: ${FeatureChoiceType[entity.type] || entity.type}`;
-            } else if ('effectType' in entity) {
-                // Effect
-                const formatter = formatterRegistry.getFormatter(FeatureType.Effect, entity.effectType) as EffectFormatter;
-                formattedValue = formatter ? formatter.format(entity, 1) : `Effect: ${FeatureSpecialEffectType[entity.effectType] || entity.effectType}`;
+            if (this.getEntityType(entity) === FeatureType.Modifier) {
+                const modifier = entity as FeatureModifier;
+                const formatter = formatterRegistry.getFormatter(FeatureType.Modifier, modifier.type, modifier.appliesTo) as BaseFormatter;
+                formattedValue = formatter ? formatter.format(value, modifier, metadata) : `${value}`;
+                formattedValue = labelerRegistry.applyLabel(formattedValue, modifier, showLabels);
             } else {
-                formattedValue = `${value}`;
+                const choice = entity as FeatureChoice;
+                const formatter = formatterRegistry.getFormatter(FeatureType.Choice, choice.type) as ChoiceFormatter;
+                formattedValue = formatter ? formatter.formatChoice(choice, metadata) : `Choice: ${FeatureChoiceType[choice.type] || choice.type}`;
             }
 
             return {
@@ -450,15 +364,16 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
                 featureId: this.getFeatureId(entity),
                 entityType: this.getEntityType(entity),
                 entitySubType: this.getEntitySubType(entity),
-                entityAppliesTo: 'appliesTo' in entity ? entity.appliesTo : undefined
+                entityAppliesTo: 'appliesTo' in entity ? entity.appliesTo : undefined,
+                groupingId: 'groupingId' in entity ? entity.groupingId || 0 : 0
             };
         });
     }
 
     /**
- * Phase 3: Within-Level Grouping (Pre-Transition)
- * Group entities of the same type within a single level
- */
+     * Phase 3: Within-Level Grouping (Pre-Transition)
+     * Group entities by groupingId ONLY (ignore entity type and subType for grouping)
+     */
     protected groupWithinLevel(
         formattedItems: FormattedItemWithLevel[],
         progression: FeatureProgression
@@ -467,7 +382,7 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
             return [];
         }
 
-        // Group by level first
+        // STEP 1: Group by level first
         const groupedByLevel = new Map<number, FormattedItemWithLevel[]>();
 
         for (const item of formattedItems) {
@@ -479,69 +394,66 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
 
         const results: GroupedLevelItem[] = [];
 
-        // For each level, group by entity type
         for (const [level, items] of groupedByLevel) {
-            // Group by entity type
-            const groupedByType = new Map<EntityGroupKey, FormattedItemWithLevel[]>();
+            // STEP 2: Group by groupingId ONLY (ignore entity type and subType for grouping)
+            const groupedByGroupingId = new Map<number, FormattedItemWithLevel[]>();
 
             for (const item of items) {
-                const groupKey = this.createEntityGroupKey(item.entity);
-
-                if (!groupedByType.has(groupKey)) {
-                    groupedByType.set(groupKey, []);
+                const groupingId = item.groupingId; // No || 0 needed - always present
+                if (!groupedByGroupingId.has(groupingId)) {
+                    groupedByGroupingId.set(groupingId, []);
                 }
-                groupedByType.get(groupKey)!.push(item);
+                groupedByGroupingId.get(groupingId)!.push(item);
             }
 
-            // Create grouped results for each type
-            for (const [groupKey, typeItems] of groupedByType) {
-                if (typeItems.length > 0) {
+            // STEP 3: Process each grouping separately
+            for (const [groupingId, groupedItems] of groupedByGroupingId) {
+                if (groupedItems.length > 0) {
+                    // Format items within this groupingId group
                     let formattedValue: string;
 
-                    switch (groupKey.type) {
-                        case FeatureType.Modifier: {
-                            // Use ModifierGroupingStrategy for proper formatting
-                            const modifierGroupingStrategy = new ModifierGroupingStrategy();
-                            const groupedResult = modifierGroupingStrategy.group(typeItems.map(item => ({
-                                formattedValue: item.formattedValue,
-                                breakdown: item.breakdown,
-                                metadata: undefined,
-                                modifier: 'appliesTo' in item.entity ? item.entity : undefined
-                            })));
+                    // Route to appropriate grouping strategy based on entity types
+                    // Note: Choices and modifiers should never be grouped together in practice
+                    const hasChoices = groupedItems.some(item => 'behavior' in item.entity);
 
-                            // Check if any of the modifiers have conditions and add condition prefix
-                            const modifiersWithConditions = typeItems.filter(item =>
-                                'appliesTo' in item.entity && (item.entity as FeatureModifier).conditions && (item.entity as FeatureModifier).conditions!.length > 0
-                            );
+                    if (hasChoices) {
+                        // Pure choice group
+                        const choiceGroupingStrategy = new ChoiceGroupingStrategy();
+                        const groupedResult = choiceGroupingStrategy.group(groupedItems.map(item => ({
+                            formattedValue: item.formattedValue,
+                            breakdown: item.breakdown,
+                            metadata: undefined,
+                            modifier: 'appliesTo' in item.entity ? item.entity : undefined,
+                            groupingId: item.groupingId
+                        })));
+                        formattedValue = groupedResult.formattedValue;
+                    } else {
+                        // Pure modifier group (default)
+                        const modifierGroupingStrategy = new ModifierGroupingStrategy();
+                        const groupedResult = modifierGroupingStrategy.group(groupedItems.map(item => ({
+                            formattedValue: item.formattedValue,
+                            breakdown: item.breakdown,
+                            metadata: undefined,
+                            modifier: 'appliesTo' in item.entity ? item.entity : undefined,
+                            groupingId: item.groupingId
+                        })));
 
-                            if (modifiersWithConditions.length > 0) {
-                                // Use the first modifier's conditions for the prefix (assuming all modifiers in a group have the same conditions)
-                                const firstModifier = modifiersWithConditions[0].entity as FeatureModifier;
-                                const conditionPrefix = this.formatConditionPrefix(firstModifier);
-                                if (conditionPrefix) {
-                                    formattedValue = `${groupedResult.formattedValue} vs ${conditionPrefix}`;
-                                } else {
-                                    formattedValue = groupedResult.formattedValue;
-                                }
+                        // Check if any of the modifiers have conditions and add condition prefix
+                        const modifiersWithConditions = groupedItems.filter(item =>
+                            'appliesTo' in item.entity && (item.entity as FeatureModifier).conditions && (item.entity as FeatureModifier).conditions!.length > 0
+                        );
+
+                        if (modifiersWithConditions.length > 0) {
+                            // Use the first modifier's conditions for the prefix (assuming all modifiers in a group have the same conditions)
+                            const firstModifier = modifiersWithConditions[0].entity as FeatureModifier;
+                            const conditionPrefix = this.formatConditionPrefix(firstModifier);
+                            if (conditionPrefix) {
+                                formattedValue = `${groupedResult.formattedValue} vs ${conditionPrefix}`;
                             } else {
                                 formattedValue = groupedResult.formattedValue;
                             }
-                            break;
-                        }
-                        case FeatureType.Choice: {
-                            // FeatureChoice - join with | delimiter
-                            formattedValue = typeItems.map(item => item.formattedValue).join(' | ');
-                            break;
-                        }
-                        case FeatureType.Effect: {
-                            // FeatureEffect - join with , delimiter
-                            formattedValue = typeItems.map(item => item.formattedValue).join(', ');
-                            break;
-                        }
-                        default: {
-                            // Unknown entity type - join with , delimiter
-                            formattedValue = typeItems.map(item => item.formattedValue).join(', ');
-                            break;
+                        } else {
+                            formattedValue = groupedResult.formattedValue;
                         }
                     }
 
@@ -552,9 +464,10 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
                         breakdown: { components: [] }, // Simplified for now
                         descriptionLevel: progression.level,
                         progressionId: progression.id,
-                        entityType: groupKey.type,
-                        entitySubType: groupKey.subType,
-                        entityAppliesTo: undefined
+                        entityType: FeatureType.Modifier, // Default type since we're grouping by groupingId
+                        entitySubType: ModifierType.Bonus, // Default subtype since we're ignoring subType grouping
+                        entityAppliesTo: undefined,
+                        groupingId: groupingId
                     });
                 }
             }
@@ -621,7 +534,8 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
                         progressionId: firstItem.progressionId,
                         entityType: FeatureType.Modifier, // Default type since we're combining all
                         entitySubType: ModifierType.Bonus, // Default subtype
-                        entityAppliesTo: undefined
+                        entityAppliesTo: undefined,
+                        groupingId: 0 // Default grouping for ungrouped entities
                     });
                 }
             }
@@ -671,19 +585,19 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
 
     /**
      * Phase 4: Transition Detection
-     * Detect transitions for each entity type separately
+     * Detect transitions for each groupingId separately
      */
     protected detectTransitions(withinLevelGrouped: GroupedLevelItem[]): TransitionPoint[] {
         if (withinLevelGrouped.length === 0) {
             return [];
         }
 
-        // Step 1: Flatten and sort by level, then by entity type
+        // Step 1: Flatten and sort by level, then by groupingId
         const levelEntityGroups = this.flattenToLevelEntityGroups(withinLevelGrouped);
 
         // Step 2: Single-pass transition detection
         const transitions: TransitionPoint[] = [];
-        const previousValues = new Map<string, string>();
+        const previousValues = new Map<number, string>(); // Use groupingId as key
 
         // Always include start level
         const startGroup = levelEntityGroups[0];
@@ -691,12 +605,13 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
 
         // Detect transitions for each group
         for (const group of levelEntityGroups) {
-            const key = `${group.entityType}-${group.entitySubType}`;
-            const previousValue = previousValues.get(key);
+            // Use groupingId as the key for transition detection
+            const groupingId = group.items[0]?.groupingId || 0;
+            const previousValue = previousValues.get(groupingId);
 
             if (group.formattedValue !== previousValue) {
                 transitions.push(this.createTransition(group));
-                previousValues.set(key, group.formattedValue);
+                previousValues.set(groupingId, group.formattedValue);
             }
         }
 
@@ -709,11 +624,11 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     private flattenToLevelEntityGroups(withinLevelGrouped: GroupedLevelItem[]): Array<{
         level: number;
         entityType: FeatureType;
-        entitySubType: ModifierType | FeatureSpecialEffectType | FeatureChoiceType;
+        entitySubType: ModifierType | FeatureChoiceType;
         formattedValue: string;
         items: GroupedLevelItem[];
     }> {
-        // Group by level first, then by entity type
+        // Group by level first, then by groupingId (not entity type)
         const groupedByLevel = new Map<number, GroupedLevelItem[]>();
 
         for (const item of withinLevelGrouped) {
@@ -726,42 +641,46 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
         const result: Array<{
             level: number;
             entityType: FeatureType;
-            entitySubType: ModifierType | FeatureSpecialEffectType | FeatureChoiceType;
+            entitySubType: ModifierType | FeatureChoiceType;
             formattedValue: string;
             items: GroupedLevelItem[];
         }> = [];
 
-        // For each level, group by entity type and create flattened structure
+        // For each level, group by groupingId and create flattened structure
         for (const [level, items] of groupedByLevel) {
-            const groupedByType = new Map<string, GroupedLevelItem[]>();
+            const groupedByGroupingId = new Map<number, GroupedLevelItem[]>();
 
             for (const item of items) {
-                const typeKey = `${item.entityType}-${item.entitySubType}`;
-                if (!groupedByType.has(typeKey)) {
-                    groupedByType.set(typeKey, []);
+                const groupingId = item.groupingId;
+                if (!groupedByGroupingId.has(groupingId)) {
+                    groupedByGroupingId.set(groupingId, []);
                 }
-                groupedByType.get(typeKey)!.push(item);
+                groupedByGroupingId.get(groupingId)!.push(item);
             }
 
-            // Create flattened groups for each entity type at this level
-            for (const [typeKey, typeItems] of groupedByType) {
-                const [entityType, entitySubType] = typeKey.split('-').map(Number);
-                const formattedValue = typeItems.map(item => item.formattedValue).join(', ');
+            // Create flattened groups for each groupingId at this level
+            for (const [, groupingItems] of groupedByGroupingId) {
+                // Use the first item's entity type and subtype for the flattened structure
+                const firstItem = groupingItems[0];
+                const formattedValue = groupingItems.map(item => item.formattedValue).join(', ');
 
                 result.push({
                     level,
-                    entityType: entityType as FeatureType,
-                    entitySubType: entitySubType as ModifierType | FeatureSpecialEffectType | FeatureChoiceType,
+                    entityType: firstItem.entityType,
+                    entitySubType: firstItem.entitySubType,
                     formattedValue,
-                    items: typeItems
+                    items: groupingItems
                 });
             }
         }
 
-        // Sort by level, then by entity type for consistent processing
+        // Sort by level, then by groupingId for consistent processing
         return result.sort((a, b) => {
             if (a.level !== b.level) return a.level - b.level;
-            return a.entitySubType - b.entitySubType;
+            // Sort by groupingId instead of entitySubType
+            const aGroupingId = a.items[0]?.groupingId || 0;
+            const bGroupingId = b.items[0]?.groupingId || 0;
+            return aGroupingId - bGroupingId;
         });
     }
 
@@ -771,7 +690,7 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     private createStartTransition(group: {
         level: number;
         entityType: FeatureType;
-        entitySubType: ModifierType | FeatureSpecialEffectType | FeatureChoiceType;
+        entitySubType: ModifierType | FeatureChoiceType;
         formattedValue: string;
         items: GroupedLevelItem[];
     }): TransitionPoint {
@@ -792,7 +711,7 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     private createTransition(group: {
         level: number;
         entityType: FeatureType;
-        entitySubType: ModifierType | FeatureSpecialEffectType | FeatureChoiceType;
+        entitySubType: ModifierType | FeatureChoiceType;
         formattedValue: string;
         items: GroupedLevelItem[];
     }): TransitionPoint {
@@ -827,7 +746,7 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
         context?: DisplayContext,
         progressionLevel?: number,
         modifierValue?: number
-    ): { value: number; breakdown: CalculationBreakdown } {
+    ): { value: number | string; breakdown: CalculationBreakdown } {
         const calculationContext: CalculationContext = {
             level,
             progressionLevel: progressionLevel || level,
@@ -872,7 +791,7 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     }
 
     protected processEntity(
-        entity: FeatureModifier | FeatureChoice | FeatureSpecialEffect,
+        entity: FeatureModifier | FeatureChoice,
         config: ProcessingConfig,
         context: ProcessingContext
     ): ProcessingResult {
@@ -904,8 +823,8 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     }
 
     protected formatEntity(
-        entity: FeatureModifier | FeatureChoice | FeatureSpecialEffect,
-        formatter: BaseFormatter | ChoiceFormatter | EffectFormatter,
+        entity: FeatureModifier | FeatureChoice,
+        formatter: BaseFormatter | ChoiceFormatter,
         context: ProcessingContext
     ): string {
         switch (context.entityType) {
@@ -916,10 +835,6 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
             case FeatureType.Choice: {
                 const choice = entity as FeatureChoice;
                 return (formatter as ChoiceFormatter).formatChoice(choice, context.metadata);
-            }
-            case FeatureType.Effect: {
-                const effect = entity as FeatureSpecialEffect;
-                return (formatter as EffectFormatter).format(effect, context.level || 1);
             }
             default:
                 return `Unknown entity type: ${FeatureType[context.entityType] || context.entityType}`;
@@ -959,45 +874,11 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
                 return SPELL_SCHOOL_MAP[conditionValue]?.name || `Spell School ${conditionValue}`;
             case FeatureModifierConditionType.attack_type:
                 return ATTACK_TYPES[conditionValue]?.name || `Attack Type ${conditionValue}`;
+            case FeatureModifierConditionType.creature_type:
+                return CREATURE_TYPES[conditionValue]?.name || `Creature Type ${conditionValue}`;
             default:
                 return `Value ${conditionValue}`;
         }
-    }
-
-    protected buildFormulaParams(
-        formula: FormulaParamsData,
-        level: number,
-        startLevel: number,
-        context?: DisplayContext,
-        modifierValue?: number
-    ): Record<string, unknown> {
-        // Use the formula object directly and add the additional parameters
-        const params: Record<string, unknown> = {
-            ...formula,
-            level,
-            startLevel,
-            scalingValue: modifierValue !== undefined ? modifierValue : 1,
-            baseValue: modifierValue !== undefined ? modifierValue : 1, // Add baseValue for Ability-based formulas
-            context // Pass context to formulas
-        };
-
-        return params;
-    }
-
-    /**
-     * Template method for formatting transition information
-     * Subclasses can override this to customize transition display
-     */
-    protected formatTransitionInfo(
-        baseResult: string,
-        transitions: Array<{ level: number; type: number; description: string; value: number; previousValue?: number }>,
-        _progression: FeatureProgression,
-        _context?: DisplayContext,
-        _metadata?: FormatterMetadata
-    ): string {
-        // Default implementation: append transition levels in parentheses
-        const transitionLevels = transitions.map(t => t.level).join(', ');
-        return `${baseResult} (transitions at levels: ${transitionLevels})`;
     }
 }
 
@@ -1005,10 +886,11 @@ export class EditPageDisplayStrategy extends DisplayStrategyBase {
     protected formatProgressions(
         progressions: FeatureProgression[],
         context?: DisplayContext,
-        metadata?: FormatterMetadata
+        metadata?: FormatterMetadata,
+        showLabels: boolean = true
     ): DisplayResult {
         // just use the first progression
-        return this.orchestrateFormatting(progressions[0], context, metadata);
+        return this.orchestrateFormatting(progressions[0], context, metadata, showLabels);
     }
 
     /**
@@ -1069,7 +951,8 @@ export class DetailPageDisplayStrategy extends DisplayStrategyBase {
     protected formatProgressions(
         progressions: FeatureProgression[],
         context?: DisplayContext,
-        metadata?: FormatterMetadata
+        metadata?: FormatterMetadata,
+        showLabels: boolean = true
     ): DisplayResult {
         if (!progressions || progressions.length === 0) {
             return {
@@ -1086,7 +969,7 @@ export class DetailPageDisplayStrategy extends DisplayStrategyBase {
 
         for (const progression of progressions) {
             // Use orchestrateFormatting for Phases 1-5 (same as EditPageDisplayStrategy)
-            const result = this.orchestrateFormatting(progression, context, metadata);
+            const result = this.orchestrateFormatting(progression, context, metadata, showLabels);
             progressionResults.push(result);
         }
 
@@ -1132,7 +1015,8 @@ export class DetailPageDisplayStrategy extends DisplayStrategyBase {
                         progressionId: progression.id,
                         entityType: FeatureType.Modifier,
                         entitySubType: 0,
-                        entityAppliesTo: undefined
+                        entityAppliesTo: undefined,
+                        groupingId: 0 // Default grouping for ungrouped entities
                     }]
                 }]
             };
@@ -1165,7 +1049,6 @@ export class DetailPageDisplayStrategy extends DisplayStrategyBase {
         const groupedByLevel = new Map<number, LevelEntry[]>();
 
         for (const item of progressionResults) {
-            console.log('item: ', item);
             for (const levelEntry of item.levelEntries) {
                 if (!groupedByLevel.has(levelEntry.level)) {
                     groupedByLevel.set(levelEntry.level, []);
@@ -1177,9 +1060,6 @@ export class DetailPageDisplayStrategy extends DisplayStrategyBase {
         // Create LevelEntry[] for each level
         const levelEntries: LevelEntry[] = [];
         for (const [level, items] of groupedByLevel) {
-            for (const item of items) {
-                console.log('level: ', level, 'item: ', item);
-            }
             levelEntries.push({
                 level,
                 description: `Level ${level}`,
@@ -1196,7 +1076,8 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     protected formatProgressions(
         progressions: FeatureProgression[],
         context?: DisplayContext,
-        metadata?: FormatterMetadata
+        metadata?: FormatterMetadata,
+        showLabels: boolean = true
     ): DisplayResult {
         // Character sheet shows current level values only
         const currentLevel = context?.character?.classLevels ?
@@ -1206,7 +1087,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
 
         for (const progression of progressions) {
             // Use orchestration for character sheet display
-            const result = this.orchestrateFormatting(progression, context, metadata);
+            const result = this.orchestrateFormatting(progression, context, metadata, showLabels);
             if (result.formattedValue) {
                 formattedItems.push({
                     level: currentLevel,
@@ -1217,7 +1098,8 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                     progressionId: progression.id,
                     entityType: FeatureType.Modifier, // Default type
                     entitySubType: 0, // Default subtype
-                    entityAppliesTo: undefined
+                    entityAppliesTo: undefined,
+                    groupingId: 0 // Default grouping for ungrouped entities
                 });
             }
         }
@@ -1246,7 +1128,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     protected createDisplayResult(
         withinProgressionGrouped: GroupedLevelItem[],
         context?: DisplayContext,
-        progression?: FeatureProgression
+        _progression?: FeatureProgression
     ): DisplayResult {
         // DisplayType.CharacterSheet: filter to current character level only
         const currentLevel = context?.character?.classLevels ?

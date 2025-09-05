@@ -54,7 +54,6 @@ export const ClassSkillService = {
                 },
                 modifiers: [],
                 choices: [],
-                effects: [],
             };
         }
 
@@ -75,11 +74,11 @@ export const ClassSkillService = {
             type: ModifierType.Other, // Not a bonus, just marking as class skill
             appliesTo: ModifierAppliesToType.Skill,
             appliesToId: skillId,
-            formulaParamsId: null,
             value: 0, // No bonus value - just marking as class skill
             bonusType: null, // No bonus type needed
             appliesIfChoiceKey: null,
             appliesIfChoiceValue: null,
+            groupingId: 0,
         };
 
         // Update the progression with the new modifier

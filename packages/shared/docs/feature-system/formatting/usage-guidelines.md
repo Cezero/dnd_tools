@@ -6,6 +6,24 @@ This document provides comprehensive guidelines for agents working with the D&D 
 
 The formatting system is used by multiple other systems in the D&D Tools project, including the [Class System](../class-system/README.md) and [Race System](../race-system/README.md), to display feature progressions in a consistent and user-friendly manner.
 
+## 🆕 **Recent GroupingId Integration**
+
+The formatting system has been updated to use **`groupingId`-based grouping** instead of the previous entity type-based grouping approach. This change improves the accuracy of feature grouping and transition detection by using logical grouping identifiers rather than entity type classifications.
+
+### **Key Changes for Agents**
+
+1. **Grouping Logic**: Entities are now grouped by their `groupingId` value rather than by entity type and subtype
+2. **Transition Detection**: Transition detection now works with logical grouping rather than entity type grouping
+3. **Maintained Architecture**: All changes preserve the 6-layer architecture and 6-phase processing flow
+4. **Enhanced Accuracy**: The new approach correctly handles complex feature scenarios without false transitions
+
+### **GroupingId Behavior**
+
+- **`groupingId = 0`**: Represents ungrouped entities that are formatted individually
+- **`groupingId > 0`**: Represents logically grouped entities that are formatted together as a unit
+- **Default Value**: All entities have a `groupingId` that defaults to 0 if not explicitly set
+- **No Validation Required**: The system assumes `groupingId` is always present and valid
+
 ## 🏗️ **Architecture Principles**
 
 For complete architecture overview and layer descriptions, see **[README.md](./README.md)**.
@@ -77,6 +95,22 @@ When working with calculator types, transition types, or other constants, use th
 #### ❌ **WRONG: Don't use magic numbers**
 Avoid using hardcoded numeric values for calculator types, transition types, or other constants. These magic numbers make the code difficult to maintain, prone to errors, and violate the principle of self-documenting code.
 
+### **5. GroupingId Usage**
+
+#### ✅ **CORRECT: Use groupingId for all grouping operations**
+The formatting system now uses `groupingId` as the primary criterion for grouping entities. This provides logical grouping based on content administrator intent rather than arbitrary entity type classifications.
+
+When working with grouping operations:
+- **Phase 3**: Use `groupingId` for within-level grouping
+- **Phase 4**: Use `groupingId` for transition detection
+- **Type System**: Ensure all relevant interfaces include the `groupingId` field
+- **Grouping Strategies**: Implement grouping logic based on `groupingId` values
+
+#### ❌ **WRONG: Don't use entity type-based grouping**
+Avoid using the old entity type and subtype-based grouping approach. This approach was replaced because it led to incorrect groupings and false transitions in complex feature scenarios.
+
+The new `groupingId` approach provides more accurate and logical grouping that better reflects the intended feature organization.
+
 ## 🔧 **Development Patterns**
 
 ### **1. Adding New Calculator Types**
@@ -104,6 +138,25 @@ When calculators or formatters are missing, provide meaningful error messages an
 #### ❌ **WRONG: Don't assume calculators or formatters exist**
 Never assume that a calculator or formatter exists without checking. This can lead to runtime errors and poor user experience when expected components are not available.
 
+### **4. GroupingId Integration**
+
+#### ✅ **CORRECT: Follow groupingId integration patterns**
+When working with the new groupingId system:
+
+1. **Respect the Core Principle**: Only change Phase 3 grouping logic, maintain all other phases and behavior
+2. **Use groupingId for Grouping**: All grouping operations should use `groupingId` instead of entity type
+3. **Maintain Delimiters**: Keep all existing delimiters (modifiers: `', '`, choices: `' | '`, effects: `', '`)
+4. **Preserve Display Behavior**: Maintain DisplayType.Edit and DisplayType.Detail behavior exactly as before
+5. **Update Type Interfaces**: Ensure all relevant interfaces include the `groupingId` field
+
+#### ❌ **WRONG: Don't violate groupingId integration principles**
+Avoid these common mistakes:
+
+1. **Changing Delimiters**: Don't modify the existing delimiter behavior
+2. **Changing Display Types**: Don't alter how DisplayType.Edit or DisplayType.Detail work
+3. **Bypassing Phases**: Don't skip or modify phases other than Phase 3 and Phase 4
+4. **Ignoring groupingId**: Don't fall back to entity type-based grouping
+
 ## 🧪 **Testing Patterns**
 
 ### **1. Unit Testing**
@@ -119,6 +172,17 @@ When testing display strategies, mock the calculators and formatters they depend
 Integration testing should verify that the complete formatting workflow functions correctly with real data. This includes testing the 6-phase process, proper error handling, and correct output formatting.
 
 Test with actual feature progressions from the [Class System](../class-system/README.md) and [Race System](../race-system/README.md) to ensure the formatting system works correctly with real-world data.
+
+### **3. GroupingId Testing**
+
+#### ✅ **CORRECT: Test groupingId integration thoroughly**
+When testing the new groupingId system:
+
+1. **Test Grouping Logic**: Verify that entities with the same `groupingId` are grouped together
+2. **Test Transition Detection**: Ensure transitions are detected correctly using `groupingId` grouping
+3. **Test Complex Scenarios**: Use complex features like "Inspire Greatness" to test edge cases
+4. **Test Display Types**: Verify that all display types work correctly with the new grouping
+5. **Test Delimiters**: Ensure all delimiters are preserved and working correctly
 
 ## 🚫 **Anti-Patterns to Avoid**
 
@@ -146,6 +210,14 @@ Avoid importing calculator instances directly from their source files. All calcu
 #### ❌ **WRONG: Replacing default implementations without testing**
 Avoid replacing default implementations without thorough testing. Default implementations are used throughout the system and changing them can have widespread effects.
 
+### **4. GroupingId Integration Violations**
+
+#### ❌ **WRONG: Mixing old and new grouping approaches**
+Avoid mixing the old entity type-based grouping with the new `groupingId` approach. This can lead to inconsistent behavior and incorrect results.
+
+#### ❌ **WRONG: Changing non-grouping aspects**
+Avoid modifying delimiters, display type behavior, or other aspects that should remain unchanged. The groupingId integration only affects the grouping logic, not the formatting or display behavior.
+
 ## 📋 **Best Practices**
 
 ### **1. Registry Usage**
@@ -159,6 +231,7 @@ Avoid replacing default implementations without thorough testing. Default implem
 - **Extend base interfaces** for new types rather than creating duplicates
 - **Use proper enums** instead of magic numbers
 - **Avoid deprecated types**
+- **Include groupingId** in all relevant interfaces
 
 ### **3. Error Handling**
 - **Handle missing calculators/formatters** gracefully
@@ -171,19 +244,27 @@ Avoid replacing default implementations without thorough testing. Default implem
 - **Test complete workflows** for integration testing
 - **Test error conditions** thoroughly
 - **Use real data** for integration tests
+- **Test groupingId scenarios** specifically
+
+### **5. GroupingId Integration**
+- **Follow the core principle**: Only change Phase 3 grouping logic
+- **Use groupingId consistently**: Apply groupingId-based grouping throughout Phase 3 and Phase 4
+- **Maintain existing behavior**: Preserve all delimiters and display type behavior
+- **Test thoroughly**: Verify that complex scenarios work correctly
+- **Document changes**: Update documentation to reflect the new approach
 
 ## Integration with Other Systems
 
 The formatting system is used by multiple other systems in the D&D Tools project:
 
 ### **Class System Integration**
-The [Class System](../class-system/README.md) uses the formatting system to display class feature progressions. Class features with multiple levels and complex progression patterns are formatted consistently using the 6-phase process.
+The [Class System](../class-system/README.md) uses the formatting system to display class feature progressions. Class features with multiple levels and complex progression patterns are formatted consistently using the 6-phase process with the new groupingId-based grouping.
 
 ### **Race System Integration**
-The [Race System](../race-system/README.md) uses the formatting system to display racial feature progressions. Racial features with level-based scaling and conditional modifiers are formatted using the same patterns as class features.
+The [Race System](../race-system/README.md) uses the formatting system to display racial feature progressions. Racial features with level-based scaling and conditional modifiers are formatted using the same patterns as class features, now with improved groupingId-based grouping.
 
 ### **Feature System Integration**
-The main [Feature System](../README.md) uses the formatting system for feature detail displays and editing interfaces. This ensures consistent formatting across all feature-related displays in the application.
+The main [Feature System](../README.md) uses the formatting system for feature detail displays and editing interfaces. This ensures consistent formatting across all feature-related displays in the application, with the new groupingId approach providing more accurate and logical grouping.
 
 ## Related Documentation
 

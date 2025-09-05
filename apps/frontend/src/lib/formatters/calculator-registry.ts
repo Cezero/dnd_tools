@@ -2,8 +2,6 @@ import { FormulaId } from '@shared/static-data';
 
 import {
     FormulaCalculatorImpl,
-    ChoiceCalculatorImpl,
-    ConditionalValueDetectorImpl
 } from './calculators';
 import {
     ProgressionGeneratorImpl,

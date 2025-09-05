@@ -1,9 +1,10 @@
 import type {
     FormulaParamsData
 } from '@shared/schema';
-import { FORMULA_MAP, BreakdownComponentType, FeatureType, ModifierType } from '@shared/static-data';
+import { FORMULA_MAP, BreakdownComponentType, FeatureType, ModifierType, DisplayType } from '@shared/static-data';
 
 import { FormulaCalculatorImpl } from './calculators';
+import { buildFormulaParams } from './formula-utils';
 // Remove circular dependency - calculator will be passed as parameter
 import type {
     CalculationContext,
@@ -40,11 +41,6 @@ export class ProgressionGeneratorImpl implements ProgressionGenerator {
             return values;
         }
 
-        // If formula doesn't have progression, don't generate progression values
-        if (!formulaDef.hasProgression) {
-            return values;
-        }
-
         for (let level = startLevel; level <= endLevel; level++) {
             const calculationContext: CalculationContext = {
                 level,
@@ -53,27 +49,31 @@ export class ProgressionGeneratorImpl implements ProgressionGenerator {
                 character: context?.character
             };
 
-            let value: number;
+            let value: number | string;
             let breakdown: CalculationBreakdown;
 
             // Determine whether to use calculate() or getDisplayString() based on formula properties
             if (formulaDef.isCharacterDependent && !context?.character) {
                 // Character-dependent formula but no character data available
                 // Use getDisplayString() and convert to numeric representation
-                const params = {
+                // Convert CalculationContext to DisplayContext for buildFormulaParams
+                const displayContext = context ? {
+                    character: context.character,
+                    displayType: DisplayType.Edit,
+                    currentLevel: context.level,
+                    showBreakdown: false
+                } : undefined;
+
+                const params = buildFormulaParams(
+                    formula,
                     level,
                     startLevel,
-                    interval: formula.interval,
-                    formulaStartLevel: formula.formulaStartLevel,
-                    abilityId: formula.abilityId,
-                    thresholds: formula.thresholds,
-                    values: formula.values
-                };
+                    displayContext,
+                    modifierValue
+                );
 
                 const displayString = formulaDef.getDisplayString(params);
-                // Convert display string to numeric value for comparison purposes
-                // This is a simple hash-based approach - in practice, you might want more sophisticated parsing
-                value = displayString.split('').reduce((hash, char) => hash + char.charCodeAt(0), 0);
+                value = displayString;
                 breakdown = {
                     components: [{
                         source: formulaDef.name,
@@ -177,71 +177,3 @@ export class TransitionDetectorImpl implements TransitionDetector {
         return this.findTransitions(values);
     }
 }
-
-/**
- * Utility functions for progression analysis
- */
-export class ProgressionAnalysisUtils {
-    /**
-     * Get the maximum value in a progression
-     */
-    static getMaxValue(values: Array<ProgressionValue>): number {
-        return Math.max(...values.map(v => v.value));
-    }
-
-    /**
-     * Get the minimum value in a progression
-     */
-    static getMinValue(values: Array<ProgressionValue>): number {
-        return Math.min(...values.map(v => v.value));
-    }
-
-    /**
-     * Get the value at a specific level
-     */
-    static getValueAtLevel(values: Array<ProgressionValue>, level: number): number | undefined {
-        const entry = values.find(v => v.level === level);
-        return entry?.value;
-    }
-
-    /**
-     * Check if a progression has any transitions
-     */
-    static hasTransitions(values: Array<ProgressionValue>): boolean {
-        for (let i = 1; i < values.length; i++) {
-            if (values[i].value !== values[i - 1].value) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Get the number of transitions in a progression
-     */
-    static getTransitionCount(values: Array<ProgressionValue>): number {
-        let count = 0;
-        for (let i = 1; i < values.length; i++) {
-            if (values[i].value !== values[i - 1].value) {
-                count++;
-            }
-        }
-        return count;
-    }
-
-    /**
-     * Get the levels where transitions occur
-     */
-    static getTransitionLevels(values: Array<ProgressionValue>): Array<number> {
-        const levels: Array<number> = [];
-        for (let i = 1; i < values.length; i++) {
-            if (values[i].value !== values[i - 1].value) {
-                levels.push(values[i].level);
-            }
-        }
-        return levels;
-    }
-}
-
-// Export utility functions
-export const progressionAnalysis = ProgressionAnalysisUtils;

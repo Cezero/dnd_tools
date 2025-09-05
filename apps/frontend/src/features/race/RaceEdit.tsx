@@ -12,7 +12,7 @@ import {
     ValidatedForm,
     useValidatedForm
 } from '@/components/forms';
-import { UpdateRaceSchema, BaseRaceSchema, FeatureProgression, FeatureModifier, FeatureChoice, FeatureSpecialEffect, CreateRaceRequest, UpdateRaceRequest } from '@shared/schema';
+import { UpdateRaceSchema, BaseRaceSchema, FeatureProgression, FeatureModifier, FeatureChoice, CreateRaceRequest, UpdateRaceRequest } from '@shared/schema';
 import { ModifierAppliesToType, SpecialFeatureId, ModifierType, FeatureSourceType } from '@shared/static-data';
 
 import { RaceApi } from './RaceApi';
@@ -123,7 +123,7 @@ export function RaceEdit() {
     const handleAddOrUpdateFeature = useCallback((selectedFeatureObjects: Array<{ featureId: number; slug: string; name: string; description: string; level: number }>) => {
         setFeatureProgressions(prev => {
             // Create a map of existing features for quick lookup by featureId
-            const existingFeaturesMap = new Map<number, { modifiers?: FeatureModifier[]; choices?: FeatureChoice[]; effects?: FeatureSpecialEffect[] }>();
+            const existingFeaturesMap = new Map<number, { modifiers?: FeatureModifier[]; choices?: FeatureChoice[] }>();
             prev.forEach(f => existingFeaturesMap.set(f.featureId, f));
 
             const updatedFeatures = selectedFeatureObjects.map(selectedFeature => {
@@ -143,7 +143,6 @@ export function RaceEdit() {
                     },
                     modifiers: existingFeature?.modifiers || [],
                     choices: existingFeature?.choices || [],
-                    effects: existingFeature?.effects || [],
                 };
             });
             return updatedFeatures;
@@ -204,7 +203,6 @@ export function RaceEdit() {
                     level: 1,
                     classId: null,
                     featureId: featureId,
-                    // REMOVED: appliesTo and appliesToType - redundant fields removed from schema
                     sourceType: FeatureSourceType.Race,
                     feature: {
                         id: featureId,
@@ -213,8 +211,7 @@ export function RaceEdit() {
                         slug: isAutomatic ? 'automatic-language' : 'bonus-language',
                     },
                     modifiers: [],
-                    choices: [],
-                    effects: []
+                    choices: []
                 };
             }
 
@@ -227,10 +224,10 @@ export function RaceEdit() {
                 bonusType: null,
                 appliesTo: isAutomatic ? ModifierAppliesToType.AutomaticLanguage : ModifierAppliesToType.BonusLanguage,
                 appliesToId: languageId,
-                formulaParamsId: null,
                 appliesIfChoiceKey: null,
                 appliesIfChoiceValue: null,
-                conditions: []
+                conditions: [],
+                groupingId: 0,
             };
 
             // Update the existing progression or add a new one
@@ -272,8 +269,7 @@ export function RaceEdit() {
                 slug: feature.slug,
             },
             modifiers: [],
-            choices: [],
-            effects: [],
+            choices: []
         };
 
         setFeatureProgressions(prev => [...prev, newProgression]);
@@ -385,10 +381,10 @@ export function RaceEdit() {
                                     bonusType: null,
                                     appliesTo: ModifierAppliesToType.Ability,
                                     appliesToId: abilityId,
-                                    formulaParamsId: null,
                                     appliesIfChoiceKey: null,
                                     appliesIfChoiceValue: null,
-                                    conditions: []
+                                    conditions: [],
+                                    groupingId: 0,
                                 }]
                             }
                             : fp
@@ -432,13 +428,12 @@ export function RaceEdit() {
                         bonusType: null,
                         appliesTo: ModifierAppliesToType.Ability,
                         appliesToId: abilityId,
-                        formulaParamsId: null,
                         appliesIfChoiceKey: null,
                         appliesIfChoiceValue: null,
-                        conditions: []
+                        conditions: [],
+                        groupingId: 0,
                     }],
-                    choices: [],
-                    effects: [],
+                    choices: []
                 };
                 return [...prev, newAbilityFeature];
             }
@@ -466,7 +461,6 @@ export function RaceEdit() {
                     const { id: _, ...progressionData } = prog;
                     return {
                         ...progressionData,
-                        // Remove temporary IDs from related entities
                         modifiers: prog.modifiers?.map(mod => {
                             const { id: _, progressionId: __, ...modData } = mod;
                             return modData;
@@ -474,10 +468,6 @@ export function RaceEdit() {
                         choices: prog.choices?.map(choice => {
                             const { id: _, progressionId: __, ...choiceData } = choice;
                             return choiceData;
-                        }) || [],
-                        effects: prog.effects?.map(effect => {
-                            const { id: _, progressionId: __, ...effectData } = effect;
-                            return effectData;
                         }) || [],
                     };
                 })

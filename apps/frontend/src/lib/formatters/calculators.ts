@@ -5,7 +5,6 @@ import type {
 } from '@shared/schema';
 import {
     FORMULA_MAP,
-    FormulaId,
     DisplayType,
     BreakdownComponentType
 } from '@shared/static-data';
@@ -48,10 +47,9 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
         const _characterLevel = context?.characterLevel || calculationLevel;
         const progressionLevel = context?.progressionLevel || calculationLevel;
 
-        let value = 0;
         const components: Array<{
             source: string;
-            value: number;
+            value: number | string;
             type: BreakdownComponentType;
             description: string;
             formula?: string;
@@ -68,43 +66,21 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
         const params = buildFormulaParams(formula, calculationLevel, progressionLevel, displayContext, modifierValue);
 
         // Use the formula's calculate function
-        const calculatedValue = formulaDef.calculate(params);
+        const value = formulaDef.calculate(params);
 
-        // For Conditional Scaling with string values, we need to handle them specially
-        if (formula.formulaId === FormulaId.CONDITIONAL_SCALING && typeof calculatedValue === 'string') {
-            // For string values (like "1d6"), we need to convert them to a numeric representation
-            // that can be used by the formatter system, but preserve the original string for display
-            // Use a simple hash of the string as the numeric value for comparison purposes
-            // TODO: Consider a more sophisticated approach for string-to-number conversion
-            const stringHash = calculatedValue.split('').reduce((hash, char) => hash + char.charCodeAt(0), 0);
-            value = stringHash;
+        // Use the formula's display string function
+        const formulaString = formulaDef.getDisplayString ?
+            formulaDef.getDisplayString(params) :
+            formulaDef.name;
 
-            // Store the original string value in the breakdown for later use
-            components.push({
-                source: formulaDef.name,
-                value: stringHash,
-                type: BreakdownComponentType.formula,
-                description: `Conditional scaling: ${calculatedValue}`,
-                formula: calculatedValue // Store original string in formula field
-            });
-        } else {
-            // For numeric values, use them as-is
-            value = typeof calculatedValue === 'number' ? calculatedValue : Number(calculatedValue) || 0;
-
-            // Use the formula's display string function
-            const formulaString = formulaDef.getDisplayString ?
-                formulaDef.getDisplayString(params) :
-                formulaDef.name;
-
-            components.push({
-                source: formulaDef.name,
-                value,
-                type: BreakdownComponentType.formula,
-                description: formulaDef.description,
-                formula: formulaString
-            });
-        }
-
+        components.push({
+            source: formulaDef.name,
+            value,
+            type: BreakdownComponentType.formula,
+            description: formulaDef.description,
+            formula: formulaString
+        });
+        
         return {
             value,
             breakdown: {

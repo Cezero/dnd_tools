@@ -3,11 +3,15 @@ import { NameSelectOptionList } from "./Util";
 
 export const FeatureType = {
     Modifier: 0,
-    Effect: 1,
     Choice: 2,
 } as const;
 
 export type FeatureType = typeof FeatureType[keyof typeof FeatureType];
+
+export const FEATURE_TYPES: BaseMap<CoreComponent> = {
+    [FeatureType.Modifier]: { id: FeatureType.Modifier, name: 'modifiers' },
+    [FeatureType.Choice]: { id: FeatureType.Choice, name: 'choices' },
+}
 
 export const SpecialFeatureId = {
     ClassSkill: 1,
@@ -69,6 +73,11 @@ export const ModifierAppliesToType = {
     UnarmedDamage: 20,  // Unarmed strike damage dice
     Feat: 21,           // Direct feat grants (e.g., Ranger Track, Endurance)
 
+    // New types for complex abilities
+    SizeCategory: 22,
+    CreatureType: 23,
+    DamageType: 24,
+
     // Other
     Other: 13,          // Special cases
     BonusLanguage: 14,  // Languages that require INT modifier
@@ -99,6 +108,11 @@ export const MODIFIER_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
     [ModifierAppliesToType.SpellResistance]: { id: ModifierAppliesToType.SpellResistance, name: 'Spell Resistance', displayName: 'SR' },
     [ModifierAppliesToType.UnarmedDamage]: { id: ModifierAppliesToType.UnarmedDamage, name: 'Unarmed Damage', displayName: 'Unarmed Dmg' },
     [ModifierAppliesToType.Feat]: { id: ModifierAppliesToType.Feat, name: 'Feat', displayName: 'Feat' },
+
+    // New types for complex abilities
+    [ModifierAppliesToType.SizeCategory]: { id: ModifierAppliesToType.SizeCategory, name: 'Size Category', displayName: 'Size Category' },
+    [ModifierAppliesToType.CreatureType]: { id: ModifierAppliesToType.CreatureType, name: 'Creature Type', displayName: 'Creature Type' },
+    [ModifierAppliesToType.DamageType]: { id: ModifierAppliesToType.DamageType, name: 'Damage Type', displayName: 'Damage Type' },
 
     // Other
     [ModifierAppliesToType.Other]: { id: ModifierAppliesToType.Other, name: 'Other', displayName: 'Other' },
@@ -144,6 +158,11 @@ export const MODIFIER_TYPE_COMPATIBILITY = {
         ModifierAppliesToType.AutomaticLanguage, // Automatic languages are Other type modifiers
 
         ModifierAppliesToType.Feat, // Direct feat grants are Other type modifiers
+
+        // New complex ability types
+        ModifierAppliesToType.SizeCategory,
+        ModifierAppliesToType.CreatureType,
+        ModifierAppliesToType.DamageType,
     ],
 } as const;
 
@@ -203,33 +222,6 @@ export const FEATURE_BONUS_TYPES: BaseMap<CoreComponent> = {
 
 export const FEATURE_BONUS_LIST = Object.values(FEATURE_BONUS_TYPES);
 export const FEATURE_BONUS_SELECT_LIST = NameSelectOptionList(FEATURE_BONUS_LIST);
-
-export const FeatureSpecialEffectType = {
-    Proficiency: 0,
-    FavoredEnemy: 1,
-    ConditionalUpgrade: 2,
-    TurnUndead: 3,
-    WildShapeForm: 4,
-    WildShapeSize: 5,
-    Other: 6,
-    WeaponFamiliarity: 7,
-} as const;
-
-export type FeatureSpecialEffectType = typeof FeatureSpecialEffectType[keyof typeof FeatureSpecialEffectType];
-
-export const FEATURE_SPECIAL_EFFECT_TYPES: BaseMap<CoreComponent> = {
-    [FeatureSpecialEffectType.Proficiency]: { id: FeatureSpecialEffectType.Proficiency, name: 'Proficiency' },
-    [FeatureSpecialEffectType.FavoredEnemy]: { id: FeatureSpecialEffectType.FavoredEnemy, name: 'Favored Enemy' },
-    [FeatureSpecialEffectType.ConditionalUpgrade]: { id: FeatureSpecialEffectType.ConditionalUpgrade, name: 'Conditional Upgrade' },
-    [FeatureSpecialEffectType.TurnUndead]: { id: FeatureSpecialEffectType.TurnUndead, name: 'Turn Undead' },
-    [FeatureSpecialEffectType.WildShapeForm]: { id: FeatureSpecialEffectType.WildShapeForm, name: 'Wild Shape Form' },
-    [FeatureSpecialEffectType.WildShapeSize]: { id: FeatureSpecialEffectType.WildShapeSize, name: 'Wild Shape Size' },
-    [FeatureSpecialEffectType.Other]: { id: FeatureSpecialEffectType.Other, name: 'Other' },
-    [FeatureSpecialEffectType.WeaponFamiliarity]: { id: FeatureSpecialEffectType.WeaponFamiliarity, name: 'Weapon Familiarity' },
-}
-
-export const FEATURE_SPECIAL_EFFECT_LIST = Object.values(FEATURE_SPECIAL_EFFECT_TYPES);
-export const FEATURE_SPECIAL_EFFECT_SELECT_LIST = NameSelectOptionList(FEATURE_SPECIAL_EFFECT_LIST);
 
 export const FeatureAppliesToType = {
     Skill: 0,
@@ -333,6 +325,7 @@ export const FeatureModifierConditionType = {
     other: 3,
     feature: 4,
     spell_school: 5,
+    creature_type: 6,
 } as const;
 
 export type FeatureModifierConditionType = typeof FeatureModifierConditionType[keyof typeof FeatureModifierConditionType];
@@ -344,6 +337,7 @@ export const FEATURE_MODIFIER_CONDITION_TYPES: BaseMap<ConditionType> = {
     [FeatureModifierConditionType.other]: { id: FeatureModifierConditionType.other, name: 'Other', displayName: 'Other' },
     [FeatureModifierConditionType.feature]: { id: FeatureModifierConditionType.feature, name: 'Feature', displayName: 'Feature' },
     [FeatureModifierConditionType.spell_school]: { id: FeatureModifierConditionType.spell_school, name: 'Spell School', displayName: '' },
+    [FeatureModifierConditionType.creature_type]: { id: FeatureModifierConditionType.creature_type, name: 'Creature Type', displayName: '' },
 }
 
 export const FEATURE_MODIFIER_CONDITION_LIST = Object.values(FEATURE_MODIFIER_CONDITION_TYPES);
@@ -402,14 +396,31 @@ export const CreatureType = {
     Elemental: 5,
     Fey: 6,
     Giant: 7,
-    Humanoid: 8,
-    MagicalBeast: 9,
-    MonstrousHumanoid: 10,
-    Ooze: 11,
-    Outsider: 12,
-    Plant: 13,
-    Undead: 14,
-    Vermin: 15,
+    Humanoid_aquatic: 8,
+    Humanoid_dwarf: 9,
+    Humanoid_elf: 10,
+    Humanoid_goblinoid: 11,
+    Humanoid_gnoll: 12,
+    Humanoid_gnome: 13,
+    Humanoid_halfling: 14,
+    Humanoid_human: 15,
+    Humanoid_orc: 16,
+    Humanoid_reptilian: 17,
+    MagicalBeast: 18,
+    MonstrousHumanoid: 19,
+    Ooze: 20,
+    Outsider_air: 21,
+    Outsider_chaotic: 22,
+    Outsider_earth: 23,
+    Outsider_evil: 24,
+    Outsider_fire: 25,
+    Outsider_good: 26,
+    Outsider_lawful: 27,
+    Outsider_native: 28,
+    Outsider_water: 29,
+    Plant: 30,
+    Undead: 31,
+    Vermin: 32,
 } as const;
 
 export type CreatureType = typeof CreatureType[keyof typeof CreatureType];
@@ -422,11 +433,28 @@ export const CREATURE_TYPES: BaseMap<CoreComponent> = {
     [CreatureType.Elemental]: { id: CreatureType.Elemental, name: 'Elemental' },
     [CreatureType.Fey]: { id: CreatureType.Fey, name: 'Fey' },
     [CreatureType.Giant]: { id: CreatureType.Giant, name: 'Giant' },
-    [CreatureType.Humanoid]: { id: CreatureType.Humanoid, name: 'Humanoid' },
+    [CreatureType.Humanoid_aquatic]: { id: CreatureType.Humanoid_aquatic, name: 'Humanoid (aquatic)' },
+    [CreatureType.Humanoid_dwarf]: { id: CreatureType.Humanoid_dwarf, name: 'Humanoid (dwarf)' },
+    [CreatureType.Humanoid_elf]: { id: CreatureType.Humanoid_elf, name: 'Humanoid (elf)' },
+    [CreatureType.Humanoid_goblinoid]: { id: CreatureType.Humanoid_goblinoid, name: 'Humanoid (goblinoid)' },
+    [CreatureType.Humanoid_gnoll]: { id: CreatureType.Humanoid_gnoll, name: 'Humanoid (gnoll)' },
+    [CreatureType.Humanoid_gnome]: { id: CreatureType.Humanoid_gnome, name: 'Humanoid (gnome)' },
+    [CreatureType.Humanoid_halfling]: { id: CreatureType.Humanoid_halfling, name: 'Humanoid (halfling)' },
+    [CreatureType.Humanoid_human]: { id: CreatureType.Humanoid_human, name: 'Humanoid (human)' },
+    [CreatureType.Humanoid_orc]: { id: CreatureType.Humanoid_orc, name: 'Humanoid (orc)' },
+    [CreatureType.Humanoid_reptilian]: { id: CreatureType.Humanoid_reptilian, name: 'Humanoid (reptilian)' },
     [CreatureType.MagicalBeast]: { id: CreatureType.MagicalBeast, name: 'Magical Beast' },
     [CreatureType.MonstrousHumanoid]: { id: CreatureType.MonstrousHumanoid, name: 'Monstrous Humanoid' },
     [CreatureType.Ooze]: { id: CreatureType.Ooze, name: 'Ooze' },
-    [CreatureType.Outsider]: { id: CreatureType.Outsider, name: 'Outsider' },
+    [CreatureType.Outsider_air]: { id: CreatureType.Outsider_air, name: 'Outsider (air)' },
+    [CreatureType.Outsider_chaotic]: { id: CreatureType.Outsider_chaotic, name: 'Outsider (chaotic)' },
+    [CreatureType.Outsider_earth]: { id: CreatureType.Outsider_earth, name: 'Outsider (earth)' },
+    [CreatureType.Outsider_evil]: { id: CreatureType.Outsider_evil, name: 'Outsider (evil)' },
+    [CreatureType.Outsider_fire]: { id: CreatureType.Outsider_fire, name: 'Outsider (fire)' },
+    [CreatureType.Outsider_good]: { id: CreatureType.Outsider_good, name: 'Outsider (good)' },
+    [CreatureType.Outsider_lawful]: { id: CreatureType.Outsider_lawful, name: 'Outsider (lawful)' },
+    [CreatureType.Outsider_native]: { id: CreatureType.Outsider_native, name: 'Outsider (native)' },
+    [CreatureType.Outsider_water]: { id: CreatureType.Outsider_water, name: 'Outsider (water)' },
     [CreatureType.Plant]: { id: CreatureType.Plant, name: 'Plant' },
     [CreatureType.Undead]: { id: CreatureType.Undead, name: 'Undead' },
     [CreatureType.Vermin]: { id: CreatureType.Vermin, name: 'Vermin' },
@@ -434,5 +462,3 @@ export const CREATURE_TYPES: BaseMap<CoreComponent> = {
 
 export const CREATURE_TYPE_LIST = Object.values(CREATURE_TYPES);
 export const CREATURE_TYPE_SELECT_LIST = NameSelectOptionList(CREATURE_TYPE_LIST);
-
-

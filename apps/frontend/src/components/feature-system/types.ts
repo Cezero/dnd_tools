@@ -1,3 +1,5 @@
+import type { ComponentType } from 'react';
+
 import type { FeatureProgression } from '@shared/schema';
 
 // Feature system specific types
@@ -91,4 +93,35 @@ export interface FeatureEditState {
     isDirty: boolean;
     saving: boolean;
     error?: string;
+}
+
+// Component prop types for different entity forms
+export interface BaseFormProps {
+    index: number;
+    preSelectedFeature?: { id: number; name: string; description: string; slug: string };
+    progression?: FeatureProgression | null;
+}
+
+export interface ModifierFormProps extends BaseFormProps {
+    feats: Array<{ id: number; name: string }>;
+    featsLoading: boolean;
+}
+
+export type ChoiceFormProps = BaseFormProps;
+
+export type EffectFormProps = BaseFormProps;
+
+// Union type for all possible form component props
+export type FormComponentProps = ModifierFormProps | ChoiceFormProps | EffectFormProps;
+
+// Entity type configuration for reusable rendering in FeatureProgressionDetailEdit
+export interface EntityTypeConfig<TFormData = Record<string, unknown>, TGroupingState = Record<string, unknown>> {
+    key: 'modifiers' | 'choices';
+    label: string;
+    formComponent: ComponentType<FormComponentProps>;
+    addFunction: () => void;
+    removeFunction: (index: number) => void;
+    formDataKey: keyof TFormData;
+    groupingStateKey: keyof TGroupingState;
+    hasFeature: boolean;
 }

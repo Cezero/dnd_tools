@@ -43,7 +43,7 @@ This directory contains the project management documentation for the D&D Tools a
 - ✅ **COMPLETED**: Pure formatters and formatter registry
 - ✅ **COMPLETED**: Display strategies as true orchestrators
 - ✅ **COMPLETED**: Architecture inversion fix - removed FormatterOrchestrator
-- ✅ **COMPLETED**: Formula property-based routing (isCharacterDependent, hasProgression)
+- ✅ **COMPLETED**: Formula property-based routing (isCharacterDependent)
 - ✅ **COMPLETED**: Proper dependency flow and separation of concerns
 
 ### Consolidated Documents

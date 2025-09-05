@@ -69,11 +69,6 @@ export type FeatureFormulaParams = $Result.DefaultSelection<Prisma.$FeatureFormu
  */
 export type FeatureModifierCondition = $Result.DefaultSelection<Prisma.$FeatureModifierConditionPayload>
 /**
- * Model FeatureSpecialEffect
- * 
- */
-export type FeatureSpecialEffect = $Result.DefaultSelection<Prisma.$FeatureSpecialEffectPayload>
-/**
  * Model FeatureChoice
  * 
  */
@@ -565,16 +560,6 @@ export class PrismaClient<
     * ```
     */
   get featureModifierCondition(): Prisma.FeatureModifierConditionDelegate<ExtArgs, ClientOptions>;
-
-  /**
-   * `prisma.featureSpecialEffect`: Exposes CRUD operations for the **FeatureSpecialEffect** model.
-    * Example usage:
-    * ```ts
-    * // Fetch zero or more FeatureSpecialEffects
-    * const featureSpecialEffects = await prisma.featureSpecialEffect.findMany()
-    * ```
-    */
-  get featureSpecialEffect(): Prisma.FeatureSpecialEffectDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.featureChoice`: Exposes CRUD operations for the **FeatureChoice** model.
@@ -1446,7 +1431,6 @@ export namespace Prisma {
     FeatureModifier: 'FeatureModifier',
     FeatureFormulaParams: 'FeatureFormulaParams',
     FeatureModifierCondition: 'FeatureModifierCondition',
-    FeatureSpecialEffect: 'FeatureSpecialEffect',
     FeatureChoice: 'FeatureChoice',
     FeaturePrerequisite: 'FeaturePrerequisite',
     Spell: 'Spell',
@@ -1507,7 +1491,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "class" | "spellcastingProgression" | "spellcastingSlot" | "spellcastingLink" | "classSourceMap" | "spellLevelMap" | "feature" | "featureProgression" | "featureModifier" | "featureFormulaParams" | "featureModifierCondition" | "featureSpecialEffect" | "featureChoice" | "featurePrerequisite" | "spell" | "spellDescriptorMap" | "spellSchoolMap" | "spellSourceMap" | "spellSubschoolMap" | "spellComponentMap" | "skill" | "feat" | "featBenefitMap" | "featPrerequisiteMap" | "race" | "raceSourceMap" | "item" | "itemType" | "armor" | "weapon" | "itemProperty" | "itemPropertyAppliesTo" | "itemPropertyIncompatibility" | "itemTemplate" | "itemTemplateProperty" | "characterItem" | "characterItemProperty" | "sourceBook" | "referenceTable" | "referenceTableColumn" | "referenceTableRow" | "referenceTableCell" | "userCharacter" | "userCharacterAbilityScore" | "characterAdvancement" | "advancementSkill" | "advancementFeat" | "advancementSpell" | "characterFeatureChoice" | "characterSpellPreparation" | "spellPreparationMetamagic" | "user" | "diceBoxAdminConfig" | "userDiceConfigOverride"
+      modelProps: "class" | "spellcastingProgression" | "spellcastingSlot" | "spellcastingLink" | "classSourceMap" | "spellLevelMap" | "feature" | "featureProgression" | "featureModifier" | "featureFormulaParams" | "featureModifierCondition" | "featureChoice" | "featurePrerequisite" | "spell" | "spellDescriptorMap" | "spellSchoolMap" | "spellSourceMap" | "spellSubschoolMap" | "spellComponentMap" | "skill" | "feat" | "featBenefitMap" | "featPrerequisiteMap" | "race" | "raceSourceMap" | "item" | "itemType" | "armor" | "weapon" | "itemProperty" | "itemPropertyAppliesTo" | "itemPropertyIncompatibility" | "itemTemplate" | "itemTemplateProperty" | "characterItem" | "characterItemProperty" | "sourceBook" | "referenceTable" | "referenceTableColumn" | "referenceTableRow" | "referenceTableCell" | "userCharacter" | "userCharacterAbilityScore" | "characterAdvancement" | "advancementSkill" | "advancementFeat" | "advancementSpell" | "characterFeatureChoice" | "characterSpellPreparation" | "spellPreparationMetamagic" | "user" | "diceBoxAdminConfig" | "userDiceConfigOverride"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -2234,72 +2218,6 @@ export namespace Prisma {
           count: {
             args: Prisma.FeatureModifierConditionCountArgs<ExtArgs>
             result: $Utils.Optional<FeatureModifierConditionCountAggregateOutputType> | number
-          }
-        }
-      }
-      FeatureSpecialEffect: {
-        payload: Prisma.$FeatureSpecialEffectPayload<ExtArgs>
-        fields: Prisma.FeatureSpecialEffectFieldRefs
-        operations: {
-          findUnique: {
-            args: Prisma.FeatureSpecialEffectFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$FeatureSpecialEffectPayload> | null
-          }
-          findUniqueOrThrow: {
-            args: Prisma.FeatureSpecialEffectFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$FeatureSpecialEffectPayload>
-          }
-          findFirst: {
-            args: Prisma.FeatureSpecialEffectFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$FeatureSpecialEffectPayload> | null
-          }
-          findFirstOrThrow: {
-            args: Prisma.FeatureSpecialEffectFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$FeatureSpecialEffectPayload>
-          }
-          findMany: {
-            args: Prisma.FeatureSpecialEffectFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$FeatureSpecialEffectPayload>[]
-          }
-          create: {
-            args: Prisma.FeatureSpecialEffectCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$FeatureSpecialEffectPayload>
-          }
-          createMany: {
-            args: Prisma.FeatureSpecialEffectCreateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          delete: {
-            args: Prisma.FeatureSpecialEffectDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$FeatureSpecialEffectPayload>
-          }
-          update: {
-            args: Prisma.FeatureSpecialEffectUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$FeatureSpecialEffectPayload>
-          }
-          deleteMany: {
-            args: Prisma.FeatureSpecialEffectDeleteManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateMany: {
-            args: Prisma.FeatureSpecialEffectUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          upsert: {
-            args: Prisma.FeatureSpecialEffectUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$FeatureSpecialEffectPayload>
-          }
-          aggregate: {
-            args: Prisma.FeatureSpecialEffectAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateFeatureSpecialEffect>
-          }
-          groupBy: {
-            args: Prisma.FeatureSpecialEffectGroupByArgs<ExtArgs>
-            result: $Utils.Optional<FeatureSpecialEffectGroupByOutputType>[]
-          }
-          count: {
-            args: Prisma.FeatureSpecialEffectCountArgs<ExtArgs>
-            result: $Utils.Optional<FeatureSpecialEffectCountAggregateOutputType> | number
           }
         }
       }
@@ -5170,7 +5088,6 @@ export namespace Prisma {
     featureModifier?: FeatureModifierOmit
     featureFormulaParams?: FeatureFormulaParamsOmit
     featureModifierCondition?: FeatureModifierConditionOmit
-    featureSpecialEffect?: FeatureSpecialEffectOmit
     featureChoice?: FeatureChoiceOmit
     featurePrerequisite?: FeaturePrerequisiteOmit
     spell?: SpellOmit
@@ -5491,14 +5408,12 @@ export namespace Prisma {
 
   export type FeatureProgressionCountOutputType = {
     choices: number
-    effects: number
     modifiers: number
     characterFeatureChoice: number
   }
 
   export type FeatureProgressionCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     choices?: boolean | FeatureProgressionCountOutputTypeCountChoicesArgs
-    effects?: boolean | FeatureProgressionCountOutputTypeCountEffectsArgs
     modifiers?: boolean | FeatureProgressionCountOutputTypeCountModifiersArgs
     characterFeatureChoice?: boolean | FeatureProgressionCountOutputTypeCountCharacterFeatureChoiceArgs
   }
@@ -5519,13 +5434,6 @@ export namespace Prisma {
    */
   export type FeatureProgressionCountOutputTypeCountChoicesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: FeatureChoiceWhereInput
-  }
-
-  /**
-   * FeatureProgressionCountOutputType without action
-   */
-  export type FeatureProgressionCountOutputTypeCountEffectsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: FeatureSpecialEffectWhereInput
   }
 
   /**
@@ -5789,7 +5697,6 @@ export namespace Prisma {
     advFeat: number
     spellPrepMetamagic: number
     featureChoice: number
-    featureSpecialEffect: number
   }
 
   export type FeatCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -5798,7 +5705,6 @@ export namespace Prisma {
     advFeat?: boolean | FeatCountOutputTypeCountAdvFeatArgs
     spellPrepMetamagic?: boolean | FeatCountOutputTypeCountSpellPrepMetamagicArgs
     featureChoice?: boolean | FeatCountOutputTypeCountFeatureChoiceArgs
-    featureSpecialEffect?: boolean | FeatCountOutputTypeCountFeatureSpecialEffectArgs
   }
 
   // Custom InputTypes
@@ -5845,13 +5751,6 @@ export namespace Prisma {
    */
   export type FeatCountOutputTypeCountFeatureChoiceArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: FeatureChoiceWhereInput
-  }
-
-  /**
-   * FeatCountOutputType without action
-   */
-  export type FeatCountOutputTypeCountFeatureSpecialEffectArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: FeatureSpecialEffectWhereInput
   }
 
 
@@ -5911,13 +5810,13 @@ export namespace Prisma {
   export type ItemCountOutputType = {
     characterItems: number
     itemTemplate: number
-    featureSpecialEffect: number
+    featureModifiers: number
   }
 
   export type ItemCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     characterItems?: boolean | ItemCountOutputTypeCountCharacterItemsArgs
     itemTemplate?: boolean | ItemCountOutputTypeCountItemTemplateArgs
-    featureSpecialEffect?: boolean | ItemCountOutputTypeCountFeatureSpecialEffectArgs
+    featureModifiers?: boolean | ItemCountOutputTypeCountFeatureModifiersArgs
   }
 
   // Custom InputTypes
@@ -5948,8 +5847,8 @@ export namespace Prisma {
   /**
    * ItemCountOutputType without action
    */
-  export type ItemCountOutputTypeCountFeatureSpecialEffectArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: FeatureSpecialEffectWhereInput
+  export type ItemCountOutputTypeCountFeatureModifiersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: FeatureModifierWhereInput
   }
 
 
@@ -14037,7 +13936,6 @@ export namespace Prisma {
     feature?: boolean | FeatureDefaultArgs<ExtArgs>
     choices?: boolean | FeatureProgression$choicesArgs<ExtArgs>
     spellcasting?: boolean | FeatureProgression$spellcastingArgs<ExtArgs>
-    effects?: boolean | FeatureProgression$effectsArgs<ExtArgs>
     modifiers?: boolean | FeatureProgression$modifiersArgs<ExtArgs>
     characterFeatureChoice?: boolean | FeatureProgression$characterFeatureChoiceArgs<ExtArgs>
     _count?: boolean | FeatureProgressionCountOutputTypeDefaultArgs<ExtArgs>
@@ -14061,7 +13959,6 @@ export namespace Prisma {
     feature?: boolean | FeatureDefaultArgs<ExtArgs>
     choices?: boolean | FeatureProgression$choicesArgs<ExtArgs>
     spellcasting?: boolean | FeatureProgression$spellcastingArgs<ExtArgs>
-    effects?: boolean | FeatureProgression$effectsArgs<ExtArgs>
     modifiers?: boolean | FeatureProgression$modifiersArgs<ExtArgs>
     characterFeatureChoice?: boolean | FeatureProgression$characterFeatureChoiceArgs<ExtArgs>
     _count?: boolean | FeatureProgressionCountOutputTypeDefaultArgs<ExtArgs>
@@ -14075,7 +13972,6 @@ export namespace Prisma {
       feature: Prisma.$FeaturePayload<ExtArgs>
       choices: Prisma.$FeatureChoicePayload<ExtArgs>[]
       spellcasting: Prisma.$SpellcastingLinkPayload<ExtArgs> | null
-      effects: Prisma.$FeatureSpecialEffectPayload<ExtArgs>[]
       modifiers: Prisma.$FeatureModifierPayload<ExtArgs>[]
       characterFeatureChoice: Prisma.$CharacterFeatureChoicePayload<ExtArgs>[]
     }
@@ -14431,7 +14327,6 @@ export namespace Prisma {
     feature<T extends FeatureDefaultArgs<ExtArgs> = {}>(args?: Subset<T, FeatureDefaultArgs<ExtArgs>>): Prisma__FeatureClient<$Result.GetResult<Prisma.$FeaturePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     choices<T extends FeatureProgression$choicesArgs<ExtArgs> = {}>(args?: Subset<T, FeatureProgression$choicesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$FeatureChoicePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     spellcasting<T extends FeatureProgression$spellcastingArgs<ExtArgs> = {}>(args?: Subset<T, FeatureProgression$spellcastingArgs<ExtArgs>>): Prisma__SpellcastingLinkClient<$Result.GetResult<Prisma.$SpellcastingLinkPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-    effects<T extends FeatureProgression$effectsArgs<ExtArgs> = {}>(args?: Subset<T, FeatureProgression$effectsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$FeatureSpecialEffectPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     modifiers<T extends FeatureProgression$modifiersArgs<ExtArgs> = {}>(args?: Subset<T, FeatureProgression$modifiersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$FeatureModifierPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     characterFeatureChoice<T extends FeatureProgression$characterFeatureChoiceArgs<ExtArgs> = {}>(args?: Subset<T, FeatureProgression$characterFeatureChoiceArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CharacterFeatureChoicePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
@@ -14893,30 +14788,6 @@ export namespace Prisma {
   }
 
   /**
-   * FeatureProgression.effects
-   */
-  export type FeatureProgression$effectsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the FeatureSpecialEffect
-     */
-    select?: FeatureSpecialEffectSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the FeatureSpecialEffect
-     */
-    omit?: FeatureSpecialEffectOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: FeatureSpecialEffectInclude<ExtArgs> | null
-    where?: FeatureSpecialEffectWhereInput
-    orderBy?: FeatureSpecialEffectOrderByWithRelationInput | FeatureSpecialEffectOrderByWithRelationInput[]
-    cursor?: FeatureSpecialEffectWhereUniqueInput
-    take?: number
-    skip?: number
-    distinct?: FeatureSpecialEffectScalarFieldEnum | FeatureSpecialEffectScalarFieldEnum[]
-  }
-
-  /**
    * FeatureProgression.modifiers
    */
   export type FeatureProgression$modifiersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -15003,6 +14874,7 @@ export namespace Prisma {
     bonusType: number | null
     appliesTo: number | null
     appliesToId: number | null
+    itemId: number | null
     formulaParamsId: number | null
     groupingId: number | null
   }
@@ -15015,6 +14887,7 @@ export namespace Prisma {
     bonusType: number | null
     appliesTo: number | null
     appliesToId: number | null
+    itemId: number | null
     formulaParamsId: number | null
     groupingId: number | null
   }
@@ -15027,6 +14900,7 @@ export namespace Prisma {
     bonusType: number | null
     appliesTo: number | null
     appliesToId: number | null
+    itemId: number | null
     formulaParamsId: number | null
     groupingId: number | null
   }
@@ -15039,6 +14913,7 @@ export namespace Prisma {
     bonusType: number | null
     appliesTo: number | null
     appliesToId: number | null
+    itemId: number | null
     formulaParamsId: number | null
     groupingId: number | null
   }
@@ -15051,6 +14926,7 @@ export namespace Prisma {
     bonusType: number
     appliesTo: number
     appliesToId: number
+    itemId: number
     formulaParamsId: number
     groupingId: number
     _all: number
@@ -15065,6 +14941,7 @@ export namespace Prisma {
     bonusType?: true
     appliesTo?: true
     appliesToId?: true
+    itemId?: true
     formulaParamsId?: true
     groupingId?: true
   }
@@ -15077,6 +14954,7 @@ export namespace Prisma {
     bonusType?: true
     appliesTo?: true
     appliesToId?: true
+    itemId?: true
     formulaParamsId?: true
     groupingId?: true
   }
@@ -15089,6 +14967,7 @@ export namespace Prisma {
     bonusType?: true
     appliesTo?: true
     appliesToId?: true
+    itemId?: true
     formulaParamsId?: true
     groupingId?: true
   }
@@ -15101,6 +14980,7 @@ export namespace Prisma {
     bonusType?: true
     appliesTo?: true
     appliesToId?: true
+    itemId?: true
     formulaParamsId?: true
     groupingId?: true
   }
@@ -15113,6 +14993,7 @@ export namespace Prisma {
     bonusType?: true
     appliesTo?: true
     appliesToId?: true
+    itemId?: true
     formulaParamsId?: true
     groupingId?: true
     _all?: true
@@ -15212,6 +15093,7 @@ export namespace Prisma {
     bonusType: number | null
     appliesTo: number | null
     appliesToId: number | null
+    itemId: number | null
     formulaParamsId: number | null
     groupingId: number
     _count: FeatureModifierCountAggregateOutputType | null
@@ -15243,11 +15125,13 @@ export namespace Prisma {
     bonusType?: boolean
     appliesTo?: boolean
     appliesToId?: boolean
+    itemId?: boolean
     formulaParamsId?: boolean
     groupingId?: boolean
     featureProgression?: boolean | FeatureProgressionDefaultArgs<ExtArgs>
     conditions?: boolean | FeatureModifier$conditionsArgs<ExtArgs>
     formulaParams?: boolean | FeatureModifier$formulaParamsArgs<ExtArgs>
+    item?: boolean | FeatureModifier$itemArgs<ExtArgs>
     _count?: boolean | FeatureModifierCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["featureModifier"]>
 
@@ -15261,15 +15145,17 @@ export namespace Prisma {
     bonusType?: boolean
     appliesTo?: boolean
     appliesToId?: boolean
+    itemId?: boolean
     formulaParamsId?: boolean
     groupingId?: boolean
   }
 
-  export type FeatureModifierOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "progressionId" | "type" | "value" | "bonusType" | "appliesTo" | "appliesToId" | "formulaParamsId" | "groupingId", ExtArgs["result"]["featureModifier"]>
+  export type FeatureModifierOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "progressionId" | "type" | "value" | "bonusType" | "appliesTo" | "appliesToId" | "itemId" | "formulaParamsId" | "groupingId", ExtArgs["result"]["featureModifier"]>
   export type FeatureModifierInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     featureProgression?: boolean | FeatureProgressionDefaultArgs<ExtArgs>
     conditions?: boolean | FeatureModifier$conditionsArgs<ExtArgs>
     formulaParams?: boolean | FeatureModifier$formulaParamsArgs<ExtArgs>
+    item?: boolean | FeatureModifier$itemArgs<ExtArgs>
     _count?: boolean | FeatureModifierCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -15279,6 +15165,7 @@ export namespace Prisma {
       featureProgression: Prisma.$FeatureProgressionPayload<ExtArgs>
       conditions: Prisma.$FeatureModifierConditionPayload<ExtArgs>[]
       formulaParams: Prisma.$FeatureFormulaParamsPayload<ExtArgs> | null
+      item: Prisma.$ItemPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -15288,6 +15175,7 @@ export namespace Prisma {
       bonusType: number | null
       appliesTo: number | null
       appliesToId: number | null
+      itemId: number | null
       formulaParamsId: number | null
       groupingId: number
     }, ExtArgs["result"]["featureModifier"]>
@@ -15633,6 +15521,7 @@ export namespace Prisma {
     featureProgression<T extends FeatureProgressionDefaultArgs<ExtArgs> = {}>(args?: Subset<T, FeatureProgressionDefaultArgs<ExtArgs>>): Prisma__FeatureProgressionClient<$Result.GetResult<Prisma.$FeatureProgressionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     conditions<T extends FeatureModifier$conditionsArgs<ExtArgs> = {}>(args?: Subset<T, FeatureModifier$conditionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$FeatureModifierConditionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     formulaParams<T extends FeatureModifier$formulaParamsArgs<ExtArgs> = {}>(args?: Subset<T, FeatureModifier$formulaParamsArgs<ExtArgs>>): Prisma__FeatureFormulaParamsClient<$Result.GetResult<Prisma.$FeatureFormulaParamsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    item<T extends FeatureModifier$itemArgs<ExtArgs> = {}>(args?: Subset<T, FeatureModifier$itemArgs<ExtArgs>>): Prisma__ItemClient<$Result.GetResult<Prisma.$ItemPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -15669,6 +15558,7 @@ export namespace Prisma {
     readonly bonusType: FieldRef<"FeatureModifier", 'Int'>
     readonly appliesTo: FieldRef<"FeatureModifier", 'Int'>
     readonly appliesToId: FieldRef<"FeatureModifier", 'Int'>
+    readonly itemId: FieldRef<"FeatureModifier", 'Int'>
     readonly formulaParamsId: FieldRef<"FeatureModifier", 'Int'>
     readonly groupingId: FieldRef<"FeatureModifier", 'Int'>
   }
@@ -16054,6 +15944,25 @@ export namespace Prisma {
      */
     include?: FeatureFormulaParamsInclude<ExtArgs> | null
     where?: FeatureFormulaParamsWhereInput
+  }
+
+  /**
+   * FeatureModifier.item
+   */
+  export type FeatureModifier$itemArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Item
+     */
+    select?: ItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Item
+     */
+    omit?: ItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ItemInclude<ExtArgs> | null
+    where?: ItemWhereInput
   }
 
   /**
@@ -18091,1083 +18000,6 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: FeatureModifierConditionInclude<ExtArgs> | null
-  }
-
-
-  /**
-   * Model FeatureSpecialEffect
-   */
-
-  export type AggregateFeatureSpecialEffect = {
-    _count: FeatureSpecialEffectCountAggregateOutputType | null
-    _avg: FeatureSpecialEffectAvgAggregateOutputType | null
-    _sum: FeatureSpecialEffectSumAggregateOutputType | null
-    _min: FeatureSpecialEffectMinAggregateOutputType | null
-    _max: FeatureSpecialEffectMaxAggregateOutputType | null
-  }
-
-  export type FeatureSpecialEffectAvgAggregateOutputType = {
-    id: number | null
-    progressionId: number | null
-    effectType: number | null
-    numericValue: number | null
-    groupingId: number | null
-    featId: number | null
-    itemId: number | null
-  }
-
-  export type FeatureSpecialEffectSumAggregateOutputType = {
-    id: number | null
-    progressionId: number | null
-    effectType: number | null
-    numericValue: number | null
-    groupingId: number | null
-    featId: number | null
-    itemId: number | null
-  }
-
-  export type FeatureSpecialEffectMinAggregateOutputType = {
-    id: number | null
-    progressionId: number | null
-    effectType: number | null
-    key: string | null
-    value: string | null
-    numericValue: number | null
-    groupingId: number | null
-    featId: number | null
-    itemId: number | null
-  }
-
-  export type FeatureSpecialEffectMaxAggregateOutputType = {
-    id: number | null
-    progressionId: number | null
-    effectType: number | null
-    key: string | null
-    value: string | null
-    numericValue: number | null
-    groupingId: number | null
-    featId: number | null
-    itemId: number | null
-  }
-
-  export type FeatureSpecialEffectCountAggregateOutputType = {
-    id: number
-    progressionId: number
-    effectType: number
-    key: number
-    value: number
-    numericValue: number
-    groupingId: number
-    featId: number
-    itemId: number
-    _all: number
-  }
-
-
-  export type FeatureSpecialEffectAvgAggregateInputType = {
-    id?: true
-    progressionId?: true
-    effectType?: true
-    numericValue?: true
-    groupingId?: true
-    featId?: true
-    itemId?: true
-  }
-
-  export type FeatureSpecialEffectSumAggregateInputType = {
-    id?: true
-    progressionId?: true
-    effectType?: true
-    numericValue?: true
-    groupingId?: true
-    featId?: true
-    itemId?: true
-  }
-
-  export type FeatureSpecialEffectMinAggregateInputType = {
-    id?: true
-    progressionId?: true
-    effectType?: true
-    key?: true
-    value?: true
-    numericValue?: true
-    groupingId?: true
-    featId?: true
-    itemId?: true
-  }
-
-  export type FeatureSpecialEffectMaxAggregateInputType = {
-    id?: true
-    progressionId?: true
-    effectType?: true
-    key?: true
-    value?: true
-    numericValue?: true
-    groupingId?: true
-    featId?: true
-    itemId?: true
-  }
-
-  export type FeatureSpecialEffectCountAggregateInputType = {
-    id?: true
-    progressionId?: true
-    effectType?: true
-    key?: true
-    value?: true
-    numericValue?: true
-    groupingId?: true
-    featId?: true
-    itemId?: true
-    _all?: true
-  }
-
-  export type FeatureSpecialEffectAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which FeatureSpecialEffect to aggregate.
-     */
-    where?: FeatureSpecialEffectWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of FeatureSpecialEffects to fetch.
-     */
-    orderBy?: FeatureSpecialEffectOrderByWithRelationInput | FeatureSpecialEffectOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the start position
-     */
-    cursor?: FeatureSpecialEffectWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` FeatureSpecialEffects from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` FeatureSpecialEffects.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Count returned FeatureSpecialEffects
-    **/
-    _count?: true | FeatureSpecialEffectCountAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to average
-    **/
-    _avg?: FeatureSpecialEffectAvgAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to sum
-    **/
-    _sum?: FeatureSpecialEffectSumAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the minimum value
-    **/
-    _min?: FeatureSpecialEffectMinAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the maximum value
-    **/
-    _max?: FeatureSpecialEffectMaxAggregateInputType
-  }
-
-  export type GetFeatureSpecialEffectAggregateType<T extends FeatureSpecialEffectAggregateArgs> = {
-        [P in keyof T & keyof AggregateFeatureSpecialEffect]: P extends '_count' | 'count'
-      ? T[P] extends true
-        ? number
-        : GetScalarType<T[P], AggregateFeatureSpecialEffect[P]>
-      : GetScalarType<T[P], AggregateFeatureSpecialEffect[P]>
-  }
-
-
-
-
-  export type FeatureSpecialEffectGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: FeatureSpecialEffectWhereInput
-    orderBy?: FeatureSpecialEffectOrderByWithAggregationInput | FeatureSpecialEffectOrderByWithAggregationInput[]
-    by: FeatureSpecialEffectScalarFieldEnum[] | FeatureSpecialEffectScalarFieldEnum
-    having?: FeatureSpecialEffectScalarWhereWithAggregatesInput
-    take?: number
-    skip?: number
-    _count?: FeatureSpecialEffectCountAggregateInputType | true
-    _avg?: FeatureSpecialEffectAvgAggregateInputType
-    _sum?: FeatureSpecialEffectSumAggregateInputType
-    _min?: FeatureSpecialEffectMinAggregateInputType
-    _max?: FeatureSpecialEffectMaxAggregateInputType
-  }
-
-  export type FeatureSpecialEffectGroupByOutputType = {
-    id: number
-    progressionId: number
-    effectType: number
-    key: string | null
-    value: string | null
-    numericValue: number | null
-    groupingId: number
-    featId: number | null
-    itemId: number | null
-    _count: FeatureSpecialEffectCountAggregateOutputType | null
-    _avg: FeatureSpecialEffectAvgAggregateOutputType | null
-    _sum: FeatureSpecialEffectSumAggregateOutputType | null
-    _min: FeatureSpecialEffectMinAggregateOutputType | null
-    _max: FeatureSpecialEffectMaxAggregateOutputType | null
-  }
-
-  type GetFeatureSpecialEffectGroupByPayload<T extends FeatureSpecialEffectGroupByArgs> = Prisma.PrismaPromise<
-    Array<
-      PickEnumerable<FeatureSpecialEffectGroupByOutputType, T['by']> &
-        {
-          [P in ((keyof T) & (keyof FeatureSpecialEffectGroupByOutputType))]: P extends '_count'
-            ? T[P] extends boolean
-              ? number
-              : GetScalarType<T[P], FeatureSpecialEffectGroupByOutputType[P]>
-            : GetScalarType<T[P], FeatureSpecialEffectGroupByOutputType[P]>
-        }
-      >
-    >
-
-
-  export type FeatureSpecialEffectSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    progressionId?: boolean
-    effectType?: boolean
-    key?: boolean
-    value?: boolean
-    numericValue?: boolean
-    groupingId?: boolean
-    featId?: boolean
-    itemId?: boolean
-    featureProgression?: boolean | FeatureProgressionDefaultArgs<ExtArgs>
-    feat?: boolean | FeatureSpecialEffect$featArgs<ExtArgs>
-    item?: boolean | FeatureSpecialEffect$itemArgs<ExtArgs>
-  }, ExtArgs["result"]["featureSpecialEffect"]>
-
-
-
-  export type FeatureSpecialEffectSelectScalar = {
-    id?: boolean
-    progressionId?: boolean
-    effectType?: boolean
-    key?: boolean
-    value?: boolean
-    numericValue?: boolean
-    groupingId?: boolean
-    featId?: boolean
-    itemId?: boolean
-  }
-
-  export type FeatureSpecialEffectOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "progressionId" | "effectType" | "key" | "value" | "numericValue" | "groupingId" | "featId" | "itemId", ExtArgs["result"]["featureSpecialEffect"]>
-  export type FeatureSpecialEffectInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    featureProgression?: boolean | FeatureProgressionDefaultArgs<ExtArgs>
-    feat?: boolean | FeatureSpecialEffect$featArgs<ExtArgs>
-    item?: boolean | FeatureSpecialEffect$itemArgs<ExtArgs>
-  }
-
-  export type $FeatureSpecialEffectPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "FeatureSpecialEffect"
-    objects: {
-      featureProgression: Prisma.$FeatureProgressionPayload<ExtArgs>
-      feat: Prisma.$FeatPayload<ExtArgs> | null
-      item: Prisma.$ItemPayload<ExtArgs> | null
-    }
-    scalars: $Extensions.GetPayloadResult<{
-      id: number
-      progressionId: number
-      effectType: number
-      key: string | null
-      value: string | null
-      numericValue: number | null
-      groupingId: number
-      featId: number | null
-      itemId: number | null
-    }, ExtArgs["result"]["featureSpecialEffect"]>
-    composites: {}
-  }
-
-  type FeatureSpecialEffectGetPayload<S extends boolean | null | undefined | FeatureSpecialEffectDefaultArgs> = $Result.GetResult<Prisma.$FeatureSpecialEffectPayload, S>
-
-  type FeatureSpecialEffectCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
-    Omit<FeatureSpecialEffectFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
-      select?: FeatureSpecialEffectCountAggregateInputType | true
-    }
-
-  export interface FeatureSpecialEffectDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['FeatureSpecialEffect'], meta: { name: 'FeatureSpecialEffect' } }
-    /**
-     * Find zero or one FeatureSpecialEffect that matches the filter.
-     * @param {FeatureSpecialEffectFindUniqueArgs} args - Arguments to find a FeatureSpecialEffect
-     * @example
-     * // Get one FeatureSpecialEffect
-     * const featureSpecialEffect = await prisma.featureSpecialEffect.findUnique({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUnique<T extends FeatureSpecialEffectFindUniqueArgs>(args: SelectSubset<T, FeatureSpecialEffectFindUniqueArgs<ExtArgs>>): Prisma__FeatureSpecialEffectClient<$Result.GetResult<Prisma.$FeatureSpecialEffectPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find one FeatureSpecialEffect that matches the filter or throw an error with `error.code='P2025'`
-     * if no matches were found.
-     * @param {FeatureSpecialEffectFindUniqueOrThrowArgs} args - Arguments to find a FeatureSpecialEffect
-     * @example
-     * // Get one FeatureSpecialEffect
-     * const featureSpecialEffect = await prisma.featureSpecialEffect.findUniqueOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUniqueOrThrow<T extends FeatureSpecialEffectFindUniqueOrThrowArgs>(args: SelectSubset<T, FeatureSpecialEffectFindUniqueOrThrowArgs<ExtArgs>>): Prisma__FeatureSpecialEffectClient<$Result.GetResult<Prisma.$FeatureSpecialEffectPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find the first FeatureSpecialEffect that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {FeatureSpecialEffectFindFirstArgs} args - Arguments to find a FeatureSpecialEffect
-     * @example
-     * // Get one FeatureSpecialEffect
-     * const featureSpecialEffect = await prisma.featureSpecialEffect.findFirst({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirst<T extends FeatureSpecialEffectFindFirstArgs>(args?: SelectSubset<T, FeatureSpecialEffectFindFirstArgs<ExtArgs>>): Prisma__FeatureSpecialEffectClient<$Result.GetResult<Prisma.$FeatureSpecialEffectPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find the first FeatureSpecialEffect that matches the filter or
-     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {FeatureSpecialEffectFindFirstOrThrowArgs} args - Arguments to find a FeatureSpecialEffect
-     * @example
-     * // Get one FeatureSpecialEffect
-     * const featureSpecialEffect = await prisma.featureSpecialEffect.findFirstOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirstOrThrow<T extends FeatureSpecialEffectFindFirstOrThrowArgs>(args?: SelectSubset<T, FeatureSpecialEffectFindFirstOrThrowArgs<ExtArgs>>): Prisma__FeatureSpecialEffectClient<$Result.GetResult<Prisma.$FeatureSpecialEffectPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find zero or more FeatureSpecialEffects that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {FeatureSpecialEffectFindManyArgs} args - Arguments to filter and select certain fields only.
-     * @example
-     * // Get all FeatureSpecialEffects
-     * const featureSpecialEffects = await prisma.featureSpecialEffect.findMany()
-     * 
-     * // Get first 10 FeatureSpecialEffects
-     * const featureSpecialEffects = await prisma.featureSpecialEffect.findMany({ take: 10 })
-     * 
-     * // Only select the `id`
-     * const featureSpecialEffectWithIdOnly = await prisma.featureSpecialEffect.findMany({ select: { id: true } })
-     * 
-     */
-    findMany<T extends FeatureSpecialEffectFindManyArgs>(args?: SelectSubset<T, FeatureSpecialEffectFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$FeatureSpecialEffectPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
-
-    /**
-     * Create a FeatureSpecialEffect.
-     * @param {FeatureSpecialEffectCreateArgs} args - Arguments to create a FeatureSpecialEffect.
-     * @example
-     * // Create one FeatureSpecialEffect
-     * const FeatureSpecialEffect = await prisma.featureSpecialEffect.create({
-     *   data: {
-     *     // ... data to create a FeatureSpecialEffect
-     *   }
-     * })
-     * 
-     */
-    create<T extends FeatureSpecialEffectCreateArgs>(args: SelectSubset<T, FeatureSpecialEffectCreateArgs<ExtArgs>>): Prisma__FeatureSpecialEffectClient<$Result.GetResult<Prisma.$FeatureSpecialEffectPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Create many FeatureSpecialEffects.
-     * @param {FeatureSpecialEffectCreateManyArgs} args - Arguments to create many FeatureSpecialEffects.
-     * @example
-     * // Create many FeatureSpecialEffects
-     * const featureSpecialEffect = await prisma.featureSpecialEffect.createMany({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     *     
-     */
-    createMany<T extends FeatureSpecialEffectCreateManyArgs>(args?: SelectSubset<T, FeatureSpecialEffectCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Delete a FeatureSpecialEffect.
-     * @param {FeatureSpecialEffectDeleteArgs} args - Arguments to delete one FeatureSpecialEffect.
-     * @example
-     * // Delete one FeatureSpecialEffect
-     * const FeatureSpecialEffect = await prisma.featureSpecialEffect.delete({
-     *   where: {
-     *     // ... filter to delete one FeatureSpecialEffect
-     *   }
-     * })
-     * 
-     */
-    delete<T extends FeatureSpecialEffectDeleteArgs>(args: SelectSubset<T, FeatureSpecialEffectDeleteArgs<ExtArgs>>): Prisma__FeatureSpecialEffectClient<$Result.GetResult<Prisma.$FeatureSpecialEffectPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Update one FeatureSpecialEffect.
-     * @param {FeatureSpecialEffectUpdateArgs} args - Arguments to update one FeatureSpecialEffect.
-     * @example
-     * // Update one FeatureSpecialEffect
-     * const featureSpecialEffect = await prisma.featureSpecialEffect.update({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    update<T extends FeatureSpecialEffectUpdateArgs>(args: SelectSubset<T, FeatureSpecialEffectUpdateArgs<ExtArgs>>): Prisma__FeatureSpecialEffectClient<$Result.GetResult<Prisma.$FeatureSpecialEffectPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Delete zero or more FeatureSpecialEffects.
-     * @param {FeatureSpecialEffectDeleteManyArgs} args - Arguments to filter FeatureSpecialEffects to delete.
-     * @example
-     * // Delete a few FeatureSpecialEffects
-     * const { count } = await prisma.featureSpecialEffect.deleteMany({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     * 
-     */
-    deleteMany<T extends FeatureSpecialEffectDeleteManyArgs>(args?: SelectSubset<T, FeatureSpecialEffectDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more FeatureSpecialEffects.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {FeatureSpecialEffectUpdateManyArgs} args - Arguments to update one or more rows.
-     * @example
-     * // Update many FeatureSpecialEffects
-     * const featureSpecialEffect = await prisma.featureSpecialEffect.updateMany({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    updateMany<T extends FeatureSpecialEffectUpdateManyArgs>(args: SelectSubset<T, FeatureSpecialEffectUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create or update one FeatureSpecialEffect.
-     * @param {FeatureSpecialEffectUpsertArgs} args - Arguments to update or create a FeatureSpecialEffect.
-     * @example
-     * // Update or create a FeatureSpecialEffect
-     * const featureSpecialEffect = await prisma.featureSpecialEffect.upsert({
-     *   create: {
-     *     // ... data to create a FeatureSpecialEffect
-     *   },
-     *   update: {
-     *     // ... in case it already exists, update
-     *   },
-     *   where: {
-     *     // ... the filter for the FeatureSpecialEffect we want to update
-     *   }
-     * })
-     */
-    upsert<T extends FeatureSpecialEffectUpsertArgs>(args: SelectSubset<T, FeatureSpecialEffectUpsertArgs<ExtArgs>>): Prisma__FeatureSpecialEffectClient<$Result.GetResult<Prisma.$FeatureSpecialEffectPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-
-    /**
-     * Count the number of FeatureSpecialEffects.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {FeatureSpecialEffectCountArgs} args - Arguments to filter FeatureSpecialEffects to count.
-     * @example
-     * // Count the number of FeatureSpecialEffects
-     * const count = await prisma.featureSpecialEffect.count({
-     *   where: {
-     *     // ... the filter for the FeatureSpecialEffects we want to count
-     *   }
-     * })
-    **/
-    count<T extends FeatureSpecialEffectCountArgs>(
-      args?: Subset<T, FeatureSpecialEffectCountArgs>,
-    ): Prisma.PrismaPromise<
-      T extends $Utils.Record<'select', any>
-        ? T['select'] extends true
-          ? number
-          : GetScalarType<T['select'], FeatureSpecialEffectCountAggregateOutputType>
-        : number
-    >
-
-    /**
-     * Allows you to perform aggregations operations on a FeatureSpecialEffect.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {FeatureSpecialEffectAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
-     * @example
-     * // Ordered by age ascending
-     * // Where email contains prisma.io
-     * // Limited to the 10 users
-     * const aggregations = await prisma.user.aggregate({
-     *   _avg: {
-     *     age: true,
-     *   },
-     *   where: {
-     *     email: {
-     *       contains: "prisma.io",
-     *     },
-     *   },
-     *   orderBy: {
-     *     age: "asc",
-     *   },
-     *   take: 10,
-     * })
-    **/
-    aggregate<T extends FeatureSpecialEffectAggregateArgs>(args: Subset<T, FeatureSpecialEffectAggregateArgs>): Prisma.PrismaPromise<GetFeatureSpecialEffectAggregateType<T>>
-
-    /**
-     * Group by FeatureSpecialEffect.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {FeatureSpecialEffectGroupByArgs} args - Group by arguments.
-     * @example
-     * // Group by city, order by createdAt, get count
-     * const result = await prisma.user.groupBy({
-     *   by: ['city', 'createdAt'],
-     *   orderBy: {
-     *     createdAt: true
-     *   },
-     *   _count: {
-     *     _all: true
-     *   },
-     * })
-     * 
-    **/
-    groupBy<
-      T extends FeatureSpecialEffectGroupByArgs,
-      HasSelectOrTake extends Or<
-        Extends<'skip', Keys<T>>,
-        Extends<'take', Keys<T>>
-      >,
-      OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: FeatureSpecialEffectGroupByArgs['orderBy'] }
-        : { orderBy?: FeatureSpecialEffectGroupByArgs['orderBy'] },
-      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
-      ByFields extends MaybeTupleToUnion<T['by']>,
-      ByValid extends Has<ByFields, OrderFields>,
-      HavingFields extends GetHavingFields<T['having']>,
-      HavingValid extends Has<ByFields, HavingFields>,
-      ByEmpty extends T['by'] extends never[] ? True : False,
-      InputErrors extends ByEmpty extends True
-      ? `Error: "by" must not be empty.`
-      : HavingValid extends False
-      ? {
-          [P in HavingFields]: P extends ByFields
-            ? never
-            : P extends string
-            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
-            : [
-                Error,
-                'Field ',
-                P,
-                ` in "having" needs to be provided in "by"`,
-              ]
-        }[HavingFields]
-      : 'take' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "take", you also need to provide "orderBy"'
-      : 'skip' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "skip", you also need to provide "orderBy"'
-      : ByValid extends True
-      ? {}
-      : {
-          [P in OrderFields]: P extends ByFields
-            ? never
-            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-        }[OrderFields]
-    >(args: SubsetIntersection<T, FeatureSpecialEffectGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetFeatureSpecialEffectGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
-  /**
-   * Fields of the FeatureSpecialEffect model
-   */
-  readonly fields: FeatureSpecialEffectFieldRefs;
-  }
-
-  /**
-   * The delegate class that acts as a "Promise-like" for FeatureSpecialEffect.
-   * Why is this prefixed with `Prisma__`?
-   * Because we want to prevent naming conflicts as mentioned in
-   * https://github.com/prisma/prisma-client-js/issues/707
-   */
-  export interface Prisma__FeatureSpecialEffectClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    featureProgression<T extends FeatureProgressionDefaultArgs<ExtArgs> = {}>(args?: Subset<T, FeatureProgressionDefaultArgs<ExtArgs>>): Prisma__FeatureProgressionClient<$Result.GetResult<Prisma.$FeatureProgressionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-    feat<T extends FeatureSpecialEffect$featArgs<ExtArgs> = {}>(args?: Subset<T, FeatureSpecialEffect$featArgs<ExtArgs>>): Prisma__FeatClient<$Result.GetResult<Prisma.$FeatPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-    item<T extends FeatureSpecialEffect$itemArgs<ExtArgs> = {}>(args?: Subset<T, FeatureSpecialEffect$itemArgs<ExtArgs>>): Prisma__ItemClient<$Result.GetResult<Prisma.$ItemPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-    /**
-     * Attaches callbacks for the resolution and/or rejection of the Promise.
-     * @param onfulfilled The callback to execute when the Promise is resolved.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of which ever callback is executed.
-     */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
-    /**
-     * Attaches a callback for only the rejection of the Promise.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of the callback.
-     */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
-    /**
-     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
-     * resolved value cannot be modified from the callback.
-     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
-     * @returns A Promise for the completion of the callback.
-     */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
-  }
-
-
-
-
-  /**
-   * Fields of the FeatureSpecialEffect model
-   */
-  interface FeatureSpecialEffectFieldRefs {
-    readonly id: FieldRef<"FeatureSpecialEffect", 'Int'>
-    readonly progressionId: FieldRef<"FeatureSpecialEffect", 'Int'>
-    readonly effectType: FieldRef<"FeatureSpecialEffect", 'Int'>
-    readonly key: FieldRef<"FeatureSpecialEffect", 'String'>
-    readonly value: FieldRef<"FeatureSpecialEffect", 'String'>
-    readonly numericValue: FieldRef<"FeatureSpecialEffect", 'Int'>
-    readonly groupingId: FieldRef<"FeatureSpecialEffect", 'Int'>
-    readonly featId: FieldRef<"FeatureSpecialEffect", 'Int'>
-    readonly itemId: FieldRef<"FeatureSpecialEffect", 'Int'>
-  }
-    
-
-  // Custom InputTypes
-  /**
-   * FeatureSpecialEffect findUnique
-   */
-  export type FeatureSpecialEffectFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the FeatureSpecialEffect
-     */
-    select?: FeatureSpecialEffectSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the FeatureSpecialEffect
-     */
-    omit?: FeatureSpecialEffectOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: FeatureSpecialEffectInclude<ExtArgs> | null
-    /**
-     * Filter, which FeatureSpecialEffect to fetch.
-     */
-    where: FeatureSpecialEffectWhereUniqueInput
-  }
-
-  /**
-   * FeatureSpecialEffect findUniqueOrThrow
-   */
-  export type FeatureSpecialEffectFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the FeatureSpecialEffect
-     */
-    select?: FeatureSpecialEffectSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the FeatureSpecialEffect
-     */
-    omit?: FeatureSpecialEffectOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: FeatureSpecialEffectInclude<ExtArgs> | null
-    /**
-     * Filter, which FeatureSpecialEffect to fetch.
-     */
-    where: FeatureSpecialEffectWhereUniqueInput
-  }
-
-  /**
-   * FeatureSpecialEffect findFirst
-   */
-  export type FeatureSpecialEffectFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the FeatureSpecialEffect
-     */
-    select?: FeatureSpecialEffectSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the FeatureSpecialEffect
-     */
-    omit?: FeatureSpecialEffectOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: FeatureSpecialEffectInclude<ExtArgs> | null
-    /**
-     * Filter, which FeatureSpecialEffect to fetch.
-     */
-    where?: FeatureSpecialEffectWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of FeatureSpecialEffects to fetch.
-     */
-    orderBy?: FeatureSpecialEffectOrderByWithRelationInput | FeatureSpecialEffectOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for FeatureSpecialEffects.
-     */
-    cursor?: FeatureSpecialEffectWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` FeatureSpecialEffects from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` FeatureSpecialEffects.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of FeatureSpecialEffects.
-     */
-    distinct?: FeatureSpecialEffectScalarFieldEnum | FeatureSpecialEffectScalarFieldEnum[]
-  }
-
-  /**
-   * FeatureSpecialEffect findFirstOrThrow
-   */
-  export type FeatureSpecialEffectFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the FeatureSpecialEffect
-     */
-    select?: FeatureSpecialEffectSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the FeatureSpecialEffect
-     */
-    omit?: FeatureSpecialEffectOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: FeatureSpecialEffectInclude<ExtArgs> | null
-    /**
-     * Filter, which FeatureSpecialEffect to fetch.
-     */
-    where?: FeatureSpecialEffectWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of FeatureSpecialEffects to fetch.
-     */
-    orderBy?: FeatureSpecialEffectOrderByWithRelationInput | FeatureSpecialEffectOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for FeatureSpecialEffects.
-     */
-    cursor?: FeatureSpecialEffectWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` FeatureSpecialEffects from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` FeatureSpecialEffects.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of FeatureSpecialEffects.
-     */
-    distinct?: FeatureSpecialEffectScalarFieldEnum | FeatureSpecialEffectScalarFieldEnum[]
-  }
-
-  /**
-   * FeatureSpecialEffect findMany
-   */
-  export type FeatureSpecialEffectFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the FeatureSpecialEffect
-     */
-    select?: FeatureSpecialEffectSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the FeatureSpecialEffect
-     */
-    omit?: FeatureSpecialEffectOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: FeatureSpecialEffectInclude<ExtArgs> | null
-    /**
-     * Filter, which FeatureSpecialEffects to fetch.
-     */
-    where?: FeatureSpecialEffectWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of FeatureSpecialEffects to fetch.
-     */
-    orderBy?: FeatureSpecialEffectOrderByWithRelationInput | FeatureSpecialEffectOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for listing FeatureSpecialEffects.
-     */
-    cursor?: FeatureSpecialEffectWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` FeatureSpecialEffects from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` FeatureSpecialEffects.
-     */
-    skip?: number
-    distinct?: FeatureSpecialEffectScalarFieldEnum | FeatureSpecialEffectScalarFieldEnum[]
-  }
-
-  /**
-   * FeatureSpecialEffect create
-   */
-  export type FeatureSpecialEffectCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the FeatureSpecialEffect
-     */
-    select?: FeatureSpecialEffectSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the FeatureSpecialEffect
-     */
-    omit?: FeatureSpecialEffectOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: FeatureSpecialEffectInclude<ExtArgs> | null
-    /**
-     * The data needed to create a FeatureSpecialEffect.
-     */
-    data: XOR<FeatureSpecialEffectCreateInput, FeatureSpecialEffectUncheckedCreateInput>
-  }
-
-  /**
-   * FeatureSpecialEffect createMany
-   */
-  export type FeatureSpecialEffectCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to create many FeatureSpecialEffects.
-     */
-    data: FeatureSpecialEffectCreateManyInput | FeatureSpecialEffectCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * FeatureSpecialEffect update
-   */
-  export type FeatureSpecialEffectUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the FeatureSpecialEffect
-     */
-    select?: FeatureSpecialEffectSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the FeatureSpecialEffect
-     */
-    omit?: FeatureSpecialEffectOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: FeatureSpecialEffectInclude<ExtArgs> | null
-    /**
-     * The data needed to update a FeatureSpecialEffect.
-     */
-    data: XOR<FeatureSpecialEffectUpdateInput, FeatureSpecialEffectUncheckedUpdateInput>
-    /**
-     * Choose, which FeatureSpecialEffect to update.
-     */
-    where: FeatureSpecialEffectWhereUniqueInput
-  }
-
-  /**
-   * FeatureSpecialEffect updateMany
-   */
-  export type FeatureSpecialEffectUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update FeatureSpecialEffects.
-     */
-    data: XOR<FeatureSpecialEffectUpdateManyMutationInput, FeatureSpecialEffectUncheckedUpdateManyInput>
-    /**
-     * Filter which FeatureSpecialEffects to update
-     */
-    where?: FeatureSpecialEffectWhereInput
-    /**
-     * Limit how many FeatureSpecialEffects to update.
-     */
-    limit?: number
-  }
-
-  /**
-   * FeatureSpecialEffect upsert
-   */
-  export type FeatureSpecialEffectUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the FeatureSpecialEffect
-     */
-    select?: FeatureSpecialEffectSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the FeatureSpecialEffect
-     */
-    omit?: FeatureSpecialEffectOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: FeatureSpecialEffectInclude<ExtArgs> | null
-    /**
-     * The filter to search for the FeatureSpecialEffect to update in case it exists.
-     */
-    where: FeatureSpecialEffectWhereUniqueInput
-    /**
-     * In case the FeatureSpecialEffect found by the `where` argument doesn't exist, create a new FeatureSpecialEffect with this data.
-     */
-    create: XOR<FeatureSpecialEffectCreateInput, FeatureSpecialEffectUncheckedCreateInput>
-    /**
-     * In case the FeatureSpecialEffect was found with the provided `where` argument, update it with this data.
-     */
-    update: XOR<FeatureSpecialEffectUpdateInput, FeatureSpecialEffectUncheckedUpdateInput>
-  }
-
-  /**
-   * FeatureSpecialEffect delete
-   */
-  export type FeatureSpecialEffectDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the FeatureSpecialEffect
-     */
-    select?: FeatureSpecialEffectSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the FeatureSpecialEffect
-     */
-    omit?: FeatureSpecialEffectOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: FeatureSpecialEffectInclude<ExtArgs> | null
-    /**
-     * Filter which FeatureSpecialEffect to delete.
-     */
-    where: FeatureSpecialEffectWhereUniqueInput
-  }
-
-  /**
-   * FeatureSpecialEffect deleteMany
-   */
-  export type FeatureSpecialEffectDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which FeatureSpecialEffects to delete
-     */
-    where?: FeatureSpecialEffectWhereInput
-    /**
-     * Limit how many FeatureSpecialEffects to delete.
-     */
-    limit?: number
-  }
-
-  /**
-   * FeatureSpecialEffect.feat
-   */
-  export type FeatureSpecialEffect$featArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Feat
-     */
-    select?: FeatSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Feat
-     */
-    omit?: FeatOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: FeatInclude<ExtArgs> | null
-    where?: FeatWhereInput
-  }
-
-  /**
-   * FeatureSpecialEffect.item
-   */
-  export type FeatureSpecialEffect$itemArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Item
-     */
-    select?: ItemSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Item
-     */
-    omit?: ItemOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ItemInclude<ExtArgs> | null
-    where?: ItemWhereInput
-  }
-
-  /**
-   * FeatureSpecialEffect without action
-   */
-  export type FeatureSpecialEffectDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the FeatureSpecialEffect
-     */
-    select?: FeatureSpecialEffectSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the FeatureSpecialEffect
-     */
-    omit?: FeatureSpecialEffectOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: FeatureSpecialEffectInclude<ExtArgs> | null
   }
 
 
@@ -28726,7 +27558,6 @@ export namespace Prisma {
     advFeat?: boolean | Feat$advFeatArgs<ExtArgs>
     spellPrepMetamagic?: boolean | Feat$spellPrepMetamagicArgs<ExtArgs>
     featureChoice?: boolean | Feat$featureChoiceArgs<ExtArgs>
-    featureSpecialEffect?: boolean | Feat$featureSpecialEffectArgs<ExtArgs>
     _count?: boolean | FeatCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["feat"]>
 
@@ -28752,7 +27583,6 @@ export namespace Prisma {
     advFeat?: boolean | Feat$advFeatArgs<ExtArgs>
     spellPrepMetamagic?: boolean | Feat$spellPrepMetamagicArgs<ExtArgs>
     featureChoice?: boolean | Feat$featureChoiceArgs<ExtArgs>
-    featureSpecialEffect?: boolean | Feat$featureSpecialEffectArgs<ExtArgs>
     _count?: boolean | FeatCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -28764,7 +27594,6 @@ export namespace Prisma {
       advFeat: Prisma.$AdvancementFeatPayload<ExtArgs>[]
       spellPrepMetamagic: Prisma.$SpellPreparationMetamagicPayload<ExtArgs>[]
       featureChoice: Prisma.$FeatureChoicePayload<ExtArgs>[]
-      featureSpecialEffect: Prisma.$FeatureSpecialEffectPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -29122,7 +27951,6 @@ export namespace Prisma {
     advFeat<T extends Feat$advFeatArgs<ExtArgs> = {}>(args?: Subset<T, Feat$advFeatArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AdvancementFeatPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     spellPrepMetamagic<T extends Feat$spellPrepMetamagicArgs<ExtArgs> = {}>(args?: Subset<T, Feat$spellPrepMetamagicArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SpellPreparationMetamagicPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     featureChoice<T extends Feat$featureChoiceArgs<ExtArgs> = {}>(args?: Subset<T, Feat$featureChoiceArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$FeatureChoicePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    featureSpecialEffect<T extends Feat$featureSpecialEffectArgs<ExtArgs> = {}>(args?: Subset<T, Feat$featureSpecialEffectArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$FeatureSpecialEffectPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -29622,30 +28450,6 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: FeatureChoiceScalarFieldEnum | FeatureChoiceScalarFieldEnum[]
-  }
-
-  /**
-   * Feat.featureSpecialEffect
-   */
-  export type Feat$featureSpecialEffectArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the FeatureSpecialEffect
-     */
-    select?: FeatureSpecialEffectSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the FeatureSpecialEffect
-     */
-    omit?: FeatureSpecialEffectOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: FeatureSpecialEffectInclude<ExtArgs> | null
-    where?: FeatureSpecialEffectWhereInput
-    orderBy?: FeatureSpecialEffectOrderByWithRelationInput | FeatureSpecialEffectOrderByWithRelationInput[]
-    cursor?: FeatureSpecialEffectWhereUniqueInput
-    take?: number
-    skip?: number
-    distinct?: FeatureSpecialEffectScalarFieldEnum | FeatureSpecialEffectScalarFieldEnum[]
   }
 
   /**
@@ -33926,7 +32730,7 @@ export namespace Prisma {
     itemType?: boolean | ItemTypeDefaultArgs<ExtArgs>
     characterItems?: boolean | Item$characterItemsArgs<ExtArgs>
     itemTemplate?: boolean | Item$itemTemplateArgs<ExtArgs>
-    featureSpecialEffect?: boolean | Item$featureSpecialEffectArgs<ExtArgs>
+    featureModifiers?: boolean | Item$featureModifiersArgs<ExtArgs>
     _count?: boolean | ItemCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["item"]>
 
@@ -33949,7 +32753,7 @@ export namespace Prisma {
     itemType?: boolean | ItemTypeDefaultArgs<ExtArgs>
     characterItems?: boolean | Item$characterItemsArgs<ExtArgs>
     itemTemplate?: boolean | Item$itemTemplateArgs<ExtArgs>
-    featureSpecialEffect?: boolean | Item$featureSpecialEffectArgs<ExtArgs>
+    featureModifiers?: boolean | Item$featureModifiersArgs<ExtArgs>
     _count?: boolean | ItemCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -33961,7 +32765,7 @@ export namespace Prisma {
       itemType: Prisma.$ItemTypePayload<ExtArgs>
       characterItems: Prisma.$CharacterItemPayload<ExtArgs>[]
       itemTemplate: Prisma.$ItemTemplatePayload<ExtArgs>[]
-      featureSpecialEffect: Prisma.$FeatureSpecialEffectPayload<ExtArgs>[]
+      featureModifiers: Prisma.$FeatureModifierPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -34316,7 +33120,7 @@ export namespace Prisma {
     itemType<T extends ItemTypeDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ItemTypeDefaultArgs<ExtArgs>>): Prisma__ItemTypeClient<$Result.GetResult<Prisma.$ItemTypePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     characterItems<T extends Item$characterItemsArgs<ExtArgs> = {}>(args?: Subset<T, Item$characterItemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CharacterItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     itemTemplate<T extends Item$itemTemplateArgs<ExtArgs> = {}>(args?: Subset<T, Item$itemTemplateArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ItemTemplatePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    featureSpecialEffect<T extends Item$featureSpecialEffectArgs<ExtArgs> = {}>(args?: Subset<T, Item$featureSpecialEffectArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$FeatureSpecialEffectPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    featureModifiers<T extends Item$featureModifiersArgs<ExtArgs> = {}>(args?: Subset<T, Item$featureModifiersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$FeatureModifierPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -34782,27 +33586,27 @@ export namespace Prisma {
   }
 
   /**
-   * Item.featureSpecialEffect
+   * Item.featureModifiers
    */
-  export type Item$featureSpecialEffectArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type Item$featureModifiersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the FeatureSpecialEffect
+     * Select specific fields to fetch from the FeatureModifier
      */
-    select?: FeatureSpecialEffectSelect<ExtArgs> | null
+    select?: FeatureModifierSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the FeatureSpecialEffect
+     * Omit specific fields from the FeatureModifier
      */
-    omit?: FeatureSpecialEffectOmit<ExtArgs> | null
+    omit?: FeatureModifierOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: FeatureSpecialEffectInclude<ExtArgs> | null
-    where?: FeatureSpecialEffectWhereInput
-    orderBy?: FeatureSpecialEffectOrderByWithRelationInput | FeatureSpecialEffectOrderByWithRelationInput[]
-    cursor?: FeatureSpecialEffectWhereUniqueInput
+    include?: FeatureModifierInclude<ExtArgs> | null
+    where?: FeatureModifierWhereInput
+    orderBy?: FeatureModifierOrderByWithRelationInput | FeatureModifierOrderByWithRelationInput[]
+    cursor?: FeatureModifierWhereUniqueInput
     take?: number
     skip?: number
-    distinct?: FeatureSpecialEffectScalarFieldEnum | FeatureSpecialEffectScalarFieldEnum[]
+    distinct?: FeatureModifierScalarFieldEnum | FeatureModifierScalarFieldEnum[]
   }
 
   /**
@@ -62406,6 +61210,7 @@ export namespace Prisma {
     bonusType: 'bonusType',
     appliesTo: 'appliesTo',
     appliesToId: 'appliesToId',
+    itemId: 'itemId',
     formulaParamsId: 'formulaParamsId',
     groupingId: 'groupingId'
   };
@@ -62434,21 +61239,6 @@ export namespace Prisma {
   };
 
   export type FeatureModifierConditionScalarFieldEnum = (typeof FeatureModifierConditionScalarFieldEnum)[keyof typeof FeatureModifierConditionScalarFieldEnum]
-
-
-  export const FeatureSpecialEffectScalarFieldEnum: {
-    id: 'id',
-    progressionId: 'progressionId',
-    effectType: 'effectType',
-    key: 'key',
-    value: 'value',
-    numericValue: 'numericValue',
-    groupingId: 'groupingId',
-    featId: 'featId',
-    itemId: 'itemId'
-  };
-
-  export type FeatureSpecialEffectScalarFieldEnum = (typeof FeatureSpecialEffectScalarFieldEnum)[keyof typeof FeatureSpecialEffectScalarFieldEnum]
 
 
   export const FeatureChoiceScalarFieldEnum: {
@@ -63007,14 +61797,6 @@ export namespace Prisma {
   };
 
   export type FeatureFormulaParamsOrderByRelevanceFieldEnum = (typeof FeatureFormulaParamsOrderByRelevanceFieldEnum)[keyof typeof FeatureFormulaParamsOrderByRelevanceFieldEnum]
-
-
-  export const FeatureSpecialEffectOrderByRelevanceFieldEnum: {
-    key: 'key',
-    value: 'value'
-  };
-
-  export type FeatureSpecialEffectOrderByRelevanceFieldEnum = (typeof FeatureSpecialEffectOrderByRelevanceFieldEnum)[keyof typeof FeatureSpecialEffectOrderByRelevanceFieldEnum]
 
 
   export const FeatureChoiceOrderByRelevanceFieldEnum: {
@@ -63797,7 +62579,6 @@ export namespace Prisma {
     feature?: XOR<FeatureScalarRelationFilter, FeatureWhereInput>
     choices?: FeatureChoiceListRelationFilter
     spellcasting?: XOR<SpellcastingLinkNullableScalarRelationFilter, SpellcastingLinkWhereInput> | null
-    effects?: FeatureSpecialEffectListRelationFilter
     modifiers?: FeatureModifierListRelationFilter
     characterFeatureChoice?: CharacterFeatureChoiceListRelationFilter
   }
@@ -63814,7 +62595,6 @@ export namespace Prisma {
     feature?: FeatureOrderByWithRelationInput
     choices?: FeatureChoiceOrderByRelationAggregateInput
     spellcasting?: SpellcastingLinkOrderByWithRelationInput
-    effects?: FeatureSpecialEffectOrderByRelationAggregateInput
     modifiers?: FeatureModifierOrderByRelationAggregateInput
     characterFeatureChoice?: CharacterFeatureChoiceOrderByRelationAggregateInput
   }
@@ -63834,7 +62614,6 @@ export namespace Prisma {
     feature?: XOR<FeatureScalarRelationFilter, FeatureWhereInput>
     choices?: FeatureChoiceListRelationFilter
     spellcasting?: XOR<SpellcastingLinkNullableScalarRelationFilter, SpellcastingLinkWhereInput> | null
-    effects?: FeatureSpecialEffectListRelationFilter
     modifiers?: FeatureModifierListRelationFilter
     characterFeatureChoice?: CharacterFeatureChoiceListRelationFilter
   }, "id">
@@ -63876,11 +62655,13 @@ export namespace Prisma {
     bonusType?: IntNullableFilter<"FeatureModifier"> | number | null
     appliesTo?: IntNullableFilter<"FeatureModifier"> | number | null
     appliesToId?: IntNullableFilter<"FeatureModifier"> | number | null
+    itemId?: IntNullableFilter<"FeatureModifier"> | number | null
     formulaParamsId?: IntNullableFilter<"FeatureModifier"> | number | null
     groupingId?: IntFilter<"FeatureModifier"> | number
     featureProgression?: XOR<FeatureProgressionScalarRelationFilter, FeatureProgressionWhereInput>
     conditions?: FeatureModifierConditionListRelationFilter
     formulaParams?: XOR<FeatureFormulaParamsNullableScalarRelationFilter, FeatureFormulaParamsWhereInput> | null
+    item?: XOR<ItemNullableScalarRelationFilter, ItemWhereInput> | null
   }
 
   export type FeatureModifierOrderByWithRelationInput = {
@@ -63891,11 +62672,13 @@ export namespace Prisma {
     bonusType?: SortOrderInput | SortOrder
     appliesTo?: SortOrderInput | SortOrder
     appliesToId?: SortOrderInput | SortOrder
+    itemId?: SortOrderInput | SortOrder
     formulaParamsId?: SortOrderInput | SortOrder
     groupingId?: SortOrder
     featureProgression?: FeatureProgressionOrderByWithRelationInput
     conditions?: FeatureModifierConditionOrderByRelationAggregateInput
     formulaParams?: FeatureFormulaParamsOrderByWithRelationInput
+    item?: ItemOrderByWithRelationInput
   }
 
   export type FeatureModifierWhereUniqueInput = Prisma.AtLeast<{
@@ -63909,11 +62692,13 @@ export namespace Prisma {
     bonusType?: IntNullableFilter<"FeatureModifier"> | number | null
     appliesTo?: IntNullableFilter<"FeatureModifier"> | number | null
     appliesToId?: IntNullableFilter<"FeatureModifier"> | number | null
+    itemId?: IntNullableFilter<"FeatureModifier"> | number | null
     formulaParamsId?: IntNullableFilter<"FeatureModifier"> | number | null
     groupingId?: IntFilter<"FeatureModifier"> | number
     featureProgression?: XOR<FeatureProgressionScalarRelationFilter, FeatureProgressionWhereInput>
     conditions?: FeatureModifierConditionListRelationFilter
     formulaParams?: XOR<FeatureFormulaParamsNullableScalarRelationFilter, FeatureFormulaParamsWhereInput> | null
+    item?: XOR<ItemNullableScalarRelationFilter, ItemWhereInput> | null
   }, "id">
 
   export type FeatureModifierOrderByWithAggregationInput = {
@@ -63924,6 +62709,7 @@ export namespace Prisma {
     bonusType?: SortOrderInput | SortOrder
     appliesTo?: SortOrderInput | SortOrder
     appliesToId?: SortOrderInput | SortOrder
+    itemId?: SortOrderInput | SortOrder
     formulaParamsId?: SortOrderInput | SortOrder
     groupingId?: SortOrder
     _count?: FeatureModifierCountOrderByAggregateInput
@@ -63944,6 +62730,7 @@ export namespace Prisma {
     bonusType?: IntNullableWithAggregatesFilter<"FeatureModifier"> | number | null
     appliesTo?: IntNullableWithAggregatesFilter<"FeatureModifier"> | number | null
     appliesToId?: IntNullableWithAggregatesFilter<"FeatureModifier"> | number | null
+    itemId?: IntNullableWithAggregatesFilter<"FeatureModifier"> | number | null
     formulaParamsId?: IntNullableWithAggregatesFilter<"FeatureModifier"> | number | null
     groupingId?: IntWithAggregatesFilter<"FeatureModifier"> | number
   }
@@ -64069,90 +62856,6 @@ export namespace Prisma {
     featureModifierId?: IntWithAggregatesFilter<"FeatureModifierCondition"> | number
     conditionType?: IntWithAggregatesFilter<"FeatureModifierCondition"> | number
     conditionValue?: IntWithAggregatesFilter<"FeatureModifierCondition"> | number
-  }
-
-  export type FeatureSpecialEffectWhereInput = {
-    AND?: FeatureSpecialEffectWhereInput | FeatureSpecialEffectWhereInput[]
-    OR?: FeatureSpecialEffectWhereInput[]
-    NOT?: FeatureSpecialEffectWhereInput | FeatureSpecialEffectWhereInput[]
-    id?: IntFilter<"FeatureSpecialEffect"> | number
-    progressionId?: IntFilter<"FeatureSpecialEffect"> | number
-    effectType?: IntFilter<"FeatureSpecialEffect"> | number
-    key?: StringNullableFilter<"FeatureSpecialEffect"> | string | null
-    value?: StringNullableFilter<"FeatureSpecialEffect"> | string | null
-    numericValue?: IntNullableFilter<"FeatureSpecialEffect"> | number | null
-    groupingId?: IntFilter<"FeatureSpecialEffect"> | number
-    featId?: IntNullableFilter<"FeatureSpecialEffect"> | number | null
-    itemId?: IntNullableFilter<"FeatureSpecialEffect"> | number | null
-    featureProgression?: XOR<FeatureProgressionScalarRelationFilter, FeatureProgressionWhereInput>
-    feat?: XOR<FeatNullableScalarRelationFilter, FeatWhereInput> | null
-    item?: XOR<ItemNullableScalarRelationFilter, ItemWhereInput> | null
-  }
-
-  export type FeatureSpecialEffectOrderByWithRelationInput = {
-    id?: SortOrder
-    progressionId?: SortOrder
-    effectType?: SortOrder
-    key?: SortOrderInput | SortOrder
-    value?: SortOrderInput | SortOrder
-    numericValue?: SortOrderInput | SortOrder
-    groupingId?: SortOrder
-    featId?: SortOrderInput | SortOrder
-    itemId?: SortOrderInput | SortOrder
-    featureProgression?: FeatureProgressionOrderByWithRelationInput
-    feat?: FeatOrderByWithRelationInput
-    item?: ItemOrderByWithRelationInput
-    _relevance?: FeatureSpecialEffectOrderByRelevanceInput
-  }
-
-  export type FeatureSpecialEffectWhereUniqueInput = Prisma.AtLeast<{
-    id?: number
-    AND?: FeatureSpecialEffectWhereInput | FeatureSpecialEffectWhereInput[]
-    OR?: FeatureSpecialEffectWhereInput[]
-    NOT?: FeatureSpecialEffectWhereInput | FeatureSpecialEffectWhereInput[]
-    progressionId?: IntFilter<"FeatureSpecialEffect"> | number
-    effectType?: IntFilter<"FeatureSpecialEffect"> | number
-    key?: StringNullableFilter<"FeatureSpecialEffect"> | string | null
-    value?: StringNullableFilter<"FeatureSpecialEffect"> | string | null
-    numericValue?: IntNullableFilter<"FeatureSpecialEffect"> | number | null
-    groupingId?: IntFilter<"FeatureSpecialEffect"> | number
-    featId?: IntNullableFilter<"FeatureSpecialEffect"> | number | null
-    itemId?: IntNullableFilter<"FeatureSpecialEffect"> | number | null
-    featureProgression?: XOR<FeatureProgressionScalarRelationFilter, FeatureProgressionWhereInput>
-    feat?: XOR<FeatNullableScalarRelationFilter, FeatWhereInput> | null
-    item?: XOR<ItemNullableScalarRelationFilter, ItemWhereInput> | null
-  }, "id">
-
-  export type FeatureSpecialEffectOrderByWithAggregationInput = {
-    id?: SortOrder
-    progressionId?: SortOrder
-    effectType?: SortOrder
-    key?: SortOrderInput | SortOrder
-    value?: SortOrderInput | SortOrder
-    numericValue?: SortOrderInput | SortOrder
-    groupingId?: SortOrder
-    featId?: SortOrderInput | SortOrder
-    itemId?: SortOrderInput | SortOrder
-    _count?: FeatureSpecialEffectCountOrderByAggregateInput
-    _avg?: FeatureSpecialEffectAvgOrderByAggregateInput
-    _max?: FeatureSpecialEffectMaxOrderByAggregateInput
-    _min?: FeatureSpecialEffectMinOrderByAggregateInput
-    _sum?: FeatureSpecialEffectSumOrderByAggregateInput
-  }
-
-  export type FeatureSpecialEffectScalarWhereWithAggregatesInput = {
-    AND?: FeatureSpecialEffectScalarWhereWithAggregatesInput | FeatureSpecialEffectScalarWhereWithAggregatesInput[]
-    OR?: FeatureSpecialEffectScalarWhereWithAggregatesInput[]
-    NOT?: FeatureSpecialEffectScalarWhereWithAggregatesInput | FeatureSpecialEffectScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"FeatureSpecialEffect"> | number
-    progressionId?: IntWithAggregatesFilter<"FeatureSpecialEffect"> | number
-    effectType?: IntWithAggregatesFilter<"FeatureSpecialEffect"> | number
-    key?: StringNullableWithAggregatesFilter<"FeatureSpecialEffect"> | string | null
-    value?: StringNullableWithAggregatesFilter<"FeatureSpecialEffect"> | string | null
-    numericValue?: IntNullableWithAggregatesFilter<"FeatureSpecialEffect"> | number | null
-    groupingId?: IntWithAggregatesFilter<"FeatureSpecialEffect"> | number
-    featId?: IntNullableWithAggregatesFilter<"FeatureSpecialEffect"> | number | null
-    itemId?: IntNullableWithAggregatesFilter<"FeatureSpecialEffect"> | number | null
   }
 
   export type FeatureChoiceWhereInput = {
@@ -64802,7 +63505,6 @@ export namespace Prisma {
     advFeat?: AdvancementFeatListRelationFilter
     spellPrepMetamagic?: SpellPreparationMetamagicListRelationFilter
     featureChoice?: FeatureChoiceListRelationFilter
-    featureSpecialEffect?: FeatureSpecialEffectListRelationFilter
   }
 
   export type FeatOrderByWithRelationInput = {
@@ -64821,7 +63523,6 @@ export namespace Prisma {
     advFeat?: AdvancementFeatOrderByRelationAggregateInput
     spellPrepMetamagic?: SpellPreparationMetamagicOrderByRelationAggregateInput
     featureChoice?: FeatureChoiceOrderByRelationAggregateInput
-    featureSpecialEffect?: FeatureSpecialEffectOrderByRelationAggregateInput
     _relevance?: FeatOrderByRelevanceInput
   }
 
@@ -64844,7 +63545,6 @@ export namespace Prisma {
     advFeat?: AdvancementFeatListRelationFilter
     spellPrepMetamagic?: SpellPreparationMetamagicListRelationFilter
     featureChoice?: FeatureChoiceListRelationFilter
-    featureSpecialEffect?: FeatureSpecialEffectListRelationFilter
   }, "id">
 
   export type FeatOrderByWithAggregationInput = {
@@ -65143,7 +63843,7 @@ export namespace Prisma {
     itemType?: XOR<ItemTypeScalarRelationFilter, ItemTypeWhereInput>
     characterItems?: CharacterItemListRelationFilter
     itemTemplate?: ItemTemplateListRelationFilter
-    featureSpecialEffect?: FeatureSpecialEffectListRelationFilter
+    featureModifiers?: FeatureModifierListRelationFilter
   }
 
   export type ItemOrderByWithRelationInput = {
@@ -65159,7 +63859,7 @@ export namespace Prisma {
     itemType?: ItemTypeOrderByWithRelationInput
     characterItems?: CharacterItemOrderByRelationAggregateInput
     itemTemplate?: ItemTemplateOrderByRelationAggregateInput
-    featureSpecialEffect?: FeatureSpecialEffectOrderByRelationAggregateInput
+    featureModifiers?: FeatureModifierOrderByRelationAggregateInput
     _relevance?: ItemOrderByRelevanceInput
   }
 
@@ -65179,7 +63879,7 @@ export namespace Prisma {
     itemType?: XOR<ItemTypeScalarRelationFilter, ItemTypeWhereInput>
     characterItems?: CharacterItemListRelationFilter
     itemTemplate?: ItemTemplateListRelationFilter
-    featureSpecialEffect?: FeatureSpecialEffectListRelationFilter
+    featureModifiers?: FeatureModifierListRelationFilter
   }, "id">
 
   export type ItemOrderByWithAggregationInput = {
@@ -67496,7 +66196,6 @@ export namespace Prisma {
     feature: FeatureCreateNestedOneWithoutProgressionsInput
     choices?: FeatureChoiceCreateNestedManyWithoutFeatureProgressionInput
     spellcasting?: SpellcastingLinkCreateNestedOneWithoutFeatureInput
-    effects?: FeatureSpecialEffectCreateNestedManyWithoutFeatureProgressionInput
     modifiers?: FeatureModifierCreateNestedManyWithoutFeatureProgressionInput
     characterFeatureChoice?: CharacterFeatureChoiceCreateNestedManyWithoutFeatureProgressionInput
   }
@@ -67510,7 +66209,6 @@ export namespace Prisma {
     raceId?: number | null
     choices?: FeatureChoiceUncheckedCreateNestedManyWithoutFeatureProgressionInput
     spellcasting?: SpellcastingLinkUncheckedCreateNestedOneWithoutFeatureInput
-    effects?: FeatureSpecialEffectUncheckedCreateNestedManyWithoutFeatureProgressionInput
     modifiers?: FeatureModifierUncheckedCreateNestedManyWithoutFeatureProgressionInput
     characterFeatureChoice?: CharacterFeatureChoiceUncheckedCreateNestedManyWithoutFeatureProgressionInput
   }
@@ -67523,7 +66221,6 @@ export namespace Prisma {
     feature?: FeatureUpdateOneRequiredWithoutProgressionsNestedInput
     choices?: FeatureChoiceUpdateManyWithoutFeatureProgressionNestedInput
     spellcasting?: SpellcastingLinkUpdateOneWithoutFeatureNestedInput
-    effects?: FeatureSpecialEffectUpdateManyWithoutFeatureProgressionNestedInput
     modifiers?: FeatureModifierUpdateManyWithoutFeatureProgressionNestedInput
     characterFeatureChoice?: CharacterFeatureChoiceUpdateManyWithoutFeatureProgressionNestedInput
   }
@@ -67537,7 +66234,6 @@ export namespace Prisma {
     raceId?: NullableIntFieldUpdateOperationsInput | number | null
     choices?: FeatureChoiceUncheckedUpdateManyWithoutFeatureProgressionNestedInput
     spellcasting?: SpellcastingLinkUncheckedUpdateOneWithoutFeatureNestedInput
-    effects?: FeatureSpecialEffectUncheckedUpdateManyWithoutFeatureProgressionNestedInput
     modifiers?: FeatureModifierUncheckedUpdateManyWithoutFeatureProgressionNestedInput
     characterFeatureChoice?: CharacterFeatureChoiceUncheckedUpdateManyWithoutFeatureProgressionNestedInput
   }
@@ -67575,6 +66271,7 @@ export namespace Prisma {
     featureProgression: FeatureProgressionCreateNestedOneWithoutModifiersInput
     conditions?: FeatureModifierConditionCreateNestedManyWithoutFeatureModifierInput
     formulaParams?: FeatureFormulaParamsCreateNestedOneWithoutFeatureModifierInput
+    item?: ItemCreateNestedOneWithoutFeatureModifiersInput
   }
 
   export type FeatureModifierUncheckedCreateInput = {
@@ -67585,6 +66282,7 @@ export namespace Prisma {
     bonusType?: number | null
     appliesTo?: number | null
     appliesToId?: number | null
+    itemId?: number | null
     formulaParamsId?: number | null
     groupingId?: number
     conditions?: FeatureModifierConditionUncheckedCreateNestedManyWithoutFeatureModifierInput
@@ -67600,6 +66298,7 @@ export namespace Prisma {
     featureProgression?: FeatureProgressionUpdateOneRequiredWithoutModifiersNestedInput
     conditions?: FeatureModifierConditionUpdateManyWithoutFeatureModifierNestedInput
     formulaParams?: FeatureFormulaParamsUpdateOneWithoutFeatureModifierNestedInput
+    item?: ItemUpdateOneWithoutFeatureModifiersNestedInput
   }
 
   export type FeatureModifierUncheckedUpdateInput = {
@@ -67610,6 +66309,7 @@ export namespace Prisma {
     bonusType?: NullableIntFieldUpdateOperationsInput | number | null
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
+    itemId?: NullableIntFieldUpdateOperationsInput | number | null
     formulaParamsId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
     conditions?: FeatureModifierConditionUncheckedUpdateManyWithoutFeatureModifierNestedInput
@@ -67623,6 +66323,7 @@ export namespace Prisma {
     bonusType?: number | null
     appliesTo?: number | null
     appliesToId?: number | null
+    itemId?: number | null
     formulaParamsId?: number | null
     groupingId?: number
   }
@@ -67644,6 +66345,7 @@ export namespace Prisma {
     bonusType?: NullableIntFieldUpdateOperationsInput | number | null
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
+    itemId?: NullableIntFieldUpdateOperationsInput | number | null
     formulaParamsId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
   }
@@ -67766,84 +66468,6 @@ export namespace Prisma {
     featureModifierId?: IntFieldUpdateOperationsInput | number
     conditionType?: IntFieldUpdateOperationsInput | number
     conditionValue?: IntFieldUpdateOperationsInput | number
-  }
-
-  export type FeatureSpecialEffectCreateInput = {
-    effectType: number
-    key?: string | null
-    value?: string | null
-    numericValue?: number | null
-    groupingId?: number
-    featureProgression: FeatureProgressionCreateNestedOneWithoutEffectsInput
-    feat?: FeatCreateNestedOneWithoutFeatureSpecialEffectInput
-    item?: ItemCreateNestedOneWithoutFeatureSpecialEffectInput
-  }
-
-  export type FeatureSpecialEffectUncheckedCreateInput = {
-    id?: number
-    progressionId: number
-    effectType: number
-    key?: string | null
-    value?: string | null
-    numericValue?: number | null
-    groupingId?: number
-    featId?: number | null
-    itemId?: number | null
-  }
-
-  export type FeatureSpecialEffectUpdateInput = {
-    effectType?: IntFieldUpdateOperationsInput | number
-    key?: NullableStringFieldUpdateOperationsInput | string | null
-    value?: NullableStringFieldUpdateOperationsInput | string | null
-    numericValue?: NullableIntFieldUpdateOperationsInput | number | null
-    groupingId?: IntFieldUpdateOperationsInput | number
-    featureProgression?: FeatureProgressionUpdateOneRequiredWithoutEffectsNestedInput
-    feat?: FeatUpdateOneWithoutFeatureSpecialEffectNestedInput
-    item?: ItemUpdateOneWithoutFeatureSpecialEffectNestedInput
-  }
-
-  export type FeatureSpecialEffectUncheckedUpdateInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    progressionId?: IntFieldUpdateOperationsInput | number
-    effectType?: IntFieldUpdateOperationsInput | number
-    key?: NullableStringFieldUpdateOperationsInput | string | null
-    value?: NullableStringFieldUpdateOperationsInput | string | null
-    numericValue?: NullableIntFieldUpdateOperationsInput | number | null
-    groupingId?: IntFieldUpdateOperationsInput | number
-    featId?: NullableIntFieldUpdateOperationsInput | number | null
-    itemId?: NullableIntFieldUpdateOperationsInput | number | null
-  }
-
-  export type FeatureSpecialEffectCreateManyInput = {
-    id?: number
-    progressionId: number
-    effectType: number
-    key?: string | null
-    value?: string | null
-    numericValue?: number | null
-    groupingId?: number
-    featId?: number | null
-    itemId?: number | null
-  }
-
-  export type FeatureSpecialEffectUpdateManyMutationInput = {
-    effectType?: IntFieldUpdateOperationsInput | number
-    key?: NullableStringFieldUpdateOperationsInput | string | null
-    value?: NullableStringFieldUpdateOperationsInput | string | null
-    numericValue?: NullableIntFieldUpdateOperationsInput | number | null
-    groupingId?: IntFieldUpdateOperationsInput | number
-  }
-
-  export type FeatureSpecialEffectUncheckedUpdateManyInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    progressionId?: IntFieldUpdateOperationsInput | number
-    effectType?: IntFieldUpdateOperationsInput | number
-    key?: NullableStringFieldUpdateOperationsInput | string | null
-    value?: NullableStringFieldUpdateOperationsInput | string | null
-    numericValue?: NullableIntFieldUpdateOperationsInput | number | null
-    groupingId?: IntFieldUpdateOperationsInput | number
-    featId?: NullableIntFieldUpdateOperationsInput | number | null
-    itemId?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type FeatureChoiceCreateInput = {
@@ -68476,7 +67100,6 @@ export namespace Prisma {
     advFeat?: AdvancementFeatCreateNestedManyWithoutFeatInput
     spellPrepMetamagic?: SpellPreparationMetamagicCreateNestedManyWithoutFeatInput
     featureChoice?: FeatureChoiceCreateNestedManyWithoutFeatInput
-    featureSpecialEffect?: FeatureSpecialEffectCreateNestedManyWithoutFeatInput
   }
 
   export type FeatUncheckedCreateInput = {
@@ -68495,7 +67118,6 @@ export namespace Prisma {
     advFeat?: AdvancementFeatUncheckedCreateNestedManyWithoutFeatInput
     spellPrepMetamagic?: SpellPreparationMetamagicUncheckedCreateNestedManyWithoutFeatInput
     featureChoice?: FeatureChoiceUncheckedCreateNestedManyWithoutFeatInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedCreateNestedManyWithoutFeatInput
   }
 
   export type FeatUpdateInput = {
@@ -68513,7 +67135,6 @@ export namespace Prisma {
     advFeat?: AdvancementFeatUpdateManyWithoutFeatNestedInput
     spellPrepMetamagic?: SpellPreparationMetamagicUpdateManyWithoutFeatNestedInput
     featureChoice?: FeatureChoiceUpdateManyWithoutFeatNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUpdateManyWithoutFeatNestedInput
   }
 
   export type FeatUncheckedUpdateInput = {
@@ -68532,7 +67153,6 @@ export namespace Prisma {
     advFeat?: AdvancementFeatUncheckedUpdateManyWithoutFeatNestedInput
     spellPrepMetamagic?: SpellPreparationMetamagicUncheckedUpdateManyWithoutFeatNestedInput
     featureChoice?: FeatureChoiceUncheckedUpdateManyWithoutFeatNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedUpdateManyWithoutFeatNestedInput
   }
 
   export type FeatCreateManyInput = {
@@ -68820,7 +67440,7 @@ export namespace Prisma {
     itemType?: ItemTypeCreateNestedOneWithoutItemLinksInput
     characterItems?: CharacterItemCreateNestedManyWithoutBaseItemInput
     itemTemplate?: ItemTemplateCreateNestedManyWithoutItemInput
-    featureSpecialEffect?: FeatureSpecialEffectCreateNestedManyWithoutItemInput
+    featureModifiers?: FeatureModifierCreateNestedManyWithoutItemInput
   }
 
   export type ItemUncheckedCreateInput = {
@@ -68835,7 +67455,7 @@ export namespace Prisma {
     weapon?: WeaponUncheckedCreateNestedOneWithoutItemInput
     characterItems?: CharacterItemUncheckedCreateNestedManyWithoutBaseItemInput
     itemTemplate?: ItemTemplateUncheckedCreateNestedManyWithoutItemInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedCreateNestedManyWithoutItemInput
+    featureModifiers?: FeatureModifierUncheckedCreateNestedManyWithoutItemInput
   }
 
   export type ItemUpdateInput = {
@@ -68849,7 +67469,7 @@ export namespace Prisma {
     itemType?: ItemTypeUpdateOneRequiredWithoutItemLinksNestedInput
     characterItems?: CharacterItemUpdateManyWithoutBaseItemNestedInput
     itemTemplate?: ItemTemplateUpdateManyWithoutItemNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUpdateManyWithoutItemNestedInput
+    featureModifiers?: FeatureModifierUpdateManyWithoutItemNestedInput
   }
 
   export type ItemUncheckedUpdateInput = {
@@ -68864,7 +67484,7 @@ export namespace Prisma {
     weapon?: WeaponUncheckedUpdateOneWithoutItemNestedInput
     characterItems?: CharacterItemUncheckedUpdateManyWithoutBaseItemNestedInput
     itemTemplate?: ItemTemplateUncheckedUpdateManyWithoutItemNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedUpdateManyWithoutItemNestedInput
+    featureModifiers?: FeatureModifierUncheckedUpdateManyWithoutItemNestedInput
   }
 
   export type ItemCreateManyInput = {
@@ -71214,12 +69834,6 @@ export namespace Prisma {
     isNot?: SpellcastingLinkWhereInput | null
   }
 
-  export type FeatureSpecialEffectListRelationFilter = {
-    every?: FeatureSpecialEffectWhereInput
-    some?: FeatureSpecialEffectWhereInput
-    none?: FeatureSpecialEffectWhereInput
-  }
-
   export type FeatureModifierListRelationFilter = {
     every?: FeatureModifierWhereInput
     some?: FeatureModifierWhereInput
@@ -71230,10 +69844,6 @@ export namespace Prisma {
     every?: CharacterFeatureChoiceWhereInput
     some?: CharacterFeatureChoiceWhereInput
     none?: CharacterFeatureChoiceWhereInput
-  }
-
-  export type FeatureSpecialEffectOrderByRelationAggregateInput = {
-    _count?: SortOrder
   }
 
   export type FeatureModifierOrderByRelationAggregateInput = {
@@ -71300,6 +69910,11 @@ export namespace Prisma {
     isNot?: FeatureFormulaParamsWhereInput | null
   }
 
+  export type ItemNullableScalarRelationFilter = {
+    is?: ItemWhereInput | null
+    isNot?: ItemWhereInput | null
+  }
+
   export type FeatureModifierConditionOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -71312,6 +69927,7 @@ export namespace Prisma {
     bonusType?: SortOrder
     appliesTo?: SortOrder
     appliesToId?: SortOrder
+    itemId?: SortOrder
     formulaParamsId?: SortOrder
     groupingId?: SortOrder
   }
@@ -71324,6 +69940,7 @@ export namespace Prisma {
     bonusType?: SortOrder
     appliesTo?: SortOrder
     appliesToId?: SortOrder
+    itemId?: SortOrder
     formulaParamsId?: SortOrder
     groupingId?: SortOrder
   }
@@ -71336,6 +69953,7 @@ export namespace Prisma {
     bonusType?: SortOrder
     appliesTo?: SortOrder
     appliesToId?: SortOrder
+    itemId?: SortOrder
     formulaParamsId?: SortOrder
     groupingId?: SortOrder
   }
@@ -71348,6 +69966,7 @@ export namespace Prisma {
     bonusType?: SortOrder
     appliesTo?: SortOrder
     appliesToId?: SortOrder
+    itemId?: SortOrder
     formulaParamsId?: SortOrder
     groupingId?: SortOrder
   }
@@ -71360,6 +69979,7 @@ export namespace Prisma {
     bonusType?: SortOrder
     appliesTo?: SortOrder
     appliesToId?: SortOrder
+    itemId?: SortOrder
     formulaParamsId?: SortOrder
     groupingId?: SortOrder
   }
@@ -71459,73 +70079,6 @@ export namespace Prisma {
   export type FeatNullableScalarRelationFilter = {
     is?: FeatWhereInput | null
     isNot?: FeatWhereInput | null
-  }
-
-  export type ItemNullableScalarRelationFilter = {
-    is?: ItemWhereInput | null
-    isNot?: ItemWhereInput | null
-  }
-
-  export type FeatureSpecialEffectOrderByRelevanceInput = {
-    fields: FeatureSpecialEffectOrderByRelevanceFieldEnum | FeatureSpecialEffectOrderByRelevanceFieldEnum[]
-    sort: SortOrder
-    search: string
-  }
-
-  export type FeatureSpecialEffectCountOrderByAggregateInput = {
-    id?: SortOrder
-    progressionId?: SortOrder
-    effectType?: SortOrder
-    key?: SortOrder
-    value?: SortOrder
-    numericValue?: SortOrder
-    groupingId?: SortOrder
-    featId?: SortOrder
-    itemId?: SortOrder
-  }
-
-  export type FeatureSpecialEffectAvgOrderByAggregateInput = {
-    id?: SortOrder
-    progressionId?: SortOrder
-    effectType?: SortOrder
-    numericValue?: SortOrder
-    groupingId?: SortOrder
-    featId?: SortOrder
-    itemId?: SortOrder
-  }
-
-  export type FeatureSpecialEffectMaxOrderByAggregateInput = {
-    id?: SortOrder
-    progressionId?: SortOrder
-    effectType?: SortOrder
-    key?: SortOrder
-    value?: SortOrder
-    numericValue?: SortOrder
-    groupingId?: SortOrder
-    featId?: SortOrder
-    itemId?: SortOrder
-  }
-
-  export type FeatureSpecialEffectMinOrderByAggregateInput = {
-    id?: SortOrder
-    progressionId?: SortOrder
-    effectType?: SortOrder
-    key?: SortOrder
-    value?: SortOrder
-    numericValue?: SortOrder
-    groupingId?: SortOrder
-    featId?: SortOrder
-    itemId?: SortOrder
-  }
-
-  export type FeatureSpecialEffectSumOrderByAggregateInput = {
-    id?: SortOrder
-    progressionId?: SortOrder
-    effectType?: SortOrder
-    numericValue?: SortOrder
-    groupingId?: SortOrder
-    featId?: SortOrder
-    itemId?: SortOrder
   }
 
   export type FeatureNullableScalarRelationFilter = {
@@ -74792,13 +73345,6 @@ export namespace Prisma {
     connect?: SpellcastingLinkWhereUniqueInput
   }
 
-  export type FeatureSpecialEffectCreateNestedManyWithoutFeatureProgressionInput = {
-    create?: XOR<FeatureSpecialEffectCreateWithoutFeatureProgressionInput, FeatureSpecialEffectUncheckedCreateWithoutFeatureProgressionInput> | FeatureSpecialEffectCreateWithoutFeatureProgressionInput[] | FeatureSpecialEffectUncheckedCreateWithoutFeatureProgressionInput[]
-    connectOrCreate?: FeatureSpecialEffectCreateOrConnectWithoutFeatureProgressionInput | FeatureSpecialEffectCreateOrConnectWithoutFeatureProgressionInput[]
-    createMany?: FeatureSpecialEffectCreateManyFeatureProgressionInputEnvelope
-    connect?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-  }
-
   export type FeatureModifierCreateNestedManyWithoutFeatureProgressionInput = {
     create?: XOR<FeatureModifierCreateWithoutFeatureProgressionInput, FeatureModifierUncheckedCreateWithoutFeatureProgressionInput> | FeatureModifierCreateWithoutFeatureProgressionInput[] | FeatureModifierUncheckedCreateWithoutFeatureProgressionInput[]
     connectOrCreate?: FeatureModifierCreateOrConnectWithoutFeatureProgressionInput | FeatureModifierCreateOrConnectWithoutFeatureProgressionInput[]
@@ -74824,13 +73370,6 @@ export namespace Prisma {
     create?: XOR<SpellcastingLinkCreateWithoutFeatureInput, SpellcastingLinkUncheckedCreateWithoutFeatureInput>
     connectOrCreate?: SpellcastingLinkCreateOrConnectWithoutFeatureInput
     connect?: SpellcastingLinkWhereUniqueInput
-  }
-
-  export type FeatureSpecialEffectUncheckedCreateNestedManyWithoutFeatureProgressionInput = {
-    create?: XOR<FeatureSpecialEffectCreateWithoutFeatureProgressionInput, FeatureSpecialEffectUncheckedCreateWithoutFeatureProgressionInput> | FeatureSpecialEffectCreateWithoutFeatureProgressionInput[] | FeatureSpecialEffectUncheckedCreateWithoutFeatureProgressionInput[]
-    connectOrCreate?: FeatureSpecialEffectCreateOrConnectWithoutFeatureProgressionInput | FeatureSpecialEffectCreateOrConnectWithoutFeatureProgressionInput[]
-    createMany?: FeatureSpecialEffectCreateManyFeatureProgressionInputEnvelope
-    connect?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
   }
 
   export type FeatureModifierUncheckedCreateNestedManyWithoutFeatureProgressionInput = {
@@ -74899,20 +73438,6 @@ export namespace Prisma {
     update?: XOR<XOR<SpellcastingLinkUpdateToOneWithWhereWithoutFeatureInput, SpellcastingLinkUpdateWithoutFeatureInput>, SpellcastingLinkUncheckedUpdateWithoutFeatureInput>
   }
 
-  export type FeatureSpecialEffectUpdateManyWithoutFeatureProgressionNestedInput = {
-    create?: XOR<FeatureSpecialEffectCreateWithoutFeatureProgressionInput, FeatureSpecialEffectUncheckedCreateWithoutFeatureProgressionInput> | FeatureSpecialEffectCreateWithoutFeatureProgressionInput[] | FeatureSpecialEffectUncheckedCreateWithoutFeatureProgressionInput[]
-    connectOrCreate?: FeatureSpecialEffectCreateOrConnectWithoutFeatureProgressionInput | FeatureSpecialEffectCreateOrConnectWithoutFeatureProgressionInput[]
-    upsert?: FeatureSpecialEffectUpsertWithWhereUniqueWithoutFeatureProgressionInput | FeatureSpecialEffectUpsertWithWhereUniqueWithoutFeatureProgressionInput[]
-    createMany?: FeatureSpecialEffectCreateManyFeatureProgressionInputEnvelope
-    set?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    disconnect?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    delete?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    connect?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    update?: FeatureSpecialEffectUpdateWithWhereUniqueWithoutFeatureProgressionInput | FeatureSpecialEffectUpdateWithWhereUniqueWithoutFeatureProgressionInput[]
-    updateMany?: FeatureSpecialEffectUpdateManyWithWhereWithoutFeatureProgressionInput | FeatureSpecialEffectUpdateManyWithWhereWithoutFeatureProgressionInput[]
-    deleteMany?: FeatureSpecialEffectScalarWhereInput | FeatureSpecialEffectScalarWhereInput[]
-  }
-
   export type FeatureModifierUpdateManyWithoutFeatureProgressionNestedInput = {
     create?: XOR<FeatureModifierCreateWithoutFeatureProgressionInput, FeatureModifierUncheckedCreateWithoutFeatureProgressionInput> | FeatureModifierCreateWithoutFeatureProgressionInput[] | FeatureModifierUncheckedCreateWithoutFeatureProgressionInput[]
     connectOrCreate?: FeatureModifierCreateOrConnectWithoutFeatureProgressionInput | FeatureModifierCreateOrConnectWithoutFeatureProgressionInput[]
@@ -74965,20 +73490,6 @@ export namespace Prisma {
     update?: XOR<XOR<SpellcastingLinkUpdateToOneWithWhereWithoutFeatureInput, SpellcastingLinkUpdateWithoutFeatureInput>, SpellcastingLinkUncheckedUpdateWithoutFeatureInput>
   }
 
-  export type FeatureSpecialEffectUncheckedUpdateManyWithoutFeatureProgressionNestedInput = {
-    create?: XOR<FeatureSpecialEffectCreateWithoutFeatureProgressionInput, FeatureSpecialEffectUncheckedCreateWithoutFeatureProgressionInput> | FeatureSpecialEffectCreateWithoutFeatureProgressionInput[] | FeatureSpecialEffectUncheckedCreateWithoutFeatureProgressionInput[]
-    connectOrCreate?: FeatureSpecialEffectCreateOrConnectWithoutFeatureProgressionInput | FeatureSpecialEffectCreateOrConnectWithoutFeatureProgressionInput[]
-    upsert?: FeatureSpecialEffectUpsertWithWhereUniqueWithoutFeatureProgressionInput | FeatureSpecialEffectUpsertWithWhereUniqueWithoutFeatureProgressionInput[]
-    createMany?: FeatureSpecialEffectCreateManyFeatureProgressionInputEnvelope
-    set?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    disconnect?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    delete?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    connect?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    update?: FeatureSpecialEffectUpdateWithWhereUniqueWithoutFeatureProgressionInput | FeatureSpecialEffectUpdateWithWhereUniqueWithoutFeatureProgressionInput[]
-    updateMany?: FeatureSpecialEffectUpdateManyWithWhereWithoutFeatureProgressionInput | FeatureSpecialEffectUpdateManyWithWhereWithoutFeatureProgressionInput[]
-    deleteMany?: FeatureSpecialEffectScalarWhereInput | FeatureSpecialEffectScalarWhereInput[]
-  }
-
   export type FeatureModifierUncheckedUpdateManyWithoutFeatureProgressionNestedInput = {
     create?: XOR<FeatureModifierCreateWithoutFeatureProgressionInput, FeatureModifierUncheckedCreateWithoutFeatureProgressionInput> | FeatureModifierCreateWithoutFeatureProgressionInput[] | FeatureModifierUncheckedCreateWithoutFeatureProgressionInput[]
     connectOrCreate?: FeatureModifierCreateOrConnectWithoutFeatureProgressionInput | FeatureModifierCreateOrConnectWithoutFeatureProgressionInput[]
@@ -75026,6 +73537,12 @@ export namespace Prisma {
     connect?: FeatureFormulaParamsWhereUniqueInput
   }
 
+  export type ItemCreateNestedOneWithoutFeatureModifiersInput = {
+    create?: XOR<ItemCreateWithoutFeatureModifiersInput, ItemUncheckedCreateWithoutFeatureModifiersInput>
+    connectOrCreate?: ItemCreateOrConnectWithoutFeatureModifiersInput
+    connect?: ItemWhereUniqueInput
+  }
+
   export type FeatureModifierConditionUncheckedCreateNestedManyWithoutFeatureModifierInput = {
     create?: XOR<FeatureModifierConditionCreateWithoutFeatureModifierInput, FeatureModifierConditionUncheckedCreateWithoutFeatureModifierInput> | FeatureModifierConditionCreateWithoutFeatureModifierInput[] | FeatureModifierConditionUncheckedCreateWithoutFeatureModifierInput[]
     connectOrCreate?: FeatureModifierConditionCreateOrConnectWithoutFeatureModifierInput | FeatureModifierConditionCreateOrConnectWithoutFeatureModifierInput[]
@@ -75063,6 +73580,16 @@ export namespace Prisma {
     delete?: FeatureFormulaParamsWhereInput | boolean
     connect?: FeatureFormulaParamsWhereUniqueInput
     update?: XOR<XOR<FeatureFormulaParamsUpdateToOneWithWhereWithoutFeatureModifierInput, FeatureFormulaParamsUpdateWithoutFeatureModifierInput>, FeatureFormulaParamsUncheckedUpdateWithoutFeatureModifierInput>
+  }
+
+  export type ItemUpdateOneWithoutFeatureModifiersNestedInput = {
+    create?: XOR<ItemCreateWithoutFeatureModifiersInput, ItemUncheckedCreateWithoutFeatureModifiersInput>
+    connectOrCreate?: ItemCreateOrConnectWithoutFeatureModifiersInput
+    upsert?: ItemUpsertWithoutFeatureModifiersInput
+    disconnect?: ItemWhereInput | boolean
+    delete?: ItemWhereInput | boolean
+    connect?: ItemWhereUniqueInput
+    update?: XOR<XOR<ItemUpdateToOneWithWhereWithoutFeatureModifiersInput, ItemUpdateWithoutFeatureModifiersInput>, ItemUncheckedUpdateWithoutFeatureModifiersInput>
   }
 
   export type FeatureModifierConditionUncheckedUpdateManyWithoutFeatureModifierNestedInput = {
@@ -75175,52 +73702,6 @@ export namespace Prisma {
     upsert?: FeatureModifierUpsertWithoutConditionsInput
     connect?: FeatureModifierWhereUniqueInput
     update?: XOR<XOR<FeatureModifierUpdateToOneWithWhereWithoutConditionsInput, FeatureModifierUpdateWithoutConditionsInput>, FeatureModifierUncheckedUpdateWithoutConditionsInput>
-  }
-
-  export type FeatureProgressionCreateNestedOneWithoutEffectsInput = {
-    create?: XOR<FeatureProgressionCreateWithoutEffectsInput, FeatureProgressionUncheckedCreateWithoutEffectsInput>
-    connectOrCreate?: FeatureProgressionCreateOrConnectWithoutEffectsInput
-    connect?: FeatureProgressionWhereUniqueInput
-  }
-
-  export type FeatCreateNestedOneWithoutFeatureSpecialEffectInput = {
-    create?: XOR<FeatCreateWithoutFeatureSpecialEffectInput, FeatUncheckedCreateWithoutFeatureSpecialEffectInput>
-    connectOrCreate?: FeatCreateOrConnectWithoutFeatureSpecialEffectInput
-    connect?: FeatWhereUniqueInput
-  }
-
-  export type ItemCreateNestedOneWithoutFeatureSpecialEffectInput = {
-    create?: XOR<ItemCreateWithoutFeatureSpecialEffectInput, ItemUncheckedCreateWithoutFeatureSpecialEffectInput>
-    connectOrCreate?: ItemCreateOrConnectWithoutFeatureSpecialEffectInput
-    connect?: ItemWhereUniqueInput
-  }
-
-  export type FeatureProgressionUpdateOneRequiredWithoutEffectsNestedInput = {
-    create?: XOR<FeatureProgressionCreateWithoutEffectsInput, FeatureProgressionUncheckedCreateWithoutEffectsInput>
-    connectOrCreate?: FeatureProgressionCreateOrConnectWithoutEffectsInput
-    upsert?: FeatureProgressionUpsertWithoutEffectsInput
-    connect?: FeatureProgressionWhereUniqueInput
-    update?: XOR<XOR<FeatureProgressionUpdateToOneWithWhereWithoutEffectsInput, FeatureProgressionUpdateWithoutEffectsInput>, FeatureProgressionUncheckedUpdateWithoutEffectsInput>
-  }
-
-  export type FeatUpdateOneWithoutFeatureSpecialEffectNestedInput = {
-    create?: XOR<FeatCreateWithoutFeatureSpecialEffectInput, FeatUncheckedCreateWithoutFeatureSpecialEffectInput>
-    connectOrCreate?: FeatCreateOrConnectWithoutFeatureSpecialEffectInput
-    upsert?: FeatUpsertWithoutFeatureSpecialEffectInput
-    disconnect?: FeatWhereInput | boolean
-    delete?: FeatWhereInput | boolean
-    connect?: FeatWhereUniqueInput
-    update?: XOR<XOR<FeatUpdateToOneWithWhereWithoutFeatureSpecialEffectInput, FeatUpdateWithoutFeatureSpecialEffectInput>, FeatUncheckedUpdateWithoutFeatureSpecialEffectInput>
-  }
-
-  export type ItemUpdateOneWithoutFeatureSpecialEffectNestedInput = {
-    create?: XOR<ItemCreateWithoutFeatureSpecialEffectInput, ItemUncheckedCreateWithoutFeatureSpecialEffectInput>
-    connectOrCreate?: ItemCreateOrConnectWithoutFeatureSpecialEffectInput
-    upsert?: ItemUpsertWithoutFeatureSpecialEffectInput
-    disconnect?: ItemWhereInput | boolean
-    delete?: ItemWhereInput | boolean
-    connect?: ItemWhereUniqueInput
-    update?: XOR<XOR<ItemUpdateToOneWithWhereWithoutFeatureSpecialEffectInput, ItemUpdateWithoutFeatureSpecialEffectInput>, ItemUncheckedUpdateWithoutFeatureSpecialEffectInput>
   }
 
   export type FeatureProgressionCreateNestedOneWithoutChoicesInput = {
@@ -75900,13 +74381,6 @@ export namespace Prisma {
     connect?: FeatureChoiceWhereUniqueInput | FeatureChoiceWhereUniqueInput[]
   }
 
-  export type FeatureSpecialEffectCreateNestedManyWithoutFeatInput = {
-    create?: XOR<FeatureSpecialEffectCreateWithoutFeatInput, FeatureSpecialEffectUncheckedCreateWithoutFeatInput> | FeatureSpecialEffectCreateWithoutFeatInput[] | FeatureSpecialEffectUncheckedCreateWithoutFeatInput[]
-    connectOrCreate?: FeatureSpecialEffectCreateOrConnectWithoutFeatInput | FeatureSpecialEffectCreateOrConnectWithoutFeatInput[]
-    createMany?: FeatureSpecialEffectCreateManyFeatInputEnvelope
-    connect?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-  }
-
   export type FeatBenefitMapUncheckedCreateNestedManyWithoutFeatInput = {
     create?: XOR<FeatBenefitMapCreateWithoutFeatInput, FeatBenefitMapUncheckedCreateWithoutFeatInput> | FeatBenefitMapCreateWithoutFeatInput[] | FeatBenefitMapUncheckedCreateWithoutFeatInput[]
     connectOrCreate?: FeatBenefitMapCreateOrConnectWithoutFeatInput | FeatBenefitMapCreateOrConnectWithoutFeatInput[]
@@ -75940,13 +74414,6 @@ export namespace Prisma {
     connectOrCreate?: FeatureChoiceCreateOrConnectWithoutFeatInput | FeatureChoiceCreateOrConnectWithoutFeatInput[]
     createMany?: FeatureChoiceCreateManyFeatInputEnvelope
     connect?: FeatureChoiceWhereUniqueInput | FeatureChoiceWhereUniqueInput[]
-  }
-
-  export type FeatureSpecialEffectUncheckedCreateNestedManyWithoutFeatInput = {
-    create?: XOR<FeatureSpecialEffectCreateWithoutFeatInput, FeatureSpecialEffectUncheckedCreateWithoutFeatInput> | FeatureSpecialEffectCreateWithoutFeatInput[] | FeatureSpecialEffectUncheckedCreateWithoutFeatInput[]
-    connectOrCreate?: FeatureSpecialEffectCreateOrConnectWithoutFeatInput | FeatureSpecialEffectCreateOrConnectWithoutFeatInput[]
-    createMany?: FeatureSpecialEffectCreateManyFeatInputEnvelope
-    connect?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
   }
 
   export type FeatBenefitMapUpdateManyWithoutFeatNestedInput = {
@@ -76019,20 +74486,6 @@ export namespace Prisma {
     deleteMany?: FeatureChoiceScalarWhereInput | FeatureChoiceScalarWhereInput[]
   }
 
-  export type FeatureSpecialEffectUpdateManyWithoutFeatNestedInput = {
-    create?: XOR<FeatureSpecialEffectCreateWithoutFeatInput, FeatureSpecialEffectUncheckedCreateWithoutFeatInput> | FeatureSpecialEffectCreateWithoutFeatInput[] | FeatureSpecialEffectUncheckedCreateWithoutFeatInput[]
-    connectOrCreate?: FeatureSpecialEffectCreateOrConnectWithoutFeatInput | FeatureSpecialEffectCreateOrConnectWithoutFeatInput[]
-    upsert?: FeatureSpecialEffectUpsertWithWhereUniqueWithoutFeatInput | FeatureSpecialEffectUpsertWithWhereUniqueWithoutFeatInput[]
-    createMany?: FeatureSpecialEffectCreateManyFeatInputEnvelope
-    set?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    disconnect?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    delete?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    connect?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    update?: FeatureSpecialEffectUpdateWithWhereUniqueWithoutFeatInput | FeatureSpecialEffectUpdateWithWhereUniqueWithoutFeatInput[]
-    updateMany?: FeatureSpecialEffectUpdateManyWithWhereWithoutFeatInput | FeatureSpecialEffectUpdateManyWithWhereWithoutFeatInput[]
-    deleteMany?: FeatureSpecialEffectScalarWhereInput | FeatureSpecialEffectScalarWhereInput[]
-  }
-
   export type FeatBenefitMapUncheckedUpdateManyWithoutFeatNestedInput = {
     create?: XOR<FeatBenefitMapCreateWithoutFeatInput, FeatBenefitMapUncheckedCreateWithoutFeatInput> | FeatBenefitMapCreateWithoutFeatInput[] | FeatBenefitMapUncheckedCreateWithoutFeatInput[]
     connectOrCreate?: FeatBenefitMapCreateOrConnectWithoutFeatInput | FeatBenefitMapCreateOrConnectWithoutFeatInput[]
@@ -76101,20 +74554,6 @@ export namespace Prisma {
     update?: FeatureChoiceUpdateWithWhereUniqueWithoutFeatInput | FeatureChoiceUpdateWithWhereUniqueWithoutFeatInput[]
     updateMany?: FeatureChoiceUpdateManyWithWhereWithoutFeatInput | FeatureChoiceUpdateManyWithWhereWithoutFeatInput[]
     deleteMany?: FeatureChoiceScalarWhereInput | FeatureChoiceScalarWhereInput[]
-  }
-
-  export type FeatureSpecialEffectUncheckedUpdateManyWithoutFeatNestedInput = {
-    create?: XOR<FeatureSpecialEffectCreateWithoutFeatInput, FeatureSpecialEffectUncheckedCreateWithoutFeatInput> | FeatureSpecialEffectCreateWithoutFeatInput[] | FeatureSpecialEffectUncheckedCreateWithoutFeatInput[]
-    connectOrCreate?: FeatureSpecialEffectCreateOrConnectWithoutFeatInput | FeatureSpecialEffectCreateOrConnectWithoutFeatInput[]
-    upsert?: FeatureSpecialEffectUpsertWithWhereUniqueWithoutFeatInput | FeatureSpecialEffectUpsertWithWhereUniqueWithoutFeatInput[]
-    createMany?: FeatureSpecialEffectCreateManyFeatInputEnvelope
-    set?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    disconnect?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    delete?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    connect?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    update?: FeatureSpecialEffectUpdateWithWhereUniqueWithoutFeatInput | FeatureSpecialEffectUpdateWithWhereUniqueWithoutFeatInput[]
-    updateMany?: FeatureSpecialEffectUpdateManyWithWhereWithoutFeatInput | FeatureSpecialEffectUpdateManyWithWhereWithoutFeatInput[]
-    deleteMany?: FeatureSpecialEffectScalarWhereInput | FeatureSpecialEffectScalarWhereInput[]
   }
 
   export type FeatCreateNestedOneWithoutBenefitsInput = {
@@ -76333,11 +74772,11 @@ export namespace Prisma {
     connect?: ItemTemplateWhereUniqueInput | ItemTemplateWhereUniqueInput[]
   }
 
-  export type FeatureSpecialEffectCreateNestedManyWithoutItemInput = {
-    create?: XOR<FeatureSpecialEffectCreateWithoutItemInput, FeatureSpecialEffectUncheckedCreateWithoutItemInput> | FeatureSpecialEffectCreateWithoutItemInput[] | FeatureSpecialEffectUncheckedCreateWithoutItemInput[]
-    connectOrCreate?: FeatureSpecialEffectCreateOrConnectWithoutItemInput | FeatureSpecialEffectCreateOrConnectWithoutItemInput[]
-    createMany?: FeatureSpecialEffectCreateManyItemInputEnvelope
-    connect?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
+  export type FeatureModifierCreateNestedManyWithoutItemInput = {
+    create?: XOR<FeatureModifierCreateWithoutItemInput, FeatureModifierUncheckedCreateWithoutItemInput> | FeatureModifierCreateWithoutItemInput[] | FeatureModifierUncheckedCreateWithoutItemInput[]
+    connectOrCreate?: FeatureModifierCreateOrConnectWithoutItemInput | FeatureModifierCreateOrConnectWithoutItemInput[]
+    createMany?: FeatureModifierCreateManyItemInputEnvelope
+    connect?: FeatureModifierWhereUniqueInput | FeatureModifierWhereUniqueInput[]
   }
 
   export type ArmorUncheckedCreateNestedOneWithoutItemInput = {
@@ -76366,11 +74805,11 @@ export namespace Prisma {
     connect?: ItemTemplateWhereUniqueInput | ItemTemplateWhereUniqueInput[]
   }
 
-  export type FeatureSpecialEffectUncheckedCreateNestedManyWithoutItemInput = {
-    create?: XOR<FeatureSpecialEffectCreateWithoutItemInput, FeatureSpecialEffectUncheckedCreateWithoutItemInput> | FeatureSpecialEffectCreateWithoutItemInput[] | FeatureSpecialEffectUncheckedCreateWithoutItemInput[]
-    connectOrCreate?: FeatureSpecialEffectCreateOrConnectWithoutItemInput | FeatureSpecialEffectCreateOrConnectWithoutItemInput[]
-    createMany?: FeatureSpecialEffectCreateManyItemInputEnvelope
-    connect?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
+  export type FeatureModifierUncheckedCreateNestedManyWithoutItemInput = {
+    create?: XOR<FeatureModifierCreateWithoutItemInput, FeatureModifierUncheckedCreateWithoutItemInput> | FeatureModifierCreateWithoutItemInput[] | FeatureModifierUncheckedCreateWithoutItemInput[]
+    connectOrCreate?: FeatureModifierCreateOrConnectWithoutItemInput | FeatureModifierCreateOrConnectWithoutItemInput[]
+    createMany?: FeatureModifierCreateManyItemInputEnvelope
+    connect?: FeatureModifierWhereUniqueInput | FeatureModifierWhereUniqueInput[]
   }
 
   export type NullableDecimalFieldUpdateOperationsInput = {
@@ -76437,18 +74876,18 @@ export namespace Prisma {
     deleteMany?: ItemTemplateScalarWhereInput | ItemTemplateScalarWhereInput[]
   }
 
-  export type FeatureSpecialEffectUpdateManyWithoutItemNestedInput = {
-    create?: XOR<FeatureSpecialEffectCreateWithoutItemInput, FeatureSpecialEffectUncheckedCreateWithoutItemInput> | FeatureSpecialEffectCreateWithoutItemInput[] | FeatureSpecialEffectUncheckedCreateWithoutItemInput[]
-    connectOrCreate?: FeatureSpecialEffectCreateOrConnectWithoutItemInput | FeatureSpecialEffectCreateOrConnectWithoutItemInput[]
-    upsert?: FeatureSpecialEffectUpsertWithWhereUniqueWithoutItemInput | FeatureSpecialEffectUpsertWithWhereUniqueWithoutItemInput[]
-    createMany?: FeatureSpecialEffectCreateManyItemInputEnvelope
-    set?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    disconnect?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    delete?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    connect?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    update?: FeatureSpecialEffectUpdateWithWhereUniqueWithoutItemInput | FeatureSpecialEffectUpdateWithWhereUniqueWithoutItemInput[]
-    updateMany?: FeatureSpecialEffectUpdateManyWithWhereWithoutItemInput | FeatureSpecialEffectUpdateManyWithWhereWithoutItemInput[]
-    deleteMany?: FeatureSpecialEffectScalarWhereInput | FeatureSpecialEffectScalarWhereInput[]
+  export type FeatureModifierUpdateManyWithoutItemNestedInput = {
+    create?: XOR<FeatureModifierCreateWithoutItemInput, FeatureModifierUncheckedCreateWithoutItemInput> | FeatureModifierCreateWithoutItemInput[] | FeatureModifierUncheckedCreateWithoutItemInput[]
+    connectOrCreate?: FeatureModifierCreateOrConnectWithoutItemInput | FeatureModifierCreateOrConnectWithoutItemInput[]
+    upsert?: FeatureModifierUpsertWithWhereUniqueWithoutItemInput | FeatureModifierUpsertWithWhereUniqueWithoutItemInput[]
+    createMany?: FeatureModifierCreateManyItemInputEnvelope
+    set?: FeatureModifierWhereUniqueInput | FeatureModifierWhereUniqueInput[]
+    disconnect?: FeatureModifierWhereUniqueInput | FeatureModifierWhereUniqueInput[]
+    delete?: FeatureModifierWhereUniqueInput | FeatureModifierWhereUniqueInput[]
+    connect?: FeatureModifierWhereUniqueInput | FeatureModifierWhereUniqueInput[]
+    update?: FeatureModifierUpdateWithWhereUniqueWithoutItemInput | FeatureModifierUpdateWithWhereUniqueWithoutItemInput[]
+    updateMany?: FeatureModifierUpdateManyWithWhereWithoutItemInput | FeatureModifierUpdateManyWithWhereWithoutItemInput[]
+    deleteMany?: FeatureModifierScalarWhereInput | FeatureModifierScalarWhereInput[]
   }
 
   export type ArmorUncheckedUpdateOneWithoutItemNestedInput = {
@@ -76499,18 +74938,18 @@ export namespace Prisma {
     deleteMany?: ItemTemplateScalarWhereInput | ItemTemplateScalarWhereInput[]
   }
 
-  export type FeatureSpecialEffectUncheckedUpdateManyWithoutItemNestedInput = {
-    create?: XOR<FeatureSpecialEffectCreateWithoutItemInput, FeatureSpecialEffectUncheckedCreateWithoutItemInput> | FeatureSpecialEffectCreateWithoutItemInput[] | FeatureSpecialEffectUncheckedCreateWithoutItemInput[]
-    connectOrCreate?: FeatureSpecialEffectCreateOrConnectWithoutItemInput | FeatureSpecialEffectCreateOrConnectWithoutItemInput[]
-    upsert?: FeatureSpecialEffectUpsertWithWhereUniqueWithoutItemInput | FeatureSpecialEffectUpsertWithWhereUniqueWithoutItemInput[]
-    createMany?: FeatureSpecialEffectCreateManyItemInputEnvelope
-    set?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    disconnect?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    delete?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    connect?: FeatureSpecialEffectWhereUniqueInput | FeatureSpecialEffectWhereUniqueInput[]
-    update?: FeatureSpecialEffectUpdateWithWhereUniqueWithoutItemInput | FeatureSpecialEffectUpdateWithWhereUniqueWithoutItemInput[]
-    updateMany?: FeatureSpecialEffectUpdateManyWithWhereWithoutItemInput | FeatureSpecialEffectUpdateManyWithWhereWithoutItemInput[]
-    deleteMany?: FeatureSpecialEffectScalarWhereInput | FeatureSpecialEffectScalarWhereInput[]
+  export type FeatureModifierUncheckedUpdateManyWithoutItemNestedInput = {
+    create?: XOR<FeatureModifierCreateWithoutItemInput, FeatureModifierUncheckedCreateWithoutItemInput> | FeatureModifierCreateWithoutItemInput[] | FeatureModifierUncheckedCreateWithoutItemInput[]
+    connectOrCreate?: FeatureModifierCreateOrConnectWithoutItemInput | FeatureModifierCreateOrConnectWithoutItemInput[]
+    upsert?: FeatureModifierUpsertWithWhereUniqueWithoutItemInput | FeatureModifierUpsertWithWhereUniqueWithoutItemInput[]
+    createMany?: FeatureModifierCreateManyItemInputEnvelope
+    set?: FeatureModifierWhereUniqueInput | FeatureModifierWhereUniqueInput[]
+    disconnect?: FeatureModifierWhereUniqueInput | FeatureModifierWhereUniqueInput[]
+    delete?: FeatureModifierWhereUniqueInput | FeatureModifierWhereUniqueInput[]
+    connect?: FeatureModifierWhereUniqueInput | FeatureModifierWhereUniqueInput[]
+    update?: FeatureModifierUpdateWithWhereUniqueWithoutItemInput | FeatureModifierUpdateWithWhereUniqueWithoutItemInput[]
+    updateMany?: FeatureModifierUpdateManyWithWhereWithoutItemInput | FeatureModifierUpdateManyWithWhereWithoutItemInput[]
+    deleteMany?: FeatureModifierScalarWhereInput | FeatureModifierScalarWhereInput[]
   }
 
   export type ItemCreateNestedManyWithoutItemTypeInput = {
@@ -78610,7 +77049,6 @@ export namespace Prisma {
     feature: FeatureCreateNestedOneWithoutProgressionsInput
     choices?: FeatureChoiceCreateNestedManyWithoutFeatureProgressionInput
     spellcasting?: SpellcastingLinkCreateNestedOneWithoutFeatureInput
-    effects?: FeatureSpecialEffectCreateNestedManyWithoutFeatureProgressionInput
     modifiers?: FeatureModifierCreateNestedManyWithoutFeatureProgressionInput
     characterFeatureChoice?: CharacterFeatureChoiceCreateNestedManyWithoutFeatureProgressionInput
   }
@@ -78623,7 +77061,6 @@ export namespace Prisma {
     raceId?: number | null
     choices?: FeatureChoiceUncheckedCreateNestedManyWithoutFeatureProgressionInput
     spellcasting?: SpellcastingLinkUncheckedCreateNestedOneWithoutFeatureInput
-    effects?: FeatureSpecialEffectUncheckedCreateNestedManyWithoutFeatureProgressionInput
     modifiers?: FeatureModifierUncheckedCreateNestedManyWithoutFeatureProgressionInput
     characterFeatureChoice?: CharacterFeatureChoiceUncheckedCreateNestedManyWithoutFeatureProgressionInput
   }
@@ -79434,7 +77871,6 @@ export namespace Prisma {
     race?: RaceCreateNestedOneWithoutFeatureProgressionInput
     feature: FeatureCreateNestedOneWithoutProgressionsInput
     choices?: FeatureChoiceCreateNestedManyWithoutFeatureProgressionInput
-    effects?: FeatureSpecialEffectCreateNestedManyWithoutFeatureProgressionInput
     modifiers?: FeatureModifierCreateNestedManyWithoutFeatureProgressionInput
     characterFeatureChoice?: CharacterFeatureChoiceCreateNestedManyWithoutFeatureProgressionInput
   }
@@ -79447,7 +77883,6 @@ export namespace Prisma {
     classId?: number | null
     raceId?: number | null
     choices?: FeatureChoiceUncheckedCreateNestedManyWithoutFeatureProgressionInput
-    effects?: FeatureSpecialEffectUncheckedCreateNestedManyWithoutFeatureProgressionInput
     modifiers?: FeatureModifierUncheckedCreateNestedManyWithoutFeatureProgressionInput
     characterFeatureChoice?: CharacterFeatureChoiceUncheckedCreateNestedManyWithoutFeatureProgressionInput
   }
@@ -79495,7 +77930,6 @@ export namespace Prisma {
     race?: RaceUpdateOneWithoutFeatureProgressionNestedInput
     feature?: FeatureUpdateOneRequiredWithoutProgressionsNestedInput
     choices?: FeatureChoiceUpdateManyWithoutFeatureProgressionNestedInput
-    effects?: FeatureSpecialEffectUpdateManyWithoutFeatureProgressionNestedInput
     modifiers?: FeatureModifierUpdateManyWithoutFeatureProgressionNestedInput
     characterFeatureChoice?: CharacterFeatureChoiceUpdateManyWithoutFeatureProgressionNestedInput
   }
@@ -79508,7 +77942,6 @@ export namespace Prisma {
     classId?: NullableIntFieldUpdateOperationsInput | number | null
     raceId?: NullableIntFieldUpdateOperationsInput | number | null
     choices?: FeatureChoiceUncheckedUpdateManyWithoutFeatureProgressionNestedInput
-    effects?: FeatureSpecialEffectUncheckedUpdateManyWithoutFeatureProgressionNestedInput
     modifiers?: FeatureModifierUncheckedUpdateManyWithoutFeatureProgressionNestedInput
     characterFeatureChoice?: CharacterFeatureChoiceUncheckedUpdateManyWithoutFeatureProgressionNestedInput
   }
@@ -79970,7 +78403,6 @@ export namespace Prisma {
     race?: RaceCreateNestedOneWithoutFeatureProgressionInput
     choices?: FeatureChoiceCreateNestedManyWithoutFeatureProgressionInput
     spellcasting?: SpellcastingLinkCreateNestedOneWithoutFeatureInput
-    effects?: FeatureSpecialEffectCreateNestedManyWithoutFeatureProgressionInput
     modifiers?: FeatureModifierCreateNestedManyWithoutFeatureProgressionInput
     characterFeatureChoice?: CharacterFeatureChoiceCreateNestedManyWithoutFeatureProgressionInput
   }
@@ -79983,7 +78415,6 @@ export namespace Prisma {
     raceId?: number | null
     choices?: FeatureChoiceUncheckedCreateNestedManyWithoutFeatureProgressionInput
     spellcasting?: SpellcastingLinkUncheckedCreateNestedOneWithoutFeatureInput
-    effects?: FeatureSpecialEffectUncheckedCreateNestedManyWithoutFeatureProgressionInput
     modifiers?: FeatureModifierUncheckedCreateNestedManyWithoutFeatureProgressionInput
     characterFeatureChoice?: CharacterFeatureChoiceUncheckedCreateNestedManyWithoutFeatureProgressionInput
   }
@@ -80299,37 +78730,6 @@ export namespace Prisma {
     create: XOR<SpellcastingLinkCreateWithoutFeatureInput, SpellcastingLinkUncheckedCreateWithoutFeatureInput>
   }
 
-  export type FeatureSpecialEffectCreateWithoutFeatureProgressionInput = {
-    effectType: number
-    key?: string | null
-    value?: string | null
-    numericValue?: number | null
-    groupingId?: number
-    feat?: FeatCreateNestedOneWithoutFeatureSpecialEffectInput
-    item?: ItemCreateNestedOneWithoutFeatureSpecialEffectInput
-  }
-
-  export type FeatureSpecialEffectUncheckedCreateWithoutFeatureProgressionInput = {
-    id?: number
-    effectType: number
-    key?: string | null
-    value?: string | null
-    numericValue?: number | null
-    groupingId?: number
-    featId?: number | null
-    itemId?: number | null
-  }
-
-  export type FeatureSpecialEffectCreateOrConnectWithoutFeatureProgressionInput = {
-    where: FeatureSpecialEffectWhereUniqueInput
-    create: XOR<FeatureSpecialEffectCreateWithoutFeatureProgressionInput, FeatureSpecialEffectUncheckedCreateWithoutFeatureProgressionInput>
-  }
-
-  export type FeatureSpecialEffectCreateManyFeatureProgressionInputEnvelope = {
-    data: FeatureSpecialEffectCreateManyFeatureProgressionInput | FeatureSpecialEffectCreateManyFeatureProgressionInput[]
-    skipDuplicates?: boolean
-  }
-
   export type FeatureModifierCreateWithoutFeatureProgressionInput = {
     type: number
     value?: number | null
@@ -80339,6 +78739,7 @@ export namespace Prisma {
     groupingId?: number
     conditions?: FeatureModifierConditionCreateNestedManyWithoutFeatureModifierInput
     formulaParams?: FeatureFormulaParamsCreateNestedOneWithoutFeatureModifierInput
+    item?: ItemCreateNestedOneWithoutFeatureModifiersInput
   }
 
   export type FeatureModifierUncheckedCreateWithoutFeatureProgressionInput = {
@@ -80348,6 +78749,7 @@ export namespace Prisma {
     bonusType?: number | null
     appliesTo?: number | null
     appliesToId?: number | null
+    itemId?: number | null
     formulaParamsId?: number | null
     groupingId?: number
     conditions?: FeatureModifierConditionUncheckedCreateNestedManyWithoutFeatureModifierInput
@@ -80560,37 +78962,6 @@ export namespace Prisma {
     levelOffset?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
-  export type FeatureSpecialEffectUpsertWithWhereUniqueWithoutFeatureProgressionInput = {
-    where: FeatureSpecialEffectWhereUniqueInput
-    update: XOR<FeatureSpecialEffectUpdateWithoutFeatureProgressionInput, FeatureSpecialEffectUncheckedUpdateWithoutFeatureProgressionInput>
-    create: XOR<FeatureSpecialEffectCreateWithoutFeatureProgressionInput, FeatureSpecialEffectUncheckedCreateWithoutFeatureProgressionInput>
-  }
-
-  export type FeatureSpecialEffectUpdateWithWhereUniqueWithoutFeatureProgressionInput = {
-    where: FeatureSpecialEffectWhereUniqueInput
-    data: XOR<FeatureSpecialEffectUpdateWithoutFeatureProgressionInput, FeatureSpecialEffectUncheckedUpdateWithoutFeatureProgressionInput>
-  }
-
-  export type FeatureSpecialEffectUpdateManyWithWhereWithoutFeatureProgressionInput = {
-    where: FeatureSpecialEffectScalarWhereInput
-    data: XOR<FeatureSpecialEffectUpdateManyMutationInput, FeatureSpecialEffectUncheckedUpdateManyWithoutFeatureProgressionInput>
-  }
-
-  export type FeatureSpecialEffectScalarWhereInput = {
-    AND?: FeatureSpecialEffectScalarWhereInput | FeatureSpecialEffectScalarWhereInput[]
-    OR?: FeatureSpecialEffectScalarWhereInput[]
-    NOT?: FeatureSpecialEffectScalarWhereInput | FeatureSpecialEffectScalarWhereInput[]
-    id?: IntFilter<"FeatureSpecialEffect"> | number
-    progressionId?: IntFilter<"FeatureSpecialEffect"> | number
-    effectType?: IntFilter<"FeatureSpecialEffect"> | number
-    key?: StringNullableFilter<"FeatureSpecialEffect"> | string | null
-    value?: StringNullableFilter<"FeatureSpecialEffect"> | string | null
-    numericValue?: IntNullableFilter<"FeatureSpecialEffect"> | number | null
-    groupingId?: IntFilter<"FeatureSpecialEffect"> | number
-    featId?: IntNullableFilter<"FeatureSpecialEffect"> | number | null
-    itemId?: IntNullableFilter<"FeatureSpecialEffect"> | number | null
-  }
-
   export type FeatureModifierUpsertWithWhereUniqueWithoutFeatureProgressionInput = {
     where: FeatureModifierWhereUniqueInput
     update: XOR<FeatureModifierUpdateWithoutFeatureProgressionInput, FeatureModifierUncheckedUpdateWithoutFeatureProgressionInput>
@@ -80618,6 +78989,7 @@ export namespace Prisma {
     bonusType?: IntNullableFilter<"FeatureModifier"> | number | null
     appliesTo?: IntNullableFilter<"FeatureModifier"> | number | null
     appliesToId?: IntNullableFilter<"FeatureModifier"> | number | null
+    itemId?: IntNullableFilter<"FeatureModifier"> | number | null
     formulaParamsId?: IntNullableFilter<"FeatureModifier"> | number | null
     groupingId?: IntFilter<"FeatureModifier"> | number
   }
@@ -80660,7 +79032,6 @@ export namespace Prisma {
     feature: FeatureCreateNestedOneWithoutProgressionsInput
     choices?: FeatureChoiceCreateNestedManyWithoutFeatureProgressionInput
     spellcasting?: SpellcastingLinkCreateNestedOneWithoutFeatureInput
-    effects?: FeatureSpecialEffectCreateNestedManyWithoutFeatureProgressionInput
     characterFeatureChoice?: CharacterFeatureChoiceCreateNestedManyWithoutFeatureProgressionInput
   }
 
@@ -80673,7 +79044,6 @@ export namespace Prisma {
     raceId?: number | null
     choices?: FeatureChoiceUncheckedCreateNestedManyWithoutFeatureProgressionInput
     spellcasting?: SpellcastingLinkUncheckedCreateNestedOneWithoutFeatureInput
-    effects?: FeatureSpecialEffectUncheckedCreateNestedManyWithoutFeatureProgressionInput
     characterFeatureChoice?: CharacterFeatureChoiceUncheckedCreateNestedManyWithoutFeatureProgressionInput
   }
 
@@ -80729,6 +79099,38 @@ export namespace Prisma {
     create: XOR<FeatureFormulaParamsCreateWithoutFeatureModifierInput, FeatureFormulaParamsUncheckedCreateWithoutFeatureModifierInput>
   }
 
+  export type ItemCreateWithoutFeatureModifiersInput = {
+    name: string
+    description?: string | null
+    cost?: Decimal | DecimalJsLike | number | string | null
+    weight?: Decimal | DecimalJsLike | number | string | null
+    quantity?: number | null
+    armor?: ArmorCreateNestedOneWithoutItemInput
+    weapon?: WeaponCreateNestedOneWithoutItemInput
+    itemType?: ItemTypeCreateNestedOneWithoutItemLinksInput
+    characterItems?: CharacterItemCreateNestedManyWithoutBaseItemInput
+    itemTemplate?: ItemTemplateCreateNestedManyWithoutItemInput
+  }
+
+  export type ItemUncheckedCreateWithoutFeatureModifiersInput = {
+    id?: number
+    name: string
+    description?: string | null
+    typeId?: number
+    cost?: Decimal | DecimalJsLike | number | string | null
+    weight?: Decimal | DecimalJsLike | number | string | null
+    quantity?: number | null
+    armor?: ArmorUncheckedCreateNestedOneWithoutItemInput
+    weapon?: WeaponUncheckedCreateNestedOneWithoutItemInput
+    characterItems?: CharacterItemUncheckedCreateNestedManyWithoutBaseItemInput
+    itemTemplate?: ItemTemplateUncheckedCreateNestedManyWithoutItemInput
+  }
+
+  export type ItemCreateOrConnectWithoutFeatureModifiersInput = {
+    where: ItemWhereUniqueInput
+    create: XOR<ItemCreateWithoutFeatureModifiersInput, ItemUncheckedCreateWithoutFeatureModifiersInput>
+  }
+
   export type FeatureProgressionUpsertWithoutModifiersInput = {
     update: XOR<FeatureProgressionUpdateWithoutModifiersInput, FeatureProgressionUncheckedUpdateWithoutModifiersInput>
     create: XOR<FeatureProgressionCreateWithoutModifiersInput, FeatureProgressionUncheckedCreateWithoutModifiersInput>
@@ -80748,7 +79150,6 @@ export namespace Prisma {
     feature?: FeatureUpdateOneRequiredWithoutProgressionsNestedInput
     choices?: FeatureChoiceUpdateManyWithoutFeatureProgressionNestedInput
     spellcasting?: SpellcastingLinkUpdateOneWithoutFeatureNestedInput
-    effects?: FeatureSpecialEffectUpdateManyWithoutFeatureProgressionNestedInput
     characterFeatureChoice?: CharacterFeatureChoiceUpdateManyWithoutFeatureProgressionNestedInput
   }
 
@@ -80761,7 +79162,6 @@ export namespace Prisma {
     raceId?: NullableIntFieldUpdateOperationsInput | number | null
     choices?: FeatureChoiceUncheckedUpdateManyWithoutFeatureProgressionNestedInput
     spellcasting?: SpellcastingLinkUncheckedUpdateOneWithoutFeatureNestedInput
-    effects?: FeatureSpecialEffectUncheckedUpdateManyWithoutFeatureProgressionNestedInput
     characterFeatureChoice?: CharacterFeatureChoiceUncheckedUpdateManyWithoutFeatureProgressionNestedInput
   }
 
@@ -80823,6 +79223,44 @@ export namespace Prisma {
     featureChoice?: FeatureChoiceUncheckedUpdateManyWithoutFormulaParamsNestedInput
   }
 
+  export type ItemUpsertWithoutFeatureModifiersInput = {
+    update: XOR<ItemUpdateWithoutFeatureModifiersInput, ItemUncheckedUpdateWithoutFeatureModifiersInput>
+    create: XOR<ItemCreateWithoutFeatureModifiersInput, ItemUncheckedCreateWithoutFeatureModifiersInput>
+    where?: ItemWhereInput
+  }
+
+  export type ItemUpdateToOneWithWhereWithoutFeatureModifiersInput = {
+    where?: ItemWhereInput
+    data: XOR<ItemUpdateWithoutFeatureModifiersInput, ItemUncheckedUpdateWithoutFeatureModifiersInput>
+  }
+
+  export type ItemUpdateWithoutFeatureModifiersInput = {
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    cost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    weight?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    quantity?: NullableIntFieldUpdateOperationsInput | number | null
+    armor?: ArmorUpdateOneWithoutItemNestedInput
+    weapon?: WeaponUpdateOneWithoutItemNestedInput
+    itemType?: ItemTypeUpdateOneRequiredWithoutItemLinksNestedInput
+    characterItems?: CharacterItemUpdateManyWithoutBaseItemNestedInput
+    itemTemplate?: ItemTemplateUpdateManyWithoutItemNestedInput
+  }
+
+  export type ItemUncheckedUpdateWithoutFeatureModifiersInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    typeId?: IntFieldUpdateOperationsInput | number
+    cost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    weight?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    quantity?: NullableIntFieldUpdateOperationsInput | number | null
+    armor?: ArmorUncheckedUpdateOneWithoutItemNestedInput
+    weapon?: WeaponUncheckedUpdateOneWithoutItemNestedInput
+    characterItems?: CharacterItemUncheckedUpdateManyWithoutBaseItemNestedInput
+    itemTemplate?: ItemTemplateUncheckedUpdateManyWithoutItemNestedInput
+  }
+
   export type FeatureModifierCreateWithoutFormulaParamsInput = {
     type: number
     value?: number | null
@@ -80832,6 +79270,7 @@ export namespace Prisma {
     groupingId?: number
     featureProgression: FeatureProgressionCreateNestedOneWithoutModifiersInput
     conditions?: FeatureModifierConditionCreateNestedManyWithoutFeatureModifierInput
+    item?: ItemCreateNestedOneWithoutFeatureModifiersInput
   }
 
   export type FeatureModifierUncheckedCreateWithoutFormulaParamsInput = {
@@ -80842,6 +79281,7 @@ export namespace Prisma {
     bonusType?: number | null
     appliesTo?: number | null
     appliesToId?: number | null
+    itemId?: number | null
     groupingId?: number
     conditions?: FeatureModifierConditionUncheckedCreateNestedManyWithoutFeatureModifierInput
   }
@@ -80934,6 +79374,7 @@ export namespace Prisma {
     groupingId?: number
     featureProgression: FeatureProgressionCreateNestedOneWithoutModifiersInput
     formulaParams?: FeatureFormulaParamsCreateNestedOneWithoutFeatureModifierInput
+    item?: ItemCreateNestedOneWithoutFeatureModifiersInput
   }
 
   export type FeatureModifierUncheckedCreateWithoutConditionsInput = {
@@ -80944,6 +79385,7 @@ export namespace Prisma {
     bonusType?: number | null
     appliesTo?: number | null
     appliesToId?: number | null
+    itemId?: number | null
     formulaParamsId?: number | null
     groupingId?: number
   }
@@ -80973,6 +79415,7 @@ export namespace Prisma {
     groupingId?: IntFieldUpdateOperationsInput | number
     featureProgression?: FeatureProgressionUpdateOneRequiredWithoutModifiersNestedInput
     formulaParams?: FeatureFormulaParamsUpdateOneWithoutFeatureModifierNestedInput
+    item?: ItemUpdateOneWithoutFeatureModifiersNestedInput
   }
 
   export type FeatureModifierUncheckedUpdateWithoutConditionsInput = {
@@ -80983,230 +79426,9 @@ export namespace Prisma {
     bonusType?: NullableIntFieldUpdateOperationsInput | number | null
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
+    itemId?: NullableIntFieldUpdateOperationsInput | number | null
     formulaParamsId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
-  }
-
-  export type FeatureProgressionCreateWithoutEffectsInput = {
-    sourceType: number
-    level: number
-    class?: ClassCreateNestedOneWithoutFeaturesInput
-    race?: RaceCreateNestedOneWithoutFeatureProgressionInput
-    feature: FeatureCreateNestedOneWithoutProgressionsInput
-    choices?: FeatureChoiceCreateNestedManyWithoutFeatureProgressionInput
-    spellcasting?: SpellcastingLinkCreateNestedOneWithoutFeatureInput
-    modifiers?: FeatureModifierCreateNestedManyWithoutFeatureProgressionInput
-    characterFeatureChoice?: CharacterFeatureChoiceCreateNestedManyWithoutFeatureProgressionInput
-  }
-
-  export type FeatureProgressionUncheckedCreateWithoutEffectsInput = {
-    id?: number
-    sourceType: number
-    level: number
-    featureId: number
-    classId?: number | null
-    raceId?: number | null
-    choices?: FeatureChoiceUncheckedCreateNestedManyWithoutFeatureProgressionInput
-    spellcasting?: SpellcastingLinkUncheckedCreateNestedOneWithoutFeatureInput
-    modifiers?: FeatureModifierUncheckedCreateNestedManyWithoutFeatureProgressionInput
-    characterFeatureChoice?: CharacterFeatureChoiceUncheckedCreateNestedManyWithoutFeatureProgressionInput
-  }
-
-  export type FeatureProgressionCreateOrConnectWithoutEffectsInput = {
-    where: FeatureProgressionWhereUniqueInput
-    create: XOR<FeatureProgressionCreateWithoutEffectsInput, FeatureProgressionUncheckedCreateWithoutEffectsInput>
-  }
-
-  export type FeatCreateWithoutFeatureSpecialEffectInput = {
-    name: string
-    typeId: number
-    description?: string | null
-    benefit?: string | null
-    normalEffect?: string | null
-    specialEffect?: string | null
-    prerequisites?: string | null
-    repeatable?: boolean | null
-    fighterBonus?: boolean | null
-    benefits?: FeatBenefitMapCreateNestedManyWithoutFeatInput
-    prereqs?: FeatPrerequisiteMapCreateNestedManyWithoutFeatInput
-    advFeat?: AdvancementFeatCreateNestedManyWithoutFeatInput
-    spellPrepMetamagic?: SpellPreparationMetamagicCreateNestedManyWithoutFeatInput
-    featureChoice?: FeatureChoiceCreateNestedManyWithoutFeatInput
-  }
-
-  export type FeatUncheckedCreateWithoutFeatureSpecialEffectInput = {
-    id?: number
-    name: string
-    typeId: number
-    description?: string | null
-    benefit?: string | null
-    normalEffect?: string | null
-    specialEffect?: string | null
-    prerequisites?: string | null
-    repeatable?: boolean | null
-    fighterBonus?: boolean | null
-    benefits?: FeatBenefitMapUncheckedCreateNestedManyWithoutFeatInput
-    prereqs?: FeatPrerequisiteMapUncheckedCreateNestedManyWithoutFeatInput
-    advFeat?: AdvancementFeatUncheckedCreateNestedManyWithoutFeatInput
-    spellPrepMetamagic?: SpellPreparationMetamagicUncheckedCreateNestedManyWithoutFeatInput
-    featureChoice?: FeatureChoiceUncheckedCreateNestedManyWithoutFeatInput
-  }
-
-  export type FeatCreateOrConnectWithoutFeatureSpecialEffectInput = {
-    where: FeatWhereUniqueInput
-    create: XOR<FeatCreateWithoutFeatureSpecialEffectInput, FeatUncheckedCreateWithoutFeatureSpecialEffectInput>
-  }
-
-  export type ItemCreateWithoutFeatureSpecialEffectInput = {
-    name: string
-    description?: string | null
-    cost?: Decimal | DecimalJsLike | number | string | null
-    weight?: Decimal | DecimalJsLike | number | string | null
-    quantity?: number | null
-    armor?: ArmorCreateNestedOneWithoutItemInput
-    weapon?: WeaponCreateNestedOneWithoutItemInput
-    itemType?: ItemTypeCreateNestedOneWithoutItemLinksInput
-    characterItems?: CharacterItemCreateNestedManyWithoutBaseItemInput
-    itemTemplate?: ItemTemplateCreateNestedManyWithoutItemInput
-  }
-
-  export type ItemUncheckedCreateWithoutFeatureSpecialEffectInput = {
-    id?: number
-    name: string
-    description?: string | null
-    typeId?: number
-    cost?: Decimal | DecimalJsLike | number | string | null
-    weight?: Decimal | DecimalJsLike | number | string | null
-    quantity?: number | null
-    armor?: ArmorUncheckedCreateNestedOneWithoutItemInput
-    weapon?: WeaponUncheckedCreateNestedOneWithoutItemInput
-    characterItems?: CharacterItemUncheckedCreateNestedManyWithoutBaseItemInput
-    itemTemplate?: ItemTemplateUncheckedCreateNestedManyWithoutItemInput
-  }
-
-  export type ItemCreateOrConnectWithoutFeatureSpecialEffectInput = {
-    where: ItemWhereUniqueInput
-    create: XOR<ItemCreateWithoutFeatureSpecialEffectInput, ItemUncheckedCreateWithoutFeatureSpecialEffectInput>
-  }
-
-  export type FeatureProgressionUpsertWithoutEffectsInput = {
-    update: XOR<FeatureProgressionUpdateWithoutEffectsInput, FeatureProgressionUncheckedUpdateWithoutEffectsInput>
-    create: XOR<FeatureProgressionCreateWithoutEffectsInput, FeatureProgressionUncheckedCreateWithoutEffectsInput>
-    where?: FeatureProgressionWhereInput
-  }
-
-  export type FeatureProgressionUpdateToOneWithWhereWithoutEffectsInput = {
-    where?: FeatureProgressionWhereInput
-    data: XOR<FeatureProgressionUpdateWithoutEffectsInput, FeatureProgressionUncheckedUpdateWithoutEffectsInput>
-  }
-
-  export type FeatureProgressionUpdateWithoutEffectsInput = {
-    sourceType?: IntFieldUpdateOperationsInput | number
-    level?: IntFieldUpdateOperationsInput | number
-    class?: ClassUpdateOneWithoutFeaturesNestedInput
-    race?: RaceUpdateOneWithoutFeatureProgressionNestedInput
-    feature?: FeatureUpdateOneRequiredWithoutProgressionsNestedInput
-    choices?: FeatureChoiceUpdateManyWithoutFeatureProgressionNestedInput
-    spellcasting?: SpellcastingLinkUpdateOneWithoutFeatureNestedInput
-    modifiers?: FeatureModifierUpdateManyWithoutFeatureProgressionNestedInput
-    characterFeatureChoice?: CharacterFeatureChoiceUpdateManyWithoutFeatureProgressionNestedInput
-  }
-
-  export type FeatureProgressionUncheckedUpdateWithoutEffectsInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    sourceType?: IntFieldUpdateOperationsInput | number
-    level?: IntFieldUpdateOperationsInput | number
-    featureId?: IntFieldUpdateOperationsInput | number
-    classId?: NullableIntFieldUpdateOperationsInput | number | null
-    raceId?: NullableIntFieldUpdateOperationsInput | number | null
-    choices?: FeatureChoiceUncheckedUpdateManyWithoutFeatureProgressionNestedInput
-    spellcasting?: SpellcastingLinkUncheckedUpdateOneWithoutFeatureNestedInput
-    modifiers?: FeatureModifierUncheckedUpdateManyWithoutFeatureProgressionNestedInput
-    characterFeatureChoice?: CharacterFeatureChoiceUncheckedUpdateManyWithoutFeatureProgressionNestedInput
-  }
-
-  export type FeatUpsertWithoutFeatureSpecialEffectInput = {
-    update: XOR<FeatUpdateWithoutFeatureSpecialEffectInput, FeatUncheckedUpdateWithoutFeatureSpecialEffectInput>
-    create: XOR<FeatCreateWithoutFeatureSpecialEffectInput, FeatUncheckedCreateWithoutFeatureSpecialEffectInput>
-    where?: FeatWhereInput
-  }
-
-  export type FeatUpdateToOneWithWhereWithoutFeatureSpecialEffectInput = {
-    where?: FeatWhereInput
-    data: XOR<FeatUpdateWithoutFeatureSpecialEffectInput, FeatUncheckedUpdateWithoutFeatureSpecialEffectInput>
-  }
-
-  export type FeatUpdateWithoutFeatureSpecialEffectInput = {
-    name?: StringFieldUpdateOperationsInput | string
-    typeId?: IntFieldUpdateOperationsInput | number
-    description?: NullableStringFieldUpdateOperationsInput | string | null
-    benefit?: NullableStringFieldUpdateOperationsInput | string | null
-    normalEffect?: NullableStringFieldUpdateOperationsInput | string | null
-    specialEffect?: NullableStringFieldUpdateOperationsInput | string | null
-    prerequisites?: NullableStringFieldUpdateOperationsInput | string | null
-    repeatable?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    fighterBonus?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    benefits?: FeatBenefitMapUpdateManyWithoutFeatNestedInput
-    prereqs?: FeatPrerequisiteMapUpdateManyWithoutFeatNestedInput
-    advFeat?: AdvancementFeatUpdateManyWithoutFeatNestedInput
-    spellPrepMetamagic?: SpellPreparationMetamagicUpdateManyWithoutFeatNestedInput
-    featureChoice?: FeatureChoiceUpdateManyWithoutFeatNestedInput
-  }
-
-  export type FeatUncheckedUpdateWithoutFeatureSpecialEffectInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    name?: StringFieldUpdateOperationsInput | string
-    typeId?: IntFieldUpdateOperationsInput | number
-    description?: NullableStringFieldUpdateOperationsInput | string | null
-    benefit?: NullableStringFieldUpdateOperationsInput | string | null
-    normalEffect?: NullableStringFieldUpdateOperationsInput | string | null
-    specialEffect?: NullableStringFieldUpdateOperationsInput | string | null
-    prerequisites?: NullableStringFieldUpdateOperationsInput | string | null
-    repeatable?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    fighterBonus?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    benefits?: FeatBenefitMapUncheckedUpdateManyWithoutFeatNestedInput
-    prereqs?: FeatPrerequisiteMapUncheckedUpdateManyWithoutFeatNestedInput
-    advFeat?: AdvancementFeatUncheckedUpdateManyWithoutFeatNestedInput
-    spellPrepMetamagic?: SpellPreparationMetamagicUncheckedUpdateManyWithoutFeatNestedInput
-    featureChoice?: FeatureChoiceUncheckedUpdateManyWithoutFeatNestedInput
-  }
-
-  export type ItemUpsertWithoutFeatureSpecialEffectInput = {
-    update: XOR<ItemUpdateWithoutFeatureSpecialEffectInput, ItemUncheckedUpdateWithoutFeatureSpecialEffectInput>
-    create: XOR<ItemCreateWithoutFeatureSpecialEffectInput, ItemUncheckedCreateWithoutFeatureSpecialEffectInput>
-    where?: ItemWhereInput
-  }
-
-  export type ItemUpdateToOneWithWhereWithoutFeatureSpecialEffectInput = {
-    where?: ItemWhereInput
-    data: XOR<ItemUpdateWithoutFeatureSpecialEffectInput, ItemUncheckedUpdateWithoutFeatureSpecialEffectInput>
-  }
-
-  export type ItemUpdateWithoutFeatureSpecialEffectInput = {
-    name?: StringFieldUpdateOperationsInput | string
-    description?: NullableStringFieldUpdateOperationsInput | string | null
-    cost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    weight?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    quantity?: NullableIntFieldUpdateOperationsInput | number | null
-    armor?: ArmorUpdateOneWithoutItemNestedInput
-    weapon?: WeaponUpdateOneWithoutItemNestedInput
-    itemType?: ItemTypeUpdateOneRequiredWithoutItemLinksNestedInput
-    characterItems?: CharacterItemUpdateManyWithoutBaseItemNestedInput
-    itemTemplate?: ItemTemplateUpdateManyWithoutItemNestedInput
-  }
-
-  export type ItemUncheckedUpdateWithoutFeatureSpecialEffectInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    name?: StringFieldUpdateOperationsInput | string
-    description?: NullableStringFieldUpdateOperationsInput | string | null
-    typeId?: IntFieldUpdateOperationsInput | number
-    cost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    weight?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    quantity?: NullableIntFieldUpdateOperationsInput | number | null
-    armor?: ArmorUncheckedUpdateOneWithoutItemNestedInput
-    weapon?: WeaponUncheckedUpdateOneWithoutItemNestedInput
-    characterItems?: CharacterItemUncheckedUpdateManyWithoutBaseItemNestedInput
-    itemTemplate?: ItemTemplateUncheckedUpdateManyWithoutItemNestedInput
   }
 
   export type FeatureProgressionCreateWithoutChoicesInput = {
@@ -81216,7 +79438,6 @@ export namespace Prisma {
     race?: RaceCreateNestedOneWithoutFeatureProgressionInput
     feature: FeatureCreateNestedOneWithoutProgressionsInput
     spellcasting?: SpellcastingLinkCreateNestedOneWithoutFeatureInput
-    effects?: FeatureSpecialEffectCreateNestedManyWithoutFeatureProgressionInput
     modifiers?: FeatureModifierCreateNestedManyWithoutFeatureProgressionInput
     characterFeatureChoice?: CharacterFeatureChoiceCreateNestedManyWithoutFeatureProgressionInput
   }
@@ -81229,7 +79450,6 @@ export namespace Prisma {
     classId?: number | null
     raceId?: number | null
     spellcasting?: SpellcastingLinkUncheckedCreateNestedOneWithoutFeatureInput
-    effects?: FeatureSpecialEffectUncheckedCreateNestedManyWithoutFeatureProgressionInput
     modifiers?: FeatureModifierUncheckedCreateNestedManyWithoutFeatureProgressionInput
     characterFeatureChoice?: CharacterFeatureChoiceUncheckedCreateNestedManyWithoutFeatureProgressionInput
   }
@@ -81253,7 +79473,6 @@ export namespace Prisma {
     prereqs?: FeatPrerequisiteMapCreateNestedManyWithoutFeatInput
     advFeat?: AdvancementFeatCreateNestedManyWithoutFeatInput
     spellPrepMetamagic?: SpellPreparationMetamagicCreateNestedManyWithoutFeatInput
-    featureSpecialEffect?: FeatureSpecialEffectCreateNestedManyWithoutFeatInput
   }
 
   export type FeatUncheckedCreateWithoutFeatureChoiceInput = {
@@ -81271,7 +79490,6 @@ export namespace Prisma {
     prereqs?: FeatPrerequisiteMapUncheckedCreateNestedManyWithoutFeatInput
     advFeat?: AdvancementFeatUncheckedCreateNestedManyWithoutFeatInput
     spellPrepMetamagic?: SpellPreparationMetamagicUncheckedCreateNestedManyWithoutFeatInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedCreateNestedManyWithoutFeatInput
   }
 
   export type FeatCreateOrConnectWithoutFeatureChoiceInput = {
@@ -81374,7 +79592,6 @@ export namespace Prisma {
     race?: RaceUpdateOneWithoutFeatureProgressionNestedInput
     feature?: FeatureUpdateOneRequiredWithoutProgressionsNestedInput
     spellcasting?: SpellcastingLinkUpdateOneWithoutFeatureNestedInput
-    effects?: FeatureSpecialEffectUpdateManyWithoutFeatureProgressionNestedInput
     modifiers?: FeatureModifierUpdateManyWithoutFeatureProgressionNestedInput
     characterFeatureChoice?: CharacterFeatureChoiceUpdateManyWithoutFeatureProgressionNestedInput
   }
@@ -81387,7 +79604,6 @@ export namespace Prisma {
     classId?: NullableIntFieldUpdateOperationsInput | number | null
     raceId?: NullableIntFieldUpdateOperationsInput | number | null
     spellcasting?: SpellcastingLinkUncheckedUpdateOneWithoutFeatureNestedInput
-    effects?: FeatureSpecialEffectUncheckedUpdateManyWithoutFeatureProgressionNestedInput
     modifiers?: FeatureModifierUncheckedUpdateManyWithoutFeatureProgressionNestedInput
     characterFeatureChoice?: CharacterFeatureChoiceUncheckedUpdateManyWithoutFeatureProgressionNestedInput
   }
@@ -81417,7 +79633,6 @@ export namespace Prisma {
     prereqs?: FeatPrerequisiteMapUpdateManyWithoutFeatNestedInput
     advFeat?: AdvancementFeatUpdateManyWithoutFeatNestedInput
     spellPrepMetamagic?: SpellPreparationMetamagicUpdateManyWithoutFeatNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUpdateManyWithoutFeatNestedInput
   }
 
   export type FeatUncheckedUpdateWithoutFeatureChoiceInput = {
@@ -81435,7 +79650,6 @@ export namespace Prisma {
     prereqs?: FeatPrerequisiteMapUncheckedUpdateManyWithoutFeatNestedInput
     advFeat?: AdvancementFeatUncheckedUpdateManyWithoutFeatNestedInput
     spellPrepMetamagic?: SpellPreparationMetamagicUncheckedUpdateManyWithoutFeatNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedUpdateManyWithoutFeatNestedInput
   }
 
   export type FeatureUpsertWithoutFeatureChoiceInput = {
@@ -82851,37 +81065,6 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
-  export type FeatureSpecialEffectCreateWithoutFeatInput = {
-    effectType: number
-    key?: string | null
-    value?: string | null
-    numericValue?: number | null
-    groupingId?: number
-    featureProgression: FeatureProgressionCreateNestedOneWithoutEffectsInput
-    item?: ItemCreateNestedOneWithoutFeatureSpecialEffectInput
-  }
-
-  export type FeatureSpecialEffectUncheckedCreateWithoutFeatInput = {
-    id?: number
-    progressionId: number
-    effectType: number
-    key?: string | null
-    value?: string | null
-    numericValue?: number | null
-    groupingId?: number
-    itemId?: number | null
-  }
-
-  export type FeatureSpecialEffectCreateOrConnectWithoutFeatInput = {
-    where: FeatureSpecialEffectWhereUniqueInput
-    create: XOR<FeatureSpecialEffectCreateWithoutFeatInput, FeatureSpecialEffectUncheckedCreateWithoutFeatInput>
-  }
-
-  export type FeatureSpecialEffectCreateManyFeatInputEnvelope = {
-    data: FeatureSpecialEffectCreateManyFeatInput | FeatureSpecialEffectCreateManyFeatInput[]
-    skipDuplicates?: boolean
-  }
-
   export type FeatBenefitMapUpsertWithWhereUniqueWithoutFeatInput = {
     where: FeatBenefitMapWhereUniqueInput
     update: XOR<FeatBenefitMapUpdateWithoutFeatInput, FeatBenefitMapUncheckedUpdateWithoutFeatInput>
@@ -83001,22 +81184,6 @@ export namespace Prisma {
     data: XOR<FeatureChoiceUpdateManyMutationInput, FeatureChoiceUncheckedUpdateManyWithoutFeatInput>
   }
 
-  export type FeatureSpecialEffectUpsertWithWhereUniqueWithoutFeatInput = {
-    where: FeatureSpecialEffectWhereUniqueInput
-    update: XOR<FeatureSpecialEffectUpdateWithoutFeatInput, FeatureSpecialEffectUncheckedUpdateWithoutFeatInput>
-    create: XOR<FeatureSpecialEffectCreateWithoutFeatInput, FeatureSpecialEffectUncheckedCreateWithoutFeatInput>
-  }
-
-  export type FeatureSpecialEffectUpdateWithWhereUniqueWithoutFeatInput = {
-    where: FeatureSpecialEffectWhereUniqueInput
-    data: XOR<FeatureSpecialEffectUpdateWithoutFeatInput, FeatureSpecialEffectUncheckedUpdateWithoutFeatInput>
-  }
-
-  export type FeatureSpecialEffectUpdateManyWithWhereWithoutFeatInput = {
-    where: FeatureSpecialEffectScalarWhereInput
-    data: XOR<FeatureSpecialEffectUpdateManyMutationInput, FeatureSpecialEffectUncheckedUpdateManyWithoutFeatInput>
-  }
-
   export type FeatCreateWithoutBenefitsInput = {
     name: string
     typeId: number
@@ -83031,7 +81198,6 @@ export namespace Prisma {
     advFeat?: AdvancementFeatCreateNestedManyWithoutFeatInput
     spellPrepMetamagic?: SpellPreparationMetamagicCreateNestedManyWithoutFeatInput
     featureChoice?: FeatureChoiceCreateNestedManyWithoutFeatInput
-    featureSpecialEffect?: FeatureSpecialEffectCreateNestedManyWithoutFeatInput
   }
 
   export type FeatUncheckedCreateWithoutBenefitsInput = {
@@ -83049,7 +81215,6 @@ export namespace Prisma {
     advFeat?: AdvancementFeatUncheckedCreateNestedManyWithoutFeatInput
     spellPrepMetamagic?: SpellPreparationMetamagicUncheckedCreateNestedManyWithoutFeatInput
     featureChoice?: FeatureChoiceUncheckedCreateNestedManyWithoutFeatInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedCreateNestedManyWithoutFeatInput
   }
 
   export type FeatCreateOrConnectWithoutBenefitsInput = {
@@ -83082,7 +81247,6 @@ export namespace Prisma {
     advFeat?: AdvancementFeatUpdateManyWithoutFeatNestedInput
     spellPrepMetamagic?: SpellPreparationMetamagicUpdateManyWithoutFeatNestedInput
     featureChoice?: FeatureChoiceUpdateManyWithoutFeatNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUpdateManyWithoutFeatNestedInput
   }
 
   export type FeatUncheckedUpdateWithoutBenefitsInput = {
@@ -83100,7 +81264,6 @@ export namespace Prisma {
     advFeat?: AdvancementFeatUncheckedUpdateManyWithoutFeatNestedInput
     spellPrepMetamagic?: SpellPreparationMetamagicUncheckedUpdateManyWithoutFeatNestedInput
     featureChoice?: FeatureChoiceUncheckedUpdateManyWithoutFeatNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedUpdateManyWithoutFeatNestedInput
   }
 
   export type FeatCreateWithoutPrereqsInput = {
@@ -83117,7 +81280,6 @@ export namespace Prisma {
     advFeat?: AdvancementFeatCreateNestedManyWithoutFeatInput
     spellPrepMetamagic?: SpellPreparationMetamagicCreateNestedManyWithoutFeatInput
     featureChoice?: FeatureChoiceCreateNestedManyWithoutFeatInput
-    featureSpecialEffect?: FeatureSpecialEffectCreateNestedManyWithoutFeatInput
   }
 
   export type FeatUncheckedCreateWithoutPrereqsInput = {
@@ -83135,7 +81297,6 @@ export namespace Prisma {
     advFeat?: AdvancementFeatUncheckedCreateNestedManyWithoutFeatInput
     spellPrepMetamagic?: SpellPreparationMetamagicUncheckedCreateNestedManyWithoutFeatInput
     featureChoice?: FeatureChoiceUncheckedCreateNestedManyWithoutFeatInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedCreateNestedManyWithoutFeatInput
   }
 
   export type FeatCreateOrConnectWithoutPrereqsInput = {
@@ -83168,7 +81329,6 @@ export namespace Prisma {
     advFeat?: AdvancementFeatUpdateManyWithoutFeatNestedInput
     spellPrepMetamagic?: SpellPreparationMetamagicUpdateManyWithoutFeatNestedInput
     featureChoice?: FeatureChoiceUpdateManyWithoutFeatNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUpdateManyWithoutFeatNestedInput
   }
 
   export type FeatUncheckedUpdateWithoutPrereqsInput = {
@@ -83186,7 +81346,6 @@ export namespace Prisma {
     advFeat?: AdvancementFeatUncheckedUpdateManyWithoutFeatNestedInput
     spellPrepMetamagic?: SpellPreparationMetamagicUncheckedUpdateManyWithoutFeatNestedInput
     featureChoice?: FeatureChoiceUncheckedUpdateManyWithoutFeatNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedUpdateManyWithoutFeatNestedInput
   }
 
   export type RaceSourceMapCreateWithoutRaceInput = {
@@ -83263,7 +81422,6 @@ export namespace Prisma {
     feature: FeatureCreateNestedOneWithoutProgressionsInput
     choices?: FeatureChoiceCreateNestedManyWithoutFeatureProgressionInput
     spellcasting?: SpellcastingLinkCreateNestedOneWithoutFeatureInput
-    effects?: FeatureSpecialEffectCreateNestedManyWithoutFeatureProgressionInput
     modifiers?: FeatureModifierCreateNestedManyWithoutFeatureProgressionInput
     characterFeatureChoice?: CharacterFeatureChoiceCreateNestedManyWithoutFeatureProgressionInput
   }
@@ -83276,7 +81434,6 @@ export namespace Prisma {
     classId?: number | null
     choices?: FeatureChoiceUncheckedCreateNestedManyWithoutFeatureProgressionInput
     spellcasting?: SpellcastingLinkUncheckedCreateNestedOneWithoutFeatureInput
-    effects?: FeatureSpecialEffectUncheckedCreateNestedManyWithoutFeatureProgressionInput
     modifiers?: FeatureModifierUncheckedCreateNestedManyWithoutFeatureProgressionInput
     characterFeatureChoice?: CharacterFeatureChoiceUncheckedCreateNestedManyWithoutFeatureProgressionInput
   }
@@ -83613,34 +81770,38 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
-  export type FeatureSpecialEffectCreateWithoutItemInput = {
-    effectType: number
-    key?: string | null
-    value?: string | null
-    numericValue?: number | null
+  export type FeatureModifierCreateWithoutItemInput = {
+    type: number
+    value?: number | null
+    bonusType?: number | null
+    appliesTo?: number | null
+    appliesToId?: number | null
     groupingId?: number
-    featureProgression: FeatureProgressionCreateNestedOneWithoutEffectsInput
-    feat?: FeatCreateNestedOneWithoutFeatureSpecialEffectInput
+    featureProgression: FeatureProgressionCreateNestedOneWithoutModifiersInput
+    conditions?: FeatureModifierConditionCreateNestedManyWithoutFeatureModifierInput
+    formulaParams?: FeatureFormulaParamsCreateNestedOneWithoutFeatureModifierInput
   }
 
-  export type FeatureSpecialEffectUncheckedCreateWithoutItemInput = {
+  export type FeatureModifierUncheckedCreateWithoutItemInput = {
     id?: number
     progressionId: number
-    effectType: number
-    key?: string | null
-    value?: string | null
-    numericValue?: number | null
+    type: number
+    value?: number | null
+    bonusType?: number | null
+    appliesTo?: number | null
+    appliesToId?: number | null
+    formulaParamsId?: number | null
     groupingId?: number
-    featId?: number | null
+    conditions?: FeatureModifierConditionUncheckedCreateNestedManyWithoutFeatureModifierInput
   }
 
-  export type FeatureSpecialEffectCreateOrConnectWithoutItemInput = {
-    where: FeatureSpecialEffectWhereUniqueInput
-    create: XOR<FeatureSpecialEffectCreateWithoutItemInput, FeatureSpecialEffectUncheckedCreateWithoutItemInput>
+  export type FeatureModifierCreateOrConnectWithoutItemInput = {
+    where: FeatureModifierWhereUniqueInput
+    create: XOR<FeatureModifierCreateWithoutItemInput, FeatureModifierUncheckedCreateWithoutItemInput>
   }
 
-  export type FeatureSpecialEffectCreateManyItemInputEnvelope = {
-    data: FeatureSpecialEffectCreateManyItemInput | FeatureSpecialEffectCreateManyItemInput[]
+  export type FeatureModifierCreateManyItemInputEnvelope = {
+    data: FeatureModifierCreateManyItemInput | FeatureModifierCreateManyItemInput[]
     skipDuplicates?: boolean
   }
 
@@ -83786,20 +81947,20 @@ export namespace Prisma {
     itemId?: IntFilter<"ItemTemplate"> | number
   }
 
-  export type FeatureSpecialEffectUpsertWithWhereUniqueWithoutItemInput = {
-    where: FeatureSpecialEffectWhereUniqueInput
-    update: XOR<FeatureSpecialEffectUpdateWithoutItemInput, FeatureSpecialEffectUncheckedUpdateWithoutItemInput>
-    create: XOR<FeatureSpecialEffectCreateWithoutItemInput, FeatureSpecialEffectUncheckedCreateWithoutItemInput>
+  export type FeatureModifierUpsertWithWhereUniqueWithoutItemInput = {
+    where: FeatureModifierWhereUniqueInput
+    update: XOR<FeatureModifierUpdateWithoutItemInput, FeatureModifierUncheckedUpdateWithoutItemInput>
+    create: XOR<FeatureModifierCreateWithoutItemInput, FeatureModifierUncheckedCreateWithoutItemInput>
   }
 
-  export type FeatureSpecialEffectUpdateWithWhereUniqueWithoutItemInput = {
-    where: FeatureSpecialEffectWhereUniqueInput
-    data: XOR<FeatureSpecialEffectUpdateWithoutItemInput, FeatureSpecialEffectUncheckedUpdateWithoutItemInput>
+  export type FeatureModifierUpdateWithWhereUniqueWithoutItemInput = {
+    where: FeatureModifierWhereUniqueInput
+    data: XOR<FeatureModifierUpdateWithoutItemInput, FeatureModifierUncheckedUpdateWithoutItemInput>
   }
 
-  export type FeatureSpecialEffectUpdateManyWithWhereWithoutItemInput = {
-    where: FeatureSpecialEffectScalarWhereInput
-    data: XOR<FeatureSpecialEffectUpdateManyMutationInput, FeatureSpecialEffectUncheckedUpdateManyWithoutItemInput>
+  export type FeatureModifierUpdateManyWithWhereWithoutItemInput = {
+    where: FeatureModifierScalarWhereInput
+    data: XOR<FeatureModifierUpdateManyMutationInput, FeatureModifierUncheckedUpdateManyWithoutItemInput>
   }
 
   export type ItemCreateWithoutItemTypeInput = {
@@ -83812,7 +81973,7 @@ export namespace Prisma {
     weapon?: WeaponCreateNestedOneWithoutItemInput
     characterItems?: CharacterItemCreateNestedManyWithoutBaseItemInput
     itemTemplate?: ItemTemplateCreateNestedManyWithoutItemInput
-    featureSpecialEffect?: FeatureSpecialEffectCreateNestedManyWithoutItemInput
+    featureModifiers?: FeatureModifierCreateNestedManyWithoutItemInput
   }
 
   export type ItemUncheckedCreateWithoutItemTypeInput = {
@@ -83826,7 +81987,7 @@ export namespace Prisma {
     weapon?: WeaponUncheckedCreateNestedOneWithoutItemInput
     characterItems?: CharacterItemUncheckedCreateNestedManyWithoutBaseItemInput
     itemTemplate?: ItemTemplateUncheckedCreateNestedManyWithoutItemInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedCreateNestedManyWithoutItemInput
+    featureModifiers?: FeatureModifierUncheckedCreateNestedManyWithoutItemInput
   }
 
   export type ItemCreateOrConnectWithoutItemTypeInput = {
@@ -83878,7 +82039,7 @@ export namespace Prisma {
     itemType?: ItemTypeCreateNestedOneWithoutItemLinksInput
     characterItems?: CharacterItemCreateNestedManyWithoutBaseItemInput
     itemTemplate?: ItemTemplateCreateNestedManyWithoutItemInput
-    featureSpecialEffect?: FeatureSpecialEffectCreateNestedManyWithoutItemInput
+    featureModifiers?: FeatureModifierCreateNestedManyWithoutItemInput
   }
 
   export type ItemUncheckedCreateWithoutArmorInput = {
@@ -83892,7 +82053,7 @@ export namespace Prisma {
     weapon?: WeaponUncheckedCreateNestedOneWithoutItemInput
     characterItems?: CharacterItemUncheckedCreateNestedManyWithoutBaseItemInput
     itemTemplate?: ItemTemplateUncheckedCreateNestedManyWithoutItemInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedCreateNestedManyWithoutItemInput
+    featureModifiers?: FeatureModifierUncheckedCreateNestedManyWithoutItemInput
   }
 
   export type ItemCreateOrConnectWithoutArmorInput = {
@@ -83921,7 +82082,7 @@ export namespace Prisma {
     itemType?: ItemTypeUpdateOneRequiredWithoutItemLinksNestedInput
     characterItems?: CharacterItemUpdateManyWithoutBaseItemNestedInput
     itemTemplate?: ItemTemplateUpdateManyWithoutItemNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUpdateManyWithoutItemNestedInput
+    featureModifiers?: FeatureModifierUpdateManyWithoutItemNestedInput
   }
 
   export type ItemUncheckedUpdateWithoutArmorInput = {
@@ -83935,7 +82096,7 @@ export namespace Prisma {
     weapon?: WeaponUncheckedUpdateOneWithoutItemNestedInput
     characterItems?: CharacterItemUncheckedUpdateManyWithoutBaseItemNestedInput
     itemTemplate?: ItemTemplateUncheckedUpdateManyWithoutItemNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedUpdateManyWithoutItemNestedInput
+    featureModifiers?: FeatureModifierUncheckedUpdateManyWithoutItemNestedInput
   }
 
   export type ItemCreateWithoutWeaponInput = {
@@ -83948,7 +82109,7 @@ export namespace Prisma {
     itemType?: ItemTypeCreateNestedOneWithoutItemLinksInput
     characterItems?: CharacterItemCreateNestedManyWithoutBaseItemInput
     itemTemplate?: ItemTemplateCreateNestedManyWithoutItemInput
-    featureSpecialEffect?: FeatureSpecialEffectCreateNestedManyWithoutItemInput
+    featureModifiers?: FeatureModifierCreateNestedManyWithoutItemInput
   }
 
   export type ItemUncheckedCreateWithoutWeaponInput = {
@@ -83962,7 +82123,7 @@ export namespace Prisma {
     armor?: ArmorUncheckedCreateNestedOneWithoutItemInput
     characterItems?: CharacterItemUncheckedCreateNestedManyWithoutBaseItemInput
     itemTemplate?: ItemTemplateUncheckedCreateNestedManyWithoutItemInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedCreateNestedManyWithoutItemInput
+    featureModifiers?: FeatureModifierUncheckedCreateNestedManyWithoutItemInput
   }
 
   export type ItemCreateOrConnectWithoutWeaponInput = {
@@ -83991,7 +82152,7 @@ export namespace Prisma {
     itemType?: ItemTypeUpdateOneRequiredWithoutItemLinksNestedInput
     characterItems?: CharacterItemUpdateManyWithoutBaseItemNestedInput
     itemTemplate?: ItemTemplateUpdateManyWithoutItemNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUpdateManyWithoutItemNestedInput
+    featureModifiers?: FeatureModifierUpdateManyWithoutItemNestedInput
   }
 
   export type ItemUncheckedUpdateWithoutWeaponInput = {
@@ -84005,7 +82166,7 @@ export namespace Prisma {
     armor?: ArmorUncheckedUpdateOneWithoutItemNestedInput
     characterItems?: CharacterItemUncheckedUpdateManyWithoutBaseItemNestedInput
     itemTemplate?: ItemTemplateUncheckedUpdateManyWithoutItemNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedUpdateManyWithoutItemNestedInput
+    featureModifiers?: FeatureModifierUncheckedUpdateManyWithoutItemNestedInput
   }
 
   export type ItemPropertyAppliesToCreateWithoutPropertyInput = {
@@ -84463,7 +82624,7 @@ export namespace Prisma {
     weapon?: WeaponCreateNestedOneWithoutItemInput
     itemType?: ItemTypeCreateNestedOneWithoutItemLinksInput
     characterItems?: CharacterItemCreateNestedManyWithoutBaseItemInput
-    featureSpecialEffect?: FeatureSpecialEffectCreateNestedManyWithoutItemInput
+    featureModifiers?: FeatureModifierCreateNestedManyWithoutItemInput
   }
 
   export type ItemUncheckedCreateWithoutItemTemplateInput = {
@@ -84477,7 +82638,7 @@ export namespace Prisma {
     armor?: ArmorUncheckedCreateNestedOneWithoutItemInput
     weapon?: WeaponUncheckedCreateNestedOneWithoutItemInput
     characterItems?: CharacterItemUncheckedCreateNestedManyWithoutBaseItemInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedCreateNestedManyWithoutItemInput
+    featureModifiers?: FeatureModifierUncheckedCreateNestedManyWithoutItemInput
   }
 
   export type ItemCreateOrConnectWithoutItemTemplateInput = {
@@ -84525,7 +82686,7 @@ export namespace Prisma {
     weapon?: WeaponUpdateOneWithoutItemNestedInput
     itemType?: ItemTypeUpdateOneRequiredWithoutItemLinksNestedInput
     characterItems?: CharacterItemUpdateManyWithoutBaseItemNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUpdateManyWithoutItemNestedInput
+    featureModifiers?: FeatureModifierUpdateManyWithoutItemNestedInput
   }
 
   export type ItemUncheckedUpdateWithoutItemTemplateInput = {
@@ -84539,7 +82700,7 @@ export namespace Prisma {
     armor?: ArmorUncheckedUpdateOneWithoutItemNestedInput
     weapon?: WeaponUncheckedUpdateOneWithoutItemNestedInput
     characterItems?: CharacterItemUncheckedUpdateManyWithoutBaseItemNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedUpdateManyWithoutItemNestedInput
+    featureModifiers?: FeatureModifierUncheckedUpdateManyWithoutItemNestedInput
   }
 
   export type ItemTemplatePropertyUpsertWithWhereUniqueWithoutTemplateInput = {
@@ -84726,7 +82887,7 @@ export namespace Prisma {
     weapon?: WeaponCreateNestedOneWithoutItemInput
     itemType?: ItemTypeCreateNestedOneWithoutItemLinksInput
     itemTemplate?: ItemTemplateCreateNestedManyWithoutItemInput
-    featureSpecialEffect?: FeatureSpecialEffectCreateNestedManyWithoutItemInput
+    featureModifiers?: FeatureModifierCreateNestedManyWithoutItemInput
   }
 
   export type ItemUncheckedCreateWithoutCharacterItemsInput = {
@@ -84740,7 +82901,7 @@ export namespace Prisma {
     armor?: ArmorUncheckedCreateNestedOneWithoutItemInput
     weapon?: WeaponUncheckedCreateNestedOneWithoutItemInput
     itemTemplate?: ItemTemplateUncheckedCreateNestedManyWithoutItemInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedCreateNestedManyWithoutItemInput
+    featureModifiers?: FeatureModifierUncheckedCreateNestedManyWithoutItemInput
   }
 
   export type ItemCreateOrConnectWithoutCharacterItemsInput = {
@@ -84836,7 +82997,7 @@ export namespace Prisma {
     weapon?: WeaponUpdateOneWithoutItemNestedInput
     itemType?: ItemTypeUpdateOneRequiredWithoutItemLinksNestedInput
     itemTemplate?: ItemTemplateUpdateManyWithoutItemNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUpdateManyWithoutItemNestedInput
+    featureModifiers?: FeatureModifierUpdateManyWithoutItemNestedInput
   }
 
   export type ItemUncheckedUpdateWithoutCharacterItemsInput = {
@@ -84850,7 +83011,7 @@ export namespace Prisma {
     armor?: ArmorUncheckedUpdateOneWithoutItemNestedInput
     weapon?: WeaponUncheckedUpdateOneWithoutItemNestedInput
     itemTemplate?: ItemTemplateUncheckedUpdateManyWithoutItemNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedUpdateManyWithoutItemNestedInput
+    featureModifiers?: FeatureModifierUncheckedUpdateManyWithoutItemNestedInput
   }
 
   export type CharacterItemPropertyUpsertWithWhereUniqueWithoutCharacterItemInput = {
@@ -86676,7 +84837,6 @@ export namespace Prisma {
     prereqs?: FeatPrerequisiteMapCreateNestedManyWithoutFeatInput
     spellPrepMetamagic?: SpellPreparationMetamagicCreateNestedManyWithoutFeatInput
     featureChoice?: FeatureChoiceCreateNestedManyWithoutFeatInput
-    featureSpecialEffect?: FeatureSpecialEffectCreateNestedManyWithoutFeatInput
   }
 
   export type FeatUncheckedCreateWithoutAdvFeatInput = {
@@ -86694,7 +84854,6 @@ export namespace Prisma {
     prereqs?: FeatPrerequisiteMapUncheckedCreateNestedManyWithoutFeatInput
     spellPrepMetamagic?: SpellPreparationMetamagicUncheckedCreateNestedManyWithoutFeatInput
     featureChoice?: FeatureChoiceUncheckedCreateNestedManyWithoutFeatInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedCreateNestedManyWithoutFeatInput
   }
 
   export type FeatCreateOrConnectWithoutAdvFeatInput = {
@@ -86769,7 +84928,6 @@ export namespace Prisma {
     prereqs?: FeatPrerequisiteMapUpdateManyWithoutFeatNestedInput
     spellPrepMetamagic?: SpellPreparationMetamagicUpdateManyWithoutFeatNestedInput
     featureChoice?: FeatureChoiceUpdateManyWithoutFeatNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUpdateManyWithoutFeatNestedInput
   }
 
   export type FeatUncheckedUpdateWithoutAdvFeatInput = {
@@ -86787,7 +84945,6 @@ export namespace Prisma {
     prereqs?: FeatPrerequisiteMapUncheckedUpdateManyWithoutFeatNestedInput
     spellPrepMetamagic?: SpellPreparationMetamagicUncheckedUpdateManyWithoutFeatNestedInput
     featureChoice?: FeatureChoiceUncheckedUpdateManyWithoutFeatNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedUpdateManyWithoutFeatNestedInput
   }
 
   export type CharacterAdvancementCreateWithoutSpellsKnownInput = {
@@ -86994,7 +85151,6 @@ export namespace Prisma {
     feature: FeatureCreateNestedOneWithoutProgressionsInput
     choices?: FeatureChoiceCreateNestedManyWithoutFeatureProgressionInput
     spellcasting?: SpellcastingLinkCreateNestedOneWithoutFeatureInput
-    effects?: FeatureSpecialEffectCreateNestedManyWithoutFeatureProgressionInput
     modifiers?: FeatureModifierCreateNestedManyWithoutFeatureProgressionInput
   }
 
@@ -87007,7 +85163,6 @@ export namespace Prisma {
     raceId?: number | null
     choices?: FeatureChoiceUncheckedCreateNestedManyWithoutFeatureProgressionInput
     spellcasting?: SpellcastingLinkUncheckedCreateNestedOneWithoutFeatureInput
-    effects?: FeatureSpecialEffectUncheckedCreateNestedManyWithoutFeatureProgressionInput
     modifiers?: FeatureModifierUncheckedCreateNestedManyWithoutFeatureProgressionInput
   }
 
@@ -87103,7 +85258,6 @@ export namespace Prisma {
     feature?: FeatureUpdateOneRequiredWithoutProgressionsNestedInput
     choices?: FeatureChoiceUpdateManyWithoutFeatureProgressionNestedInput
     spellcasting?: SpellcastingLinkUpdateOneWithoutFeatureNestedInput
-    effects?: FeatureSpecialEffectUpdateManyWithoutFeatureProgressionNestedInput
     modifiers?: FeatureModifierUpdateManyWithoutFeatureProgressionNestedInput
   }
 
@@ -87116,7 +85270,6 @@ export namespace Prisma {
     raceId?: NullableIntFieldUpdateOperationsInput | number | null
     choices?: FeatureChoiceUncheckedUpdateManyWithoutFeatureProgressionNestedInput
     spellcasting?: SpellcastingLinkUncheckedUpdateOneWithoutFeatureNestedInput
-    effects?: FeatureSpecialEffectUncheckedUpdateManyWithoutFeatureProgressionNestedInput
     modifiers?: FeatureModifierUncheckedUpdateManyWithoutFeatureProgressionNestedInput
   }
 
@@ -87578,7 +85731,6 @@ export namespace Prisma {
     prereqs?: FeatPrerequisiteMapCreateNestedManyWithoutFeatInput
     advFeat?: AdvancementFeatCreateNestedManyWithoutFeatInput
     featureChoice?: FeatureChoiceCreateNestedManyWithoutFeatInput
-    featureSpecialEffect?: FeatureSpecialEffectCreateNestedManyWithoutFeatInput
   }
 
   export type FeatUncheckedCreateWithoutSpellPrepMetamagicInput = {
@@ -87596,7 +85748,6 @@ export namespace Prisma {
     prereqs?: FeatPrerequisiteMapUncheckedCreateNestedManyWithoutFeatInput
     advFeat?: AdvancementFeatUncheckedCreateNestedManyWithoutFeatInput
     featureChoice?: FeatureChoiceUncheckedCreateNestedManyWithoutFeatInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedCreateNestedManyWithoutFeatInput
   }
 
   export type FeatCreateOrConnectWithoutSpellPrepMetamagicInput = {
@@ -87654,7 +85805,6 @@ export namespace Prisma {
     prereqs?: FeatPrerequisiteMapUpdateManyWithoutFeatNestedInput
     advFeat?: AdvancementFeatUpdateManyWithoutFeatNestedInput
     featureChoice?: FeatureChoiceUpdateManyWithoutFeatNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUpdateManyWithoutFeatNestedInput
   }
 
   export type FeatUncheckedUpdateWithoutSpellPrepMetamagicInput = {
@@ -87672,7 +85822,6 @@ export namespace Prisma {
     prereqs?: FeatPrerequisiteMapUncheckedUpdateManyWithoutFeatNestedInput
     advFeat?: AdvancementFeatUncheckedUpdateManyWithoutFeatNestedInput
     featureChoice?: FeatureChoiceUncheckedUpdateManyWithoutFeatNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedUpdateManyWithoutFeatNestedInput
   }
 
   export type CharacterSpellPreparationUpsertWithoutMetamagicsInput = {
@@ -88133,7 +86282,6 @@ export namespace Prisma {
     feature?: FeatureUpdateOneRequiredWithoutProgressionsNestedInput
     choices?: FeatureChoiceUpdateManyWithoutFeatureProgressionNestedInput
     spellcasting?: SpellcastingLinkUpdateOneWithoutFeatureNestedInput
-    effects?: FeatureSpecialEffectUpdateManyWithoutFeatureProgressionNestedInput
     modifiers?: FeatureModifierUpdateManyWithoutFeatureProgressionNestedInput
     characterFeatureChoice?: CharacterFeatureChoiceUpdateManyWithoutFeatureProgressionNestedInput
   }
@@ -88146,7 +86294,6 @@ export namespace Prisma {
     raceId?: NullableIntFieldUpdateOperationsInput | number | null
     choices?: FeatureChoiceUncheckedUpdateManyWithoutFeatureProgressionNestedInput
     spellcasting?: SpellcastingLinkUncheckedUpdateOneWithoutFeatureNestedInput
-    effects?: FeatureSpecialEffectUncheckedUpdateManyWithoutFeatureProgressionNestedInput
     modifiers?: FeatureModifierUncheckedUpdateManyWithoutFeatureProgressionNestedInput
     characterFeatureChoice?: CharacterFeatureChoiceUncheckedUpdateManyWithoutFeatureProgressionNestedInput
   }
@@ -88434,7 +86581,6 @@ export namespace Prisma {
     race?: RaceUpdateOneWithoutFeatureProgressionNestedInput
     choices?: FeatureChoiceUpdateManyWithoutFeatureProgressionNestedInput
     spellcasting?: SpellcastingLinkUpdateOneWithoutFeatureNestedInput
-    effects?: FeatureSpecialEffectUpdateManyWithoutFeatureProgressionNestedInput
     modifiers?: FeatureModifierUpdateManyWithoutFeatureProgressionNestedInput
     characterFeatureChoice?: CharacterFeatureChoiceUpdateManyWithoutFeatureProgressionNestedInput
   }
@@ -88447,7 +86593,6 @@ export namespace Prisma {
     raceId?: NullableIntFieldUpdateOperationsInput | number | null
     choices?: FeatureChoiceUncheckedUpdateManyWithoutFeatureProgressionNestedInput
     spellcasting?: SpellcastingLinkUncheckedUpdateOneWithoutFeatureNestedInput
-    effects?: FeatureSpecialEffectUncheckedUpdateManyWithoutFeatureProgressionNestedInput
     modifiers?: FeatureModifierUncheckedUpdateManyWithoutFeatureProgressionNestedInput
     characterFeatureChoice?: CharacterFeatureChoiceUncheckedUpdateManyWithoutFeatureProgressionNestedInput
   }
@@ -88533,17 +86678,6 @@ export namespace Prisma {
     groupingId?: number
   }
 
-  export type FeatureSpecialEffectCreateManyFeatureProgressionInput = {
-    id?: number
-    effectType: number
-    key?: string | null
-    value?: string | null
-    numericValue?: number | null
-    groupingId?: number
-    featId?: number | null
-    itemId?: number | null
-  }
-
   export type FeatureModifierCreateManyFeatureProgressionInput = {
     id?: number
     type: number
@@ -88551,6 +86685,7 @@ export namespace Prisma {
     bonusType?: number | null
     appliesTo?: number | null
     appliesToId?: number | null
+    itemId?: number | null
     formulaParamsId?: number | null
     groupingId?: number
   }
@@ -88605,38 +86740,6 @@ export namespace Prisma {
     groupingId?: IntFieldUpdateOperationsInput | number
   }
 
-  export type FeatureSpecialEffectUpdateWithoutFeatureProgressionInput = {
-    effectType?: IntFieldUpdateOperationsInput | number
-    key?: NullableStringFieldUpdateOperationsInput | string | null
-    value?: NullableStringFieldUpdateOperationsInput | string | null
-    numericValue?: NullableIntFieldUpdateOperationsInput | number | null
-    groupingId?: IntFieldUpdateOperationsInput | number
-    feat?: FeatUpdateOneWithoutFeatureSpecialEffectNestedInput
-    item?: ItemUpdateOneWithoutFeatureSpecialEffectNestedInput
-  }
-
-  export type FeatureSpecialEffectUncheckedUpdateWithoutFeatureProgressionInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    effectType?: IntFieldUpdateOperationsInput | number
-    key?: NullableStringFieldUpdateOperationsInput | string | null
-    value?: NullableStringFieldUpdateOperationsInput | string | null
-    numericValue?: NullableIntFieldUpdateOperationsInput | number | null
-    groupingId?: IntFieldUpdateOperationsInput | number
-    featId?: NullableIntFieldUpdateOperationsInput | number | null
-    itemId?: NullableIntFieldUpdateOperationsInput | number | null
-  }
-
-  export type FeatureSpecialEffectUncheckedUpdateManyWithoutFeatureProgressionInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    effectType?: IntFieldUpdateOperationsInput | number
-    key?: NullableStringFieldUpdateOperationsInput | string | null
-    value?: NullableStringFieldUpdateOperationsInput | string | null
-    numericValue?: NullableIntFieldUpdateOperationsInput | number | null
-    groupingId?: IntFieldUpdateOperationsInput | number
-    featId?: NullableIntFieldUpdateOperationsInput | number | null
-    itemId?: NullableIntFieldUpdateOperationsInput | number | null
-  }
-
   export type FeatureModifierUpdateWithoutFeatureProgressionInput = {
     type?: IntFieldUpdateOperationsInput | number
     value?: NullableIntFieldUpdateOperationsInput | number | null
@@ -88646,6 +86749,7 @@ export namespace Prisma {
     groupingId?: IntFieldUpdateOperationsInput | number
     conditions?: FeatureModifierConditionUpdateManyWithoutFeatureModifierNestedInput
     formulaParams?: FeatureFormulaParamsUpdateOneWithoutFeatureModifierNestedInput
+    item?: ItemUpdateOneWithoutFeatureModifiersNestedInput
   }
 
   export type FeatureModifierUncheckedUpdateWithoutFeatureProgressionInput = {
@@ -88655,6 +86759,7 @@ export namespace Prisma {
     bonusType?: NullableIntFieldUpdateOperationsInput | number | null
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
+    itemId?: NullableIntFieldUpdateOperationsInput | number | null
     formulaParamsId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
     conditions?: FeatureModifierConditionUncheckedUpdateManyWithoutFeatureModifierNestedInput
@@ -88667,6 +86772,7 @@ export namespace Prisma {
     bonusType?: NullableIntFieldUpdateOperationsInput | number | null
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
+    itemId?: NullableIntFieldUpdateOperationsInput | number | null
     formulaParamsId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
   }
@@ -88731,6 +86837,7 @@ export namespace Prisma {
     bonusType?: number | null
     appliesTo?: number | null
     appliesToId?: number | null
+    itemId?: number | null
     groupingId?: number
   }
 
@@ -88756,6 +86863,7 @@ export namespace Prisma {
     groupingId?: IntFieldUpdateOperationsInput | number
     featureProgression?: FeatureProgressionUpdateOneRequiredWithoutModifiersNestedInput
     conditions?: FeatureModifierConditionUpdateManyWithoutFeatureModifierNestedInput
+    item?: ItemUpdateOneWithoutFeatureModifiersNestedInput
   }
 
   export type FeatureModifierUncheckedUpdateWithoutFormulaParamsInput = {
@@ -88766,6 +86874,7 @@ export namespace Prisma {
     bonusType?: NullableIntFieldUpdateOperationsInput | number | null
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
+    itemId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
     conditions?: FeatureModifierConditionUncheckedUpdateManyWithoutFeatureModifierNestedInput
   }
@@ -88778,6 +86887,7 @@ export namespace Prisma {
     bonusType?: NullableIntFieldUpdateOperationsInput | number | null
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
+    itemId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
   }
 
@@ -89105,17 +87215,6 @@ export namespace Prisma {
     groupingId?: number
   }
 
-  export type FeatureSpecialEffectCreateManyFeatInput = {
-    id?: number
-    progressionId: number
-    effectType: number
-    key?: string | null
-    value?: string | null
-    numericValue?: number | null
-    groupingId?: number
-    itemId?: number | null
-  }
-
   export type FeatBenefitMapUpdateWithoutFeatInput = {
     typeId?: IntFieldUpdateOperationsInput | number
     referenceId?: NullableIntFieldUpdateOperationsInput | number | null
@@ -89224,38 +87323,6 @@ export namespace Prisma {
     groupingId?: IntFieldUpdateOperationsInput | number
   }
 
-  export type FeatureSpecialEffectUpdateWithoutFeatInput = {
-    effectType?: IntFieldUpdateOperationsInput | number
-    key?: NullableStringFieldUpdateOperationsInput | string | null
-    value?: NullableStringFieldUpdateOperationsInput | string | null
-    numericValue?: NullableIntFieldUpdateOperationsInput | number | null
-    groupingId?: IntFieldUpdateOperationsInput | number
-    featureProgression?: FeatureProgressionUpdateOneRequiredWithoutEffectsNestedInput
-    item?: ItemUpdateOneWithoutFeatureSpecialEffectNestedInput
-  }
-
-  export type FeatureSpecialEffectUncheckedUpdateWithoutFeatInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    progressionId?: IntFieldUpdateOperationsInput | number
-    effectType?: IntFieldUpdateOperationsInput | number
-    key?: NullableStringFieldUpdateOperationsInput | string | null
-    value?: NullableStringFieldUpdateOperationsInput | string | null
-    numericValue?: NullableIntFieldUpdateOperationsInput | number | null
-    groupingId?: IntFieldUpdateOperationsInput | number
-    itemId?: NullableIntFieldUpdateOperationsInput | number | null
-  }
-
-  export type FeatureSpecialEffectUncheckedUpdateManyWithoutFeatInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    progressionId?: IntFieldUpdateOperationsInput | number
-    effectType?: IntFieldUpdateOperationsInput | number
-    key?: NullableStringFieldUpdateOperationsInput | string | null
-    value?: NullableStringFieldUpdateOperationsInput | string | null
-    numericValue?: NullableIntFieldUpdateOperationsInput | number | null
-    groupingId?: IntFieldUpdateOperationsInput | number
-    itemId?: NullableIntFieldUpdateOperationsInput | number | null
-  }
-
   export type RaceSourceMapCreateManyRaceInput = {
     sourceBookId: number
     pageNumber?: number | null
@@ -89358,7 +87425,6 @@ export namespace Prisma {
     feature?: FeatureUpdateOneRequiredWithoutProgressionsNestedInput
     choices?: FeatureChoiceUpdateManyWithoutFeatureProgressionNestedInput
     spellcasting?: SpellcastingLinkUpdateOneWithoutFeatureNestedInput
-    effects?: FeatureSpecialEffectUpdateManyWithoutFeatureProgressionNestedInput
     modifiers?: FeatureModifierUpdateManyWithoutFeatureProgressionNestedInput
     characterFeatureChoice?: CharacterFeatureChoiceUpdateManyWithoutFeatureProgressionNestedInput
   }
@@ -89371,7 +87437,6 @@ export namespace Prisma {
     classId?: NullableIntFieldUpdateOperationsInput | number | null
     choices?: FeatureChoiceUncheckedUpdateManyWithoutFeatureProgressionNestedInput
     spellcasting?: SpellcastingLinkUncheckedUpdateOneWithoutFeatureNestedInput
-    effects?: FeatureSpecialEffectUncheckedUpdateManyWithoutFeatureProgressionNestedInput
     modifiers?: FeatureModifierUncheckedUpdateManyWithoutFeatureProgressionNestedInput
     characterFeatureChoice?: CharacterFeatureChoiceUncheckedUpdateManyWithoutFeatureProgressionNestedInput
   }
@@ -89396,15 +87461,16 @@ export namespace Prisma {
     name: string
   }
 
-  export type FeatureSpecialEffectCreateManyItemInput = {
+  export type FeatureModifierCreateManyItemInput = {
     id?: number
     progressionId: number
-    effectType: number
-    key?: string | null
-    value?: string | null
-    numericValue?: number | null
+    type: number
+    value?: number | null
+    bonusType?: number | null
+    appliesTo?: number | null
+    appliesToId?: number | null
+    formulaParamsId?: number | null
     groupingId?: number
-    featId?: number | null
   }
 
   export type CharacterItemUpdateWithoutBaseItemInput = {
@@ -89445,36 +87511,41 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
   }
 
-  export type FeatureSpecialEffectUpdateWithoutItemInput = {
-    effectType?: IntFieldUpdateOperationsInput | number
-    key?: NullableStringFieldUpdateOperationsInput | string | null
-    value?: NullableStringFieldUpdateOperationsInput | string | null
-    numericValue?: NullableIntFieldUpdateOperationsInput | number | null
+  export type FeatureModifierUpdateWithoutItemInput = {
+    type?: IntFieldUpdateOperationsInput | number
+    value?: NullableIntFieldUpdateOperationsInput | number | null
+    bonusType?: NullableIntFieldUpdateOperationsInput | number | null
+    appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
+    appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
-    featureProgression?: FeatureProgressionUpdateOneRequiredWithoutEffectsNestedInput
-    feat?: FeatUpdateOneWithoutFeatureSpecialEffectNestedInput
+    featureProgression?: FeatureProgressionUpdateOneRequiredWithoutModifiersNestedInput
+    conditions?: FeatureModifierConditionUpdateManyWithoutFeatureModifierNestedInput
+    formulaParams?: FeatureFormulaParamsUpdateOneWithoutFeatureModifierNestedInput
   }
 
-  export type FeatureSpecialEffectUncheckedUpdateWithoutItemInput = {
+  export type FeatureModifierUncheckedUpdateWithoutItemInput = {
     id?: IntFieldUpdateOperationsInput | number
     progressionId?: IntFieldUpdateOperationsInput | number
-    effectType?: IntFieldUpdateOperationsInput | number
-    key?: NullableStringFieldUpdateOperationsInput | string | null
-    value?: NullableStringFieldUpdateOperationsInput | string | null
-    numericValue?: NullableIntFieldUpdateOperationsInput | number | null
+    type?: IntFieldUpdateOperationsInput | number
+    value?: NullableIntFieldUpdateOperationsInput | number | null
+    bonusType?: NullableIntFieldUpdateOperationsInput | number | null
+    appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
+    appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
+    formulaParamsId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
-    featId?: NullableIntFieldUpdateOperationsInput | number | null
+    conditions?: FeatureModifierConditionUncheckedUpdateManyWithoutFeatureModifierNestedInput
   }
 
-  export type FeatureSpecialEffectUncheckedUpdateManyWithoutItemInput = {
+  export type FeatureModifierUncheckedUpdateManyWithoutItemInput = {
     id?: IntFieldUpdateOperationsInput | number
     progressionId?: IntFieldUpdateOperationsInput | number
-    effectType?: IntFieldUpdateOperationsInput | number
-    key?: NullableStringFieldUpdateOperationsInput | string | null
-    value?: NullableStringFieldUpdateOperationsInput | string | null
-    numericValue?: NullableIntFieldUpdateOperationsInput | number | null
+    type?: IntFieldUpdateOperationsInput | number
+    value?: NullableIntFieldUpdateOperationsInput | number | null
+    bonusType?: NullableIntFieldUpdateOperationsInput | number | null
+    appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
+    appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
+    formulaParamsId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
-    featId?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type ItemCreateManyItemTypeInput = {
@@ -89496,7 +87567,7 @@ export namespace Prisma {
     weapon?: WeaponUpdateOneWithoutItemNestedInput
     characterItems?: CharacterItemUpdateManyWithoutBaseItemNestedInput
     itemTemplate?: ItemTemplateUpdateManyWithoutItemNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUpdateManyWithoutItemNestedInput
+    featureModifiers?: FeatureModifierUpdateManyWithoutItemNestedInput
   }
 
   export type ItemUncheckedUpdateWithoutItemTypeInput = {
@@ -89510,7 +87581,7 @@ export namespace Prisma {
     weapon?: WeaponUncheckedUpdateOneWithoutItemNestedInput
     characterItems?: CharacterItemUncheckedUpdateManyWithoutBaseItemNestedInput
     itemTemplate?: ItemTemplateUncheckedUpdateManyWithoutItemNestedInput
-    featureSpecialEffect?: FeatureSpecialEffectUncheckedUpdateManyWithoutItemNestedInput
+    featureModifiers?: FeatureModifierUncheckedUpdateManyWithoutItemNestedInput
   }
 
   export type ItemUncheckedUpdateManyWithoutItemTypeInput = {

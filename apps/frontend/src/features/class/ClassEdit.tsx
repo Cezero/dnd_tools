@@ -24,9 +24,10 @@ import {
     SpellcastingProgressionWithSlots
 } from '@shared/schema';
 import {
-    FeatureSpecialEffectType,
+    ModifierType,
     SpecialFeatureId,
     ModifierAppliesToType,
+    FeatureType,
 } from '@shared/static-data';
 
 import { ClassApi } from './ClassApi';
@@ -118,54 +119,34 @@ export default function ClassEdit() {
                             description: 'Class proficiency feature',
                         },
                         modifiers: [],
-                        choices: [],
-                        effects: [],
+                        choices: []
                     };
                     prev = [...prev, classProficiencyProgression];
                 }
 
                 // Check if this specific proficiency already exists
-                const existingProficiency = classProficiencyProgression.effects?.find(e =>
-                    e.effectType === FeatureSpecialEffectType.Proficiency &&
-                    e.featId === featId &&
-                    e.itemId === itemId
+                const existingProficiency = classProficiencyProgression.modifiers?.find(m =>
+                    m.appliesTo === ModifierAppliesToType.Feat &&
+                    m.appliesToId === featId &&
+                    m.itemId === itemId
                 );
 
                 if (existingProficiency) {
                     return prev;
                 }
 
-                // Add the proficiency as a special effect
-                const newEffect = {
+                // Add the proficiency as a modifier
+                const newModifier = {
                     id: Date.now() + Math.random(),
                     progressionId: classProficiencyProgression.id,
-                    effectType: FeatureSpecialEffectType.Proficiency,
-                    key: null,
-                    value: null,
-                    numericValue: null,
-                    featId: featId,
+                    type: ModifierType.Other,
+                    value: 0,
+                    bonusType: null,
+                    appliesTo: ModifierAppliesToType.Feat,
+                    appliesToId: featId,
                     itemId: itemId,
-                    feat: {
-                        id: featId,
-                        name: featName,
-                        description: null,
-                        typeId: 1,
-                        benefit: null,
-                        normalEffect: null,
-                        specialEffect: null,
-                        prerequisites: null,
-                        repeatable: null,
-                        fighterBonus: null
-                    },
-                    item: itemId !== -1 ? {
-                        id: itemId,
-                        name: itemName,
-                        description: null,
-                        typeId: 1,
-                        cost: null,
-                        weight: null,
-                        quantity: null
-                    } : null
+                    formulaParamsId: null,
+                    groupingId: 0,
                 };
 
                 // Create a new array with the updated progression
@@ -173,7 +154,7 @@ export default function ClassEdit() {
                     if (p.id === classProficiencyProgression.id) {
                         return {
                             ...p,
-                            effects: [...(p.effects || []), newEffect]
+                            modifiers: [...(p.modifiers || []), newModifier]
                         };
                     }
                     return p;
@@ -269,7 +250,6 @@ export default function ClassEdit() {
             },
             modifiers: [],
             choices: [],
-            effects: [],
         };
 
         setFeatureProgressions(prev => [...prev, defaultProgression]);
@@ -439,7 +419,6 @@ export default function ClassEdit() {
                 },
                 modifiers: [],
                 choices: [],
-                effects: [],
             };
             setFeatureProgressions(prev => [...prev, newProgression]);
             // Clear the state
@@ -496,10 +475,7 @@ export default function ClassEdit() {
                             const { id: _, progressionId: __, ...choiceData } = choice;
                             return choiceData;
                         }) || [],
-                        effects: prog.effects?.map(effect => {
-                            const { id: _, progressionId: __, ...effectData } = effect;
-                            return effectData;
-                        }) || [],
+
                     };
                 }),
                 spellcastingProgression: spellcastingProgression.map(prog => {
@@ -757,7 +733,6 @@ export default function ClassEdit() {
                                 },
                                 modifiers: [],
                                 choices: [],
-                                effects: [],
                             }));
 
                         return [...updated, ...newProgressions];

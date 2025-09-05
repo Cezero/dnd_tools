@@ -51,7 +51,6 @@ export interface Formula extends CoreComponent {
     parameters: FormulaParameter[];
     calculate: (params: Record<string, any>) => number | string;
     getDisplayString: (params: Record<string, any>) => string;
-    hasProgression: boolean; // Does this formula scale with level?
     isCharacterDependent: boolean; // Does this formula require character context?
 }
 

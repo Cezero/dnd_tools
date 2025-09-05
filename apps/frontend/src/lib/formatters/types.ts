@@ -1,21 +1,19 @@
 import type {
     FeatureModifier,
     FeatureChoice,
-    FeatureSpecialEffect,
     FormulaParamsData,
     FeatureProgression
 } from '@shared/schema';
 import type { BreakdownComponentType, Formula, FeatureType } from '@shared/static-data';
-import { ModifierAppliesToType, DisplayType, ModifierType, FeatureSpecialEffectType, FeatureChoiceType } from '@shared/static-data';
+import { ModifierAppliesToType, DisplayType, ModifierType, FeatureChoiceType } from '@shared/static-data';
 
 // Processing configuration interface for consolidated processing functions
 export interface ProcessingConfig {
     hasFormula: boolean;
     isCharacterDependent: boolean;
-    hasProgression: boolean;
     isConditional: boolean;
     entityType: FeatureType;
-    subType?: ModifierType | FeatureSpecialEffectType | FeatureChoiceType;
+    subType?: ModifierType | FeatureChoiceType;
     subTypeId?: ModifierAppliesToType;
 }
 
@@ -46,8 +44,8 @@ export interface ProcessingResult extends BaseProcessingResult {
 
 // Strategy interface for processing different types of entities
 export interface ProcessingStrategy {
-    canProcess(entities: Array<FeatureModifier | FeatureChoice | FeatureSpecialEffect>, context: ProcessingContext): boolean;
-    process(entities: Array<FeatureModifier | FeatureChoice | FeatureSpecialEffect>, context: ProcessingContext): string;
+    canProcess(entities: Array<FeatureModifier | FeatureChoice>, context: ProcessingContext): boolean;
+    process(entities: Array<FeatureModifier | FeatureChoice>, context: ProcessingContext): string;
     getPriority(): number; // Higher priority strategies are tried first
 }
 
@@ -113,6 +111,7 @@ export interface FormattedItemWithBreakdown extends BaseFormattedValue {
     value?: number;
     progressionId?: number;
     featureId?: number;
+    groupingId: number; // Always present, no || 0 needed
 }
 
 // Grouped result from grouping strategies
@@ -175,7 +174,7 @@ export interface ConditionalValue {
 // Base calculation result
 export interface BaseCalculationResult {
     breakdown: CalculationBreakdown;
-    value: number;
+    value: number | string;
     conditionalValues?: ConditionalValue[];
 }
 
@@ -200,7 +199,7 @@ export interface LevelEntry {
 // Display result for formatter output
 export interface DisplayResult extends BaseFormattedValue {
     showBreakdown: boolean;
-    components: Array<FeatureModifier | FeatureChoice | FeatureSpecialEffect>;
+    components: Array<FeatureModifier | FeatureChoice>;
     levelEntries?: LevelEntry[];
     conditionalDisplays?: ConditionalDisplay[]; // For xxxEdit page 1:1 relationship
 }
@@ -231,8 +230,6 @@ export interface ChoiceBasedCalculation {
     allocatedBonuses?: Record<number, number>; // choiceId -> bonus
 }
 
-
-
 // Base character information
 export interface BaseCharacterInfo {
     abilityScores: Record<number, number>; // abilityId -> score
@@ -249,13 +246,12 @@ export interface ProgressionValue extends BaseCalculationResult {
     level: number;
     choices?: FeatureChoice[];
     modifiers?: FeatureModifier[];
-    effects?: FeatureSpecialEffect[];
 }
 
 // Base entity information
 export interface BaseEntityInfo {
     entityType: FeatureType;
-    entitySubType: ModifierType | FeatureSpecialEffectType | FeatureChoiceType;
+    entitySubType: ModifierType | FeatureChoiceType;
     entityAppliesTo?: number; // For modifiers, the appliesTo value
 }
 
@@ -264,8 +260,8 @@ export interface BaseTransitionInfo {
     level: number;
     type: number; // TransitionPointType
     description: string;
-    value: number;
-    previousValue?: number;
+    value: number | string;
+    previousValue?: number | string;
 }
 
 // Transition point for progression transitions (Layer 4)
@@ -274,16 +270,17 @@ export interface TransitionPoint extends BaseTransitionInfo, BaseEntityInfo { }
 export interface FormattedItemWithLevel extends BaseEntityInfo {
     formattedValue: string;
     breakdown: CalculationBreakdown;
-    entity: FeatureModifier | FeatureChoice | FeatureSpecialEffect;
+    entity: FeatureModifier | FeatureChoice;
     level: number;
     descriptionLevel: number; // The level where the feature's full description should be shown
     featureId: number; // The feature ID for easy lookup
+    groupingId: number; // Add groupingId for entity grouping support
 }
 
 export interface CalculatedValueWithLevel {
-    value: number;
+    value: number | string;
     breakdown: CalculationBreakdown;
-    entity: FeatureModifier | FeatureChoice | FeatureSpecialEffect;
+    entity: FeatureModifier | FeatureChoice;
     level: number;
 }
 
@@ -301,13 +298,15 @@ export interface BaseFormattedValue {
 
 export interface EntityGroupKey {
     type: FeatureType;
-    subType: ModifierType | FeatureSpecialEffectType | FeatureChoiceType;
+    subType: ModifierType | FeatureChoiceType;
+    groupingId: number; // NEW: Primary grouping criterion
 }
 
 // Type for grouped level items (used by groupWithinLevel, groupWithinProgression, and detectTransitions)
 export interface GroupedLevelItem extends BaseLevelInfo, BaseFormattedValue, BaseEntityInfo {
     progressionId: number;
     descriptionLevel: number;
+    groupingId: number; // Add groupingId for entity grouping support
 }
 
 // Type for grouping strategy input
@@ -333,11 +332,6 @@ export interface ChoiceFormatter {
     formatChoice(choice: FeatureChoice, metadata?: FormatterMetadata): string;
 }
 
-// Effect formatter interface
-export interface EffectFormatter {
-    format(effect: FeatureSpecialEffect, level: number): string;
-}
-
 // Formula calculator interface
 export interface FormulaCalculator {
     calculate(formula: FormulaParamsData, level: number, context?: CalculationContext, modifierValue?: number | string): CalculationResult;
@@ -347,7 +341,6 @@ export interface FormulaCalculator {
 export interface FormulaDefinition extends Formula {
     calculate: (params: Record<string, unknown>) => number | string;
     getDisplayString: (params: Record<string, unknown>) => string;
-    hasProgression: boolean;
     isCharacterDependent: boolean;
 }
 
@@ -388,7 +381,7 @@ export interface TransitionDetector {
 
 // Display strategy interface
 export interface DisplayStrategy {
-    format(input: FeatureProgression | FeatureProgression[], context?: DisplayContext, metadata?: FormatterMetadata): DisplayResult;
+    format(input: FeatureProgression | FeatureProgression[], context?: DisplayContext, metadata?: FormatterMetadata, showLabels?: boolean): DisplayResult;
 }
 
 // Choice calculator interface

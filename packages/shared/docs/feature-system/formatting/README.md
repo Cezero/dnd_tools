@@ -25,6 +25,24 @@ The formatting system underwent a **comprehensive refactoring** to improve type 
 - **Consolidated Types**: Merged duplicate interfaces into unified types
 - **Enum Usage**: Replaced string literals with proper enums for type safety
 
+## Recent GroupingId Integration
+
+The formatting system has been updated to use **`groupingId`-based grouping** instead of the previous entity type-based grouping approach. This change improves the accuracy of feature grouping and transition detection by using logical grouping identifiers rather than entity type classifications.
+
+### **Key Integration Changes**
+
+1. **GroupingId-Based Grouping**: Entities are now grouped by their `groupingId` value rather than by entity type and subtype
+2. **Improved Transition Detection**: Transition detection now works with logical grouping rather than entity type grouping
+3. **Maintained Architecture**: All changes preserve the 6-layer architecture and 6-phase processing flow
+4. **Enhanced Accuracy**: The new approach correctly handles complex feature scenarios like "Inspire Greatness" without false transitions
+
+### **GroupingId Behavior**
+
+- **`groupingId = 0`**: Represents ungrouped entities that are formatted individually
+- **`groupingId > 0`**: Represents logically grouped entities that are formatted together as a unit
+- **Default Value**: All entities have a `groupingId` that defaults to 0 if not explicitly set
+- **No Validation Required**: The system assumes `groupingId` is always present and valid
+
 ## Architecture
 
 The formatting system implements a **6-layer clean architecture** with **6 processing phases** and **4 distinct grouping activities**. This creates three organizational dimensions:
@@ -50,8 +68,8 @@ graph TD
 
 **Layer Responsibilities:**
 - **Layer 6**: Orchestration and display strategy management
-- **Layer 5**: Grouping strategies for different entity types
-- **Layer 4**: Transition detection and progression analysis (via registry)
+- **Layer 5**: Grouping strategies for different entity types (now using groupingId)
+- **Layer 4**: Transition detection and progression analysis (via registry, now groupingId-based)
 - **Layer 3**: Progression value generation and formula expansion (via registry)
 - **Layer 2**: Value calculation and breakdown generation (via registry)
 - **Layer 1**: Pure formatting of individual values (via registry)
@@ -62,8 +80,8 @@ The actual **execution order** follows a logical sequence based on data dependen
 ```mermaid
 graph LR
     P1[Phase 1: Value Generation<br/>& Calculation] --> P2[Phase 2: Pure Formatting<br/>Individual Values]
-    P2 --> P3[Phase 3: Within-Level Grouping<br/>Pre-Transition]
-    P3 --> P4[Phase 4: Transition Detection<br/>Value Changes]
+    P2 --> P3[Phase 3: Within-Level Grouping<br/>Pre-Transition (groupingId-based)]
+    P3 --> P4[Phase 4: Transition Detection<br/>Value Changes (groupingId-based)]
     P4 --> P5[Phase 5: Within-Progression Grouping<br/>Post-Transition]
     P5 --> P6[Phase 6: Display-Specific<br/>Final Grouping]
     
@@ -78,8 +96,8 @@ graph LR
 **Phase Details:**
 - **Phase 1**: Generate calculated values for each level of each progression
 - **Phase 2**: Format each calculated value using appropriate formatters
-- **Phase 3**: Group entities by type within each level (pre-transition)
-- **Phase 4**: Detect transitions in formatted values
+- **Phase 3**: Group entities by `groupingId` within each level (pre-transition)
+- **Phase 4**: Detect transitions in formatted values using `groupingId` grouping
 - **Phase 5**: Group all entities for each transition level (post-transition)
 - **Phase 6**: Apply display-specific final grouping logic
 
@@ -88,7 +106,7 @@ Four distinct grouping activities organize data at different stages:
 
 ```mermaid
 graph TD
-    GA1[Grouping Activity 1:<br/>Within-Level Grouping<br/>Pre-Transition] --> GA2[Grouping Activity 2:<br/>Within-Progression Grouping<br/>Post-Transition]
+    GA1[Grouping Activity 1:<br/>Within-Level Grouping<br/>Pre-Transition (groupingId-based)] --> GA2[Grouping Activity 2:<br/>Within-Progression Grouping<br/>Post-Transition]
     GA2 --> GA3[Grouping Activity 3:<br/>Display-Specific Progression<br/>Grouping]
     GA3 --> GA4[Grouping Activity 4:<br/>Multi-Progression Level<br/>Grouping]
     
@@ -103,18 +121,21 @@ graph TD
 - Apples to DisplayType.Edit and DisplayType.Detail only, there is no grouping for DisplayType.CharacterSheet
 
 #### **Grouping Activity 1: Within-Level Grouping (Pre-Transition)**
-- **Purpose**: Group entities of the same type within a single level
+- **Purpose**: Group entities by `groupingId` within a single level
 - **Scope**: Single level of single FeatureProgression
+- **Grouping Logic**: 
+  - Entities with `groupingId = 0` are formatted individually
+  - Entities with `groupingId > 0` are grouped together and formatted as a unit
 - **Delimiters**: 
   - FeatureModifiers: `', '` (within same ModifierType)
   - FeatureChoices: `' | '` (within same choice type)
-  - FeatureEffects: `', '` (within same effect type)
-- **Rules**: Never group different ModifierTypes together, never group FeatureModifiers with FeatureChoices
+  - Between different `groupingId` groups: `'; '` (semicolon and space)
+- **Rules**: Grouping is now based purely on `groupingId` value, not entity type or subtype
 
 #### **Grouping Activity 2: Within-Progression Grouping (Post-Transition)**
 - **Purpose**: Group all entities for each transition level within a single progression
 - **Scope**: Single FeatureProgression across all transition levels
-- **Delimiter**: `', '` (regardless of entity type)
+- **Delimiter**: `', '` (regardless of entity type or groupingId)
 - **Rules**: Concatenate all entity types for each transition level
 
 #### **Grouping Activity 3: DisplayType.Edit Progression Grouping**
@@ -134,6 +155,33 @@ graph TD
 - **Grouping Activities (1-4)**: Represent **data organization** and **display formatting**
 
 The processing flow (Phase 1→2→3→4→5→6) is different from the dependency hierarchy (Layer 6 depends on Layer 5, etc.) because **data preparation must happen before data processing**.
+
+## GroupingId Integration Details
+
+### **Core Principle**
+
+The `groupingId` integration follows a **single core principle**: **replace only the Phase 3 grouping logic** while maintaining all other phases, delimiters, and display type behavior exactly as they were.
+
+### **What Changed**
+
+1. **Phase 3 Grouping**: Within-level grouping now uses `groupingId` instead of entity type/subtype
+2. **Phase 4 Transition Detection**: Transition detection now works with `groupingId`-based groups
+3. **Grouping Strategy**: `ModifierGroupingStrategy` now groups by `groupingId` instead of entity type
+
+### **What Stayed the Same**
+
+1. **All Delimiters**: Modifiers still use `', '`, choices still use `' | '`, effects still use `', '`
+2. **DisplayType.Edit Behavior**: Still produces `Level X: prefix; Level Y: prefix` format
+3. **DisplayType.Detail Behavior**: Still groups by level and shows feature items per level
+4. **Phase 1-2**: Value generation and pure formatting unchanged
+5. **Phase 5-6**: Within-progression and display-specific grouping unchanged
+
+### **Implementation Benefits**
+
+1. **Accurate Grouping**: Entities are now grouped logically rather than by arbitrary type classifications
+2. **Correct Transition Detection**: Transitions are detected based on logical grouping, preventing false positives
+3. **Admin Control**: Content administrators can control grouping through the `groupingId` field
+4. **Maintained Architecture**: All architectural principles and phase separation remain intact
 
 ## Registry Pattern Architecture
 
@@ -172,12 +220,13 @@ The system uses a clean type hierarchy with base interfaces that provide common 
 
 **Consolidated Types:**
 - **`GroupedLevelItem`**: Replaces multiple duplicate interfaces for grouped items with level information
-- **`FormattedItemWithBreakdown`**: Replaces duplicate interfaces for formatted items with breakdown information
+- **`FormattedItemWithBreakdown`**: Replaces duplicate interfaces for formatted items with breakdown information, now includes `groupingId`
 - **`BaseProcessingResult`**: Extends base formatted value for consistent structure
+- **`EntityGroupKey`**: Now includes `groupingId` for proper grouping identification
 
 ### **Type Safety Improvements**
 
-The type system improvements include proper enum usage instead of magic numbers, consistent interfaces that follow the same pattern, and clear inheritance hierarchy with base interfaces.
+The type system improvements include proper enum usage instead of magic numbers, consistent interfaces that follow the same pattern, and clear inheritance hierarchy with base interfaces. The `groupingId` field is now properly typed and integrated throughout the type system.
 
 ## Key Principles
 
@@ -199,8 +248,8 @@ The type system improvements include proper enum usage instead of magic numbers,
 The system follows a logical processing sequence:
 - **Phase 1**: Value generation and calculation must happen before formatting
 - **Phase 2**: Pure formatting must happen before within-level grouping
-- **Phase 3**: Within-level grouping must happen before transition detection
-- **Phase 4**: Transition detection must happen before within-progression grouping
+- **Phase 3**: Within-level grouping by `groupingId` must happen before transition detection
+- **Phase 4**: Transition detection using `groupingId` grouping must happen before within-progression grouping
 - **Phase 5**: Within-progression grouping must happen before display-specific grouping
 - **Phase 6**: Display-specific final grouping creates the final result
 
@@ -209,8 +258,8 @@ The system follows a logical processing sequence:
 graph TD
     Input[Input: FeatureProgression[]] --> P1[Phase 1: Value Generation<br/>& Calculation via Registry]
     P1 --> P2[Phase 2: Pure Formatting<br/>Individual Values via Registry]
-    P2 --> P3[Phase 3: Within-Level Grouping<br/>Pre-Transition]
-    P3 --> P4[Phase 4: Transition Detection<br/>Value Changes via Registry]
+    P2 --> P3[Phase 3: Within-Level Grouping<br/>Pre-Transition (groupingId-based)]
+    P3 --> P4[Phase 4: Transition Detection<br/>Value Changes (groupingId-based)]
     P4 --> P5[Phase 5: Within-Progression Grouping<br/>Post-Transition]
     P5 --> P6[Phase 6: Display-Specific<br/>Final Grouping]
     P6 --> Output[Output: DisplayResult<br/>or LevelEntry[]]
@@ -227,7 +276,6 @@ graph TD
 
 ### **Formula Property-Based Routing**
 The system intelligently routes formula calls based on formula properties:
-- **`hasProgression: true`** → Generate progression values in Phase 1
 - **`isCharacterDependent: true`** + no character data → Use `.getDisplayString()` in Phase 1
 - **`isCharacterDependent: true`** + has character data → Use `.calculate()` in Phase 1
 - **`isCharacterDependent: false`** → Always use `.calculate()` in Phase 1
@@ -264,13 +312,13 @@ graph TD
 - **[Architecture Decisions](./architecture-decisions.md)** - Key architectural decisions and future extensibility
 
 ### **Key Files**
-- `frontend/src/lib/formatters/display-strategies.ts` - Display strategy implementations (Layer 6)
+- `frontend/src/lib/formatters/display-strategies.ts` - Display strategy implementations (Layer 6), updated for groupingId
 - `frontend/src/lib/formatters/calculator-registry.ts` - Calculator registration and lookup (Registry)
 - `frontend/src/lib/formatters/formatter-registry.ts` - Formatter registration and lookup (Layer 1)
-- `frontend/src/lib/formatters/types.ts` - Type definitions and interfaces
+- `frontend/src/lib/formatters/types.ts` - Type definitions and interfaces, updated for groupingId
 - `frontend/src/lib/formatters/pure-formatters.ts` - Pure formatter implementations (Layer 1)
 - `frontend/src/lib/formatters/formula-utils.ts` - Shared formula parameter utilities
-- `frontend/src/lib/formatters/grouping-strategies.ts` - Grouping strategy implementations
+- `frontend/src/lib/formatters/grouping-strategies.ts` - Grouping strategy implementations, updated for groupingId
 - `frontend/src/lib/formatters/progression-generators.ts` - Progression generation and transition detection
 - `frontend/src/lib/formatters/calculators.ts` - Calculator implementations
 
@@ -296,9 +344,9 @@ The formatting system provides a factory pattern for accessing display strategie
 The formatting system is tightly integrated with the feature system and used by multiple other systems:
 
 - **Feature Progressions** - Formatted based on level and progression data
-- **Feature Modifiers** - Formatted based on type, value, and conditions
-- **Feature Choices** - Formatted based on choice type and behavior
-- **Feature Effects** - Formatted based on effect type and parameters
+- **Feature Modifiers** - Formatted based on type, value, conditions, and groupingId
+- **Feature Choices** - Formatted based on choice type, behavior, and groupingId
+- **Feature Effects** - Formatted based on effect type, parameters, and groupingId
 
 ### **Cross-System Integration**
 
@@ -320,11 +368,12 @@ The formatting system underwent a major refactoring to implement proper architec
 3. **Architectural Consistency** - Ensured all components follow the same patterns
 4. **Code Quality Improvements** - Removed magic numbers, unused variables, and unnecessary wrappers
 5. **Future Extensibility** - Set up architecture to support multiple calculator implementations
+6. **GroupingId Integration** - Replaced entity type-based grouping with logical groupingId-based grouping
 
 **Current Status**:
 - **Architecture**: Fully defined with registry pattern and clean type hierarchy
 - **Documentation**: Complete with mermaid visualizations and detailed explanations
-- **Implementation**: Production-ready with proper error handling and type safety
+- **Implementation**: Production-ready with proper error handling, type safety, and groupingId integration
 
 ## Testing
 
@@ -335,6 +384,7 @@ For comprehensive testing guidelines and debugging patterns, see **[usage-guidel
 - **Integration Testing** - Test display strategy orchestration
 - **Formula Testing** - Test formula property-based routing
 - **Registry Testing** - Test calculator registration and lookup
+- **GroupingId Testing** - Test new groupingId-based grouping logic
 
 ## Contributing
 
@@ -345,7 +395,7 @@ For comprehensive contributing guidelines and anti-patterns to avoid, see **[usa
 2. **Follow the 6-phase processing flow** - Execute phases in correct order (1→2→3→4→5→6)
 3. **Use the registry pattern** - Access calculators through registry
 4. **Use the factory pattern** - Access strategies through factory
-5. **Respect formula properties** - Use `isCharacterDependent` and `hasProgression` for routing
+5. **Respect formula properties** - Use `isCharacterDependent` for routing
 6. **Maintain separation of concerns** - Each layer should have single responsibility
 7. **Follow type hierarchy** - Use base interfaces and proper extensions
 8. **Understand the three dimensions**:
@@ -353,10 +403,14 @@ For comprehensive contributing guidelines and anti-patterns to avoid, see **[usa
    - **Phase numbers (1-6)**: Represent execution order and data flow
    - **Grouping Activities (1-4)**: Represent data organization and display formatting
 9. **Follow grouping rules**:
-   - **Within-Level**: Group same entity types only, use appropriate delimiters
+   - **Within-Level**: Group by `groupingId` only, use appropriate delimiters
    - **Within-Progression**: Group all entities per transition level with `', '` delimiter
    - **Display-Specific**: Apply display type formatting rules
    - **Multi-Progression**: Union by level for Detail display type only
+10. **Respect groupingId integration**:
+    - Use `groupingId` for all grouping operations in Phase 3 and Phase 4
+    - Maintain all existing delimiters and display type behavior
+    - Only change the grouping logic, not the formatting or display behavior
 
 ## Related Documentation
 

@@ -45,7 +45,6 @@ export const FORMULA_MAP: BaseMap<Formula> = {
         getDisplayString: (params) => {
             return `(${params.level} - ${params.startLevel} + 1) × ${params.scalingValue}`;
         },
-        hasProgression: true,
         isCharacterDependent: false
     },
 
@@ -92,7 +91,6 @@ export const FORMULA_MAP: BaseMap<Formula> = {
             }
             return `${params.scalingValue} + (intervals since ${params.startLevel}) × ${params.scalingValue}`;
         },
-        hasProgression: true,
         isCharacterDependent: false
     },
 
@@ -149,7 +147,6 @@ export const FORMULA_MAP: BaseMap<Formula> = {
         getDisplayString: (params) => {
             return `Conditional scaling based on level thresholds`;
         },
-        hasProgression: true,
         isCharacterDependent: false
     },
 
@@ -177,7 +174,6 @@ export const FORMULA_MAP: BaseMap<Formula> = {
         getDisplayString: (params) => {
             return `${params.scalingValue}d6 + (intervals since ${params.startLevel}) × ${params.scalingValue}d6`;
         },
-        hasProgression: true,
         isCharacterDependent: false
     },
 
@@ -200,7 +196,6 @@ export const FORMULA_MAP: BaseMap<Formula> = {
             const abilityName = ABILITY_MAP[params.abilityId]?.abbreviation || 'ability';
             return `${params.baseValue} + ${abilityName}`;
         },
-        hasProgression: false,
         isCharacterDependent: true
     },
 
@@ -221,7 +216,6 @@ export const FORMULA_MAP: BaseMap<Formula> = {
             const abilityName = ABILITY_MAP[params.abilityId]?.abbreviation || 'ability';
             return `${abilityName} modifier`;
         },
-        hasProgression: false,
         isCharacterDependent: true
     },
 
@@ -243,7 +237,6 @@ export const FORMULA_MAP: BaseMap<Formula> = {
             const abilityName = ABILITY_MAP[params.abilityId]?.abbreviation || 'ability';
             return `level × ${abilityName}`;
         },
-        hasProgression: true,
         isCharacterDependent: true
     },
 
@@ -266,7 +259,6 @@ export const FORMULA_MAP: BaseMap<Formula> = {
         getDisplayString: (params) => {
             return `level × ${params.scalingValue}`;
         },
-        hasProgression: true,
         isCharacterDependent: false
     },
 
@@ -289,7 +281,6 @@ export const FORMULA_MAP: BaseMap<Formula> = {
         getDisplayString: (params) => {
             return `${params.scalingValue} + level`;
         },
-        hasProgression: true,
         isCharacterDependent: false
     },
 
@@ -317,7 +308,6 @@ export const FORMULA_MAP: BaseMap<Formula> = {
             const abilityName = params.abilityId && ABILITY_MAP[params.abilityId] ? ABILITY_MAP[params.abilityId].abbreviation : '[ability]';
             return `${params.level} + ${abilityName}`;
         },
-        hasProgression: true,
         isCharacterDependent: true
     },
 

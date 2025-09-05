@@ -33,7 +33,6 @@ export const FloatingTextInput: React.FC<FloatingTextInputProps> = ({
     // Initialize the input value when it becomes visible
     useEffect(() => {
         if (isVisible) {
-            console.log('FloatingTextInput: Initializing with value:', currentValue);
             setInputValue(currentValue);
             setDebouncedValue(currentValue);
             setHasBeenFocused(false);
@@ -43,11 +42,9 @@ export const FloatingTextInput: React.FC<FloatingTextInputProps> = ({
     // Focus input when it becomes visible
     useEffect(() => {
         if (isVisible && inputRef.current) {
-            console.log('FloatingTextInput: Attempting to focus input');
             // Small delay to ensure the DOM is ready
             const focusTimeout = setTimeout(() => {
                 if (inputRef.current) {
-                    console.log('FloatingTextInput: Focusing input after delay');
                     inputRef.current.focus();
                     setHasBeenFocused(true);
                 }
@@ -77,32 +74,27 @@ export const FloatingTextInput: React.FC<FloatingTextInputProps> = ({
     // Apply filter when debounced value changes
     useEffect(() => {
         if (debouncedValue !== currentValue) {
-            console.log('FloatingTextInput: Applying filter:', debouncedValue);
             onValueChange(columnId, debouncedValue);
         }
     }, [debouncedValue, currentValue, columnId, onValueChange]);
 
     const handleClear = useCallback(() => {
-        console.log('FloatingTextInput: Clearing input');
         setInputValue('');
         setDebouncedValue('');
         onValueChange(columnId, '');
 
         // Always close the input after clearing
         setTimeout(() => {
-            console.log('FloatingTextInput: Closing after clear');
             onClose();
         }, 50);
     }, [columnId, onValueChange, onClose]);
 
     const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
-            console.log('FloatingTextInput: Enter pressed, applying filter and closing');
             // Apply the current input value immediately before closing
             onValueChange(columnId, inputValue);
             onClose();
         } else if (e.key === 'Escape') {
-            console.log('FloatingTextInput: Escape pressed, closing');
             setInputValue(currentValue);
             onClose();
         }
@@ -112,13 +104,10 @@ export const FloatingTextInput: React.FC<FloatingTextInputProps> = ({
         const now = Date.now();
         const timeSinceFocus = now - focusTimeRef.current;
 
-        console.log('FloatingTextInput: Blur event, hasBeenFocused:', hasBeenFocused, 'timeSinceFocus:', timeSinceFocus);
-
         // Only close if the input has been properly focused first
         if (hasBeenFocused) {
             // Ignore blur events that happen within 200ms of focus (likely context menu closing)
             if (timeSinceFocus < 200) {
-                console.log('FloatingTextInput: Ignoring blur event (too soon after focus)');
                 return;
             }
 
@@ -129,19 +118,16 @@ export const FloatingTextInput: React.FC<FloatingTextInputProps> = ({
 
             // Small delay to allow for clicking the clear button
             blurTimeoutRef.current = setTimeout(() => {
-                console.log('FloatingTextInput: Closing after blur timeout');
                 onClose();
             }, 150);
         }
     }, [hasBeenFocused, onClose]);
 
     const handleFocus = useCallback(() => {
-        console.log('FloatingTextInput: Focus event');
         focusTimeRef.current = Date.now();
         setHasBeenFocused(true);
         // Clear any pending blur timeout
         if (blurTimeoutRef.current) {
-            console.log('FloatingTextInput: Clearing pending blur timeout');
             clearTimeout(blurTimeoutRef.current);
             blurTimeoutRef.current = null;
         }

@@ -179,7 +179,6 @@ export function RaceDisplay({
                                                 )}
                                                 {(() => {
                                                     const hasDetails = (featureProg.modifiers && featureProg.modifiers.length > 0) ||
-                                                        (featureProg.effects && featureProg.effects.length > 0) ||
                                                         (featureProg.choices && featureProg.choices.length > 0);
 
                                                     if (hasDetails) {

@@ -1,5 +1,5 @@
 import z from "zod";
-import { ModifierType, ModifierAppliesToType, FeatureSpecialEffectType, FeatureSourceType, FeatureBonusType, FeaturePrerequisiteType, FeatureModifierConditionType, FeatureChoiceType, FeatureChoiceBehavior } from "@shared/static-data";
+import { ModifierType, ModifierAppliesToType, FeatureSourceType, FeatureBonusType, FeaturePrerequisiteType, FeatureModifierConditionType, FeatureChoiceType, FeatureChoiceBehavior } from "@shared/static-data";
 import { SpellcastingLinkSchema } from "./spellcasting";
 import { QueryResponseSchema } from "./query";
 import { FeatSchema } from "./feat";
@@ -21,6 +21,12 @@ export const FeatureSchema = z.object({
     name: z.string().min(1, 'Feature name is required').max(100, 'Feature name must be less than 100 characters').trim(),
     description: z.string().max(10000, 'Description must be less than 10000 characters'),
     prerequisites: z.array(FeaturePrerequisiteSchema).optional(),
+});
+
+// Lightweight feature schema for choices and summaries
+export const FeatureSummarySchema = FeatureSchema.omit({
+    description: true,
+    prerequisites: true,
 });
 
 // Feature Modifier Condition Schema
@@ -48,28 +54,21 @@ export const FeatureModifierSchema = z.object({
     progressionId: z.number().int().positive('Progression ID must be a positive integer'),
     type: z.nativeEnum(ModifierType),
     value: z.number().int().nullable(),
-    formulaParamsId: z.number().int().nullable(), // References FeatureFormulaParams
+    formulaParamsId: z.number().int().optional().nullable(),
     bonusType: z.nativeEnum(FeatureBonusType).nullable(),
     appliesTo: z.nativeEnum(ModifierAppliesToType).nullable(),
     appliesToId: z.number().int().nullable(),
+    itemId: z.number().int().optional().nullable(),
     conditions: z.array(FeatureModifierConditionSchema).optional(),
     formulaParams: FeatureFormulaParamsSchema.optional().nullable(),
     groupingId: z.number().int().default(0),
+    item: ItemSchema.optional().nullable(),
 });
 
-// Feature Special Effect Schema
-export const FeatureSpecialEffectSchema = z.object({
-    id: z.number().int().positive('Special effect ID must be a positive integer'),
-    progressionId: z.number().int().positive('Progression ID must be a positive integer'),
-    effectType: z.nativeEnum(FeatureSpecialEffectType),
-    key: z.string().nullable(),
-    value: z.string().nullable(),
-    numericValue: z.number().int().nullable(),
-    featId: z.number().int().nullable(),
-    itemId: z.number().int().nullable(),
-    feat: FeatSchema.nullable(),
-    item: ItemSchema.nullable(),
-    groupingId: z.number().int().default(0),
+// Minimal Feat Schema for choices (only includes fields that frontend actually uses)
+export const FeatChoiceSchema = FeatSchema.pick({
+    id: true,
+    name: true,
 });
 
 // Feature Choice Schema
@@ -82,10 +81,10 @@ export const FeatureChoiceSchema = z.object({
     behavior: z.nativeEnum(FeatureChoiceBehavior),
     featId: z.number().int().positive('Feat ID must be a positive integer').nullable(),
     featureId: z.number().int().positive('Feature ID must be a positive integer').nullable(),
-    formulaParamsId: z.number().int().nullable(),
+    formulaParamsId: z.number().int().optional().nullable(),
     filterType: z.number().int().nullable(),
-    feat: FeatSchema.nullable(),
-    feature: FeatureSchema.nullable(),
+    feat: FeatChoiceSchema.nullable(),
+    feature: FeatureSummarySchema.nullable(),
     formulaParams: FeatureFormulaParamsSchema.optional().nullable(),
     groupingId: z.number().int().default(0),
 });
@@ -105,15 +104,7 @@ export const FeatureProgressionSchema = z.object({
     }).optional(),
     modifiers: z.array(FeatureModifierSchema).optional(),
     choices: z.array(FeatureChoiceSchema).optional(),
-    effects: z.array(FeatureSpecialEffectSchema).optional(),
     spellcasting: SpellcastingLinkSchema.optional(),
-});
-
-export const CreateFeatureSpecialEffectSchema = FeatureSpecialEffectSchema.omit({
-    id: true,
-    progressionId: true,
-    feat: true,
-    item: true,
 });
 
 export const CreateFeatureModifierConditionSchema = FeatureModifierConditionSchema.omit({
@@ -134,6 +125,7 @@ export const CreateFeatureModifierSchema = FeatureModifierSchema.omit({
     conditions: true,
     formulaParams: true,
     formulaParamsId: true,
+    item: true,
 }).extend({
     conditions: z.array(CreateFeatureModifierConditionSchema).optional(),
     formulaParams: CreateFeatureFormulaParamsSchema.optional().nullable(),
@@ -158,7 +150,6 @@ export const CreateFeatureProgressionSchema = FeatureProgressionSchema.omit({
 }).extend({
     modifiers: z.array(CreateFeatureModifierSchema).optional(),
     choices: z.array(CreateFeatureChoiceSchema).optional(),
-    effects: z.array(CreateFeatureSpecialEffectSchema).optional(),
 });
 
 // Feature with relations (used for feature detail views)
@@ -234,11 +225,10 @@ export type CreateFeatureProgressionFormRequest = z.infer<typeof CreateFeaturePr
 export type FeatureProgression = z.infer<typeof FeatureProgressionSchema>;
 export type FeatureModifier = z.infer<typeof FeatureModifierSchema>;
 export type CreateFeatureModifierRequest = z.infer<typeof CreateFeatureModifierSchema>;
-export type CreateFeatureSpecialEffectRequest = z.infer<typeof CreateFeatureSpecialEffectSchema>;
 export type CreateFeatureChoiceRequest = z.infer<typeof CreateFeatureChoiceSchema>;
 export type CreateFeatureModifierConditionRequest = z.infer<typeof CreateFeatureModifierConditionSchema>;
 export type CreateFeatureFormulaParamsRequest = z.infer<typeof CreateFeatureFormulaParamsSchema>;
-export type FeatureSpecialEffect = z.infer<typeof FeatureSpecialEffectSchema>;
+
 export type FeatureChoice = z.infer<typeof FeatureChoiceSchema>;
 export type FeatureModifierCondition = z.infer<typeof FeatureModifierConditionSchema>;
 export type FeatureFormulaParams = z.infer<typeof FeatureFormulaParamsSchema>;

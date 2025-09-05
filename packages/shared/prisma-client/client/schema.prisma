@@ -126,7 +126,6 @@ model FeatureProgression {
   feature                Feature                  @relation(fields: [featureId], references: [id])
   choices                FeatureChoice[]
   spellcasting           SpellcastingLink?
-  effects                FeatureSpecialEffect[]
   modifiers              FeatureModifier[]
   characterFeatureChoice CharacterFeatureChoice[]
 }
@@ -136,15 +135,17 @@ model FeatureModifier {
   progressionId   Int
   type            Int
   value           Int?
-  bonusType       Int? // dodge, enhancement, etc.
+  bonusType       Int?
   appliesTo       Int?
   appliesToId     Int?
+  itemId          Int?
   formulaParamsId Int?
   groupingId      Int  @default(0)
 
   featureProgression FeatureProgression         @relation(fields: [progressionId], references: [id])
   conditions         FeatureModifierCondition[]
   formulaParams      FeatureFormulaParams?      @relation(fields: [formulaParamsId], references: [id])
+  item               Item?                      @relation(fields: [itemId], references: [id])
 }
 
 model FeatureFormulaParams {
@@ -153,8 +154,8 @@ model FeatureFormulaParams {
   interval          Int?
   formulaStartLevel Int?
   abilityId         Int?
-  thresholds        String? // Comma-separated level thresholds (e.g., "4,8,12")
-  values            String? // Comma-separated corresponding values (e.g., "-2,-1,0")
+  thresholds        String?
+  values            String?
 
   featureModifier FeatureModifier[]
   featureChoice   FeatureChoice[]
@@ -167,23 +168,6 @@ model FeatureModifierCondition {
   conditionValue    Int
 
   featureModifier FeatureModifier @relation(fields: [featureModifierId], references: [id])
-}
-
-model FeatureSpecialEffect {
-  id            Int     @id @default(autoincrement())
-  progressionId Int
-  effectType    Int
-  key           String?
-  value         String?
-  numericValue  Int?
-  groupingId    Int     @default(0)
-
-  featId Int?
-  itemId Int?
-
-  featureProgression FeatureProgression @relation(fields: [progressionId], references: [id])
-  feat               Feat?              @relation(fields: [featId], references: [id])
-  item               Item?              @relation(fields: [itemId], references: [id])
 }
 
 model FeatureChoice {
@@ -339,9 +323,8 @@ model Feat {
   prereqs  FeatPrerequisiteMap[]
   advFeat  AdvancementFeat[]
 
-  spellPrepMetamagic   SpellPreparationMetamagic[]
-  featureChoice        FeatureChoice[]
-  featureSpecialEffect FeatureSpecialEffect[]
+  spellPrepMetamagic SpellPreparationMetamagic[]
+  featureChoice      FeatureChoice[]
 }
 
 model FeatBenefitMap {
@@ -416,9 +399,9 @@ model Item {
 
   itemType ItemType @relation(fields: [typeId], references: [id])
 
-  characterItems       CharacterItem[]
-  itemTemplate         ItemTemplate[]
-  featureSpecialEffect FeatureSpecialEffect[]
+  characterItems   CharacterItem[]
+  itemTemplate     ItemTemplate[]
+  featureModifiers FeatureModifier[]
 }
 
 model ItemType {

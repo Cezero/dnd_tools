@@ -157,7 +157,7 @@ export const featureSystemService: FeatureSystemService = {
 
     // Bulk Feature Progression management (for class/race creation)
     async createFeatureProgressionWithRelations(data: CreateFeatureProgressionRequest): Promise<CreateResponse> {
-        const { modifiers, choices, effects, ...progressionData } = data;
+        const { modifiers, choices, ...progressionData } = data;
 
         const result = await prisma.$transaction(async (tx) => {
             // Create the feature progression
@@ -231,17 +231,6 @@ export const featureSystemService: FeatureSystemService = {
                 }
             }
 
-            // Create related effects
-            if (effects && effects.length > 0) {
-                await tx.featureSpecialEffect.createMany({
-                    data: effects.map(effect => ({
-                        ...effect,
-                        progressionId: featureProgression.id,
-                        featId: effect.featId || null,
-                        itemId: effect.itemId || null,
-                    })),
-                });
-            }
 
             return featureProgression;
         });
@@ -261,7 +250,7 @@ export const featureSystemService: FeatureSystemService = {
 
         const executeTransaction = async (transactionClient: Prisma.TransactionClient) => {
             for (const progression of progressions) {
-                const { modifiers, choices, effects, ...progressionData } = progression;
+                const { modifiers, choices, ...progressionData } = progression;
 
                 // Create the feature progression with context
                 const featureProgression = await transactionClient.featureProgression.create({
@@ -341,17 +330,6 @@ export const featureSystemService: FeatureSystemService = {
                     }
                 }
 
-                // Create related effects
-                if (effects && effects.length > 0) {
-                    await transactionClient.featureSpecialEffect.createMany({
-                        data: effects.map(effect => ({
-                            ...effect,
-                            progressionId: featureProgression.id,
-                            featId: effect.featId || null,
-                            itemId: effect.itemId || null,
-                        })),
-                    });
-                }
             }
         };
 
@@ -432,9 +410,6 @@ export const featureSystemService: FeatureSystemService = {
                 await transactionClient.featureChoice.deleteMany({
                     where: { progressionId: { in: progressionIds } }
                 });
-                await transactionClient.featureSpecialEffect.deleteMany({
-                    where: { progressionId: { in: progressionIds } }
-                });
 
                 // Delete orphaned formula params
                 if (existingFormulaParamIds.length > 0) {
@@ -505,9 +480,6 @@ export const featureSystemService: FeatureSystemService = {
                 await tx.featureChoice.deleteMany({
                     where: { progressionId: { in: progressionIds } }
                 });
-                await tx.featureSpecialEffect.deleteMany({
-                    where: { progressionId: { in: progressionIds } }
-                });
 
                 // Delete orphaned formula params
                 if (existingFormulaParamIds.length > 0) {
@@ -525,7 +497,7 @@ export const featureSystemService: FeatureSystemService = {
             // Create new progressions
             if (progressions && progressions.length > 0) {
                 for (const progression of progressions) {
-                    const { modifiers, choices, effects, ...progressionData } = progression;
+                    const { modifiers, choices, ...progressionData } = progression;
 
                     // Create the feature progression
                     const featureProgression = await tx.featureProgression.create({
@@ -602,17 +574,6 @@ export const featureSystemService: FeatureSystemService = {
                         }
                     }
 
-                    // Create related effects
-                    if (effects && effects.length > 0) {
-                        await tx.featureSpecialEffect.createMany({
-                            data: effects.map((effect) => ({
-                                ...effect,
-                                progressionId: featureProgression.id,
-                                featId: effect.featId || null,
-                                itemId: effect.itemId || null,
-                            })),
-                        });
-                    }
                 }
             }
         });
@@ -657,12 +618,6 @@ export const featureSystemService: FeatureSystemService = {
                         formulaParams: true
                     }
                 },
-                effects: {
-                    include: {
-                        feat: true,
-                        item: true
-                    }
-                }
             }
         });
 

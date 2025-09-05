@@ -4,8 +4,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list/GenericList';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
-import { FEAT_COLUMNS } from '@/features/feat/FeatColumns';
 import { FeatApi } from '@/features/feat/FeatApi';
+import { FEAT_COLUMNS } from '@/features/feat/FeatColumns';
 import { FeatInQueryResponse } from '@shared/schema';
 
 import { routes } from './FeatConfig';

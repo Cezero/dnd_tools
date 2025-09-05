@@ -1,8 +1,8 @@
 import React from 'react';
 import { z } from 'zod';
 
-import { ListSelectionDialog } from '@/components/generic-list';
 import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
+import { ListSelectionDialog } from '@/components/generic-list';
 import { FeatureSchema } from '@shared/schema';
 
 type RaceFeatureItem = z.infer<typeof FeatureSchema>;

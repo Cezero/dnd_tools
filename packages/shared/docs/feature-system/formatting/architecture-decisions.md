@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document captures the key architectural decisions made during the comprehensive refactoring of the Feature Formatting System in August 2024. These decisions form the foundation for the current implementation and future extensibility.
+This document captures the key architectural decisions made during the comprehensive refactoring of the Feature Formatting System in August 2024 and the subsequent groupingId integration. These decisions form the foundation for the current implementation and future extensibility.
 
 The formatting system is used by multiple other systems in the D&D Tools project, including the [Class System](../class-system/README.md) and [Race System](../race-system/README.md), to display feature progressions in a consistent and user-friendly manner.
 
@@ -99,7 +99,41 @@ The formatting system is used by multiple other systems in the D&D Tools project
 - ✅ **Consistency**: All constants follow same pattern
 - ✅ **Performance**: Numeric enums are efficient
 
-### **4. Future Extensibility Architecture**
+### **4. GroupingId-Based Grouping**
+
+#### **Decision**: Replace entity type-based grouping with groupingId-based grouping
+
+**Context**: The system was using entity type and subtype classifications for grouping, which led to incorrect groupings and false transitions in complex feature scenarios like "Inspire Greatness".
+
+**Options Considered**:
+1. **Keep Entity Type Grouping**: Continue using the existing entity type-based approach
+2. **Hybrid Approach**: Use both entity type and groupingId for grouping
+3. **Complete GroupingId Replacement**: Replace entity type grouping entirely with groupingId-based grouping
+
+**Chosen Solution**: Complete GroupingId Replacement
+
+**Rationale**:
+- **Logical Grouping**: GroupingId provides logical grouping based on content administrator intent
+- **Accurate Transitions**: Prevents false transitions by using logical rather than arbitrary groupings
+- **Admin Control**: Content administrators have full control over feature grouping
+- **Maintained Architecture**: Preserves all architectural principles and phase separation
+- **Enhanced Accuracy**: Correctly handles complex feature scenarios without false transitions
+
+**Implementation**: The groupingId integration is implemented across multiple components:
+- **Type System**: `FormattedItemWithBreakdown` and `EntityGroupKey` interfaces now include `groupingId`
+- **Grouping Strategies**: `ModifierGroupingStrategy` now groups by `groupingId` instead of entity type
+- **Display Strategies**: `groupWithinLevel` and `detectTransitions` methods now use `groupingId`-based grouping
+- **Phase 3**: Within-level grouping now uses `groupingId` instead of entity type/subtype
+- **Phase 4**: Transition detection now works with `groupingId`-based groups
+
+**Benefits Achieved**:
+- ✅ **Accurate Grouping**: Entities are now grouped logically rather than by arbitrary type classifications
+- ✅ **Correct Transition Detection**: Transitions are detected based on logical grouping, preventing false positives
+- ✅ **Admin Control**: Content administrators can control grouping through the `groupingId` field
+- ✅ **Maintained Architecture**: All architectural principles and phase separation remain intact
+- ✅ **Enhanced User Experience**: Feature displays are now more accurate and user-friendly
+
+### **5. Future Extensibility Architecture**
 
 #### **Decision**: Set up architecture to support multiple calculator implementations
 
@@ -248,7 +282,19 @@ The formatting system is used by multiple other systems in the D&D Tools project
 
 **Application**: Will continue to use enums for all constants
 
-### **4. Future Extensibility Planning**
+### **4. GroupingId Integration Benefits**
+
+**Lesson**: Replacing entity type-based grouping with groupingId-based grouping significantly improves accuracy
+
+**Impact**:
+- **Accurate Grouping**: Entities are now grouped logically rather than by arbitrary type classifications
+- **Correct Transitions**: Transitions are detected based on logical grouping, preventing false positives
+- **Admin Control**: Content administrators have full control over feature grouping
+- **Maintained Architecture**: All architectural principles remain intact
+
+**Application**: Will continue to use groupingId-based grouping for all feature grouping operations
+
+### **5. Future Extensibility Planning**
 
 **Lesson**: Planning for future extensibility from the start pays dividends
 
@@ -265,24 +311,25 @@ The formatting system is used by multiple other systems in the D&D Tools project
 The formatting system is used by multiple other systems in the D&D Tools project:
 
 ### **Class System Integration**
-The [Class System](../class-system/README.md) uses the formatting system to display class feature progressions. Class features with multiple levels and complex progression patterns are formatted consistently using the 6-phase process.
+The [Class System](../class-system/README.md) uses the formatting system to display class feature progressions. Class features with multiple levels and complex progression patterns are formatted consistently using the 6-phase process with the new groupingId-based grouping.
 
 ### **Race System Integration**
-The [Race System](../race-system/README.md) uses the formatting system to display racial feature progressions. Racial features with level-based scaling and conditional modifiers are formatted using the same patterns as class features.
+The [Race System](../race-system/README.md) uses the formatting system to display racial feature progressions. Racial features with level-based scaling and conditional modifiers are formatted using the same patterns as class features, now with improved groupingId-based grouping.
 
 ### **Feature System Integration**
-The main [Feature System](../README.md) uses the formatting system for feature detail displays and editing interfaces. This ensures consistent formatting across all feature-related displays in the application.
+The main [Feature System](../README.md) uses the formatting system for feature detail displays and editing interfaces. This ensures consistent formatting across all feature-related displays in the application, with the new groupingId approach providing more accurate and logical grouping.
 
 ## Conclusion
 
-The architectural decisions made during the refactoring have created a solid foundation for the Feature Formatting System:
+The architectural decisions made during the refactoring and groupingId integration have created a solid foundation for the Feature Formatting System:
 
 - **Registry Pattern**: Provides extensibility and consistency
 - **Type Consolidation**: Improves maintainability and type safety
 - **Enum Usage**: Enhances code quality and readability
+- **GroupingId Integration**: Provides accurate and logical feature grouping
 - **Future Extensibility**: Enables growth and evolution
 
-These decisions ensure that the system can evolve gracefully as new requirements emerge while maintaining clean separation of concerns and high code quality.
+These decisions ensure that the system can evolve gracefully as new requirements emerge while maintaining clean separation of concerns and high code quality. The groupingId integration specifically addresses the complex feature scenarios that were problematic with the old entity type-based approach, providing content administrators with full control over feature grouping while maintaining the system's architectural integrity.
 
 ## Related Documentation
 

@@ -6,9 +6,9 @@ import { GenericList } from '@/components/generic-list/GenericList';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { ItemWithDetails } from '@shared/schema';
 
+import { ItemApi } from './ItemApi';
 import { ITEM_COLUMNS } from './ItemColumns';
 import { routes } from './ItemConfig';
-import { ItemApi } from './ItemApi';
 
 export function ItemList(): React.JSX.Element {
     const navigate = useNavigate();

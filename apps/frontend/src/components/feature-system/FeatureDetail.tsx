@@ -213,18 +213,6 @@ export function FeatureDetail() {
                                                     </ul>
                                                 </div>
                                             )}
-                                            {progression.effects && progression.effects.length > 0 && (
-                                                <div>
-                                                    <h4 className="font-medium">Effects:</h4>
-                                                    <ul className="text-sm text-gray-600 dark:text-gray-400">
-                                                        {progression.effects.map((effect, index) => (
-                                                            <li key={index}>
-                                                                {effect.effectType}: {effect.key} = {effect.value}
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
                                 ))}

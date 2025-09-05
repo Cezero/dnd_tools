@@ -15,7 +15,6 @@ import {
     SKILL_MAP,
     ModifierAppliesToType,
     SpecialFeatureId,
-    FeatureSpecialEffectType
 } from '@shared/static-data';
 
 interface ClassDisplayProps {
@@ -54,6 +53,21 @@ export function ClassDisplay({
                         id: choice.featId,
                         name: choice.feat.name
                     });
+                }
+            });
+        });
+
+        // Extract feat names from modifiers (for proficiencies)
+        cls.features?.forEach(progression => {
+            progression.modifiers?.forEach(modifier => {
+                if (modifier.appliesTo === ModifierAppliesToType.Feat && modifier.appliesToId) {
+                    const feat = feats.find(f => f.id === modifier.appliesToId);
+                    if (feat) {
+                        featNames.push({
+                            id: modifier.appliesToId,
+                            name: feat.name
+                        });
+                    }
                 }
             });
         });
@@ -177,32 +191,21 @@ export function ClassDisplay({
 
                     {/* Class Skills Section */}
                     {(() => {
-                        const classSkills = enhancedFeatures
-                            ?.filter(progression =>
-                                progression.featureId === SpecialFeatureId.ClassSkill
-                            )
-                            .flatMap(progression =>
-                                progression.modifiers
-                                    ?.filter(modifier =>
-                                        modifier.appliesTo === ModifierAppliesToType.Skill && modifier.appliesToId
-                                    )
-                                    .map(modifier => ({
-                                        skillId: modifier.appliesToId,
-                                        modifier: modifier
-                                    })) || []
-                            ) || [];
+                        const classSkillProgressions = enhancedFeatures?.filter(progression =>
+                            progression.featureId === SpecialFeatureId.ClassSkill
+                        ) || [];
 
-                        if (classSkills.length > 0) {
+                        if (classSkillProgressions.length > 0) {
+                            // Use display strategy to format class skills
+                            const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
+                            const result = strategy.format(classSkillProgressions, undefined, formatterMetadata, true);
                             return (
                                 <div className="mt-4">
                                     <h3 className="text-lg font-semibold mb-2">Class Skills</h3>
                                     <div className="flex flex-wrap gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md">
-                                        {classSkills.map((skill, index) => (
-                                            <span key={skill.skillId} className="text-sm">
-                                                {SKILL_MAP[skill.skillId]?.name || 'Unknown Skill'}
-                                                {index < classSkills.length - 1 && ','}
-                                            </span>
-                                        ))}
+                                        <span className="text-sm">
+                                            {result.levelEntries[0]?.items.length > 0 ? result.levelEntries[0].items[0].formattedValue : result.levelEntries[0]?.description}
+                                        </span>
                                     </div>
                                 </div>
                             );
@@ -218,13 +221,16 @@ export function ClassDisplay({
                                 progression.featureId === SpecialFeatureId.ClassProficiency
                             )
                             .flatMap(progression =>
-                                progression.effects
-                                    ?.filter(effect => effect.effectType === FeatureSpecialEffectType.Proficiency)
-                                    .map(effect => ({
-                                        featId: effect.featId || 0,
-                                        itemId: effect.itemId || -1,
-                                        featName: effect.feat?.name || `Feat ${effect.featId}`,
-                                        itemName: effect.itemId === -1 ? undefined : (effect.item?.name || `Item ${effect.itemId}`)
+                                progression.modifiers
+                                    ?.filter(modifier =>
+                                        modifier.appliesTo === ModifierAppliesToType.Feat &&
+                                        modifier.itemId !== null
+                                    )
+                                    .map(modifier => ({
+                                        featId: modifier.appliesToId || 0,
+                                        itemId: modifier.itemId || -1,
+                                        featName: `Feat ${modifier.appliesToId}`,
+                                        itemName: modifier.itemId === -1 ? undefined : `Item ${modifier.itemId}`
                                     })) || []
                             ) || [];
 
@@ -236,7 +242,7 @@ export function ClassDisplay({
                             ) || [];
 
                             if (proficiencyProgressions.length > 0) {
-                                const result = strategy.format(proficiencyProgressions, undefined, formatterMetadata);
+                                const result = strategy.format(proficiencyProgressions, undefined, formatterMetadata, false);
                                 return (
                                     <div className="mt-4">
                                         <h3 className="text-lg font-semibold mb-2">Class Proficiencies</h3>
@@ -285,14 +291,12 @@ export function ClassDisplay({
                                                     {levelEntry.items?.map((item, index) => {
                                                         // Find the corresponding feature for this item
                                                         const feature = actualFeatures.find(f => f.featureId === item.featureId);
-                                                        
                                                         if (!feature) {
                                                             return null;
                                                         }
 
                                                         // Determine whether to show description or name
                                                         const shouldShowDescription = item.descriptionLevel === levelEntry.level;
-                                                        
                                                         return (
                                                             <div key={`item-${index}`} className="p-2">
                                                                 <div className="text-sm">

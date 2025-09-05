@@ -64,7 +64,18 @@ export const classService: ClassService = {
                         modifiers: {
                             include: {
                                 formulaParams: true,
-                                conditions: true
+                                conditions: true,
+                                item: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        description: true,
+                                        typeId: true,
+                                        cost: true,
+                                        weight: true,
+                                        quantity: true
+                                    }
+                                }
                             }
                         },
                         choices: {
@@ -84,14 +95,7 @@ export const classService: ClassService = {
                                 },
                                 formulaParams: true
                             }
-                        },
-                        effects: {
-                            include: {
-                                feat: true,
-                                item: true
-                            }
                         }
-                        // prerequisites removed - now at feature level
                     }
                 },
                 spellcastingProgression: {
