@@ -4,15 +4,13 @@ import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { FeatApi } from '@/features/feat/FeatApi';
 import { generateClassProgression } from '@/lib/ClassProgression';
 import { ClassProgressionTable } from '@/lib/ClassProgressionTable';
-import { displayStrategyFactory } from '@/lib/formatters';
-import type { FormatterMetadata } from '@/lib/formatters';
-import { DnDClass } from '@shared/schema';
+import { displayStrategyFactory, extractFormatterMetadata } from '@/lib/formatters';
+import { DnDClass, FeatQueryResponse } from '@shared/schema';
 import {
     DisplayType,
     RPG_DICE,
     EDITION_MAP,
     ABILITY_MAP,
-    SKILL_MAP,
     ModifierAppliesToType,
     SpecialFeatureId,
 } from '@shared/static-data';
@@ -36,68 +34,9 @@ export function ClassDisplay({
     isAdmin = false,
     fromListParams: _fromListParams = ''
 }: ClassDisplayProps): React.JSX.Element {
-    const [feats, setFeats] = useState<Array<{ id: number; name: string }>>([]);
+    const [feats, setFeats] = useState<FeatQueryResponse['results']>([]);
     const [featsLoaded, setFeatsLoaded] = useState(false);
 
-    // Extract FormatterMetadata from the class data
-    const extractFormatterMetadata = (): FormatterMetadata => {
-        const featNames: Array<{ id: number; name: string }> = [];
-        const featureNames: Array<{ id: number; name: string }> = [];
-        const itemNames: Array<{ id: number; name: string }> = [];
-
-        // Extract feat names from nested choice data
-        cls.features?.forEach(progression => {
-            progression.choices?.forEach(choice => {
-                if (choice.feat && choice.featId) {
-                    featNames.push({
-                        id: choice.featId,
-                        name: choice.feat.name
-                    });
-                }
-            });
-        });
-
-        // Extract feat names from modifiers (for proficiencies)
-        cls.features?.forEach(progression => {
-            progression.modifiers?.forEach(modifier => {
-                if (modifier.appliesTo === ModifierAppliesToType.Feat && modifier.appliesToId) {
-                    const feat = feats.find(f => f.id === modifier.appliesToId);
-                    if (feat) {
-                        featNames.push({
-                            id: modifier.appliesToId,
-                            name: feat.name
-                        });
-                    }
-                }
-            });
-        });
-
-        // Extract feature names from nested choice data
-        cls.features?.forEach(progression => {
-            progression.choices?.forEach(choice => {
-                if (choice.feature && choice.featureId) {
-                    featureNames.push({
-                        id: choice.featureId,
-                        name: choice.feature.name
-                    });
-                }
-            });
-        });
-
-        // Remove duplicates
-        const uniqueFeatNames = Array.from(
-            new Map(featNames.map(item => [item.id, item])).values()
-        );
-        const uniqueFeatureNames = Array.from(
-            new Map(featureNames.map(item => [item.id, item])).values()
-        );
-
-        return {
-            featNames: uniqueFeatNames.length > 0 ? uniqueFeatNames : undefined,
-            featureNames: uniqueFeatureNames.length > 0 ? uniqueFeatureNames : undefined,
-            itemNames: itemNames.length > 0 ? itemNames : undefined
-        };
-    };
 
     // Load feats if we have feat modifiers
     useEffect(() => {
@@ -112,7 +51,7 @@ export function ClassDisplay({
 
             if (hasFeatModifiers) {
                 try {
-                    const response = await FeatApi.getFeats({});
+                    const response = await FeatApi.featQuery({ queryType: 'all' });
                     setFeats(response.results || []);
                 } catch (error) {
                     console.error('Failed to load feats:', error);
@@ -127,20 +66,8 @@ export function ClassDisplay({
         loadFeatsIfNeeded();
     }, [cls.features, featsLoaded]);
 
-    // Enhance modifiers with feat data
-    const enhancedFeatures = cls.features?.map(progression => ({
-        ...progression,
-        modifiers: progression.modifiers?.map(modifier => {
-            if (modifier.appliesTo === ModifierAppliesToType.Feat && modifier.appliesToId) {
-                const feat = feats.find(f => f.id === modifier.appliesToId);
-                return feat ? { ...modifier, feat } : modifier;
-            }
-            return modifier;
-        })
-    })) || [];
-
     // Get FormatterMetadata for this class
-    const formatterMetadata = extractFormatterMetadata();
+    const formatterMetadata = extractFormatterMetadata(cls.features, feats);
 
     return (
         <div className={showHeader ? "pt-8" : ""}>
@@ -191,7 +118,7 @@ export function ClassDisplay({
 
                     {/* Class Skills Section */}
                     {(() => {
-                        const classSkillProgressions = enhancedFeatures?.filter(progression =>
+                        const classSkillProgressions = cls.features?.filter(progression =>
                             progression.featureId === SpecialFeatureId.ClassSkill
                         ) || [];
 
@@ -215,45 +142,25 @@ export function ClassDisplay({
 
                     {/* Class Proficiencies Section */}
                     {(() => {
-                        // Extract proficiencies in the same format as ClassEdit.tsx
-                        const classProficiencies = enhancedFeatures
-                            ?.filter(progression =>
-                                progression.featureId === SpecialFeatureId.ClassProficiency
-                            )
-                            .flatMap(progression =>
-                                progression.modifiers
-                                    ?.filter(modifier =>
-                                        modifier.appliesTo === ModifierAppliesToType.Feat &&
-                                        modifier.itemId !== null
-                                    )
-                                    .map(modifier => ({
-                                        featId: modifier.appliesToId || 0,
-                                        itemId: modifier.itemId || -1,
-                                        featName: `Feat ${modifier.appliesToId}`,
-                                        itemName: modifier.itemId === -1 ? undefined : `Item ${modifier.itemId}`
-                                    })) || []
-                            ) || [];
+                        // Find all proficiency progressions (should be only one, but be defensive)
+                        const proficiencyProgressions = cls.features?.filter(progression =>
+                            progression.featureId === SpecialFeatureId.ClassProficiency
+                        ) || [];
 
-                        if (classProficiencies.length > 0) {
+                        if (proficiencyProgressions.length > 0) {
                             // Use display strategy to format proficiencies
                             const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
-                            const proficiencyProgressions = enhancedFeatures?.filter(progression =>
-                                progression.featureId === SpecialFeatureId.ClassProficiency
-                            ) || [];
-
-                            if (proficiencyProgressions.length > 0) {
-                                const result = strategy.format(proficiencyProgressions, undefined, formatterMetadata, false);
-                                return (
-                                    <div className="mt-4">
-                                        <h3 className="text-lg font-semibold mb-2">Class Proficiencies</h3>
-                                        <div className="flex flex-wrap gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md">
-                                            <span className="text-sm">
-                                                {result.levelEntries[0]?.items.length > 0 ? result.levelEntries[0].items[0].formattedValue : result.levelEntries[0]?.description}
-                                            </span>
-                                        </div>
+                            const result = strategy.format(proficiencyProgressions, undefined, formatterMetadata, false);
+                            return (
+                                <div className="mt-4">
+                                    <h3 className="text-lg font-semibold mb-2">Class Proficiencies</h3>
+                                    <div className="flex flex-wrap gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md">
+                                        <span className="text-sm">
+                                            {result.levelEntries[0]?.items.length > 0 ? result.levelEntries[0].items[0].formattedValue : result.levelEntries[0]?.description}
+                                        </span>
                                     </div>
-                                );
-                            }
+                                </div>
+                            );
                         }
                         return null;
                     })()}
@@ -263,7 +170,7 @@ export function ClassDisplay({
                     {/* Class Features Section */}
                     {(() => {
                         // Filter out progressions that contain skills and proficiencies
-                        const actualFeatures = enhancedFeatures?.filter(progression => {
+                        const actualFeatures = cls.features?.filter(progression => {
                             // Check if this progression contains class skills
                             const hasClassSkills = progression.featureId === SpecialFeatureId.ClassSkill;
 

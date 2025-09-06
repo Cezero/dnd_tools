@@ -1,7 +1,7 @@
 import type { FeatureModifier } from '@shared/schema';
 import { ModifierAppliesToType, ModifierType, FeatureType } from '@shared/static-data';
 
-import { classSkillLabeler, skillModifierLabeler, displayNameLabeler, emptyStringLabeler, bonusLanguageLabeler, automaticLanguageLabeler, abilityModifierLabeler, savingThrowModifierLabeler } from './label-formatters';
+import { classSkillLabeler, skillModifierLabeler, displayNameLabeler, emptyStringLabeler, bonusLanguageLabeler, automaticLanguageLabeler, abilityModifierLabeler, savingThrowModifierLabeler, creatureTypeLabeler, sizeCategoryLabeler } from './label-formatters';
 import { generateKey } from './registry-utils';
 
 export interface Labeler {
@@ -71,6 +71,10 @@ export class LabelerRegistry implements ILabelerRegistry {
         this.registerLabeler(FeatureType.Modifier, ModifierType.Other, labeler, appliesToType);
     }
 
+    registerProficiencyLabeler(appliesToType: ModifierAppliesToType, labeler: Labeler): void {
+        this.registerLabeler(FeatureType.Modifier, ModifierType.Proficiency, labeler, appliesToType);
+    }
+
     applyLabel(value: string, modifier: FeatureModifier, showLabel: boolean = true): string {
         if (!showLabel) return value;
 
@@ -114,10 +118,13 @@ export class LabelerRegistry implements ILabelerRegistry {
         this.registerOtherLabeler(ModifierAppliesToType.BonusLanguage, bonusLanguageLabeler);
         this.registerOtherLabeler(ModifierAppliesToType.AutomaticLanguage, automaticLanguageLabeler);
         this.registerOtherLabeler(ModifierAppliesToType.Feat, emptyStringLabeler);
-        this.registerOtherLabeler(ModifierAppliesToType.SizeCategory, emptyStringLabeler);
-        this.registerOtherLabeler(ModifierAppliesToType.CreatureType, emptyStringLabeler);
+        this.registerOtherLabeler(ModifierAppliesToType.SizeCategory, sizeCategoryLabeler);
+        this.registerOtherLabeler(ModifierAppliesToType.CreatureType, creatureTypeLabeler);
         this.registerOtherLabeler(ModifierAppliesToType.DamageType, emptyStringLabeler);
         this.registerOtherLabeler(ModifierAppliesToType.Skill, classSkillLabeler); // Special case for class skills
+
+        // ModifierType.Proficiency
+        this.registerProficiencyLabeler(ModifierAppliesToType.Feat, emptyStringLabeler);
     }
 }
 

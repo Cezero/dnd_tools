@@ -10,5 +10,9 @@ export * from './calculator-registry';
 export * from './progression-generators';
 export * from './grouping-strategies';
 export * from './formula-utils';
+export * from './metadata-utils';
+export * from './condition-formatters';
+export * from './condition-formatter-registry';
 export { formatterRegistry } from './formatter-registry';
+export { conditionFormatterRegistry } from './condition-formatter-registry';
 

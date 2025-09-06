@@ -135,6 +135,11 @@ export function FeatureEdit() {
     };
 
     const getBackLink = () => {
+        // Handle return from ListSelectionDialog
+        if (location.state?.from === 'ListSelectionDialog') {
+            return location.state.returnPath;
+        }
+
         switch (fromPage) {
             case 'classes':
                 return fromListParams ? `/classes?${fromListParams}` : '/classes';
@@ -222,9 +227,12 @@ export function FeatureEdit() {
         try {
             setIsLoading(true);
 
+            let createdFeatureId: string | null = null;
+
             if (id === 'new') {
                 const result = await FeatureSystemApi.createFeature(formData as CreateFeatureRequest);
                 setMessage('Feature created successfully');
+                createdFeatureId = result.id;
 
                 // Save FeatureProgressions after feature creation
                 if (featureProgressions.length > 0) {
@@ -281,7 +289,22 @@ export function FeatureEdit() {
 
             // Navigate back after a short delay
             setTimeout(() => {
-                navigate(getBackLink());
+                if (location.state?.from === 'ListSelectionDialog' && createdFeatureId) {
+                    // Navigate back to parent with new feature data
+                    navigate(location.state.returnPath, {
+                        state: {
+                            newFeature: {
+                                featureId: parseInt(createdFeatureId),
+                                name: formData.name,
+                                description: formData.description,
+                                slug: formData.slug,
+                                level: 1
+                            }
+                        }
+                    });
+                } else {
+                    navigate(getBackLink());
+                }
             }, 1000);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to save feature');

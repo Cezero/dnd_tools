@@ -80,6 +80,13 @@ export interface Language extends CoreComponent {
 export interface Proficiency extends CoreComponent {
     itemTypeId: number;
     category: number;
+    allName: string;
+}
+
+export interface FeatBenefit {
+    typeId: number;
+    referenceId: number;
+    amount?: number;
 }
 
 export interface Feat extends CoreComponent {
@@ -89,6 +96,7 @@ export interface Feat extends CoreComponent {
     benefit: string;
     special: string;
     sourceId: number;
+    benefits?: FeatBenefit[];
 }
 
 export interface Item extends CoreComponent {

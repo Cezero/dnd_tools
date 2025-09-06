@@ -135,49 +135,57 @@ export const PROFICIENCY_TYPES: ProficiencyMap = {
         id: PROFICIENCY_TYPE_ENUM.SIMPLE_WEAPON,
         name: 'Simple Weapon',
         itemTypeId: ITEM_TYPE_ENUM.WEAPON,
-        category: WEAPON_CATEGORY_ENUM.SIMPLE
+        category: WEAPON_CATEGORY_ENUM.SIMPLE,
+        allName: 'all simple weapons'
     },
     [PROFICIENCY_TYPE_ENUM.MARTIAL_WEAPON]: {
         id: PROFICIENCY_TYPE_ENUM.MARTIAL_WEAPON,
         name: 'Martial Weapon',
         itemTypeId: ITEM_TYPE_ENUM.WEAPON,
-        category: WEAPON_CATEGORY_ENUM.MARTIAL
+        category: WEAPON_CATEGORY_ENUM.MARTIAL,
+        allName: 'all martial weapons'
     },
     [PROFICIENCY_TYPE_ENUM.EXOTIC_WEAPON]: {
         id: PROFICIENCY_TYPE_ENUM.EXOTIC_WEAPON,
         name: 'Exotic Weapon',
         itemTypeId: ITEM_TYPE_ENUM.WEAPON,
-        category: WEAPON_CATEGORY_ENUM.EXOTIC
+        category: WEAPON_CATEGORY_ENUM.EXOTIC,
+        allName: 'all exotic weapons'
     },
     [PROFICIENCY_TYPE_ENUM.LIGHT_ARMOR]: {
         id: PROFICIENCY_TYPE_ENUM.LIGHT_ARMOR,
         name: 'Light Armor',
         itemTypeId: ITEM_TYPE_ENUM.ARMOR,
-        category: ARMOR_CATEGORY_ENUM.LIGHT
+        category: ARMOR_CATEGORY_ENUM.LIGHT,
+        allName: 'all light armor'
     },
     [PROFICIENCY_TYPE_ENUM.MEDIUM_ARMOR]: {
         id: PROFICIENCY_TYPE_ENUM.MEDIUM_ARMOR,
         name: 'Medium Armor',
         itemTypeId: ITEM_TYPE_ENUM.ARMOR,
-        category: ARMOR_CATEGORY_ENUM.MEDIUM
+        category: ARMOR_CATEGORY_ENUM.MEDIUM,
+        allName: 'all medium armor'
     },
     [PROFICIENCY_TYPE_ENUM.HEAVY_ARMOR]: {
         id: PROFICIENCY_TYPE_ENUM.HEAVY_ARMOR,
         name: 'Heavy Armor',
         itemTypeId: ITEM_TYPE_ENUM.ARMOR,
-        category: ARMOR_CATEGORY_ENUM.HEAVY
+        category: ARMOR_CATEGORY_ENUM.HEAVY,
+        allName: 'all heavy armor'
     },
     [PROFICIENCY_TYPE_ENUM.SHIELD]: {
         id: PROFICIENCY_TYPE_ENUM.SHIELD,
         name: 'Shield',
         itemTypeId: ITEM_TYPE_ENUM.ARMOR,
-        category: ARMOR_CATEGORY_ENUM.SHIELD
+        category: ARMOR_CATEGORY_ENUM.SHIELD,
+        allName: 'all shields'
     },
     [PROFICIENCY_TYPE_ENUM.TOWER_SHIELD]: {
         id: PROFICIENCY_TYPE_ENUM.TOWER_SHIELD,
         name: 'Tower Shield',
         itemTypeId: ITEM_TYPE_ENUM.ARMOR,
-        category: ARMOR_CATEGORY_ENUM.SHIELD
+        category: ARMOR_CATEGORY_ENUM.SHIELD,
+        allName: 'all tower shields'
     },
 };
 

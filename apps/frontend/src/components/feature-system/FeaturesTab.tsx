@@ -187,10 +187,27 @@ export function FeaturesTab({
                 isOpen={isFeatureSelectionOpen}
                 onClose={() => setIsFeatureSelectionOpen(false)}
                 onSave={(features) => {
-                    // Handle all selected features - call onAddFeature for each one
-                    features.forEach(feature => {
-                        handleFeatureSelected(feature);
-                    });
+                    // Get current feature IDs (excluding special features)
+                    const currentFeatureIds = featureProgressions
+                        .filter(p => !excludeSpecialFeatures.includes(p.featureId))
+                        .map(p => p.featureId);
+
+                    // Get selected feature IDs
+                    const selectedFeatureIds = features.map(f => f.id);
+
+                    // Find features to add (newly selected)
+                    const featuresToAdd = selectedFeatureIds.filter(id => !currentFeatureIds.includes(id));
+
+                    console.log('[SharedFeaturesTab] Current feature IDs:', currentFeatureIds);
+                    console.log('[SharedFeaturesTab] Selected feature IDs:', selectedFeatureIds);
+                    console.log('[SharedFeaturesTab] Features to add:', featuresToAdd);
+
+                    // Only call onAddFeature for newly selected features
+                    features
+                        .filter(feature => featuresToAdd.includes(feature.id))
+                        .forEach(feature => {
+                            handleFeatureSelected(feature);
+                        });
                 }}
                 initialSelectedIds={featureProgressions.map(p => p.featureId)}
                 parentId={contextId}

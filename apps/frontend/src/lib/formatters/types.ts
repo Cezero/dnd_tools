@@ -1,8 +1,10 @@
 import type {
     FeatureModifier,
     FeatureChoice,
+    FeatureModifierCondition,
     FormulaParamsData,
-    FeatureProgression
+    FeatureProgression,
+    FeatQueryResponse
 } from '@shared/schema';
 import type { BreakdownComponentType, Formula, FeatureType } from '@shared/static-data';
 import { ModifierAppliesToType, DisplayType, ModifierType, FeatureChoiceType } from '@shared/static-data';
@@ -59,7 +61,7 @@ export interface NameLookupRecord {
 export interface FormatterMetadata {
     // Name lookups - extracted from DisplayContext for specific modifier/choice
     // These are arrays because a single progression can have multiple items (e.g., Rogue Special Abilities)
-    featNames?: NameLookupRecord[]; // featId -> name mapping for feat formatters
+    featObjects?: FeatQueryResponse['results']; // full feat objects for proficiency formatters
     featureNames?: NameLookupRecord[]; // featureId -> name mapping for feature formatters
     itemNames?: NameLookupRecord[]; // itemId -> name mapping for item formatters
     // Breakdown information for Conditional Scaling formulas
@@ -242,10 +244,12 @@ export interface BaseCharacterInfo {
 export type CharacterContext = BaseCharacterInfo;
 
 // Progression value for progression calculations (Layer 3)
-export interface ProgressionValue extends BaseCalculationResult {
+export interface ProgressionValue {
     level: number;
-    choices?: FeatureChoice[];
-    modifiers?: FeatureModifier[];
+    breakdown: CalculationBreakdown;
+    conditionalValues?: ConditionalValue[];
+    modifier?: FeatureModifier; // Modified modifier based on formula calculation
+    choice?: FeatureChoice; // Modified choice based on formula calculation
 }
 
 // Base entity information
@@ -265,7 +269,9 @@ export interface BaseTransitionInfo {
 }
 
 // Transition point for progression transitions (Layer 4)
-export interface TransitionPoint extends BaseTransitionInfo, BaseEntityInfo { }
+export interface TransitionPoint extends BaseTransitionInfo, BaseEntityInfo {
+    groupingId: number; // Add groupingId for proper transition matching
+}
 
 export interface FormattedItemWithLevel extends BaseEntityInfo {
     formattedValue: string;
@@ -278,7 +284,7 @@ export interface FormattedItemWithLevel extends BaseEntityInfo {
 }
 
 export interface CalculatedValueWithLevel {
-    value: number | string;
+    // Remove value field - it's redundant with entity.value
     breakdown: CalculationBreakdown;
     entity: FeatureModifier | FeatureChoice;
     level: number;
@@ -321,7 +327,6 @@ export interface TransitionInfo extends BaseTransitionInfo, BaseEntityInfo { }
 // Base formatter interface
 export interface BaseFormatter {
     format(
-        value: number | string,
         modifier: FeatureModifier, // Direct access to modifier data
         metadata?: FormatterMetadata // Supplementary formatting data
     ): string;
@@ -352,9 +357,21 @@ export interface FormulaParameter {
     defaultValue?: number;
 }
 
+// Progression generator parameters
+export interface ProgressionGeneratorParams {
+    formula: FormulaParamsData;
+    startLevel: number;
+    endLevel: number;
+    context?: CalculationContext;
+    modifierValue?: number;
+    formulaCalculator?: FormulaCalculator;
+    originalModifier?: FeatureModifier;
+    originalChoice?: FeatureChoice;
+}
+
 // Progression generator interface
 export interface ProgressionGenerator {
-    generateValues(formula: FormulaParamsData, startLevel: number, endLevel: number, context?: CalculationContext, modifierValue?: number, formulaCalculator?: FormulaCalculator): Array<ProgressionValue>;
+    generateValues(params: ProgressionGeneratorParams): Array<ProgressionValue>;
 }
 
 // Calculator type enum
@@ -396,4 +413,9 @@ export interface IChoiceCalculator {
 // Conditional value detector interface
 export interface ConditionalValueDetector {
     detectConditionals(modifiers: FeatureModifier[], context?: CharacterContext): Array<ConditionalValue>;
+}
+
+// Condition formatter interface
+export interface ConditionFormatter {
+    formatCondition(condition: FeatureModifierCondition, formattedValue: string): string;
 }

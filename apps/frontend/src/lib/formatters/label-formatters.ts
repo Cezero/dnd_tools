@@ -1,5 +1,5 @@
 import type { FeatureModifier } from '@shared/schema';
-import { SKILL_MAP, MODIFIER_APPLIES_TO_TYPES, ABILITY_MAP, SAVING_THROW_MAP } from '@shared/static-data';
+import { SKILL_MAP, MODIFIER_APPLIES_TO_TYPES, ABILITY_MAP, SAVING_THROW_MAP, DAMAGE_TYPES } from '@shared/static-data';
 
 // Labeler function for Class Skills (ModifierType.Other + ModifierAppliesToType.Skill)
 export function classSkillLabeler(value: string, modifier: FeatureModifier): string {
@@ -74,6 +74,27 @@ export function savingThrowModifierLabeler(value: string, modifier: FeatureModif
         const savingThrowName = SAVING_THROW_MAP[modifier.appliesToId]?.abbreviation;
         if (savingThrowName) {
             return `${savingThrowName}: ${value}`;
+        }
+    }
+    return value;
+}
+
+// Labeler for Creature Type modifiers
+export function creatureTypeLabeler(value: string, _modifier: FeatureModifier): string {
+    return `Type: ${value}`;
+}
+
+// Labeler for Size Category modifiers
+export function sizeCategoryLabeler(value: string, _modifier: FeatureModifier): string {
+    return `Size: ${value}`;
+}
+
+// Labeler for Damage Type modifiers
+export function damageTypeLabeler(value: string, modifier: FeatureModifier): string {
+    if (modifier.appliesToId) {
+        const damageTypeName = DAMAGE_TYPES[modifier.appliesToId]?.name;
+        if (damageTypeName) {
+            return `${damageTypeName}: ${value}`;
         }
     }
     return value;

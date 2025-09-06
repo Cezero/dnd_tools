@@ -12,9 +12,13 @@ import {
     DAMAGE_TYPE_SELECT_LIST,
     USES_FREQUENCY_SELECT_LIST,
     LANGUAGE_SELECT_LIST,
+    SIZE_SELECT_LIST,
+    CREATURE_TYPE_SELECT_LIST,
     ModifierAppliesToType,
     ModifierType,
-    FEATURE_TYPES
+    FEATURE_TYPES,
+    FormulaId,
+    CumulativeValueType
 } from '@shared/static-data';
 
 import type { AppliesToSelectorProps } from './types';
@@ -26,7 +30,9 @@ export function AppliesToSelector({
     appliesTo,
     appliesToId,
     onAppliesToChange,
-    onAppliesToIdChange
+    onAppliesToIdChange,
+    formulaId,
+    valuesRepresent
 }: AppliesToSelectorProps) {
     // Helper function to get the appropriate appliesTo options based on modifierType
     const getAppliesToOptions = (modifierType: number | null) => {
@@ -77,6 +83,16 @@ export function AppliesToSelector({
                 return [
                     { value: null, label: 'Select a feat...' }
                 ];
+            case ModifierAppliesToType.SizeCategory:
+                return [
+                    { value: -1, label: 'Any Size' },
+                    ...SIZE_SELECT_LIST
+                ];
+            case ModifierAppliesToType.CreatureType:
+                return [
+                    { value: -1, label: 'Any Creature Type' },
+                    ...CREATURE_TYPE_SELECT_LIST
+                ];
             case ModifierAppliesToType.MovementSpeed:
             case ModifierAppliesToType.Attack:
             case ModifierAppliesToType.Initiative:
@@ -107,6 +123,14 @@ export function AppliesToSelector({
 
             {/* Applies To ID field (if needed) */}
             {(() => {
+                // Hide AppliesToId field when using conditional scaling with AppliesToId valuesRepresent
+                const isConditionalScalingWithAppliesToId = formulaId === FormulaId.CONDITIONAL_SCALING &&
+                    valuesRepresent === CumulativeValueType.AppliesToId;
+
+                if (isConditionalScalingWithAppliesToId) {
+                    return null;
+                }
+
                 const appliesToIdOptions = getAppliesToIdOptions(appliesTo);
                 return appliesToIdOptions.length > 0 ? (
                     <div>

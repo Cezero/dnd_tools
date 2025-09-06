@@ -1,5 +1,5 @@
 import z from "zod";
-import { ModifierType, ModifierAppliesToType, FeatureSourceType, FeatureBonusType, FeaturePrerequisiteType, FeatureModifierConditionType, FeatureChoiceType, FeatureChoiceBehavior } from "@shared/static-data";
+import { ModifierType, ModifierAppliesToType, FeatureSourceType, FeatureBonusType, FeaturePrerequisiteType, FeatureModifierConditionType, FeatureChoiceType, FeatureChoiceBehavior, CumulativeValueType } from "@shared/static-data";
 import { SpellcastingLinkSchema } from "./spellcasting";
 import { QueryResponseSchema } from "./query";
 import { FeatSchema } from "./feat";
@@ -46,6 +46,10 @@ export const FeatureFormulaParamsSchema = z.object({
     abilityId: z.number().int().positive('Ability ID must be a positive integer').optional().nullable(),
     thresholds: z.array(z.number().int()).nullable(),
     values: z.array(z.union([z.string(), z.number()])).nullable(),
+
+    // Enhanced parameters for complex scaling
+    valuesRepresent: z.nativeEnum(CumulativeValueType).optional().nullable(),
+    cumulative: z.boolean().default(false),
 });
 
 // Feature Modifier Schema
@@ -62,6 +66,7 @@ export const FeatureModifierSchema = z.object({
     conditions: z.array(FeatureModifierConditionSchema).optional(),
     formulaParams: FeatureFormulaParamsSchema.optional().nullable(),
     groupingId: z.number().int().default(0),
+    displayInDetail: z.boolean().default(true),
     item: ItemSchema.optional().nullable(),
 });
 
@@ -117,6 +122,8 @@ export const CreateFeatureFormulaParamsSchema = FeatureFormulaParamsSchema.omit(
 }).extend({
     thresholds: z.array(z.number().int()).nullable().optional(),
     values: z.array(z.union([z.string(), z.number()])).nullable().optional(),
+    valuesRepresent: z.nativeEnum(CumulativeValueType).optional().nullable(),
+    cumulative: z.boolean().optional(),
 });
 
 export const CreateFeatureModifierSchema = FeatureModifierSchema.omit({

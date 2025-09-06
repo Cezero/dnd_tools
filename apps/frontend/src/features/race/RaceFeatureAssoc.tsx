@@ -55,8 +55,9 @@ export function RaceFeatureAssoc({ isOpen, onClose, onSave, initialSelectedFeatu
             onSave={onSave}
             initialSelectedIds={initialSelectedFeatureIds}
             parentId={raceId}
+            parentType="race"
             serviceFunction={async () => {
-                const response = await FeatureSystemApi.getFeatures({});
+                const response = await FeatureSystemApi.getFeatures({ sourceType: 0 }); // 0 = FeatureSourceType.Race
                 return response;
             }}
             storageKey="raceFeatureSelectionList"

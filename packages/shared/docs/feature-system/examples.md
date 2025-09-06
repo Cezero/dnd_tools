@@ -306,29 +306,32 @@ const wholenessOfBody: FeatureProgression = {
 
 ### **Druid Wild Shape**
 
-**D&D 3.5 Rule**: At 1st level, a druid can wild shape into animals. The number of times per day increases with level.
+**D&D 3.5 Rule**: At 1st level, a druid can wild shape into animals. The number of times per day increases with level, and the size categories available increase with level.
 
-#### **Base Wild Shape (Level 1)**
+#### **Enhanced Wild Shape with Cumulative Size Categories**
 ```typescript
-const wildShapeBase: FeatureProgression = {
+const wildShapeEnhanced: FeatureProgression = {
     level: 1,
     sourceType: FeatureSourceType.Class,
     classId: DRUID_CLASS_ID,
-    modifiers: [{
-        type: ModifierType.Quantity,
-        appliesTo: ModifierAppliesToType.Uses,
-        value: 1,
-        formulaParamsId: 789 // Links to FeatureFormulaParams
-        bonusType: FeatureBonusType.Other
-    }],
-    // FeatureFormulaParams (created separately)
-    // {
-    //     id: 789,
-    //     formulaId: FormulaId.EVERY_N_LEVELS, // EVERY_N_LEVELS
-    //     interval: 1,  // Every level
-    //     formulaStartLevel: 1, // Start at level 1
-    //     abilityId: null
-    // }
+    modifiers: [
+        // Uses per day (traditional scaling)
+        {
+            type: ModifierType.Quantity,
+            appliesTo: ModifierAppliesToType.Uses,
+            value: 1,
+            formulaParamsId: 789, // Links to FeatureFormulaParams for uses
+            bonusType: FeatureBonusType.Other
+        },
+        // Size categories (cumulative scaling)
+        {
+            type: ModifierType.Other,
+            appliesTo: ModifierAppliesToType.SizeCategory,
+            value: 0, // Not used with enhanced formula
+            formulaParamsId: 790, // Links to FeatureFormulaParams for sizes
+            bonusType: null
+        }
+    ],
     choices: [],
     effects: [{
         effectType: FeatureSpecialEffectType.WildShapeForm,
@@ -336,6 +339,25 @@ const wildShapeBase: FeatureProgression = {
         value: 'animal'
     }]
 };
+
+// FeatureFormulaParams for uses per day (traditional)
+// {
+//     id: 789,
+//     formulaId: FormulaId.EVERY_N_LEVELS,
+//     interval: 1,  // Every level
+//     formulaStartLevel: 1,
+//     abilityId: null
+// }
+
+// FeatureFormulaParams for size categories (enhanced cumulative)
+// {
+//     id: 790,
+//     formulaId: FormulaId.CONDITIONAL_SCALING,
+//     thresholds: [1, 4, 8, 11, 15, 20], // Level thresholds
+//     values: [1, 2, 3, 4, 5, 6], // Size category IDs: Small, Medium, Large, Huge, Gargantuan, Colossal
+//     valuesRepresent: CumulativeValueType.AppliesToId, // Values represent size category IDs
+//     cumulative: true // Values accumulate (Level 8 can do Small, Medium, Large)
+// }
 ```
 
 #### **Elemental Wild Shape (Level 16)**

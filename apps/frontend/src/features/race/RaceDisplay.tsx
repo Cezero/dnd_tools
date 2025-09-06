@@ -1,10 +1,11 @@
 import pluralize from 'pluralize';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { displayStrategyFactory, FormatterMetadata } from '@/lib/formatters';
+import { FeatApi } from '@/features/feat/FeatApi';
+import { displayStrategyFactory, extractFormatterMetadata } from '@/lib/formatters';
 import { LanguageService } from '@/lib/LanguageService';
-import { Race } from '@shared/schema';
+import { Race, FeatQueryResponse } from '@shared/schema';
 import { DisplayType, SIZE_MAP, LANGUAGE_MAP, EDITION_MAP, ABILITY_MAP, CLASS_MAP, ModifierAppliesToType, ABILITY_LIST, SpecialFeatureId } from '@shared/static-data';
 
 interface RaceDisplayProps {
@@ -26,53 +27,40 @@ export function RaceDisplay({
     isAdmin = false,
     fromListParams: _fromListParams = ''
 }: RaceDisplayProps): React.JSX.Element {
-    // Extract FormatterMetadata from the race data
-    const extractFormatterMetadata = (): FormatterMetadata => {
-        const featNames: Array<{ id: number; name: string }> = [];
-        const featureNames: Array<{ id: number; name: string }> = [];
-        const itemNames: Array<{ id: number; name: string }> = [];
+    const [feats, setFeats] = useState<FeatQueryResponse['results']>([]);
+    const [featsLoaded, setFeatsLoaded] = useState(false);
 
-        // Extract feat names from nested choice data
-        race.features?.forEach(progression => {
-            progression.choices?.forEach(choice => {
-                if (choice.feat && choice.featId) {
-                    featNames.push({
-                        id: choice.featId,
-                        name: choice.feat.name
-                    });
+
+    // Load feats if we have feat modifiers
+    useEffect(() => {
+        const loadFeatsIfNeeded = async () => {
+            if (featsLoaded) return;
+
+            // Check if we have any feat modifiers or choices
+            const hasFeatModifiers = race.features?.some(progression =>
+                progression.modifiers?.some(modifier => modifier.appliesTo === ModifierAppliesToType.Feat) ||
+                progression.choices?.some(choice => choice.featId)
+            );
+
+            if (hasFeatModifiers) {
+                try {
+                    const response = await FeatApi.featQuery({ queryType: 'all' });
+                    setFeats(response.results || []);
+                } catch (error) {
+                    console.error('Failed to load feats:', error);
+                } finally {
+                    setFeatsLoaded(true);
                 }
-            });
-        });
-
-        // Extract feature names from nested choice data
-        race.features?.forEach(progression => {
-            progression.choices?.forEach(choice => {
-                if (choice.feature && choice.featureId) {
-                    featureNames.push({
-                        id: choice.featureId,
-                        name: choice.feature.name
-                    });
-                }
-            });
-        });
-
-        // Remove duplicates
-        const uniqueFeatNames = Array.from(
-            new Map(featNames.map(item => [item.id, item])).values()
-        );
-        const uniqueFeatureNames = Array.from(
-            new Map(featureNames.map(item => [item.id, item])).values()
-        );
-
-        return {
-            featNames: uniqueFeatNames.length > 0 ? uniqueFeatNames : undefined,
-            featureNames: uniqueFeatureNames.length > 0 ? uniqueFeatureNames : undefined,
-            itemNames: itemNames.length > 0 ? itemNames : undefined
+            } else {
+                setFeatsLoaded(true);
+            }
         };
-    };
+
+        loadFeatsIfNeeded();
+    }, [race.features, featsLoaded]);
 
     // Get FormatterMetadata for this race
-    const formatterMetadata = extractFormatterMetadata();
+    const formatterMetadata = extractFormatterMetadata(race.features, feats);
 
     // Inner cell styling (the inner border, padding, background, text colors)
     const innerCellContentClasses = "p-3 bg-content border-content rounded-lg border w-full";

@@ -185,6 +185,10 @@ export function CustomSelect<T = string | number>({
 
     const renderDisplayValue = displayValue || defaultDisplayValue;
 
+    if (triggerExtraClassName === "") {
+        triggerExtraClassName = "pl-2 pr-1 py-1";
+    }
+
     return (
         <div className={`${componentExtraClassName}`}>
             {label && (
@@ -198,7 +202,7 @@ export function CustomSelect<T = string | number>({
                 items={options}
                 disabled={disabled}
             >
-                <Select.Trigger className={triggerExtraClassName + " flex items-center justify-between gap-1 pl-2 pr-1 py-2 cursor-default rounded-md bg-white shadow-sm ring-1 ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:ring-gray-600"}>
+                <Select.Trigger className={triggerExtraClassName + " flex items-center justify-between gap-1 cursor-default rounded-md bg-white shadow-sm ring-1 ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:ring-gray-600"}>
                     <Select.Value>
                         {(value) => renderDisplayValue(value)}
                     </Select.Value>
@@ -206,26 +210,24 @@ export function CustomSelect<T = string | number>({
                         {icon}
                     </Select.Icon>
                 </Select.Trigger>
-                <Select.Portal>
-                    <Select.Positioner>
-                        <Select.Popup className={`${popupExtraClassName} absolute pt-1 pb-1 pr-1 max-h-60 overflow-auto rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800`}>
-                            {options.map((option) => (
-                                <Select.Item
-                                    key={String(option.value)}
-                                    value={option.value}
-                                    className={`${itemExtraClassName} flex items-center justify-end gap-1 text-left select-none cursor-default pl-1 pr-2 hover:bg-blue-600 data-[highlighted]:bg-blue-600 data-[selected]:text-blue-400`}
-                                >
-                                    <Select.ItemIndicator>
-                                        <ChevronRightIcon className="h-4 w-4" />
-                                    </Select.ItemIndicator>
-                                    <Select.ItemText className={itemTextExtraClassName}>
-                                        {option.label}
-                                    </Select.ItemText>
-                                </Select.Item>
-                            ))}
-                        </Select.Popup>
-                    </Select.Positioner>
-                </Select.Portal>
+                <Select.Positioner>
+                    <Select.Popup className={`${popupExtraClassName} absolute pt-1 pb-1 pr-1 max-h-60 overflow-auto rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800`}>
+                        {options.map((option) => (
+                            <Select.Item
+                                key={String(option.value)}
+                                value={option.value}
+                                className={`${itemExtraClassName} flex items-center justify-end gap-1 text-left select-none cursor-default pl-1 pr-2 hover:bg-blue-600 data-[highlighted]:bg-blue-600 data-[selected]:text-blue-400`}
+                            >
+                                <Select.ItemIndicator>
+                                    <ChevronRightIcon className="h-4 w-4" />
+                                </Select.ItemIndicator>
+                                <Select.ItemText className={itemTextExtraClassName}>
+                                    {option.label}
+                                </Select.ItemText>
+                            </Select.Item>
+                        ))}
+                    </Select.Popup>
+                </Select.Positioner>
             </Select.Root>
         </div>
     );
@@ -250,15 +252,7 @@ export function CustomCheckbox({
     label,
     disabled = false,
     componentExtraClassName = "",
-    checkboxClassName = `
-        h-5 w-5 rounded border border-gray-300 bg-white 
-        focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-        disabled:opacity-50 disabled:cursor-not-allowed 
-        data-checked:bg-blue-600 data-checked:border-blue-600 
-        dark:bg-gray-700 dark:border-gray-600 
-        dark:focus:ring-blue-500 
-        dark:data-checked:bg-blue-600 dark:data-checked:border-blue-600
-    `.replace(/\s+/g, ' ').trim(),
+    checkboxClassName = "",
     labelClassName = "font-medium",
     required = false,
     id,
@@ -278,10 +272,10 @@ export function CustomCheckbox({
                 checked={checked}
                 onCheckedChange={onCheckedChange}
                 disabled={disabled}
-                className={checkboxClassName}
+                className={`h-5 w-5 rounded border-2 border-gray-300 bg-white flex items-center justify-center focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 dark:bg-gray-700 dark:border-gray-600 dark:data-[state=checked]:bg-blue-600 dark:data-[state=checked]:border-blue-600 ${checkboxClassName}`}
             >
-                <Checkbox.Indicator>
-                    <CheckIcon />
+                <Checkbox.Indicator className="flex items-center justify-center">
+                    <CheckIcon className="h-4 w-4 text-white" />
                 </Checkbox.Indicator>
             </Checkbox.Root>
             {label && labelPosition === 'right' && (

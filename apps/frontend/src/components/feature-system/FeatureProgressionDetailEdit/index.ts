@@ -19,7 +19,6 @@ export { ChoiceDetailForm } from './ChoiceDetailForm';
 
 // Shared components
 export { FormulaManager } from './FormulaManager';
-export { FormulaParamsEditor } from './FormulaParamsEditor';
 export { ConditionEditor } from './ConditionEditor';
 export { AppliesToSelector } from './AppliesToSelector';
 
@@ -35,7 +34,6 @@ export type {
     EntitySectionRendererProps,
     SectionSelectorProps,
     GroupingControlsProps,
-    FormulaParamsEditorProps,
     ConditionEditorProps,
     AppliesToSelectorProps
 } from './types';

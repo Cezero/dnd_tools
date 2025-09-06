@@ -16,6 +16,8 @@ export function transformFormulaParamsForDatabase(formulaParams: {
     abilityId?: number | null;
     thresholds?: (number | string)[] | null;
     values?: (number | string)[] | null;
+    valuesRepresent?: number | null;
+    cumulative?: boolean | null;
 }): {
     id?: number;
     formulaId: number;
@@ -24,6 +26,8 @@ export function transformFormulaParamsForDatabase(formulaParams: {
     abilityId?: number | null;
     thresholds?: string | null;
     values?: string | null;
+    valuesRepresent?: number | null;
+    cumulative?: boolean | null;
 } {
     return {
         id: formulaParams.id,
@@ -34,6 +38,9 @@ export function transformFormulaParamsForDatabase(formulaParams: {
         // Transform arrays to comma-separated strings
         thresholds: formulaParams.thresholds ? formulaParams.thresholds.join(',') : null,
         values: formulaParams.values ? formulaParams.values.map(v => String(v)).join(',') : null,
+        // Include new fields
+        valuesRepresent: formulaParams.valuesRepresent,
+        cumulative: formulaParams.cumulative,
     };
 }
 
@@ -48,6 +55,8 @@ export function transformFormulaParamsFromDatabase(formulaParams: {
     abilityId?: number | null;
     thresholds?: string | null;
     values?: string | null;
+    valuesRepresent?: number | null;
+    cumulative?: boolean | null;
 }): {
     id: number;
     formulaId: number;
@@ -56,6 +65,8 @@ export function transformFormulaParamsFromDatabase(formulaParams: {
     abilityId?: number | null;
     thresholds?: number[] | null;
     values?: (string | number)[] | null;
+    valuesRepresent?: number | null;
+    cumulative?: boolean | null;
 } {
     return {
         id: formulaParams.id,
@@ -79,6 +90,9 @@ export function transformFormulaParamsFromDatabase(formulaParams: {
                 return isNaN(num) ? trimmed : num;
             })
             : null,
+        // Include new fields
+        valuesRepresent: formulaParams.valuesRepresent,
+        cumulative: formulaParams.cumulative,
     };
 }
 

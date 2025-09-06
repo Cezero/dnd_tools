@@ -146,7 +146,7 @@ export default function ClassEdit() {
                     appliesToId: featId,
                     itemId: itemId,
                     formulaParamsId: null,
-                    groupingId: 0,
+                    groupingId: 1, // Group all class proficiencies together as one feature
                 };
 
                 // Create a new array with the updated progression
@@ -234,7 +234,6 @@ export default function ClassEdit() {
      * Handles adding a feature to the class by creating a default level 1 progression.
      */
     const handleAddFeature = useCallback((feature: { id: number; name: string; description: string; slug: string }) => {
-        console.log('handleAddFeature called with:', feature);
         const defaultProgression: FeatureProgression = {
             id: Date.now() + Math.random(), // Temporary ID for frontend
             sourceType: 1, // 1 for Class
@@ -685,58 +684,10 @@ export default function ClassEdit() {
             <ClassFeatureAssoc
                 isOpen={isFeatureAssocOpen}
                 onClose={() => setIsFeatureAssocOpen(false)}
-                onSave={(selectedFeatures) => {
-                    console.log('[ClassEdit] selectedFeatures received', selectedFeatures);
-
-                    setFeatureProgressions(prev => {
-                        // Get current non-special feature IDs
-                        const currentFeatureIds = prev
-                            .filter(p => p.featureId !== SpecialFeatureId.ClassSkill && p.featureId !== SpecialFeatureId.ClassProficiency)
-                            .map(p => p.featureId);
-
-                        // Get selected feature IDs
-                        const selectedFeatureIds = selectedFeatures.map(sf => sf.featureId);
-
-                        // Find features to remove (deselected)
-                        const featuresToRemove = currentFeatureIds.filter(id => !selectedFeatureIds.includes(id));
-
-                        // Find features to add (newly selected)
-                        const featuresToAdd = selectedFeatureIds.filter(id => !currentFeatureIds.includes(id));
-
-                        console.log('[ClassEdit] Features to remove:', featuresToRemove);
-                        console.log('[ClassEdit] Features to add:', featuresToAdd);
-
-                        // Remove deselected features (but keep special features)
-                        let updated = prev.filter(p =>
-                            p.featureId === SpecialFeatureId.ClassSkill ||
-                            p.featureId === SpecialFeatureId.ClassProficiency ||
-                            !featuresToRemove.includes(p.featureId)
-                        );
-
-                        // Add newly selected features
-                        const newProgressions: FeatureProgression[] = selectedFeatures
-                            .filter(feature => featuresToAdd.includes(feature.featureId))
-                            .map(feature => ({
-                                id: Date.now() + Math.random(), // Temporary ID for frontend
-                                sourceType: 1, // 1 for Class
-                                classId: parseInt(id),
-                                raceId: null,
-                                level: feature.level,
-                                featureId: feature.featureId,
-                                appliesToType: null,
-                                appliesTo: null,
-                                feature: {
-                                    id: feature.featureId,
-                                    name: feature.name,
-                                    description: feature.description,
-                                    slug: feature.slug,
-                                },
-                                modifiers: [],
-                                choices: [],
-                            }));
-
-                        return [...updated, ...newProgressions];
-                    });
+                onSave={(_selectedFeatures) => {
+                    // The SharedFeaturesTab component handles the change detection logic
+                    // This onSave handler is not used - the actual logic is in FeaturesTab.tsx
+                    console.warn('ClassEdit onSave handler called but not used - change detection handled by SharedFeaturesTab');
                     setIsFeatureAssocOpen(false);
                 }}
                 initialSelectedFeatureIds={Object.keys(progressionsByFeature)
@@ -747,8 +698,6 @@ export default function ClassEdit() {
                     )}
                 classId={id !== 'new' ? parseInt(id) : undefined}
             />
-
-
 
             {/* Feature Progression Dialog */}
             <FeatureProgressionDetailEdit

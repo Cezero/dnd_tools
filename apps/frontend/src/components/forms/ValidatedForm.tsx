@@ -1,9 +1,8 @@
-import { Select } from '@base-ui-components/react/select';
-import { ChevronUpDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import React, { forwardRef } from 'react';
 
 import { type ValidationState } from '@/hooks/useZodValidation';
 
+import { CustomSelect, CustomCheckbox } from './FormComponents';
 import { FormContext, useFormContext } from './ValidatedFormHooks';
 
 // Validated Input Component
@@ -58,7 +57,7 @@ export const ValidatedInput = forwardRef<HTMLInputElement | HTMLTextAreaElement,
 
             for (let i = 0; i < keys.length - 1; i++) {
                 const key = keys[i];
-                if (!(key in current) || typeof current[key] !== 'object') {
+                if (!(key in current) || typeof current[key] !== 'object' || current[key] === null) {
                     current[key] = {};
                 }
                 current = current[key] as Record<string, unknown>;
@@ -97,11 +96,10 @@ export const ValidatedInput = forwardRef<HTMLInputElement | HTMLTextAreaElement,
             validation.validateField(field, value);
         };
 
-        const inputClassName = `
-            block p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600
+        const inputClassName = `${inputExtraClassName}
+            block border rounded-md dark:bg-gray-700 dark:border-gray-600
             ${hasError ? 'border-red-500 focus:border-red-500' : 'focus:border-blue-500'}
-            ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-            ${inputExtraClassName}
+            ${disabled ? 'opacity-50 cursor-not-allowed' : ''}            
         `.replace(/\s+/g, ' ').trim();
 
         const commonProps = {
@@ -145,32 +143,131 @@ export const ValidatedInput = forwardRef<HTMLInputElement | HTMLTextAreaElement,
 
 ValidatedInput.displayName = 'ValidatedInput';
 
-// Validated Custom Select Component
-export interface ValidatedCustomSelectProps {
+// Validated Custom Checkbox Component
+export interface ValidatedCustomCheckboxProps {
     field: string;
-    label: string;
-    options: Array<{ value: string | number; label: string }>;
+    label?: string;
+    required?: boolean;
+    componentExtraClassName?: string;
+    checkboxClassName?: string;
+    labelClassName?: string;
+    disabled?: boolean;
+    id?: string;
+    labelPosition?: 'left' | 'right';
+    nested?: boolean;
+}
+
+export const ValidatedCustomCheckbox = forwardRef<HTMLButtonElement, ValidatedCustomCheckboxProps>(
+    ({
+        field,
+        label,
+        required = false,
+        componentExtraClassName = '',
+        checkboxClassName = '',
+        labelClassName = '',
+        disabled = false,
+        id,
+        labelPosition = 'right',
+        nested = false,
+        ..._props
+    }, _ref) => {
+        const { formData, setFormData } = useFormContext();
+
+        // Helper function to get nested value
+        const getNestedValue = (obj: Record<string, unknown>, path: string): boolean | undefined => {
+            if (!nested) {
+                const value = obj[path];
+                return value === undefined ? undefined : Boolean(value);
+            }
+            const result = path.split('.').reduce((current, key) => {
+                return current && typeof current === 'object' ? (current as Record<string, unknown>)[key] : undefined;
+            }, obj);
+            return result === undefined ? undefined : Boolean(result);
+        };
+
+        // Helper function to set nested value
+        const setNestedValue = (obj: Record<string, unknown>, path: string, value: boolean): Record<string, unknown> => {
+            if (!nested) return { ...obj, [path]: value };
+
+            const keys = path.split('.');
+            const newObj = { ...obj };
+            let current = newObj;
+
+            for (let i = 0; i < keys.length - 1; i++) {
+                const key = keys[i];
+                if (!(key in current) || typeof current[key] !== 'object' || current[key] === null) {
+                    current[key] = {};
+                }
+                current = current[key] as Record<string, unknown>;
+            }
+
+            current[keys[keys.length - 1]] = value;
+            return newObj;
+        };
+
+        const currentValue = getNestedValue(formData, field);
+
+        const handleChange = (checked: boolean) => {
+            setFormData(prev => setNestedValue(prev, field, checked));
+        };
+
+        return (
+            <CustomCheckbox
+                checked={currentValue ?? false}
+                onCheckedChange={handleChange}
+                label={label}
+                disabled={disabled}
+                componentExtraClassName={componentExtraClassName}
+                checkboxClassName={checkboxClassName}
+                labelClassName={labelClassName}
+                required={required}
+                id={id || field}
+                labelPosition={labelPosition}
+            />
+        );
+    }
+);
+
+ValidatedCustomCheckbox.displayName = 'ValidatedCustomCheckbox';
+
+// Validated Custom Select Component
+export interface ValidatedCustomSelectProps<T = string | number> {
+    field: string;
+    options: Array<{ value: T; label: string }>;
+    label?: string;
     required?: boolean;
     placeholder?: string;
-    componentExtraClassName?: string;
-    labelExtraClassName?: string;
     disabled?: boolean;
+    componentExtraClassName?: string;
+    triggerExtraClassName?: string;
+    popupExtraClassName?: string;
+    itemExtraClassName?: string;
+    itemTextExtraClassName?: string;
+    icon?: React.ReactNode;
+    displayValue?: (value: T | null) => string;
+    labelExtraClassName?: string;
     nested?: boolean;
 }
 
 export const ValidatedCustomSelect = forwardRef<HTMLDivElement, ValidatedCustomSelectProps>(
     ({
         field,
-        label,
         options,
+        label,
         required = false,
         placeholder = 'Select an option',
-        componentExtraClassName = '',
-        labelExtraClassName = '',
         disabled = false,
+        componentExtraClassName = '',
+        triggerExtraClassName = '',
+        popupExtraClassName = '',
+        itemExtraClassName = '',
+        itemTextExtraClassName = '',
+        icon,
+        displayValue,
+        labelExtraClassName = '',
         nested = false,
         ..._props
-    }, ref) => {
+    }, _ref) => {
         const { formData, setFormData } = useFormContext();
 
         // Helper function to get nested value
@@ -191,7 +288,7 @@ export const ValidatedCustomSelect = forwardRef<HTMLDivElement, ValidatedCustomS
 
             for (let i = 0; i < keys.length - 1; i++) {
                 const key = keys[i];
-                if (!(key in current) || typeof current[key] !== 'object') {
+                if (!(key in current) || typeof current[key] !== 'object' || current[key] === null) {
                     current[key] = {};
                 }
                 current = current[key] as Record<string, unknown>;
@@ -207,59 +304,24 @@ export const ValidatedCustomSelect = forwardRef<HTMLDivElement, ValidatedCustomS
             setFormData(prev => setNestedValue(prev, field, newValue));
         };
 
-        const selectClassName = `
-            focus:ring-blue-500
-            ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-        `.replace(/\s+/g, ' ').trim();
-
         return (
-            <div className={`${componentExtraClassName}`} ref={ref}>
-                {label && (
-                    <label className={`block font-medium ${labelExtraClassName}`}>
-                        {label}{required && <span className="text-red-500 ml-1">*</span>}
-                    </label>
-                )}
-                <div className={selectClassName}>
-                    <Select.Root
-                        value={value as string | number}
-                        onValueChange={handleValueChange}
-                        items={options}
-                        disabled={disabled}
-                        modal={false}
-                    >
-                        <Select.Trigger className="flex items-center justify-between gap-1 pl-2 pr-1 py-2 cursor-default rounded-md bg-white shadow-sm ring-1 ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:ring-gray-600">
-                            <Select.Value>
-                                {(value) => {
-                                    if (value === null || value === undefined) return placeholder;
-                                    const option = options.find(opt => opt.value === value);
-                                    return option?.label || placeholder;
-                                }}
-                            </Select.Value>
-                            <Select.Icon>
-                                <ChevronUpDownIcon className="h-5 w-5" aria-hidden="true" />
-                            </Select.Icon>
-                        </Select.Trigger>
-                        <Select.Positioner>
-                            <Select.Popup className="absolute z-[9999] pt-1 pb-1 pr-1 max-h-60 overflow-auto rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800">
-                                {options.map((option) => (
-                                    <Select.Item
-                                        key={String(option.value)}
-                                        value={option.value}
-                                        className="flex items-center justify-end gap-1 text-left select-none cursor-default pl-1 pr-2 hover:bg-blue-600 data-[highlighted]:bg-blue-600 data-[selected]:text-blue-400"
-                                    >
-                                        <Select.ItemIndicator>
-                                            <ChevronRightIcon className="h-4 w-4" />
-                                        </Select.ItemIndicator>
-                                        <Select.ItemText>
-                                            {option.label}
-                                        </Select.ItemText>
-                                    </Select.Item>
-                                ))}
-                            </Select.Popup>
-                        </Select.Positioner>
-                    </Select.Root>
-                </div>
-            </div>
+            <CustomSelect
+                value={value as string | number}
+                onValueChange={handleValueChange}
+                options={options}
+                placeholder={placeholder}
+                disabled={disabled}
+                componentExtraClassName={componentExtraClassName}
+                triggerExtraClassName={triggerExtraClassName}
+                popupExtraClassName={popupExtraClassName}
+                itemExtraClassName={itemExtraClassName}
+                itemTextExtraClassName={itemTextExtraClassName}
+                label={label}
+                required={required}
+                labelExtraClassName={labelExtraClassName}
+                icon={icon}
+                displayValue={displayValue}
+            />
         );
     }
 );

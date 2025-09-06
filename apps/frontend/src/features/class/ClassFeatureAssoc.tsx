@@ -49,8 +49,9 @@ export function ClassFeatureAssoc({ isOpen, onClose, onSave, initialSelectedFeat
             onSave={onSave}
             initialSelectedIds={initialSelectedFeatureIds}
             parentId={classId}
+            parentType="class"
             serviceFunction={async () => {
-                const response = await FeatureSystemApi.getFeatures({});
+                const response = await FeatureSystemApi.getFeatures({ sourceType: 1 }); // 1 = FeatureSourceType.Class
                 return response;
             }}
             storageKey="classFeatureSelectionList"

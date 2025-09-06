@@ -2,9 +2,11 @@ export {
     ValidatedInput,
     ValidatedForm,
     ValidatedCustomSelect,
+    ValidatedCustomCheckbox,
     type ValidatedInputProps,
     type ValidatedFormProps,
     type ValidatedCustomSelectProps,
+    type ValidatedCustomCheckboxProps,
 } from './ValidatedForm';
 
 export {

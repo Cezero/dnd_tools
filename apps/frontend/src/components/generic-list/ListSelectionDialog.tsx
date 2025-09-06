@@ -3,10 +3,13 @@ import { ColumnDef } from '@tanstack/react-table';
 import { useCallback, useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { FilterType } from '@shared/static-data';
+
 import { GenericList } from './GenericList';
 
 // Generic type for item data
 interface BaseItem {
+    name: string;
     slug: string;
     description: string;
     [key: string]: unknown;
@@ -31,6 +34,8 @@ interface ListSelectionDialogProps<T extends BaseItem, U extends BaseSelectedIte
     initialSelectedIds: (string | number)[];
     /** The ID of the parent item currently being edited */
     parentId?: number;
+    /** The type of parent item (class or race) */
+    parentType?: 'class' | 'race';
     /** Service function to fetch all items */
     serviceFunction: () => Promise<{ results: T[]; total: number }>;
     /** Storage key for the GenericList */
@@ -58,6 +63,7 @@ export function ListSelectionDialog<T extends BaseItem, U extends BaseSelectedIt
     onSave,
     initialSelectedIds = [],
     parentId,
+    parentType,
     serviceFunction,
     storageKey,
     itemDesc,
@@ -91,11 +97,27 @@ export function ListSelectionDialog<T extends BaseItem, U extends BaseSelectedIt
 
     const columns: ColumnDef<T>[] = useMemo(() => [
         {
-            accessorKey: 'slug',
-            header: `${itemDesc.charAt(0).toUpperCase() + itemDesc.slice(1)} Slug`,
+            accessorKey: 'name',
+            header: 'Name',
+            enableSorting: true,
+            enableColumnFilter: true,
+            size: 200,
             meta: {
                 required: true,
-            },
+                filterType: FilterType.TEXT_INPUT,
+                placeholder: 'Filter by name...'
+            }
+        },
+        {
+            accessorKey: 'slug',
+            header: `${itemDesc.charAt(0).toUpperCase() + itemDesc.slice(1)} Slug`,
+            enableSorting: true,
+            enableColumnFilter: true,
+            size: 150,
+            meta: {
+                filterType: FilterType.TEXT_INPUT,
+                placeholder: 'Filter by slug...'
+            }
         },
         {
             accessorKey: 'description',
@@ -166,7 +188,20 @@ export function ListSelectionDialog<T extends BaseItem, U extends BaseSelectedIt
                                     className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:bg-blue-700 dark:hover:bg-blue-600"
                                     onClick={() => {
                                         onClose();
-                                        navigate(createNewRoute, { state: { from: 'ListSelectionDialog', parentId: parentId } });
+                                        const returnPath = parentType === 'class'
+                                            ? `/classes/${parentId}/edit`
+                                            : parentType === 'race'
+                                                ? `/races/${parentId}/edit`
+                                                : '/features';
+
+                                        navigate(createNewRoute, {
+                                            state: {
+                                                from: 'ListSelectionDialog',
+                                                parentId: parentId,
+                                                parentType: parentType,
+                                                returnPath: returnPath
+                                            }
+                                        });
                                     }}
                                 >
                                     {createNewButtonText}

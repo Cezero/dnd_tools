@@ -7,11 +7,38 @@ import type {
 } from '@shared/schema';
 import { FormulaId, FeatureSourceType, ModifierType, FeatureChoiceType, FeatureChoiceBehavior } from '@shared/static-data';
 
-// Transform form data to submission format - just cast to the request type
+// Transform form data to submission format with proper type conversion
 export function transformFormDataForSubmission(
     formData: Partial<FeatureProgression>
 ): CreateFeatureProgressionRequest {
-    return formData as CreateFeatureProgressionRequest;
+    // Deep clone and convert string numbers to actual numbers for thresholds
+    const transformedData = JSON.parse(JSON.stringify(formData));
+
+    // Convert thresholds from strings to numbers in modifiers
+    if (transformedData.modifiers) {
+        transformedData.modifiers = transformedData.modifiers.map((modifier: any) => {
+            if (modifier.formulaParams?.thresholds) {
+                modifier.formulaParams.thresholds = modifier.formulaParams.thresholds.map((threshold: any) =>
+                    typeof threshold === 'string' ? parseInt(threshold, 10) : threshold
+                );
+            }
+            return modifier;
+        });
+    }
+
+    // Convert thresholds from strings to numbers in choices
+    if (transformedData.choices) {
+        transformedData.choices = transformedData.choices.map((choice: any) => {
+            if (choice.formulaParams?.thresholds) {
+                choice.formulaParams.thresholds = choice.formulaParams.thresholds.map((threshold: any) =>
+                    typeof threshold === 'string' ? parseInt(threshold, 10) : threshold
+                );
+            }
+            return choice;
+        });
+    }
+
+    return transformedData as CreateFeatureProgressionRequest;
 }
 
 // Add feature info if missing

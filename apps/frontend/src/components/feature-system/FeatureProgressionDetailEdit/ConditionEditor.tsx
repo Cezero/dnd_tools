@@ -7,6 +7,7 @@ import {
     SIZE_SELECT_LIST,
     SPELL_SCHOOL_SELECT_LIST,
     CREATURE_TYPE_SELECT_LIST,
+    SOURCE_TYPE_SELECT_LIST,
     FeatureModifierConditionType
 } from '@shared/static-data';
 
@@ -79,6 +80,15 @@ export function ConditionEditor({
                                     label=""
                                     options={CREATURE_TYPE_SELECT_LIST}
                                     placeholder="Select creature type"
+                                    componentExtraClassName="flex-1"
+                                    nested
+                                />
+                            ) : condition.conditionType === FeatureModifierConditionType.source ? (
+                                <ValidatedCustomSelect
+                                    field={`${entityType}.${index}.conditions.${conditionIndex}.conditionValue`}
+                                    label=""
+                                    options={SOURCE_TYPE_SELECT_LIST}
+                                    placeholder="Select source"
                                     componentExtraClassName="flex-1"
                                     nested
                                 />

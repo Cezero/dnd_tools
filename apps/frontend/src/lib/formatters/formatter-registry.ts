@@ -18,7 +18,11 @@ import {
     DamageReductionFormatter,
     SpellResistanceFormatter,
     OtherFormatter,
-    DamageBonusFormatter
+    DamageBonusFormatter,
+    ProficiencyFormatter,
+    CreatureTypeFormatter,
+    SizeCategoryFormatter,
+    DamageTypeFormatter
 } from './pure-formatters';
 import { generateKey } from './registry-utils';
 import type { BaseFormatter, ChoiceFormatter } from './types';
@@ -90,6 +94,10 @@ export class FormatterRegistry implements IFormatterRegistry {
         this.registerFormatter(FeatureType.Modifier, ModifierType.Other, formatter, appliesToType);
     }
 
+    registerProficiencyFormatter(appliesToType: ModifierAppliesToType, formatter: BaseFormatter): void {
+        this.registerFormatter(FeatureType.Modifier, ModifierType.Proficiency, formatter, appliesToType);
+    }
+
     // Choice convenience wrapper
     registerChoiceFormatter(choiceType: FeatureChoiceType, formatter: ChoiceFormatter): void {
         this.registerFormatter(FeatureType.Choice, choiceType, formatter);
@@ -114,6 +122,10 @@ export class FormatterRegistry implements IFormatterRegistry {
         const spellResistanceFormatter = new SpellResistanceFormatter();
         const otherFormatter = new OtherFormatter();
         const damageBonusFormatter = new DamageBonusFormatter();
+        const proficiencyFormatter = new ProficiencyFormatter();
+        const creatureTypeFormatter = new CreatureTypeFormatter();
+        const sizeCategoryFormatter = new SizeCategoryFormatter();
+        const damageTypeFormatter = new DamageTypeFormatter();
 
         // Bonus-compatible types (using convenience wrapper)
         this.registerBonusFormatter(ModifierAppliesToType.Ability, signedValueFormatter);
@@ -149,6 +161,12 @@ export class FormatterRegistry implements IFormatterRegistry {
         this.registerOtherFormatter(ModifierAppliesToType.AutomaticLanguage, languageFormatter);
         this.registerOtherFormatter(ModifierAppliesToType.Feat, featFormatter);
         this.registerOtherFormatter(ModifierAppliesToType.Skill, emptyStringFormatter);
+        this.registerOtherFormatter(ModifierAppliesToType.CreatureType, creatureTypeFormatter);
+        this.registerOtherFormatter(ModifierAppliesToType.SizeCategory, sizeCategoryFormatter);
+        this.registerOtherFormatter(ModifierAppliesToType.DamageType, damageTypeFormatter);
+
+        // Proficiency-compatible types
+        this.registerProficiencyFormatter(ModifierAppliesToType.Feat, proficiencyFormatter);
 
         // Skill formatter is already registered above via registerOtherFormatter
 

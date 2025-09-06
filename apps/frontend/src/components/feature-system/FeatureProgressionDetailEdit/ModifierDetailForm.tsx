@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 
-import { useFormContext, ValidatedCustomSelect, ValidatedInput } from '@/components/forms';
+import { useFormContext, ValidatedCustomSelect, ValidatedInput, CustomCheckbox } from '@/components/forms';
 import type { FeatureModifier, FeatureModifierCondition } from '@shared/schema';
 import {
     MODIFIER_SELECT_LIST,
@@ -15,7 +15,9 @@ import {
     SIZE_SELECT_LIST,
     SPELL_SCHOOL_SELECT_LIST,
     CREATURE_TYPE_SELECT_LIST,
-    FeatureType
+    SOURCE_TYPE_SELECT_LIST,
+    FeatureType,
+    FormulaId
 } from '@shared/static-data';
 
 import { AppliesToSelector } from './AppliesToSelector';
@@ -30,8 +32,13 @@ export function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeat
     );
     const modifier = modifiers[index];
 
-    const [showConditions, setShowConditions] = useState(false);
+    const [showConditions, setShowConditions] = useState((modifier.conditions && modifier.conditions.length > 0) || false);
     const prevAppliesToRef = useRef<number | null>(null);
+
+    // Update showConditions when modifier changes
+    useEffect(() => {
+        setShowConditions((modifier.conditions && modifier.conditions.length > 0) || false);
+    }, [modifier.conditions]);
 
     // Clear appliesTo when modifierType changes to an incompatible type
     useEffect(() => {
@@ -122,31 +129,30 @@ export function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeat
                     />
                 </div>
                 <div>
-                    {modifier.type === ModifierType.Replacement && (modifier.appliesTo === ModifierAppliesToType.Damage || modifier.appliesTo === ModifierAppliesToType.UnarmedDamage) ? (
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Damage Dice
-                            </label>
-                            <p className="text-xs text-gray-500 mb-2">
-                                Use formula parameters for progression
-                            </p>
-                            <input
-                                type="text"
-                                value="Formula-based"
-                                disabled
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed"
+                    {(() => {
+                        // Hide value field for damage types or when using any conditional scaling formula
+                        const isDamageType = modifier.type === ModifierType.Replacement &&
+                            (modifier.appliesTo === ModifierAppliesToType.Damage || modifier.appliesTo === ModifierAppliesToType.UnarmedDamage);
+
+                        const isConditionalScaling = modifier.formulaParams?.formulaId === FormulaId.CONDITIONAL_SCALING;
+
+                        const shouldHideValueField = isDamageType || isConditionalScaling;
+
+                        if (shouldHideValueField) {
+                            return null;
+                        }
+
+                        return (
+                            <ValidatedInput
+                                field={`modifiers.${index}.value`}
+                                label="Value"
+                                type="number"
+                                componentExtraClassName="flex items-center gap-2"
+                                inputExtraClassName="w-16"
+                                nested
                             />
-                        </div>
-                    ) : (
-                        <ValidatedInput
-                            field={`modifiers.${index}.value`}
-                            label="Value"
-                            type="number"
-                            componentExtraClassName="flex items-center gap-2"
-                            inputExtraClassName="w-16"
-                            nested
-                        />
-                    )}
+                        );
+                    })()}
                 </div>
                 <div>
                     <ValidatedCustomSelect
@@ -167,6 +173,8 @@ export function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeat
                         appliesToId={modifier.appliesToId}
                         onAppliesToChange={() => { }}
                         onAppliesToIdChange={() => { }}
+                        formulaId={modifier.formulaParams?.formulaId}
+                        valuesRepresent={modifier.formulaParams?.valuesRepresent}
                     />
                 </div>
             </div>
@@ -196,28 +204,24 @@ export function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeat
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            id={`conditions-${index}`}
-                            checked={showConditions}
-                            onChange={(e) => {
-                                setShowConditions(e.target.checked);
-                                if (!e.target.checked) {
-                                    setFormData(prev => ({
-                                        ...prev,
-                                        modifiers: (prev.modifiers as FeatureModifier[] || []).map((mod, i) =>
-                                            i === index ? { ...mod, conditions: [] } : mod
-                                        )
-                                    }));
-                                }
-                            }}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        />
-                        <label htmlFor={`conditions-${index}`} className="text-sm font-medium">
-                            Conditions
-                        </label>
-                    </div>
+                    <CustomCheckbox
+                        id={`conditions-${index}`}
+                        checked={showConditions}
+                        onCheckedChange={(checked) => {
+                            setShowConditions(checked);
+                            if (!checked) {
+                                setFormData(prev => ({
+                                    ...prev,
+                                    modifiers: (prev.modifiers as FeatureModifier[] || []).map((mod, i) =>
+                                        i === index ? { ...mod, conditions: [] } : mod
+                                    )
+                                }));
+                            }
+                        }}
+                        label="Conditions"
+                        labelClassName="text-sm font-medium"
+                        componentExtraClassName=""
+                    />
                 </div>
             </div>
 
@@ -282,6 +286,15 @@ export function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeat
                                             label=""
                                             options={CREATURE_TYPE_SELECT_LIST}
                                             placeholder="Select creature type"
+                                            componentExtraClassName="flex-1"
+                                            nested
+                                        />
+                                    ) : condition.conditionType === FeatureModifierConditionType.source ? (
+                                        <ValidatedCustomSelect
+                                            field={`modifiers.${index}.conditions.${conditionIndex}.conditionValue`}
+                                            label=""
+                                            options={SOURCE_TYPE_SELECT_LIST}
+                                            placeholder="Select source"
                                             componentExtraClassName="flex-1"
                                             nested
                                         />

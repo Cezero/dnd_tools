@@ -97,18 +97,19 @@ export const FORMULA_MAP: BaseMap<Formula> = {
     [FormulaId.CONDITIONAL_SCALING]: {
         id: FormulaId.CONDITIONAL_SCALING,
         name: 'Conditional Scaling',
-        description: 'Different values based on level thresholds starting from a specific level',
+        description: 'Different values based on level thresholds',
         parameters: [
             { name: 'level', description: 'Character level', required: true },
             { name: 'startLevel', description: 'Starting level for the progression', required: true },
             { name: 'scalingValue', description: 'Base scaling value (from FeatureModifier.value)', required: true },
             { name: 'thresholds', description: 'Level thresholds (comma-separated)', required: true },
-            { name: 'values', description: 'Corresponding values (comma-separated)', required: true }
+            { name: 'values', description: 'Corresponding values (comma-separated)', required: true },
+            { name: 'valuesRepresent', description: 'What the values represent (Value or AppliesToId)', required: false }
+            // Remove cumulative parameter - handled in progression generator
         ],
         calculate: (params) => {
-            // For conditional scaling, we don't use startLevel - thresholds are absolute levels
-            // If character level is before the first threshold, return the first value
-            // Handle incomplete parameters gracefully
+            // ONLY calculate single value based on highest applicable threshold
+            // Remove cumulative logic - that belongs in progression generator
             if (!params.thresholds || !params.values) {
                 return params.scalingValue; // Return base value if parameters are missing
             }
@@ -120,29 +121,18 @@ export const FORMULA_MAP: BaseMap<Formula> = {
                 return params.scalingValue; // Return base value if no thresholds defined
             }
 
-            // For conditional scaling, values array can be one longer than thresholds
-            // The last value applies to all levels after the last threshold
-            if (values.length < thresholds.length || values.length > thresholds.length + 1) {
-                return params.scalingValue; // Return base value if arrays don't match properly
-            }
-
             // Use thresholds as absolute levels (not relative to startLevel)
             const absoluteThresholds = thresholds;
 
-            // For conditional scaling, thresholds and values should have the same length
-            // Each threshold corresponds to the value that applies at/after that level
-            // We need to find the highest threshold that the level is >= to
+            // Find highest threshold that level meets or exceeds
             for (let i = absoluteThresholds.length - 1; i >= 0; i--) {
                 if (params.level >= absoluteThresholds[i]) {
-                    const value = values[i]; // Return the value that applies at/after this threshold
-                    // For Conditional Scaling, preserve the original value type (string or number)
-                    return value;
+                    return values[i]; // Return the value that applies at/after this threshold
                 }
             }
 
             // If we get here, level is before all thresholds
-            // This shouldn't happen if thresholds start at 1, but return the first value as fallback
-            return values[0];
+            return params.scalingValue;
         },
         getDisplayString: (params) => {
             return `Conditional scaling based on level thresholds`;
@@ -214,7 +204,7 @@ export const FORMULA_MAP: BaseMap<Formula> = {
         getDisplayString: (params) => {
             // Always return formula structure, no context needed
             const abilityName = ABILITY_MAP[params.abilityId]?.abbreviation || 'ability';
-            return `${abilityName} modifier`;
+            return `+${abilityName}`;
         },
         isCharacterDependent: true
     },

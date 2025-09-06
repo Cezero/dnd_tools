@@ -97,17 +97,6 @@ export interface GroupingControlsProps {
     setHoveredEntityType: (type: FeatureType | null) => void;
 }
 
-// Formula parameters editor props
-export interface FormulaParamsEditorProps {
-    formulaId: number;
-    index: number;
-    entityType: FeatureType;
-    thresholds?: number[];
-    values?: number[];
-    onThresholdsChange: (thresholds: number[]) => void;
-    onValuesChange: (values: number[]) => void;
-}
-
 // Condition editor props
 export interface ConditionEditorProps {
     index: number;
@@ -126,4 +115,7 @@ export interface AppliesToSelectorProps {
     appliesToId: number | null;
     onAppliesToChange: (value: number | null) => void;
     onAppliesToIdChange: (value: number | null) => void;
+    // Additional props for enhanced conditional scaling
+    formulaId?: number | null;
+    valuesRepresent?: number | null;
 }

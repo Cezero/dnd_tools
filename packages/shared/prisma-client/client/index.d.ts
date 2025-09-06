@@ -14903,6 +14903,7 @@ export namespace Prisma {
     itemId: number | null
     formulaParamsId: number | null
     groupingId: number | null
+    displayInDetail: boolean | null
   }
 
   export type FeatureModifierMaxAggregateOutputType = {
@@ -14916,6 +14917,7 @@ export namespace Prisma {
     itemId: number | null
     formulaParamsId: number | null
     groupingId: number | null
+    displayInDetail: boolean | null
   }
 
   export type FeatureModifierCountAggregateOutputType = {
@@ -14929,6 +14931,7 @@ export namespace Prisma {
     itemId: number
     formulaParamsId: number
     groupingId: number
+    displayInDetail: number
     _all: number
   }
 
@@ -14970,6 +14973,7 @@ export namespace Prisma {
     itemId?: true
     formulaParamsId?: true
     groupingId?: true
+    displayInDetail?: true
   }
 
   export type FeatureModifierMaxAggregateInputType = {
@@ -14983,6 +14987,7 @@ export namespace Prisma {
     itemId?: true
     formulaParamsId?: true
     groupingId?: true
+    displayInDetail?: true
   }
 
   export type FeatureModifierCountAggregateInputType = {
@@ -14996,6 +15001,7 @@ export namespace Prisma {
     itemId?: true
     formulaParamsId?: true
     groupingId?: true
+    displayInDetail?: true
     _all?: true
   }
 
@@ -15096,6 +15102,7 @@ export namespace Prisma {
     itemId: number | null
     formulaParamsId: number | null
     groupingId: number
+    displayInDetail: boolean
     _count: FeatureModifierCountAggregateOutputType | null
     _avg: FeatureModifierAvgAggregateOutputType | null
     _sum: FeatureModifierSumAggregateOutputType | null
@@ -15128,6 +15135,7 @@ export namespace Prisma {
     itemId?: boolean
     formulaParamsId?: boolean
     groupingId?: boolean
+    displayInDetail?: boolean
     featureProgression?: boolean | FeatureProgressionDefaultArgs<ExtArgs>
     conditions?: boolean | FeatureModifier$conditionsArgs<ExtArgs>
     formulaParams?: boolean | FeatureModifier$formulaParamsArgs<ExtArgs>
@@ -15148,9 +15156,10 @@ export namespace Prisma {
     itemId?: boolean
     formulaParamsId?: boolean
     groupingId?: boolean
+    displayInDetail?: boolean
   }
 
-  export type FeatureModifierOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "progressionId" | "type" | "value" | "bonusType" | "appliesTo" | "appliesToId" | "itemId" | "formulaParamsId" | "groupingId", ExtArgs["result"]["featureModifier"]>
+  export type FeatureModifierOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "progressionId" | "type" | "value" | "bonusType" | "appliesTo" | "appliesToId" | "itemId" | "formulaParamsId" | "groupingId" | "displayInDetail", ExtArgs["result"]["featureModifier"]>
   export type FeatureModifierInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     featureProgression?: boolean | FeatureProgressionDefaultArgs<ExtArgs>
     conditions?: boolean | FeatureModifier$conditionsArgs<ExtArgs>
@@ -15178,6 +15187,7 @@ export namespace Prisma {
       itemId: number | null
       formulaParamsId: number | null
       groupingId: number
+      displayInDetail: boolean
     }, ExtArgs["result"]["featureModifier"]>
     composites: {}
   }
@@ -15561,6 +15571,7 @@ export namespace Prisma {
     readonly itemId: FieldRef<"FeatureModifier", 'Int'>
     readonly formulaParamsId: FieldRef<"FeatureModifier", 'Int'>
     readonly groupingId: FieldRef<"FeatureModifier", 'Int'>
+    readonly displayInDetail: FieldRef<"FeatureModifier", 'Boolean'>
   }
     
 
@@ -16002,6 +16013,7 @@ export namespace Prisma {
     interval: number | null
     formulaStartLevel: number | null
     abilityId: number | null
+    valuesRepresent: number | null
   }
 
   export type FeatureFormulaParamsSumAggregateOutputType = {
@@ -16010,6 +16022,7 @@ export namespace Prisma {
     interval: number | null
     formulaStartLevel: number | null
     abilityId: number | null
+    valuesRepresent: number | null
   }
 
   export type FeatureFormulaParamsMinAggregateOutputType = {
@@ -16020,6 +16033,8 @@ export namespace Prisma {
     abilityId: number | null
     thresholds: string | null
     values: string | null
+    valuesRepresent: number | null
+    cumulative: boolean | null
   }
 
   export type FeatureFormulaParamsMaxAggregateOutputType = {
@@ -16030,6 +16045,8 @@ export namespace Prisma {
     abilityId: number | null
     thresholds: string | null
     values: string | null
+    valuesRepresent: number | null
+    cumulative: boolean | null
   }
 
   export type FeatureFormulaParamsCountAggregateOutputType = {
@@ -16040,6 +16057,8 @@ export namespace Prisma {
     abilityId: number
     thresholds: number
     values: number
+    valuesRepresent: number
+    cumulative: number
     _all: number
   }
 
@@ -16050,6 +16069,7 @@ export namespace Prisma {
     interval?: true
     formulaStartLevel?: true
     abilityId?: true
+    valuesRepresent?: true
   }
 
   export type FeatureFormulaParamsSumAggregateInputType = {
@@ -16058,6 +16078,7 @@ export namespace Prisma {
     interval?: true
     formulaStartLevel?: true
     abilityId?: true
+    valuesRepresent?: true
   }
 
   export type FeatureFormulaParamsMinAggregateInputType = {
@@ -16068,6 +16089,8 @@ export namespace Prisma {
     abilityId?: true
     thresholds?: true
     values?: true
+    valuesRepresent?: true
+    cumulative?: true
   }
 
   export type FeatureFormulaParamsMaxAggregateInputType = {
@@ -16078,6 +16101,8 @@ export namespace Prisma {
     abilityId?: true
     thresholds?: true
     values?: true
+    valuesRepresent?: true
+    cumulative?: true
   }
 
   export type FeatureFormulaParamsCountAggregateInputType = {
@@ -16088,6 +16113,8 @@ export namespace Prisma {
     abilityId?: true
     thresholds?: true
     values?: true
+    valuesRepresent?: true
+    cumulative?: true
     _all?: true
   }
 
@@ -16185,6 +16212,8 @@ export namespace Prisma {
     abilityId: number | null
     thresholds: string | null
     values: string | null
+    valuesRepresent: number | null
+    cumulative: boolean
     _count: FeatureFormulaParamsCountAggregateOutputType | null
     _avg: FeatureFormulaParamsAvgAggregateOutputType | null
     _sum: FeatureFormulaParamsSumAggregateOutputType | null
@@ -16214,6 +16243,8 @@ export namespace Prisma {
     abilityId?: boolean
     thresholds?: boolean
     values?: boolean
+    valuesRepresent?: boolean
+    cumulative?: boolean
     featureModifier?: boolean | FeatureFormulaParams$featureModifierArgs<ExtArgs>
     featureChoice?: boolean | FeatureFormulaParams$featureChoiceArgs<ExtArgs>
     _count?: boolean | FeatureFormulaParamsCountOutputTypeDefaultArgs<ExtArgs>
@@ -16229,9 +16260,11 @@ export namespace Prisma {
     abilityId?: boolean
     thresholds?: boolean
     values?: boolean
+    valuesRepresent?: boolean
+    cumulative?: boolean
   }
 
-  export type FeatureFormulaParamsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "formulaId" | "interval" | "formulaStartLevel" | "abilityId" | "thresholds" | "values", ExtArgs["result"]["featureFormulaParams"]>
+  export type FeatureFormulaParamsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "formulaId" | "interval" | "formulaStartLevel" | "abilityId" | "thresholds" | "values" | "valuesRepresent" | "cumulative", ExtArgs["result"]["featureFormulaParams"]>
   export type FeatureFormulaParamsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     featureModifier?: boolean | FeatureFormulaParams$featureModifierArgs<ExtArgs>
     featureChoice?: boolean | FeatureFormulaParams$featureChoiceArgs<ExtArgs>
@@ -16252,6 +16285,8 @@ export namespace Prisma {
       abilityId: number | null
       thresholds: string | null
       values: string | null
+      valuesRepresent: number | null
+      cumulative: boolean
     }, ExtArgs["result"]["featureFormulaParams"]>
     composites: {}
   }
@@ -16630,6 +16665,8 @@ export namespace Prisma {
     readonly abilityId: FieldRef<"FeatureFormulaParams", 'Int'>
     readonly thresholds: FieldRef<"FeatureFormulaParams", 'String'>
     readonly values: FieldRef<"FeatureFormulaParams", 'String'>
+    readonly valuesRepresent: FieldRef<"FeatureFormulaParams", 'Int'>
+    readonly cumulative: FieldRef<"FeatureFormulaParams", 'Boolean'>
   }
     
 
@@ -61212,7 +61249,8 @@ export namespace Prisma {
     appliesToId: 'appliesToId',
     itemId: 'itemId',
     formulaParamsId: 'formulaParamsId',
-    groupingId: 'groupingId'
+    groupingId: 'groupingId',
+    displayInDetail: 'displayInDetail'
   };
 
   export type FeatureModifierScalarFieldEnum = (typeof FeatureModifierScalarFieldEnum)[keyof typeof FeatureModifierScalarFieldEnum]
@@ -61225,7 +61263,9 @@ export namespace Prisma {
     formulaStartLevel: 'formulaStartLevel',
     abilityId: 'abilityId',
     thresholds: 'thresholds',
-    values: 'values'
+    values: 'values',
+    valuesRepresent: 'valuesRepresent',
+    cumulative: 'cumulative'
   };
 
   export type FeatureFormulaParamsScalarFieldEnum = (typeof FeatureFormulaParamsScalarFieldEnum)[keyof typeof FeatureFormulaParamsScalarFieldEnum]
@@ -62658,6 +62698,7 @@ export namespace Prisma {
     itemId?: IntNullableFilter<"FeatureModifier"> | number | null
     formulaParamsId?: IntNullableFilter<"FeatureModifier"> | number | null
     groupingId?: IntFilter<"FeatureModifier"> | number
+    displayInDetail?: BoolFilter<"FeatureModifier"> | boolean
     featureProgression?: XOR<FeatureProgressionScalarRelationFilter, FeatureProgressionWhereInput>
     conditions?: FeatureModifierConditionListRelationFilter
     formulaParams?: XOR<FeatureFormulaParamsNullableScalarRelationFilter, FeatureFormulaParamsWhereInput> | null
@@ -62675,6 +62716,7 @@ export namespace Prisma {
     itemId?: SortOrderInput | SortOrder
     formulaParamsId?: SortOrderInput | SortOrder
     groupingId?: SortOrder
+    displayInDetail?: SortOrder
     featureProgression?: FeatureProgressionOrderByWithRelationInput
     conditions?: FeatureModifierConditionOrderByRelationAggregateInput
     formulaParams?: FeatureFormulaParamsOrderByWithRelationInput
@@ -62695,6 +62737,7 @@ export namespace Prisma {
     itemId?: IntNullableFilter<"FeatureModifier"> | number | null
     formulaParamsId?: IntNullableFilter<"FeatureModifier"> | number | null
     groupingId?: IntFilter<"FeatureModifier"> | number
+    displayInDetail?: BoolFilter<"FeatureModifier"> | boolean
     featureProgression?: XOR<FeatureProgressionScalarRelationFilter, FeatureProgressionWhereInput>
     conditions?: FeatureModifierConditionListRelationFilter
     formulaParams?: XOR<FeatureFormulaParamsNullableScalarRelationFilter, FeatureFormulaParamsWhereInput> | null
@@ -62712,6 +62755,7 @@ export namespace Prisma {
     itemId?: SortOrderInput | SortOrder
     formulaParamsId?: SortOrderInput | SortOrder
     groupingId?: SortOrder
+    displayInDetail?: SortOrder
     _count?: FeatureModifierCountOrderByAggregateInput
     _avg?: FeatureModifierAvgOrderByAggregateInput
     _max?: FeatureModifierMaxOrderByAggregateInput
@@ -62733,6 +62777,7 @@ export namespace Prisma {
     itemId?: IntNullableWithAggregatesFilter<"FeatureModifier"> | number | null
     formulaParamsId?: IntNullableWithAggregatesFilter<"FeatureModifier"> | number | null
     groupingId?: IntWithAggregatesFilter<"FeatureModifier"> | number
+    displayInDetail?: BoolWithAggregatesFilter<"FeatureModifier"> | boolean
   }
 
   export type FeatureFormulaParamsWhereInput = {
@@ -62746,6 +62791,8 @@ export namespace Prisma {
     abilityId?: IntNullableFilter<"FeatureFormulaParams"> | number | null
     thresholds?: StringNullableFilter<"FeatureFormulaParams"> | string | null
     values?: StringNullableFilter<"FeatureFormulaParams"> | string | null
+    valuesRepresent?: IntNullableFilter<"FeatureFormulaParams"> | number | null
+    cumulative?: BoolFilter<"FeatureFormulaParams"> | boolean
     featureModifier?: FeatureModifierListRelationFilter
     featureChoice?: FeatureChoiceListRelationFilter
   }
@@ -62758,6 +62805,8 @@ export namespace Prisma {
     abilityId?: SortOrderInput | SortOrder
     thresholds?: SortOrderInput | SortOrder
     values?: SortOrderInput | SortOrder
+    valuesRepresent?: SortOrderInput | SortOrder
+    cumulative?: SortOrder
     featureModifier?: FeatureModifierOrderByRelationAggregateInput
     featureChoice?: FeatureChoiceOrderByRelationAggregateInput
     _relevance?: FeatureFormulaParamsOrderByRelevanceInput
@@ -62774,6 +62823,8 @@ export namespace Prisma {
     abilityId?: IntNullableFilter<"FeatureFormulaParams"> | number | null
     thresholds?: StringNullableFilter<"FeatureFormulaParams"> | string | null
     values?: StringNullableFilter<"FeatureFormulaParams"> | string | null
+    valuesRepresent?: IntNullableFilter<"FeatureFormulaParams"> | number | null
+    cumulative?: BoolFilter<"FeatureFormulaParams"> | boolean
     featureModifier?: FeatureModifierListRelationFilter
     featureChoice?: FeatureChoiceListRelationFilter
   }, "id">
@@ -62786,6 +62837,8 @@ export namespace Prisma {
     abilityId?: SortOrderInput | SortOrder
     thresholds?: SortOrderInput | SortOrder
     values?: SortOrderInput | SortOrder
+    valuesRepresent?: SortOrderInput | SortOrder
+    cumulative?: SortOrder
     _count?: FeatureFormulaParamsCountOrderByAggregateInput
     _avg?: FeatureFormulaParamsAvgOrderByAggregateInput
     _max?: FeatureFormulaParamsMaxOrderByAggregateInput
@@ -62804,6 +62857,8 @@ export namespace Prisma {
     abilityId?: IntNullableWithAggregatesFilter<"FeatureFormulaParams"> | number | null
     thresholds?: StringNullableWithAggregatesFilter<"FeatureFormulaParams"> | string | null
     values?: StringNullableWithAggregatesFilter<"FeatureFormulaParams"> | string | null
+    valuesRepresent?: IntNullableWithAggregatesFilter<"FeatureFormulaParams"> | number | null
+    cumulative?: BoolWithAggregatesFilter<"FeatureFormulaParams"> | boolean
   }
 
   export type FeatureModifierConditionWhereInput = {
@@ -66268,6 +66323,7 @@ export namespace Prisma {
     appliesTo?: number | null
     appliesToId?: number | null
     groupingId?: number
+    displayInDetail?: boolean
     featureProgression: FeatureProgressionCreateNestedOneWithoutModifiersInput
     conditions?: FeatureModifierConditionCreateNestedManyWithoutFeatureModifierInput
     formulaParams?: FeatureFormulaParamsCreateNestedOneWithoutFeatureModifierInput
@@ -66285,6 +66341,7 @@ export namespace Prisma {
     itemId?: number | null
     formulaParamsId?: number | null
     groupingId?: number
+    displayInDetail?: boolean
     conditions?: FeatureModifierConditionUncheckedCreateNestedManyWithoutFeatureModifierInput
   }
 
@@ -66295,6 +66352,7 @@ export namespace Prisma {
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
+    displayInDetail?: BoolFieldUpdateOperationsInput | boolean
     featureProgression?: FeatureProgressionUpdateOneRequiredWithoutModifiersNestedInput
     conditions?: FeatureModifierConditionUpdateManyWithoutFeatureModifierNestedInput
     formulaParams?: FeatureFormulaParamsUpdateOneWithoutFeatureModifierNestedInput
@@ -66312,6 +66370,7 @@ export namespace Prisma {
     itemId?: NullableIntFieldUpdateOperationsInput | number | null
     formulaParamsId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
+    displayInDetail?: BoolFieldUpdateOperationsInput | boolean
     conditions?: FeatureModifierConditionUncheckedUpdateManyWithoutFeatureModifierNestedInput
   }
 
@@ -66326,6 +66385,7 @@ export namespace Prisma {
     itemId?: number | null
     formulaParamsId?: number | null
     groupingId?: number
+    displayInDetail?: boolean
   }
 
   export type FeatureModifierUpdateManyMutationInput = {
@@ -66335,6 +66395,7 @@ export namespace Prisma {
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
+    displayInDetail?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type FeatureModifierUncheckedUpdateManyInput = {
@@ -66348,6 +66409,7 @@ export namespace Prisma {
     itemId?: NullableIntFieldUpdateOperationsInput | number | null
     formulaParamsId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
+    displayInDetail?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type FeatureFormulaParamsCreateInput = {
@@ -66357,6 +66419,8 @@ export namespace Prisma {
     abilityId?: number | null
     thresholds?: string | null
     values?: string | null
+    valuesRepresent?: number | null
+    cumulative?: boolean
     featureModifier?: FeatureModifierCreateNestedManyWithoutFormulaParamsInput
     featureChoice?: FeatureChoiceCreateNestedManyWithoutFormulaParamsInput
   }
@@ -66369,6 +66433,8 @@ export namespace Prisma {
     abilityId?: number | null
     thresholds?: string | null
     values?: string | null
+    valuesRepresent?: number | null
+    cumulative?: boolean
     featureModifier?: FeatureModifierUncheckedCreateNestedManyWithoutFormulaParamsInput
     featureChoice?: FeatureChoiceUncheckedCreateNestedManyWithoutFormulaParamsInput
   }
@@ -66380,6 +66446,8 @@ export namespace Prisma {
     abilityId?: NullableIntFieldUpdateOperationsInput | number | null
     thresholds?: NullableStringFieldUpdateOperationsInput | string | null
     values?: NullableStringFieldUpdateOperationsInput | string | null
+    valuesRepresent?: NullableIntFieldUpdateOperationsInput | number | null
+    cumulative?: BoolFieldUpdateOperationsInput | boolean
     featureModifier?: FeatureModifierUpdateManyWithoutFormulaParamsNestedInput
     featureChoice?: FeatureChoiceUpdateManyWithoutFormulaParamsNestedInput
   }
@@ -66392,6 +66460,8 @@ export namespace Prisma {
     abilityId?: NullableIntFieldUpdateOperationsInput | number | null
     thresholds?: NullableStringFieldUpdateOperationsInput | string | null
     values?: NullableStringFieldUpdateOperationsInput | string | null
+    valuesRepresent?: NullableIntFieldUpdateOperationsInput | number | null
+    cumulative?: BoolFieldUpdateOperationsInput | boolean
     featureModifier?: FeatureModifierUncheckedUpdateManyWithoutFormulaParamsNestedInput
     featureChoice?: FeatureChoiceUncheckedUpdateManyWithoutFormulaParamsNestedInput
   }
@@ -66404,6 +66474,8 @@ export namespace Prisma {
     abilityId?: number | null
     thresholds?: string | null
     values?: string | null
+    valuesRepresent?: number | null
+    cumulative?: boolean
   }
 
   export type FeatureFormulaParamsUpdateManyMutationInput = {
@@ -66413,6 +66485,8 @@ export namespace Prisma {
     abilityId?: NullableIntFieldUpdateOperationsInput | number | null
     thresholds?: NullableStringFieldUpdateOperationsInput | string | null
     values?: NullableStringFieldUpdateOperationsInput | string | null
+    valuesRepresent?: NullableIntFieldUpdateOperationsInput | number | null
+    cumulative?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type FeatureFormulaParamsUncheckedUpdateManyInput = {
@@ -66423,6 +66497,8 @@ export namespace Prisma {
     abilityId?: NullableIntFieldUpdateOperationsInput | number | null
     thresholds?: NullableStringFieldUpdateOperationsInput | string | null
     values?: NullableStringFieldUpdateOperationsInput | string | null
+    valuesRepresent?: NullableIntFieldUpdateOperationsInput | number | null
+    cumulative?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type FeatureModifierConditionCreateInput = {
@@ -69930,6 +70006,7 @@ export namespace Prisma {
     itemId?: SortOrder
     formulaParamsId?: SortOrder
     groupingId?: SortOrder
+    displayInDetail?: SortOrder
   }
 
   export type FeatureModifierAvgOrderByAggregateInput = {
@@ -69956,6 +70033,7 @@ export namespace Prisma {
     itemId?: SortOrder
     formulaParamsId?: SortOrder
     groupingId?: SortOrder
+    displayInDetail?: SortOrder
   }
 
   export type FeatureModifierMinOrderByAggregateInput = {
@@ -69969,6 +70047,7 @@ export namespace Prisma {
     itemId?: SortOrder
     formulaParamsId?: SortOrder
     groupingId?: SortOrder
+    displayInDetail?: SortOrder
   }
 
   export type FeatureModifierSumOrderByAggregateInput = {
@@ -69998,6 +70077,8 @@ export namespace Prisma {
     abilityId?: SortOrder
     thresholds?: SortOrder
     values?: SortOrder
+    valuesRepresent?: SortOrder
+    cumulative?: SortOrder
   }
 
   export type FeatureFormulaParamsAvgOrderByAggregateInput = {
@@ -70006,6 +70087,7 @@ export namespace Prisma {
     interval?: SortOrder
     formulaStartLevel?: SortOrder
     abilityId?: SortOrder
+    valuesRepresent?: SortOrder
   }
 
   export type FeatureFormulaParamsMaxOrderByAggregateInput = {
@@ -70016,6 +70098,8 @@ export namespace Prisma {
     abilityId?: SortOrder
     thresholds?: SortOrder
     values?: SortOrder
+    valuesRepresent?: SortOrder
+    cumulative?: SortOrder
   }
 
   export type FeatureFormulaParamsMinOrderByAggregateInput = {
@@ -70026,6 +70110,8 @@ export namespace Prisma {
     abilityId?: SortOrder
     thresholds?: SortOrder
     values?: SortOrder
+    valuesRepresent?: SortOrder
+    cumulative?: SortOrder
   }
 
   export type FeatureFormulaParamsSumOrderByAggregateInput = {
@@ -70034,6 +70120,7 @@ export namespace Prisma {
     interval?: SortOrder
     formulaStartLevel?: SortOrder
     abilityId?: SortOrder
+    valuesRepresent?: SortOrder
   }
 
   export type FeatureModifierScalarRelationFilter = {
@@ -78737,6 +78824,7 @@ export namespace Prisma {
     appliesTo?: number | null
     appliesToId?: number | null
     groupingId?: number
+    displayInDetail?: boolean
     conditions?: FeatureModifierConditionCreateNestedManyWithoutFeatureModifierInput
     formulaParams?: FeatureFormulaParamsCreateNestedOneWithoutFeatureModifierInput
     item?: ItemCreateNestedOneWithoutFeatureModifiersInput
@@ -78752,6 +78840,7 @@ export namespace Prisma {
     itemId?: number | null
     formulaParamsId?: number | null
     groupingId?: number
+    displayInDetail?: boolean
     conditions?: FeatureModifierConditionUncheckedCreateNestedManyWithoutFeatureModifierInput
   }
 
@@ -78992,6 +79081,7 @@ export namespace Prisma {
     itemId?: IntNullableFilter<"FeatureModifier"> | number | null
     formulaParamsId?: IntNullableFilter<"FeatureModifier"> | number | null
     groupingId?: IntFilter<"FeatureModifier"> | number
+    displayInDetail?: BoolFilter<"FeatureModifier"> | boolean
   }
 
   export type CharacterFeatureChoiceUpsertWithWhereUniqueWithoutFeatureProgressionInput = {
@@ -79080,6 +79170,8 @@ export namespace Prisma {
     abilityId?: number | null
     thresholds?: string | null
     values?: string | null
+    valuesRepresent?: number | null
+    cumulative?: boolean
     featureChoice?: FeatureChoiceCreateNestedManyWithoutFormulaParamsInput
   }
 
@@ -79091,6 +79183,8 @@ export namespace Prisma {
     abilityId?: number | null
     thresholds?: string | null
     values?: string | null
+    valuesRepresent?: number | null
+    cumulative?: boolean
     featureChoice?: FeatureChoiceUncheckedCreateNestedManyWithoutFormulaParamsInput
   }
 
@@ -79209,6 +79303,8 @@ export namespace Prisma {
     abilityId?: NullableIntFieldUpdateOperationsInput | number | null
     thresholds?: NullableStringFieldUpdateOperationsInput | string | null
     values?: NullableStringFieldUpdateOperationsInput | string | null
+    valuesRepresent?: NullableIntFieldUpdateOperationsInput | number | null
+    cumulative?: BoolFieldUpdateOperationsInput | boolean
     featureChoice?: FeatureChoiceUpdateManyWithoutFormulaParamsNestedInput
   }
 
@@ -79220,6 +79316,8 @@ export namespace Prisma {
     abilityId?: NullableIntFieldUpdateOperationsInput | number | null
     thresholds?: NullableStringFieldUpdateOperationsInput | string | null
     values?: NullableStringFieldUpdateOperationsInput | string | null
+    valuesRepresent?: NullableIntFieldUpdateOperationsInput | number | null
+    cumulative?: BoolFieldUpdateOperationsInput | boolean
     featureChoice?: FeatureChoiceUncheckedUpdateManyWithoutFormulaParamsNestedInput
   }
 
@@ -79268,6 +79366,7 @@ export namespace Prisma {
     appliesTo?: number | null
     appliesToId?: number | null
     groupingId?: number
+    displayInDetail?: boolean
     featureProgression: FeatureProgressionCreateNestedOneWithoutModifiersInput
     conditions?: FeatureModifierConditionCreateNestedManyWithoutFeatureModifierInput
     item?: ItemCreateNestedOneWithoutFeatureModifiersInput
@@ -79283,6 +79382,7 @@ export namespace Prisma {
     appliesToId?: number | null
     itemId?: number | null
     groupingId?: number
+    displayInDetail?: boolean
     conditions?: FeatureModifierConditionUncheckedCreateNestedManyWithoutFeatureModifierInput
   }
 
@@ -79372,6 +79472,7 @@ export namespace Prisma {
     appliesTo?: number | null
     appliesToId?: number | null
     groupingId?: number
+    displayInDetail?: boolean
     featureProgression: FeatureProgressionCreateNestedOneWithoutModifiersInput
     formulaParams?: FeatureFormulaParamsCreateNestedOneWithoutFeatureModifierInput
     item?: ItemCreateNestedOneWithoutFeatureModifiersInput
@@ -79388,6 +79489,7 @@ export namespace Prisma {
     itemId?: number | null
     formulaParamsId?: number | null
     groupingId?: number
+    displayInDetail?: boolean
   }
 
   export type FeatureModifierCreateOrConnectWithoutConditionsInput = {
@@ -79413,6 +79515,7 @@ export namespace Prisma {
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
+    displayInDetail?: BoolFieldUpdateOperationsInput | boolean
     featureProgression?: FeatureProgressionUpdateOneRequiredWithoutModifiersNestedInput
     formulaParams?: FeatureFormulaParamsUpdateOneWithoutFeatureModifierNestedInput
     item?: ItemUpdateOneWithoutFeatureModifiersNestedInput
@@ -79429,6 +79532,7 @@ export namespace Prisma {
     itemId?: NullableIntFieldUpdateOperationsInput | number | null
     formulaParamsId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
+    displayInDetail?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type FeatureProgressionCreateWithoutChoicesInput = {
@@ -79526,6 +79630,8 @@ export namespace Prisma {
     abilityId?: number | null
     thresholds?: string | null
     values?: string | null
+    valuesRepresent?: number | null
+    cumulative?: boolean
     featureModifier?: FeatureModifierCreateNestedManyWithoutFormulaParamsInput
   }
 
@@ -79537,6 +79643,8 @@ export namespace Prisma {
     abilityId?: number | null
     thresholds?: string | null
     values?: string | null
+    valuesRepresent?: number | null
+    cumulative?: boolean
     featureModifier?: FeatureModifierUncheckedCreateNestedManyWithoutFormulaParamsInput
   }
 
@@ -79698,6 +79806,8 @@ export namespace Prisma {
     abilityId?: NullableIntFieldUpdateOperationsInput | number | null
     thresholds?: NullableStringFieldUpdateOperationsInput | string | null
     values?: NullableStringFieldUpdateOperationsInput | string | null
+    valuesRepresent?: NullableIntFieldUpdateOperationsInput | number | null
+    cumulative?: BoolFieldUpdateOperationsInput | boolean
     featureModifier?: FeatureModifierUpdateManyWithoutFormulaParamsNestedInput
   }
 
@@ -79709,6 +79819,8 @@ export namespace Prisma {
     abilityId?: NullableIntFieldUpdateOperationsInput | number | null
     thresholds?: NullableStringFieldUpdateOperationsInput | string | null
     values?: NullableStringFieldUpdateOperationsInput | string | null
+    valuesRepresent?: NullableIntFieldUpdateOperationsInput | number | null
+    cumulative?: BoolFieldUpdateOperationsInput | boolean
     featureModifier?: FeatureModifierUncheckedUpdateManyWithoutFormulaParamsNestedInput
   }
 
@@ -81777,6 +81889,7 @@ export namespace Prisma {
     appliesTo?: number | null
     appliesToId?: number | null
     groupingId?: number
+    displayInDetail?: boolean
     featureProgression: FeatureProgressionCreateNestedOneWithoutModifiersInput
     conditions?: FeatureModifierConditionCreateNestedManyWithoutFeatureModifierInput
     formulaParams?: FeatureFormulaParamsCreateNestedOneWithoutFeatureModifierInput
@@ -81792,6 +81905,7 @@ export namespace Prisma {
     appliesToId?: number | null
     formulaParamsId?: number | null
     groupingId?: number
+    displayInDetail?: boolean
     conditions?: FeatureModifierConditionUncheckedCreateNestedManyWithoutFeatureModifierInput
   }
 
@@ -86688,6 +86802,7 @@ export namespace Prisma {
     itemId?: number | null
     formulaParamsId?: number | null
     groupingId?: number
+    displayInDetail?: boolean
   }
 
   export type CharacterFeatureChoiceCreateManyFeatureProgressionInput = {
@@ -86747,6 +86862,7 @@ export namespace Prisma {
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
+    displayInDetail?: BoolFieldUpdateOperationsInput | boolean
     conditions?: FeatureModifierConditionUpdateManyWithoutFeatureModifierNestedInput
     formulaParams?: FeatureFormulaParamsUpdateOneWithoutFeatureModifierNestedInput
     item?: ItemUpdateOneWithoutFeatureModifiersNestedInput
@@ -86762,6 +86878,7 @@ export namespace Prisma {
     itemId?: NullableIntFieldUpdateOperationsInput | number | null
     formulaParamsId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
+    displayInDetail?: BoolFieldUpdateOperationsInput | boolean
     conditions?: FeatureModifierConditionUncheckedUpdateManyWithoutFeatureModifierNestedInput
   }
 
@@ -86775,6 +86892,7 @@ export namespace Prisma {
     itemId?: NullableIntFieldUpdateOperationsInput | number | null
     formulaParamsId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
+    displayInDetail?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type CharacterFeatureChoiceUpdateWithoutFeatureProgressionInput = {
@@ -86839,6 +86957,7 @@ export namespace Prisma {
     appliesToId?: number | null
     itemId?: number | null
     groupingId?: number
+    displayInDetail?: boolean
   }
 
   export type FeatureChoiceCreateManyFormulaParamsInput = {
@@ -86861,6 +86980,7 @@ export namespace Prisma {
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
+    displayInDetail?: BoolFieldUpdateOperationsInput | boolean
     featureProgression?: FeatureProgressionUpdateOneRequiredWithoutModifiersNestedInput
     conditions?: FeatureModifierConditionUpdateManyWithoutFeatureModifierNestedInput
     item?: ItemUpdateOneWithoutFeatureModifiersNestedInput
@@ -86876,6 +86996,7 @@ export namespace Prisma {
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
     itemId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
+    displayInDetail?: BoolFieldUpdateOperationsInput | boolean
     conditions?: FeatureModifierConditionUncheckedUpdateManyWithoutFeatureModifierNestedInput
   }
 
@@ -86889,6 +87010,7 @@ export namespace Prisma {
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
     itemId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
+    displayInDetail?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type FeatureChoiceUpdateWithoutFormulaParamsInput = {
@@ -87471,6 +87593,7 @@ export namespace Prisma {
     appliesToId?: number | null
     formulaParamsId?: number | null
     groupingId?: number
+    displayInDetail?: boolean
   }
 
   export type CharacterItemUpdateWithoutBaseItemInput = {
@@ -87518,6 +87641,7 @@ export namespace Prisma {
     appliesTo?: NullableIntFieldUpdateOperationsInput | number | null
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
+    displayInDetail?: BoolFieldUpdateOperationsInput | boolean
     featureProgression?: FeatureProgressionUpdateOneRequiredWithoutModifiersNestedInput
     conditions?: FeatureModifierConditionUpdateManyWithoutFeatureModifierNestedInput
     formulaParams?: FeatureFormulaParamsUpdateOneWithoutFeatureModifierNestedInput
@@ -87533,6 +87657,7 @@ export namespace Prisma {
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
     formulaParamsId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
+    displayInDetail?: BoolFieldUpdateOperationsInput | boolean
     conditions?: FeatureModifierConditionUncheckedUpdateManyWithoutFeatureModifierNestedInput
   }
 
@@ -87546,6 +87671,7 @@ export namespace Prisma {
     appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
     formulaParamsId?: NullableIntFieldUpdateOperationsInput | number | null
     groupingId?: IntFieldUpdateOperationsInput | number
+    displayInDetail?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type ItemCreateManyItemTypeInput = {

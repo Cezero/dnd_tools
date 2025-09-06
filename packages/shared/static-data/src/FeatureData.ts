@@ -36,6 +36,7 @@ export const ModifierType = {
     Quantity: 1,     // Counts, amounts, resources (3d6 damage, 2 targets, 30ft speed)
     Replacement: 2,  // Replace existing values (unarmed damage, base speed)
     Other: 3,        // Special cases, complex effects
+    Proficiency: 4,  // Proficiency bonus
 } as const;
 
 export type ModifierType = typeof ModifierType[keyof typeof ModifierType];
@@ -45,6 +46,7 @@ export const MODIFIER_TYPES: BaseMap<CoreComponent> = {
     [ModifierType.Quantity]: { id: ModifierType.Quantity, name: 'Quantity' },
     [ModifierType.Replacement]: { id: ModifierType.Replacement, name: 'Replacement' },
     [ModifierType.Other]: { id: ModifierType.Other, name: 'Other' },
+    [ModifierType.Proficiency]: { id: ModifierType.Proficiency, name: 'Proficiency' },
 }
 
 export const MODIFIER_LIST = Object.values(MODIFIER_TYPES);
@@ -163,6 +165,9 @@ export const MODIFIER_TYPE_COMPATIBILITY = {
         ModifierAppliesToType.SizeCategory,
         ModifierAppliesToType.CreatureType,
         ModifierAppliesToType.DamageType,
+    ],
+    [ModifierType.Proficiency]: [
+        ModifierAppliesToType.Feat, // Feats used as proficiencies
     ],
 } as const;
 
@@ -326,6 +331,7 @@ export const FeatureModifierConditionType = {
     feature: 4,
     spell_school: 5,
     creature_type: 6,
+    source: 7,
 } as const;
 
 export type FeatureModifierConditionType = typeof FeatureModifierConditionType[keyof typeof FeatureModifierConditionType];
@@ -338,10 +344,25 @@ export const FEATURE_MODIFIER_CONDITION_TYPES: BaseMap<ConditionType> = {
     [FeatureModifierConditionType.feature]: { id: FeatureModifierConditionType.feature, name: 'Feature', displayName: 'Feature' },
     [FeatureModifierConditionType.spell_school]: { id: FeatureModifierConditionType.spell_school, name: 'Spell School', displayName: '' },
     [FeatureModifierConditionType.creature_type]: { id: FeatureModifierConditionType.creature_type, name: 'Creature Type', displayName: '' },
+    [FeatureModifierConditionType.source]: { id: FeatureModifierConditionType.source, name: 'Source', displayName: 'Source' },
 }
 
 export const FEATURE_MODIFIER_CONDITION_LIST = Object.values(FEATURE_MODIFIER_CONDITION_TYPES);
 export const FEATURE_MODIFIER_CONDITION_SELECT_LIST = NameSelectOptionList(FEATURE_MODIFIER_CONDITION_LIST);
+
+// Source values for FeatureModifierConditionType.source
+export const SourceType = {
+    traps: 0,
+} as const;
+
+export type SourceType = typeof SourceType[keyof typeof SourceType];
+
+export const SOURCE_TYPES: BaseMap<CoreComponent> = {
+    [SourceType.traps]: { id: SourceType.traps, name: 'Traps' },
+};
+
+export const SOURCE_TYPE_LIST = Object.values(SOURCE_TYPES);
+export const SOURCE_TYPE_SELECT_LIST = NameSelectOptionList(SOURCE_TYPE_LIST);
 
 // Attack Type Enum for conditions
 export const ATTACK_TYPE_ENUM = {
@@ -462,3 +483,20 @@ export const CREATURE_TYPES: BaseMap<CoreComponent> = {
 
 export const CREATURE_TYPE_LIST = Object.values(CREATURE_TYPES);
 export const CREATURE_TYPE_SELECT_LIST = NameSelectOptionList(CREATURE_TYPE_LIST);
+
+// Cumulative Value Type for enhanced formula parameters
+export const CumulativeValueType = {
+    Value: 0,        // Default: values represent numeric values (current behavior)
+    AppliesToId: 1,  // Values represent appliesToId lookups
+    // Future: Could add other types like "ItemId", "SpellId", etc.
+} as const;
+
+export type CumulativeValueType = typeof CumulativeValueType[keyof typeof CumulativeValueType];
+
+export const CUMULATIVE_VALUE_TYPES: BaseMap<CoreComponent> = {
+    [CumulativeValueType.Value]: { id: CumulativeValueType.Value, name: 'Value' },
+    [CumulativeValueType.AppliesToId]: { id: CumulativeValueType.AppliesToId, name: 'Applies To ID' },
+};
+
+export const CUMULATIVE_VALUE_TYPE_LIST = Object.values(CUMULATIVE_VALUE_TYPES);
+export const CUMULATIVE_VALUE_TYPE_SELECT_LIST = NameSelectOptionList(CUMULATIVE_VALUE_TYPE_LIST);

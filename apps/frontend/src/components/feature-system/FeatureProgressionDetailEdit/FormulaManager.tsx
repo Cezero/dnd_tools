@@ -1,11 +1,12 @@
 import React, { useEffect } from 'react';
 
-import { ValidatedInput, ValidatedCustomSelect } from '@/components/forms';
+import { ValidatedInput, ValidatedCustomSelect, ValidatedCustomCheckbox } from '@/components/forms';
 import type { FeatureModifier, FeatureChoice, FeatureProgression, Feature } from '@shared/schema';
-import { ABILITY_SELECT_LIST, FormulaId, FeatureType, FEATURE_TYPES } from '@shared/static-data';
+import { ABILITY_SELECT_LIST, FormulaId, FeatureType, FEATURE_TYPES, CumulativeValueType, CUMULATIVE_VALUE_TYPE_SELECT_LIST } from '@shared/static-data';
 
 import { ArrayPairEditor } from '../ArrayPairEditor';
 import { FormulaPreview } from './FormulaPreview';
+import { getAppliesToSelectOptions } from './utils';
 
 interface FormulaManagerProps<T extends FeatureModifier | FeatureChoice> {
     entity: T;
@@ -122,43 +123,83 @@ export function FormulaManager<T extends FeatureModifier | FeatureChoice>({
                             </div>
                         );
 
-                    case FormulaId.CONDITIONAL_SCALING:
+                    case FormulaId.CONDITIONAL_SCALING: {
+                        // Get the appropriate select options based on appliesTo type
+                        const appliesTo = (entity as FeatureModifier).appliesTo;
+                        const modifierType = (entity as FeatureModifier).type;
+                        const appliesToSelectOptions = getAppliesToSelectOptions(appliesTo, modifierType);
+                        const valuesRepresent = entity.formulaParams?.valuesRepresent;
+                        const isAppliesToId = valuesRepresent === CumulativeValueType.AppliesToId;
+
                         return (
                             <div className="grid grid-cols-1 gap-3">
-                                <ArrayPairEditor
-                                    thresholds={entity.formulaParams?.thresholds || []}
-                                    values={entity.formulaParams?.values || []}
-                                    onThresholdsChange={(thresholds) => {
-                                        setFormData(prev => {
-                                            const entities = [...(prev[entityKey] || [])];
-                                            entities[index] = {
-                                                ...entities[index],
-                                                formulaParams: {
-                                                    ...entities[index].formulaParams,
-                                                    thresholds
-                                                }
-                                            } as T;
-                                            return { ...prev, [entityKey]: entities };
-                                        });
-                                    }}
-                                    onValuesChange={(values) => {
-                                        setFormData(prev => {
-                                            const entities = [...(prev[entityKey] || [])];
-                                            entities[index] = {
-                                                ...entities[index],
-                                                formulaParams: {
-                                                    ...entities[index].formulaParams,
-                                                    values
-                                                }
-                                            } as T;
-                                            return { ...prev, [entityKey]: entities };
-                                        });
-                                    }}
-                                    thresholdPlaceholder="e.g., 4"
-                                    valuePlaceholder="e.g., -2"
-                                />
+                                <div className="grid grid-cols-[1fr_1.5fr] gap-4">
+                                    <div>
+                                        <ArrayPairEditor
+                                            thresholds={entity.formulaParams?.thresholds || []}
+                                            values={entity.formulaParams?.values || []}
+                                            onThresholdsChange={(thresholds) => {
+                                                setFormData(prev => {
+                                                    const entities = [...(prev[entityKey] || [])];
+                                                    entities[index] = {
+                                                        ...entities[index],
+                                                        formulaParams: {
+                                                            ...entities[index].formulaParams,
+                                                            thresholds
+                                                        }
+                                                    } as T;
+                                                    return { ...prev, [entityKey]: entities };
+                                                });
+                                            }}
+                                            onValuesChange={(values) => {
+                                                setFormData(prev => {
+                                                    const entities = [...(prev[entityKey] || [])];
+                                                    entities[index] = {
+                                                        ...entities[index],
+                                                        formulaParams: {
+                                                            ...entities[index].formulaParams,
+                                                            values
+                                                        }
+                                                    } as T;
+                                                    return { ...prev, [entityKey]: entities };
+                                                });
+                                            }}
+                                            thresholdPlaceholder="e.g., 4"
+                                            valuePlaceholder={isAppliesToId ? "Select option" : "e.g., -2"}
+                                            valuesRepresent={isAppliesToId ? 'appliesToId' : 'value'}
+                                            appliesToSelectOptions={appliesToSelectOptions}
+                                            entityKey={entityKey}
+                                            index={index}
+                                        />
+                                    </div>
+                                    <div className="space-y-3 flex flex-col items-start gap-2">
+                                        <div>
+                                            <ValidatedCustomSelect
+                                                field={`${entityKey}.${index}.formulaParams.valuesRepresent`}
+                                                label="Values Represent"
+                                                options={CUMULATIVE_VALUE_TYPE_SELECT_LIST}
+                                                placeholder={valuesRepresent === CumulativeValueType.AppliesToId ? "Applies To ID" : "Value"}
+                                                componentExtraClassName="flex items-center gap-2"
+                                                nested
+                                            />
+                                        </div>
+                                        <div>
+                                            <ValidatedCustomCheckbox
+                                                field={`${entityKey}.${index}.formulaParams.cumulative`}
+                                                label="Cumulative"
+                                                componentExtraClassName="flex items-center gap-2"
+                                                nested
+                                            />
+                                        </div>
+                                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                                            <strong>Values Represent:</strong> Choose what the values represent (Value for numeric/string values, Applies To ID for enum lookups)<br />
+                                            <strong>Cumulative:</strong> When enabled, values accumulate instead of replacing previous ones
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         );
+                    }
 
                     default:
                         return (

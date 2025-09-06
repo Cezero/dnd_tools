@@ -20,28 +20,46 @@ const prisma = new PrismaClient();
 export const featureSystemService: FeatureSystemService = {
     // Core Feature CRUD operations
     async getAllFeatures(sourceType?: number): Promise<GetAllFeaturesResponse> {
-        let whereClause: Prisma.FeatureWhereInput = {
-            // Always filter out special features (IDs 1-5)
-            id: {
-                notIn: [1, 2, 3, 4, 5]
-            }
-        };
+        let whereClause: Prisma.FeatureWhereInput;
 
         if (sourceType !== undefined) {
-            // If sourceType is specified, filter by source type (for ClassList/RaceList)
-            whereClause.progressions = {
-                some: {
-                    sourceType: sourceType
-                }
+            // If sourceType is specified, show both features with that sourceType AND orphaned features
+            whereClause = {
+                // Always filter out special features (IDs 1-5)
+                id: {
+                    notIn: [1, 2, 3, 4, 5]
+                },
+                OR: [
+                    // Features with progressions of this sourceType
+                    {
+                        progressions: {
+                            some: {
+                                sourceType: sourceType
+                            }
+                        }
+                    },
+                    // Orphaned features (no progressions at all)
+                    {
+                        progressions: {
+                            none: {}
+                        }
+                    }
+                ]
             };
         } else {
             // If no sourceType specified, also filter out features associated with classes/races (for standalone features)
-            whereClause.progressions = {
-                none: {
-                    OR: [
-                        { classId: { not: null } },
-                        { raceId: { not: null } }
-                    ]
+            whereClause = {
+                // Always filter out special features (IDs 1-5)
+                id: {
+                    notIn: [1, 2, 3, 4, 5]
+                },
+                progressions: {
+                    none: {
+                        OR: [
+                            { classId: { not: null } },
+                            { raceId: { not: null } }
+                        ]
+                    }
                 }
             };
         }
@@ -597,7 +615,8 @@ export const featureSystemService: FeatureSystemService = {
                 modifiers: {
                     include: {
                         formulaParams: true,
-                        conditions: true
+                        conditions: true,
+                        item: true
                     }
                 },
                 choices: {

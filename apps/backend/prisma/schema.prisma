@@ -131,7 +131,7 @@ model FeatureProgression {
 }
 
 model FeatureModifier {
-    id              Int  @id @default(autoincrement())
+    id              Int     @id @default(autoincrement())
     progressionId   Int
     type            Int
     value           Int?
@@ -140,7 +140,8 @@ model FeatureModifier {
     appliesToId     Int?
     itemId          Int?
     formulaParamsId Int?
-    groupingId      Int  @default(0)
+    groupingId      Int     @default(0)
+    displayInDetail Boolean @default(true)
 
     featureProgression FeatureProgression         @relation(fields: [progressionId], references: [id])
     conditions         FeatureModifierCondition[]
@@ -156,6 +157,10 @@ model FeatureFormulaParams {
     abilityId         Int?
     thresholds        String?
     values            String?
+
+    // Enhanced parameters for complex scaling
+    valuesRepresent Int? // CumulativeValueType enum
+    cumulative      Boolean @default(false) // Whether values accumulate
 
     featureModifier FeatureModifier[]
     featureChoice   FeatureChoice[]

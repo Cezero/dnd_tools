@@ -12,14 +12,19 @@ import {
     FEATURE_BONUS_TYPES,
     RPG_DICE,
     DAMAGE_TYPES,
-    USES_FREQUENCIES
+    USES_FREQUENCIES,
+    PROFICIENCY_TYPES,
+    FeatBenefitType,
+    CREATURE_TYPES,
+    SIZE_MAP,
 } from '@shared/static-data';
 
 import type { BaseFormatter, ChoiceFormatter, FormatterMetadata } from './types';
 
 export class DamageFormatter implements BaseFormatter {
-    format(value: number, _modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
         // For now, use default values since diceType and size aren't in the current schema
+        const value = modifier.value;
         const diceType = 'd6';
         const sizeSuffix = '';
         return `+${value}${diceType}${sizeSuffix}`;
@@ -27,7 +32,8 @@ export class DamageFormatter implements BaseFormatter {
 }
 
 export class DamageBonusFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+        const value = modifier.value;
         const baseValue = formatSignedValue(value);
 
         // Include damage type if appliesToId is present
@@ -40,18 +46,15 @@ export class DamageBonusFormatter implements BaseFormatter {
 }
 
 export class HealingFormatter implements BaseFormatter {
-    format(value: number, _modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+        const value = modifier.value;
         return `${value} hp/day`;
     }
 }
 
 export class SignedValueFormatter implements BaseFormatter {
-    format(value: number | string, modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
-        // Handle string values (formula breakdown strings) by returning them as-is
-        if (typeof value === 'string') {
-            return value;
-        }
-
+    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+        const value = modifier.value;
         const baseValue = formatSignedValue(value);
 
         // Include bonus type if present
@@ -65,13 +68,14 @@ export class SignedValueFormatter implements BaseFormatter {
 }
 
 export class EmptyStringFormatter implements BaseFormatter {
-    format(_value: number, _modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(_modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
         return '';
     }
 }
 
 export class LanguageFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+        const value = modifier.value;
         const languageId = modifier.appliesToId;
         if (languageId && LANGUAGE_MAP[languageId]) {
             return LANGUAGE_MAP[languageId].name;
@@ -81,7 +85,8 @@ export class LanguageFormatter implements BaseFormatter {
 }
 
 export class FeatFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifier, metadata?: FormatterMetadata): string {
+    format(modifier: FeatureModifier, metadata?: FormatterMetadata): string {
+        const value = modifier.value;
         // Handle proficiencies (which have itemId) vs general feats
         if (modifier.itemId !== null && modifier.itemId !== undefined) {
             // This is a proficiency - return the item name
@@ -94,10 +99,10 @@ export class FeatFormatter implements BaseFormatter {
 
         // Handle general feats
         const featId = modifier.appliesToId;
-        if (featId && metadata?.featNames) {
-            const featName = metadata.featNames.find(f => f.id === featId)?.name;
-            if (featName) {
-                return featName;
+        if (featId && metadata?.featObjects) {
+            const feat = metadata.featObjects.find(f => f.id === featId);
+            if (feat) {
+                return feat.name;
             }
         }
         return `${featId || value} (feat name not found)`;
@@ -105,7 +110,8 @@ export class FeatFormatter implements BaseFormatter {
 }
 
 export class UsesFormatter implements BaseFormatter {
-    format(value: number | string, modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+        const value = modifier.value;
         const frequencyInfo = USES_FREQUENCIES[modifier.appliesToId || 1];
         const frequency = frequencyInfo?.name || 'day';
 
@@ -114,31 +120,36 @@ export class UsesFormatter implements BaseFormatter {
 }
 
 export class TargetsFormatter implements BaseFormatter {
-    format(value: number, _modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+        const value = modifier.value;
         return `${value} ${pluralize('target', value)}`;
     }
 }
 
 export class ExtraAttacksFormatter implements BaseFormatter {
-    format(value: number, _modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
-        return `${value} extra ${pluralize('attack', value)}`;
+    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+        const value = modifier.value;
+        return value.toString();
     }
 }
 
 export class DistanceFormatter implements BaseFormatter {
-    format(value: number, _modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+        const value = modifier.value;
         return `${value} ft.`;
     }
 }
 
 export class MovementSpeedFormatter implements BaseFormatter {
-    format(value: number, _modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+        const value = modifier.value;
         return `+${value} ft.`;
     }
 }
 
 export class DiceFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+        const value = modifier.value;
         // Use appliesToId to determine the dice type
         const diceId = modifier.appliesToId;
         if (diceId !== null && diceId !== undefined && RPG_DICE[diceId]) {
@@ -151,7 +162,8 @@ export class DiceFormatter implements BaseFormatter {
 }
 
 export class DiceBonusFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+        const value = modifier.value;
         // Use appliesToId to determine the dice type
         const diceId = modifier.appliesToId;
         if (diceId !== null && diceId !== undefined && RPG_DICE[diceId]) {
@@ -164,7 +176,8 @@ export class DiceBonusFormatter implements BaseFormatter {
 }
 
 export class DamageReductionFormatter implements BaseFormatter {
-    format(value: number, modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+        const value = modifier.value;
         const damageTypeId = modifier.appliesToId;
         if (damageTypeId !== null && damageTypeId !== undefined && DAMAGE_TYPES[damageTypeId]) {
             const damageType = DAMAGE_TYPES[damageTypeId].name;
@@ -175,8 +188,9 @@ export class DamageReductionFormatter implements BaseFormatter {
 }
 
 export class SpellResistanceFormatter implements BaseFormatter {
-    format(value: number, _modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
-        return `SR ${value}`;
+    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+        const value = modifier.value;
+        return value.toString();
     }
 }
 
@@ -217,10 +231,10 @@ export class FeatureChoiceFormatter implements ChoiceFormatter {
         }
 
         // Priority 2: Use passed-in name lookup (specific feat selected)
-        if (choice.featId && metadata?.featNames) {
-            const featName = metadata.featNames.find(f => f.id === choice.featId)?.name;
-            if (featName) {
-                return featName;
+        if (choice.featId && metadata?.featObjects) {
+            const feat = metadata.featObjects.find(f => f.id === choice.featId);
+            if (feat) {
+                return feat.name;
             }
         }
 
@@ -273,8 +287,80 @@ export class FeatureChoiceFormatter implements ChoiceFormatter {
 }
 
 export class OtherFormatter implements BaseFormatter {
-    format(value: number, _modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+
+        const value = modifier.value;
         return `${value}`;
+    }
+}
+
+export class ProficiencyFormatter implements BaseFormatter {
+    format(modifier: FeatureModifier, metadata?: FormatterMetadata): string {
+
+        if (modifier.itemId === -1) {
+            const featObject = metadata?.featObjects?.find(feat => feat.id === modifier.appliesToId);
+            if (featObject?.benefits) {
+                const proficiencyBenefit = featObject.benefits.find(benefit => benefit.typeId === FeatBenefitType.PROFICIENCY);
+                if (proficiencyBenefit) {
+                    return PROFICIENCY_TYPES[proficiencyBenefit.referenceId].allName;
+                }
+            }
+            // Fallback if feat object or proficiency benefit not found
+            return 'all items';
+        } else if (modifier.itemId && modifier.itemId > 0) {
+            // itemId > 0 means a specific item proficiency
+            const itemRecord = metadata?.itemNames?.find(item => item.id === modifier.itemId);
+            if (itemRecord) {
+                return itemRecord.name.toLowerCase();
+            }
+            // Fallback if item name not found
+            return `item ${modifier.itemId}`;
+        } else {
+            // No specific item, just return a generic message
+            return 'proficiency';
+        }
+    }
+}
+
+export class CreatureTypeFormatter implements BaseFormatter {
+    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+        const value = modifier.value;
+        const creatureType = CREATURE_TYPES[modifier.appliesToId];
+        if (creatureType) {
+            if (value !== 0) {
+                const stringValue = formatSignedValue(value);
+                return `${creatureType.name}: ${stringValue}`;
+            }
+            return creatureType.name;
+        }
+        return `Creature Type ID: ${modifier.appliesToId}`;
+    }
+}
+
+export class SizeCategoryFormatter implements BaseFormatter {
+    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+        const value = modifier.value;
+        const sizeCategory = SIZE_MAP[modifier.appliesToId];
+        if (sizeCategory) {
+            if (value !== 0) {
+                const stringValue = formatSignedValue(value);
+                return `${sizeCategory.name}: ${stringValue}`;
+            }
+            return sizeCategory.name;
+        }
+        return `Size Category ID: ${modifier.appliesToId}`;
+    }
+}
+
+export class DamageTypeFormatter implements BaseFormatter {
+    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+        if (modifier.appliesToId !== null && modifier.appliesToId !== undefined) {
+            const damageType = DAMAGE_TYPES[modifier.appliesToId];
+            if (damageType) {
+                return damageType.name;
+            }
+        }
+        return `Damage Type ID: ${modifier.appliesToId}`;
     }
 }
 

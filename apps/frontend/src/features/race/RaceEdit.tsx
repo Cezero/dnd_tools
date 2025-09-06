@@ -119,34 +119,10 @@ export function RaceEdit() {
 
     /**
      * Handles adding or updating race features.
+     * NOTE: This function is not used - the SharedFeaturesTab component handles change detection.
      */
-    const handleAddOrUpdateFeature = useCallback((selectedFeatureObjects: Array<{ featureId: number; slug: string; name: string; description: string; level: number }>) => {
-        setFeatureProgressions(prev => {
-            // Create a map of existing features for quick lookup by featureId
-            const existingFeaturesMap = new Map<number, { modifiers?: FeatureModifier[]; choices?: FeatureChoice[] }>();
-            prev.forEach(f => existingFeaturesMap.set(f.featureId, f));
-
-            const updatedFeatures = selectedFeatureObjects.map(selectedFeature => {
-                const existingFeature = existingFeaturesMap.get(selectedFeature.featureId);
-                return {
-                    id: Date.now() + Math.random(), // Temporary ID for frontend
-                    raceId: parseInt(id || '0'),
-                    classId: null,
-                    level: selectedFeature.level,
-                    featureId: selectedFeature.featureId,
-                    sourceType: FeatureSourceType.Race,
-                    feature: {
-                        id: selectedFeature.featureId,
-                        name: selectedFeature.name,
-                        description: selectedFeature.description,
-                        slug: selectedFeature.slug,
-                    },
-                    modifiers: existingFeature?.modifiers || [],
-                    choices: existingFeature?.choices || [],
-                };
-            });
-            return updatedFeatures;
-        });
+    const handleAddOrUpdateFeature = useCallback((_selectedFeatureObjects: Array<{ featureId: number; slug: string; name: string; description: string; level: number }>) => {
+        console.warn('RaceEdit handleAddOrUpdateFeature called but not used - change detection handled by SharedFeaturesTab');
         setIsFeatureAssocOpen(false);
     }, [id]);
 
@@ -227,7 +203,7 @@ export function RaceEdit() {
                 appliesIfChoiceKey: null,
                 appliesIfChoiceValue: null,
                 conditions: [],
-                groupingId: 0,
+                groupingId: 1, // Group all race languages together as one feature
             };
 
             // Update the existing progression or add a new one
@@ -384,7 +360,7 @@ export function RaceEdit() {
                                     appliesIfChoiceKey: null,
                                     appliesIfChoiceValue: null,
                                     conditions: [],
-                                    groupingId: 0,
+                                    groupingId: 1, // Group all race ability adjustments together as one feature
                                 }]
                             }
                             : fp
@@ -431,7 +407,7 @@ export function RaceEdit() {
                         appliesIfChoiceKey: null,
                         appliesIfChoiceValue: null,
                         conditions: [],
-                        groupingId: 0,
+                        groupingId: 1, // Group all race ability adjustments together as one feature
                     }],
                     choices: []
                 };

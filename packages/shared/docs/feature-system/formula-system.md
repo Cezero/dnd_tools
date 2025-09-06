@@ -89,11 +89,11 @@ Increases every N levels starting from a specific level, with optional formula s
 
 ### **Conditional Scaling**
 
-Different values based on level thresholds, providing step-based progression.
+Different values based on level thresholds, providing step-based progression with enhanced cumulative and semantic options.
 
-**Purpose**: Provides progression that changes at specific level thresholds rather than continuous scaling.
+**Purpose**: Provides progression that changes at specific level thresholds rather than continuous scaling, with support for cumulative values and semantic value interpretation.
 
-**Mathematical Pattern**: Value based on highest threshold that level is >= to
+**Mathematical Pattern**: Value based on highest threshold that level is >= to (replacement) or array of all applicable values (cumulative)
 
 **Key Parameters**:
 - **`level`**: Current character level
@@ -101,18 +101,27 @@ Different values based on level thresholds, providing step-based progression.
 - **`scalingValue`**: Base scaling value
 - **`thresholds`**: Array of level thresholds
 - **`values`**: Array of corresponding values
+- **`valuesRepresent`**: What the values represent (Value or AppliesToId)
+- **`cumulative`**: Whether values accumulate instead of replacing
 
 **Calculation Logic**:
-- **Threshold Matching**: Finds highest threshold that current level meets or exceeds
-- **Value Assignment**: Returns corresponding value for matched threshold
+- **Replacement Mode** (cumulative = false): Finds highest threshold that current level meets or exceeds, returns corresponding value
+- **Cumulative Mode** (cumulative = true): Returns array of all values for thresholds that current level meets or exceeds
 - **Default Value**: Returns first value if level is below all thresholds
 - **Step Progression**: Provides discrete steps rather than continuous scaling
+
+**Enhanced Features**:
+- **Cumulative Behavior**: When enabled, values accumulate instead of replacing previous ones
+- **Semantic Values**: Values can represent either direct values or appliesToId lookups
+- **Backward Compatibility**: Default behavior unchanged (replacement mode, value semantics)
 
 **Common Uses**:
 - **Base Attack Bonus**: Different BAB values at specific levels
 - **Saving Throws**: Different save bonuses at level thresholds
 - **Special Abilities**: New abilities at specific levels
 - **Proficiency Upgrades**: Improved proficiencies at level milestones
+- **Wild Shape Sizes**: Cumulative size categories that unlock at different levels
+- **Size Category Progression**: Multiple size options that accumulate over time
 
 **Source File**: `packages/shared/static-data/src/FormulaDefinitions.ts` (CONDITIONAL_SCALING definition)
 
@@ -339,6 +348,86 @@ The formula system includes management capabilities:
 **Parameter Extension**: Formula parameters can be extended
 **Calculation Updates**: Calculation logic can be updated
 **Backward Compatibility**: Changes maintain backward compatibility
+
+## 🔧 **Enhanced Formula Parameters**
+
+### **CumulativeValueType Enum**
+
+The enhanced formula system introduces semantic value interpretation through the `CumulativeValueType` enum.
+
+**Purpose**: Defines what formula values represent, enabling more sophisticated progression patterns.
+
+**Values**:
+- **`Value` (0)**: Default behavior - values represent direct numeric or string values
+- **`AppliesToId` (1)**: Values represent IDs to look up in appliesTo enums (e.g., size categories, creature types)
+
+**Source File**: `packages/shared/static-data/src/FeatureData.ts` (CumulativeValueType definition)
+
+### **Enhanced FeatureFormulaParams**
+
+The `FeatureFormulaParams` model has been extended with new fields for complex scaling patterns.
+
+**New Fields**:
+- **`valuesRepresent`**: CumulativeValueType enum indicating what values represent
+- **`cumulative`**: Boolean flag indicating whether values accumulate or replace
+
+**Database Schema**: `backend/prisma/schema.prisma` (FeatureFormulaParams model)
+**Validation Schema**: `packages/shared/schema/src/feature.ts` (FeatureFormulaParamsSchema)
+
+### **Cumulative Behavior**
+
+When `cumulative` is enabled, formulas return arrays of applicable values instead of single replacement values.
+
+**Replacement Mode** (cumulative = false):
+- Returns single value based on highest applicable threshold
+- Used for traditional progression (e.g., BAB, save bonuses)
+- Maintains backward compatibility
+
+**Cumulative Mode** (cumulative = true):
+- Returns array of all values for applicable thresholds
+- Used for accumulating abilities (e.g., Wild Shape sizes)
+- Enables complex progression patterns
+
+### **Implementation Examples**
+
+#### **Wild Shape Size Progression**
+```typescript
+// FeatureFormulaParams for cumulative size categories
+{
+    formulaId: FormulaId.CONDITIONAL_SCALING,
+    thresholds: [1, 4, 8, 11, 15, 20],
+    values: [1, 2, 3, 4, 5, 6], // Size category IDs
+    valuesRepresent: CumulativeValueType.AppliesToId,
+    cumulative: true
+}
+
+// Level 8 druid gets: [1, 2, 3] (Small, Medium, Large)
+// Level 11 druid gets: [1, 2, 3, 4] (Small, Medium, Large, Huge)
+```
+
+#### **Traditional BAB Progression** (Backward Compatible)
+```typescript
+// FeatureFormulaParams for traditional BAB
+{
+    formulaId: FormulaId.CONDITIONAL_SCALING,
+    thresholds: [1, 6, 11, 16],
+    values: [1, 2, 3, 4], // BAB values
+    valuesRepresent: CumulativeValueType.Value, // Default
+    cumulative: false // Default
+}
+
+// Level 8 fighter gets: 2 (single BAB value)
+```
+
+### **Frontend Integration**
+
+The enhanced parameters are fully integrated into the frontend UI:
+
+**FormulaParamsEditor**: Updated to include controls for `valuesRepresent` and `cumulative` fields
+**Validation**: Zod schemas validate the new fields
+**User Experience**: Clear labels and help text explain the new options
+
+**Source File**: `frontend/src/components/feature-system/FeatureProgressionDetailEdit/FormulaParamsEditor.tsx`
 
 ### **Testing and Validation**
 

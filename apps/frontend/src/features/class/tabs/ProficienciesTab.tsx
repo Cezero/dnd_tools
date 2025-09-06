@@ -4,11 +4,12 @@ import React, { useState, useEffect, useRef } from 'react';
 
 import { CustomSelect } from '@/components/forms';
 import { renderCellValue } from '@/components/generic-list/columnUtils';
+import { FeatureSystemService } from '@/components/feature-system/FeatureSystemService';
 import { ClassProficiencyService } from '@/features/class/ClassProficiencyService';
 import { FeatApi } from '@/features/feat/FeatApi';
 import { ItemApi } from '@/features/item/ItemApi';
 import type { Feat, ItemWithDetails } from '@shared/schema';
-import { FeatBenefitType, PROFICIENCY_TYPES } from '@shared/static-data';
+import { FeatBenefitType } from '@shared/static-data';
 
 import type { ClassTabProps } from './types';
 
@@ -111,30 +112,11 @@ export function ProficienciesTab({
             // Load items for this proficiency type
             try {
                 setIsDialogLoading(true);
-                // Get proficiency info from the enhanced PROFICIENCY_TYPES
-                const proficiencyInfo = PROFICIENCY_TYPES[feat.proficiencyTypeId];
-                if (!proficiencyInfo) {
-                    console.error('Unknown proficiency type:', feat.proficiencyTypeId);
-                    setProficiencyItems([]);
-                    return;
-                }
+                // Use the FeatureSystemService to get items by proficiency type
+                const items = await FeatureSystemService.getItemsByProficiencyType(feat.proficiencyTypeId);
 
-                // Use the new item query endpoint with the mapped values
-                const response = await ItemApi.itemQuery({
-                    queryType: 'byCategory',
-                    typeId: proficiencyInfo.itemTypeId,
-                    category: proficiencyInfo.category
-                });
-
-                // For tower shield proficiency, filter to only tower shields
-                let filteredItems = response.results;
-                if (feat.proficiencyTypeId === 8) { // Tower Shield
-                    filteredItems = response.results.filter(item =>
-                        item.name.toLowerCase().includes('tower')
-                    );
-                }
-
-                const items = filteredItems.map(item => ({
+                // Transform to the expected format
+                const transformedItems = items.map(item => ({
                     id: item.id,
                     name: item.name,
                     typeId: item.typeId,
@@ -142,7 +124,7 @@ export function ProficienciesTab({
                     armor: item.armor
                 }));
 
-                setProficiencyItems(items);
+                setProficiencyItems(transformedItems);
             } catch (error) {
                 console.error('Failed to load items for proficiency type:', error);
                 setProficiencyItems([]);

@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { CustomCheckbox } from '@/components/forms';
+
 import type { SectionSelectorProps } from './types';
 
 export function SectionSelector({
@@ -17,26 +19,20 @@ export function SectionSelector({
                 Select which components this feature progression provides:
             </p>
             <div className="flex flex-wrap gap-4">
-                <label className="flex items-center gap-2">
-                    <input
-                        type="checkbox"
-                        checked={hasModifiers}
-                        onChange={(e) => onModifierToggle(e.target.checked)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <span className="text-sm font-medium">Modifiers</span>
-                    <span className="text-xs text-gray-500">({modifierCount})</span>
-                </label>
-                <label className="flex items-center gap-2">
-                    <input
-                        type="checkbox"
-                        checked={hasChoices}
-                        onChange={(e) => onChoiceToggle(e.target.checked)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <span className="text-sm font-medium">Choices</span>
-                    <span className="text-xs text-gray-500">({choiceCount})</span>
-                </label>
+                <CustomCheckbox
+                    checked={hasModifiers}
+                    onCheckedChange={onModifierToggle}
+                    label={`Modifiers (${modifierCount})`}
+                    labelClassName="text-sm font-medium"
+                    componentExtraClassName=""
+                />
+                <CustomCheckbox
+                    checked={hasChoices}
+                    onCheckedChange={onChoiceToggle}
+                    label={`Choices (${choiceCount})`}
+                    labelClassName="text-sm font-medium"
+                    componentExtraClassName=""
+                />
             </div>
         </div>
     );

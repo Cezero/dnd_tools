@@ -201,7 +201,8 @@ exports.Prisma.FeatureModifierScalarFieldEnum = {
   appliesToId: 'appliesToId',
   itemId: 'itemId',
   formulaParamsId: 'formulaParamsId',
-  groupingId: 'groupingId'
+  groupingId: 'groupingId',
+  displayInDetail: 'displayInDetail'
 };
 
 exports.Prisma.FeatureFormulaParamsScalarFieldEnum = {
@@ -211,7 +212,9 @@ exports.Prisma.FeatureFormulaParamsScalarFieldEnum = {
   formulaStartLevel: 'formulaStartLevel',
   abilityId: 'abilityId',
   thresholds: 'thresholds',
-  values: 'values'
+  values: 'values',
+  valuesRepresent: 'valuesRepresent',
+  cumulative: 'cumulative'
 };
 
 exports.Prisma.FeatureModifierConditionScalarFieldEnum = {

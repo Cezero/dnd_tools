@@ -143,11 +143,33 @@ export function FeatureProgressionDetailEdit({
 
         setFormData(prev => {
             const entities = [...(prev[key] || [])];
-            entities[index] = { ...entities[index], groupingId: 0 };
+            const currentEntity = entities[index];
+            const currentGroupingId = currentEntity.groupingId || 0;
+
+            // If the entity is not grouped, nothing to do
+            if (currentGroupingId === 0) {
+                return prev;
+            }
+
+            // Count how many entities are in the same group
+            const entitiesInGroup = entities.filter(entity => (entity.groupingId || 0) === currentGroupingId);
+
+            // If there are only 2 entities in the group, ungroup both
+            if (entitiesInGroup.length === 2) {
+                entities.forEach((entity, i) => {
+                    if ((entity.groupingId || 0) === currentGroupingId) {
+                        entities[i] = { ...entity, groupingId: 0 };
+                        updateEntityGrouping(entityType, i, 0);
+                    }
+                });
+            } else {
+                // If there are more than 2 entities, just ungroup the clicked one
+                entities[index] = { ...entities[index], groupingId: 0 };
+                updateEntityGrouping(entityType, index, 0);
+            }
+
             return { ...prev, [key]: entities };
         });
-
-        updateEntityGrouping(entityType, index, 0);
     }, [setFormData, updateEntityGrouping]);
 
     // Handle form submission
@@ -162,11 +184,12 @@ export function FeatureProgressionDetailEdit({
 
         // Validate against the schema directly
         try {
-            const parsed = schema.parse(submissionData);
+            schema.parse(submissionData);
             onSave(updatedProgression as FeatureProgression);
             onClose();
         } catch (error) {
             console.error('Schema validation failed:', error);
+            console.error('Data being validated:', JSON.stringify(submissionData, null, 2));
         }
     };
 

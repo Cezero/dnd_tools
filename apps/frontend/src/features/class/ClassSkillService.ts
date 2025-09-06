@@ -78,7 +78,7 @@ export const ClassSkillService = {
             bonusType: null, // No bonus type needed
             appliesIfChoiceKey: null,
             appliesIfChoiceValue: null,
-            groupingId: 0,
+            groupingId: 1, // Group all class skills together as one feature
         };
 
         // Update the progression with the new modifier

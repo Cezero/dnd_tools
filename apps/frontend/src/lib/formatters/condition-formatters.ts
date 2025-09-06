@@ -1,0 +1,129 @@
+import type { FeatureModifierCondition } from '@shared/schema';
+import {
+    FEATURE_MODIFIER_CONDITION_TYPES,
+    SIZE_MAP,
+    SPELL_SCHOOL_MAP,
+    ATTACK_TYPES,
+    CREATURE_TYPES,
+    SOURCE_TYPES,
+    FeatureModifierConditionType
+} from '@shared/static-data';
+
+import type { ConditionFormatter } from './types';
+
+/**
+ * Formats condition values for display
+ */
+export function formatConditionValue(conditionType: number, conditionValue: number): string {
+    switch (conditionType) {
+        case FeatureModifierConditionType.character_size:
+            return SIZE_MAP[conditionValue]?.name || `Size ${conditionValue}`;
+        case FeatureModifierConditionType.spell_school:
+            return SPELL_SCHOOL_MAP[conditionValue]?.name || `Spell School ${conditionValue}`;
+        case FeatureModifierConditionType.attack_type:
+            return ATTACK_TYPES[conditionValue]?.name || `Attack Type ${conditionValue}`;
+        case FeatureModifierConditionType.creature_type:
+            return CREATURE_TYPES[conditionValue]?.name || `Creature Type ${conditionValue}`;
+        case FeatureModifierConditionType.source:
+            return SOURCE_TYPES[conditionValue]?.name || `Source ${conditionValue}`;
+        default:
+            return `Value ${conditionValue}`;
+    }
+}
+
+/**
+ * Formats condition type names for display
+ */
+export function formatConditionType(conditionType: number): string {
+    const conditionTypeInfo = FEATURE_MODIFIER_CONDITION_TYPES[conditionType];
+    return conditionTypeInfo.displayName !== undefined && conditionTypeInfo.displayName !== null
+        ? conditionTypeInfo.displayName
+        : conditionTypeInfo.name;
+}
+
+/**
+ * Formats a single condition for display
+ */
+export function formatSingleCondition(condition: FeatureModifierCondition): string {
+    const conditionTypeName = formatConditionType(condition.conditionType);
+    const conditionValueName = formatConditionValue(condition.conditionType, condition.conditionValue);
+
+    // For source conditions, just show the value name (e.g., "Traps" not "Source Traps")
+    if (condition.conditionType === FeatureModifierConditionType.source) {
+        return conditionValueName;
+    }
+
+    return `${conditionTypeName} ${conditionValueName}`;
+}
+
+/**
+ * Formats all conditions for a modifier
+ */
+export function formatModifierConditions(modifier: { conditions?: FeatureModifierCondition[] }): string {
+    if (!modifier.conditions || modifier.conditions.length === 0) {
+        return '';
+    }
+
+    const conditionStrings = modifier.conditions.map(formatSingleCondition);
+    return conditionStrings.join(', ');
+}
+
+/**
+ * Specific formatter for spell school conditions
+ */
+export class SpellSchoolConditionFormatter implements ConditionFormatter {
+    formatCondition(condition: FeatureModifierCondition, formattedValue: string): string {
+        const spellSchoolName = formatConditionValue(condition.conditionType, condition.conditionValue);
+        return `${formattedValue} vs ${spellSchoolName}`;
+    }
+}
+
+/**
+ * Specific formatter for creature type conditions
+ */
+export class CreatureTypeConditionFormatter implements ConditionFormatter {
+    formatCondition(condition: FeatureModifierCondition, formattedValue: string): string {
+        const creatureTypeName = formatConditionValue(condition.conditionType, condition.conditionValue);
+        return `${formattedValue} vs ${creatureTypeName}`;
+    }
+}
+
+/**
+ * Specific formatter for source conditions
+ */
+export class SourceConditionFormatter implements ConditionFormatter {
+    formatCondition(condition: FeatureModifierCondition, formattedValue: string): string {
+        const sourceName = formatConditionValue(condition.conditionType, condition.conditionValue);
+        return `${formattedValue} vs ${sourceName}`;
+    }
+}
+
+/**
+ * Specific formatter for trigger conditions
+ */
+export class TriggerConditionFormatter implements ConditionFormatter {
+    formatCondition(condition: FeatureModifierCondition, formattedValue: string): string {
+        const triggerName = formatConditionValue(condition.conditionType, condition.conditionValue);
+        return `${triggerName}: ${formattedValue}`;
+    }
+}
+
+/**
+ * Specific formatter for attack type conditions
+ */
+export class AttackTypeConditionFormatter implements ConditionFormatter {
+    formatCondition(condition: FeatureModifierCondition, formattedValue: string): string {
+        const attackTypeName = formatConditionValue(condition.conditionType, condition.conditionValue);
+        return `${attackTypeName} treated as ${formattedValue}`;
+    }
+}
+
+/**
+ * Specific formatter for character size conditions
+ */
+export class CharacterSizeConditionFormatter implements ConditionFormatter {
+    formatCondition(condition: FeatureModifierCondition, formattedValue: string): string {
+        const sizeName = formatConditionValue(condition.conditionType, condition.conditionValue);
+        return `${sizeName}: ${formattedValue}`;
+    }
+}
