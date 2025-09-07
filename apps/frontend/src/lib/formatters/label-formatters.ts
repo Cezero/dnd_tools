@@ -65,7 +65,7 @@ export function abilityModifierLabeler(value: string, modifier: FeatureModifier)
 
 // Labeler for Saving Throw modifiers - shows saving throw name or "All Save" for -1
 export function savingThrowModifierLabeler(value: string, modifier: FeatureModifier): string {
-    if (modifier.appliesToId) {
+    if (modifier.appliesToId !== null && modifier.appliesToId !== undefined) {
         // Check if it's -1 (all saving throws)
         if (modifier.appliesToId === -1) {
             return `All Saves: ${value}`;

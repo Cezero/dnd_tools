@@ -16,6 +16,7 @@ import {
     SPELL_SCHOOL_SELECT_LIST,
     CREATURE_TYPE_SELECT_LIST,
     SOURCE_TYPE_SELECT_LIST,
+    TARGET_TYPE_SELECT_LIST,
     FeatureType,
     FormulaId
 } from '@shared/static-data';
@@ -225,6 +226,28 @@ export function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeat
                 </div>
             </div>
 
+            {/* Display Control */}
+            <div className="flex items-center gap-2">
+                <CustomCheckbox
+                    id={`displayInDetail-${index}`}
+                    checked={modifier.displayInDetail !== false}
+                    onCheckedChange={(checked) => {
+                        setFormData(prev => ({
+                            ...prev,
+                            modifiers: (prev.modifiers as FeatureModifier[] || []).map((mod, i) =>
+                                i === index ? { ...mod, displayInDetail: checked } : mod
+                            )
+                        }));
+                    }}
+                    label="Show in Detail View"
+                    labelClassName="text-sm font-medium"
+                    componentExtraClassName=""
+                />
+                <span className="text-xs text-gray-500">
+                    Uncheck to hide this modifier from class/race detail pages
+                </span>
+            </div>
+
             {/* Conditions */}
             {showConditions && (
                 <div className="space-y-3">
@@ -295,6 +318,15 @@ export function ModifierDetailForm({ index, feats, featsLoading, preSelectedFeat
                                             label=""
                                             options={SOURCE_TYPE_SELECT_LIST}
                                             placeholder="Select source"
+                                            componentExtraClassName="flex-1"
+                                            nested
+                                        />
+                                    ) : condition.conditionType === FeatureModifierConditionType.target ? (
+                                        <ValidatedCustomSelect
+                                            field={`modifiers.${index}.conditions.${conditionIndex}.conditionValue`}
+                                            label=""
+                                            options={TARGET_TYPE_SELECT_LIST}
+                                            placeholder="Select target"
                                             componentExtraClassName="flex-1"
                                             nested
                                         />

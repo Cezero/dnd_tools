@@ -280,7 +280,7 @@ export class ProgressionGeneratorImpl implements ProgressionGenerator {
             return {
                 ...originalModifier,
                 value: 0, // Use 0 as placeholder for string values
-                appliesToId: null,
+                // Preserve appliesToId for labeler to work correctly
                 groupingId: groupingId,
                 // Store the display string in a way that formatters can access it
                 // We'll use a special approach: put the string in the breakdown

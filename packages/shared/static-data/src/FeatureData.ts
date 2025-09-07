@@ -327,7 +327,7 @@ export const FeatureModifierConditionType = {
     trigger: 0,
     attack_type: 1,
     character_size: 2,
-    other: 3,
+    target: 3,
     feature: 4,
     spell_school: 5,
     creature_type: 6,
@@ -340,7 +340,7 @@ export const FEATURE_MODIFIER_CONDITION_TYPES: BaseMap<ConditionType> = {
     [FeatureModifierConditionType.trigger]: { id: FeatureModifierConditionType.trigger, name: 'Trigger', displayName: 'Trigger' },
     [FeatureModifierConditionType.attack_type]: { id: FeatureModifierConditionType.attack_type, name: 'Attack Type', displayName: '' },
     [FeatureModifierConditionType.character_size]: { id: FeatureModifierConditionType.character_size, name: 'Character Size', displayName: '' },
-    [FeatureModifierConditionType.other]: { id: FeatureModifierConditionType.other, name: 'Other', displayName: 'Other' },
+    [FeatureModifierConditionType.target]: { id: FeatureModifierConditionType.target, name: 'Target', displayName: 'Target' },
     [FeatureModifierConditionType.feature]: { id: FeatureModifierConditionType.feature, name: 'Feature', displayName: 'Feature' },
     [FeatureModifierConditionType.spell_school]: { id: FeatureModifierConditionType.spell_school, name: 'Spell School', displayName: '' },
     [FeatureModifierConditionType.creature_type]: { id: FeatureModifierConditionType.creature_type, name: 'Creature Type', displayName: '' },
@@ -353,16 +353,38 @@ export const FEATURE_MODIFIER_CONDITION_SELECT_LIST = NameSelectOptionList(FEATU
 // Source values for FeatureModifierConditionType.source
 export const SourceType = {
     traps: 0,
+    fear: 1,
 } as const;
 
 export type SourceType = typeof SourceType[keyof typeof SourceType];
 
 export const SOURCE_TYPES: BaseMap<CoreComponent> = {
     [SourceType.traps]: { id: SourceType.traps, name: 'Traps' },
+    [SourceType.fear]: { id: SourceType.fear, name: 'Fear' },
 };
 
 export const SOURCE_TYPE_LIST = Object.values(SOURCE_TYPES);
 export const SOURCE_TYPE_SELECT_LIST = NameSelectOptionList(SOURCE_TYPE_LIST);
+
+// Target values for FeatureModifierConditionType.target
+export const TargetType = {
+    nearby_allies: 0,          // Affects allies within range (e.g., Aura of Courage)
+    nearby_enemies: 1,         // Affects enemies within range
+    touched_creature: 2,       // Affects a creature you touch
+    line_of_sight: 3,          // Affects creatures you can see
+} as const;
+
+export type TargetType = typeof TargetType[keyof typeof TargetType];
+
+export const TARGET_TYPES: BaseMap<CoreComponent> = {
+    [TargetType.nearby_allies]: { id: TargetType.nearby_allies, name: 'Nearby Allies' },
+    [TargetType.nearby_enemies]: { id: TargetType.nearby_enemies, name: 'Nearby Enemies' },
+    [TargetType.touched_creature]: { id: TargetType.touched_creature, name: 'Touched Creature' },
+    [TargetType.line_of_sight]: { id: TargetType.line_of_sight, name: 'Line of Sight' },
+};
+
+export const TARGET_TYPE_LIST = Object.values(TARGET_TYPES);
+export const TARGET_TYPE_SELECT_LIST = NameSelectOptionList(TARGET_TYPE_LIST);
 
 // Attack Type Enum for conditions
 export const ATTACK_TYPE_ENUM = {

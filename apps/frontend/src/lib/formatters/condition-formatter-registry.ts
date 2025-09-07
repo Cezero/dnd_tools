@@ -7,7 +7,8 @@ import {
     SourceConditionFormatter,
     TriggerConditionFormatter,
     AttackTypeConditionFormatter,
-    CharacterSizeConditionFormatter
+    CharacterSizeConditionFormatter,
+    TargetConditionFormatter
 } from './condition-formatters';
 import type { ConditionFormatter } from './types';
 
@@ -75,6 +76,7 @@ export class ConditionFormatterRegistry implements IConditionFormatterRegistry {
         const triggerConditionFormatter = new TriggerConditionFormatter();
         const attackTypeConditionFormatter = new AttackTypeConditionFormatter();
         const characterSizeConditionFormatter = new CharacterSizeConditionFormatter();
+        const targetConditionFormatter = new TargetConditionFormatter();
 
         // Register formatters for each condition type
         this.registerConditionFormatter(FeatureModifierConditionType.spell_school, spellSchoolConditionFormatter);
@@ -83,6 +85,7 @@ export class ConditionFormatterRegistry implements IConditionFormatterRegistry {
         this.registerConditionFormatter(FeatureModifierConditionType.trigger, triggerConditionFormatter);
         this.registerConditionFormatter(FeatureModifierConditionType.attack_type, attackTypeConditionFormatter);
         this.registerConditionFormatter(FeatureModifierConditionType.character_size, characterSizeConditionFormatter);
+        this.registerConditionFormatter(FeatureModifierConditionType.target, targetConditionFormatter);
     }
 }
 

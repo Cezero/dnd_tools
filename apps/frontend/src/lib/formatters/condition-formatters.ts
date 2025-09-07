@@ -6,6 +6,7 @@ import {
     ATTACK_TYPES,
     CREATURE_TYPES,
     SOURCE_TYPES,
+    TARGET_TYPES,
     FeatureModifierConditionType
 } from '@shared/static-data';
 
@@ -26,6 +27,8 @@ export function formatConditionValue(conditionType: number, conditionValue: numb
             return CREATURE_TYPES[conditionValue]?.name || `Creature Type ${conditionValue}`;
         case FeatureModifierConditionType.source:
             return SOURCE_TYPES[conditionValue]?.name || `Source ${conditionValue}`;
+        case FeatureModifierConditionType.target:
+            return TARGET_TYPES[conditionValue]?.name || `Target ${conditionValue}`;
         default:
             return `Value ${conditionValue}`;
     }
@@ -125,5 +128,15 @@ export class CharacterSizeConditionFormatter implements ConditionFormatter {
     formatCondition(condition: FeatureModifierCondition, formattedValue: string): string {
         const sizeName = formatConditionValue(condition.conditionType, condition.conditionValue);
         return `${sizeName}: ${formattedValue}`;
+    }
+}
+
+/**
+ * Specific formatter for target conditions
+ */
+export class TargetConditionFormatter implements ConditionFormatter {
+    formatCondition(condition: FeatureModifierCondition, formattedValue: string): string {
+        const targetName = formatConditionValue(condition.conditionType, condition.conditionValue);
+        return `${formattedValue} (${targetName})`;
     }
 }
