@@ -1,18 +1,6 @@
 import { AppliesToType, BaseMap, CoreComponent, ConditionType } from "./types";
 import { NameSelectOptionList } from "./Util";
 
-export const FeatureType = {
-    Modifier: 0,
-    Choice: 2,
-} as const;
-
-export type FeatureType = typeof FeatureType[keyof typeof FeatureType];
-
-export const FEATURE_TYPES: BaseMap<CoreComponent> = {
-    [FeatureType.Modifier]: { id: FeatureType.Modifier, name: 'modifiers' },
-    [FeatureType.Choice]: { id: FeatureType.Choice, name: 'choices' },
-}
-
 export const SpecialFeatureId = {
     ClassSkill: 1,
     ClassProficiency: 2,
@@ -31,28 +19,32 @@ export const FeatureSourceType = {
 
 export type FeatureSourceType = typeof FeatureSourceType[keyof typeof FeatureSourceType];
 
-export const ModifierType = {
+export const EntityType = {
     Bonus: 0,        // Numeric bonuses/penalties (STR+4, AC+2, etc.)
     Quantity: 1,     // Counts, amounts, resources (3d6 damage, 2 targets, 30ft speed)
     Replacement: 2,  // Replace existing values (unarmed damage, base speed)
     Other: 3,        // Special cases, complex effects
     Proficiency: 4,  // Proficiency bonus
+    Choice: 5,      // Choice-based features
+    Allocation: 6,  // Allocation-based features
 } as const;
 
-export type ModifierType = typeof ModifierType[keyof typeof ModifierType];
+export type EntityType = typeof EntityType[keyof typeof EntityType];
 
-export const MODIFIER_TYPES: BaseMap<CoreComponent> = {
-    [ModifierType.Bonus]: { id: ModifierType.Bonus, name: 'Bonus' },
-    [ModifierType.Quantity]: { id: ModifierType.Quantity, name: 'Quantity' },
-    [ModifierType.Replacement]: { id: ModifierType.Replacement, name: 'Replacement' },
-    [ModifierType.Other]: { id: ModifierType.Other, name: 'Other' },
-    [ModifierType.Proficiency]: { id: ModifierType.Proficiency, name: 'Proficiency' },
+export const ENTITY_TYPES: BaseMap<CoreComponent> = {
+    [EntityType.Bonus]: { id: EntityType.Bonus, name: 'Bonus' },
+    [EntityType.Quantity]: { id: EntityType.Quantity, name: 'Quantity' },
+    [EntityType.Replacement]: { id: EntityType.Replacement, name: 'Replacement' },
+    [EntityType.Other]: { id: EntityType.Other, name: 'Other' },
+    [EntityType.Proficiency]: { id: EntityType.Proficiency, name: 'Proficiency' },
+    [EntityType.Choice]: { id: EntityType.Choice, name: 'Choice' },
+    [EntityType.Allocation]: { id: EntityType.Allocation, name: 'Allocation' },
 }
 
-export const MODIFIER_LIST = Object.values(MODIFIER_TYPES);
-export const MODIFIER_SELECT_LIST = NameSelectOptionList(MODIFIER_LIST);
+export const ENTITY_LIST = Object.values(ENTITY_TYPES);
+export const ENTITY_TYPE_SELECT_LIST = NameSelectOptionList(ENTITY_LIST);
 
-export const ModifierAppliesToType = {
+export const EntityAppliesToType = {
     // Bonus-compatible types
     Ability: 0,        // STR, DEX, CON, etc.
     Skill: 1,           // Climb, Jump, etc.
@@ -74,6 +66,7 @@ export const ModifierAppliesToType = {
     SpellResistance: 19, // Spell Resistance (SR)
     UnarmedDamage: 20,  // Unarmed strike damage dice
     Feat: 21,           // Direct feat grants (e.g., Ranger Track, Endurance)
+    Feature: 25,        // Direct feature grants (e.g., Ranger Endurance)
 
     // New types for complex abilities
     SizeCategory: 22,
@@ -86,88 +79,99 @@ export const ModifierAppliesToType = {
     AutomaticLanguage: 15, // Languages granted automatically
 } as const;
 
-export type ModifierAppliesToType = typeof ModifierAppliesToType[keyof typeof ModifierAppliesToType];
+export type EntityAppliesToType = typeof EntityAppliesToType[keyof typeof EntityAppliesToType];
 
-export const MODIFIER_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
+export const ENTITY_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
     // Bonus-compatible types
-    [ModifierAppliesToType.Ability]: { id: ModifierAppliesToType.Ability, name: 'Ability', displayName: null },
-    [ModifierAppliesToType.Skill]: { id: ModifierAppliesToType.Skill, name: 'Skill', displayName: '' },
-    [ModifierAppliesToType.SavingThrow]: { id: ModifierAppliesToType.SavingThrow, name: 'Saving Throw', displayName: '' },
-    [ModifierAppliesToType.AC]: { id: ModifierAppliesToType.AC, name: 'Armor Class', displayName: 'AC' },
-    [ModifierAppliesToType.Attack]: { id: ModifierAppliesToType.Attack, name: 'Attack', displayName: 'Atk' },
-    [ModifierAppliesToType.Damage]: { id: ModifierAppliesToType.Damage, name: 'Damage', displayName: 'Dmg' },
-    [ModifierAppliesToType.DamageReduction]: { id: ModifierAppliesToType.DamageReduction, name: 'Damage Reduction', displayName: 'DR' },
-    [ModifierAppliesToType.Initiative]: { id: ModifierAppliesToType.Initiative, name: 'Initiative', displayName: 'Init' },
+    [EntityAppliesToType.Ability]: { id: EntityAppliesToType.Ability, name: 'Ability', displayName: null },
+    [EntityAppliesToType.Skill]: { id: EntityAppliesToType.Skill, name: 'Skill', displayName: '' },
+    [EntityAppliesToType.SavingThrow]: { id: EntityAppliesToType.SavingThrow, name: 'Saving Throw', displayName: '' },
+    [EntityAppliesToType.AC]: { id: EntityAppliesToType.AC, name: 'Armor Class', displayName: 'AC' },
+    [EntityAppliesToType.Attack]: { id: EntityAppliesToType.Attack, name: 'Attack', displayName: 'Atk' },
+    [EntityAppliesToType.Damage]: { id: EntityAppliesToType.Damage, name: 'Damage', displayName: 'Dmg' },
+    [EntityAppliesToType.DamageReduction]: { id: EntityAppliesToType.DamageReduction, name: 'Damage Reduction', displayName: 'DR' },
+    [EntityAppliesToType.Initiative]: { id: EntityAppliesToType.Initiative, name: 'Initiative', displayName: 'Init' },
 
     // Quantity-compatible types
-    [ModifierAppliesToType.MovementSpeed]: { id: ModifierAppliesToType.MovementSpeed, name: 'Movement Speed', displayName: 'Move Speed' },
-    [ModifierAppliesToType.HitDice]: { id: ModifierAppliesToType.HitDice, name: 'Hit Dice', displayName: 'HD' },
-    [ModifierAppliesToType.Uses]: { id: ModifierAppliesToType.Uses, name: 'Uses', displayName: 'Uses' },
-    [ModifierAppliesToType.Targets]: { id: ModifierAppliesToType.Targets, name: 'Targets', displayName: '' },
-    [ModifierAppliesToType.Distance]: { id: ModifierAppliesToType.Distance, name: 'Distance', displayName: 'Distance' },
-    [ModifierAppliesToType.ExtraAttacks]: { id: ModifierAppliesToType.ExtraAttacks, name: 'Extra Attacks', displayName: 'Extra Attacks' },
-    [ModifierAppliesToType.Healing]: { id: ModifierAppliesToType.Healing, name: 'Healing', displayName: 'Healing' },
-    [ModifierAppliesToType.SpellResistance]: { id: ModifierAppliesToType.SpellResistance, name: 'Spell Resistance', displayName: 'SR' },
-    [ModifierAppliesToType.UnarmedDamage]: { id: ModifierAppliesToType.UnarmedDamage, name: 'Unarmed Damage', displayName: 'Unarmed Dmg' },
-    [ModifierAppliesToType.Feat]: { id: ModifierAppliesToType.Feat, name: 'Feat', displayName: 'Feat' },
+    [EntityAppliesToType.MovementSpeed]: { id: EntityAppliesToType.MovementSpeed, name: 'Movement Speed', displayName: 'Move Speed' },
+    [EntityAppliesToType.HitDice]: { id: EntityAppliesToType.HitDice, name: 'Hit Dice', displayName: 'HD' },
+    [EntityAppliesToType.Uses]: { id: EntityAppliesToType.Uses, name: 'Uses', displayName: 'Uses' },
+    [EntityAppliesToType.Targets]: { id: EntityAppliesToType.Targets, name: 'Targets', displayName: '' },
+    [EntityAppliesToType.Distance]: { id: EntityAppliesToType.Distance, name: 'Distance', displayName: 'Distance' },
+    [EntityAppliesToType.ExtraAttacks]: { id: EntityAppliesToType.ExtraAttacks, name: 'Extra Attacks', displayName: 'Extra Attacks' },
+    [EntityAppliesToType.Healing]: { id: EntityAppliesToType.Healing, name: 'Healing', displayName: 'Healing' },
+    [EntityAppliesToType.SpellResistance]: { id: EntityAppliesToType.SpellResistance, name: 'Spell Resistance', displayName: 'SR' },
+    [EntityAppliesToType.UnarmedDamage]: { id: EntityAppliesToType.UnarmedDamage, name: 'Unarmed Damage', displayName: 'Unarmed Dmg' },
+    [EntityAppliesToType.Feat]: { id: EntityAppliesToType.Feat, name: 'Feat', displayName: 'Feat' },
+    [EntityAppliesToType.Feature]: { id: EntityAppliesToType.Feature, name: 'Feature', displayName: 'Feature' },
 
     // New types for complex abilities
-    [ModifierAppliesToType.SizeCategory]: { id: ModifierAppliesToType.SizeCategory, name: 'Size Category', displayName: 'Size Category' },
-    [ModifierAppliesToType.CreatureType]: { id: ModifierAppliesToType.CreatureType, name: 'Creature Type', displayName: 'Creature Type' },
-    [ModifierAppliesToType.DamageType]: { id: ModifierAppliesToType.DamageType, name: 'Damage Type', displayName: 'Damage Type' },
+    [EntityAppliesToType.SizeCategory]: { id: EntityAppliesToType.SizeCategory, name: 'Size Category', displayName: 'Size Category' },
+    [EntityAppliesToType.CreatureType]: { id: EntityAppliesToType.CreatureType, name: 'Creature Type', displayName: 'Creature Type' },
+    [EntityAppliesToType.DamageType]: { id: EntityAppliesToType.DamageType, name: 'Damage Type', displayName: 'Damage Type' },
 
     // Other
-    [ModifierAppliesToType.Other]: { id: ModifierAppliesToType.Other, name: 'Other', displayName: 'Other' },
-    [ModifierAppliesToType.BonusLanguage]: { id: ModifierAppliesToType.BonusLanguage, name: 'Bonus Language', displayName: 'Bonus Language' },
-    [ModifierAppliesToType.AutomaticLanguage]: { id: ModifierAppliesToType.AutomaticLanguage, name: 'Automatic Language', displayName: 'Automatic Language' },
+    [EntityAppliesToType.Other]: { id: EntityAppliesToType.Other, name: 'Other', displayName: 'Other' },
+    [EntityAppliesToType.BonusLanguage]: { id: EntityAppliesToType.BonusLanguage, name: 'Bonus Language', displayName: 'Bonus Language' },
+    [EntityAppliesToType.AutomaticLanguage]: { id: EntityAppliesToType.AutomaticLanguage, name: 'Automatic Language', displayName: 'Automatic Language' },
 }
 
-export const MODIFIER_APPLIES_TO_LIST = Object.values(MODIFIER_APPLIES_TO_TYPES);
-export const MODIFIER_APPLIES_TO_SELECT_LIST = NameSelectOptionList(MODIFIER_APPLIES_TO_LIST);
+export const ENTITY_APPLIES_TO_LIST = Object.values(ENTITY_APPLIES_TO_TYPES);
+export const ENTITY_APPLIES_TO_SELECT_LIST = NameSelectOptionList(ENTITY_APPLIES_TO_LIST);
 
 // Type compatibility matrix - defines which ModifierAppliesToType values are valid for each ModifierType
-export const MODIFIER_TYPE_COMPATIBILITY = {
-    [ModifierType.Bonus]: [
-        ModifierAppliesToType.Ability,
-        ModifierAppliesToType.Skill,
-        ModifierAppliesToType.SavingThrow,
-        ModifierAppliesToType.AC,
-        ModifierAppliesToType.Attack,
-        ModifierAppliesToType.Damage,
-        ModifierAppliesToType.DamageReduction,
-        ModifierAppliesToType.Initiative,
+export const ENTITY_TYPE_COMPATIBILITY = {
+    [EntityType.Bonus]: [
+        EntityAppliesToType.Ability,
+        EntityAppliesToType.Skill,
+        EntityAppliesToType.SavingThrow,
+        EntityAppliesToType.AC,
+        EntityAppliesToType.Attack,
+        EntityAppliesToType.Damage,
+        EntityAppliesToType.DamageReduction,
+        EntityAppliesToType.Initiative,
     ],
-    [ModifierType.Quantity]: [
-        ModifierAppliesToType.MovementSpeed,
-        ModifierAppliesToType.HitDice,
-        ModifierAppliesToType.Uses,
-        ModifierAppliesToType.Targets,
-        ModifierAppliesToType.Distance,
-        ModifierAppliesToType.ExtraAttacks, // Extra attacks per round/action
-        ModifierAppliesToType.Damage, // For dice quantities
-        ModifierAppliesToType.Healing, // Healing per day
-        ModifierAppliesToType.SpellResistance, // Spell Resistance (SR)
+    [EntityType.Quantity]: [
+        EntityAppliesToType.MovementSpeed,
+        EntityAppliesToType.HitDice,
+        EntityAppliesToType.Uses,
+        EntityAppliesToType.Targets,
+        EntityAppliesToType.Distance,
+        EntityAppliesToType.ExtraAttacks, // Extra attacks per round/action
+        EntityAppliesToType.Damage, // For dice quantities
+        EntityAppliesToType.Healing, // Healing per day
+        EntityAppliesToType.SpellResistance, // Spell Resistance (SR)
     ],
-    [ModifierType.Replacement]: [
-        ModifierAppliesToType.Damage,
-        ModifierAppliesToType.UnarmedDamage,
-        ModifierAppliesToType.MovementSpeed,
-        ModifierAppliesToType.Ability, // For ability score replacement
+    [EntityType.Replacement]: [
+        EntityAppliesToType.Damage,
+        EntityAppliesToType.UnarmedDamage,
+        EntityAppliesToType.MovementSpeed,
+        EntityAppliesToType.Ability, // For ability score replacement
     ],
-    [ModifierType.Other]: [
-        ModifierAppliesToType.Other,
-        ModifierAppliesToType.BonusLanguage, // Bonus languages are Other type modifiers
-        ModifierAppliesToType.AutomaticLanguage, // Automatic languages are Other type modifiers
+    [EntityType.Other]: [
+        EntityAppliesToType.Other,
+        EntityAppliesToType.BonusLanguage, // Bonus languages are Other type modifiers
+        EntityAppliesToType.AutomaticLanguage, // Automatic languages are Other type modifiers
 
-        ModifierAppliesToType.Feat, // Direct feat grants are Other type modifiers
+        EntityAppliesToType.Feat, // Direct feat grants are Other type modifiers
 
         // New complex ability types
-        ModifierAppliesToType.SizeCategory,
-        ModifierAppliesToType.CreatureType,
-        ModifierAppliesToType.DamageType,
+        EntityAppliesToType.SizeCategory,
+        EntityAppliesToType.CreatureType,
+        EntityAppliesToType.DamageType,
     ],
-    [ModifierType.Proficiency]: [
-        ModifierAppliesToType.Feat, // Feats used as proficiencies
+    [EntityType.Proficiency]: [
+        EntityAppliesToType.Feat, // Feats used as proficiencies
+    ],
+    [EntityType.Choice]: [
+        EntityAppliesToType.Feat, // Choice between feats
+        EntityAppliesToType.Feature, // Choice between features
+        EntityAppliesToType.CreatureType, // Choice between creature types (e.g., Ranger favored enemy)
+    ],
+    [EntityType.Allocation]: [
+        EntityAppliesToType.Feat, // Allocation to feats
+        EntityAppliesToType.Feature, // Allocation to features
+        EntityAppliesToType.CreatureType, // Allocation to creature types (e.g., Ranger favored enemy)
     ],
 } as const;
 
@@ -228,27 +232,6 @@ export const FEATURE_BONUS_TYPES: BaseMap<CoreComponent> = {
 export const FEATURE_BONUS_LIST = Object.values(FEATURE_BONUS_TYPES);
 export const FEATURE_BONUS_SELECT_LIST = NameSelectOptionList(FEATURE_BONUS_LIST);
 
-export const FeatureAppliesToType = {
-    Skill: 0,
-    Item: 1,
-    Language: 2,
-    Feat: 3,
-    Other: 4,
-} as const;
-
-export type FeatureAppliesToType = typeof FeatureAppliesToType[keyof typeof FeatureAppliesToType];
-
-export const FEATURE_APPLIES_TO_TYPES: BaseMap<CoreComponent> = {
-    [FeatureAppliesToType.Skill]: { id: FeatureAppliesToType.Skill, name: 'Skill' },
-    [FeatureAppliesToType.Item]: { id: FeatureAppliesToType.Item, name: 'Item' },
-    [FeatureAppliesToType.Language]: { id: FeatureAppliesToType.Language, name: 'Language' },
-    [FeatureAppliesToType.Feat]: { id: FeatureAppliesToType.Feat, name: 'Feat' },
-    [FeatureAppliesToType.Other]: { id: FeatureAppliesToType.Other, name: 'Other' },
-}
-
-export const FEATURE_APPLIES_TO_LIST = Object.values(FEATURE_APPLIES_TO_TYPES);
-export const FEATURE_APPLIES_TO_SELECT_LIST = NameSelectOptionList(FEATURE_APPLIES_TO_LIST);
-
 export const FeatureFeatChoiceFilter = {
     Any: 0,
     FighterBonus: 1,
@@ -265,40 +248,6 @@ export const FEATURE_FEAT_CHOICE_FILTER_TYPES: BaseMap<CoreComponent> = {
 
 export const FEATURE_FEAT_CHOICE_FILTER_LIST = Object.values(FEATURE_FEAT_CHOICE_FILTER_TYPES);
 export const FEATURE_FEAT_CHOICE_FILTER_SELECT_LIST = NameSelectOptionList(FEATURE_FEAT_CHOICE_FILTER_LIST);
-
-export const FeatureChoiceType = {
-    Feat: 0,
-    Feature: 1,
-    CreatureType: 2,
-} as const;
-
-export type FeatureChoiceType = typeof FeatureChoiceType[keyof typeof FeatureChoiceType];
-
-export const FEATURE_CHOICE_TYPES: BaseMap<CoreComponent> = {
-    [FeatureChoiceType.Feat]: { id: FeatureChoiceType.Feat, name: 'Feat' },
-    [FeatureChoiceType.Feature]: { id: FeatureChoiceType.Feature, name: 'Feature' },
-    [FeatureChoiceType.CreatureType]: { id: FeatureChoiceType.CreatureType, name: 'Creature Type' },
-}
-
-export const FEATURE_CHOICE_LIST = Object.values(FEATURE_CHOICE_TYPES);
-export const FEATURE_CHOICE_SELECT_LIST = NameSelectOptionList(FEATURE_CHOICE_LIST);
-
-export const FeatureChoiceBehavior = {
-    Single: 0,
-    Multiple: 1,
-    Allocation: 2,
-} as const;
-
-export type FeatureChoiceBehavior = typeof FeatureChoiceBehavior[keyof typeof FeatureChoiceBehavior];
-
-export const FEATURE_CHOICE_BEHAVIOR_TYPES: BaseMap<CoreComponent> = {
-    [FeatureChoiceBehavior.Single]: { id: FeatureChoiceBehavior.Single, name: 'Single' },
-    [FeatureChoiceBehavior.Multiple]: { id: FeatureChoiceBehavior.Multiple, name: 'Multiple' },
-    [FeatureChoiceBehavior.Allocation]: { id: FeatureChoiceBehavior.Allocation, name: 'Allocation' },
-}
-
-export const FEATURE_CHOICE_BEHAVIOR_LIST = Object.values(FEATURE_CHOICE_BEHAVIOR_TYPES);
-export const FEATURE_CHOICE_BEHAVIOR_SELECT_LIST = NameSelectOptionList(FEATURE_CHOICE_BEHAVIOR_LIST);
 
 export const FeaturePrerequisiteType = {
     SkillRanks: 0,
@@ -323,7 +272,7 @@ export const FEATURE_PRE_REQ_TYPES: BaseMap<CoreComponent> = {
 export const FEATURE_PRE_REQ_LIST = Object.values(FEATURE_PRE_REQ_TYPES);
 export const FEATURE_PRE_REQ_SELECT_LIST = NameSelectOptionList(FEATURE_PRE_REQ_LIST);
 
-export const FeatureModifierConditionType = {
+export const FeatureEntityConditionType = {
     trigger: 0,
     attack_type: 1,
     character_size: 2,
@@ -334,23 +283,23 @@ export const FeatureModifierConditionType = {
     source: 7,
 } as const;
 
-export type FeatureModifierConditionType = typeof FeatureModifierConditionType[keyof typeof FeatureModifierConditionType];
+export type FeatureEntityConditionType = typeof FeatureEntityConditionType[keyof typeof FeatureEntityConditionType];
 
-export const FEATURE_MODIFIER_CONDITION_TYPES: BaseMap<ConditionType> = {
-    [FeatureModifierConditionType.trigger]: { id: FeatureModifierConditionType.trigger, name: 'Trigger', displayName: 'Trigger' },
-    [FeatureModifierConditionType.attack_type]: { id: FeatureModifierConditionType.attack_type, name: 'Attack Type', displayName: '' },
-    [FeatureModifierConditionType.character_size]: { id: FeatureModifierConditionType.character_size, name: 'Character Size', displayName: '' },
-    [FeatureModifierConditionType.target]: { id: FeatureModifierConditionType.target, name: 'Target', displayName: 'Target' },
-    [FeatureModifierConditionType.feature]: { id: FeatureModifierConditionType.feature, name: 'Feature', displayName: 'Feature' },
-    [FeatureModifierConditionType.spell_school]: { id: FeatureModifierConditionType.spell_school, name: 'Spell School', displayName: '' },
-    [FeatureModifierConditionType.creature_type]: { id: FeatureModifierConditionType.creature_type, name: 'Creature Type', displayName: '' },
-    [FeatureModifierConditionType.source]: { id: FeatureModifierConditionType.source, name: 'Source', displayName: 'Source' },
+export const FEATURE_ENTITY_CONDITION_TYPES: BaseMap<ConditionType> = {
+    [FeatureEntityConditionType.trigger]: { id: FeatureEntityConditionType.trigger, name: 'Trigger', displayName: 'Trigger' },
+    [FeatureEntityConditionType.attack_type]: { id: FeatureEntityConditionType.attack_type, name: 'Attack Type', displayName: '' },
+    [FeatureEntityConditionType.character_size]: { id: FeatureEntityConditionType.character_size, name: 'Character Size', displayName: '' },
+    [FeatureEntityConditionType.target]: { id: FeatureEntityConditionType.target, name: 'Target', displayName: 'Target' },
+    [FeatureEntityConditionType.feature]: { id: FeatureEntityConditionType.feature, name: 'Feature', displayName: 'Feature' },
+    [FeatureEntityConditionType.spell_school]: { id: FeatureEntityConditionType.spell_school, name: 'Spell School', displayName: '' },
+    [FeatureEntityConditionType.creature_type]: { id: FeatureEntityConditionType.creature_type, name: 'Creature Type', displayName: '' },
+    [FeatureEntityConditionType.source]: { id: FeatureEntityConditionType.source, name: 'Source', displayName: 'Source' },
 }
 
-export const FEATURE_MODIFIER_CONDITION_LIST = Object.values(FEATURE_MODIFIER_CONDITION_TYPES);
-export const FEATURE_MODIFIER_CONDITION_SELECT_LIST = NameSelectOptionList(FEATURE_MODIFIER_CONDITION_LIST);
+export const FEATURE_ENTITY_CONDITION_LIST = Object.values(FEATURE_ENTITY_CONDITION_TYPES);
+export const FEATURE_ENTITY_CONDITION_SELECT_LIST = NameSelectOptionList(FEATURE_ENTITY_CONDITION_LIST);
 
-// Source values for FeatureModifierConditionType.source
+// Source values for FeatureEntityConditionType.source
 export const SourceType = {
     traps: 0,
     fear: 1,
@@ -366,7 +315,7 @@ export const SOURCE_TYPES: BaseMap<CoreComponent> = {
 export const SOURCE_TYPE_LIST = Object.values(SOURCE_TYPES);
 export const SOURCE_TYPE_SELECT_LIST = NameSelectOptionList(SOURCE_TYPE_LIST);
 
-// Target values for FeatureModifierConditionType.target
+// Target values for FeatureEntityConditionType.target
 export const TargetType = {
     nearby_allies: 0,          // Affects allies within range (e.g., Aura of Courage)
     nearby_enemies: 1,         // Affects enemies within range
@@ -386,7 +335,7 @@ export const TARGET_TYPES: BaseMap<CoreComponent> = {
 export const TARGET_TYPE_LIST = Object.values(TARGET_TYPES);
 export const TARGET_TYPE_SELECT_LIST = NameSelectOptionList(TARGET_TYPE_LIST);
 
-// Attack Type Enum for conditions
+// Attack Type Enum for FeatureEntityConditionType.attack_type
 export const ATTACK_TYPE_ENUM = {
     MELEE: 1,
     RANGED: 2,
@@ -430,7 +379,7 @@ export const ATTACK_TYPES: BaseMap<CoreComponent> = {
 export const ATTACK_TYPE_LIST = Object.values(ATTACK_TYPES);
 export const ATTACK_TYPE_SELECT_LIST = NameSelectOptionList(ATTACK_TYPE_LIST);
 
-// Creature Types for Favored Enemy and similar features
+// Creature Types for FeatureEntityConditionType.creature_type
 export const CreatureType = {
     Aberration: 1,
     Animal: 2,

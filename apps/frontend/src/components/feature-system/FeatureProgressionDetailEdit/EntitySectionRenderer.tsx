@@ -1,29 +1,21 @@
 import { TrashIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 
-import { FeatureType, FEATURE_TYPES } from '@shared/static-data';
-
 import { getGroupedEntities } from './entityHelpers';
 import { GroupingControls } from './GroupingControls';
 import type { EntitySectionRendererProps } from './types';
 
-
 export function EntitySectionRenderer({
     config,
     formData,
-    groupingState,
     hoveredIndex,
-    hoveredEntityType,
     onGroup,
     onUngroup,
     setHoveredIndex,
-    setHoveredEntityType,
-    feats,
-    featsLoading,
     preSelectedFeature,
     progression
 }: EntitySectionRendererProps) {
-    const entities = formData[FEATURE_TYPES[config.key].name] || [];
+    const entities = formData.entities || [];
     const groups = getGroupedEntities(entities);
 
     // Render groups
@@ -38,10 +30,8 @@ export function EntitySectionRenderer({
                                 <span className="text-sm font-medium">{config.label} {index + 1}</span>
                                 <config.formComponent
                                     index={index}
-                                    feats={config.key === FeatureType.Modifier ? feats : undefined}
-                                    featsLoading={config.key === FeatureType.Modifier ? featsLoading : undefined}
-                                    preSelectedFeature={config.key === FeatureType.Modifier ? preSelectedFeature : undefined}
-                                    progression={config.key === FeatureType.Modifier ? progression : undefined}
+                                    preSelectedFeature={preSelectedFeature}
+                                    progression={progression}
                                 />
                             </div>
                             <button
@@ -66,17 +56,14 @@ export function EntitySectionRenderer({
                         if (nextGroupingId === 0) {
                             return (
                                 <GroupingControls
-                                    entityType={config.key}
                                     index={index}
                                     nextIndex={nextIndex}
                                     nextGroupingId={nextGroupingId}
                                     isGroupButton={true}
-                                    onGroup={() => onGroup(config.key, index)}
-                                    onUngroup={() => onUngroup(config.key, index)}
+                                    onGroup={() => onGroup(index)}
+                                    onUngroup={() => onUngroup(index)}
                                     hoveredIndex={hoveredIndex}
-                                    hoveredEntityType={hoveredEntityType}
                                     setHoveredIndex={setHoveredIndex}
-                                    setHoveredEntityType={setHoveredEntityType}
                                 />
                             );
                         }
@@ -94,17 +81,14 @@ export function EntitySectionRenderer({
                                 {/* Ungroup button - only show on boundary between grouped entities */}
                                 {groupIndex > 0 && (
                                     <GroupingControls
-                                        entityType={config.key}
                                         index={index}
                                         nextIndex={index}
                                         nextGroupingId={groupingId}
                                         isGroupButton={false}
-                                        onGroup={() => onGroup(config.key, index)}
-                                        onUngroup={() => onUngroup(config.key, index)}
+                                        onGroup={() => onGroup(index)}
+                                        onUngroup={() => onUngroup(index)}
                                         hoveredIndex={hoveredIndex}
-                                        hoveredEntityType={hoveredEntityType}
                                         setHoveredIndex={setHoveredIndex}
-                                        setHoveredEntityType={setHoveredEntityType}
                                     />
                                 )}
                                 <div className="flex justify-between items-center">
@@ -112,10 +96,8 @@ export function EntitySectionRenderer({
                                         <span className="text-sm font-medium">{config.label} {index + 1}</span>
                                         <config.formComponent
                                             index={index}
-                                            feats={config.key === FeatureType.Modifier ? feats : undefined}
-                                            featsLoading={config.key === FeatureType.Modifier ? featsLoading : undefined}
-                                            preSelectedFeature={config.key === FeatureType.Modifier ? preSelectedFeature : undefined}
-                                            progression={config.key === FeatureType.Modifier ? progression : undefined}
+                                            preSelectedFeature={preSelectedFeature}
+                                            progression={progression}
                                         />
                                     </div>
                                     <button
@@ -143,17 +125,14 @@ export function EntitySectionRenderer({
                         if (nextGroupingId === 0) {
                             return (
                                 <GroupingControls
-                                    entityType={config.key}
                                     index={lastIndexInGroup}
                                     nextIndex={nextIndex}
                                     nextGroupingId={nextGroupingId}
                                     isGroupButton={true}
-                                    onGroup={() => onGroup(config.key, lastIndexInGroup)}
-                                    onUngroup={() => onUngroup(config.key, lastIndexInGroup)}
+                                    onGroup={() => onGroup(lastIndexInGroup)}
+                                    onUngroup={() => onUngroup(lastIndexInGroup)}
                                     hoveredIndex={hoveredIndex}
-                                    hoveredEntityType={hoveredEntityType}
                                     setHoveredIndex={setHoveredIndex}
-                                    setHoveredEntityType={setHoveredEntityType}
                                 />
                             );
                         }

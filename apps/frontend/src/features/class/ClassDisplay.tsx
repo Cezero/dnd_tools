@@ -1,17 +1,16 @@
 import React, { useEffect, useState } from 'react';
 
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { FeatApi } from '@/features/feat/FeatApi';
 import { generateClassProgression } from '@/lib/ClassProgression';
 import { ClassProgressionTable } from '@/lib/ClassProgressionTable';
-import { displayStrategyFactory, extractFormatterMetadata } from '@/lib/formatters';
-import { DnDClass, FeatQueryResponse } from '@shared/schema';
+import { displayStrategyFactory } from '@/lib/formatters';
+import { DnDClass } from '@shared/schema';
 import {
     DisplayType,
     RPG_DICE,
     EDITION_MAP,
     ABILITY_MAP,
-    ModifierAppliesToType,
+    EntityAppliesToType,
     SpecialFeatureId,
 } from '@shared/static-data';
 
@@ -34,40 +33,6 @@ export function ClassDisplay({
     isAdmin = false,
     fromListParams: _fromListParams = ''
 }: ClassDisplayProps): React.JSX.Element {
-    const [feats, setFeats] = useState<FeatQueryResponse['results']>([]);
-    const [featsLoaded, setFeatsLoaded] = useState(false);
-
-
-    // Load feats if we have feat modifiers
-    useEffect(() => {
-        const loadFeatsIfNeeded = async () => {
-            if (featsLoaded) return;
-
-            const hasFeatModifiers = cls.features?.some(progression =>
-                progression.modifiers?.some(modifier =>
-                    modifier.appliesTo === ModifierAppliesToType.Feat
-                )
-            );
-
-            if (hasFeatModifiers) {
-                try {
-                    const response = await FeatApi.featQuery({ queryType: 'all' });
-                    setFeats(response.results || []);
-                } catch (error) {
-                    console.error('Failed to load feats:', error);
-                } finally {
-                    setFeatsLoaded(true);
-                }
-            } else {
-                setFeatsLoaded(true);
-            }
-        };
-
-        loadFeatsIfNeeded();
-    }, [cls.features, featsLoaded]);
-
-    // Get FormatterMetadata for this class
-    const formatterMetadata = extractFormatterMetadata(cls.features, feats);
 
     return (
         <div className={showHeader ? "pt-8" : ""}>
@@ -125,7 +90,7 @@ export function ClassDisplay({
                         if (classSkillProgressions.length > 0) {
                             // Use display strategy to format class skills
                             const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
-                            const result = strategy.format(classSkillProgressions, undefined, formatterMetadata, true);
+                            const result = strategy.format(classSkillProgressions, undefined, true);
                             return (
                                 <div className="mt-4">
                                     <h3 className="text-lg font-semibold mb-2">Class Skills</h3>
@@ -150,7 +115,7 @@ export function ClassDisplay({
                         if (proficiencyProgressions.length > 0) {
                             // Use display strategy to format proficiencies
                             const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
-                            const result = strategy.format(proficiencyProgressions, undefined, formatterMetadata, false);
+                            const result = strategy.format(proficiencyProgressions, undefined, false);
                             return (
                                 <div className="mt-4">
                                     <h3 className="text-lg font-semibold mb-2">Class Proficiencies</h3>
@@ -184,7 +149,7 @@ export function ClassDisplay({
                         if (actualFeatures.length > 0) {
                             // Use display strategy to format features
                             const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
-                            const result = strategy.format(actualFeatures, undefined, formatterMetadata);
+                            const result = strategy.format(actualFeatures, undefined);
 
                             return (
                                 <div className="mt-4">

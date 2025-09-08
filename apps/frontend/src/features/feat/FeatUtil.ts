@@ -1,6 +1,5 @@
 import ordinal from 'ordinal';
 
-import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { SAVING_THROW_SELECT_LIST, PROFICIENCY_TYPE_SELECT_LIST, SKILL_SELECT_LIST, FeatBenefitType, SelectOption, FeatPrerequisiteType, ABILITY_SELECT_LIST, FEAT_PREREQ_BY_ID, GetBaseClassesByEdition } from '@shared/static-data';
 
 import { FeatApi } from './FeatApi';

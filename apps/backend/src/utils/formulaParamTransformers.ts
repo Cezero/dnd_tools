@@ -5,75 +5,39 @@
  * Zod schemas and application logic use arrays for better validation and manipulation
  */
 
+import { Prisma } from '@shared/prisma-client';
+import { CreateFeatureFormulaParamsRequest, FeatureFormulaParams } from '@shared/schema';
+
 /**
  * Transform array data to string format for database storage
  */
-export function transformFormulaParamsForDatabase(formulaParams: {
-    id?: number;
-    formulaId: number;
-    interval?: number | null;
-    formulaStartLevel?: number | null;
-    abilityId?: number | null;
-    thresholds?: (number | string)[] | null;
-    values?: (number | string)[] | null;
-    valuesRepresent?: number | null;
-    cumulative?: boolean | null;
-}): {
-    id?: number;
-    formulaId: number;
-    interval?: number | null;
-    formulaStartLevel?: number | null;
-    abilityId?: number | null;
-    thresholds?: string | null;
-    values?: string | null;
-    valuesRepresent?: number | null;
-    cumulative?: boolean | null;
-} {
+export function transformFormulaParamsForDatabase(formulaParams: FeatureFormulaParams): Prisma.FeatureFormulaParamsUpdateInput {
     return {
-        id: formulaParams.id,
-        formulaId: formulaParams.formulaId,
-        interval: formulaParams.interval,
-        formulaStartLevel: formulaParams.formulaStartLevel,
-        abilityId: formulaParams.abilityId,
+        ...formulaParams,
         // Transform arrays to comma-separated strings
         thresholds: formulaParams.thresholds ? formulaParams.thresholds.join(',') : null,
         values: formulaParams.values ? formulaParams.values.map(v => String(v)).join(',') : null,
-        // Include new fields
-        valuesRepresent: formulaParams.valuesRepresent,
-        cumulative: formulaParams.cumulative,
+    };
+}
+
+/**
+ * Transform array data to string format for database storage (for create operations - omits id)
+ */
+export function transformFormulaParamsForDatabaseCreate(formulaParams: CreateFeatureFormulaParamsRequest): Prisma.FeatureFormulaParamsCreateInput {
+    return {
+        ...formulaParams,
+        // Transform arrays to comma-separated strings
+        thresholds: formulaParams.thresholds ? formulaParams.thresholds.join(',') : null,
+        values: formulaParams.values ? formulaParams.values.map(v => String(v)).join(',') : null,
     };
 }
 
 /**
  * Transform string data from database to array format for application use
  */
-export function transformFormulaParamsFromDatabase(formulaParams: {
-    id: number;
-    formulaId: number;
-    interval?: number | null;
-    formulaStartLevel?: number | null;
-    abilityId?: number | null;
-    thresholds?: string | null;
-    values?: string | null;
-    valuesRepresent?: number | null;
-    cumulative?: boolean | null;
-}): {
-    id: number;
-    formulaId: number;
-    interval?: number | null;
-    formulaStartLevel?: number | null;
-    abilityId?: number | null;
-    thresholds?: number[] | null;
-    values?: (string | number)[] | null;
-    valuesRepresent?: number | null;
-    cumulative?: boolean | null;
-} {
+export function transformFormulaParamsFromDatabase(formulaParams: Prisma.FeatureFormulaParamsGetPayload<object>): FeatureFormulaParams {
     return {
-        id: formulaParams.id,
-        formulaId: formulaParams.formulaId,
-        interval: formulaParams.interval,
-        formulaStartLevel: formulaParams.formulaStartLevel,
-        abilityId: formulaParams.abilityId,
+        ...formulaParams,
         // Transform comma-separated strings to arrays
         thresholds: formulaParams.thresholds
             ? formulaParams.thresholds.split(',').map(s => parseInt(s.trim(), 10))
@@ -90,16 +54,15 @@ export function transformFormulaParamsFromDatabase(formulaParams: {
                 return isNaN(num) ? trimmed : num;
             })
             : null,
-        // Include new fields
-        valuesRepresent: formulaParams.valuesRepresent,
-        cumulative: formulaParams.cumulative,
+        // Cast valuesRepresent to the proper enum type
+        valuesRepresent: formulaParams.valuesRepresent as FeatureFormulaParams['valuesRepresent'],
     };
 }
 
 /**
  * Validate that thresholds and values arrays have compatible lengths
  */
-export function validateThresholdsAndValues(thresholds?: (number | string)[] | null, values?: (number | string)[] | null): boolean {
+export function validateThresholdsAndValues(thresholds?: number[] | null, values?: (string | number)[] | null): boolean {
     if (!thresholds || !values) {
         return true; // Both can be null/undefined
     }

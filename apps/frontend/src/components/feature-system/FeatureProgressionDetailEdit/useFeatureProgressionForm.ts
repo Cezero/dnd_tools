@@ -6,8 +6,6 @@ import {
     CreateFeatureProgressionFormSchema,
     FeatureProgression,
     Feature,
-    FeatureModifier,
-    FeatureChoice
 } from '@shared/schema';
 import { FORMULA_MAP } from '@shared/static-data';
 
@@ -17,7 +15,7 @@ export function useFeatureProgressionForm(
     progression: FeatureProgression | null,
     preSelectedFeature?: Feature
 ) {
-    const [formData, setFormData] = useState<Partial<FeatureProgression>>(() =>
+    const [formData, setFormData] = useState<FeatureProgression>(() =>
         initializeFormData(progression, preSelectedFeature)
     );
 
@@ -35,17 +33,16 @@ export function useFeatureProgressionForm(
     }, [progression, preSelectedFeature]);
 
     // Get current section states
-    const hasModifiers = (formData.modifiers || []).length > 0;
-    const hasChoices = (formData.choices || []).length > 0;
+    const hasEntities = (formData.entities || []).length > 0;
 
     // Helper function to get selected formula description
     const getSelectedFormulaDescription = () => {
-        const modifiers = formData.modifiers || [];
-        const formulaModifier = modifiers.find(mod => mod.formulaParams?.formulaId);
+        const entities = formData.entities || [];
+        const formulaEntity = entities.find(entity => entity.formulaParams?.formulaId);
 
-        if (!formulaModifier) return null;
+        if (!formulaEntity) return null;
 
-        const formula = FORMULA_MAP[formulaModifier.formulaParams.formulaId];
+        const formula = FORMULA_MAP[formulaEntity.formulaParams.formulaId];
         return formula?.description || null;
     };
 
@@ -53,8 +50,7 @@ export function useFeatureProgressionForm(
         formData,
         setFormData,
         form,
-        hasModifiers,
-        hasChoices,
+        hasEntities,
         getSelectedFormulaDescription,
         schema
     };

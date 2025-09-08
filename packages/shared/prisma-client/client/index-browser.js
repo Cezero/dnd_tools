@@ -191,18 +191,19 @@ exports.Prisma.FeatureProgressionScalarFieldEnum = {
   raceId: 'raceId'
 };
 
-exports.Prisma.FeatureModifierScalarFieldEnum = {
+exports.Prisma.FeatureEntityScalarFieldEnum = {
   id: 'id',
   progressionId: 'progressionId',
+  appliesTo: 'appliesTo',
+  appliesToId: 'appliesToId',
+  appliesToSubId: 'appliesToSubId',
+  formulaParamsId: 'formulaParamsId',
+  groupingId: 'groupingId',
   type: 'type',
   value: 'value',
   bonusType: 'bonusType',
-  appliesTo: 'appliesTo',
-  appliesToId: 'appliesToId',
-  itemId: 'itemId',
-  formulaParamsId: 'formulaParamsId',
-  groupingId: 'groupingId',
-  displayInDetail: 'displayInDetail'
+  displayInDetail: 'displayInDetail',
+  filterType: 'filterType'
 };
 
 exports.Prisma.FeatureFormulaParamsScalarFieldEnum = {
@@ -213,29 +214,16 @@ exports.Prisma.FeatureFormulaParamsScalarFieldEnum = {
   abilityId: 'abilityId',
   thresholds: 'thresholds',
   values: 'values',
+  includeProgressionLevel: 'includeProgressionLevel',
   valuesRepresent: 'valuesRepresent',
   cumulative: 'cumulative'
 };
 
-exports.Prisma.FeatureModifierConditionScalarFieldEnum = {
+exports.Prisma.FeatureEntityConditionScalarFieldEnum = {
   id: 'id',
-  featureModifierId: 'featureModifierId',
+  featureEntityId: 'featureEntityId',
   conditionType: 'conditionType',
   conditionValue: 'conditionValue'
-};
-
-exports.Prisma.FeatureChoiceScalarFieldEnum = {
-  id: 'id',
-  progressionId: 'progressionId',
-  label: 'label',
-  pickCount: 'pickCount',
-  type: 'type',
-  behavior: 'behavior',
-  featId: 'featId',
-  featureId: 'featureId',
-  formulaParamsId: 'formulaParamsId',
-  filterType: 'filterType',
-  groupingId: 'groupingId'
 };
 
 exports.Prisma.FeaturePrerequisiteScalarFieldEnum = {
@@ -539,7 +527,6 @@ exports.Prisma.AdvancementSpellScalarFieldEnum = {
 exports.Prisma.CharacterFeatureChoiceScalarFieldEnum = {
   id: 'id',
   characterId: 'characterId',
-  featureChoiceId: 'featureChoiceId',
   progressionId: 'progressionId',
   advancementId: 'advancementId',
   key: 'key',
@@ -636,10 +623,6 @@ exports.Prisma.FeatureOrderByRelevanceFieldEnum = {
 exports.Prisma.FeatureFormulaParamsOrderByRelevanceFieldEnum = {
   thresholds: 'thresholds',
   values: 'values'
-};
-
-exports.Prisma.FeatureChoiceOrderByRelevanceFieldEnum = {
-  label: 'label'
 };
 
 exports.Prisma.SpellOrderByRelevanceFieldEnum = {
@@ -810,10 +793,9 @@ exports.Prisma.ModelName = {
   SpellLevelMap: 'SpellLevelMap',
   Feature: 'Feature',
   FeatureProgression: 'FeatureProgression',
-  FeatureModifier: 'FeatureModifier',
+  FeatureEntity: 'FeatureEntity',
   FeatureFormulaParams: 'FeatureFormulaParams',
-  FeatureModifierCondition: 'FeatureModifierCondition',
-  FeatureChoice: 'FeatureChoice',
+  FeatureEntityCondition: 'FeatureEntityCondition',
   FeaturePrerequisite: 'FeaturePrerequisite',
   Spell: 'Spell',
   SpellDescriptorMap: 'SpellDescriptorMap',

@@ -1,5 +1,5 @@
-import type { FeatureModifier, FeatureChoice } from '@shared/schema';
-import { FeatureChoiceType, FeatureChoiceBehavior, FormulaId } from '@shared/static-data';
+import type { FeatureEntity } from '@shared/schema';
+import { EntityAppliesToType, FormulaId, EntityType } from '@shared/static-data';
 
 // Generic function to check if an entity has valid formula parameters
 function hasValidFormulaParamsGeneric(entity: { formulaParams?: { formulaId?: number; interval?: number; abilityId?: number; thresholds?: number[]; values?: (string | number)[] } }): boolean {
@@ -41,74 +41,51 @@ function hasValidFormulaParamsGeneric(entity: { formulaParams?: { formulaId?: nu
 }
 
 // Check if a modifier has valid formula parameters
-export function hasValidFormulaParams(modifier: FeatureModifier): boolean {
-    return hasValidFormulaParamsGeneric(modifier);
+export function hasValidFormulaParams(entity: FeatureEntity): boolean {
+    return hasValidFormulaParamsGeneric(entity);
 }
 
-// Check if a choice has valid formula parameters
-export function hasValidChoiceFormulaParams(choice: FeatureChoice): boolean {
-    return hasValidFormulaParamsGeneric(choice);
-}
-
-// Check if a choice has valid configuration
-export function hasValidChoiceConfig(choice: FeatureChoice): boolean {
-    // Basic validation
-    if (!choice.label || choice.pickCount < 1) {
-        return false;
-    }
+// Check if an entity has valid configuration
+export function hasValidEntityConfig(entity: FeatureEntity): boolean {
 
     // Type-specific validation
-    switch (choice.type) {
-        case FeatureChoiceType.Feat:
-            // For feat choices, either filterType or featId should be set
-            return !!(choice.filterType || choice.featId);
+    switch (entity.appliesTo) {
+        case EntityAppliesToType.Feat:
+            // For feat entities, either filterType or featId should be set
+            return !!(entity.filterType || entity.feat?.id);
 
-        case FeatureChoiceType.Feature:
-            // For feature choices, featureId is optional
+        case EntityAppliesToType.Feature:
+            // For feature entities, featureId is optional
             return true;
 
-        case FeatureChoiceType.CreatureType:
-            // For creature type choices, behavior should be valid
-            return choice.behavior === FeatureChoiceBehavior.Single || choice.behavior === FeatureChoiceBehavior.Allocation;
+        case EntityAppliesToType.CreatureType:
+            // For creature type entities, should be choice or allocation type
+            return entity.type === EntityType.Choice || entity.type === EntityType.Allocation;
 
         default:
             return false;
     }
 }
 
-// Get validation error message for a modifier
-export function getModifierValidationError(modifier: FeatureModifier): string | null {
-    return hasValidFormulaParams(modifier) ? null : 'Invalid formula parameters';
-}
-
-// Get validation error message for a choice
-export function getChoiceValidationError(choice: FeatureChoice): string | null {
-    if (!hasValidChoiceConfig(choice)) {
-        return 'Invalid choice configuration';
+// Get validation error message for an entity
+export function getEntityValidationError(entity: FeatureEntity): string | null {
+    if (!hasValidEntityConfig(entity)) {
+        return 'Invalid entity configuration';
     }
-    return choice.formulaParams?.formulaId && !hasValidChoiceFormulaParams(choice) ? 'Invalid formula parameters' : null;
+    return entity.formulaParams?.formulaId && !hasValidFormulaParams(entity) ? 'Invalid formula parameters' : null;
 }
 
 // Check if all entities in a progression are valid
 export function validateProgressionEntities(
-    modifiers: FeatureModifier[],
-    choices: FeatureChoice[]
+    entities: FeatureEntity[]
 ): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
 
-    // Validate modifiers
-    modifiers.forEach((modifier, index) => {
-        const error = getModifierValidationError(modifier);
+    // Validate entities
+    entities.forEach((entity, index) => {
+        const error = getEntityValidationError(entity);
         if (error) {
-            errors.push(`Modifier ${index + 1}: ${error}`);
-        }
-    });
-
-    // Validate choices
-    choices.forEach((choice, index) => {
-        const error = getChoiceValidationError(choice);
-        if (error) {
-            errors.push(`Choice ${index + 1}: ${error}`);
+            errors.push(`Entity ${index + 1}: ${error}`);
         }
     });
 
@@ -120,10 +97,9 @@ export function validateProgressionEntities(
 
 // Check if a progression has at least one component
 export function hasProgressionComponents(
-    modifiers: FeatureModifier[],
-    choices: FeatureChoice[]
+    entities: FeatureEntity[]
 ): boolean {
-    return modifiers.length > 0 || choices.length > 0;
+    return entities.length > 0;
 }
 
 // Validate progression level

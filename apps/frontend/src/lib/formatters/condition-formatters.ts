@@ -1,13 +1,13 @@
-import type { FeatureModifierCondition } from '@shared/schema';
+import type { FeatureEntityCondition } from '@shared/schema';
 import {
-    FEATURE_MODIFIER_CONDITION_TYPES,
+    FEATURE_ENTITY_CONDITION_TYPES,
     SIZE_MAP,
     SPELL_SCHOOL_MAP,
     ATTACK_TYPES,
     CREATURE_TYPES,
     SOURCE_TYPES,
     TARGET_TYPES,
-    FeatureModifierConditionType
+    FeatureEntityConditionType
 } from '@shared/static-data';
 
 import type { ConditionFormatter } from './types';
@@ -17,17 +17,17 @@ import type { ConditionFormatter } from './types';
  */
 export function formatConditionValue(conditionType: number, conditionValue: number): string {
     switch (conditionType) {
-        case FeatureModifierConditionType.character_size:
+        case FeatureEntityConditionType.character_size:
             return SIZE_MAP[conditionValue]?.name || `Size ${conditionValue}`;
-        case FeatureModifierConditionType.spell_school:
+        case FeatureEntityConditionType.spell_school:
             return SPELL_SCHOOL_MAP[conditionValue]?.name || `Spell School ${conditionValue}`;
-        case FeatureModifierConditionType.attack_type:
+        case FeatureEntityConditionType.attack_type:
             return ATTACK_TYPES[conditionValue]?.name || `Attack Type ${conditionValue}`;
-        case FeatureModifierConditionType.creature_type:
+        case FeatureEntityConditionType.creature_type:
             return CREATURE_TYPES[conditionValue]?.name || `Creature Type ${conditionValue}`;
-        case FeatureModifierConditionType.source:
+        case FeatureEntityConditionType.source:
             return SOURCE_TYPES[conditionValue]?.name || `Source ${conditionValue}`;
-        case FeatureModifierConditionType.target:
+        case FeatureEntityConditionType.target:
             return TARGET_TYPES[conditionValue]?.name || `Target ${conditionValue}`;
         default:
             return `Value ${conditionValue}`;
@@ -38,7 +38,7 @@ export function formatConditionValue(conditionType: number, conditionValue: numb
  * Formats condition type names for display
  */
 export function formatConditionType(conditionType: number): string {
-    const conditionTypeInfo = FEATURE_MODIFIER_CONDITION_TYPES[conditionType];
+    const conditionTypeInfo = FEATURE_ENTITY_CONDITION_TYPES[conditionType];
     return conditionTypeInfo.displayName !== undefined && conditionTypeInfo.displayName !== null
         ? conditionTypeInfo.displayName
         : conditionTypeInfo.name;
@@ -47,12 +47,12 @@ export function formatConditionType(conditionType: number): string {
 /**
  * Formats a single condition for display
  */
-export function formatSingleCondition(condition: FeatureModifierCondition): string {
+export function formatSingleCondition(condition: FeatureEntityCondition): string {
     const conditionTypeName = formatConditionType(condition.conditionType);
     const conditionValueName = formatConditionValue(condition.conditionType, condition.conditionValue);
 
     // For source conditions, just show the value name (e.g., "Traps" not "Source Traps")
-    if (condition.conditionType === FeatureModifierConditionType.source) {
+    if (condition.conditionType === FeatureEntityConditionType.source) {
         return conditionValueName;
     }
 
@@ -62,12 +62,12 @@ export function formatSingleCondition(condition: FeatureModifierCondition): stri
 /**
  * Formats all conditions for a modifier
  */
-export function formatModifierConditions(modifier: { conditions?: FeatureModifierCondition[] }): string {
-    if (!modifier.conditions || modifier.conditions.length === 0) {
+export function formatModifierConditions(entity: { conditions?: FeatureEntityCondition[] }): string {
+    if (!entity.conditions || entity.conditions.length === 0) {
         return '';
     }
 
-    const conditionStrings = modifier.conditions.map(formatSingleCondition);
+    const conditionStrings = entity.conditions.map(formatSingleCondition);
     return conditionStrings.join(', ');
 }
 
@@ -75,7 +75,7 @@ export function formatModifierConditions(modifier: { conditions?: FeatureModifie
  * Specific formatter for spell school conditions
  */
 export class SpellSchoolConditionFormatter implements ConditionFormatter {
-    formatCondition(condition: FeatureModifierCondition, formattedValue: string): string {
+    formatCondition(condition: FeatureEntityCondition, formattedValue: string): string {
         const spellSchoolName = formatConditionValue(condition.conditionType, condition.conditionValue);
         return `${formattedValue} vs ${spellSchoolName}`;
     }
@@ -85,7 +85,7 @@ export class SpellSchoolConditionFormatter implements ConditionFormatter {
  * Specific formatter for creature type conditions
  */
 export class CreatureTypeConditionFormatter implements ConditionFormatter {
-    formatCondition(condition: FeatureModifierCondition, formattedValue: string): string {
+    formatCondition(condition: FeatureEntityCondition, formattedValue: string): string {
         const creatureTypeName = formatConditionValue(condition.conditionType, condition.conditionValue);
         return `${formattedValue} vs ${creatureTypeName}`;
     }
@@ -95,7 +95,7 @@ export class CreatureTypeConditionFormatter implements ConditionFormatter {
  * Specific formatter for source conditions
  */
 export class SourceConditionFormatter implements ConditionFormatter {
-    formatCondition(condition: FeatureModifierCondition, formattedValue: string): string {
+    formatCondition(condition: FeatureEntityCondition, formattedValue: string): string {
         const sourceName = formatConditionValue(condition.conditionType, condition.conditionValue);
         return `${formattedValue} vs ${sourceName}`;
     }
@@ -105,7 +105,7 @@ export class SourceConditionFormatter implements ConditionFormatter {
  * Specific formatter for trigger conditions
  */
 export class TriggerConditionFormatter implements ConditionFormatter {
-    formatCondition(condition: FeatureModifierCondition, formattedValue: string): string {
+    formatCondition(condition: FeatureEntityCondition, formattedValue: string): string {
         const triggerName = formatConditionValue(condition.conditionType, condition.conditionValue);
         return `${triggerName}: ${formattedValue}`;
     }
@@ -114,10 +114,17 @@ export class TriggerConditionFormatter implements ConditionFormatter {
 /**
  * Specific formatter for attack type conditions
  */
-export class AttackTypeConditionFormatter implements ConditionFormatter {
-    formatCondition(condition: FeatureModifierCondition, formattedValue: string): string {
+export class OtherAttackTypeConditionFormatter implements ConditionFormatter {
+    formatCondition(condition: FeatureEntityCondition, formattedValue: string): string {
         const attackTypeName = formatConditionValue(condition.conditionType, condition.conditionValue);
         return `${attackTypeName} treated as ${formattedValue}`;
+    }
+}
+
+export class QuantityAttackTypeConditionFormatter implements ConditionFormatter {
+    formatCondition(condition: FeatureEntityCondition, formattedValue: string): string {
+        const attackTypeName = formatConditionValue(condition.conditionType, condition.conditionValue);
+        return `${attackTypeName} ${formattedValue}`;
     }
 }
 
@@ -125,7 +132,7 @@ export class AttackTypeConditionFormatter implements ConditionFormatter {
  * Specific formatter for character size conditions
  */
 export class CharacterSizeConditionFormatter implements ConditionFormatter {
-    formatCondition(condition: FeatureModifierCondition, formattedValue: string): string {
+    formatCondition(condition: FeatureEntityCondition, formattedValue: string): string {
         const sizeName = formatConditionValue(condition.conditionType, condition.conditionValue);
         return `${sizeName}: ${formattedValue}`;
     }
@@ -135,7 +142,7 @@ export class CharacterSizeConditionFormatter implements ConditionFormatter {
  * Specific formatter for target conditions
  */
 export class TargetConditionFormatter implements ConditionFormatter {
-    formatCondition(condition: FeatureModifierCondition, formattedValue: string): string {
+    formatCondition(condition: FeatureEntityCondition, formattedValue: string): string {
         const targetName = formatConditionValue(condition.conditionType, condition.conditionValue);
         return `${formattedValue} (${targetName})`;
     }

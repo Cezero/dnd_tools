@@ -1,28 +1,30 @@
 import type {
-    FeatureModifier,
-    FeatureChoice,
-    FeatureModifierCondition,
+    FeatureEntity,
+    FeatureEntityCondition,
     FormulaParamsData,
-    FeatureProgression,
-    FeatQueryResponse
+    FeatureProgression
 } from '@shared/schema';
-import type { BreakdownComponentType, Formula, FeatureType } from '@shared/static-data';
-import { ModifierAppliesToType, DisplayType, ModifierType, FeatureChoiceType } from '@shared/static-data';
+import type { BreakdownComponentType, Formula } from '@shared/static-data';
+import { EntityAppliesToType, EntityType } from '@shared/static-data';
+
+// CalculatedEntity extends FeatureEntity but allows value to be string for formatted display
+export interface CalculatedEntity extends Omit<FeatureEntity, 'value'> {
+    value: number | string | null;
+    calculatedValue?: number | string | null; // Original calculated result
+}
 
 // Processing configuration interface for consolidated processing functions
 export interface ProcessingConfig {
     hasFormula: boolean;
     isCharacterDependent: boolean;
     isConditional: boolean;
-    entityType: FeatureType;
-    subType?: ModifierType | FeatureChoiceType;
-    subTypeId?: ModifierAppliesToType;
+    entityType: EntityType;
+    subTypeId?: EntityAppliesToType;
 }
 
 // Base context information
 export interface BaseContextInfo {
     level?: number;
-    metadata?: FormatterMetadata;
 }
 
 // Processing context interface for consolidated processing functions
@@ -30,7 +32,7 @@ export interface ProcessingContext extends BaseContextInfo {
     progression: FeatureProgression;
     context?: DisplayContext;
     conditionPrefix?: string;
-    entityType: FeatureType;
+    entityType: EntityType;
 }
 
 // Base processing result
@@ -39,15 +41,10 @@ export interface BaseProcessingResult extends BaseFormattedValue {
     error?: string;
 }
 
-// Processing result interface for consolidated processing functions
-export interface ProcessingResult extends BaseProcessingResult {
-    transitions?: TransitionPoint[];
-}
-
 // Strategy interface for processing different types of entities
 export interface ProcessingStrategy {
-    canProcess(entities: Array<FeatureModifier | FeatureChoice>, context: ProcessingContext): boolean;
-    process(entities: Array<FeatureModifier | FeatureChoice>, context: ProcessingContext): string;
+    canProcess(entities: Array<FeatureEntity>, context: ProcessingContext): boolean;
+    process(entities: Array<FeatureEntity>, context: ProcessingContext): string;
     getPriority(): number; // Higher priority strategies are tried first
 }
 
@@ -55,17 +52,6 @@ export interface ProcessingStrategy {
 export interface NameLookupRecord {
     id: number;
     name: string;
-}
-
-// Formatter metadata - constructed in frontend from backend data, only used internally
-export interface FormatterMetadata {
-    // Name lookups - extracted from DisplayContext for specific modifier/choice
-    // These are arrays because a single progression can have multiple items (e.g., Rogue Special Abilities)
-    featObjects?: FeatQueryResponse['results']; // full feat objects for proficiency formatters
-    featureNames?: NameLookupRecord[]; // featureId -> name mapping for feature formatters
-    itemNames?: NameLookupRecord[]; // itemId -> name mapping for item formatters
-    // Breakdown information for Conditional Scaling formulas
-    breakdown?: CalculationBreakdown;
 }
 
 // Calculation breakdown for showing "work" - internal frontend type
@@ -105,12 +91,10 @@ export interface FormulaValidationResult {
 
 // Formatted item with breakdown for grouping strategies
 export interface FormattedItemWithBreakdown extends BaseFormattedValue {
-    metadata?: FormatterMetadata;
     // Original data for grouping strategies to access
-    modifier?: FeatureModifier;
-    choice?: FeatureChoice;
+    entity?: CalculatedEntity;
     // Additional properties for other use cases
-    value?: number;
+    value?: string | number;
     progressionId?: number;
     featureId?: number;
     groupingId: number; // Always present, no || 0 needed
@@ -134,7 +118,6 @@ export interface BaseFormatterContext {
 
 // Display context for formatter display logic
 export interface DisplayContext extends BaseFormatterContext {
-    displayType: DisplayType;
     currentLevel?: number;
     showBreakdown?: boolean;
 }
@@ -150,7 +133,7 @@ export interface CalculationContext extends BaseFormatterContext {
 // Condition schema for breakdown components
 export interface Condition {
     condition: string;
-    conditionType: number; // FeatureModifierConditionType
+    conditionType: number; // FeatureEntityConditionType
     conditionValue: number;
     description: string;
 }
@@ -201,9 +184,30 @@ export interface LevelEntry {
 // Display result for formatter output
 export interface DisplayResult extends BaseFormattedValue {
     showBreakdown: boolean;
-    components: Array<FeatureModifier | FeatureChoice>;
+    components: Array<FeatureEntity>;
     levelEntries?: LevelEntry[];
     conditionalDisplays?: ConditionalDisplay[]; // For xxxEdit page 1:1 relationship
+}
+
+// Individual entity formatting result
+export interface FormattedEntityResult {
+    formattedValue: string;           // "all simple weapons", "club", "+2"
+    breakdown: CalculationBreakdown;  // How the value was calculated
+    entity: CalculatedEntity;        // The calculated entity
+    level: number;                   // Character level this applies to
+    computedValue?: number;          // For bonuses: 2, for uses: 4, etc.
+    structuredData?: {               // Structured data for complex cases
+        type: string;                // "bonus", "uses", "proficiency"
+        value: number;               // 2, 4, etc.
+        interval?: string;           // "day", "level", etc.
+        target?: string;             // "Survival", "simple weapons", etc.
+    };
+}
+
+// Enhanced display result for character sheet strategy
+export interface CharacterSheetDisplayResult extends DisplayResult {
+    groupedByType: Record<EntityAppliesToType, FormattedEntityResult[]>;
+    individualEntities: FormattedEntityResult[];
 }
 
 // Character sheet calculation input
@@ -224,14 +228,6 @@ export interface SelectedValue {
     value?: number;
 }
 
-// Choice-based calculation
-export interface ChoiceBasedCalculation {
-    choiceType: number; // FeatureChoiceType
-    behavior: number; // FeatureChoiceBehavior
-    selectedValues: SelectedValue[];
-    allocatedBonuses?: Record<number, number>; // choiceId -> bonus
-}
-
 // Base character information
 export interface BaseCharacterInfo {
     abilityScores: Record<number, number>; // abilityId -> score
@@ -248,35 +244,18 @@ export interface ProgressionValue {
     level: number;
     breakdown: CalculationBreakdown;
     conditionalValues?: ConditionalValue[];
-    modifier?: FeatureModifier; // Modified modifier based on formula calculation
-    choice?: FeatureChoice; // Modified choice based on formula calculation
+    entity?: CalculatedEntity; // Modified entity based on formula calculation
 }
 
 // Base entity information
 export interface BaseEntityInfo {
-    entityType: FeatureType;
-    entitySubType: ModifierType | FeatureChoiceType;
-    entityAppliesTo?: number; // For modifiers, the appliesTo value
-}
-
-// Base transition information
-export interface BaseTransitionInfo {
-    level: number;
-    type: number; // TransitionPointType
-    description: string;
-    value: number | string;
-    previousValue?: number | string;
-}
-
-// Transition point for progression transitions (Layer 4)
-export interface TransitionPoint extends BaseTransitionInfo, BaseEntityInfo {
-    groupingId: number; // Add groupingId for proper transition matching
+    entityAppliesTo?: EntityAppliesToType; // For entities, the appliesTo value
 }
 
 export interface FormattedItemWithLevel extends BaseEntityInfo {
     formattedValue: string;
     breakdown: CalculationBreakdown;
-    entity: FeatureModifier | FeatureChoice;
+    entity: CalculatedEntity;
     level: number;
     descriptionLevel: number; // The level where the feature's full description should be shown
     featureId: number; // The feature ID for easy lookup
@@ -286,7 +265,7 @@ export interface FormattedItemWithLevel extends BaseEntityInfo {
 export interface CalculatedValueWithLevel {
     // Remove value field - it's redundant with entity.value
     breakdown: CalculationBreakdown;
-    entity: FeatureModifier | FeatureChoice;
+    entity: CalculatedEntity;
     level: number;
 }
 
@@ -303,8 +282,7 @@ export interface BaseFormattedValue {
 }
 
 export interface EntityGroupKey {
-    type: FeatureType;
-    subType: ModifierType | FeatureChoiceType;
+    type: EntityType;
     groupingId: number; // NEW: Primary grouping criterion
 }
 
@@ -317,36 +295,20 @@ export interface GroupedLevelItem extends BaseLevelInfo, BaseFormattedValue, Bas
 
 // Type for grouping strategy input
 export interface GroupingStrategyInput extends BaseFormattedValue, BaseEntityInfo {
-    metadata?: FormatterMetadata;
-    modifier?: FeatureModifier;
+    entity?: FeatureEntity;
 }
-
-// Type for transition detection results
-export interface TransitionInfo extends BaseTransitionInfo, BaseEntityInfo { }
 
 // Base formatter interface
 export interface BaseFormatter {
     format(
-        modifier: FeatureModifier, // Direct access to modifier data
-        metadata?: FormatterMetadata // Supplementary formatting data
+        entity: CalculatedEntity, // Direct access to entity data with calculated values
     ): string;
 }
 
-// Choice formatter interface
-export interface ChoiceFormatter {
-    formatChoice(choice: FeatureChoice, metadata?: FormatterMetadata): string;
-}
 
 // Formula calculator interface
 export interface FormulaCalculator {
     calculate(formula: FormulaParamsData, level: number, context?: CalculationContext, modifierValue?: number | string): CalculationResult;
-}
-
-// Formula definition interface for better type safety
-export interface FormulaDefinition extends Formula {
-    calculate: (params: Record<string, unknown>) => number | string;
-    getDisplayString: (params: Record<string, unknown>) => string;
-    isCharacterDependent: boolean;
 }
 
 // Formula parameter interface for better type safety
@@ -363,10 +325,9 @@ export interface ProgressionGeneratorParams {
     startLevel: number;
     endLevel: number;
     context?: CalculationContext;
-    modifierValue?: number;
+    entityValue?: number;
     formulaCalculator?: FormulaCalculator;
-    originalModifier?: FeatureModifier;
-    originalChoice?: FeatureChoice;
+    originalEntity?: FeatureEntity;
 }
 
 // Progression generator interface
@@ -379,7 +340,6 @@ export enum CalculatorType {
     Formula = 0,
     Choice = 1,
     Progression = 2,
-    Transition = 3,
     Conditional = 4
 }
 
@@ -387,35 +347,17 @@ export enum ProgressionGeneratorType {
     default = 0,
 }
 
-export enum TransitionDetectorType {
-    default = 0,
-}
-
-// Transition detector interface
-export interface TransitionDetector {
-    findTransitions(values: Array<ProgressionValue>): Array<TransitionPoint>;
-}
-
 // Display strategy interface
 export interface DisplayStrategy {
-    format(input: FeatureProgression | FeatureProgression[], context?: DisplayContext, metadata?: FormatterMetadata, showLabels?: boolean): DisplayResult;
-}
-
-// Choice calculator interface
-export interface IChoiceCalculator {
-    calculateChoiceValue(
-        choice: ChoiceBasedCalculation,
-        selectedValues: SelectedValue[],
-        context?: CalculationContext
-    ): CalculationResult;
+    format(input: FeatureProgression | FeatureProgression[], context?: DisplayContext, showLabels?: boolean): DisplayResult;
 }
 
 // Conditional value detector interface
 export interface ConditionalValueDetector {
-    detectConditionals(modifiers: FeatureModifier[], context?: CharacterContext): Array<ConditionalValue>;
+    detectConditionals(entities: FeatureEntity[], context?: CharacterContext): Array<ConditionalValue>;
 }
 
 // Condition formatter interface
 export interface ConditionFormatter {
-    formatCondition(condition: FeatureModifierCondition, formattedValue: string): string;
+    formatCondition(condition: FeatureEntityCondition, formattedValue: string): string;
 }

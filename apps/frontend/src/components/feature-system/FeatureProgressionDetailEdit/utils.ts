@@ -1,3 +1,5 @@
+import { FeatApi } from '@/features/feat/FeatApi';
+import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import {
     ABILITY_SELECT_LIST,
     FULL_SKILL_SELECT_LIST,
@@ -8,72 +10,103 @@ import {
     LANGUAGE_SELECT_LIST,
     SIZE_SELECT_LIST,
     CREATURE_TYPE_SELECT_LIST,
-    ModifierAppliesToType,
-    ModifierType
+    EntityAppliesToType,
+    EntityType
 } from '@shared/static-data';
+import type { SelectOption } from '@shared/static-data';
 
 /**
  * Get the appropriate select options for AppliesToId based on the appliesTo type
  * Used when valuesRepresent is set to AppliesToId in conditional scaling formulas
  * This mirrors the logic from AppliesToSelector.tsx
  */
-export function getAppliesToSelectOptions(appliesTo: number | null | undefined, modifierType?: number | null) {
-    if (appliesTo === null || appliesTo === undefined) return [];
+export async function getAppliesToSelectOptions(appliesTo: EntityAppliesToType, entityType?: EntityType | null): Promise<SelectOption[]> {
 
     switch (appliesTo) {
-        case ModifierAppliesToType.Ability:
+        case EntityAppliesToType.Ability:
             return [
                 { value: -1, label: 'Any Ability' },
                 ...ABILITY_SELECT_LIST
             ];
-        case ModifierAppliesToType.Skill:
+        case EntityAppliesToType.Skill:
             return [
                 { value: -1, label: 'Any Skill' },
                 ...FULL_SKILL_SELECT_LIST
             ];
-        case ModifierAppliesToType.SavingThrow:
+        case EntityAppliesToType.SavingThrow:
             return [
                 { value: -1, label: 'Any Saving Throw' },
                 ...SAVING_THROW_SELECT_LIST
             ];
-        case ModifierAppliesToType.HitDice:
+        case EntityAppliesToType.HitDice:
             return RPG_DICE_SELECT_LIST;
-        case ModifierAppliesToType.Damage:
-            return modifierType === ModifierType.Quantity ? RPG_DICE_SELECT_LIST : DAMAGE_TYPE_SELECT_LIST;
-        case ModifierAppliesToType.DamageReduction:
+        case EntityAppliesToType.Damage:
+            return entityType === EntityType.Quantity ? RPG_DICE_SELECT_LIST : DAMAGE_TYPE_SELECT_LIST;
+        case EntityAppliesToType.DamageReduction:
             return DAMAGE_TYPE_SELECT_LIST;
-        case ModifierAppliesToType.AC:
+        case EntityAppliesToType.AC:
             return [];
-        case ModifierAppliesToType.Uses:
+        case EntityAppliesToType.Uses:
             return USES_FREQUENCY_SELECT_LIST;
-        case ModifierAppliesToType.BonusLanguage:
-        case ModifierAppliesToType.AutomaticLanguage:
+        case EntityAppliesToType.BonusLanguage:
+        case EntityAppliesToType.AutomaticLanguage:
             return [
                 { value: -1, label: 'Any Language' },
                 ...LANGUAGE_SELECT_LIST
             ];
-        case ModifierAppliesToType.Feat:
+        case EntityAppliesToType.Feat:
+            try {
+                const feats = await FeatApi.getFeatList({ queryType: 'all' });
+                if (feats && feats.length > 0) {
+                    return feats.map(feat => ({
+                        value: feat.id,
+                        label: feat.name
+                    }));
+                }
+            } catch (error) {
+                console.error('Failed to load feats for AppliesToId options:', error);
+            }
             return [
-                { value: null, label: 'Select a feat...' }
+                { value: -1, label: 'Select a feat...' }
             ];
-        case ModifierAppliesToType.SizeCategory:
+        case EntityAppliesToType.Feature:
+            try {
+                const response = await FeatureSystemApi.getFeatures(undefined, undefined);
+                if (response && response.results && response.results.length > 0) {
+                    return response.results.map(feature => ({
+                        value: feature.id,
+                        label: feature.name || feature.slug
+                    }));
+                }
+            } catch (error) {
+                console.error('Failed to load features for AppliesToId options:', error);
+            }
             return [
-                { value: -1, label: 'Any Size' },
-                ...SIZE_SELECT_LIST
+                { value: -1, label: 'Select a feature...' }
             ];
-        case ModifierAppliesToType.CreatureType:
+        case EntityAppliesToType.CreatureType:
             return [
                 { value: -1, label: 'Any Creature Type' },
                 ...CREATURE_TYPE_SELECT_LIST
             ];
-        case ModifierAppliesToType.DamageType:
-            return DAMAGE_TYPE_SELECT_LIST;
-        case ModifierAppliesToType.MovementSpeed:
-        case ModifierAppliesToType.Attack:
-        case ModifierAppliesToType.Initiative:
-        case ModifierAppliesToType.Other:
+        case EntityAppliesToType.SizeCategory:
             return [
-                { value: null, label: 'Any/All' },
+                { value: -1, label: 'Any Size' },
+                ...SIZE_SELECT_LIST
+            ];
+        case EntityAppliesToType.CreatureType:
+            return [
+                { value: -1, label: 'Any Creature Type' },
+                ...CREATURE_TYPE_SELECT_LIST
+            ];
+        case EntityAppliesToType.DamageType:
+            return DAMAGE_TYPE_SELECT_LIST;
+        case EntityAppliesToType.MovementSpeed:
+        case EntityAppliesToType.Attack:
+        case EntityAppliesToType.Initiative:
+        case EntityAppliesToType.Other:
+            return [
+                { value: -1, label: 'Any/All' },
                 { value: 1, label: 'Specific Target 1' },
                 { value: 2, label: 'Specific Target 2' }
             ];

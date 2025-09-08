@@ -50,54 +50,6 @@ export const classService: ClassService = {
                         pageNumber: true
                     }
                 },
-                features: {
-                    include: {
-                        feature: {
-                            select: {
-                                id: true,
-                                slug: true,
-                                name: true,
-                                description: true,
-                                prerequisites: true
-                            }
-                        },
-                        modifiers: {
-                            include: {
-                                formulaParams: true,
-                                conditions: true,
-                                item: {
-                                    select: {
-                                        id: true,
-                                        name: true,
-                                        description: true,
-                                        typeId: true,
-                                        cost: true,
-                                        weight: true,
-                                        quantity: true
-                                    }
-                                }
-                            }
-                        },
-                        choices: {
-                            include: {
-                                feat: {
-                                    select: {
-                                        id: true,
-                                        name: true
-                                    }
-                                },
-                                feature: {
-                                    select: {
-                                        id: true,
-                                        name: true,
-                                        slug: true
-                                    }
-                                },
-                                formulaParams: true
-                            }
-                        }
-                    }
-                },
                 spellcastingProgression: {
                     include: {
                         slots: true,
@@ -111,26 +63,19 @@ export const classService: ClassService = {
             },
         });
 
-        // Transform formula parameters from strings to arrays for frontend consumption
+        if (!classData) {
+            return null;
+        }
+
+        // Get feature progressions using the new architecture
+        const features = await featureSystemService.getFeatureProgressionsByClassId(query.id);
+
+        // Combine class data with enriched feature progressions
         const transformedClassData = {
             ...classData,
-            features: classData?.features?.map(feature => ({
-                ...feature,
-                modifiers: feature.modifiers?.map(modifier => ({
-                    ...modifier,
-                    formulaParams: modifier.formulaParams
-                        ? transformFormulaParamsFromDatabase(modifier.formulaParams)
-                        : null
-                })),
-                choices: feature.choices?.map(choice => ({
-                    ...choice,
-                    formulaParams: choice.formulaParams
-                        ? transformFormulaParamsFromDatabase(choice.formulaParams)
-                        : null
-                }))
-            })),
-            spellcastingProgression: classData?.spellcastingProgression ?? null,
-            spellsKnownProgression: classData?.classSpellsKnown ?? null,
+            features,
+            spellcastingProgression: classData.spellcastingProgression ?? null,
+            spellsKnownProgression: classData.classSpellsKnown ?? null,
         };
 
         return transformedClassData as DnDClass;

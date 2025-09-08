@@ -1,51 +1,47 @@
 import type {
     FeatureProgression,
-    FeatureModifier,
-    FeatureChoice
+    FeatureEntity
 } from '@shared/schema';
 import {
-    BreakdownComponentType,
-    ModifierType,
-    ModifierAppliesToType,
-    FeatureType,
-    FeatureChoiceType,
     FormulaId
 } from '@shared/static-data';
 
-import { calculatorRegistry } from './calculator-registry';
-import { formatMultipleConditions } from './display-utils';
-import { formatterRegistry } from './formatter-registry';
-import { ModifierGroupingStrategy, ChoiceGroupingStrategy } from './grouping-strategies';
-import { labelerRegistry } from './labeler-registry';
+import {
+    ValueGenerationPhase,
+    FormattingPhase,
+    GroupingPhase,
+    ProgressionGroupingPhase
+} from './phases';
 import type {
     DisplayContext,
     DisplayResult,
     DisplayStrategy,
     ProgressionValue,
-    FormatterMetadata,
     ProcessingConfig,
     ProcessingContext,
     ProcessingResult,
-    BaseFormatter,
-    ChoiceFormatter,
-    TransitionPoint,
     CalculationContext,
-    FormattedItemWithLevel,
-    CalculatedValueWithLevel,
     GroupedLevelItem,
-    CalculationBreakdown
+    CalculatedValueWithLevel
 } from './types';
+import {
+    BreakdownAnalyzer,
+    RegistryManager
+} from './utils';
 
 // Constants
 const MAX_CHARACTER_LEVEL = 20; // D&D standard maximum character level
 
-// Transition types
-const TRANSITION_TYPE = {
-    START: 0,
-    TRANSITION: 1
-} as const;
-
 abstract class DisplayStrategyBase implements DisplayStrategy {
+    // Phase instances
+    protected readonly valueGenerationPhase = new ValueGenerationPhase();
+    protected readonly formattingPhase = new FormattingPhase();
+    protected readonly groupingPhase = new GroupingPhase();
+    protected readonly progressionGroupingPhase = new ProgressionGroupingPhase();
+
+    // Utility instances
+    protected readonly breakdownAnalyzer = new BreakdownAnalyzer();
+    protected readonly registryManager = new RegistryManager();
     /**
      * Unified entry point for formatting feature progressions
      * Converts single progression to array and delegates to formatProgressions
@@ -53,11 +49,10 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     format(
         input: FeatureProgression | FeatureProgression[],
         context?: DisplayContext,
-        metadata?: FormatterMetadata,
         showLabels: boolean = true
     ): DisplayResult {
         const progressions = Array.isArray(input) ? input : [input];
-        return this.formatProgressions(progressions, context, metadata, showLabels);
+        return this.formatProgressions(progressions, context, showLabels);
     }
 
     /**
@@ -67,9 +62,19 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     protected abstract formatProgressions(
         progressions: FeatureProgression[],
         context?: DisplayContext,
-        metadata?: FormatterMetadata,
         showLabels?: boolean
     ): DisplayResult;
+
+    /**
+     * Generates calculated values for a progression. Can be overridden by subclasses
+     * to implement custom filtering or processing logic.
+     */
+    protected generateValues(
+        progression: FeatureProgression,
+        context?: DisplayContext,
+    ): CalculatedValueWithLevel[] {
+        return this.valueGenerationPhase.generateValues(progression, context);
+    }
 
     /**
      * Orchestrate the complete 6-phase formatting process for a single progression
@@ -78,25 +83,21 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
     protected orchestrateFormatting(
         progression: FeatureProgression,
         context?: DisplayContext,
-        metadata?: FormatterMetadata,
         showLabels: boolean = true
     ): DisplayResult {
         // Phase 1: Value Generation & Calculation
-        const calculatedValues = this.generateValues(progression, context, metadata);
+        const calculatedValues = this.generateValues(progression, context);
 
         // Phase 2: Pure Formatting - Format individual calculated values
-        const formattedItems = this.formatItems(calculatedValues, metadata, progression.level, showLabels);
+        const formattedItems = this.formattingPhase.formatItems(calculatedValues, progression.level, showLabels);
 
-        // Phase 3: Within-Level Grouping (Pre-Transition)
-        const withinLevelGrouped = this.groupWithinLevel(formattedItems, progression);
+        // Phase 3: Within-Level Grouping
+        const withinLevelGrouped = this.groupingPhase.groupWithinLevel(formattedItems, progression);
 
-        // Phase 4: Transition Detection
-        const transitions = this.detectTransitions(withinLevelGrouped);
+        // Phase 4: Within-Progression Grouping
+        const withinProgressionGrouped = this.progressionGroupingPhase.groupWithinProgression(withinLevelGrouped);
 
-        // Phase 5: Within-Progression Grouping (Post-Transition)
-        const withinProgressionGrouped = this.groupWithinProgression(withinLevelGrouped, transitions);
-
-        // Phase 6: Display-Specific Final Grouping
+        // Phase 5: Display-Specific Final Grouping
         const result = this.createDisplayResult(withinProgressionGrouped, context, progression);
 
         return result;
@@ -106,583 +107,23 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
      * Determine if progression generation is needed based on formula properties
      */
     protected shouldGenerateProgression(progression: FeatureProgression, _context?: DisplayContext): boolean {
-        const hasProgressionModifiers = progression.modifiers?.some(m =>
-            m.formulaParams
+        const hasProgressionEntities = progression.entities?.some(e =>
+            e.formulaParams
         );
 
-        // Check if any choice has progression (if applicable)
-        const hasProgressionChoices = progression.choices?.some(c =>
-            c.formulaParams
-        );
-
-        return hasProgressionModifiers || hasProgressionChoices;
+        return hasProgressionEntities;
     }
 
     /**
-     * Phase 1: Value Generation & Calculation
-     * Generate calculated values for each level of each progression
+     * Phase 1: Progression Generation for a specific entity
+     * Generate progression values for a single formula-based entity
      */
-    protected generateValues(
-        progression: FeatureProgression,
-        context?: DisplayContext,
-        _metadata?: FormatterMetadata
-    ): CalculatedValueWithLevel[] {
-        const results: CalculatedValueWithLevel[] = [];
-
-        // For progressions with formula-based modifiers/choices: use ProgressionGenerator
-        if (this.shouldGenerateProgression(progression, context)) {
-            // Process ALL formula modifiers using progression generation
-            const formulaModifiers = progression.modifiers?.filter(m => m.formulaParams) || [];
-
-            for (const formulaModifier of formulaModifiers) {
-                const progressionValues = this.generateProgressionValuesForSingleModifier(formulaModifier, progression, context);
-
-                // Process all progression values for this modifier
-                for (const progressionValue of progressionValues) {
-                    results.push({
-                        // Remove value field - formatters will get it from entity.value
-                        breakdown: progressionValue.breakdown,
-                        entity: progressionValue.modifier, // Use the modified modifier
-                        level: progressionValue.level
-                    });
-                }
-            }
-
-            // Process ALL formula choices using progression generation
-            const formulaChoices = progression.choices?.filter(c => c.formulaParams) || [];
-
-            for (const formulaChoice of formulaChoices) {
-                const progressionValues = this.generateProgressionValuesForSingleChoice(formulaChoice, progression, context);
-
-                // Process all progression values for this choice
-                for (const progressionValue of progressionValues) {
-                    results.push({
-                        // Remove value field - choices don't have numeric values
-                        breakdown: progressionValue.breakdown,
-                        entity: progressionValue.choice!, // Use the choice from progression value
-                        level: progressionValue.level
-                    });
-                }
-            }
-
-            // Also process static modifiers and choices at the progression level
-            this.processStaticModifiersAtLevel(progression, progression.level, results);
-            this.processStaticChoicesAtLevel(progression, progression.level, results);
-        } else {
-            // For progressions with only static entities: process directly
-            this.processEntitiesAtLevel(progression, progression.level, results);
-        }
-
-        return results;
-    }
-
-    /**
-     * Helper method to process only static modifiers (without formulas) at a specific level
-     */
-    private processStaticModifiersAtLevel(
-        progression: FeatureProgression,
-        level: number,
-        results: CalculatedValueWithLevel[]
-    ): void {
-        // Process only static modifiers (those without formulas)
-        if (progression.modifiers) {
-            for (const modifier of progression.modifiers) {
-                if (!modifier.formulaParams) {
-                    // Direct value - static modifier
-                    results.push({
-                        // Remove value field - formatters will get it from entity.value
-                        breakdown: {
-                            components: [{
-                                source: 'Direct Value',
-                                value: modifier.value,
-                                type: BreakdownComponentType.base,
-                                description: 'Direct modifier value'
-                            }]
-                        },
-                        entity: modifier,
-                        level
-                    });
-                }
-            }
-        }
-    }
-
-    /**
-     * Helper method to process only static choices (without formulas) at a specific level
-     */
-    private processStaticChoicesAtLevel(
-        progression: FeatureProgression,
-        level: number,
-        results: CalculatedValueWithLevel[]
-    ): void {
-        // Process only static choices (those without formulas)
-        if (progression.choices) {
-            for (const choice of progression.choices) {
-                if (!choice.formulaParams) {
-                    results.push({
-                        // Remove value field - choices don't have numeric values
-                        breakdown: {
-                            components: [{
-                                source: 'Choice',
-                                value: 0,
-                                type: BreakdownComponentType.choice,
-                                description: `Choice: ${choice.type}`
-                            }]
-                        },
-                        entity: choice,
-                        level
-                    });
-                }
-            }
-        }
-    }
-
-    /**
-     * Helper method to process static entities (modifiers/choices without formulas) at a specific level
-     * All formula-based entities are handled by the progression generator path
-     */
-    private processEntitiesAtLevel(
-        progression: FeatureProgression,
-        level: number,
-        results: CalculatedValueWithLevel[]
-    ): void {
-        // Process modifiers
-        if (progression.modifiers) {
-            for (const modifier of progression.modifiers) {
-                // Process only static modifiers (those without formulas)
-                // Modifiers with formulaParams are handled by the progression generator path
-                if (!modifier.formulaParams) {
-                    // Direct value
-                    results.push({
-                        // Remove value field - formatters will get it from entity.value
-                        breakdown: {
-                            components: [{
-                                source: 'Direct Value',
-                                value: modifier.value,
-                                type: BreakdownComponentType.base,
-                                description: 'Direct modifier value'
-                            }]
-                        },
-                        entity: modifier,
-                        level
-                    });
-                }
-            }
-        }
-
-        // Process choices
-        if (progression.choices) {
-            for (const choice of progression.choices) {
-                results.push({
-                    // Remove value field - choices don't have numeric values
-                    breakdown: {
-                        components: [{
-                            source: 'Choice',
-                            value: 0,
-                            type: BreakdownComponentType.choice,
-                            description: `Choice: ${choice.type}`
-                        }]
-                    },
-                    entity: choice,
-                    level
-                });
-            }
-        }
-    }
-
-    /**
-     * Get entity type from entity information
-     */
-    private getEntityType(entity: FeatureModifier | FeatureChoice): FeatureType {
-        if ('appliesTo' in entity) {
-            return FeatureType.Modifier;
-        } else if ('behavior' in entity) {
-            return FeatureType.Choice;
-        } else {
-            return FeatureType.Modifier; // Default fallback
-        }
-    }
-
-    /**
-     * Check if breakdown contains a display string from getDisplayString()
-     * Returns the display string if found, null otherwise
-     */
-    private getDisplayStringFromBreakdown(breakdown: CalculationBreakdown): string | null {
-        // Check if this is a display string case by looking at the breakdown
-        // When getDisplayString() is used, the formula field contains the display string
-        // and the value is 0
-        if (breakdown.components.length > 0) {
-            const component = breakdown.components[0];
-            if (component.value === 0 && component.formula !== component.source) {
-                // This indicates a display string case
-                return component.formula;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Check if a group of items represents cumulative modifiers
-     * Cumulative modifiers are those generated from formulas with cumulative=true
-     */
-    private isCumulativeGroup(groupedItems: FormattedItemWithLevel[]): boolean {
-        if (groupedItems.length === 0) return false;
-
-        // Check if all items in the group are modifiers with the same cumulative formula
-        const firstItem = groupedItems[0];
-        if (!('appliesTo' in firstItem.entity)) return false;
-
-        const firstModifier = firstItem.entity as FeatureModifier;
-        if (!firstModifier.formulaParams) return false;
-
-        // Check if the formula is cumulative
-        const isCumulative = firstModifier.formulaParams.cumulative === true;
-
-        // Also verify that all items in the group have the same formula
-        return isCumulative && groupedItems.every(item => {
-            if (!('appliesTo' in item.entity)) return false;
-            const modifier = item.entity as FeatureModifier;
-            return modifier.formulaParams?.formulaId === firstModifier.formulaParams?.formulaId;
-        });
-    }
-
-    /**
-     * Get entity sub type from entity information
-     */
-    private getEntitySubType(entity: FeatureModifier | FeatureChoice): ModifierType | FeatureChoiceType {
-        if ('appliesTo' in entity) {
-            return entity.type as ModifierType;
-        } else if ('behavior' in entity) {
-            return entity.type as FeatureChoiceType;
-        } else {
-            return ModifierType.Bonus; // Default fallback
-        }
-    }
-
-    /**
-     * Helper method to get the feature ID for an entity
-     */
-    private getFeatureId(entity: FeatureModifier | FeatureChoice): number {
-        // For dummy modifiers representing features without entities, use the id as the feature ID
-        if ('appliesTo' in entity && entity.appliesTo === ModifierAppliesToType.Ability && entity.type === ModifierType.Bonus && entity.value === 0 && !entity.formulaParams) {
-            return entity.id; // This is actually the feature ID
-        }
-
-        // For regular entities, we need to find the feature ID
-        // This is a simplified approach - in a more robust implementation, we'd track this explicitly
-        if ('appliesTo' in entity) {
-            return entity.progressionId;
-        } else if ('behavior' in entity) {
-            return entity.featureId;
-        }
-        return 0;
-    }
-
-    /**
-     * Phase 2: Pure Formatting
-     * Format individual calculated values using pure formatters
-     */
-    protected formatItems(
-        calculatedValues: CalculatedValueWithLevel[],
-        metadata?: FormatterMetadata,
-        progressionLevel?: number,
-        showLabels: boolean = true
-    ): FormattedItemWithLevel[] {
-        return calculatedValues.map(({ breakdown, entity, level }) => {
-            let formattedValue: string;
-
-            if (this.getEntityType(entity) === FeatureType.Modifier) {
-                const modifier = entity as FeatureModifier;
-
-                // Check if this is a display string case (from getDisplayString())
-                const displayString = this.getDisplayStringFromBreakdown(breakdown);
-                if (displayString) {
-                    formattedValue = displayString;
-                } else {
-                    const formatter = formatterRegistry.getFormatter(FeatureType.Modifier, modifier.type, modifier.appliesTo) as BaseFormatter;
-                    formattedValue = formatter ? formatter.format(modifier, metadata) : `${modifier.value}`;
-                }
-
-                // Skip labeling for cumulative modifiers - they will be labeled after grouping
-                const isCumulativeModifier = modifier.formulaParams?.cumulative === true;
-                if (!isCumulativeModifier) {
-                    formattedValue = labelerRegistry.applyLabel(formattedValue, modifier, showLabels);
-                }
-            } else {
-                const choice = entity as FeatureChoice;
-                const formatter = formatterRegistry.getFormatter(FeatureType.Choice, choice.type) as ChoiceFormatter;
-                formattedValue = formatter ? formatter.formatChoice(choice, metadata) : `Choice: ${FeatureChoiceType[choice.type] || choice.type}`;
-            }
-
-            return {
-                formattedValue,
-                breakdown,
-                entity,
-                level,
-                descriptionLevel: progressionLevel,
-                featureId: this.getFeatureId(entity),
-                entityType: this.getEntityType(entity),
-                entitySubType: this.getEntitySubType(entity),
-                entityAppliesTo: 'appliesTo' in entity ? entity.appliesTo : undefined,
-                groupingId: 'groupingId' in entity ? entity.groupingId || 0 : 0
-            };
-        });
-    }
-
-    /**
-     * Phase 3: Within-Level Grouping (Pre-Transition)
-     * Group entities by groupingId ONLY (ignore entity type and subType for grouping)
-     */
-    protected groupWithinLevel(
-        formattedItems: FormattedItemWithLevel[],
-        progression: FeatureProgression
-    ): GroupedLevelItem[] {
-        if (formattedItems.length === 0) {
-            return [];
-        }
-
-        // STEP 1: Group by level first
-        const groupedByLevel = new Map<number, FormattedItemWithLevel[]>();
-
-        for (const item of formattedItems) {
-            if (!groupedByLevel.has(item.level)) {
-                groupedByLevel.set(item.level, []);
-            }
-            groupedByLevel.get(item.level)!.push(item);
-        }
-
-        const results: GroupedLevelItem[] = [];
-
-        for (const [level, items] of groupedByLevel) {
-            // STEP 2: Group by groupingId ONLY (ignore entity type and subType for grouping)
-            const groupedByGroupingId = new Map<number, FormattedItemWithLevel[]>();
-
-            for (const item of items) {
-                const groupingId = item.groupingId; // No || 0 needed - always present
-                if (!groupedByGroupingId.has(groupingId)) {
-                    groupedByGroupingId.set(groupingId, []);
-                }
-                groupedByGroupingId.get(groupingId)!.push(item);
-            }
-
-            // STEP 3: Process each grouping separately
-            for (const [groupingId, groupedItems] of groupedByGroupingId) {
-                if (groupedItems.length > 0) {
-                    if (groupingId === 0) {
-                        // For groupingId = 0, keep items separate - don't group them
-                        for (const item of groupedItems) {
-                            let formattedValue = item.formattedValue;
-
-                            // Apply condition formatting to individual items as well
-                            if ('appliesTo' in item.entity && (item.entity as FeatureModifier).conditions && (item.entity as FeatureModifier).conditions!.length > 0) {
-                                const modifier = item.entity as FeatureModifier;
-                                formattedValue = formatMultipleConditions(
-                                    modifier.conditions!,
-                                    item.formattedValue
-                                );
-                            }
-
-                            results.push({
-                                level,
-                                featureId: progression.featureId,
-                                formattedValue,
-                                breakdown: { components: [] }, // Simplified for now
-                                descriptionLevel: progression.level,
-                                progressionId: progression.id,
-                                entityType: item.entityType,
-                                entitySubType: item.entitySubType,
-                                entityAppliesTo: item.entityAppliesTo,
-                                groupingId: item.groupingId
-                            });
-                        }
-                    } else {
-                        // For groupingId > 0, use grouping strategy to combine items
-                        let formattedValue: string;
-
-                        // Route to appropriate grouping strategy based on entity types
-                        // Note: Choices and modifiers should never be grouped together in practice
-                        const hasChoices = groupedItems.some(item => 'behavior' in item.entity);
-
-                        if (hasChoices) {
-                            // Pure choice group
-                            const choiceGroupingStrategy = new ChoiceGroupingStrategy();
-                            const groupedResult = choiceGroupingStrategy.group(groupedItems.map(item => ({
-                                formattedValue: item.formattedValue,
-                                breakdown: item.breakdown,
-                                metadata: undefined,
-                                modifier: 'appliesTo' in item.entity ? item.entity : undefined,
-                                groupingId: item.groupingId
-                            })));
-                            formattedValue = groupedResult.formattedValue;
-                        } else {
-                            // Pure modifier group (default)
-                            const modifierGroupingStrategy = new ModifierGroupingStrategy();
-                            const groupedResult = modifierGroupingStrategy.group(groupedItems.map(item => ({
-                                formattedValue: item.formattedValue,
-                                breakdown: item.breakdown,
-                                metadata: undefined,
-                                modifier: 'appliesTo' in item.entity ? item.entity : undefined,
-                                groupingId: item.groupingId
-                            })));
-
-                            // Check if any of the modifiers have conditions and add condition prefix
-                            const modifiersWithConditions = groupedItems.filter(item =>
-                                'appliesTo' in item.entity && (item.entity as FeatureModifier).conditions && (item.entity as FeatureModifier).conditions!.length > 0
-                            );
-
-                            if (modifiersWithConditions.length > 0) {
-                                // Use the first modifier's conditions for the prefix (assuming all modifiers in a group have the same conditions)
-                                const firstModifier = modifiersWithConditions[0].entity as FeatureModifier;
-                                if (firstModifier.conditions && firstModifier.conditions.length > 0) {
-                                    // Use the condition formatter registry to format all conditions with the grouped result
-                                    formattedValue = formatMultipleConditions(
-                                        firstModifier.conditions,
-                                        groupedResult.formattedValue
-                                    );
-                                } else {
-                                    formattedValue = groupedResult.formattedValue;
-                                }
-                            } else {
-                                formattedValue = groupedResult.formattedValue;
-                            }
-                        }
-
-                        // Check if this is a cumulative group (all modifiers have the same cumulative formula)
-                        const firstModifier = groupedItems[0].entity as FeatureModifier;
-                        const isCumulativeGroup = this.isCumulativeGroup(groupedItems);
-
-                        if (isCumulativeGroup) {
-                            // For cumulative groups, apply label to the grouped result
-                            formattedValue = labelerRegistry.applyLabel(formattedValue, firstModifier, true);
-                        }
-                        // For non-cumulative groups, the individual items are already labeled
-
-                        // For grouped items, use default values since items are grouped
-
-                        results.push({
-                            level,
-                            featureId: progression.featureId,
-                            formattedValue,
-                            breakdown: { components: [] }, // Simplified for now
-                            descriptionLevel: progression.level,
-                            progressionId: progression.id,
-                            entityType: FeatureType.Modifier,
-                            entitySubType: ModifierType.Bonus,
-                            entityAppliesTo: undefined,
-                            groupingId: groupingId
-                        });
-                    }
-                }
-            }
-        }
-
-        return results;
-    }
-
-    /**
-     * Phase 5: Within-Progression Grouping (Post-Transition)
-     * Group all entities for each transition level within a single progression
-     */
-    protected groupWithinProgression(
-        withinLevelGrouped: GroupedLevelItem[],
-        transitions: TransitionPoint[]
-    ): GroupedLevelItem[] {
-        if (withinLevelGrouped.length === 0) {
-            return [];
-        }
-
-        // Get transition levels (including start level)
-        const transitionLevels = new Set<number>();
-        transitionLevels.add(withinLevelGrouped[0]?.level || 1); // Start level - using 1 as fallback for empty arrays
-        transitions.forEach(t => transitionLevels.add(t.level));
-
-        const results: GroupedLevelItem[] = [];
-
-        // For each transition level, only include entities that actually changed
-        for (const level of Array.from(transitionLevels).sort((a, b) => a - b)) {
-            const levelItems = withinLevelGrouped.filter(item => item.level === level);
-
-            if (levelItems.length > 0) {
-                // Find which entities actually changed at this level
-                const changedEntities: GroupedLevelItem[] = [];
-
-                for (const item of levelItems) {
-                    // Check if this entity type has a transition at this level
-                    // Use the same composite key logic as transition detection
-                    const hasTransition = transitions.some(t => {
-                        if (t.level !== level) return false;
-
-                        if (item.groupingId === 0) {
-                            // For individual items, match by entity type + subtype + appliesTo
-                            return t.entityType === item.entityType &&
-                                t.entitySubType === item.entitySubType &&
-                                t.entityAppliesTo === item.entityAppliesTo;
-                        } else {
-                            // For grouped items, match by groupingId
-                            return t.groupingId === item.groupingId;
-                        }
-                    });
-
-                    // Also include if this is the start level (first transition)
-                    const isStartLevel = level === Array.from(transitionLevels).sort((a, b) => a - b)[0];
-
-                    if (hasTransition || isStartLevel) {
-                        changedEntities.push(item);
-                    }
-                }
-
-                if (changedEntities.length > 0) {
-                    // Phase 5: Group ALL entities at this level by featureId
-                    // This is the key fix - group by featureId regardless of groupingId
-                    const entitiesByFeatureId = new Map<number, GroupedLevelItem[]>();
-
-                    for (const item of changedEntities) {
-                        if (!entitiesByFeatureId.has(item.featureId)) {
-                            entitiesByFeatureId.set(item.featureId, []);
-                        }
-                        entitiesByFeatureId.get(item.featureId)!.push(item);
-                    }
-
-                    // For each featureId, combine all entities with ', ' delimiter
-                    for (const [_featureId, featureEntities] of entitiesByFeatureId) {
-                        if (featureEntities.length === 1) {
-                            // Single entity - add as-is
-                            results.push(featureEntities[0]);
-                        } else {
-                            // Multiple entities - combine with ', ' delimiter
-                            const combinedValue = featureEntities.map(item => item.formattedValue).join(', ');
-                            const firstItem = featureEntities[0];
-                            results.push({
-                                level,
-                                featureId: firstItem.featureId,
-                                formattedValue: combinedValue,
-                                breakdown: { components: [] },
-                                descriptionLevel: firstItem.descriptionLevel,
-                                progressionId: firstItem.progressionId,
-                                entityType: FeatureType.Modifier, // Default type since we're combining all
-                                entitySubType: ModifierType.Bonus, // Default subtype
-                                entityAppliesTo: undefined,
-                                groupingId: 0 // Reset to 0 since we're now grouping by featureId
-                            });
-                        }
-                    }
-                }
-            }
-        }
-
-        return results;
-    }
-
-    /**
-     * Phase 1: Progression Generation for a specific modifier
-     * Generate progression values for a single formula-based modifier
-     */
-    protected generateProgressionValuesForSingleModifier(
-        formulaModifier: FeatureModifier,
+    protected generateProgressionValuesForSingleEntity(
+        formulaEntity: FeatureEntity,
         progression: FeatureProgression,
         context?: DisplayContext
     ): ProgressionValue[] {
-        if (!formulaModifier.formulaParams) {
+        if (!formulaEntity.formulaParams) {
             return [];
         }
 
@@ -694,259 +135,32 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
         };
 
         // Use registry to get progression generator and formula calculator
-        const progressionGenerator = calculatorRegistry.getDefaultProgressionGenerator();
-        const formulaCalculator = calculatorRegistry.getFormulaCalculator(formulaModifier.formulaParams.formulaId);
+        const progressionGenerator = this.registryManager.getDefaultProgressionGenerator();
+        const formulaCalculator = this.registryManager.getFormulaCalculator(formulaEntity.formulaParams.formulaId);
         if (!progressionGenerator) {
             return [];
         }
 
         // For CONDITIONAL_SCALING, start at the first threshold level instead of progression.level
         let startLevel = progression.level;
-        if (formulaModifier.formulaParams.formulaId === FormulaId.CONDITIONAL_SCALING &&
-            formulaModifier.formulaParams.thresholds &&
-            formulaModifier.formulaParams.thresholds.length > 0) {
+        if (formulaEntity.formulaParams.formulaId === FormulaId.CONDITIONAL_SCALING &&
+            formulaEntity.formulaParams.thresholds &&
+            formulaEntity.formulaParams.thresholds.length > 0) {
             // Start at the first threshold level for conditional scaling
-            startLevel = Math.min(...formulaModifier.formulaParams.thresholds);
+            startLevel = Math.min(...formulaEntity.formulaParams.thresholds);
         }
 
         // Generate all values using the progression generator
         // The progression generator handles character-dependent formulas internally
         return progressionGenerator.generateValues({
-            formula: formulaModifier.formulaParams,
+            formula: formulaEntity.formulaParams,
             startLevel,
             endLevel: MAX_CHARACTER_LEVEL,
             context: calculationContext,
-            modifierValue: formulaModifier.value, // Pass the actual modifier value for proper scaling
+            entityValue: formulaEntity.value || 0, // Use entity value, default to 0 if null
             formulaCalculator,
-            originalModifier: formulaModifier // Pass the original modifier for creating modified version
+            originalEntity: formulaEntity // Pass the original entity for creating modified version
         });
-    }
-
-    /**
-     * Phase 1: Progression Generation for a specific choice
-     * Generate progression values for a single formula-based choice
-     */
-    protected generateProgressionValuesForSingleChoice(
-        formulaChoice: FeatureChoice,
-        progression: FeatureProgression,
-        context?: DisplayContext
-    ): ProgressionValue[] {
-        if (!formulaChoice.formulaParams) {
-            return [];
-        }
-
-        const calculationContext: CalculationContext = {
-            level: progression.level,
-            progressionLevel: progression.level,
-            characterLevel: context?.currentLevel,
-            character: context?.character
-        };
-
-        // Use registry to get progression generator and formula calculator
-        const progressionGenerator = calculatorRegistry.getDefaultProgressionGenerator();
-        const formulaCalculator = calculatorRegistry.getFormulaCalculator(formulaChoice.formulaParams.formulaId);
-        if (!progressionGenerator) {
-            return [];
-        }
-
-        // For CONDITIONAL_SCALING, start at the first threshold level instead of progression.level
-        let startLevel = progression.level;
-        if (formulaChoice.formulaParams.formulaId === FormulaId.CONDITIONAL_SCALING &&
-            formulaChoice.formulaParams.thresholds &&
-            formulaChoice.formulaParams.thresholds.length > 0) {
-            // Start at the first threshold level for conditional scaling
-            startLevel = Math.min(...formulaChoice.formulaParams.thresholds);
-        }
-
-        // Generate all values using the progression generator
-        // The progression generator handles character-dependent formulas internally
-        return progressionGenerator.generateValues({
-            formula: formulaChoice.formulaParams,
-            startLevel,
-            endLevel: MAX_CHARACTER_LEVEL,
-            context: calculationContext,
-            modifierValue: 0, // Choices don't have numeric values
-            formulaCalculator,
-            originalChoice: formulaChoice // Pass the original choice
-        });
-    }
-
-    /**
-     * Phase 4: Transition Detection
-     * Detect transitions for each groupingId separately
-     */
-    protected detectTransitions(withinLevelGrouped: GroupedLevelItem[]): TransitionPoint[] {
-        if (withinLevelGrouped.length === 0) {
-            return [];
-        }
-
-        // Step 1: Flatten and sort by level, then by groupingId
-        const levelEntityGroups = this.flattenToLevelEntityGroups(withinLevelGrouped);
-
-        // Step 2: Single-pass transition detection
-        const transitions: TransitionPoint[] = [];
-        const previousValues = new Map<string, string>(); // Use composite key for individual items
-
-        // Always include start level
-        const startGroup = levelEntityGroups[0];
-        transitions.push(this.createStartTransition(startGroup));
-
-        // Detect transitions for each group
-        for (const group of levelEntityGroups) {
-            const groupingId = group.items[0]?.groupingId || 0;
-            const entityType = group.items[0]?.entityType;
-
-            // Create a composite key for transition detection
-            let transitionKey: string;
-            if (groupingId === 0) {
-                // For individual items (groupingId = 0), use entity type + subtype + appliesTo as key
-                const item = group.items[0];
-                transitionKey = `${item.entityType}-${item.entitySubType}-${item.entityAppliesTo || 'none'}`;
-            } else {
-                // For grouped items (groupingId > 0), use groupingId as key
-                transitionKey = `group-${groupingId}`;
-            }
-
-            const previousValue = previousValues.get(transitionKey);
-
-            // For choices, always create a transition at every level where they appear
-            // because choices represent availability, not value changes
-            if (entityType === FeatureType.Choice) {
-                transitions.push(this.createTransition(group));
-                previousValues.set(transitionKey, group.formattedValue);
-            } else if (group.formattedValue !== previousValue) {
-                // For modifiers, only create transitions when the value actually changes
-                transitions.push(this.createTransition(group));
-                previousValues.set(transitionKey, group.formattedValue);
-            }
-        }
-
-        return transitions.sort((a, b) => a.level - b.level);
-    }
-
-    /**
-     * Helper method to flatten grouped items into a simple structure for transition detection
-     */
-    private flattenToLevelEntityGroups(withinLevelGrouped: GroupedLevelItem[]): Array<{
-        level: number;
-        entityType: FeatureType;
-        entitySubType: ModifierType | FeatureChoiceType;
-        formattedValue: string;
-        items: GroupedLevelItem[];
-    }> {
-        // Group by level first, then by groupingId (not entity type)
-        const groupedByLevel = new Map<number, GroupedLevelItem[]>();
-
-        for (const item of withinLevelGrouped) {
-            if (!groupedByLevel.has(item.level)) {
-                groupedByLevel.set(item.level, []);
-            }
-            groupedByLevel.get(item.level)!.push(item);
-        }
-
-        const result: Array<{
-            level: number;
-            entityType: FeatureType;
-            entitySubType: ModifierType | FeatureChoiceType;
-            formattedValue: string;
-            items: GroupedLevelItem[];
-        }> = [];
-
-        // For each level, group by groupingId and create flattened structure
-        for (const [level, items] of groupedByLevel) {
-            const groupedByGroupingId = new Map<number, GroupedLevelItem[]>();
-
-            for (const item of items) {
-                const groupingId = item.groupingId;
-                if (!groupedByGroupingId.has(groupingId)) {
-                    groupedByGroupingId.set(groupingId, []);
-                }
-                groupedByGroupingId.get(groupingId)!.push(item);
-            }
-
-            // Create flattened groups for each groupingId at this level
-            for (const [groupingId, groupingItems] of groupedByGroupingId) {
-                if (groupingId === 0) {
-                    // For groupingId = 0, treat each item individually
-                    for (const item of groupingItems) {
-                        result.push({
-                            level,
-                            entityType: item.entityType,
-                            entitySubType: item.entitySubType,
-                            formattedValue: item.formattedValue,
-                            items: [item]
-                        });
-                    }
-                } else {
-                    // For grouped items (groupingId > 0), group them together
-                    const firstItem = groupingItems[0];
-                    const formattedValue = groupingItems.map(item => item.formattedValue).join(', ');
-
-                    result.push({
-                        level,
-                        entityType: firstItem.entityType,
-                        entitySubType: firstItem.entitySubType,
-                        formattedValue,
-                        items: groupingItems
-                    });
-                }
-            }
-        }
-
-        // Sort by level, then by groupingId for consistent processing
-        return result.sort((a, b) => {
-            if (a.level !== b.level) return a.level - b.level;
-            // Sort by groupingId instead of entitySubType
-            const aGroupingId = a.items[0]?.groupingId || 0;
-            const bGroupingId = b.items[0]?.groupingId || 0;
-            return aGroupingId - bGroupingId;
-        });
-    }
-
-    /**
-     * Helper method to create a start transition
-     */
-    private createStartTransition(group: {
-        level: number;
-        entityType: FeatureType;
-        entitySubType: ModifierType | FeatureChoiceType;
-        formattedValue: string;
-        items: GroupedLevelItem[];
-    }): TransitionPoint {
-        return {
-            level: group.level,
-            type: TRANSITION_TYPE.START,
-            description: group.formattedValue,
-            value: 0,
-            previousValue: undefined,
-            entityType: group.entityType,
-            entitySubType: group.entitySubType,
-            entityAppliesTo: group.items[0]?.entityAppliesTo,
-            groupingId: group.items[0]?.groupingId || 0,
-        };
-    }
-
-    /**
-     * Helper method to create a regular transition
-     */
-    private createTransition(group: {
-        level: number;
-        entityType: FeatureType;
-        entitySubType: ModifierType | FeatureChoiceType;
-        formattedValue: string;
-        items: GroupedLevelItem[];
-    }): TransitionPoint {
-        return {
-            level: group.level,
-            type: TRANSITION_TYPE.TRANSITION,
-            description: group.formattedValue,
-            value: 0,
-            previousValue: 0,
-            entityType: group.entityType,
-            entitySubType: group.entitySubType,
-            entityAppliesTo: group.items[0]?.entityAppliesTo,
-            groupingId: group.items[0]?.groupingId || 0,
-        };
     }
 
     /**
@@ -962,12 +176,12 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
 
 
     protected processEntity(
-        entity: FeatureModifier | FeatureChoice,
+        entity: FeatureEntity,
         config: ProcessingConfig,
-        context: ProcessingContext
+        _context: ProcessingContext
     ): ProcessingResult {
         try {
-            const formatter = formatterRegistry.getFormatter(config.entityType, config.subType!, config.subTypeId);
+            const formatter = this.registryManager.getFormatter(config.entityType, config.subTypeId);
             if (!formatter) {
                 return {
                     formattedValue: `Unknown formatter for ${config.entityType}`,
@@ -976,7 +190,7 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
                     breakdown: { components: [] }
                 };
             }
-            const formattedValue = this.formatEntity(entity, formatter, context);
+            const formattedValue = formatter.format(entity);
 
             return {
                 formattedValue,
@@ -990,25 +204,6 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
                 error: error instanceof Error ? error.message : 'Unknown error',
                 breakdown: { components: [] }
             };
-        }
-    }
-
-    protected formatEntity(
-        entity: FeatureModifier | FeatureChoice,
-        formatter: BaseFormatter | ChoiceFormatter,
-        context: ProcessingContext
-    ): string {
-        switch (context.entityType) {
-            case FeatureType.Modifier: {
-                const modifier = entity as FeatureModifier;
-                return (formatter as BaseFormatter).format(modifier, context.metadata);
-            }
-            case FeatureType.Choice: {
-                const choice = entity as FeatureChoice;
-                return (formatter as ChoiceFormatter).formatChoice(choice, context.metadata);
-            }
-            default:
-                return `Unknown entity type: ${FeatureType[context.entityType] || context.entityType}`;
         }
     }
 }

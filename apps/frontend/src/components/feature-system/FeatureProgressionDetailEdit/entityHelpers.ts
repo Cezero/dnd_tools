@@ -1,52 +1,49 @@
-import type { FeatureModifier, FeatureChoice } from '@shared/schema';
-import { FeatureType } from '@shared/static-data';
+import type { FeatureEntity } from '@shared/schema';
 
 import type { GroupingState } from './types';
 
 // Helper function to update grouping state after entity removal
 export function updateGroupingStateAfterRemoval(
     groupingState: GroupingState,
-    entityType: FeatureType,
     removedIndex: number
 ): GroupingState {
     const newState = { ...groupingState };
-    const entityMap = new Map(newState[entityType]);
 
     // Remove the deleted index
-    entityMap.delete(removedIndex);
+    delete newState[removedIndex];
 
     // Shift down all indices after the removed item
-    for (let i = removedIndex; i < entityMap.size; i++) {
-        const value = entityMap.get(i + 1);
-        if (value !== undefined) {
-            entityMap.set(i, value);
-            entityMap.delete(i + 1);
+    for (let i = removedIndex; i < Object.keys(newState).length; i++) {
+        const nextIndex = i + 1;
+        if (newState[nextIndex]) {
+            newState[i] = newState[nextIndex];
+            delete newState[nextIndex];
         }
     }
 
-    newState[entityType] = entityMap;
     return newState;
 }
 
 // Helper function to update grouping state
 export function updateGroupingState(
     groupingState: GroupingState,
-    entityType: FeatureType,
     index: number,
     groupingId: number
 ): GroupingState {
     const newState = { ...groupingState };
-    const entityMap = new Map(newState[entityType]);
 
-    entityMap.set(index, groupingId);
-    newState[entityType] = entityMap;
+    if (!newState[index]) {
+        newState[index] = new Map<number, number>();
+    }
+
+    newState[index].set(index, groupingId);
 
     return newState;
 }
 
 // Helper function to get entities grouped by groupingId
 export function getGroupedEntities(
-    entities: (FeatureModifier | FeatureChoice)[]
+    entities: FeatureEntity[]
 ): Map<number, number[]> {
     const groups = new Map<number, number[]>();
 

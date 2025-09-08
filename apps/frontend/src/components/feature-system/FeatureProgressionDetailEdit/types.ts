@@ -1,20 +1,20 @@
 import type { ComponentType } from 'react';
 
 import type {
-    FeatureModifier,
-    FeatureChoice,
+    FeatureEntity,
     FeatureProgression,
     Feature,
-    FeatureModifierCondition
+    FeatureEntityCondition
 } from '@shared/schema';
-import { FeatureType } from '@shared/static-data';
-import type { CoreComponent } from '@shared/static-data';
+import { EntityAppliesToType, EntityType } from '@shared/static-data';
+
+
 
 // Entity type configuration for reusable rendering
 export interface EntityTypeConfig {
-    key: FeatureType;
+    key: EntityType;
     label: string;
-    formComponent: ComponentType<ModifierDetailFormProps | ChoiceDetailFormProps>;
+    formComponent: ComponentType<BaseFormProps>;
     addFunction: () => void;
     removeFunction: (index: number) => void;
     hasFeature: boolean;
@@ -22,14 +22,12 @@ export interface EntityTypeConfig {
 
 // Grouping state management
 export interface GroupingState {
-    [FeatureType.Modifier]: Map<number, number>; // index -> groupingId
-    [FeatureType.Choice]: Map<number, number>;
+    [key: number]: Map<number, number>; // index -> groupingId
 }
 
 // Hover state for group/ungroup buttons
 export interface HoverState {
     hoveredIndex: string | null;
-    hoveredEntityType: FeatureType | null;
 }
 
 // Base form component props
@@ -39,18 +37,9 @@ export interface BaseFormProps {
     progression?: FeatureProgression | null;
 }
 
-// Modifier form props
-export interface ModifierDetailFormProps extends BaseFormProps {
-    feats: CoreComponent[];
-    featsLoading: boolean;
-}
-
-// Choice form props
-export type ChoiceDetailFormProps = BaseFormProps;
-
 // Formula preview props
 export interface FormulaPreviewProps {
-    item: FeatureModifier | FeatureChoice;
+    item: FeatureEntity;
     progressionLevel: number;
     featureName?: string;
 }
@@ -58,33 +47,24 @@ export interface FormulaPreviewProps {
 // Entity section renderer props
 export interface EntitySectionRendererProps {
     config: EntityTypeConfig;
-    formData: Partial<FeatureProgression>;
-    groupingState: GroupingState;
+    formData: FeatureProgression;
     hoveredIndex: string | null;
-    hoveredEntityType: FeatureType | null;
-    onGroup: (entityType: FeatureType, index: number) => void;
-    onUngroup: (entityType: FeatureType, index: number) => void;
+    onGroup: (index: number) => void;
+    onUngroup: (index: number) => void;
     setHoveredIndex: (index: string | null) => void;
-    setHoveredEntityType: (type: FeatureType | null) => void;
-    feats?: CoreComponent[];
-    featsLoading?: boolean;
     preSelectedFeature?: Feature;
     progression?: FeatureProgression | null;
 }
 
 // Section selector props
 export interface SectionSelectorProps {
-    hasModifiers: boolean;
-    hasChoices: boolean;
-    modifierCount: number;
-    choiceCount: number;
-    onModifierToggle: (checked: boolean) => void;
-    onChoiceToggle: (checked: boolean) => void;
+    hasEntities: boolean;
+    entityCount: number;
+    onEntityToggle: (checked: boolean) => void;
 }
 
 // Grouping controls props
 export interface GroupingControlsProps {
-    entityType: FeatureType;
     index: number;
     nextIndex: number;
     nextGroupingId: number;
@@ -92,16 +72,13 @@ export interface GroupingControlsProps {
     onGroup: () => void;
     onUngroup: () => void;
     hoveredIndex: string | null;
-    hoveredEntityType: FeatureType | null;
     setHoveredIndex: (index: string | null) => void;
-    setHoveredEntityType: (type: FeatureType | null) => void;
 }
 
 // Condition editor props
 export interface ConditionEditorProps {
     index: number;
-    entityType: FeatureType;
-    conditions: FeatureModifierCondition[];
+    conditions: FeatureEntityCondition[];
     onAddCondition: () => void;
     onRemoveCondition: (conditionIndex: number) => void;
 }
@@ -109,12 +86,8 @@ export interface ConditionEditorProps {
 // Applies to selector props
 export interface AppliesToSelectorProps {
     index: number;
-    entityType: FeatureType;
-    modifierType: number | null;
-    appliesTo: number | null;
-    appliesToId: number | null;
-    onAppliesToChange: (value: number | null) => void;
-    onAppliesToIdChange: (value: number | null) => void;
+    entityType: EntityType;
+    appliesTo: EntityAppliesToType | null;
     // Additional props for enhanced conditional scaling
     formulaId?: number | null;
     valuesRepresent?: number | null;

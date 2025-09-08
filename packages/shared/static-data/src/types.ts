@@ -49,7 +49,7 @@ export interface Currency extends CoreComponentAbbreviation {
 export interface Formula extends CoreComponent {
     description: string;
     parameters: FormulaParameter[];
-    calculate: (params: Record<string, any>) => number | string;
+    calculate: (params: Record<string, any>) => number | null;
     getDisplayString: (params: Record<string, any>) => string;
     isCharacterDependent: boolean; // Does this formula require character context?
 }

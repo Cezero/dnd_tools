@@ -10,7 +10,6 @@ import {
 } from '@shared/schema';
 
 import type { RaceService } from './types';
-import { transformFormulaParamsFromDatabase } from '../../utils/formulaParamTransformers';
 import { featureSystemService } from '../featureSystem/featureSystemService';
 
 
@@ -23,48 +22,6 @@ export const raceService: RaceService = {
             prisma.race.findMany({
                 orderBy: { name: 'asc' },
                 include: {
-                    featureProgression: {
-                        include: {
-                            feature: {
-                                select: {
-                                    id: true,
-                                    slug: true,
-                                    name: true,
-                                    description: true
-                                }
-                            },
-                            modifiers: {
-                                include: {
-                                    formulaParams: true,
-                                    conditions: true
-                                }
-                            },
-                            choices: {
-                                include: {
-                                    feat: {
-                                        select: {
-                                            id: true,
-                                            name: true
-                                        }
-                                    },
-                                    feature: {
-                                        select: {
-                                            id: true,
-                                            name: true,
-                                            slug: true
-                                        }
-                                    },
-                                    formulaParams: true
-                                }
-                            },
-                            effects: {
-                                include: {
-                                    feat: true,
-                                    item: true
-                                }
-                            }
-                        }
-                    },
                     sources: {
                         select: {
                             sourceBookId: true,
@@ -76,25 +33,16 @@ export const raceService: RaceService = {
             prisma.race.count(),
         ]);
 
-        // Map featureProgression to features for schema compatibility and transform formula parameters
-        const racesWithFeatures = races.map(race => ({
-            ...race,
-            features: race.featureProgression?.map(feature => ({
-                ...feature,
-                modifiers: feature.modifiers?.map(modifier => ({
-                    ...modifier,
-                    formulaParams: modifier.formulaParams
-                        ? transformFormulaParamsFromDatabase(modifier.formulaParams)
-                        : null
-                })),
-                choices: feature.choices?.map(choice => ({
-                    ...choice,
-                    formulaParams: choice.formulaParams
-                        ? transformFormulaParamsFromDatabase(choice.formulaParams)
-                        : null
-                }))
-            })) || null
-        }));
+        // Get feature progressions for all races using the feature system service
+        const racesWithFeatures = await Promise.all(
+            races.map(async (race) => {
+                const features = await featureSystemService.getFeatureProgressionsByRaceId(race.id);
+                return {
+                    ...race,
+                    features,
+                };
+            })
+        );
 
         return {
             total: races.length,
@@ -106,48 +54,6 @@ export const raceService: RaceService = {
         const race = await prisma.race.findUnique({
             where: { id: id.id },
             include: {
-                featureProgression: {
-                    include: {
-                        feature: {
-                            select: {
-                                id: true,
-                                slug: true,
-                                name: true,
-                                description: true
-                            }
-                        },
-                        modifiers: {
-                            include: {
-                                formulaParams: true,
-                                conditions: true
-                            }
-                        },
-                        choices: {
-                            include: {
-                                feat: {
-                                    select: {
-                                        id: true,
-                                        name: true
-                                    }
-                                },
-                                feature: {
-                                    select: {
-                                        id: true,
-                                        name: true,
-                                        slug: true
-                                    }
-                                },
-                                formulaParams: true
-                            }
-                        },
-                        effects: {
-                            include: {
-                                feat: true,
-                                item: true
-                            }
-                        }
-                    }
-                },
                 sources: true,
             },
         });
@@ -156,24 +62,13 @@ export const raceService: RaceService = {
             return null;
         }
 
-        // Transform formula parameters from strings to arrays for frontend consumption
+        // Get feature progressions using the new architecture
+        const features = await featureSystemService.getFeatureProgressionsByRaceId(id.id);
+
+        // Combine race data with enriched feature progressions
         const transformedRace = {
             ...race,
-            features: race.featureProgression?.map(feature => ({
-                ...feature,
-                modifiers: feature.modifiers?.map(modifier => ({
-                    ...modifier,
-                    formulaParams: modifier.formulaParams
-                        ? transformFormulaParamsFromDatabase(modifier.formulaParams)
-                        : null
-                })),
-                choices: feature.choices?.map(choice => ({
-                    ...choice,
-                    formulaParams: choice.formulaParams
-                        ? transformFormulaParamsFromDatabase(choice.formulaParams)
-                        : null
-                }))
-            })) || null
+            features,
         };
 
         return transformedRace as Race;

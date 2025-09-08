@@ -2,8 +2,8 @@ import {
     FeatureProgression,
 } from '@shared/schema';
 import {
-    ModifierAppliesToType,
-    ModifierType,
+    EntityAppliesToType,
+    EntityType,
     SpecialFeatureId,
 } from '@shared/static-data';
 
@@ -15,9 +15,9 @@ export const ClassSkillService = {
         return progressions
             .filter(prog => prog.featureId === SpecialFeatureId.ClassSkill)
             .flatMap(prog =>
-                prog.modifiers
-                    ?.filter(mod => mod.appliesTo === ModifierAppliesToType.Skill && mod.appliesToId)
-                    .map(mod => mod.appliesToId) || []
+                prog.entities
+                    ?.filter(entity => entity.appliesTo === EntityAppliesToType.Skill && entity.appliesToId)
+                    .map(entity => entity.appliesToId) || []
             )
             .filter(id => id > 0);
     },
@@ -52,39 +52,39 @@ export const ClassSkillService = {
                     name: 'Class Skill',
                     description: 'Class skill feature',
                 },
-                modifiers: [],
-                choices: [],
+                entities: [],
             };
         }
 
         // Check if this specific skill is already added
-        const existingSkillModifier = classSkillsProgression.modifiers?.find(m =>
-            m.appliesTo === ModifierAppliesToType.Skill && m.appliesToId === skillId
+        const existingSkillEntity = classSkillsProgression.entities?.find(e =>
+            e.appliesTo === EntityAppliesToType.Skill && e.appliesToId === skillId
         );
 
-        if (existingSkillModifier) {
+        if (existingSkillEntity) {
             // Skill already exists, don't add duplicate
             return;
         }
 
-        // Add the skill as a modifier to the progression
-        const newModifier = {
+        // Add the skill as an entity to the progression
+        const newEntity = {
             id: Date.now() + Math.random(), // Temporary ID
             progressionId: classSkillsProgression.id,
-            type: ModifierType.Other, // Not a bonus, just marking as class skill
-            appliesTo: ModifierAppliesToType.Skill,
+            type: EntityType.Other, // Not a bonus, just marking as class skill
+            appliesTo: EntityAppliesToType.Skill,
             appliesToId: skillId,
             value: 0, // No bonus value - just marking as class skill
             bonusType: null, // No bonus type needed
-            appliesIfChoiceKey: null,
-            appliesIfChoiceValue: null,
+            appliesToSubId: null,
+            displayInDetail: true,
+            filterType: null,
             groupingId: 1, // Group all class skills together as one feature
         };
 
-        // Update the progression with the new modifier
+        // Update the progression with the new entity
         const updatedProgression = {
             ...classSkillsProgression,
-            modifiers: [...(classSkillsProgression.modifiers || []), newModifier]
+            entities: [...(classSkillsProgression.entities || []), newEntity]
         };
 
         // Update the progressions array
@@ -105,23 +105,23 @@ export const ClassSkillService = {
     ) {
         const updatedProgressions = featureProgressions.map(prog => {
             if (prog.featureId === SpecialFeatureId.ClassSkill) {
-                // Remove the specific skill modifier
-                const updatedModifiers = prog.modifiers?.filter(mod =>
-                    !(mod.appliesTo === ModifierAppliesToType.Skill && mod.appliesToId === skillId)
+                // Remove the specific skill entity
+                const updatedEntities = prog.entities?.filter(entity =>
+                    !(entity.appliesTo === EntityAppliesToType.Skill && entity.appliesToId === skillId)
                 ) || [];
 
                 return {
                     ...prog,
-                    modifiers: updatedModifiers
+                    entities: updatedEntities
                 };
             }
             return prog;
         });
 
-        // Remove the progression entirely if it has no modifiers left
+        // Remove the progression entirely if it has no entities left
         const finalProgressions = updatedProgressions.filter(prog =>
             !(prog.featureId === SpecialFeatureId.ClassSkill) ||
-            (prog.modifiers && prog.modifiers.length > 0)
+            (prog.entities && prog.entities.length > 0)
         );
 
         setFeatureProgressions(finalProgressions);

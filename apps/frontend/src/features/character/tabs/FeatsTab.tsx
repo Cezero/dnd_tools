@@ -12,7 +12,7 @@ import type {
     CharacterWithAllDetailsResponse,
     CharacterAdvancementWithDetailsResponse
 } from '@shared/schema';
-import { ModifierAppliesToType, SpecialFeatureId } from '@shared/static-data';
+import { EntityAppliesToType, SpecialFeatureId } from '@shared/static-data';
 
 interface FeatsTabProps {
     character: CharacterWithAllDetailsResponse;
@@ -67,9 +67,9 @@ export function FeatsTab({
             selectedClassDetails.features
                 .filter(prog => prog.featureId === SpecialFeatureId.ClassProficiency)
                 .forEach(prog => {
-                    prog.modifiers?.forEach(modifier => {
-                        if (modifier.appliesTo === ModifierAppliesToType.Feat && modifier.itemId === -1) {
-                            excludedFeatIds.add(modifier.appliesToId || 0);
+                    prog.entities?.forEach(entity => {
+                        if (entity.appliesTo === EntityAppliesToType.Feat && entity.appliesToSubId === -1) {
+                            excludedFeatIds.add(entity.appliesToId || 0);
                         }
                     });
                 });

@@ -5,6 +5,7 @@ import {
     UpdateFeatureSchema,
     CreateFeatureProgressionSchema,
     UpdateFeatureProgressionsRequestSchema,
+    FeatureQuerySchema,
 } from '@shared/schema';
 
 import {
@@ -16,6 +17,7 @@ import {
     CreateFeatureProgressionWithRelations,
     UpdateFeatureProgressions,
     GetFeatureProgressions,
+    GetFeatureList,
 } from './featureSystemController.js';
 import { requireAdmin } from '../../middleware/authMiddleware.js';
 
@@ -23,6 +25,7 @@ const { router: FeatureSystemRouter, get, post, put, delete: deleteRoute } = bui
 
 // Core Feature Routes
 get('/', {}, GetAllFeatures);
+get('/list', { query: FeatureQuerySchema }, GetFeatureList);
 get('/:id', { params: FeatureIdParamSchema }, GetFeatureById);
 
 post('/', requireAdmin, { body: CreateFeatureSchema }, CreateFeature);

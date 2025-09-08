@@ -1,8 +1,6 @@
 
-import {
-    FeatureChoiceType
-} from '@shared/static-data';
-
+import { EntityType } from '@shared/static-data';
+import { labelerRegistry } from './labeler-registry';
 import type {
     FormattedItemWithBreakdown,
     GroupedResult,
@@ -67,10 +65,10 @@ abstract class BaseGroupingStrategy implements GroupingStrategy {
 }
 
 /**
- * Groups modifiers by groupingId ONLY, then formats them using the appropriate formatter
+ * Groups entities by groupingId ONLY, then formats them using the appropriate formatter
  * CRITICAL: This class must use ONLY groupingId for grouping, ignoring entity type and subType completely
  */
-export class ModifierGroupingStrategy extends BaseGroupingStrategy {
+export class EntityGroupingStrategy extends BaseGroupingStrategy {
     protected formatIndividualItem(item: FormattedItemWithBreakdown): string {
         // Remove ALL labeling logic - formatters and labeler registry handle this
         // Simply return item.formattedValue (formatters handle labels)
@@ -78,45 +76,18 @@ export class ModifierGroupingStrategy extends BaseGroupingStrategy {
     }
 
     protected formatGroupedItems(items: FormattedItemWithBreakdown[]): string {
-        // Join with ', ' delimiter
+        // Use different delimiters based on entity type
+        const firstItem = items[0];
+        if (firstItem && firstItem.entity) {
+            // For Choice and Allocation types, use ' | ' delimiter with parentheses
+            if (firstItem.entity.type === EntityType.Choice || firstItem.entity.type === EntityType.Allocation) {
+                const formatted = items.map(item => this.formatIndividualItem(item)).join(' | ');
+                return labelerRegistry.applyGroupedLabel(formatted, firstItem.entity.appliesTo, true);
+            }
+        }
+
+        // For all other types, use ', ' delimiter
         return items.map(item => this.formatIndividualItem(item)).join(', ');
-    }
-
-}
-
-/**
- * Groups choices by groupingId, using ' | ' delimiters and parentheses
- */
-export class ChoiceGroupingStrategy extends BaseGroupingStrategy {
-    protected formatIndividualItem(item: FormattedItemWithBreakdown): string {
-        // No labels needed for individual choices
-        return item.formattedValue;
-    }
-
-    protected formatGroupedItems(items: FormattedItemWithBreakdown[]): string {
-        // Join with ' | ' delimiter and wrap in parentheses
-        const formatted = items.map(item => this.formatIndividualItem(item)).join(' | ');
-
-        // Add group-level label based on the first choice's type
-        const firstChoice = items[0];
-        if (firstChoice && firstChoice.choice) {
-            const choiceType = firstChoice.choice.type;
-            const choiceName = this.getChoiceTypeName(choiceType);
-            return `Choose a ${choiceName}: (${formatted})`;
-        }
-
-        return `(${formatted})`;
-    }
-
-    private getChoiceTypeName(choiceType: FeatureChoiceType): string {
-        switch (choiceType) {
-            case FeatureChoiceType.Feat:
-                return 'Feat';
-            case FeatureChoiceType.Feature:
-                return 'Feature';
-            default:
-                return 'Option';
-        }
     }
 }
 

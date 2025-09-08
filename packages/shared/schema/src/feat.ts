@@ -46,6 +46,11 @@ export const FeatSchema = BaseFeatSchema.extend({
 
 export const FeatInQueryResponseSchema = FeatSchema.omit({ benefits: true, prereqs: true });
 
+export const FeatSummarySchema = z.object({
+    id: z.number().int().positive(),
+    name: z.string().min(1).max(200),
+});
+
 export const FeatQueryResponseSchema = QueryResponseSchema.extend({
     results: z.array(FeatSchema),
 });
@@ -53,6 +58,9 @@ export const FeatQueryResponseSchema = QueryResponseSchema.extend({
 export const GetAllFeatsResponseSchema = QueryResponseSchema.extend({
     results: z.array(FeatInQueryResponseSchema),
 });
+
+// Response schema for feat list endpoint
+export const GetFeatListResponseSchema = z.array(FeatSummarySchema);
 
 export const UpdateFeatSchema = BaseFeatSchema.partial();
 
@@ -64,8 +72,11 @@ export type FeatQueryRequest = z.infer<typeof FeatQuerySchema>;
 
 export type GetAllFeatsResponse = z.infer<typeof GetAllFeatsResponseSchema>;
 export type FeatQueryResponse = z.infer<typeof FeatQueryResponseSchema>;
+export type GetFeatListResponse = z.infer<typeof GetFeatListResponseSchema>;
 export type Feat = z.infer<typeof BaseFeatSchema>;
 
 export type FeatBenefitMap = z.infer<typeof FeatBenefitMapSchema>;
 
 export type FeatPrerequisiteMap = z.infer<typeof FeatPrerequisiteMapSchema>;
+
+export type FeatSummary = z.infer<typeof FeatSummarySchema>;

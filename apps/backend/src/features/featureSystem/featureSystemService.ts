@@ -9,10 +9,11 @@ import {
     UpdateResponse,
     CreateFeatureProgressionRequest,
     FeatureProgression,
+    GetFeatureListResponse,
 } from '@shared/schema';
 
 import type { FeatureSystemService } from './types';
-import { transformFormulaParamsForDatabase, transformFormulaParamsFromDatabase } from '../../utils/formulaParamTransformers';
+import { transformFormulaParamsForDatabaseCreate, transformFormulaParamsFromDatabase } from '../../utils/formulaParamTransformers';
 
 
 const prisma = new PrismaClient();
@@ -27,7 +28,7 @@ export const featureSystemService: FeatureSystemService = {
             whereClause = {
                 // Always filter out special features (IDs 1-5)
                 id: {
-                    notIn: [1, 2, 3, 4, 5]
+                    notIn: [1, 2, 3, 4, 5]  // switch this to use SpecialFeatureId from static-data
                 },
                 OR: [
                     // Features with progressions of this sourceType
@@ -78,6 +79,63 @@ export const featureSystemService: FeatureSystemService = {
             total: features.length,
             results: features,
         };
+    },
+
+    async getFeatureList(sourceType?: number): Promise<GetFeatureListResponse> {
+        let whereClause: Prisma.FeatureWhereInput;
+
+        if (sourceType !== undefined) {
+            // If sourceType is specified, show both features with that sourceType AND orphaned features
+            whereClause = {
+                // Always filter out special features (IDs 1-5)
+                id: {
+                    notIn: [1, 2, 3, 4, 5]
+                },
+                OR: [
+                    // Features with progressions of this sourceType
+                    {
+                        progressions: {
+                            some: {
+                                sourceType: sourceType
+                            }
+                        }
+                    },
+                    // Orphaned features (no progressions at all)
+                    {
+                        progressions: {
+                            none: {}
+                        }
+                    }
+                ]
+            };
+        } else {
+            // If no sourceType specified, also filter out features associated with classes/races (for standalone features)
+            whereClause = {
+                // Always filter out special features (IDs 1-5)
+                id: {
+                    notIn: [1, 2, 3, 4, 5]
+                },
+                progressions: {
+                    none: {
+                        OR: [
+                            { classId: { not: null } },
+                            { raceId: { not: null } }
+                        ]
+                    }
+                }
+            };
+        }
+
+        const features = await prisma.feature.findMany({
+            where: whereClause,
+            select: {
+                id: true,
+                name: true,
+            },
+            orderBy: { name: 'asc' },
+        });
+
+        return features;
     },
 
     async getFeatureById(query: FeatureIdParamRequest): Promise<GetFeatureResponse | null> {
@@ -175,7 +233,7 @@ export const featureSystemService: FeatureSystemService = {
 
     // Bulk Feature Progression management (for class/race creation)
     async createFeatureProgressionWithRelations(data: CreateFeatureProgressionRequest): Promise<CreateResponse> {
-        const { modifiers, choices, ...progressionData } = data;
+        const { entities, ...progressionData } = data;
 
         const result = await prisma.$transaction(async (tx) => {
             // Create the feature progression
@@ -183,72 +241,42 @@ export const featureSystemService: FeatureSystemService = {
                 data: progressionData,
             });
 
-            // Create related modifiers
-            if (modifiers && modifiers.length > 0) {
-                for (const modifier of modifiers) {
-                    const { conditions, formulaParams, ...modifierData } = modifier;
-
-                    // Create the modifier
-                    const createdModifier = await tx.featureModifier.create({
-                        data: {
-                            ...modifierData,
-                            progressionId: featureProgression.id,
-                        },
-                    });
-
-                    // Create related formula params if any
-                    if (formulaParams) {
-                        // Transform arrays to strings for database storage
-                        const dbFormulaParams = transformFormulaParamsForDatabase(formulaParams);
-                        await tx.featureFormulaParams.create({
-                            data: {
-                                ...dbFormulaParams,
-                                featureModifier: {
-                                    connect: { id: createdModifier.id }
-                                }
-                            },
-                        });
-                    }
-
-                    // Create related conditions if any
-                    if (conditions && conditions.length > 0) {
-                        await tx.featureModifierCondition.createMany({
-                            data: conditions.map(condition => ({
-                                ...condition,
-                                featureModifierId: createdModifier.id,
-                            })),
-                        });
-                    }
-                }
-            }
-
-            // Create related choices
-            if (choices && choices.length > 0) {
-                for (const choice of choices) {
-                    const { formulaParams, ...choiceData } = choice;
+            // Create related entities
+            if (entities && entities.length > 0) {
+                for (const entity of entities) {
+                    const { conditions, formulaParams, feat, feature, item, ...entityData } = entity;
 
                     // Create formula params first if they exist
                     let formulaParamsId = null;
                     if (formulaParams) {
                         // Transform arrays to strings for database storage
-                        const dbFormulaParams = transformFormulaParamsForDatabase(formulaParams);
+                        const dbFormulaParams = transformFormulaParamsForDatabaseCreate(formulaParams);
                         const createdFormulaParams = await tx.featureFormulaParams.create({
                             data: dbFormulaParams,
                         });
                         formulaParamsId = createdFormulaParams.id;
                     }
 
-                    // Create the choice with formula params reference
-                    await tx.featureChoice.create({
+                    // Create the entity
+                    const createdEntity = await tx.featureEntity.create({
                         data: {
-                            ...choiceData,
+                            ...entityData,
                             progressionId: featureProgression.id,
                             formulaParamsId: formulaParamsId,
                         },
                     });
+
+                    // Create related conditions if any
+                    if (conditions && conditions.length > 0) {
+                        await tx.featureEntityCondition.createMany({
+                            data: conditions.map(condition => ({
+                                ...condition,
+                                featureEntityId: createdEntity.id,
+                            })),
+                        });
+                    }
                 }
             }
-
 
             return featureProgression;
         });
@@ -268,7 +296,7 @@ export const featureSystemService: FeatureSystemService = {
 
         const executeTransaction = async (transactionClient: Prisma.TransactionClient) => {
             for (const progression of progressions) {
-                const { modifiers, choices, ...progressionData } = progression;
+                const { entities, ...progressionData } = progression;
 
                 // Create the feature progression with context
                 const featureProgression = await transactionClient.featureProgression.create({
@@ -279,26 +307,26 @@ export const featureSystemService: FeatureSystemService = {
                     },
                 });
 
-                // Create related modifiers
-                if (modifiers && modifiers.length > 0) {
-                    for (const modifier of modifiers) {
-                        const { conditions, formulaParams, ...modifierData } = modifier;
+                // Create related entities
+                if (entities && entities.length > 0) {
+                    for (const entity of entities) {
+                        const { conditions, formulaParams, feat, feature, item, ...entityData } = entity;
 
                         // Create formula params first if they exist
                         let formulaParamsId = null;
                         if (formulaParams) {
                             // Transform arrays to strings for database storage
-                            const dbFormulaParams = transformFormulaParamsForDatabase(formulaParams);
+                            const dbFormulaParams = transformFormulaParamsForDatabaseCreate(formulaParams);
                             const createdFormulaParams = await transactionClient.featureFormulaParams.create({
                                 data: dbFormulaParams,
                             });
                             formulaParamsId = createdFormulaParams.id;
                         }
 
-                        // Create the modifier with formula params reference
-                        const createdModifier = await transactionClient.featureModifier.create({
+                        // Create the entity with formula params reference
+                        const createdEntity = await transactionClient.featureEntity.create({
                             data: {
-                                ...modifierData,
+                                ...entityData,
                                 progressionId: featureProgression.id,
                                 formulaParamsId: formulaParamsId,
                             },
@@ -306,45 +334,18 @@ export const featureSystemService: FeatureSystemService = {
 
                         // Create related conditions if any
                         if (conditions && conditions.length > 0) {
-                            await transactionClient.featureModifierCondition.createMany({
+                            await transactionClient.featureEntityCondition.createMany({
                                 data: conditions.map(condition => {
                                     // Ensure conditionValue is always an integer for database compatibility
                                     const intValue = condition.conditionValue != null ? Number(condition.conditionValue) : 0;
                                     return {
                                         conditionType: condition.conditionType,
                                         conditionValue: intValue,
-                                        featureModifierId: createdModifier.id,
+                                        featureEntityId: createdEntity.id,
                                     };
                                 }),
                             });
                         }
-                    }
-                }
-
-                // Create related choices
-                if (choices && choices.length > 0) {
-                    for (const choice of choices) {
-                        const { formulaParams, ...choiceData } = choice;
-
-                        // Create formula params first if they exist and have a formulaId
-                        let formulaParamsId = null;
-                        if (formulaParams && formulaParams.formulaId !== null) {
-                            // Transform arrays to strings for database storage
-                            const dbFormulaParams = transformFormulaParamsForDatabase(formulaParams);
-                            const createdFormulaParams = await transactionClient.featureFormulaParams.create({
-                                data: dbFormulaParams,
-                            });
-                            formulaParamsId = createdFormulaParams.id;
-                        }
-
-                        // Create the choice with formula params reference
-                        await transactionClient.featureChoice.create({
-                            data: {
-                                ...choiceData,
-                                progressionId: featureProgression.id,
-                                formulaParamsId: formulaParamsId,
-                            },
-                        });
                     }
                 }
 
@@ -389,43 +390,34 @@ export const featureSystemService: FeatureSystemService = {
             if (existingProgressions.length > 0) {
                 const progressionIds = existingProgressions.map((p: { id: number }) => p.id);
 
-                // Collect existing formula params before deleting modifiers and choices
-                const existingModifiers = await transactionClient.featureModifier.findMany({
+                // Collect existing formula params before deleting entities
+                const existingEntities = await transactionClient.featureEntity.findMany({
                     where: { progressionId: { in: progressionIds } },
                     select: { formulaParamsId: true }
                 });
 
-                const existingChoices = await transactionClient.featureChoice.findMany({
-                    where: { progressionId: { in: progressionIds } },
-                    select: { formulaParamsId: true }
-                });
-
-                const existingFormulaParamIds = [
-                    ...existingModifiers.map((m: { formulaParamsId: number | null }) => m.formulaParamsId),
-                    ...existingChoices.map((c: { formulaParamsId: number | null }) => c.formulaParamsId)
-                ].filter((id: number | null): id is number => id !== null);
+                const existingFormulaParamIds = existingEntities
+                    .map((e: { formulaParamsId: number | null }) => e.formulaParamsId)
+                    .filter((id: number | null): id is number => id !== null);
 
                 // Delete related entities first (in correct order to respect foreign key constraints)
-                // First, get the modifier IDs to delete their conditions
-                const modifierIds = await transactionClient.featureModifier.findMany({
+                // First, get the entity IDs to delete their conditions
+                const entityIds = await transactionClient.featureEntity.findMany({
                     where: { progressionId: { in: progressionIds } },
                     select: { id: true }
                 });
 
-                const modifierIdList = modifierIds.map(m => m.id);
+                const entityIdList = entityIds.map(e => e.id);
 
-                // Delete conditions first (they reference modifiers)
-                if (modifierIdList.length > 0) {
-                    await transactionClient.featureModifierCondition.deleteMany({
-                        where: { featureModifierId: { in: modifierIdList } }
+                // Delete conditions first (they reference entities)
+                if (entityIdList.length > 0) {
+                    await transactionClient.featureEntityCondition.deleteMany({
+                        where: { featureEntityId: { in: entityIdList } }
                     });
                 }
 
-                // Then delete modifiers
-                await transactionClient.featureModifier.deleteMany({
-                    where: { progressionId: { in: progressionIds } }
-                });
-                await transactionClient.featureChoice.deleteMany({
+                // Then delete entities
+                await transactionClient.featureEntity.deleteMany({
                     where: { progressionId: { in: progressionIds } }
                 });
 
@@ -465,37 +457,34 @@ export const featureSystemService: FeatureSystemService = {
             if (existingProgressions.length > 0) {
                 const progressionIds = existingProgressions.map(p => p.id);
 
-                // Collect existing formula params before deleting modifiers
-                const existingModifiers = await tx.featureModifier.findMany({
+                // Collect existing formula params before deleting entities
+                const existingEntities = await tx.featureEntity.findMany({
                     where: { progressionId: { in: progressionIds } },
                     select: { formulaParamsId: true }
                 });
 
-                const existingFormulaParamIds = existingModifiers
-                    .map(m => m.formulaParamsId)
+                const existingFormulaParamIds = existingEntities
+                    .map(e => e.formulaParamsId)
                     .filter(id => id !== null) as number[];
 
                 // Delete related entities first (in correct order to respect foreign key constraints)
-                // First, get the modifier IDs to delete their conditions
-                const modifierIds = await tx.featureModifier.findMany({
+                // First, get the entity IDs to delete their conditions
+                const entityIds = await tx.featureEntity.findMany({
                     where: { progressionId: { in: progressionIds } },
                     select: { id: true }
                 });
 
-                const modifierIdList = modifierIds.map(m => m.id);
+                const entityIdList = entityIds.map(e => e.id);
 
-                // Delete conditions first (they reference modifiers)
-                if (modifierIdList.length > 0) {
-                    await tx.featureModifierCondition.deleteMany({
-                        where: { featureModifierId: { in: modifierIdList } }
+                // Delete conditions first (they reference entities)
+                if (entityIdList.length > 0) {
+                    await tx.featureEntityCondition.deleteMany({
+                        where: { featureEntityId: { in: entityIdList } }
                     });
                 }
 
-                // Then delete modifiers
-                await tx.featureModifier.deleteMany({
-                    where: { progressionId: { in: progressionIds } }
-                });
-                await tx.featureChoice.deleteMany({
+                // Then delete entities
+                await tx.featureEntity.deleteMany({
                     where: { progressionId: { in: progressionIds } }
                 });
 
@@ -515,7 +504,7 @@ export const featureSystemService: FeatureSystemService = {
             // Create new progressions
             if (progressions && progressions.length > 0) {
                 for (const progression of progressions) {
-                    const { modifiers, choices, ...progressionData } = progression;
+                    const { entities, ...progressionData } = progression;
 
                     // Create the feature progression
                     const featureProgression = await tx.featureProgression.create({
@@ -528,26 +517,26 @@ export const featureSystemService: FeatureSystemService = {
                         },
                     });
 
-                    // Create related modifiers
-                    if (modifiers && modifiers.length > 0) {
-                        for (const modifier of modifiers) {
-                            const { conditions, formulaParams, ...modifierData } = modifier;
+                    // Create related entities
+                    if (entities && entities.length > 0) {
+                        for (const entity of entities) {
+                            const { conditions, formulaParams, feat, feature, item, ...entityData } = entity;
 
                             // Create formula params first if they exist
                             let formulaParamsId = null;
                             if (formulaParams) {
                                 // Transform arrays to strings for database storage
-                                const dbFormulaParams = transformFormulaParamsForDatabase(formulaParams);
+                                const dbFormulaParams = transformFormulaParamsForDatabaseCreate(formulaParams);
                                 const createdFormulaParams = await tx.featureFormulaParams.create({
                                     data: dbFormulaParams,
                                 });
                                 formulaParamsId = createdFormulaParams.id;
                             }
 
-                            // Create the modifier
-                            const createdModifier = await tx.featureModifier.create({
+                            // Create the entity
+                            const createdEntity = await tx.featureEntity.create({
                                 data: {
-                                    ...modifierData,
+                                    ...entityData,
                                     progressionId: featureProgression.id,
                                     formulaParamsId,
                                 },
@@ -555,40 +544,13 @@ export const featureSystemService: FeatureSystemService = {
 
                             // Create related conditions
                             if (conditions && conditions.length > 0) {
-                                await tx.featureModifierCondition.createMany({
+                                await tx.featureEntityCondition.createMany({
                                     data: conditions.map((condition) => ({
                                         ...condition,
-                                        featureModifierId: createdModifier.id,
+                                        featureEntityId: createdEntity.id,
                                     })),
                                 });
                             }
-                        }
-                    }
-
-                    // Create related choices
-                    if (choices && choices.length > 0) {
-                        for (const choice of choices) {
-                            const { formulaParams, ...choiceData } = choice;
-
-                            // Create formula params first if they exist
-                            let formulaParamsId = null;
-                            if (formulaParams) {
-                                // Transform arrays to strings for database storage
-                                const dbFormulaParams = transformFormulaParamsForDatabase(formulaParams);
-                                const createdFormulaParams = await tx.featureFormulaParams.create({
-                                    data: dbFormulaParams,
-                                });
-                                formulaParamsId = createdFormulaParams.id;
-                            }
-
-                            // Create the choice with formula params reference
-                            await tx.featureChoice.create({
-                                data: {
-                                    ...choiceData,
-                                    progressionId: featureProgression.id,
-                                    formulaParamsId: formulaParamsId,
-                                },
-                            });
                         }
                     }
 
@@ -600,8 +562,25 @@ export const featureSystemService: FeatureSystemService = {
     },
 
     async getFeatureProgressions(featureId: number): Promise<FeatureProgression[]> {
-        const progressions = await prisma.featureProgression.findMany({
+        // Get progression IDs for this feature
+        const progressionIds = await prisma.featureProgression.findMany({
             where: { featureId },
+            select: { id: true }
+        });
+
+        // Delegate to core method
+        return await this.getFeatureProgressionsByIds(progressionIds.map(p => p.id));
+    },
+
+    // NEW: Core method for getting feature progressions by IDs with smart population
+    async getFeatureProgressionsByIds(progressionIds: number[]): Promise<FeatureProgression[]> {
+        if (progressionIds.length === 0) {
+            return [];
+        }
+
+        // Single query with all the complex includes
+        const progressions = await prisma.featureProgression.findMany({
+            where: { id: { in: progressionIds } },
             include: {
                 feature: {
                     select: {
@@ -612,51 +591,139 @@ export const featureSystemService: FeatureSystemService = {
                         prerequisites: true
                     }
                 },
-                modifiers: {
+                entities: {
                     include: {
                         formulaParams: true,
-                        conditions: true,
-                        item: true
+                        conditions: true
                     }
-                },
-                choices: {
-                    include: {
-                        feat: {
-                            select: {
-                                id: true,
-                                name: true
-                            }
-                        },
-                        feature: {
-                            select: {
-                                id: true,
-                                name: true,
-                                slug: true
-                            }
-                        },
-                        formulaParams: true
-                    }
-                },
+                }
             }
         });
 
-        // Transform formula parameters from strings to arrays for frontend consumption
+        // Fetch items, feats, and features for entities that need them
+        const allEntities = progressions.flatMap(p => p.entities);
+        const itemIds = allEntities
+            .filter(e => e.appliesToSubId && e.appliesToSubId > 0)
+            .map(e => e.appliesToSubId!);
+        const featIds = allEntities
+            .filter(e => e.appliesTo === 21 && e.appliesToId !== null && e.appliesToId !== undefined) // EntityAppliesToType.Feat
+            .map(e => e.appliesToId!)
+            .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
+        const featureIds = allEntities
+            .filter(e => e.appliesTo === 25 && e.appliesToId !== null && e.appliesToId !== undefined) // EntityAppliesToType.Feature
+            .map(e => e.appliesToId!)
+            .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
+
+        // Fetch items, feats, and features
+        const items = itemIds.length > 0 ? await prisma.item.findMany({
+            where: { id: { in: itemIds } }
+        }) : [];
+
+        const feats = featIds.length > 0 ? await prisma.feat.findMany({
+            where: { id: { in: featIds } },
+            include: {
+                benefits: true
+            }
+        }) : [];
+
+        const features = featureIds.length > 0 ? await prisma.feature.findMany({
+            where: { id: { in: featureIds } },
+            include: {
+                prerequisites: true
+            }
+        }) : [];
+
+        // Create lookup maps
+        const itemMap = new Map(items.map(item => [item.id, item]));
+        const featMap = new Map(feats.map(feat => [feat.id, feat]));
+        const featureMap = new Map(features.map(feature => [feature.id, feature]));
+
+        // Transform formula parameters and add item/feat data
         const transformedProgressions = progressions.map(progression => ({
             ...progression,
-            modifiers: progression.modifiers?.map(modifier => ({
-                ...modifier,
-                formulaParams: modifier.formulaParams
-                    ? transformFormulaParamsFromDatabase(modifier.formulaParams)
-                    : null
-            })),
-            choices: progression.choices?.map(choice => ({
-                ...choice,
-                formulaParams: choice.formulaParams
-                    ? transformFormulaParamsFromDatabase(choice.formulaParams)
+            entities: progression.entities?.map((entity: Record<string, unknown>) => ({
+                ...entity,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                formulaParams: (entity as any).formulaParams
+                    ? transformFormulaParamsFromDatabase((entity as any).formulaParams)
+                    : null,
+                // Add item data if appliesToSubId > 0
+                item: (entity as any).appliesToSubId && (entity as any).appliesToSubId > 0
+                    ? itemMap.get((entity as any).appliesToSubId) || null
+                    : null,
+                // Add feat data if appliesTo === 21 (Feat)
+                feat: (entity as any).appliesTo === 21
+                    ? featMap.get((entity as any).appliesToId) || null
+                    : null,
+                // Add feature data if appliesTo === 25 (Feature)
+                feature: (entity as any).appliesTo === 25
+                    ? featureMap.get((entity as any).appliesToId) || null
                     : null
             }))
         }));
 
         return transformedProgressions as FeatureProgression[];
+    },
+
+    // NEW: Lightweight wrapper methods
+    async getFeatureProgressionsByClassId(classId: number): Promise<FeatureProgression[]> {
+        // Get progression IDs for this class
+        const progressionIds = await prisma.featureProgression.findMany({
+            where: { classId },
+            select: { id: true }
+        });
+
+        // Delegate to core method
+        return await this.getFeatureProgressionsByIds(progressionIds.map(p => p.id));
+    },
+
+    async getFeatureProgressionsByRaceId(raceId: number): Promise<FeatureProgression[]> {
+        // Get progression IDs for this race
+        const progressionIds = await prisma.featureProgression.findMany({
+            where: { raceId },
+            select: { id: true }
+        });
+
+        // Delegate to core method
+        return await this.getFeatureProgressionsByIds(progressionIds.map(p => p.id));
+    },
+
+    async getFeatureProgressionById(progressionId: number): Promise<FeatureProgression | null> {
+        const progressions = await this.getFeatureProgressionsByIds([progressionId]);
+        return progressions.length > 0 ? progressions[0] : null;
+    },
+
+    // NEW: Smart population logic
+    async populateFeatureProgressionsWithRelatedData(
+        progressions: FeatureProgression[]
+    ): Promise<FeatureProgression[]> {
+        if (!progressions || progressions.length === 0) {
+            return progressions;
+        }
+
+        // For now, just return the progressions as-is
+        // TODO: Implement smart population once database schema is updated
+        return progressions;
+    },
+
+    // NEW: Helper method to determine required includes
+    determineRequiredIncludes(_progressions: FeatureProgression[]): Prisma.FeatureProgressionInclude {
+        return {
+            feature: {
+                select: {
+                    id: true,
+                    slug: true,
+                    name: true,
+                    description: true,
+                    prerequisites: true
+                }
+            },
+            entities: {
+                include: {
+                    formulaParams: true,
+                    conditions: true
+                }
+            }
+        };
     },
 }; 

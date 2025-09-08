@@ -1,28 +1,26 @@
-import type { FeatureModifier } from '@shared/schema';
-import { ModifierAppliesToType, ModifierType, FeatureType } from '@shared/static-data';
+import { EntityAppliesToType, EntityType } from '@shared/static-data';
 
-import { classSkillLabeler, skillModifierLabeler, displayNameLabeler, emptyStringLabeler, bonusLanguageLabeler, automaticLanguageLabeler, abilityModifierLabeler, savingThrowModifierLabeler, creatureTypeLabeler, sizeCategoryLabeler } from './label-formatters';
+import { classSkillLabeler, skillModifierLabeler, displayNameLabeler, emptyStringLabeler, bonusLanguageLabeler, automaticLanguageLabeler, abilityModifierLabeler, savingThrowModifierLabeler, creatureTypeLabeler, sizeCategoryLabeler, choiceLabeler, groupedChoiceLabeler, grantedFeatLabeler } from './label-formatters';
 import { generateKey } from './registry-utils';
+import type { CalculatedEntity } from './types';
 
 export interface Labeler {
-    (value: string, modifier: FeatureModifier): string;
+    (value: string, entity: CalculatedEntity): string;
 }
 
 // Unified labeler registry interface
 interface ILabelerRegistry {
     // Core unified method
     registerLabeler(
-        featureType: FeatureType,
-        featureSubType: ModifierType,
+        entityType: EntityType,
         labeler: Labeler,
-        subTypeId?: ModifierAppliesToType
+        appliesToId?: EntityAppliesToType
     ): void;
 
     // Core unified getter method
     getLabeler(
-        featureType: FeatureType,
-        featureSubType: ModifierType,
-        subTypeId?: ModifierAppliesToType
+        entityType: EntityType,
+        appliesToId?: EntityAppliesToType
     ): Labeler | undefined;
 }
 
@@ -35,96 +33,104 @@ export class LabelerRegistry implements ILabelerRegistry {
 
     // Core unified method
     registerLabeler(
-        featureType: FeatureType,
-        featureSubType: ModifierType,
+        entityType: EntityType,
         labeler: Labeler,
-        subTypeId?: ModifierAppliesToType
+        appliesToId?: EntityAppliesToType
     ): void {
-        const key = generateKey(featureType, featureSubType, subTypeId);
+        const key = generateKey(entityType, appliesToId);
         this.labelers.set(key, labeler);
     }
 
     // Core unified getter method
     getLabeler(
-        featureType: FeatureType,
-        featureSubType: ModifierType,
-        subTypeId?: ModifierAppliesToType
+        entityType: EntityType,
+        appliesToId?: EntityAppliesToType
     ): Labeler | undefined {
-        const key = generateKey(featureType, featureSubType, subTypeId);
+        const key = generateKey(entityType, appliesToId);
         return this.labelers.get(key);
     }
 
     // Convenience wrapper methods for common registration patterns
-    registerBonusLabeler(appliesToType: ModifierAppliesToType, labeler: Labeler): void {
-        this.registerLabeler(FeatureType.Modifier, ModifierType.Bonus, labeler, appliesToType);
+    registerBonusLabeler(appliesToType: EntityAppliesToType, labeler: Labeler): void {
+        this.registerLabeler(EntityType.Bonus, labeler, appliesToType);
     }
 
-    registerQuantityLabeler(appliesToType: ModifierAppliesToType, labeler: Labeler): void {
-        this.registerLabeler(FeatureType.Modifier, ModifierType.Quantity, labeler, appliesToType);
+    registerQuantityLabeler(appliesToType: EntityAppliesToType, labeler: Labeler): void {
+        this.registerLabeler(EntityType.Quantity, labeler, appliesToType);
     }
 
-    registerReplacementLabeler(appliesToType: ModifierAppliesToType, labeler: Labeler): void {
-        this.registerLabeler(FeatureType.Modifier, ModifierType.Replacement, labeler, appliesToType);
+    registerReplacementLabeler(appliesToType: EntityAppliesToType, labeler: Labeler): void {
+        this.registerLabeler(EntityType.Replacement, labeler, appliesToType);
     }
 
-    registerOtherLabeler(appliesToType: ModifierAppliesToType, labeler: Labeler): void {
-        this.registerLabeler(FeatureType.Modifier, ModifierType.Other, labeler, appliesToType);
+    registerOtherLabeler(appliesToType: EntityAppliesToType, labeler: Labeler): void {
+        this.registerLabeler(EntityType.Other, labeler, appliesToType);
     }
 
-    registerProficiencyLabeler(appliesToType: ModifierAppliesToType, labeler: Labeler): void {
-        this.registerLabeler(FeatureType.Modifier, ModifierType.Proficiency, labeler, appliesToType);
+    registerProficiencyLabeler(appliesToType: EntityAppliesToType, labeler: Labeler): void {
+        this.registerLabeler(EntityType.Proficiency, labeler, appliesToType);
     }
 
-    applyLabel(value: string, modifier: FeatureModifier, showLabel: boolean = true): string {
+    applyLabel(value: string, modifier: CalculatedEntity, showLabel: boolean = true): string {
         if (!showLabel) return value;
 
-        const labeler = this.getLabeler(FeatureType.Modifier, modifier.type, modifier.appliesTo);
+        const labeler = this.getLabeler(modifier.type, modifier.appliesTo);
         return labeler ? labeler(value, modifier) : value;
     }
 
+    applyGroupedLabel(formattedItems: string, appliesTo: EntityAppliesToType, showLabel: boolean = true): string {
+        if (!showLabel) return formattedItems;
+
+        return groupedChoiceLabeler(formattedItems, appliesTo);
+    }
+
     private initializeDefaultLabelers(): void {
-        // Register labelers for all ModifierAppliesToType combinations
+        // Register labelers for all EntityAppliesToType combinations
         // This follows the same pattern as the formatter registry
 
-        // ModifierType.Bonus - use displayName labeler for most types
-        this.registerBonusLabeler(ModifierAppliesToType.Ability, abilityModifierLabeler);
-        this.registerBonusLabeler(ModifierAppliesToType.AC, displayNameLabeler);
-        this.registerBonusLabeler(ModifierAppliesToType.Attack, displayNameLabeler);
-        this.registerBonusLabeler(ModifierAppliesToType.Damage, displayNameLabeler);
-        this.registerBonusLabeler(ModifierAppliesToType.DamageReduction, displayNameLabeler);
-        this.registerBonusLabeler(ModifierAppliesToType.Initiative, displayNameLabeler);
-        this.registerBonusLabeler(ModifierAppliesToType.SavingThrow, savingThrowModifierLabeler);
-        this.registerBonusLabeler(ModifierAppliesToType.Skill, skillModifierLabeler); // Special case for skills
+        // EntityType.Bonus - use displayName labeler for most types
+        this.registerBonusLabeler(EntityAppliesToType.Ability, abilityModifierLabeler);
+        this.registerBonusLabeler(EntityAppliesToType.AC, displayNameLabeler);
+        this.registerBonusLabeler(EntityAppliesToType.Attack, displayNameLabeler);
+        this.registerBonusLabeler(EntityAppliesToType.Damage, displayNameLabeler);
+        this.registerBonusLabeler(EntityAppliesToType.DamageReduction, displayNameLabeler);
+        this.registerBonusLabeler(EntityAppliesToType.Initiative, displayNameLabeler);
+        this.registerBonusLabeler(EntityAppliesToType.SavingThrow, savingThrowModifierLabeler);
+        this.registerBonusLabeler(EntityAppliesToType.Skill, skillModifierLabeler); // Special case for skills
 
-        // ModifierType.Quantity - use displayName labeler for most types
-        this.registerQuantityLabeler(ModifierAppliesToType.MovementSpeed, displayNameLabeler);
-        this.registerQuantityLabeler(ModifierAppliesToType.HitDice, displayNameLabeler);
-        this.registerQuantityLabeler(ModifierAppliesToType.Uses, displayNameLabeler);
-        this.registerQuantityLabeler(ModifierAppliesToType.Targets, displayNameLabeler);
-        this.registerQuantityLabeler(ModifierAppliesToType.Distance, displayNameLabeler);
-        this.registerQuantityLabeler(ModifierAppliesToType.ExtraAttacks, displayNameLabeler);
-        this.registerQuantityLabeler(ModifierAppliesToType.Damage, displayNameLabeler);
-        this.registerQuantityLabeler(ModifierAppliesToType.Healing, displayNameLabeler);
-        this.registerQuantityLabeler(ModifierAppliesToType.SpellResistance, displayNameLabeler);
+        // EntityType.Quantity - use displayName labeler for most types
+        this.registerQuantityLabeler(EntityAppliesToType.MovementSpeed, displayNameLabeler);
+        this.registerQuantityLabeler(EntityAppliesToType.HitDice, displayNameLabeler);
+        this.registerQuantityLabeler(EntityAppliesToType.Uses, displayNameLabeler);
+        this.registerQuantityLabeler(EntityAppliesToType.Targets, displayNameLabeler);
+        this.registerQuantityLabeler(EntityAppliesToType.Distance, displayNameLabeler);
+        this.registerQuantityLabeler(EntityAppliesToType.ExtraAttacks, displayNameLabeler);
+        this.registerQuantityLabeler(EntityAppliesToType.Damage, displayNameLabeler);
+        this.registerQuantityLabeler(EntityAppliesToType.Healing, displayNameLabeler);
+        this.registerQuantityLabeler(EntityAppliesToType.SpellResistance, displayNameLabeler);
 
-        // ModifierType.Replacement - use displayName labeler for most types
-        this.registerReplacementLabeler(ModifierAppliesToType.Damage, displayNameLabeler);
-        this.registerReplacementLabeler(ModifierAppliesToType.UnarmedDamage, displayNameLabeler);
-        this.registerReplacementLabeler(ModifierAppliesToType.MovementSpeed, displayNameLabeler);
-        this.registerReplacementLabeler(ModifierAppliesToType.Ability, displayNameLabeler);
+        // EntityType.Replacement - use displayName labeler for most types
+        this.registerReplacementLabeler(EntityAppliesToType.Damage, displayNameLabeler);
+        this.registerReplacementLabeler(EntityAppliesToType.UnarmedDamage, displayNameLabeler);
+        this.registerReplacementLabeler(EntityAppliesToType.MovementSpeed, displayNameLabeler);
+        this.registerReplacementLabeler(EntityAppliesToType.Ability, displayNameLabeler);
 
-        // ModifierType.Other - use emptyString labeler for most types (no labels)
-        this.registerOtherLabeler(ModifierAppliesToType.Other, emptyStringLabeler);
-        this.registerOtherLabeler(ModifierAppliesToType.BonusLanguage, bonusLanguageLabeler);
-        this.registerOtherLabeler(ModifierAppliesToType.AutomaticLanguage, automaticLanguageLabeler);
-        this.registerOtherLabeler(ModifierAppliesToType.Feat, emptyStringLabeler);
-        this.registerOtherLabeler(ModifierAppliesToType.SizeCategory, sizeCategoryLabeler);
-        this.registerOtherLabeler(ModifierAppliesToType.CreatureType, creatureTypeLabeler);
-        this.registerOtherLabeler(ModifierAppliesToType.DamageType, emptyStringLabeler);
-        this.registerOtherLabeler(ModifierAppliesToType.Skill, classSkillLabeler); // Special case for class skills
+        // EntityType.Other - use emptyString labeler for most types (no labels)
+        this.registerOtherLabeler(EntityAppliesToType.Other, emptyStringLabeler);
+        this.registerOtherLabeler(EntityAppliesToType.BonusLanguage, bonusLanguageLabeler);
+        this.registerOtherLabeler(EntityAppliesToType.AutomaticLanguage, automaticLanguageLabeler);
+        this.registerOtherLabeler(EntityAppliesToType.Feat, grantedFeatLabeler);
+        this.registerOtherLabeler(EntityAppliesToType.SizeCategory, sizeCategoryLabeler);
+        this.registerOtherLabeler(EntityAppliesToType.CreatureType, creatureTypeLabeler);
+        this.registerOtherLabeler(EntityAppliesToType.DamageType, emptyStringLabeler);
+        this.registerOtherLabeler(EntityAppliesToType.Skill, classSkillLabeler); // Special case for class skills
 
-        // ModifierType.Proficiency
-        this.registerProficiencyLabeler(ModifierAppliesToType.Feat, emptyStringLabeler);
+        // EntityType.Proficiency
+        this.registerProficiencyLabeler(EntityAppliesToType.Feat, emptyStringLabeler);
+
+        // Choice labelers
+        this.registerLabeler(EntityType.Choice, choiceLabeler);
+        this.registerLabeler(EntityType.Allocation, choiceLabeler);
     }
 }
 

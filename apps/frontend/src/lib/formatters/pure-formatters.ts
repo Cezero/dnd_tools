@@ -1,12 +1,9 @@
 import pluralize from 'pluralize';
 
-import type {
-    FeatureModifier,
-    FeatureChoice,
-} from '@shared/schema';
+// FeatureEntity import removed - now using CalculatedEntity
 import {
-    FeatureChoiceType,
-    FeatureChoiceBehavior,
+    EntityAppliesToType,
+    EntityType,
     FEATURE_FEAT_CHOICE_FILTER_TYPES,
     LANGUAGE_MAP,
     FEATURE_BONUS_TYPES,
@@ -19,22 +16,25 @@ import {
     SIZE_MAP,
 } from '@shared/static-data';
 
-import type { BaseFormatter, ChoiceFormatter, FormatterMetadata } from './types';
+import type { BaseFormatter, CalculatedEntity } from './types';
 
 export class DamageFormatter implements BaseFormatter {
-    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
-        // For now, use default values since diceType and size aren't in the current schema
+    format(modifier: CalculatedEntity): string {
         const value = modifier.value;
+
+        // For now, use default values since diceType and size aren't in the current schema
+        // TODO: figure out if this is ever used, if so switch to using appliesToId to lookup the dice type from RPG_DICE
         const diceType = 'd6';
-        const sizeSuffix = '';
-        return `+${value}${diceType}${sizeSuffix}`;
+        return `+${value}${diceType}`;
     }
 }
 
 export class DamageBonusFormatter implements BaseFormatter {
-    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: CalculatedEntity): string {
         const value = modifier.value;
-        const baseValue = formatSignedValue(value);
+
+        // For string values, return as-is; for numeric values, format with sign
+        const baseValue = typeof value === 'string' ? value : formatSignedValue(value);
 
         // Include damage type if appliesToId is present
         if (modifier.appliesToId) {
@@ -46,16 +46,19 @@ export class DamageBonusFormatter implements BaseFormatter {
 }
 
 export class HealingFormatter implements BaseFormatter {
-    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: CalculatedEntity): string {
         const value = modifier.value;
+
         return `${value} hp/day`;
     }
 }
 
 export class SignedValueFormatter implements BaseFormatter {
-    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: CalculatedEntity): string {
         const value = modifier.value;
-        const baseValue = formatSignedValue(value);
+
+        // For string values, return as-is; for numeric values, format with sign
+        const baseValue = typeof value === 'string' ? value : formatSignedValue(value);
 
         // Include bonus type if present
         if (modifier.bonusType !== null && modifier.bonusType !== undefined) {
@@ -68,14 +71,15 @@ export class SignedValueFormatter implements BaseFormatter {
 }
 
 export class EmptyStringFormatter implements BaseFormatter {
-    format(_modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(_modifier: CalculatedEntity): string {
         return '';
     }
 }
 
 export class LanguageFormatter implements BaseFormatter {
-    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: CalculatedEntity): string {
         const value = modifier.value;
+
         const languageId = modifier.appliesToId;
         if (languageId && LANGUAGE_MAP[languageId]) {
             return LANGUAGE_MAP[languageId].name;
@@ -85,32 +89,28 @@ export class LanguageFormatter implements BaseFormatter {
 }
 
 export class FeatFormatter implements BaseFormatter {
-    format(modifier: FeatureModifier, metadata?: FormatterMetadata): string {
+    format(modifier: CalculatedEntity): string {
         const value = modifier.value;
-        // Handle proficiencies (which have itemId) vs general feats
-        if (modifier.itemId !== null && modifier.itemId !== undefined) {
-            // This is a proficiency - return the item name
-            const itemName = modifier.item?.name;
-            if (itemName) {
-                return itemName.toLowerCase();
-            }
-            return `item ${modifier.itemId}`;
+
+        // This is a proficiency - return the item name
+        const itemName = modifier.item?.name;
+        if (itemName) {
+            return itemName.toLowerCase();
         }
 
-        // Handle general feats
-        const featId = modifier.appliesToId;
-        if (featId && metadata?.featObjects) {
-            const feat = metadata.featObjects.find(f => f.id === featId);
-            if (feat) {
-                return feat.name;
-            }
+        // Handle general feats - use included entity data
+        if (modifier.feat) {
+            return modifier.feat.name;
         }
+
+        // Fallback to appliesToId if feat data is missing
+        const featId = modifier.appliesToId;
         return `${featId || value} (feat name not found)`;
     }
 }
 
 export class UsesFormatter implements BaseFormatter {
-    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: CalculatedEntity): string {
         const value = modifier.value;
         const frequencyInfo = USES_FREQUENCIES[modifier.appliesToId || 1];
         const frequency = frequencyInfo?.name || 'day';
@@ -120,36 +120,47 @@ export class UsesFormatter implements BaseFormatter {
 }
 
 export class TargetsFormatter implements BaseFormatter {
-    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: CalculatedEntity): string {
         const value = modifier.value;
+
+        // For string values like "2 + WIS", we can't determine the exact number for pluralization
+        // So we'll use a default plural form
+        if (typeof value === 'string') {
+            return `${value} targets`;
+        }
+
         return `${value} ${pluralize('target', value)}`;
     }
 }
 
-export class ExtraAttacksFormatter implements BaseFormatter {
-    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+export class ValueFormatter implements BaseFormatter {
+    format(modifier: CalculatedEntity): string {
         const value = modifier.value;
+
         return value.toString();
     }
 }
 
 export class DistanceFormatter implements BaseFormatter {
-    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: CalculatedEntity): string {
         const value = modifier.value;
+
         return `${value} ft.`;
     }
 }
 
 export class MovementSpeedFormatter implements BaseFormatter {
-    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: CalculatedEntity): string {
         const value = modifier.value;
+
         return `+${value} ft.`;
     }
 }
 
 export class DiceFormatter implements BaseFormatter {
-    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: CalculatedEntity): string {
         const value = modifier.value;
+
         // Use appliesToId to determine the dice type
         const diceId = modifier.appliesToId;
         if (diceId !== null && diceId !== undefined && RPG_DICE[diceId]) {
@@ -161,9 +172,11 @@ export class DiceFormatter implements BaseFormatter {
     }
 }
 
+// TODO: how is this different from the DiceFormatter?
 export class DiceBonusFormatter implements BaseFormatter {
-    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: CalculatedEntity): string {
         const value = modifier.value;
+
         // Use appliesToId to determine the dice type
         const diceId = modifier.appliesToId;
         if (diceId !== null && diceId !== undefined && RPG_DICE[diceId]) {
@@ -176,8 +189,9 @@ export class DiceBonusFormatter implements BaseFormatter {
 }
 
 export class DamageReductionFormatter implements BaseFormatter {
-    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: CalculatedEntity): string {
         const value = modifier.value;
+
         const damageTypeId = modifier.appliesToId;
         if (damageTypeId !== null && damageTypeId !== undefined && DAMAGE_TYPES[damageTypeId]) {
             const damageType = DAMAGE_TYPES[damageTypeId].name;
@@ -187,55 +201,51 @@ export class DamageReductionFormatter implements BaseFormatter {
     }
 }
 
-export class SpellResistanceFormatter implements BaseFormatter {
-    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
-        const value = modifier.value;
-        return value.toString();
-    }
-}
+// this is not how this should be structured, this bypasses the formatter registry and uses the formatter directly
+// this should be refactored to use the formatter registry
+export class FeatureEntityFormatter implements BaseFormatter {
+    format(choice: CalculatedEntity): string {
+        // If value is already a formatted string, return it directly
+        if (typeof choice.value === 'string') {
+            return choice.value;
+        }
 
-export class FeatureChoiceFormatter implements ChoiceFormatter {
-    formatChoice(choice: FeatureChoice, metadata?: FormatterMetadata): string {
         // CRITICAL: Always use actual names/abbreviations, never IDs
-        const choiceName = this.getChoiceName(choice, metadata);
+        const choiceName = this.getChoiceName(choice);
 
-        switch (choice.behavior) {
-            case FeatureChoiceBehavior.Single:
-                return `Select ${choiceName}`;
-            case FeatureChoiceBehavior.Multiple: {
-                const count = choice.pickCount || 1;
-                return `Select ${count} ${pluralize(choiceName, count)}`;
-            }
-            case FeatureChoiceBehavior.Allocation:
-                return `Allocate bonus to ${choiceName}`;
-            default:
-                return `Select ${choiceName}`;
-        }
-    }
-
-    private getChoiceName(choice: FeatureChoice, metadata?: FormatterMetadata): string {
         switch (choice.type) {
-            case FeatureChoiceType.Feat:
-                return this.getFeatName(choice, metadata);
-            case FeatureChoiceType.Feature:
-                return this.getFeatureName(choice, metadata);
+            case EntityType.Choice:
+                return choiceName;
+            case EntityType.Allocation: {
+                // For allocation entities, use base choice name without ordinal
+                // Choice/Allocation entities now only generate values at formula-determined intervals
+                // so ordinal numbers are not required
+                const baseChoiceName = this.getBaseChoiceName(choice);
+                return `Allocate Bonus to ${baseChoiceName}`;
+            }
             default:
-                return choice.label || 'Unknown Choice';
+                return choiceName;
         }
     }
 
-    private getFeatName(choice: FeatureChoice, metadata?: FormatterMetadata): string {
-        // Priority 1: Use passed-in feat data (specific feat selected)
-        if (choice.feat?.name) {
-            return choice.feat.name;
+    private getChoiceName(choice: CalculatedEntity): string {
+        switch (choice.appliesTo) {
+            case EntityAppliesToType.Feat:
+                return this.getFeatName(choice);
+            case EntityAppliesToType.Feature:
+                return this.getFeatureName(choice);
+            case EntityAppliesToType.CreatureType:
+                return this.getCreatureTypeName(choice);
+            default:
+                // Fallback for unknown appliesTo types
+                return `Choice (${choice.appliesTo})`;
         }
+    }
 
-        // Priority 2: Use passed-in name lookup (specific feat selected)
-        if (choice.featId && metadata?.featObjects) {
-            const feat = metadata.featObjects.find(f => f.id === choice.featId);
-            if (feat) {
-                return feat.name;
-            }
+    private getFeatName(choice: CalculatedEntity): string {
+        // Priority 1: Use included entity data (specific feat selected)
+        if (choice.feat) {
+            return choice.feat.name;
         }
 
         // Priority 3: Use static data filter type name (filter type is set)
@@ -243,27 +253,14 @@ export class FeatureChoiceFormatter implements ChoiceFormatter {
             return FEATURE_FEAT_CHOICE_FILTER_TYPES[choice.filterType].name;
         }
 
-        // Priority 4: Use choice label if available
-        if (choice.label) {
-            return choice.label;
-        }
-
         // Priority 5: Fall back to "Bonus Feat" when no filter type is set
         return 'Bonus Feat';
     }
 
-    private getFeatureName(choice: FeatureChoice, metadata?: FormatterMetadata): string {
-        // Priority 1: Use passed-in feature data
-        if (choice.feature?.name) {
+    private getFeatureName(choice: CalculatedEntity): string {
+        // Priority 1: Use included entity data
+        if (choice.feature) {
             return choice.feature.name;
-        }
-
-        // Priority 2: Use passed-in name lookup
-        if (choice.featureId && metadata?.featureNames) {
-            const featureName = metadata.featureNames.find(f => f.id === choice.featureId)?.name;
-            if (featureName) {
-                return featureName;
-            }
         }
 
         // Priority 3: Use static data filter type name
@@ -271,50 +268,81 @@ export class FeatureChoiceFormatter implements ChoiceFormatter {
             return FEATURE_FEAT_CHOICE_FILTER_TYPES[choice.filterType].name;
         }
 
-        // Priority 4: Use choice label if available
-        if (choice.label) {
-            return choice.label;
-        }
-
         // Priority 5: Fall back to generic name or ID
-        if (choice.featureId) {
-            console.warn(`Unable to resolve feature name for ID: ${choice.featureId}`);
-            return `Feature ID: ${choice.featureId}`;
+        if (choice.appliesToId) {
+            console.warn(`Unable to resolve feature name for ID: ${choice.appliesToId}`);
+            return `Feature ID: ${choice.appliesToId}`;
         } else {
             return 'Feature Choice';
         }
     }
-}
 
-export class OtherFormatter implements BaseFormatter {
-    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    private getCreatureTypeName(choice: CalculatedEntity): string {
+        // Priority 1: Use included entity data (specific creature type selected)
+        if (choice.appliesToId && CREATURE_TYPES[choice.appliesToId]) {
+            return CREATURE_TYPES[choice.appliesToId].name;
+        }
 
-        const value = modifier.value;
-        return `${value}`;
+        // Priority 2: Use static data filter type name (filter type is set)
+        if (choice.filterType && FEATURE_FEAT_CHOICE_FILTER_TYPES[choice.filterType]) {
+            return FEATURE_FEAT_CHOICE_FILTER_TYPES[choice.filterType].name;
+        }
+
+        // Priority 3: Fall back to generic name without ordinal
+        // Choice/Allocation entities now only generate values at formula-determined intervals
+        // so ordinal numbers are not required
+        return 'Creature Type';
+    }
+
+    private getBaseChoiceName(choice: CalculatedEntity): string {
+        switch (choice.appliesTo) {
+            case EntityAppliesToType.Feat:
+                return this.getFeatName(choice);
+            case EntityAppliesToType.Feature:
+                return this.getFeatureName(choice);
+            case EntityAppliesToType.CreatureType:
+                return this.getBaseCreatureTypeName(choice);
+            default:
+                return `Choice (${choice.appliesTo})`;
+        }
+    }
+
+    private getBaseCreatureTypeName(choice: CalculatedEntity): string {
+        // Priority 1: Use included entity data (specific creature type selected)
+        if (choice.appliesToId && CREATURE_TYPES[choice.appliesToId]) {
+            return CREATURE_TYPES[choice.appliesToId].name;
+        }
+
+        // Priority 2: Use static data filter type name (filter type is set)
+        if (choice.filterType && FEATURE_FEAT_CHOICE_FILTER_TYPES[choice.filterType]) {
+            return FEATURE_FEAT_CHOICE_FILTER_TYPES[choice.filterType].name;
+        }
+
+        // Priority 3: Fall back to generic name without ordinal
+        return 'Creature Type';
     }
 }
 
 export class ProficiencyFormatter implements BaseFormatter {
-    format(modifier: FeatureModifier, metadata?: FormatterMetadata): string {
+    format(modifier: CalculatedEntity): string {
 
-        if (modifier.itemId === -1) {
-            const featObject = metadata?.featObjects?.find(feat => feat.id === modifier.appliesToId);
-            if (featObject?.benefits) {
-                const proficiencyBenefit = featObject.benefits.find(benefit => benefit.typeId === FeatBenefitType.PROFICIENCY);
+        if (modifier.appliesToSubId === -1) {
+            // Use included entity data
+            if (modifier.feat?.benefits) {
+                const proficiencyBenefit = modifier.feat.benefits.find(benefit => benefit.typeId === FeatBenefitType.PROFICIENCY);
                 if (proficiencyBenefit) {
                     return PROFICIENCY_TYPES[proficiencyBenefit.referenceId].allName;
                 }
             }
             // Fallback if feat object or proficiency benefit not found
             return 'all items';
-        } else if (modifier.itemId && modifier.itemId > 0) {
+        } else if (modifier.appliesToSubId && modifier.appliesToSubId > 0) {
             // itemId > 0 means a specific item proficiency
-            const itemRecord = metadata?.itemNames?.find(item => item.id === modifier.itemId);
-            if (itemRecord) {
-                return itemRecord.name.toLowerCase();
+            if (modifier.item) {
+                return modifier.item.name.toLowerCase();
             }
             // Fallback if item name not found
-            return `item ${modifier.itemId}`;
+            return `item ${modifier.appliesToSubId}`;
         } else {
             // No specific item, just return a generic message
             return 'proficiency';
@@ -323,12 +351,13 @@ export class ProficiencyFormatter implements BaseFormatter {
 }
 
 export class CreatureTypeFormatter implements BaseFormatter {
-    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: CalculatedEntity): string {
         const value = modifier.value;
+
         const creatureType = CREATURE_TYPES[modifier.appliesToId];
         if (creatureType) {
             if (value !== 0) {
-                const stringValue = formatSignedValue(value);
+                const stringValue = typeof value === 'string' ? value : formatSignedValue(value);
                 return `${creatureType.name}: ${stringValue}`;
             }
             return creatureType.name;
@@ -338,12 +367,13 @@ export class CreatureTypeFormatter implements BaseFormatter {
 }
 
 export class SizeCategoryFormatter implements BaseFormatter {
-    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: CalculatedEntity): string {
         const value = modifier.value;
+
         const sizeCategory = SIZE_MAP[modifier.appliesToId];
         if (sizeCategory) {
             if (value !== 0) {
-                const stringValue = formatSignedValue(value);
+                const stringValue = typeof value === 'string' ? value : formatSignedValue(value);
                 return `${sizeCategory.name}: ${stringValue}`;
             }
             return sizeCategory.name;
@@ -353,7 +383,8 @@ export class SizeCategoryFormatter implements BaseFormatter {
 }
 
 export class DamageTypeFormatter implements BaseFormatter {
-    format(modifier: FeatureModifier, _metadata?: FormatterMetadata): string {
+    format(modifier: CalculatedEntity): string {
+
         if (modifier.appliesToId !== null && modifier.appliesToId !== undefined) {
             const damageType = DAMAGE_TYPES[modifier.appliesToId];
             if (damageType) {
@@ -363,7 +394,6 @@ export class DamageTypeFormatter implements BaseFormatter {
         return `Damage Type ID: ${modifier.appliesToId}`;
     }
 }
-
 
 // Utility function for formatting signed values
 function formatSignedValue(value: number): string {

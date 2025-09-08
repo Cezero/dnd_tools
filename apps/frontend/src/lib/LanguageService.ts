@@ -1,45 +1,34 @@
 import { CreateFeatureProgressionRequest } from '@shared/schema';
 import {
     SpecialFeatureId,
-    ModifierAppliesToType
+    EntityAppliesToType
 } from '@shared/static-data';
 
 // Type definitions for feature progressions with relations
-interface FeatureModifier {
+interface FeatureEntity {
     id: number;
     type: number;
     value: number;
     appliesTo: number | null;
     appliesToId: number | null;
+    appliesToSubId: number | null;
     bonusType: number | null;
-    appliesIfChoiceKey: string | null;
-    appliesIfChoiceValue: string | null;
-    conditions?: FeatureModifierCondition[];
+    filterType: number | null;
+    conditions?: FeatureEntityCondition[];
 }
 
-interface FeatureModifierCondition {
+interface FeatureEntityCondition {
     id: number;
     type: number;
     conditionValue: string | null;
 }
-
-interface FeatureChoice {
-    id: number;
-    type: string;
-    behavior: string;
-    // REMOVED: appliesToType - not used in FeatureChoice
-    label: string | null;
-    pickCount: number | null;
-}
-
 interface FeatureProgressionWithRelations {
     id: number;
     sourceType: number;
     level: number;
     featureId: number;
     // REMOVED: appliesToType and appliesTo - redundant with SpecialFeatureId
-    modifiers?: FeatureModifier[];
-    choices?: FeatureChoice[];
+    entities?: FeatureEntity[];
     effects?: unknown[];
 }
 
@@ -52,9 +41,9 @@ export class LanguageService {
     static getAutomaticLanguages(progressions: FeatureProgressionWithRelations[] | CreateFeatureProgressionRequest[]): number[] {
         return progressions
             .flatMap(prog =>
-                prog.modifiers
-                    ?.filter(mod => mod.appliesTo === ModifierAppliesToType.AutomaticLanguage && mod.appliesToId)
-                    .map(mod => mod.appliesToId!) || []
+                prog.entities
+                    ?.filter(entity => entity.appliesTo === EntityAppliesToType.AutomaticLanguage && entity.appliesToId)
+                    .map(entity => entity.appliesToId!) || []
             )
             .filter(id => id > 0);
     }
@@ -67,12 +56,12 @@ export class LanguageService {
     static getBonusLanguages(progressions: FeatureProgressionWithRelations[] | CreateFeatureProgressionRequest[]): number[] {
         return progressions
             .flatMap(prog =>
-                prog.modifiers
-                    ?.filter(mod =>
-                        mod.appliesTo === ModifierAppliesToType.BonusLanguage &&
-                        mod.appliesToId
+                prog.entities
+                    ?.filter(entity =>
+                        entity.appliesTo === EntityAppliesToType.BonusLanguage &&
+                        entity.appliesToId
                     )
-                    .map(mod => mod.appliesToId!) || []
+                    .map(entity => entity.appliesToId!) || []
             )
             .filter(id => id > 0);
     }
@@ -86,12 +75,12 @@ export class LanguageService {
         return progressions
             .filter(prog => this.isClassBonusLanguageFeature(prog))
             .flatMap(prog =>
-                prog.modifiers
-                    ?.filter(mod =>
-                        mod.appliesTo === ModifierAppliesToType.BonusLanguage &&
-                        mod.appliesToId
+                prog.entities
+                    ?.filter(entity =>
+                        entity.appliesTo === EntityAppliesToType.BonusLanguage &&
+                        entity.appliesToId
                     )
-                    .map(mod => mod.appliesToId!) || []
+                    .map(entity => entity.appliesToId!) || []
             )
             .filter(id => id > 0);
     }
@@ -101,10 +90,10 @@ export class LanguageService {
      * @param progressions Array of feature progressions
      * @returns Array of feature choices for bonus languages
      */
-    static getBonusLanguageChoices(progressions: FeatureProgressionWithRelations[]): FeatureChoice[] {
+    static getBonusLanguageChoices(progressions: FeatureProgressionWithRelations[]): FeatureEntity[] {
         return progressions
             .filter(prog => prog.featureId === SpecialFeatureId.BonusLanguage)
-            .flatMap(prog => prog.choices || []);
+            .flatMap(prog => prog.entities || []);
     }
 
     /**
@@ -116,12 +105,12 @@ export class LanguageService {
         return progressions
             .filter(prog => this.isClassLanguageFeature(prog))
             .flatMap(prog =>
-                prog.modifiers
-                    ?.filter(mod =>
-                        mod.appliesTo === ModifierAppliesToType.AutomaticLanguage &&
-                        mod.appliesToId
+                prog.entities
+                    ?.filter(entity =>
+                        entity.appliesTo === EntityAppliesToType.AutomaticLanguage &&
+                        entity.appliesToId
                     )
-                    .map(mod => mod.appliesToId!) || []
+                    .map(entity => entity.appliesToId!) || []
             )
             .filter(id => id > 0);
     }
@@ -143,7 +132,7 @@ export class LanguageService {
      */
     static isClassBonusLanguageFeature(progression: FeatureProgressionWithRelations | CreateFeatureProgressionRequest): boolean {
         return this.isClassLanguageFeature(progression) &&
-            progression.modifiers?.some(mod => mod.appliesTo === ModifierAppliesToType.BonusLanguage);
+            progression.entities?.some(entity => entity.appliesTo === EntityAppliesToType.BonusLanguage);
     }
 
     /**
@@ -167,8 +156,6 @@ export class LanguageService {
         const allLanguages = [...racialLanguages, ...classLanguages];
         return Array.from(new Set(allLanguages));
     }
-
-
 
     /**
      * Calculate the number of bonus language choices available based on INT modifier

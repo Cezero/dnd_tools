@@ -14,8 +14,7 @@ export { GroupingControls } from './GroupingControls';
 export { SectionSelector } from './SectionSelector';
 
 // Form components
-export { ModifierDetailForm } from './ModifierDetailForm';
-export { ChoiceDetailForm } from './ChoiceDetailForm';
+export { EntityDetailForm } from './EntityDetailForm';
 
 // Shared components
 export { FormulaManager } from './FormulaManager';
@@ -28,8 +27,6 @@ export type {
     GroupingState,
     HoverState,
     BaseFormProps,
-    ModifierDetailFormProps,
-    ChoiceDetailFormProps,
     FormulaPreviewProps,
     EntitySectionRendererProps,
     SectionSelectorProps,
@@ -46,19 +43,14 @@ export {
 } from './entityHelpers';
 
 export {
-    transformFormDataForSubmission,
-    transformProgressionForDisplay,
     initializeFormData,
-    createDefaultModifier,
-    createDefaultChoice
+    createDefaultEntity,
 } from './formDataTransformers';
 
 export {
     hasValidFormulaParams,
-    hasValidChoiceFormulaParams,
-    hasValidChoiceConfig,
-    getModifierValidationError,
-    getChoiceValidationError,
+    hasValidEntityConfig,
+    getEntityValidationError,
     validateProgressionEntities,
     hasProgressionComponents,
     validateProgressionLevel,

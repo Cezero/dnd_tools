@@ -12,6 +12,7 @@ import {
     UpdateFeat,
     DeleteFeat,
     GetFeatQuery,
+    GetFeatList,
 } from './featController.js';
 import { requireAdmin } from '../../middleware/authMiddleware.js';
 
@@ -19,6 +20,7 @@ const { router: FeatRouter, get, post, put, delete: deleteRoute } = buildValidat
 
 get('/', {}, GetAllFeats);
 get('/query', { query: FeatQuerySchema }, GetFeatQuery);
+get('/list', { query: FeatQuerySchema }, GetFeatList);
 get('/:id', { params: FeatIdParamSchema }, GetFeatById);
 
 post('/', requireAdmin, { body: BaseFeatSchema }, CreateFeat);

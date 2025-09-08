@@ -1,4 +1,5 @@
-import type { FeatureModifierCondition } from '@shared/schema';
+import type { FeatureEntityCondition } from '@shared/schema';
+import { EntityType } from '@shared/static-data';
 
 import { conditionFormatterRegistry } from './condition-formatter-registry';
 
@@ -8,9 +9,14 @@ import { conditionFormatterRegistry } from './condition-formatter-registry';
  * 
  * @param conditions Array of conditions to format
  * @param initialFormattedValue The initial formatted value to start with
+ * @param entityType The entity type for formatter lookup
  * @returns The final formatted value after processing all conditions
  */
-export function formatMultipleConditions(conditions: FeatureModifierCondition[], initialFormattedValue: string): string {
+export function formatMultipleConditions(
+    conditions: FeatureEntityCondition[],
+    initialFormattedValue: string,
+    entityType: EntityType
+): string {
     if (!conditions || conditions.length === 0) {
         return initialFormattedValue;
     }
@@ -19,7 +25,7 @@ export function formatMultipleConditions(conditions: FeatureModifierCondition[],
 
     // Process each condition in sequence, chaining the output
     for (const condition of conditions) {
-        result = conditionFormatterRegistry.formatCondition(condition, result);
+        result = conditionFormatterRegistry.formatCondition(condition, result, entityType);
     }
 
     return result;

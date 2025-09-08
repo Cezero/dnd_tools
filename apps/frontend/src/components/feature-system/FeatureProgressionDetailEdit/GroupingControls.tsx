@@ -3,20 +3,15 @@ import React from 'react';
 import type { GroupingControlsProps } from './types';
 
 export function GroupingControls({
-    entityType,
     index,
-    nextIndex,
-    nextGroupingId,
     isGroupButton,
     onGroup,
     onUngroup,
     hoveredIndex,
-    hoveredEntityType,
-    setHoveredIndex,
-    setHoveredEntityType
+    setHoveredIndex
 }: GroupingControlsProps) {
     const controlKey = `${isGroupButton ? 'group' : 'ungroup'}-${index}`;
-    const isHovered = hoveredIndex === controlKey && hoveredEntityType === entityType;
+    const isHovered = hoveredIndex === controlKey;
 
     if (isGroupButton) {
         return (
@@ -24,11 +19,9 @@ export function GroupingControls({
                 className="flex items-center justify-center h-2 cursor-pointer"
                 onMouseEnter={() => {
                     setHoveredIndex(controlKey);
-                    setHoveredEntityType(entityType);
                 }}
                 onMouseLeave={() => {
                     setHoveredIndex(null);
-                    setHoveredEntityType(null);
                 }}
             >
                 <div className="z-10">
@@ -52,11 +45,9 @@ export function GroupingControls({
             className="flex items-center justify-center mt-1.5 mb-1.5 border-t border-blue-200 dark:border-blue-700 h-1 cursor-pointer"
             onMouseEnter={() => {
                 setHoveredIndex(controlKey);
-                setHoveredEntityType(entityType);
             }}
             onMouseLeave={() => {
                 setHoveredIndex(null);
-                setHoveredEntityType(null);
             }}
         >
             <div className="z-10">

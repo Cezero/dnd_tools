@@ -1,6 +1,6 @@
 import { FeatApi } from '@/features/feat/FeatApi';
-import { FeatureProgression } from '@shared/schema';
-import { FeatBenefitType, ModifierAppliesToType, ModifierType, SpecialFeatureId } from '@shared/static-data';
+import { FeatureProgression, FeatureEntity } from '@shared/schema';
+import { FeatBenefitType, EntityAppliesToType, SpecialFeatureId } from '@shared/static-data';
 
 export const ClassProficiencyService = {
     /**
@@ -42,23 +42,16 @@ export const ClassProficiencyService = {
      */
     getClassProficiencies(
         progressions: FeatureProgression[]
-    ): Array<{ featId: number; itemId: number; featName: string; itemName?: string }> {
+    ): FeatureEntity[] {
         return progressions
             .filter(prog => prog.featureId === SpecialFeatureId.ClassProficiency)
             .flatMap(prog =>
-                prog.modifiers
-                    ?.filter((mod) =>
-                        mod.appliesTo === ModifierAppliesToType.Feat &&
-                        mod.itemId !== null
-                    )
-                    .map((mod) => ({
-                        featId: mod.appliesToId || 0,
-                        itemId: mod.itemId || -1,
-                        featName: `Feat ${mod.appliesToId}`, // Will need feat lookup
-                        itemName: mod.itemId === -1 ? undefined : `Item ${mod.itemId}` // Will need item lookup
-                    })) || []
-            )
-            .filter(prof => prof.featId > 0);
+                prog.entities
+                    ?.filter((entity) =>
+                        entity.appliesTo === EntityAppliesToType.Feat &&
+                        entity.appliesToId !== null
+                    ) || []
+            );
     },
 
     /**
@@ -72,25 +65,25 @@ export const ClassProficiencyService = {
     ) {
         const updatedProgressions = featureProgressions.map(prog => {
             if (prog.featureId === SpecialFeatureId.ClassProficiency) {
-                // Remove the specific proficiency modifier
-                const updatedModifiers = prog.modifiers?.filter(mod =>
-                    !(mod.appliesTo === ModifierAppliesToType.Feat &&
-                        mod.appliesToId === featId &&
-                        mod.itemId === itemId)
+                // Remove the specific proficiency entity
+                const updatedEntities = prog.entities?.filter(entity =>
+                    !(entity.appliesTo === EntityAppliesToType.Feat &&
+                        entity.appliesToId === featId &&
+                        entity.appliesToSubId === itemId)
                 ) || [];
 
                 return {
                     ...prog,
-                    modifiers: updatedModifiers
+                    entities: updatedEntities
                 };
             }
             return prog;
         });
 
-        // Remove the progression entirely if it has no modifiers left
+        // Remove the progression entirely if it has no entities left
         const finalProgressions = updatedProgressions.filter(prog =>
             !(prog.featureId === SpecialFeatureId.ClassProficiency) ||
-            (prog.modifiers && prog.modifiers.length > 0)
+            (prog.entities && prog.entities.length > 0)
         );
 
         setFeatureProgressions(finalProgressions);

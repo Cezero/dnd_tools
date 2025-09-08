@@ -4,16 +4,14 @@ import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthAuto } from '@/components/auth';
 import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { FeatApi } from '@/features/feat/FeatApi';
 import { displayStrategyFactory } from '@/lib/formatters';
 import { GetFeatureResponse, FeatureProgression } from '@shared/schema';
-import { DisplayType, ModifierAppliesToType, FeatureSourceType } from '@shared/static-data';
+import { DisplayType, FeatureSourceType } from '@shared/static-data';
 
 export function FeatureDetail() {
     const { id } = useParams();
     const [feature, setFeature] = useState<GetFeatureResponse | null>(null);
     const [featureProgressions, setFeatureProgressions] = useState<FeatureProgression[]>([]);
-    const [feats, setFeats] = useState<Array<{ id: number; name: string }>>([]);
     const [isLoading, setIsLoading] = useState(true);
     const { isAdmin } = useAuthAuto();
     const navigate = useNavigate();
@@ -71,43 +69,6 @@ export function FeatureDetail() {
                 return 'Back to Features';
         }
     };
-
-    // Load feats if we have feat modifiers
-    useEffect(() => {
-        const loadFeatsIfNeeded = async () => {
-            const hasFeatModifiers = featureProgressions.some(progression =>
-                progression.modifiers?.some(modifier =>
-                    modifier.appliesTo === ModifierAppliesToType.Feat
-                )
-            );
-
-            if (hasFeatModifiers && feats.length === 0) {
-                try {
-                    const response = await FeatApi.getFeats({});
-                    setFeats(response.results || []);
-                } catch (error) {
-                    console.error('Failed to load feats:', error);
-                }
-            }
-        };
-
-        loadFeatsIfNeeded();
-    }, [featureProgressions, feats.length]);
-
-    // Enhance feature progressions with feat data
-    const enhancedFeatureProgressions = featureProgressions.map(progression => ({
-        ...progression,
-        modifiers: progression.modifiers?.map(modifier => {
-            if (modifier.appliesTo === ModifierAppliesToType.Feat && modifier.appliesToId) {
-                const feat = feats.find(f => f.id === modifier.appliesToId);
-                if (feat) {
-                    return { ...modifier, feat };
-                }
-                return modifier;
-            }
-            return modifier;
-        })
-    }));
 
     if (isLoading) return (
         <div className="pt-8">
@@ -170,11 +131,11 @@ export function FeatureDetail() {
                     )}
 
                     {/* Feature Progressions */}
-                    {enhancedFeatureProgressions.length > 0 && (
+                    {featureProgressions.length > 0 && (
                         <div className="mb-6">
                             <h2 className="text-lg font-semibold mb-2">Progressions</h2>
                             <div className="space-y-4">
-                                {enhancedFeatureProgressions.map((progression) => (
+                                {featureProgressions.map((progression) => (
                                     <div key={progression.id} className="border border-gray-200 rounded-md dark:border-gray-600 p-4">
                                         <div className="mb-2">
                                             <h3 className="text-lg font-medium">
@@ -185,31 +146,19 @@ export function FeatureDetail() {
                                             </p>
                                         </div>
                                         <div className="space-y-2">
-                                            {progression.modifiers && progression.modifiers.length > 0 && (
+                                            {progression.entities && progression.entities.length > 0 && (
                                                 <div>
-                                                    <h4 className="font-medium">Modifiers:</h4>
+                                                    <h4 className="font-medium">Entities:</h4>
                                                     <ul className="text-sm text-gray-600 dark:text-gray-400">
-                                                        {progression.modifiers.map((modifier, index) => {
+                                                        {progression.entities.map((entity, index) => {
                                                             const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
-                                                            const formatter = strategy.format({ ...progression, modifiers: [modifier] });
+                                                            const formatter = strategy.format({ ...progression, entities: [entity] });
                                                             return (
                                                                 <li key={index}>
                                                                     {formatter.levelEntries[0]?.items[0]?.formattedValue || 'No preview'}
                                                                 </li>
                                                             );
                                                         })}
-                                                    </ul>
-                                                </div>
-                                            )}
-                                            {progression.choices && progression.choices.length > 0 && (
-                                                <div>
-                                                    <h4 className="font-medium">Choices:</h4>
-                                                    <ul className="text-sm text-gray-600 dark:text-gray-400">
-                                                        {progression.choices.map((choice, index) => (
-                                                            <li key={index}>
-                                                                {choice.label}: {choice.type} ({choice.behavior})
-                                                            </li>
-                                                        ))}
                                                     </ul>
                                                 </div>
                                             )}

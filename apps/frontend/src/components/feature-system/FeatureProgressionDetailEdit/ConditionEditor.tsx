@@ -2,20 +2,19 @@ import React from 'react';
 
 import { ValidatedCustomSelect, ValidatedInput } from '@/components/forms';
 import {
-    FEATURE_MODIFIER_CONDITION_SELECT_LIST,
+    FEATURE_ENTITY_CONDITION_SELECT_LIST,
     ATTACK_TYPE_SELECT_LIST,
     SIZE_SELECT_LIST,
     SPELL_SCHOOL_SELECT_LIST,
     CREATURE_TYPE_SELECT_LIST,
     SOURCE_TYPE_SELECT_LIST,
-    FeatureModifierConditionType
+    FeatureEntityConditionType
 } from '@shared/static-data';
 
 import type { ConditionEditorProps } from './types';
 
 export function ConditionEditor({
     index,
-    entityType,
     conditions,
     onAddCondition,
     onRemoveCondition
@@ -40,52 +39,52 @@ export function ConditionEditor({
                     {conditions.map((condition, conditionIndex) => (
                         <div key={conditionIndex} className="flex items-center gap-2 p-2 border border-gray-200 rounded dark:border-gray-600">
                             <ValidatedCustomSelect
-                                field={`${entityType}.${index}.conditions.${conditionIndex}.conditionType`}
+                                field={`entities.${index}.conditions.${conditionIndex}.conditionType`}
                                 label=""
-                                options={FEATURE_MODIFIER_CONDITION_SELECT_LIST}
+                                options={FEATURE_ENTITY_CONDITION_SELECT_LIST}
                                 placeholder="Condition type"
                                 componentExtraClassName="flex-1"
                                 nested
                             />
-                            {condition.conditionType === FeatureModifierConditionType.character_size ? (
+                            {condition.conditionType === FeatureEntityConditionType.character_size ? (
                                 <ValidatedCustomSelect
-                                    field={`${entityType}.${index}.conditions.${conditionIndex}.conditionValue`}
+                                    field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
                                     label=""
                                     options={SIZE_SELECT_LIST}
                                     placeholder="Select size"
                                     componentExtraClassName="flex-1"
                                     nested
                                 />
-                            ) : condition.conditionType === FeatureModifierConditionType.attack_type ? (
+                            ) : condition.conditionType === FeatureEntityConditionType.attack_type ? (
                                 <ValidatedCustomSelect
-                                    field={`${entityType}.${index}.conditions.${conditionIndex}.conditionValue`}
+                                    field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
                                     label=""
                                     options={ATTACK_TYPE_SELECT_LIST}
                                     placeholder="Select attack type"
                                     componentExtraClassName="flex-1"
                                     nested
                                 />
-                            ) : condition.conditionType === FeatureModifierConditionType.spell_school ? (
+                            ) : condition.conditionType === FeatureEntityConditionType.spell_school ? (
                                 <ValidatedCustomSelect
-                                    field={`${entityType}.${index}.conditions.${conditionIndex}.conditionValue`}
+                                    field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
                                     label=""
                                     options={SPELL_SCHOOL_SELECT_LIST}
                                     placeholder="Select spell school"
                                     componentExtraClassName="flex-1"
                                     nested
                                 />
-                            ) : condition.conditionType === FeatureModifierConditionType.creature_type ? (
+                            ) : condition.conditionType === FeatureEntityConditionType.creature_type ? (
                                 <ValidatedCustomSelect
-                                    field={`${entityType}.${index}.conditions.${conditionIndex}.conditionValue`}
+                                    field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
                                     label=""
                                     options={CREATURE_TYPE_SELECT_LIST}
                                     placeholder="Select creature type"
                                     componentExtraClassName="flex-1"
                                     nested
                                 />
-                            ) : condition.conditionType === FeatureModifierConditionType.source ? (
+                            ) : condition.conditionType === FeatureEntityConditionType.source ? (
                                 <ValidatedCustomSelect
-                                    field={`${entityType}.${index}.conditions.${conditionIndex}.conditionValue`}
+                                    field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
                                     label=""
                                     options={SOURCE_TYPE_SELECT_LIST}
                                     placeholder="Select source"
@@ -94,7 +93,7 @@ export function ConditionEditor({
                                 />
                             ) : (
                                 <ValidatedInput
-                                    field={`${entityType}.${index}.conditions.${conditionIndex}.conditionValue`}
+                                    field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
                                     label=""
                                     type="text"
                                     placeholder="Condition value"

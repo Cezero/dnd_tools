@@ -12,6 +12,7 @@ import {
     CreateFeatureProgressionRequest,
     UpdateFeatureProgressionsRequest,
     GetFeatureProgressionsResponse,
+    GetFeatureListResponse,
 } from '@shared/schema';
 
 import { featureSystemService } from './featureSystemService.js';
@@ -22,6 +23,15 @@ import { featureSystemService } from './featureSystemService.js';
 export async function GetAllFeatures(req: ValidatedQueryT<{ sourceType?: string }, GetAllFeaturesResponse>, res: Response) {
     const sourceType = req.query.sourceType ? Number(req.query.sourceType) : undefined;
     const features = await featureSystemService.getAllFeatures(sourceType);
+    res.json(features);
+}
+
+/**
+ * Fetches a list of features with only id and name for dropdown selection.
+ */
+export async function GetFeatureList(req: ValidatedQueryT<{ sourceType?: string }, GetFeatureListResponse>, res: Response) {
+    const sourceType = req.query.sourceType ? Number(req.query.sourceType) : undefined;
+    const features = await featureSystemService.getFeatureList(sourceType);
     res.json(features);
 }
 
@@ -80,7 +90,7 @@ export async function DeleteFeatureById(req: ValidatedParamsT<FeatureIdParamRequ
 }
 
 /**
- * Creates feature progressions with all related entities (modifiers, choices, effects).
+ * Creates feature progressions with all related entities.
  * Used for bulk operations when creating/updating classes and races.
  */
 export async function CreateFeatureProgressionWithRelations(req: ValidatedBodyT<CreateFeatureProgressionRequest, CreateResponse>, res: Response) {

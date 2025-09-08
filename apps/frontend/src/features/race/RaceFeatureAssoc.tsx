@@ -1,17 +1,9 @@
-import React from 'react';
-import { z } from 'zod';
-
 import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { ListSelectionDialog } from '@/components/generic-list';
-import { FeatureSchema } from '@shared/schema';
+import type { Feature } from '@shared/schema';
+import { FeatureSourceType } from '@shared/static-data';
 
-type RaceFeatureItem = z.infer<typeof FeatureSchema>;
-
-type SelectedFeatureData = {
-    featureId: number;
-    slug: string;
-    name: string;
-    description: string;
+interface SelectedFeatureData extends Feature {
     level: number;
     [key: string]: unknown; // Add index signature to satisfy BaseSelectedItem constraint
 };
@@ -36,20 +28,15 @@ interface RaceFeatureAssocProps {
  * selected features' information is passed to the `onSave` handler.
  */
 export function RaceFeatureAssoc({ isOpen, onClose, onSave, initialSelectedFeatureIds = [], raceId }: RaceFeatureAssocProps) {
-    const transformSelectedFeatures = (features: RaceFeatureItem[]): SelectedFeatureData[] => {
+    const transformSelectedFeatures = (features: Feature[]): SelectedFeatureData[] => {
         return features.map(feature => ({
-            featureId: feature.id,
-            slug: feature.slug,
-            name: feature.name,
-            description: feature.description,
+            ...feature,
             level: 1, // Default level for racial features
         }));
     };
 
-
-
     return (
-        <ListSelectionDialog<RaceFeatureItem, SelectedFeatureData>
+        <ListSelectionDialog<Feature, SelectedFeatureData>
             isOpen={isOpen}
             onClose={onClose}
             onSave={onSave}
@@ -57,7 +44,7 @@ export function RaceFeatureAssoc({ isOpen, onClose, onSave, initialSelectedFeatu
             parentId={raceId}
             parentType="race"
             serviceFunction={async () => {
-                const response = await FeatureSystemApi.getFeatures({ sourceType: 0 }); // 0 = FeatureSourceType.Race
+                const response = await FeatureSystemApi.getFeatures({ sourceType: FeatureSourceType.Race });
                 return response;
             }}
             storageKey="raceFeatureSelectionList"

@@ -1,30 +1,28 @@
 import { useCallback } from 'react';
 
 import { displayStrategyFactory } from '@/lib/formatters';
-import type { FeatureModifier, FeatureChoice } from '@shared/schema';
+import type { FeatureEntity } from '@shared/schema';
 import { DisplayType, FeatureSourceType } from '@shared/static-data';
 
 export function useFormulaPreview() {
-    // Generate formula preview for a modifier or choice
+    // Generate formula preview for an entity
     const generateFormulaPreview = useCallback((
-        item: FeatureModifier | FeatureChoice,
+        item: FeatureEntity,
         progressionLevel: number,
         featureName?: string
     ): string | null => {
-        // Determine if this is a choice by checking for choice-specific properties
-        const isChoice = 'behavior' in item;
+        // All entities are now unified, no need to distinguish between types
 
-        // Get formula ID from the appropriate source
-        const formulaId = isChoice
-            ? (item as FeatureChoice).formulaParams?.formulaId
-            : (item as FeatureModifier).formulaParams?.formulaId;
+        // Get formula ID from the entity
+        const formulaId = item.formulaParams?.formulaId;
 
         if (!formulaId) {
             return null;
         }
 
         try {
-            // Create a mock progression for the display strategy to work with
+            // Use the standard display strategy for ALL entities
+            // Phase 1 now handles formula-determined intervals for all entity types
             const mockProgression = {
                 id: 0,
                 sourceType: FeatureSourceType.Class,
@@ -38,13 +36,13 @@ export function useFormulaPreview() {
                     description: '',
                     slug: 'preview-feature'
                 },
-                modifiers: isChoice ? [] : [item as FeatureModifier],
-                choices: isChoice ? [item as FeatureChoice] : [],
+                entities: [item],
                 effects: []
             };
 
             // Use Display Strategy to properly orchestrate the 6-layer formatting process
             const editStrategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
+
             const displayResult = editStrategy.format(
                 mockProgression,
                 {
@@ -61,15 +59,12 @@ export function useFormulaPreview() {
         }
     }, []);
 
+
     // Check if an item has a formula that can be previewed
     const hasPreviewableFormula = useCallback((
-        item: FeatureModifier | FeatureChoice
+        item: FeatureEntity
     ): boolean => {
-        const isChoice = 'behavior' in item;
-        const formulaId = isChoice
-            ? (item as FeatureChoice).formulaParams?.formulaId
-            : (item as FeatureModifier).formulaParams?.formulaId;
-
+        const formulaId = item.formulaParams?.formulaId;
         return !!formulaId;
     }, []);
 

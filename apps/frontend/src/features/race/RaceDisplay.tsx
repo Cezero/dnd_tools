@@ -3,10 +3,10 @@ import React, { useState, useEffect } from 'react';
 
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { FeatApi } from '@/features/feat/FeatApi';
-import { displayStrategyFactory, extractFormatterMetadata } from '@/lib/formatters';
+import { displayStrategyFactory } from '@/lib/formatters';
 import { LanguageService } from '@/lib/LanguageService';
 import { Race, FeatQueryResponse } from '@shared/schema';
-import { DisplayType, SIZE_MAP, LANGUAGE_MAP, EDITION_MAP, ABILITY_MAP, CLASS_MAP, ModifierAppliesToType, ABILITY_LIST, SpecialFeatureId } from '@shared/static-data';
+import { DisplayType, SIZE_MAP, LANGUAGE_MAP, EDITION_MAP, ABILITY_MAP, CLASS_MAP, EntityAppliesToType, ABILITY_LIST, SpecialFeatureId } from '@shared/static-data';
 
 interface RaceDisplayProps {
     race: Race;
@@ -27,41 +27,6 @@ export function RaceDisplay({
     isAdmin = false,
     fromListParams: _fromListParams = ''
 }: RaceDisplayProps): React.JSX.Element {
-    const [feats, setFeats] = useState<FeatQueryResponse['results']>([]);
-    const [featsLoaded, setFeatsLoaded] = useState(false);
-
-
-    // Load feats if we have feat modifiers
-    useEffect(() => {
-        const loadFeatsIfNeeded = async () => {
-            if (featsLoaded) return;
-
-            // Check if we have any feat modifiers or choices
-            const hasFeatModifiers = race.features?.some(progression =>
-                progression.modifiers?.some(modifier => modifier.appliesTo === ModifierAppliesToType.Feat) ||
-                progression.choices?.some(choice => choice.featId)
-            );
-
-            if (hasFeatModifiers) {
-                try {
-                    const response = await FeatApi.featQuery({ queryType: 'all' });
-                    setFeats(response.results || []);
-                } catch (error) {
-                    console.error('Failed to load feats:', error);
-                } finally {
-                    setFeatsLoaded(true);
-                }
-            } else {
-                setFeatsLoaded(true);
-            }
-        };
-
-        loadFeatsIfNeeded();
-    }, [race.features, featsLoaded]);
-
-    // Get FormatterMetadata for this race
-    const formatterMetadata = extractFormatterMetadata(race.features, feats);
-
     // Inner cell styling (the inner border, padding, background, text colors)
     const innerCellContentClasses = "p-3 bg-content border-content rounded-lg border w-full";
 
@@ -108,7 +73,7 @@ export function RaceDisplay({
                                 (() => {
                                     const abilityFeatures = race.features?.filter(fp =>
                                         fp.featureId === SpecialFeatureId.AbilityAdjustment &&
-                                        fp.modifiers?.some(m => m.appliesTo === ModifierAppliesToType.Ability)
+                                        fp.entities?.some(e => e.appliesTo === EntityAppliesToType.Ability)
                                     ) || [];
 
                                     const adjustments: Array<{ abilityId: number; value: number }> = [];
@@ -117,15 +82,15 @@ export function RaceDisplay({
                                     for (const ability of ABILITY_LIST) {
                                         const abilityFeature = abilityFeatures.find(fp =>
                                             fp.featureId === SpecialFeatureId.AbilityAdjustment &&
-                                            fp.modifiers?.some(m => m.appliesTo === ModifierAppliesToType.Ability && m.appliesToId === ability.id)
+                                            fp.entities?.some(e => e.appliesTo === EntityAppliesToType.Ability && e.appliesToId === ability.id)
                                         );
-                                        const abilityModifier = abilityFeature?.modifiers?.find(m =>
-                                            m.appliesTo === ModifierAppliesToType.Ability && m.appliesToId === ability.id
+                                        const abilityEntity = abilityFeature?.entities?.find(e =>
+                                            e.appliesTo === EntityAppliesToType.Ability && e.appliesToId === ability.id
                                         );
-                                        if (abilityModifier && abilityModifier.value !== 0) {
+                                        if (abilityEntity && abilityEntity.value !== 0) {
                                             adjustments.push({
                                                 abilityId: ability.id,
-                                                value: abilityModifier.value
+                                                value: abilityEntity.value
                                             });
                                         }
                                     }
@@ -166,12 +131,11 @@ export function RaceDisplay({
                                                     </div>
                                                 )}
                                                 {(() => {
-                                                    const hasDetails = (featureProg.modifiers && featureProg.modifiers.length > 0) ||
-                                                        (featureProg.choices && featureProg.choices.length > 0);
+                                                    const hasDetails = featureProg.entities && featureProg.entities.length > 0;
 
                                                     if (hasDetails) {
                                                         const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
-                                                        const result = strategy.format(featureProg, undefined, formatterMetadata);
+                                                        const result = strategy.format(featureProg, undefined);
                                                         const formattedEntries = result.levelEntries.find(entry => entry.level === featureProg.level)?.items || [];
 
                                                         if (formattedEntries.length > 0) {
@@ -184,9 +148,9 @@ export function RaceDisplay({
                                                     }
                                                     return null;
                                                 })()}
-                                                {featureProg.choices && featureProg.choices.length > 0 && (
+                                                {featureProg.entities && featureProg.entities.length > 0 && (
                                                     <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                                                        <strong>Choices:</strong> {featureProg.choices.length} choice(s)
+                                                        <strong>Entities:</strong> {featureProg.entities.length} entity(ies)
                                                     </div>
                                                 )}
                                             </div>

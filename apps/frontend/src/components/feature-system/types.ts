@@ -102,23 +102,11 @@ export interface BaseFormProps {
     progression?: FeatureProgression | null;
 }
 
-export interface ModifierFormProps extends BaseFormProps {
-    feats: Array<{ id: number; name: string }>;
-    featsLoading: boolean;
-}
-
-export type ChoiceFormProps = BaseFormProps;
-
-export type EffectFormProps = BaseFormProps;
-
-// Union type for all possible form component props
-export type FormComponentProps = ModifierFormProps | ChoiceFormProps | EffectFormProps;
-
 // Entity type configuration for reusable rendering in FeatureProgressionDetailEdit
 export interface EntityTypeConfig<TFormData = Record<string, unknown>, TGroupingState = Record<string, unknown>> {
-    key: 'modifiers' | 'choices';
+    key: 'entities';
     label: string;
-    formComponent: ComponentType<FormComponentProps>;
+    formComponent: ComponentType<BaseFormProps>;
     addFunction: () => void;
     removeFunction: (index: number) => void;
     formDataKey: keyof TFormData;

@@ -14,20 +14,19 @@ import {
     ValidatedForm,
     useValidatedForm,
 } from '@/components/forms';
-import { FeatApi } from '@/features/feat/FeatApi';
 import {
     CreateClassSchema,
     UpdateClassSchema,
     CreateClassRequest,
     UpdateClassRequest,
     FeatureProgression,
-    SpellcastingProgressionWithSlots
+    SpellcastingProgressionWithSlots,
+    FeatureEntity
 } from '@shared/schema';
 import {
-    ModifierType,
+    EntityType,
     SpecialFeatureId,
-    ModifierAppliesToType,
-    FeatureType,
+    EntityAppliesToType,
 } from '@shared/static-data';
 
 import { ClassApi } from './ClassApi';
@@ -62,8 +61,6 @@ export default function ClassEdit() {
     const [isProgressionDialogOpen, setIsProgressionDialogOpen] = useState(false);
     const [editingProgression, setEditingProgression] = useState<FeatureProgression | null>(null);
     const [preSelectedFeature, setPreSelectedFeature] = useState<{ id: number; name: string; description: string; slug: string } | undefined>(undefined);
-    const [feats, setFeats] = useState<Array<{ id: number; name: string }>>([]);
-    const [_featsLoaded, setFeatsLoaded] = useState(false);
 
     // Ref to track if we've already processed the newFeature
     const processedNewFeatureRef = useRef<boolean>(false);
@@ -95,7 +92,7 @@ export default function ClassEdit() {
     /**
      * Handles adding a proficiency via the feature system.
      */
-    const handleAddProficiency = useCallback(async (featId: number, itemId: number, featName: string, itemName: string) => {
+    const handleAddProficiency = useCallback(async (featId: number, itemId: number) => {
         try {
             setFeatureProgressions(prev => {
                 // Check if class proficiency progression already exists
@@ -118,35 +115,35 @@ export default function ClassEdit() {
                             name: 'Class Proficiency',
                             description: 'Class proficiency feature',
                         },
-                        modifiers: [],
-                        choices: []
+                        entities: []
                     };
                     prev = [...prev, classProficiencyProgression];
                 }
 
                 // Check if this specific proficiency already exists
-                const existingProficiency = classProficiencyProgression.modifiers?.find(m =>
-                    m.appliesTo === ModifierAppliesToType.Feat &&
-                    m.appliesToId === featId &&
-                    m.itemId === itemId
+                const existingProficiency = classProficiencyProgression.entities?.find(e =>
+                    e.appliesTo === EntityAppliesToType.Feat &&
+                    e.appliesToId === featId &&
+                    e.appliesToSubId === itemId
                 );
 
                 if (existingProficiency) {
                     return prev;
                 }
 
-                // Add the proficiency as a modifier
-                const newModifier = {
+                // Add the proficiency as an entity
+                const newEntity: FeatureEntity = {
                     id: Date.now() + Math.random(),
                     progressionId: classProficiencyProgression.id,
-                    type: ModifierType.Other,
+                    type: EntityType.Other,
                     value: 0,
-                    bonusType: null,
-                    appliesTo: ModifierAppliesToType.Feat,
+                    appliesTo: EntityAppliesToType.Feat,
                     appliesToId: featId,
-                    itemId: itemId,
-                    formulaParamsId: null,
+                    appliesToSubId: itemId,
+                    bonusType: null,
+                    filterType: null,
                     groupingId: 1, // Group all class proficiencies together as one feature
+                    displayInDetail: true,
                 };
 
                 // Create a new array with the updated progression
@@ -154,7 +151,7 @@ export default function ClassEdit() {
                     if (p.id === classProficiencyProgression.id) {
                         return {
                             ...p,
-                            modifiers: [...(p.modifiers || []), newModifier]
+                            entities: [...(p.entities || []), newEntity]
                         };
                     }
                     return p;
@@ -247,8 +244,7 @@ export default function ClassEdit() {
                 description: feature.description,
                 slug: feature.slug,
             },
-            modifiers: [],
-            choices: [],
+            entities: [],
         };
 
         setFeatureProgressions(prev => [...prev, defaultProgression]);
@@ -351,50 +347,6 @@ export default function ClassEdit() {
         fetchClass();
     }, [id, initialFormData]);
 
-    // Load feats if we have feat modifiers
-    useEffect(() => {
-        const loadFeatsIfNeeded = async () => {
-            const hasFeatModifiers = featureProgressions.some(progression =>
-                progression.modifiers?.some(modifier =>
-                    modifier.appliesTo === ModifierAppliesToType.Feat
-                )
-            );
-
-
-
-            if (hasFeatModifiers && feats.length === 0) {
-                try {
-                    const response = await FeatApi.getFeats({});
-                    setFeats(response.results || []);
-                } catch (error) {
-                    console.error('Failed to load feats:', error);
-                } finally {
-                    setFeatsLoaded(true);
-                }
-            } else if (!hasFeatModifiers) {
-                setFeatsLoaded(true);
-            }
-        };
-
-        loadFeatsIfNeeded();
-    }, [featureProgressions, feats.length]);
-
-    // Enhance feature progressions with feat data
-    const enhancedFeatureProgressions = featureProgressions.map(progression => ({
-        ...progression,
-        modifiers: progression.modifiers?.map(modifier => {
-            if (modifier.appliesTo === ModifierAppliesToType.Feat && modifier.appliesToId) {
-                const feat = feats.find(f => f.id === modifier.appliesToId);
-                if (feat) {
-                    return { ...modifier, feat };
-                }
-                return modifier;
-            }
-            return modifier;
-        })
-    }));
-
-
 
     // Handle new feature from association dialog
     useEffect(() => {
@@ -416,8 +368,7 @@ export default function ClassEdit() {
                     description: newFeature.description,
                     slug: newFeature.slug,
                 },
-                modifiers: [],
-                choices: [],
+                entities: [],
             };
             setFeatureProgressions(prev => [...prev, newProgression]);
             // Clear the state
@@ -448,31 +399,24 @@ export default function ClassEdit() {
                     return {
                         ...progressionData,
                         // Remove temporary IDs from related entities
-                        modifiers: prog.modifiers?.map(mod => {
-                            const { id: _, progressionId: __, ...modData } = mod;
+                        entities: prog.entities?.map(entity => {
+                            const { id: _, progressionId: __, feat: _feat, feature: _feature, item: _item, ...entityData } = entity;
                             // Ensure formulaParams is properly structured for backend
-                            if (modData.formulaParams && modData.formulaParams.formulaId) {
+                            if (entityData.formulaParams && entityData.formulaParams.formulaId) {
                                 // Keep the formulaParams data but remove any temporary IDs
-                                const formulaParamsData = { ...modData.formulaParams };
+                                const formulaParamsData = { ...entityData.formulaParams };
                                 delete (formulaParamsData as { id?: unknown }).id; // Remove id if it exists
-                                modData.formulaParams = formulaParamsData;
+                                entityData.formulaParams = formulaParamsData;
                                 // Remove formulaParamsId as it will be set by the backend
-                                delete modData.formulaParamsId;
+                                delete entityData.formulaParamsId;
                             } else {
                                 // If no formula is selected, remove formulaParams entirely
-                                delete modData.formulaParams;
-                                delete modData.formulaParamsId;
+                                delete entityData.formulaParams;
+                                delete entityData.formulaParamsId;
                             }
-                            // Preserve feat data for feat modifiers
-                            if (modData.appliesTo === ModifierAppliesToType.Feat) {
-                                // Keep the feat data for display purposes
-                                // The backend will use appliesToId to link to the actual feat
-                            }
-                            return modData;
-                        }) || [],
-                        choices: prog.choices?.map(choice => {
-                            const { id: _, progressionId: __, ...choiceData } = choice;
-                            return choiceData;
+                            // The backend will use appliesToId to link to the actual feat/feature/item
+                            // No need to send the related objects
+                            return entityData;
                         }) || [],
 
                     };
@@ -562,7 +506,7 @@ export default function ClassEdit() {
     }
 
     // Group progressions by feature for display
-    const progressionsByFeature = enhancedFeatureProgressions.reduce((acc, progression) => {
+    const progressionsByFeature = featureProgressions.reduce((acc, progression) => {
         const featureId = progression.featureId;
         if (!acc[featureId]) {
             acc[featureId] = {
@@ -634,7 +578,7 @@ export default function ClassEdit() {
                                 setFormData={setFormData}
                                 validation={form.validation}
                                 isLoading={isLoading}
-                                featureProgressions={enhancedFeatureProgressions}
+                                featureProgressions={featureProgressions}
                                 setFeatureProgressions={setFeatureProgressions}
                                 spellcastingProgression={spellcastingProgression}
                                 setSpellcastingProgression={setSpellcastingProgression}

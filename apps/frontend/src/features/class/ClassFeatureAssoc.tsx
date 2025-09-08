@@ -1,16 +1,10 @@
-import { z } from 'zod';
-
 import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { ListSelectionDialog } from '@/components/generic-list';
-import { FeatureSchema } from '@shared/schema';
+import type { Feature } from '@shared/schema';
+import { FeatureSourceType } from '@shared/static-data';
 
-type ClassFeatureItem = z.infer<typeof FeatureSchema>;
 
-interface SelectedFeatureData {
-    featureId: number;
-    slug: string;
-    name: string;
-    description: string;
+interface SelectedFeatureData extends Feature {
     level: number;
     [key: string]: unknown; // Add index signature to satisfy BaseSelectedItem constraint
 }
@@ -30,20 +24,15 @@ interface ClassFeatureAssocProps {
  */
 export function ClassFeatureAssoc({ isOpen, onClose, onSave, initialSelectedFeatureIds = [], classId }: ClassFeatureAssocProps) {
 
-    const transformSelectedFeatures = (features: ClassFeatureItem[]): SelectedFeatureData[] => {
+    const transformSelectedFeatures = (features: Feature[]): SelectedFeatureData[] => {
         return features.map(feature => ({
-            featureId: feature.id,
-            slug: feature.slug,
-            name: feature.name,
-            description: feature.description,
+            ...feature,
             level: 1, // Default level, will be editable in the class edit form
         }));
     };
 
-
-
     return (
-        <ListSelectionDialog<ClassFeatureItem, SelectedFeatureData>
+        <ListSelectionDialog<Feature, SelectedFeatureData>
             isOpen={isOpen}
             onClose={onClose}
             onSave={onSave}
@@ -51,7 +40,7 @@ export function ClassFeatureAssoc({ isOpen, onClose, onSave, initialSelectedFeat
             parentId={classId}
             parentType="class"
             serviceFunction={async () => {
-                const response = await FeatureSystemApi.getFeatures({ sourceType: 1 }); // 1 = FeatureSourceType.Class
+                const response = await FeatureSystemApi.getFeatures({ sourceType: FeatureSourceType.Class });
                 return response;
             }}
             storageKey="classFeatureSelectionList"

@@ -7,7 +7,8 @@ import {
     CreateResponse,
     UpdateResponse,
     FeatQueryResponse,
-    FeatQueryRequest
+    FeatQueryRequest,
+    GetFeatListResponse
 } from '@shared/schema';
 import { FeatBenefitType } from '@shared/static-data';
 
@@ -59,6 +60,31 @@ export const featService: FeatService = {
             total: feats.length,
             results: feats,
         };
+    },
+
+    async getFeatList(query: FeatQueryRequest): Promise<GetFeatListResponse> {
+        let whereClause: Prisma.FeatWhereInput = {};
+        if (query.queryType === 'proficiency') {
+            whereClause = {
+                benefits: {
+                    some: {
+                        typeId: FeatBenefitType.PROFICIENCY
+                    }
+                }
+            }
+        }
+        // For 'all' query type, no where clause is needed - get all feats
+
+        const feats = await prisma.feat.findMany({
+            where: whereClause,
+            select: {
+                id: true,
+                name: true,
+            },
+            orderBy: { name: 'asc' },
+        });
+
+        return feats;
     },
 
     async getFeatById(query: FeatIdParamRequest): Promise<Feat | null> {

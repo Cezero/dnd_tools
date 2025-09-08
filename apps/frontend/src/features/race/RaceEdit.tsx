@@ -12,8 +12,8 @@ import {
     ValidatedForm,
     useValidatedForm
 } from '@/components/forms';
-import { UpdateRaceSchema, BaseRaceSchema, FeatureProgression, FeatureModifier, FeatureChoice, CreateRaceRequest, UpdateRaceRequest } from '@shared/schema';
-import { ModifierAppliesToType, SpecialFeatureId, ModifierType, FeatureSourceType } from '@shared/static-data';
+import { UpdateRaceSchema, BaseRaceSchema, FeatureProgression, CreateRaceRequest, UpdateRaceRequest } from '@shared/schema';
+import { EntityAppliesToType, SpecialFeatureId, EntityType, FeatureSourceType } from '@shared/static-data';
 
 import { RaceApi } from './RaceApi';
 import { RaceFeatureAssoc } from './RaceFeatureAssoc';
@@ -117,21 +117,11 @@ export function RaceEdit() {
         fetchRace();
     }, [id, initialFormData]);
 
-    /**
-     * Handles adding or updating race features.
-     * NOTE: This function is not used - the SharedFeaturesTab component handles change detection.
-     */
-    const handleAddOrUpdateFeature = useCallback((_selectedFeatureObjects: Array<{ featureId: number; slug: string; name: string; description: string; level: number }>) => {
-        console.warn('RaceEdit handleAddOrUpdateFeature called but not used - change detection handled by SharedFeaturesTab');
-        setIsFeatureAssocOpen(false);
-    }, [id]);
-
     useEffect(() => {
         if (location.state?.newFeature) {
-            handleAddOrUpdateFeature([location.state.newFeature]);
             setIsFeatureAssocOpen(true);
         }
-    }, [location.state, handleAddOrUpdateFeature]);
+    }, [location.state]);
 
     /**
      * Handles the deletion of a race feature from the current race.
@@ -144,7 +134,7 @@ export function RaceEdit() {
     }, []);
 
     /**
-     * Handles adding a language to the race via the feature system using FeatureModifier approach.
+     * Handles adding a language to the race via the feature system using FeatureEntity approach.
      */
     const handleAddLanguage = useCallback((languageId: number, isAutomatic: boolean) => {
         setFeatureProgressions(prev => {
@@ -153,15 +143,15 @@ export function RaceEdit() {
                 SpecialFeatureId.BonusLanguage;
 
             // Check if this language is already added
-            const existingLanguageModifier = prev.some(fp =>
+            const existingLanguageEntity = prev.some(fp =>
                 fp.featureId === featureId &&
-                fp.modifiers?.some(mod =>
-                    mod.appliesTo === (isAutomatic ? ModifierAppliesToType.AutomaticLanguage : ModifierAppliesToType.BonusLanguage) &&
-                    mod.appliesToId === languageId
+                fp.entities?.some(entity =>
+                    entity.appliesTo === (isAutomatic ? EntityAppliesToType.AutomaticLanguage : EntityAppliesToType.BonusLanguage) &&
+                    entity.appliesToId === languageId
                 )
             );
 
-            if (existingLanguageModifier) {
+            if (existingLanguageEntity) {
                 // Language already exists, don't add it again
                 return prev;
             }
@@ -186,24 +176,24 @@ export function RaceEdit() {
                         description: isAutomatic ? 'Automatic language feature' : 'Bonus language feature',
                         slug: isAutomatic ? 'automatic-language' : 'bonus-language',
                     },
-                    modifiers: [],
-                    choices: []
+                    entities: []
                 };
             }
 
             // Add language modifier
-            const languageModifier = {
+            const languageEntity = {
                 id: Date.now() + Math.random(),
                 progressionId: languageProgression.id,
-                type: ModifierType.Other,
+                type: EntityType.Other,
                 value: 0,
-                bonusType: null,
-                appliesTo: isAutomatic ? ModifierAppliesToType.AutomaticLanguage : ModifierAppliesToType.BonusLanguage,
+                appliesTo: isAutomatic ? EntityAppliesToType.AutomaticLanguage : EntityAppliesToType.BonusLanguage,
                 appliesToId: languageId,
-                appliesIfChoiceKey: null,
-                appliesIfChoiceValue: null,
+                appliesToSubId: null,
+                bonusType: null,
+                filterType: null,
                 conditions: [],
                 groupingId: 1, // Group all race languages together as one feature
+                displayInDetail: true,
             };
 
             // Update the existing progression or add a new one
@@ -211,7 +201,7 @@ export function RaceEdit() {
                 if (fp.featureId === featureId) {
                     return {
                         ...fp,
-                        modifiers: [...(fp.modifiers || []), languageModifier]
+                        entities: [...(fp.entities || []), languageEntity]
                     };
                 }
                 return fp;
@@ -219,7 +209,7 @@ export function RaceEdit() {
 
             // If no existing progression was found, add the new one with the language modifier
             if (!prev.some(fp => fp.featureId === featureId)) {
-                languageProgression.modifiers = [languageModifier];
+                languageProgression.entities = [languageEntity];
                 updatedProgressions.push(languageProgression);
             }
 
@@ -244,8 +234,7 @@ export function RaceEdit() {
                 description: feature.description,
                 slug: feature.slug,
             },
-            modifiers: [],
-            choices: []
+            entities: []
         };
 
         setFeatureProgressions(prev => [...prev, newProgression]);
@@ -283,7 +272,7 @@ export function RaceEdit() {
     }, []);
 
     /**
-     * Handles the removal of a language from the race using FeatureModifier approach.
+     * Handles the removal of a language from the race using FeatureEntity approach.
      */
     const handleRemoveLanguage = useCallback((languageId: number) => {
         setFeatureProgressions(prev => {
@@ -292,8 +281,8 @@ export function RaceEdit() {
                 if (fp.featureId === SpecialFeatureId.AutomaticLanguage || fp.featureId === SpecialFeatureId.BonusLanguage) {
                     return {
                         ...fp,
-                        modifiers: fp.modifiers?.filter(mod =>
-                            !((mod.appliesTo === ModifierAppliesToType.AutomaticLanguage || mod.appliesTo === ModifierAppliesToType.BonusLanguage) && mod.appliesToId === languageId)
+                        entities: fp.entities?.filter(entity =>
+                            !((entity.appliesTo === EntityAppliesToType.AutomaticLanguage || entity.appliesTo === EntityAppliesToType.BonusLanguage) && entity.appliesToId === languageId)
                         ) || []
                     };
                 }
@@ -303,7 +292,7 @@ export function RaceEdit() {
             // Remove empty language progressions
             const filteredProgressions = updatedProgressions.filter(fp => {
                 if (fp.featureId === SpecialFeatureId.AutomaticLanguage || fp.featureId === SpecialFeatureId.BonusLanguage) {
-                    return fp.modifiers && fp.modifiers.length > 0;
+                    return fp.entities && fp.entities.length > 0;
                 }
                 return true;
             });
@@ -324,43 +313,44 @@ export function RaceEdit() {
 
             if (existingAbilityFeature) {
                 // Check if this specific ability already has a modifier
-                const existingModifier = existingAbilityFeature.modifiers?.find(m =>
-                    m.appliesTo === ModifierAppliesToType.Ability && m.appliesToId === abilityId
+                const existingEntity = existingAbilityFeature.entities?.find(e =>
+                    e.appliesTo === EntityAppliesToType.Ability && e.appliesToId === abilityId
                 );
 
-                if (existingModifier) {
-                    // Update existing modifier
+                if (existingEntity) {
+                    // Update existing entity
                     const updatedFeatures = prev.map(fp =>
                         fp.featureId === SpecialFeatureId.AbilityAdjustment
                             ? {
                                 ...fp,
-                                modifiers: fp.modifiers?.map(m =>
-                                    m.appliesTo === ModifierAppliesToType.Ability && m.appliesToId === abilityId
-                                        ? { ...m, value: parsedValue }
-                                        : m
+                                entities: fp.entities?.map(e =>
+                                    e.appliesTo === EntityAppliesToType.Ability && e.appliesToId === abilityId
+                                        ? { ...e, value: parsedValue }
+                                        : e
                                 ) || []
                             }
                             : fp
                     );
                     return updatedFeatures;
                 } else if (parsedValue !== 0) {
-                    // Add new modifier to existing ability adjustment feature
+                    // Add new entity to existing ability adjustment feature
                     const updatedFeatures = prev.map(fp =>
                         fp.featureId === SpecialFeatureId.AbilityAdjustment
                             ? {
                                 ...fp,
-                                modifiers: [...(fp.modifiers || []), {
+                                entities: [...(fp.entities || []), {
                                     id: Date.now() + Math.random(),
                                     progressionId: fp.id,
-                                    type: ModifierType.Bonus,
+                                    type: EntityType.Bonus,
                                     value: parsedValue,
-                                    bonusType: null,
-                                    appliesTo: ModifierAppliesToType.Ability,
+                                    appliesTo: EntityAppliesToType.Ability,
                                     appliesToId: abilityId,
-                                    appliesIfChoiceKey: null,
-                                    appliesIfChoiceValue: null,
+                                    appliesToSubId: null,
+                                    bonusType: null,
+                                    filterType: null,
                                     conditions: [],
                                     groupingId: 1, // Group all race ability adjustments together as one feature
+                                    displayInDetail: true,
                                 }]
                             }
                             : fp
@@ -372,8 +362,8 @@ export function RaceEdit() {
                         fp.featureId === SpecialFeatureId.AbilityAdjustment
                             ? {
                                 ...fp,
-                                modifiers: fp.modifiers?.filter(m =>
-                                    !(m.appliesTo === ModifierAppliesToType.Ability && m.appliesToId === abilityId)
+                                entities: fp.entities?.filter(e =>
+                                    !(e.appliesTo === EntityAppliesToType.Ability && e.appliesToId === abilityId)
                                 ) || []
                             }
                             : fp
@@ -396,20 +386,20 @@ export function RaceEdit() {
                         name: 'Ability Adjustment',
                         description: 'Racial ability score adjustments',
                     },
-                    modifiers: [{
+                    entities: [{
                         id: Date.now() + Math.random(),
                         progressionId: 0,
-                        type: ModifierType.Bonus,
+                        type: EntityType.Bonus,
                         value: parsedValue,
-                        bonusType: null,
-                        appliesTo: ModifierAppliesToType.Ability,
+                        appliesTo: EntityAppliesToType.Ability,
                         appliesToId: abilityId,
-                        appliesIfChoiceKey: null,
-                        appliesIfChoiceValue: null,
+                        appliesToSubId: null,
+                        bonusType: null,
+                        filterType: null,
                         conditions: [],
                         groupingId: 1, // Group all race ability adjustments together as one feature
+                        displayInDetail: true,
                     }],
-                    choices: []
                 };
                 return [...prev, newAbilityFeature];
             }
@@ -437,13 +427,9 @@ export function RaceEdit() {
                     const { id: _, ...progressionData } = prog;
                     return {
                         ...progressionData,
-                        modifiers: prog.modifiers?.map(mod => {
-                            const { id: _, progressionId: __, ...modData } = mod;
-                            return modData;
-                        }) || [],
-                        choices: prog.choices?.map(choice => {
-                            const { id: _, progressionId: __, ...choiceData } = choice;
-                            return choiceData;
+                        entities: prog.entities?.map(entity => {
+                            const { id: _, progressionId: __, feat: _feat, feature: _feature, item: _item, ...entityData } = entity;
+                            return entityData;
                         }) || [],
                     };
                 })
@@ -590,7 +576,7 @@ export function RaceEdit() {
                 onClose={() => {
                     setIsFeatureAssocOpen(false);
                 }}
-                onSave={handleAddOrUpdateFeature}
+                onSave={() => { }}
                 initialSelectedFeatureIds={featureProgressions.map(f => f.featureId.toString())}
                 raceId={parseInt(id)}
             />

@@ -1,6 +1,6 @@
 import { PrismaClient } from '@shared/prisma-client';
 import type { CharacterWithAllDetailsResponse } from '@shared/schema';
-import { ModifierAppliesToType } from '@shared/static-data';
+import { EntityAppliesToType, ABILITY_MAP } from '@shared/static-data';
 
 const prisma = new PrismaClient();
 
@@ -70,7 +70,7 @@ export const characterCalculationService = {
                     skillId: skill.id,
                     skillName: skill.name,
                     abilityId: skill.abilityId,
-                    abilityName: await this.getAbilityNameById(skill.abilityId),
+                    abilityName: ABILITY_MAP[skill.abilityId]?.name || 'Unknown',
                     classLevels: totalClassLevels,
                     abilityModifier,
                     total,
@@ -89,9 +89,9 @@ export const characterCalculationService = {
         const progression = await prisma.featureProgression.findFirst({
             where: {
                 classId: classId,
-                modifiers: {
+                entities: {
                     some: {
-                        appliesTo: ModifierAppliesToType.Skill,
+                        appliesTo: EntityAppliesToType.Skill,
                         appliesToId: skillId,
                     }
                 }
@@ -118,23 +118,6 @@ export const characterCalculationService = {
             select: { name: true }
         });
         return classData?.name || null;
-    },
-
-    /**
-     * Get ability name by ID
-     */
-    async getAbilityNameById(abilityId: number): Promise<string> {
-        // This would typically come from a static data map
-        // For now, we'll use a simple mapping
-        const abilityMap: Record<number, string> = {
-            1: 'Strength',
-            2: 'Dexterity',
-            3: 'Constitution',
-            4: 'Intelligence',
-            5: 'Wisdom',
-            6: 'Charisma',
-        };
-        return abilityMap[abilityId] || 'Unknown';
     },
 
     /**

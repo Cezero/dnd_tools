@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { ABILITY_LIST, SpecialFeatureId, ModifierAppliesToType } from '@shared/static-data';
+import { ABILITY_LIST, SpecialFeatureId, EntityAppliesToType } from '@shared/static-data';
 
 import type { RaceTabProps } from './types';
 
@@ -16,18 +16,18 @@ export function AbilitiesTab({
     const getAbilityAdjustments = () => {
         const abilityFeatures = featureProgressions.filter(fp =>
             fp.featureId === SpecialFeatureId.AbilityAdjustment &&
-            fp.modifiers?.some(m => m.appliesTo === ModifierAppliesToType.Ability)
+            fp.entities?.some(e => e.appliesTo === EntityAppliesToType.Ability)
         );
 
         return ABILITY_LIST.map(ability => {
             const abilityFeature = abilityFeatures.find(fp =>
                 fp.featureId === SpecialFeatureId.AbilityAdjustment &&
-                fp.modifiers?.some(m => m.appliesTo === ModifierAppliesToType.Ability && m.appliesToId === ability.id)
+                fp.entities?.some(e => e.appliesTo === EntityAppliesToType.Ability && e.appliesToId === ability.id)
             );
-            const abilityModifier = abilityFeature?.modifiers?.find(m => m.appliesTo === ModifierAppliesToType.Ability && m.appliesToId === ability.id);
+            const abilityEntity = abilityFeature?.entities?.find(e => e.appliesTo === EntityAppliesToType.Ability && e.appliesToId === ability.id);
             return {
                 abilityId: ability.id,
-                value: abilityModifier?.value || 0
+                value: abilityEntity?.value || 0
             };
         });
     };

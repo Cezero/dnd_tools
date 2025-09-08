@@ -1,20 +1,15 @@
 import { Dialog } from '@base-ui-components/react/dialog';
 import { ScrollArea } from '@base-ui-components/react/scroll-area';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 
 import { ValidatedInput, ValidatedForm } from '@/components/forms';
-import { FeatApi } from '@/features/feat/FeatApi';
-import type { FeatureProgression, Feature, FeaturePrerequisite, FeatureModifier, FeatureChoice } from '@shared/schema';
-import { FeaturePrerequisiteType, ModifierAppliesToType, FeatureType, FEATURE_TYPES } from '@shared/static-data';
-import type { CoreComponent } from '@shared/static-data';
+import type { FeatureProgression, Feature, FeaturePrerequisite, FeatureEntity } from '@shared/schema';
+import { FeaturePrerequisiteType, EntityType } from '@shared/static-data';
 
 // Import our refactored components and hooks
-import { ChoiceDetailForm } from './ChoiceDetailForm';
+import { EntityDetailForm } from './EntityDetailForm';
 import { EntitySectionRenderer } from './EntitySectionRenderer';
-import { transformFormDataForSubmission, transformProgressionForDisplay } from './formDataTransformers';
-import { ModifierDetailForm } from './ModifierDetailForm';
-import { SectionSelector } from './SectionSelector';
-import type { EntityTypeConfig, GroupingState } from './types';
+import type { EntityTypeConfig } from './types';
 import { useEntityManagement } from './useEntityManagement';
 import { useFeatureProgressionForm } from './useFeatureProgressionForm';
 import { useGroupingState } from './useGroupingState';
@@ -39,8 +34,7 @@ export function FeatureProgressionDetailEdit({
         formData,
         setFormData,
         form,
-        hasModifiers,
-        hasChoices,
+        hasEntities,
         getSelectedFormulaDescription,
         schema
     } = useFeatureProgressionForm(progression, preSelectedFeature);
@@ -52,56 +46,20 @@ export function FeatureProgressionDetailEdit({
     } = useGroupingState(progression);
 
     const {
-        addModifier,
-        removeModifier,
-        addChoice,
-        removeChoice,
-        toggleModifiers,
-        toggleChoices
+        addEntity,
+        removeEntity
     } = useEntityManagement(formData, setFormData, groupingState, setGroupingState);
 
-    // State for loading feats for direct feat grants
-    const [feats, setFeats] = useState<CoreComponent[]>([]);
-    const [featsLoading, setFeatsLoading] = useState(false);
+    // Feats are now passed as props from parent component
 
     // Hover state for group/ungroup buttons
     const [hoveredIndex, setHoveredIndex] = useState<string | null>(null);
-    const [hoveredEntityType, setHoveredEntityType] = useState<FeatureType | null>(null);
 
-    // Load feats for direct feat grants
-    const loadFeats = useCallback(async () => {
-        if (feats.length > 0) return; // Already loaded
-        setFeatsLoading(true);
-        try {
-            const response = await FeatApi.getFeats({});
-            setFeats(response.results || []);
-        } catch (error) {
-            console.error('Failed to load feats:', error);
-        } finally {
-            setFeatsLoading(false);
-        }
-    }, [feats.length]);
-
-    // Load feats when component mounts or when a feat modifier is added
-    useEffect(() => {
-        const modifiers = formData.modifiers as FeatureModifier[] || [];
-        const hasFeatModifier = modifiers.some(mod => mod.appliesTo === ModifierAppliesToType.Feat);
-        if (hasFeatModifier && feats.length === 0) {
-            loadFeats();
-        }
-    }, [formData, feats.length, loadFeats]);
-
-    // Load feats when dialog opens to ensure they're available
-    useEffect(() => {
-        if (isOpen) {
-            loadFeats();
-        }
-    }, [isOpen, loadFeats]);
+    // Feats are now passed as props from parent component, no need to load them
 
     // Grouping handlers
-    const handleGroup = useCallback((entityType: FeatureType, index: number) => {
-        const key = FEATURE_TYPES[entityType].name;
-        const entities = formData[key] || [];
+    const handleGroup = useCallback((index: number) => {
+        const entities = formData.entities || [];
         const currentEntity = entities[index];
         const nextEntity = entities[index + 1];
 
@@ -114,7 +72,8 @@ export function FeatureProgressionDetailEdit({
         let targetGroupingId: number;
         if (currentGroupingId === 0 && nextGroupingId === 0) {
             // Both ungrouped - create new group
-            targetGroupingId = Math.max(...Array.from(groupingState[entityType].values()), 0) + 1;
+            const allGroupingIds = Object.values(groupingState).flatMap((map: Map<number, number>) => Array.from(map.values()));
+            targetGroupingId = Math.max(...allGroupingIds, 0) + 1;
         } else if (currentGroupingId > 0 && nextGroupingId === 0) {
             // Current grouped, next ungrouped - add to current group
             targetGroupingId = currentGroupingId;
@@ -128,21 +87,19 @@ export function FeatureProgressionDetailEdit({
 
         // Update entities and grouping state
         setFormData(prev => {
-            const updatedEntities = [...(prev[key] || [])];
+            const updatedEntities = [...(prev.entities || [])];
             updatedEntities[index] = { ...updatedEntities[index], groupingId: targetGroupingId };
             updatedEntities[index + 1] = { ...updatedEntities[index + 1], groupingId: targetGroupingId };
-            return { ...prev, [key]: updatedEntities };
+            return { ...prev, entities: updatedEntities };
         });
 
-        updateEntityGrouping(entityType, index, targetGroupingId);
-        updateEntityGrouping(entityType, index + 1, targetGroupingId);
+        updateEntityGrouping(index, targetGroupingId);
+        updateEntityGrouping(index + 1, targetGroupingId);
     }, [formData, groupingState, setFormData, updateEntityGrouping]);
 
-    const handleUngroup = useCallback((entityType: FeatureType, index: number) => {
-        const key = FEATURE_TYPES[entityType].name;
-
+    const handleUngroup = useCallback((index: number) => {
         setFormData(prev => {
-            const entities = [...(prev[key] || [])];
+            const entities = [...(prev.entities || [])];
             const currentEntity = entities[index];
             const currentGroupingId = currentEntity.groupingId || 0;
 
@@ -159,16 +116,16 @@ export function FeatureProgressionDetailEdit({
                 entities.forEach((entity, i) => {
                     if ((entity.groupingId || 0) === currentGroupingId) {
                         entities[i] = { ...entity, groupingId: 0 };
-                        updateEntityGrouping(entityType, i, 0);
+                        updateEntityGrouping(i, 0);
                     }
                 });
             } else {
                 // If there are more than 2 entities, just ungroup the clicked one
                 entities[index] = { ...entities[index], groupingId: 0 };
-                updateEntityGrouping(entityType, index, 0);
+                updateEntityGrouping(index, 0);
             }
 
-            return { ...prev, [key]: entities };
+            return { ...prev, entities };
         });
     }, [setFormData, updateEntityGrouping]);
 
@@ -176,42 +133,37 @@ export function FeatureProgressionDetailEdit({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Create the submission data with proper type conversion
-        const submissionData = transformFormDataForSubmission(formData);
-
-        // Create the updated progression for display purposes
-        const updatedProgression = transformProgressionForDisplay(formData, progression, preSelectedFeature);
+        // Check for malformed data - every FeatureProgression should have a featureId
+        if (!formData.featureId) {
+            console.error('Malformed FeatureProgression: missing featureId', {
+                formData,
+                progression,
+                preSelectedFeature
+            });
+            // TODO: Show error UI to user instead of just logging
+            return;
+        }
 
         // Validate against the schema directly
         try {
-            schema.parse(submissionData);
-            onSave(updatedProgression as FeatureProgression);
+            schema.parse(formData);
+            onSave(formData as FeatureProgression);
             onClose();
         } catch (error) {
             console.error('Schema validation failed:', error);
-            console.error('Data being validated:', JSON.stringify(submissionData, null, 2));
+            console.error('Data being validated:', JSON.stringify(formData, null, 2));
         }
     };
 
-    // Entity type configuration for reusable rendering
-    const entityTypes: EntityTypeConfig[] = [
-        {
-            key: FeatureType.Modifier,
-            label: 'Modifiers',
-            formComponent: ModifierDetailForm,
-            addFunction: addModifier,
-            removeFunction: removeModifier,
-            hasFeature: hasModifiers
-        },
-        {
-            key: FeatureType.Choice,
-            label: 'Choices',
-            formComponent: ChoiceDetailForm,
-            addFunction: addChoice,
-            removeFunction: removeChoice,
-            hasFeature: hasChoices
-        }
-    ];
+    // Entity type configuration for unified rendering
+    const entityConfig: EntityTypeConfig = {
+        key: EntityType.Bonus, // Default type, can be changed per entity
+        label: 'Entities',
+        formComponent: EntityDetailForm,
+        addFunction: addEntity,
+        removeFunction: removeEntity,
+        hasFeature: hasEntities
+    };
 
     // Helper function to format prerequisites for display
     const formatPrerequisites = (prerequisites: FeaturePrerequisite[]) => {
@@ -275,7 +227,7 @@ export function FeatureProgressionDetailEdit({
                                 return (
                                     <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-700/20 rounded-md">
                                         <p className="text-xs text-gray-600 dark:text-gray-400">
-                                            <strong>Multi-Section Feature Progression:</strong> Select which components this progression provides. A single progression can include modifiers, special effects, and choices simultaneously.
+                                            <strong>Multi-Section Feature Progression:</strong> Select which components this progression provides. A single progression can include entities, special effects, and other components simultaneously.
                                         </p>
                                     </div>
                                 );
@@ -314,55 +266,38 @@ export function FeatureProgressionDetailEdit({
                                                 />
                                             </div>
 
-                                            {/* Multi-Section Approach */}
+                                            {/* Unified Entity Approach */}
                                             <div className="space-y-6">
-                                                {/* Section Selection */}
-                                                <SectionSelector
-                                                    hasModifiers={hasModifiers}
-                                                    hasChoices={hasChoices}
-                                                    modifierCount={(formData.modifiers as FeatureModifier[] || []).length}
-                                                    choiceCount={(formData.choices as FeatureChoice[] || []).length}
-                                                    onModifierToggle={toggleModifiers}
-                                                    onChoiceToggle={toggleChoices}
-                                                />
-
-                                                {/* Entity Sections - Rendered using reusable loop */}
-                                                {entityTypes.map(config => config.hasFeature && (
-                                                    <div key={config.key} className="space-y-4">
-                                                        <div className="flex justify-between items-center">
-                                                            <h3 className="text-lg font-medium">{config.label}</h3>
-                                                            <button
-                                                                type="button"
-                                                                onClick={config.addFunction}
-                                                                className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-                                                            >
-                                                                Add {config.label.slice(0, -1)}
-                                                            </button>
-                                                        </div>
-
-                                                        {(formData[FEATURE_TYPES[config.key].name] || []).length === 0 ? (
-                                                            <p className="text-gray-500 text-sm">No {config.label.toLowerCase()} added</p>
-                                                        ) : (
-                                                            <div>
-                                                                <EntitySectionRenderer
-                                                                    config={config}
-                                                                    formData={formData}
-                                                                    groupingState={groupingState}
-                                                                    hoveredIndex={hoveredIndex}
-                                                                    hoveredEntityType={hoveredEntityType}
-                                                                    onGroup={handleGroup}
-                                                                    onUngroup={handleUngroup}
-                                                                    setHoveredIndex={setHoveredIndex}
-                                                                    setHoveredEntityType={setHoveredEntityType}
-                                                                    feats={feats}
-                                                                    featsLoading={featsLoading}
-                                                                    preSelectedFeature={preSelectedFeature}
-                                                                    progression={progression}
-                                                                />
-                                                            </div>
-                                                        )}
+                                                {/* Entity Section */}
+                                                <div className="space-y-4">
+                                                    <div className="flex justify-between items-center">
+                                                        <h3 className="text-lg font-medium">Entities</h3>
+                                                        <button
+                                                            type="button"
+                                                            onClick={entityConfig.addFunction}
+                                                            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+                                                        >
+                                                            Add Entity
+                                                        </button>
                                                     </div>
-                                                ))}
+
+                                                    {(formData.entities as FeatureEntity[] || []).length === 0 ? (
+                                                        <p className="text-gray-500 text-sm">No entities added</p>
+                                                    ) : (
+                                                        <div>
+                                                            <EntitySectionRenderer
+                                                                config={entityConfig}
+                                                                formData={formData}
+                                                                hoveredIndex={hoveredIndex}
+                                                                onGroup={handleGroup}
+                                                                onUngroup={handleUngroup}
+                                                                setHoveredIndex={setHoveredIndex}
+                                                                preSelectedFeature={preSelectedFeature}
+                                                                progression={progression}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </ValidatedForm>
                                     </ScrollArea.Content>

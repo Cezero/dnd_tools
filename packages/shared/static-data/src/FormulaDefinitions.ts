@@ -34,9 +34,9 @@ export const FORMULA_MAP: BaseMap<Formula> = {
             { name: 'scalingValue', description: 'Value to scale by (from FeatureModifier.value)', required: true }
         ],
         calculate: (params) => {
-            // If character level is before the starting level, return 0
+            // If character level is before the starting level, return null
             if (params.level < params.startLevel) {
-                return 0;
+                return null;
             }
             // Calculate levels since the progression started
             const levelsSinceStart = params.level - params.startLevel + 1;
@@ -60,9 +60,14 @@ export const FORMULA_MAP: BaseMap<Formula> = {
             { name: 'formulaStartLevel', description: 'Level when formula progression begins (from ProgressionFormulaParams.formulaStartLevel)', required: false }
         ],
         calculate: (params) => {
-            // If character level is before the starting level, return 0
+            // If character level is before the starting level, return null
             if (params.level < params.startLevel) {
-                return 0;
+                return null;
+            }
+
+            // Handle includeProgressionLevel logic within the formula
+            if (params.includeProgressionLevel === false && params.level < params.formulaStartLevel) {
+                return null; // Don't include anything before the formula start level
             }
 
             // If character level is before the formula start level, return the base scaling value
@@ -108,31 +113,33 @@ export const FORMULA_MAP: BaseMap<Formula> = {
             // Remove cumulative parameter - handled in progression generator
         ],
         calculate: (params) => {
+            // If character level is before the starting level, return null
+            if (params.level < params.startLevel) {
+                return null;
+            }
+
             // ONLY calculate single value based on highest applicable threshold
             // Remove cumulative logic - that belongs in progression generator
             if (!params.thresholds || !params.values) {
-                return params.scalingValue; // Return base value if parameters are missing
+                return null; // Return null if parameters are missing
             }
 
             const thresholds = params.thresholds;
             const values = params.values;
 
             if (thresholds.length === 0) {
-                return params.scalingValue; // Return base value if no thresholds defined
+                return null; // Return null if no thresholds defined
             }
 
-            // Use thresholds as absolute levels (not relative to startLevel)
-            const absoluteThresholds = thresholds;
-
             // Find highest threshold that level meets or exceeds
-            for (let i = absoluteThresholds.length - 1; i >= 0; i--) {
-                if (params.level >= absoluteThresholds[i]) {
+            for (let i = thresholds.length - 1; i >= 0; i--) {
+                if (params.level >= thresholds[i]) {
                     return values[i]; // Return the value that applies at/after this threshold
                 }
             }
 
             // If we get here, level is before all thresholds
-            return params.scalingValue;
+            return null;
         },
         getDisplayString: (params) => {
             return `Conditional scaling based on level thresholds`;
@@ -151,9 +158,9 @@ export const FORMULA_MAP: BaseMap<Formula> = {
             { name: 'interval', description: 'Level interval for additional dice (from ProgressionFormulaParams.interval)', required: true }
         ],
         calculate: (params) => {
-            // If character level is before the starting level, return 0
+            // If character level is before the starting level, return null
             if (params.level < params.startLevel) {
-                return 0;
+                return null;
             }
 
             // Calculate how many intervals have passed since the starting level
@@ -177,7 +184,7 @@ export const FORMULA_MAP: BaseMap<Formula> = {
         ],
         calculate: (params) => {
             // Always expect context to be available when calculate() is called
-            const abilityScore = params.context.character.abilityScores[params.abilityId];
+            const abilityScore = params.context.character.abilityScores[params.abilityId] as number;
             const modifier = GetAbilityModifier(abilityScore);
             return params.baseValue + modifier;
         },
@@ -240,9 +247,9 @@ export const FORMULA_MAP: BaseMap<Formula> = {
             { name: 'scalingValue', description: 'Base value to multiply by level (from FeatureModifier.value)', required: true }
         ],
         calculate: (params) => {
-            // If character level is before the starting level, return 0
+            // If character level is before the starting level, return null
             if (params.level < params.startLevel) {
-                return 0;
+                return null;
             }
             return params.level * params.scalingValue;
         },
@@ -262,9 +269,9 @@ export const FORMULA_MAP: BaseMap<Formula> = {
             { name: 'scalingValue', description: 'Fixed value to add to level (from FeatureModifier.value)', required: true }
         ],
         calculate: (params) => {
-            // If character level is before the starting level, return 0
+            // If character level is before the starting level, return null
             if (params.level < params.startLevel) {
-                return 0;
+                return null;
             }
             return params.scalingValue + params.level;
         },
@@ -284,9 +291,9 @@ export const FORMULA_MAP: BaseMap<Formula> = {
             { name: 'abilityId', description: 'Ability ID to use for modifier', required: true }
         ],
         calculate: (params) => {
-            // If character level is before the starting level, return 0
+            // If character level is before the starting level, return null
             if (params.level < params.startLevel) {
-                return 0;
+                return null;
             }
             // Always expect context to be available when calculate() is called
             const abilityScore = params.context.character.abilityScores[params.abilityId];
@@ -317,7 +324,7 @@ export const FORMULA_SELECT_LIST = NameSelectOptionList(FORMULA_LIST);
 /**
  * Calculate a formula with given parameters
  */
-export function calculateFormula(formulaId: number, parameters: Record<string, number>): number | string {
+export function calculateFormula(formulaId: number, parameters: Record<string, number>): number | null {
     const formula = FORMULA_MAP[formulaId];
     if (!formula) {
         throw new Error(`Unknown formula ID: ${formulaId}`);
@@ -352,7 +359,7 @@ export function getDefaultParameters(formulaId: number): Record<string, number> 
 /**
  * Preview a formula for levels 1-20
  */
-export function previewFormula(formulaId: number, parameters: Record<string, number>): Array<{ level: number; value: number | string }> {
+export function previewFormula(formulaId: number, parameters: Record<string, number>): Array<{ level: number; value: number | null }> {
     const results = [];
     const baseParams = { ...parameters };
 

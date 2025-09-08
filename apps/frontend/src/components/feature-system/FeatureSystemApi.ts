@@ -7,6 +7,7 @@ import {
     CreateFeatureProgressionSchema,
     GetFeatureResponseSchema,
     GetAllFeaturesResponseSchema,
+    GetFeatureListResponseSchema,
     CreateResponseSchema,
     UpdateResponseSchema,
     UpdateFeatureProgressionsRequestSchema,
@@ -19,7 +20,7 @@ import {
  * This service provides CRUD operations for the unified FeatureSystem.
  * All operations require admin privileges.
  * 
- * Note: Individual modifier/choice/effect CRUD operations are not included
+ * Note: Individual entity/effect CRUD operations are not included
  * as they are only ever modified as part of bulk class/race operations.
  */
 export const FeatureSystemApi = {
@@ -82,5 +83,13 @@ export const FeatureSystemApi = {
         method: 'GET',
         paramsSchema: FeatureIdParamSchema,
         responseSchema: GetFeatureProgressionsResponseSchema,
+    }),
+
+    // Lightweight feature list for dropdown selections
+    getFeatureList: typedApi<typeof FeatureQuerySchema, typeof GetFeatureListResponseSchema>({
+        path: '/features/list',
+        method: 'GET',
+        requestSchema: FeatureQuerySchema,
+        responseSchema: GetFeatureListResponseSchema,
     }),
 }; 

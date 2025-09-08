@@ -9,6 +9,7 @@ import {
     GetAllFeatsResponseSchema,
     FeatQuerySchema,
     FeatQueryResponseSchema,
+    GetFeatListResponseSchema,
     FeatSchema,
 } from '@shared/schema';
 
@@ -75,5 +76,12 @@ export const FeatApi = {
         responseSchema: FeatQueryResponseSchema,
     }),
 
+    // Lightweight feat list for dropdown selections
+    getFeatList: typedApi<typeof FeatQuerySchema, typeof GetFeatListResponseSchema>({
+        path: '/feats/list',
+        method: 'GET',
+        requestSchema: FeatQuerySchema,
+        responseSchema: GetFeatListResponseSchema,
+    }),
 
 };

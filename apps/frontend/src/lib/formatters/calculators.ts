@@ -1,7 +1,7 @@
 import type {
     FormulaParamsData,
-    FeatureModifier,
-    FeatureModifierCondition
+    FeatureEntity,
+    FeatureEntityCondition
 } from '@shared/schema';
 import {
     FORMULA_MAP,
@@ -16,35 +16,28 @@ import type {
     ConditionalValue,
     CharacterContext,
     FormulaCalculator,
-    ConditionalValueDetector,
-    SelectedValue,
-    ChoiceBasedCalculation,
-    IChoiceCalculator
+    ConditionalValueDetector
 } from './types';
 
 /**
  * Pure calculator for formula-based value calculations
+ * Works with all entity types (modifiers, choices, etc.) uniformly
  */
 export class FormulaCalculatorImpl implements FormulaCalculator {
-    calculate(formula: FormulaParamsData, level: number, context?: CalculationContext, modifierValue?: number): CalculationResult {
+    calculate(formula: FormulaParamsData, level: number, context?: CalculationContext, entityValue?: number): CalculationResult {
+        console.log('FormulaCalculatorImpl.calculate()', formula, level, context, entityValue);
         const formulaDef = FORMULA_MAP[formula.formulaId];
         if (!formulaDef) {
             return {
-                value: 0,
+                value: null, // Return null for invalid scenarios
                 breakdown: {
-                    components: [{
-                        source: 'Formula',
-                        value: 0,
-                        type: BreakdownComponentType.formula,
-                        description: `Unknown formula ID: ${formula.formulaId}`
-                    }],
+                    components: [],
                     explanation: `Formula ID ${formula.formulaId} not found`
                 }
             };
         }
 
         const calculationLevel = context?.level || level;
-        const _characterLevel = context?.characterLevel || calculationLevel;
         const progressionLevel = context?.progressionLevel || calculationLevel;
 
         const components: Array<{
@@ -63,7 +56,7 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
             currentLevel: context.level,
             showBreakdown: false
         } : undefined;
-        const params = buildFormulaParams(formula, calculationLevel, progressionLevel, displayContext, modifierValue);
+        const params = buildFormulaParams(formula, calculationLevel, progressionLevel, displayContext, entityValue);
 
         // Use the formula's calculate function
         const value = formulaDef.calculate(params);
@@ -75,60 +68,35 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
 
         components.push({
             source: formulaDef.name,
-            value,
+            value: value || 0, // Use 0 for breakdown display when value is null
             type: BreakdownComponentType.formula,
-            description: formulaDef.description,
+            description: value === null ? `Formula does not apply at level ${level}` : formulaDef.description,
             formula: formulaString
         });
-        
+
         return {
-            value,
+            value, // Keep null values as null
             breakdown: {
                 components,
                 formula: formulaDef.name,
-                explanation: `Calculated using ${formulaDef.name} formula`
+                explanation: value === null ? `Formula does not apply at level ${level}` : `Calculated using ${formulaDef.name} formula`
             }
         };
     }
 }
 
-/**
- * Pure calculator for choice-based calculations
- */
-export class ChoiceCalculatorImpl implements IChoiceCalculator {
-    calculateChoiceValue(
-        choice: ChoiceBasedCalculation,
-        selectedValues: SelectedValue[],
-        _context?: CalculationContext
-    ): CalculationResult {
-        // This is a placeholder for choice-based calculations
-        // Will be implemented when we have the choice calculation interfaces defined
-        return {
-            value: selectedValues.length,
-            breakdown: {
-                components: [{
-                    source: 'Choice',
-                    value: selectedValues.length,
-                    type: BreakdownComponentType.choice,
-                    description: `Selected ${selectedValues.length} choice(s)`
-                }],
-                explanation: 'Choice-based calculation'
-            }
-        };
-    }
-}
 
 /**
  * Pure detector for conditional values
  */
 export class ConditionalValueDetectorImpl implements ConditionalValueDetector {
-    detectConditionals(modifiers: FeatureModifier[], _context?: CharacterContext): Array<ConditionalValue> {
+    detectConditionals(entities: FeatureEntity[], _context?: CharacterContext): Array<ConditionalValue> {
         const conditionals: Array<ConditionalValue> = [];
 
-        for (const modifier of modifiers) {
-            if (modifier.conditions && modifier.conditions.length > 0) {
-                for (const condition of modifier.conditions) {
-                    const conditionalValue = this.createConditionalValue(modifier, condition, _context);
+        for (const entity of entities) {
+            if (entity.conditions && entity.conditions.length > 0) {
+                for (const condition of entity.conditions) {
+                    const conditionalValue = this.createConditionalValue(entity, condition, _context);
                     if (conditionalValue) {
                         conditionals.push(conditionalValue);
                     }
@@ -140,20 +108,20 @@ export class ConditionalValueDetectorImpl implements ConditionalValueDetector {
     }
 
     private createConditionalValue(
-        modifier: FeatureModifier,
-        condition: FeatureModifierCondition,
+        entity: FeatureEntity,
+        condition: FeatureEntityCondition,
         _context?: CharacterContext
     ): ConditionalValue | null {
         // This is a placeholder for conditional value creation
         // Will be implemented when we have the condition interfaces defined
         return {
-            value: modifier.value,
+            value: entity.value,
             breakdown: {
                 components: [{
                     source: 'Conditional',
-                    value: modifier.value,
+                    value: entity.value,
                     type: BreakdownComponentType.conditional,
-                    description: `Conditional bonus: ${modifier.value}`
+                    description: `Conditional bonus: ${entity.value}`
                 }],
                 explanation: 'Conditional modifier'
             },
@@ -170,5 +138,4 @@ export class ConditionalValueDetectorImpl implements ConditionalValueDetector {
 
 // Export singleton instances
 export const formulaCalculator = new FormulaCalculatorImpl();
-export const choiceCalculator = new ChoiceCalculatorImpl();
 export const conditionalValueDetector = new ConditionalValueDetectorImpl();

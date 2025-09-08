@@ -8,6 +8,7 @@ import {
     GetAllFeatsResponse,
     FeatQueryRequest,
     FeatQueryResponse,
+    GetFeatListResponse,
     Feat,
 } from '@shared/schema';
 
@@ -23,6 +24,14 @@ export async function GetAllFeats(req: ValidatedNoInput<GetAllFeatsResponse>, re
 
 export async function GetFeatQuery(req: ValidatedQueryT<FeatQueryRequest, FeatQueryResponse>, res: Response) {
     const feats = await featService.featQuery(req.query);
+    res.json(feats);
+}
+
+/**
+ * Fetches a list of feats with only id and name for dropdown selection.
+ */
+export async function GetFeatList(req: ValidatedQueryT<FeatQueryRequest, GetFeatListResponse>, res: Response) {
+    const feats = await featService.getFeatList(req.query);
     res.json(feats);
 }
 

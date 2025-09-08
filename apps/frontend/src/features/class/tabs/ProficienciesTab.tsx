@@ -1,15 +1,15 @@
 import { Dialog } from '@base-ui-components/react/dialog';
 import { TrashIcon } from '@heroicons/react/24/outline';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 
+import { FeatureSystemService } from '@/components/feature-system/FeatureSystemService';
 import { CustomSelect } from '@/components/forms';
 import { renderCellValue } from '@/components/generic-list/columnUtils';
-import { FeatureSystemService } from '@/components/feature-system/FeatureSystemService';
 import { ClassProficiencyService } from '@/features/class/ClassProficiencyService';
 import { FeatApi } from '@/features/feat/FeatApi';
-import { ItemApi } from '@/features/item/ItemApi';
-import type { Feat, ItemWithDetails } from '@shared/schema';
-import { FeatBenefitType } from '@shared/static-data';
+import { displayStrategyFactory } from '@/lib/formatters';
+import type { CharacterSheetDisplayResult, DisplayResult, FormattedEntityResult } from '@/lib/formatters/types';
+import { DisplayType, FeatBenefitType, SpecialFeatureId } from '@shared/static-data';
 
 import type { ClassTabProps } from './types';
 
@@ -41,11 +41,6 @@ export function ProficienciesTab({
     onAddProficiency,
     onRemoveProficiency
 }: ClassTabProps): React.JSX.Element {
-    const [proficiencyDetails, setProficiencyDetails] = useState<{
-        feats: Record<number, Feat>;
-        items: Record<number, ItemWithDetails>;
-    }>({ feats: {}, items: {} });
-    const [loadingProficiencies, setLoadingProficiencies] = useState<Set<string>>(new Set());
 
     // Dialog state
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -54,11 +49,6 @@ export function ProficienciesTab({
     const [proficiencyItems, setProficiencyItems] = useState<ProficiencyItem[]>([]);
     const [selectedProficiencyItem, setSelectedProficiencyItem] = useState<number | null>(null);
     const [isDialogLoading, setIsDialogLoading] = useState(false);
-
-    // Use refs to track what's been loaded to avoid infinite loops
-    const loadedFeatsRef = useRef<Set<number>>(new Set());
-    const loadedItemsRef = useRef<Set<number>>(new Set());
-    const loadingRef = useRef<Set<string>>(new Set());
 
     // Load proficiency feats when dialog opens
     useEffect(() => {
@@ -70,13 +60,14 @@ export function ProficienciesTab({
     const loadProficiencyFeats = async () => {
         try {
             setIsDialogLoading(true);
-            // Use the new proficiency query endpoint
-            const response = await FeatApi.featQuery({ queryType: 'proficiency' });
+            // We need the full feat data to extract proficiency type from benefits
+            // TODO: Optimize backend to include proficiencyTypeId in list response
+            const fullFeats = await FeatApi.featQuery({ queryType: 'proficiency' });
 
             // Extract proficiency type from benefits
             const feats: ProficiencyFeat[] = [];
 
-            for (const feat of response.results) {
+            for (const feat of fullFeats.results) {
                 if (feat.benefits && feat.benefits.length > 0) {
                     const proficiencyBenefit = feat.benefits.find(benefit =>
                         benefit.typeId === FeatBenefitType.PROFICIENCY
@@ -147,76 +138,20 @@ export function ProficienciesTab({
     };
 
     const isProficiencyAlreadyAdded = (featId: number, itemId: number) => {
-        return classProficiencies.some(prof => prof.featId === featId && prof.itemId === itemId);
+        return classProficiencies.some(modifier => modifier.appliesToId === featId && modifier.appliesToSubId === itemId);
     };
 
-    // Load proficiency details for class proficiencies
-    useEffect(() => {
-        const classProficiencies = ClassProficiencyService.getClassProficiencies(featureProgressions);
-        const proficienciesToLoad = classProficiencies.filter(prof => {
-            const key = `${prof.featId}-${prof.itemId}`;
-            const featLoaded = loadedFeatsRef.current.has(prof.featId);
-            const itemLoaded = prof.itemId === -1 || loadedItemsRef.current.has(prof.itemId);
-            const currentlyLoading = loadingRef.current.has(key);
-            return (!featLoaded || !itemLoaded) && !currentlyLoading;
-        });
-
-        if (proficienciesToLoad.length > 0) {
-            const keysToLoad = proficienciesToLoad.map(prof => `${prof.featId}-${prof.itemId}`);
-
-            // Update loading state
-            keysToLoad.forEach(key => loadingRef.current.add(key));
-            setLoadingProficiencies(new Set(loadingRef.current));
-
-            Promise.all(
-                proficienciesToLoad.map(async (prof) => {
-                    const results: { featId: number; itemId: number; feat?: Feat; item?: ItemWithDetails } = {
-                        featId: prof.featId,
-                        itemId: prof.itemId
-                    };
-
-                    try {
-                        // Load feat details
-                        if (!loadedFeatsRef.current.has(prof.featId)) {
-                            results.feat = await FeatApi.getFeatById(undefined, { id: prof.featId });
-                        }
-
-                        // Load item details if applicable
-                        if (prof.itemId !== -1 && !loadedItemsRef.current.has(prof.itemId)) {
-                            results.item = await ItemApi.getItemById(undefined, { id: prof.itemId });
-                        }
-
-                        return results;
-                    } catch (error) {
-                        console.error(`Failed to load proficiency ${prof.featId}-${prof.itemId}:`, error);
-                        return results;
-                    }
-                })
-            ).then((results) => {
-                const newFeats = { ...proficiencyDetails.feats };
-                const newItems = { ...proficiencyDetails.items };
-
-                results.forEach(({ featId, itemId, feat, item }) => {
-                    if (feat) {
-                        newFeats[featId] = feat;
-                        loadedFeatsRef.current.add(featId);
-                    }
-                    if (item) {
-                        newItems[itemId] = item;
-                        loadedItemsRef.current.add(itemId);
-                    }
-                });
-
-                setProficiencyDetails({ feats: newFeats, items: newItems });
-
-                // Clear loading state
-                keysToLoad.forEach(key => loadingRef.current.delete(key));
-                setLoadingProficiencies(new Set(loadingRef.current));
-            });
-        }
-    }, [featureProgressions, proficiencyDetails.feats, proficiencyDetails.items]); // Only depend on featureProgressions
-
     const classProficiencies = ClassProficiencyService.getClassProficiencies(featureProgressions);
+
+
+    // Find proficiency progressions for display strategy
+    const proficiencyProgressions = featureProgressions.filter(progression =>
+        progression.featureId === SpecialFeatureId.ClassProficiency
+    );
+
+    // Use CharacterSheet strategy to format proficiencies individually
+    const strategy = displayStrategyFactory.createStrategy(DisplayType.CharacterSheet);
+    const result = strategy.format(proficiencyProgressions, undefined, false) as CharacterSheetDisplayResult; // Cast to access new properties
 
     return (
         <div className="p-6 space-y-6">
@@ -235,24 +170,22 @@ export function ProficienciesTab({
                 {/* Proficiencies Grid */}
                 {classProficiencies.length > 0 ? (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                        {classProficiencies.map((proficiency) => {
-                            const key = `${proficiency.featId}-${proficiency.itemId}`;
-                            const isLoading = loadingProficiencies.has(key);
-                            const featDetail = proficiencyDetails.feats[proficiency.featId];
-                            const itemDetail = proficiency.itemId !== -1 ? proficiencyDetails.items[proficiency.itemId] : null;
+                        {classProficiencies.map((modifier) => {
+                            const key = `${modifier.appliesToId}-${modifier.appliesToSubId}`;
 
-                            // Format the header: "Feat Name - Item Name" or just "Feat Name"
-                            const headerText = proficiency.itemName
-                                ? `${proficiency.featName} - ${proficiency.itemName}`
-                                : proficiency.featName;
+                            // Find the formatted result for this entity
+                            const entityResult = result.individualEntities?.find((entity: FormattedEntityResult) =>
+                                entity.entity.id === modifier.id
+                            );
+                            const formattedText = entityResult?.formattedValue || 'Unknown Proficiency';
 
                             return (
                                 <div key={key} className="border border-gray-200 rounded-lg p-3 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                                     <div className="flex justify-between items-start mb-2">
-                                        <h4 className="font-medium text-base flex-1">{headerText}</h4>
+                                        <h4 className="font-medium text-base flex-1">{formattedText}</h4>
                                         <button
                                             type="button"
-                                            onClick={() => onRemoveProficiency(proficiency.featId, proficiency.itemId)}
+                                            onClick={() => onRemoveProficiency(modifier.appliesToId || 0, modifier.appliesToSubId || -1)}
                                             className="text-red-500 hover:text-red-700 p-1 ml-2 flex-shrink-0"
                                             title="Remove Proficiency"
                                         >
@@ -261,22 +194,18 @@ export function ProficienciesTab({
                                     </div>
 
                                     <div>
-                                        {isLoading ? (
-                                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                                                Loading proficiency details...
-                                            </div>
-                                        ) : (itemDetail?.description ? (
+                                        {modifier.item?.description ? (
                                             <div className="text-sm">
                                                 {renderCellValue(
-                                                    itemDetail.description,
+                                                    modifier.item.description,
                                                     { truncate: 200, isMarkdown: true },
                                                     `proficiency-${key}-item-description`
                                                 )}
                                             </div>
-                                        ) : featDetail?.description ? (
+                                        ) : modifier.feat?.description ? (
                                             <div className="text-sm">
                                                 {renderCellValue(
-                                                    featDetail.description,
+                                                    modifier.feat.description,
                                                     { truncate: 200, isMarkdown: true },
                                                     `proficiency-${key}-feat-description`
                                                 )}
@@ -285,7 +214,7 @@ export function ProficienciesTab({
                                             <div className="text-sm text-gray-500 dark:text-gray-400 italic">
                                                 No description available
                                             </div>
-                                        ))}
+                                        )}
                                     </div>
                                 </div>
                             );

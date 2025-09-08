@@ -11,10 +11,9 @@ import {
     useValidatedForm,
     useFormContext
 } from '@/components/forms';
-import { FeatApi } from '@/features/feat/FeatApi';
 import { displayStrategyFactory } from '@/lib/formatters';
 import { CreateFeatureRequest, CreateFeatureSchema, UpdateFeatureRequest, UpdateFeatureSchema, GetFeatureResponse, FeatureProgression, FeaturePrerequisite } from '@shared/schema';
-import { DisplayType, FEATURE_PRE_REQ_SELECT_LIST, FeaturePrerequisiteType, FULL_SKILL_SELECT_LIST, FeatureSourceType, ModifierAppliesToType } from '@shared/static-data';
+import { DisplayType, FEATURE_PRE_REQ_SELECT_LIST, FeaturePrerequisiteType, FULL_SKILL_SELECT_LIST, FeatureSourceType } from '@shared/static-data';
 
 type FeatureFormData = CreateFeatureRequest | UpdateFeatureRequest;
 
@@ -34,7 +33,6 @@ export function FeatureEdit() {
     const [featureProgressions, setFeatureProgressions] = useState<FeatureProgression[]>([]);
     const [isProgressionDialogOpen, setIsProgressionDialogOpen] = useState(false);
     const [editingProgression, setEditingProgression] = useState<FeatureProgression | null>(null);
-    const [feats, setFeats] = useState<Array<{ id: number; name: string }>>([]);
 
     // Determine which schema to use based on whether we're creating or editing
     const schema = id === 'new' ? CreateFeatureSchema : UpdateFeatureSchema;
@@ -107,27 +105,6 @@ export function FeatureEdit() {
         fetchFeature();
     }, [id]);
 
-    // Load feats if we have feat modifiers
-    useEffect(() => {
-        const loadFeatsIfNeeded = async () => {
-            const hasFeatModifiers = featureProgressions.some(progression =>
-                progression.modifiers?.some(modifier =>
-                    modifier.appliesTo === ModifierAppliesToType.Feat
-                )
-            );
-
-            if (hasFeatModifiers && feats.length === 0) {
-                try {
-                    const response = await FeatApi.getFeats({});
-                    setFeats(response.results || []);
-                } catch (error) {
-                    console.error('Failed to load feats:', error);
-                }
-            }
-        };
-
-        loadFeatsIfNeeded();
-    }, [featureProgressions, feats.length]);
 
     const handleBack = () => {
         const backLink = getBackLink();
@@ -244,13 +221,9 @@ export function FeatureEdit() {
                             ...progressionData,
                             featureId: featureId,
                             // Remove temporary IDs from related entities
-                            modifiers: progression.modifiers?.map(mod => {
-                                const { id: _, progressionId: __, ...modData } = mod;
-                                return modData;
-                            }) || [],
-                            choices: progression.choices?.map(choice => {
-                                const { id: _, progressionId: __, ...choiceData } = choice;
-                                return choiceData;
+                            entities: progression.entities?.map(entity => {
+                                const { id: _, progressionId: __, feat: _feat, feature: _feature, item: _item, ...entityData } = entity;
+                                return entityData;
                             }) || [],
                         };
                     });
@@ -273,13 +246,9 @@ export function FeatureEdit() {
                         return {
                             ...progressionData,
                             // Remove temporary IDs from related entities
-                            modifiers: progression.modifiers?.map(mod => {
-                                const { id: _, progressionId: __, ...modData } = mod;
-                                return modData;
-                            }) || [],
-                            choices: progression.choices?.map(choice => {
-                                const { id: _, progressionId: __, ...choiceData } = choice;
-                                return choiceData;
+                            entities: progression.entities?.map(entity => {
+                                const { id: _, progressionId: __, feat: _feat, feature: _feature, item: _item, ...entityData } = entity;
+                                return entityData;
                             }) || [],
                         };
                     });
@@ -348,21 +317,6 @@ export function FeatureEdit() {
     if (!formData) {
         return <div>No feature data available</div>;
     }
-
-    // Enhance feature progressions with feat data
-    const enhancedFeatureProgressions = featureProgressions.map(progression => ({
-        ...progression,
-        modifiers: progression.modifiers?.map(modifier => {
-            if (modifier.appliesTo === ModifierAppliesToType.Feat && modifier.appliesToId) {
-                const feat = feats.find(f => f.id === modifier.appliesToId);
-                if (feat) {
-                    return { ...modifier, feat };
-                }
-                return modifier;
-            }
-            return modifier;
-        })
-    }));
 
     return (
         <div className="max-w-4xl mx-auto p-6">
@@ -487,7 +441,7 @@ export function FeatureEdit() {
                     </div>
                     {featureProgressions.length > 0 ? (
                         <div className="space-y-4 border p-4 rounded-md dark:border-gray-600">
-                            {enhancedFeatureProgressions.map((progression) => (
+                            {featureProgressions.map((progression) => (
                                 <div key={progression.id} className="relative p-4 border rounded-md bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
                                     <button
                                         type="button"
@@ -506,31 +460,19 @@ export function FeatureEdit() {
                                         </p>
                                     </div>
                                     <div className="space-y-2">
-                                        {progression.modifiers && progression.modifiers.length > 0 && (
+                                        {progression.entities && progression.entities.length > 0 && (
                                             <div>
-                                                <h4 className="font-medium">Modifiers:</h4>
+                                                <h4 className="font-medium">Entities:</h4>
                                                 <ul className="text-sm text-gray-600 dark:text-gray-400">
-                                                    {progression.modifiers.map((modifier, index) => {
+                                                    {progression.entities.map((entity, index) => {
                                                         const strategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
-                                                        const formatter = strategy.format({ ...progression, modifiers: [modifier] });
+                                                        const result = strategy.format({ ...progression, entities: [entity] });
                                                         return (
                                                             <li key={index}>
-                                                                {formatter.levelEntries[0]?.items[0]?.formattedValue || 'No preview'}
+                                                                {result.formattedValue || 'No preview'}
                                                             </li>
                                                         );
                                                     })}
-                                                </ul>
-                                            </div>
-                                        )}
-                                        {progression.choices && progression.choices.length > 0 && (
-                                            <div>
-                                                <h4 className="font-medium">Choices:</h4>
-                                                <ul className="text-sm text-gray-600 dark:text-gray-400">
-                                                    {progression.choices.map((choice, index) => (
-                                                        <li key={index}>
-                                                            {choice.label}: {choice.type} ({choice.behavior})
-                                                        </li>
-                                                    ))}
                                                 </ul>
                                             </div>
                                         )}

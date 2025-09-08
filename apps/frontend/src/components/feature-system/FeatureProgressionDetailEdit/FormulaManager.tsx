@@ -1,34 +1,53 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { ValidatedInput, ValidatedCustomSelect, ValidatedCustomCheckbox } from '@/components/forms';
-import type { FeatureModifier, FeatureChoice, FeatureProgression, Feature } from '@shared/schema';
-import { ABILITY_SELECT_LIST, FormulaId, FeatureType, FEATURE_TYPES, CumulativeValueType, CUMULATIVE_VALUE_TYPE_SELECT_LIST } from '@shared/static-data';
+import type { FeatureEntity, FeatureProgression, Feature } from '@shared/schema';
+import { ABILITY_SELECT_LIST, FormulaId, EntityType, CumulativeValueType, CUMULATIVE_VALUE_TYPE_SELECT_LIST } from '@shared/static-data';
+import type { SelectOption } from '@shared/static-data';
 
 import { ArrayPairEditor } from '../ArrayPairEditor';
 import { FormulaPreview } from './FormulaPreview';
 import { getAppliesToSelectOptions } from './utils';
 
-interface FormulaManagerProps<T extends FeatureModifier | FeatureChoice> {
-    entity: T;
+interface FormulaManagerProps {
+    entity: FeatureEntity;
     index: number;
-    entityType: FeatureType;
-    formData: Partial<FeatureProgression>;
-    setFormData: (data: Partial<FeatureProgression> | ((prev: Partial<FeatureProgression>) => Partial<FeatureProgression>)) => void;
+    entityType: EntityType;
+    formData: FeatureProgression;
+    setFormData: (data: FeatureProgression | ((prev: FeatureProgression) => FeatureProgression)) => void;
     preSelectedFeature?: Feature;
     progression?: FeatureProgression | null;
 }
 
-export function FormulaManager<T extends FeatureModifier | FeatureChoice>({
+export function FormulaManager({
     entity,
     index,
-    entityType,
+    entityType: _entityType,
     formData,
     setFormData,
     preSelectedFeature,
     progression
-}: FormulaManagerProps<T>) {
-    // Get the string key from FEATURE_TYPES
-    const entityKey = FEATURE_TYPES[entityType].name;
+}: FormulaManagerProps) {
+    const [appliesToSelectOptions, setAppliesToSelectOptions] = useState<SelectOption[]>([]);
+    // Use the correct field path for entities
+    const entityKey = 'entities';
+
+    // Load appliesToSelectOptions when needed for conditional scaling
+    useEffect(() => {
+        const loadAppliesToSelectOptions = async () => {
+            if (entity.formulaParams?.formulaId === FormulaId.CONDITIONAL_SCALING) {
+                const appliesTo = entity.appliesTo;
+                const entityType = entity.type;
+                if (appliesTo !== null && appliesTo !== undefined) {
+                    const options = await getAppliesToSelectOptions(appliesTo, entityType);
+                    setAppliesToSelectOptions(options);
+                } else {
+                    setAppliesToSelectOptions([]);
+                }
+            }
+        };
+        loadAppliesToSelectOptions();
+    }, [entity.formulaParams?.formulaId, entity.appliesTo, entity.type]);
 
     // Initialize arrays when formula changes to CONDITIONAL_SCALING
     useEffect(() => {
@@ -36,7 +55,7 @@ export function FormulaManager<T extends FeatureModifier | FeatureChoice>({
         if (currentFormulaId === FormulaId.CONDITIONAL_SCALING) {
             if (!entity.formulaParams?.thresholds || !entity.formulaParams?.values) {
                 setFormData(prev => {
-                    const entities = [...(prev[entityKey] || [])];
+                    const entities = [...(prev.entities || [])];
                     entities[index] = {
                         ...entities[index],
                         formulaParams: {
@@ -44,12 +63,12 @@ export function FormulaManager<T extends FeatureModifier | FeatureChoice>({
                             thresholds: entities[index].formulaParams?.thresholds || [],
                             values: entities[index].formulaParams?.values || [],
                         }
-                    } as T;
-                    return { ...prev, [entityKey]: entities };
+                    } as FeatureEntity;
+                    return { ...prev, entities };
                 });
             }
         }
-    }, [entity.formulaParams?.formulaId, index, entity.formulaParams?.thresholds, entity.formulaParams?.values, setFormData, entityKey]);
+    }, [entity.formulaParams?.formulaId, index, entity.formulaParams?.thresholds, entity.formulaParams?.values, setFormData]);
 
     // Early return if no formula is selected
     if (!entity.formulaParams?.formulaId) {
@@ -69,29 +88,43 @@ export function FormulaManager<T extends FeatureModifier | FeatureChoice>({
                     case FormulaId.EVERY_N_LEVELS:
                     case FormulaId.DICE_SCALING:
                         return (
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <ValidatedInput
-                                        field={`${entityKey}.${index}.formulaParams.interval`}
-                                        label="Interval"
-                                        type="number"
-                                        min={1}
-                                        placeholder="e.g., 2 for every 2 levels"
-                                        componentExtraClassName="flex items-center gap-2"
-                                        nested
-                                    />
+                            <div className="space-y-3">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <ValidatedInput
+                                            field={`${entityKey}.${index}.formulaParams.interval`}
+                                            label="Interval"
+                                            type="number"
+                                            min={1}
+                                            placeholder="e.g., 2 for every 2 levels"
+                                            componentExtraClassName="flex items-center gap-2"
+                                            nested
+                                        />
+                                    </div>
+                                    <div>
+                                        <ValidatedInput
+                                            field={`${entityKey}.${index}.formulaParams.formulaStartLevel`}
+                                            label="Formula Start Level (Optional)"
+                                            type="number"
+                                            min={1}
+                                            max={20}
+                                            placeholder="e.g., 2 for Fighter bonus feats"
+                                            componentExtraClassName="flex items-center gap-2"
+                                            nested
+                                        />
+                                    </div>
                                 </div>
                                 <div>
-                                    <ValidatedInput
-                                        field={`${entityKey}.${index}.formulaParams.formulaStartLevel`}
-                                        label="Formula Start Level (Optional)"
-                                        type="number"
-                                        min={1}
-                                        max={20}
-                                        placeholder="e.g., 2 for Fighter bonus feats"
+                                    <ValidatedCustomCheckbox
+                                        field={`${entityKey}.${index}.formulaParams.includeProgressionLevel`}
+                                        label="Include Progression Level"
                                         componentExtraClassName="flex items-center gap-2"
                                         nested
                                     />
+                                    <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                        When enabled, includes the progression level in the formula calculation.
+                                        Disable for entities that should only appear at formula-determined intervals (e.g., allocation bonuses).
+                                    </div>
                                 </div>
                             </div>
                         );
@@ -124,10 +157,6 @@ export function FormulaManager<T extends FeatureModifier | FeatureChoice>({
                         );
 
                     case FormulaId.CONDITIONAL_SCALING: {
-                        // Get the appropriate select options based on appliesTo type
-                        const appliesTo = (entity as FeatureModifier).appliesTo;
-                        const modifierType = (entity as FeatureModifier).type;
-                        const appliesToSelectOptions = getAppliesToSelectOptions(appliesTo, modifierType);
                         const valuesRepresent = entity.formulaParams?.valuesRepresent;
                         const isAppliesToId = valuesRepresent === CumulativeValueType.AppliesToId;
 
@@ -140,28 +169,28 @@ export function FormulaManager<T extends FeatureModifier | FeatureChoice>({
                                             values={entity.formulaParams?.values || []}
                                             onThresholdsChange={(thresholds) => {
                                                 setFormData(prev => {
-                                                    const entities = [...(prev[entityKey] || [])];
+                                                    const entities = [...(prev.entities || [])];
                                                     entities[index] = {
                                                         ...entities[index],
                                                         formulaParams: {
                                                             ...entities[index].formulaParams,
                                                             thresholds
                                                         }
-                                                    } as T;
-                                                    return { ...prev, [entityKey]: entities };
+                                                    } as FeatureEntity;
+                                                    return { ...prev, entities };
                                                 });
                                             }}
                                             onValuesChange={(values) => {
                                                 setFormData(prev => {
-                                                    const entities = [...(prev[entityKey] || [])];
+                                                    const entities = [...(prev.entities || [])];
                                                     entities[index] = {
                                                         ...entities[index],
                                                         formulaParams: {
                                                             ...entities[index].formulaParams,
                                                             values
                                                         }
-                                                    } as T;
-                                                    return { ...prev, [entityKey]: entities };
+                                                    } as FeatureEntity;
+                                                    return { ...prev, entities };
                                                 });
                                             }}
                                             thresholdPlaceholder="e.g., 4"
