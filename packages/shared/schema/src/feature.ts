@@ -1,5 +1,5 @@
 import z from "zod";
-import { FeatureSourceType, FeatureBonusType, FeaturePrerequisiteType, CumulativeValueType, EntityType, FeatureEntityConditionType, EntityAppliesToType } from "@shared/static-data";
+import { FeatureSourceType, FeatureBonusType, FeaturePrerequisiteType, ConditionalScalingValueType, EntityType, FeatureEntityConditionType, EntityAppliesToType } from "@shared/static-data";
 import { SpellcastingLinkSchema } from "./spellcasting";
 import { QueryResponseSchema } from "./query";
 import { FeatSchema } from "./feat";
@@ -46,7 +46,7 @@ export const FeatureFormulaParamsSchema = z.object({
     values: z.array(z.union([z.string(), z.number()])).nullable(),
 
     // Enhanced parameters for complex scaling
-    valuesRepresent: z.nativeEnum(CumulativeValueType).optional().nullable(),
+    valuesRepresent: z.nativeEnum(ConditionalScalingValueType).optional().nullable(),
     cumulative: z.boolean().default(false),
 
     // Control whether to include the progression level in the formula calculation
@@ -109,7 +109,7 @@ export const CreateFeatureFormulaParamsSchema = FeatureFormulaParamsSchema.omit(
 }).extend({
     thresholds: z.array(z.number().int()).nullable().optional(),
     values: z.array(z.union([z.string(), z.number()])).nullable().optional(),
-    valuesRepresent: z.nativeEnum(CumulativeValueType).optional().nullable(),
+    valuesRepresent: z.nativeEnum(ConditionalScalingValueType).optional().nullable(),
     cumulative: z.boolean().optional(),
 });
 

@@ -129,7 +129,7 @@ The analysis reveals that several critical components are **never called**:
 
 1. **Missing createModifiedEntity()**: The `createModifiedEntity()` method in `ProgressionGeneratorImpl` contains the logic to handle `valuesRepresent.AppliesToId`:
    ```typescript
-   ...(valuesRepresent === CumulativeValueType.AppliesToId
+   ...(valuesRepresent === ConditionalScalingValueType.AppliesToId
        ? { appliesToId: value as number }
        : { value: value as number })
    ```
@@ -148,8 +148,8 @@ The analysis reveals that several critical components are **never called**:
 ### The Fix Needed
 The `ValueGenerationPhase.generateFormulaIntervalValues()` method needs to:
 1. Check `formula.valuesRepresent`
-2. If `valuesRepresent === CumulativeValueType.AppliesToId`, set `appliesToId: singleValue` instead of `value: singleValue`
-3. If `valuesRepresent === CumulativeValueType.Value`, set `value: singleValue` (current behavior)
+2. If `valuesRepresent === ConditionalScalingValueType.AppliesToId`, set `appliesToId: singleValue` instead of `value: singleValue`
+3. If `valuesRepresent === ConditionalScalingValueType.Value`, set `value: singleValue` (current behavior)
 
 ## Summary
 

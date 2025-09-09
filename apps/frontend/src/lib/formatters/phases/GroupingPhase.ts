@@ -1,8 +1,11 @@
 import type {
-    FeatureProgression
+    FeatureProgression,
+    FeatureEntityCondition
 } from '@shared/schema';
+import { FeatureEntityConditionType } from '@shared/static-data';
 
-import { formatMultipleConditions } from '../display-utils';
+import { conditionLabelerRegistry } from '../condition-labeler-registry';
+import { conditionValueFormatterRegistry } from '../condition-value-formatter-registry';
 import { EntityGroupingStrategy } from '../grouping-strategies';
 import { labelerRegistry } from '../labeler-registry';
 import type {
@@ -59,10 +62,9 @@ export class GroupingPhase {
 
                         // Apply condition formatting to individual items
                         if (item.entity.conditions && item.entity.conditions.length > 0) {
-                            formattedValue = formatMultipleConditions(
+                            formattedValue = this.formatConditions(
                                 item.entity.conditions,
-                                item.formattedValue,
-                                item.entity.type
+                                item.formattedValue
                             );
                         }
 
@@ -113,10 +115,9 @@ export class GroupingPhase {
                         const firstEntity = entitiesWithConditions[0].entity;
                         if (firstEntity.conditions && firstEntity.conditions.length > 0) {
                             // Apply conditions to the entire grouped result
-                            formattedValue = formatMultipleConditions(
+                            formattedValue = this.formatConditions(
                                 firstEntity.conditions,
-                                formattedValue,
-                                firstEntity.type
+                                formattedValue
                             );
                         }
                     }
@@ -160,5 +161,53 @@ export class GroupingPhase {
         });
     }
 
+    /**
+     * Format conditions by grouping conditions of the same type together.
+     * Conditions of the same type are grouped and formatted as a comma-separated list.
+     * Works for both single and multiple conditions seamlessly.
+     */
+    private formatConditions(
+        conditions: FeatureEntityCondition[],
+        formattedValue: string
+    ): string {
+        if (conditions.length === 0) {
+            return formattedValue;
+        }
+
+        // Step 1: Group conditions by type
+        const conditionsByType = new Map<FeatureEntityConditionType, number[]>();
+        for (const condition of conditions) {
+            if (!conditionsByType.has(condition.conditionType)) {
+                conditionsByType.set(condition.conditionType, []);
+            }
+            conditionsByType.get(condition.conditionType)!.push(condition.conditionValue);
+        }
+
+        const formattedConditions: string[] = [];
+
+        // Step 2: Process each condition type
+        for (const [conditionType, conditionValues] of conditionsByType) {
+            // Step 2a: Format each condition value
+            const formatter = conditionValueFormatterRegistry.getFormatter(conditionType);
+            const formattedValues = conditionValues
+                .map(value => formatter ? formatter.format(value) : '')
+                .filter(Boolean)
+                .join(', ');
+
+            if (formattedValues) {
+                // Step 2b: Apply labeler to the formatted values
+                const labeler = conditionLabelerRegistry.getLabeler(conditionType);
+                const labeledCondition = labeler ? labeler(formattedValues) : formattedValues;
+                formattedConditions.push(labeledCondition);
+            }
+        }
+
+        // Step 3: Combine with the main formatted value
+        if (formattedConditions.length === 0) {
+            return formattedValue;
+        }
+
+        return `${formattedValue} ${formattedConditions.join(' ')}`;
+    }
 
 }

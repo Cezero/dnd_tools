@@ -53,7 +53,7 @@ The central service for all feature and feature progression management, providin
 **Key Responsibilities**:
 - **Feature CRUD**: Create, read, update, and delete individual features
 - **Feature Progression Management**: Create, update, and delete feature progressions with relationships
-- **Relationship Management**: Handle nested modifiers, choices, and effects
+- **Entity Management**: Handle unified feature entities with type-based differentiation
 - **Transaction Safety**: Ensure data consistency through proper transaction handling
 - **Validation**: Validate feature data and relationships
 - **Formula Integration**: Handle formula parameters and calculations
@@ -86,8 +86,8 @@ The central service for all feature and feature progression management, providin
 - **Returns**: Success message
 
 **createFeatureProgressionWithRelations**: Creates a feature progression with all related data
-- **Parameters**: Complete feature progression data including modifiers, choices, effects
-- **Business Logic**: Creates progression in transaction, then creates all related data (modifiers with conditions and formula params, choices with formula params, effects)
+- **Parameters**: Complete feature progression data including entities with conditions and formula params
+- **Business Logic**: Creates progression in transaction, then creates all related data (entities with conditions and formula params)
 - **Returns**: Created progression ID and success message
 
 **createMultipleFeatureProgressions**: Creates multiple feature progressions for a class or race
@@ -97,7 +97,7 @@ The central service for all feature and feature progression management, providin
 
 **deleteFeatureProgressionsForContext**: Deletes all feature progressions for a class or race
 - **Parameters**: Context (classId/raceId), optional transaction
-- **Business Logic**: Cascades deletion to all related data (modifiers, choices, effects)
+- **Business Logic**: Cascades deletion to all related data (entities with conditions)
 - **Returns**: Void (deletion confirmation)
 
 **updateFeatureProgressions**: Updates feature progressions for a specific feature
@@ -229,7 +229,7 @@ The feature system uses transactions for complex operations involving multiple r
 **Bulk Operations**: Creates multiple progressions with relationships in single transaction
 **Update Operations**: Deletes old data and creates new data in single transaction
 
-**Transaction Pattern**: The system uses database transactions to ensure data consistency when creating or updating complex feature structures. Each transaction creates the main entity first, then creates all related entities with proper foreign key references. This ensures that if any part of the operation fails, the entire operation is rolled back, maintaining data integrity.
+**Transaction Pattern**: The system uses database transactions to ensure data consistency when creating or updating complex feature structures. Each transaction creates the main entity first, then creates all related entities (feature entities with conditions and formula params) with proper foreign key references. This ensures that if any part of the operation fails, the entire operation is rolled back, maintaining data integrity.
 
 ### **Formula Integration**
 
@@ -239,7 +239,7 @@ The feature system integrates with the formula system for dynamic calculations:
 **Formula Validation**: Validates formula parameters against formula definitions
 **Formula Calculation**: Provides real-time formula calculation for UI preview
 
-**Formula Integration Pattern**: The system transforms formula parameters from the frontend format to the database storage format, creates formula parameter records in the database, and links them to modifiers or choices. This enables dynamic calculations based on character level, ability scores, and other factors.
+**Formula Integration Pattern**: The system transforms formula parameters from the frontend format to the database storage format, creates formula parameter records in the database, and links them to feature entities. This enables dynamic calculations based on character level, ability scores, and other factors.
 
 **Source File**: `src/utils/formulaParamTransformers.ts`
 
@@ -271,10 +271,10 @@ The feature system integrates with the race system through similar consolidated 
 
 ### **Spellcasting Integration**
 
-The feature system integrates with the spellcasting system through special effects:
+The feature system integrates with the spellcasting system through feature entities:
 
 **Spellcasting Links**: Feature progressions can link to spellcasting progressions
-**Spellcasting Effects**: Special effects can grant spellcasting abilities
+**Spellcasting Effects**: Feature entities can grant spellcasting abilities
 **Formula Integration**: Spellcasting can use formulas for progression calculations
 
 **Related Documentation**: [Spellcasting System](../spell-system/spellcasting-system.md)

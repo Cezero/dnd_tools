@@ -6,7 +6,7 @@
 
 The feature system uses Zod validation schemas to ensure type safety and data integrity across all API operations. These schemas provide runtime validation, automatic error messages, and TypeScript type generation for the feature system's complex data structures.
 
-The validation layer follows the shared [Validation Schema Patterns](../application-overview/validation-schemas.md) with feature-specific validation rules and constraints.
+The validation layer follows the shared [Validation Schema Patterns](../application-overview/validation-schemas.md) with feature-specific validation rules and constraints. The system uses a unified entity approach where all feature effects are handled through a single `FeatureEntitySchema`.
 
 **Source File**: `packages/shared/schema/src/feature.ts`
 
@@ -32,7 +32,7 @@ The feature system uses the shared [Schema Hierarchy Pattern](../application-ove
 
 The feature system integrates with static data following the shared [Static Data Integration](../application-overview/validation-schemas.md#static-data-integration) patterns:
 
-**Enum Validation**: Validates against static data enums for type safety
+**Enum Validation**: Validates against static data enums for type safety (@EntityType, @EntityAppliesToType, @FeatureBonusType)
 **Reference Validation**: Validates foreign key references against existing data
 **Range Validation**: Validates numeric ranges against business rules
 **Format Validation**: Validates string formats and patterns
@@ -49,7 +49,7 @@ The base schema for feature validation, defining all required and optional field
 - **`id`**: Required positive integer for unique identification
 - **`slug`**: Required string, 1-100 characters, trimmed, unique identifier
 - **`name`**: Required string, 1-100 characters, trimmed for display
-- **`description`**: Optional string, maximum 10000 characters for detailed descriptions
+- **`description`**: Required string, maximum 10000 characters for detailed descriptions
 - **`prerequisites`**: Optional array of prerequisite schemas for requirements
 
 **Usage**: Primary validation for feature data in API requests and responses.
@@ -65,7 +65,7 @@ Schema for feature prerequisites, defining requirements that must be met before 
 **Key Validations**:
 - **`id`**: Required positive integer for unique identification
 - **`featureId`**: Required positive integer linking to the feature
-- **`type`**: Required enum value from FeaturePrerequisiteType
+- **`type`**: Required enum value from @FeaturePrerequisiteType
 - **`skillId`**: Optional positive integer or null for skill-based prerequisites
 - **`minValue`**: Required integer for minimum required value
 
@@ -87,7 +87,7 @@ Schema for feature prerequisites, defining requirements that must be met before 
 
 The main schema for feature progression validation, used for bulk operations and complex feature definitions.
 
-**Purpose**: Validates feature progression data including source tracking, level requirements, and associated components.
+**Purpose**: Validates feature progression data including source tracking, level requirements, and associated entities.
 
 **Key Validations**:
 - **`id`**: Required positive integer for unique identification
@@ -97,9 +97,7 @@ The main schema for feature progression validation, used for bulk operations and
 - **`classId`/`raceId`**: Optional positive integers (mutually exclusive)
 - **`feature`**: Optional nested feature schema for complete data
 - **`class`**: Optional class summary object for display
-- **`modifiers`**: Optional array of modifier schemas
-- **`choices`**: Optional array of choice schemas
-- **`effects`**: Optional array of special effect schemas
+- **`entities`**: Optional array of feature entity schemas (unified approach)
 - **`spellcasting`**: Optional spellcasting link schema
 
 **Usage**: Primary validation for feature progression data in complex operations.
@@ -114,67 +112,103 @@ Schema for creating new feature progressions, omitting read-only fields and incl
 
 **Key Differences from Base Schema**:
 - **Omits**: `id`, `feature`, `class`, `spellcasting` (read-only or computed)
-- **Includes**: Nested creation schemas for modifiers, choices, and effects
+- **Includes**: Nested creation schemas for entities (unified approach)
 - **Validation**: Ensures proper source type and level constraints
 
 **Usage**: Validates feature progression creation requests in API endpoints.
 
 **Source File**: `packages/shared/schema/src/feature.ts` (CreateFeatureProgressionSchema definition)
 
-### **UpdateFeatureProgressionSchema**
+### **CreateFeatureProgressionFormSchema**
 
-Schema for updating existing feature progressions, making fields optional and allowing partial updates.
+Schema for creating feature progressions in frontend forms, allowing featureId to be 0 for new features.
 
-**Purpose**: Validates data for updating existing feature progressions with flexible field requirements.
+**Purpose**: Validates data for frontend form submissions where new features can be created alongside progressions.
 
 **Key Characteristics**:
-- **Optional Fields**: All fields except ID are optional for partial updates
-- **Validation**: Maintains constraints for provided fields
-- **Flexibility**: Allows updating individual components without full data
+- **Flexible Feature ID**: Allows `featureId` to be 0 for new features
+- **Form Integration**: Designed for frontend form validation
+- **Creation Support**: Supports creating both features and progressions in one operation
 
-**Usage**: Validates feature progression update requests in API endpoints.
+**Usage**: Validates feature progression form submissions in frontend applications.
 
-**Source File**: `packages/shared/schema/src/feature.ts` (UpdateFeatureProgressionSchema definition)
+**Source File**: `packages/shared/schema/src/feature.ts` (CreateFeatureProgressionFormSchema definition)
 
-## 🔧 **Modifier Schemas**
+## 🔧 **Unified Entity Schemas**
 
-### **FeatureModifierSchema**
+### **FeatureEntitySchema**
 
-Schema for feature modifiers, defining numerical bonuses, quantities, and replacements.
+The unified schema that handles all types of feature effects including modifiers, choices, and special effects through a single, flexible structure.
 
-**Purpose**: Validates modifier data including type, value, target, and conditions.
+**Purpose**: Validates all feature effects using a unified approach, whether they are numerical bonuses, player choices, or special abilities.
 
 **Key Validations**:
 - **`id`**: Required positive integer for unique identification
-- **`featureProgressionId`**: Required positive integer linking to progression
-- **`type`**: Required enum value from ModifierType
-- **`value`**: Required integer for modifier value
-- **`bonusType`**: Optional enum value from FeatureBonusType for stacking rules
-- **`appliesTo`**: Optional enum value from ModifierAppliesToType for target
+- **`progressionId`**: Required positive integer linking to the feature progression
+- **`type`**: Required enum value from @EntityType (Bonus, Quantity, Replacement, Other, Proficiency, Choice, Allocation)
+- **`appliesTo`**: Required enum value from @EntityAppliesToType for target specification
 - **`appliesToId`**: Optional positive integer for specific target ID
+- **`appliesToSubId`**: Optional positive integer for sub-target ID
+- **`value`**: Optional integer for numerical value (if applicable)
+- **`bonusType`**: Optional enum value from @FeatureBonusType for stacking rules
 - **`formulaParamsId`**: Optional positive integer linking to formula parameters
+- **`groupingId`**: Optional integer for grouping related entities (default: 0)
+- **`displayInDetail`**: Optional boolean for display control (default: true)
+- **`filterType`**: Optional integer for choice filtering
 - **`conditions`**: Optional array of condition schemas
 - **`formulaParams`**: Optional nested formula parameters schema
+- **`item`**: Optional nested item schema (when appliesTo === Item)
+- **`feat`**: Optional nested feat schema (when appliesTo === Feat)
+- **`feature`**: Optional nested feature schema (when appliesTo === Feature)
 
-**Usage**: Validates modifier data for feature mechanical effects.
+**Usage**: The unified approach allows a single feature to have multiple effects of different types, all managed through one consistent schema. This eliminates the need for separate modifier, choice, and special effect schemas while providing the same functionality.
 
-**Source File**: `packages/shared/schema/src/feature.ts` (FeatureModifierSchema definition)
+**Source File**: `packages/shared/schema/src/feature.ts` (FeatureEntitySchema definition)
 
-### **FeatureModifierConditionSchema**
+### **CreateFeatureEntitySchema**
 
-Schema for modifier conditions, defining when modifiers apply.
+Schema for creating new feature entities, omitting read-only fields and including nested creation schemas.
 
-**Purpose**: Validates condition data for conditional modifier application.
+**Purpose**: Validates data for creating new feature entities without requiring existing IDs or computed fields.
+
+**Key Differences from Base Schema**:
+- **Omits**: `id`, `progressionId`, `conditions`, `formulaParams`, `formulaParamsId`, `item`
+- **Includes**: Nested creation schemas for conditions and formula parameters
+- **Validation**: Ensures proper entity type and appliesTo constraints
+
+**Usage**: Validates feature entity creation requests in API endpoints.
+
+**Source File**: `packages/shared/schema/src/feature.ts` (CreateFeatureEntitySchema definition)
+
+### **FeatureEntityConditionSchema**
+
+Schema for feature entity conditions, defining when entities apply.
+
+**Purpose**: Validates condition data for conditional entity application.
 
 **Key Validations**:
 - **`id`**: Required positive integer for unique identification
-- **`featureModifierId`**: Required positive integer linking to modifier
-- **`conditionType`**: Required enum value from FeatureModifierConditionType
+- **`featureEntityId`**: Required positive integer linking to the feature entity
+- **`conditionType`**: Required enum value from @FeatureEntityConditionType
 - **`conditionValue`**: Required integer for condition value
 
-**Usage**: Validates condition data for conditional modifier application.
+**Usage**: Validates condition data for conditional entity application.
 
-**Source File**: `packages/shared/schema/src/feature.ts` (FeatureModifierConditionSchema definition)
+**Source File**: `packages/shared/schema/src/feature.ts` (FeatureEntityConditionSchema definition)
+
+### **CreateFeatureEntityConditionSchema**
+
+Schema for creating new feature entity conditions, omitting read-only fields.
+
+**Purpose**: Validates data for creating new feature entity conditions without requiring existing IDs.
+
+**Key Differences from Base Schema**:
+- **Omits**: `id`, `featureEntityId` (read-only fields)
+- **Validation**: Ensures proper condition type and value constraints
+
+**Usage**: Validates feature entity condition creation requests in API endpoints.
+
+**Source File**: `packages/shared/schema/src/feature.ts` (CreateFeatureEntityConditionSchema definition)
 
 ### **FeatureFormulaParamsSchema**
 
@@ -190,61 +224,28 @@ Schema for formula parameters, defining mathematical progression calculations.
 - **`abilityId`**: Optional positive integer for ability-based formulas
 - **`thresholds`**: Optional array of integers for level thresholds
 - **`values`**: Optional array of strings/numbers for threshold values
+- **`valuesRepresent`**: Optional enum value from @ConditionalScalingValueType
+- **`cumulative`**: Optional boolean for value accumulation (default: false)
+- **`includeProgressionLevel`**: Optional boolean for progression level inclusion (default: true)
 
 **Usage**: Validates formula parameter data for dynamic feature calculations.
 
 **Source File**: `packages/shared/schema/src/feature.ts` (FeatureFormulaParamsSchema definition)
 
-## 🎯 **Choice Schemas**
+### **CreateFeatureFormulaParamsSchema**
 
-### **FeatureChoiceSchema**
+Schema for creating new formula parameters, omitting read-only fields and making optional fields more flexible.
 
-Schema for feature choices, defining player selection options.
+**Purpose**: Validates data for creating new formula parameters without requiring existing IDs.
 
-**Purpose**: Validates choice data for player customization options.
+**Key Differences from Base Schema**:
+- **Omits**: `id` (read-only field)
+- **Flexible Fields**: Makes thresholds, values, valuesRepresent, and cumulative optional for creation
+- **Validation**: Ensures proper formula constraints
 
-**Key Validations**:
-- **`id`**: Required positive integer for unique identification
-- **`progressionId`**: Required positive integer linking to progression
-- **`label`**: Optional string for choice display label
-- **`pickCount`**: Optional positive integer for number of selections
-- **`type`**: Required enum value from FeatureChoiceType
-- **`behavior`**: Required enum value from FeatureChoiceBehavior
-- **`featId`**: Optional positive integer linking to feat options
-- **`featureId`**: Optional positive integer linking to feature options
-- **`formulaParamsId`**: Optional positive integer linking to formula parameters
-- **`filterType`**: Optional positive integer for choice filtering
-- **`feat`**: Optional nested feat summary object
-- **`feature`**: Optional nested feature summary object
-- **`formulaParams`**: Optional nested formula parameters schema
+**Usage**: Validates formula parameter creation requests in API endpoints.
 
-**Usage**: Validates choice data for player selection options.
-
-**Source File**: `packages/shared/schema/src/feature.ts` (FeatureChoiceSchema definition)
-
-## ✨ **Special Effect Schemas**
-
-### **FeatureSpecialEffectSchema**
-
-Schema for special effects, defining unique abilities and non-numeric effects.
-
-**Purpose**: Validates special effect data for unique feature abilities.
-
-**Key Validations**:
-- **`id`**: Required positive integer for unique identification
-- **`progressionId`**: Required positive integer linking to progression
-- **`effectType`**: Required enum value from FeatureSpecialEffectType
-- **`key`**: Optional string for effect parameter key
-- **`value`**: Optional string for effect parameter value
-- **`numericValue`**: Optional integer for numeric effect value
-- **`featId`**: Optional positive integer linking to feat
-- **`itemId`**: Optional positive integer linking to item
-- **`feat`**: Optional nested feat object
-- **`item`**: Optional nested item object
-
-**Usage**: Validates special effect data for unique feature abilities.
-
-**Source File**: `packages/shared/schema/src/feature.ts` (FeatureSpecialEffectSchema definition)
+**Source File**: `packages/shared/schema/src/feature.ts` (CreateFeatureFormulaParamsSchema definition)
 
 ## 📋 **Creation and Update Schemas**
 
@@ -278,20 +279,20 @@ Schema for updating existing features, making fields optional.
 
 **Source File**: `packages/shared/schema/src/feature.ts` (UpdateFeatureSchema definition)
 
-### **CreateFeatureProgressionRequest**
+### **UpdateFeatureProgressionsRequestSchema**
 
-Schema for creating feature progressions with full relationship data.
+Schema for updating multiple feature progressions in bulk operations.
 
-**Purpose**: Validates complete feature progression creation including all related entities.
+**Purpose**: Validates bulk feature progression update requests including all related entities.
 
 **Key Characteristics**:
-- **Includes**: All progression data with nested modifiers, choices, and effects
-- **Validation**: Ensures proper relationships and constraints
-- **Completeness**: Requires all necessary data for complete progression creation
+- **Includes**: Array of feature progression creation schemas
+- **Validation**: Ensures proper relationships and constraints for all progressions
+- **Bulk Operations**: Supports updating multiple progressions in a single request
 
-**Usage**: Validates bulk feature progression creation requests.
+**Usage**: Validates bulk feature progression update requests.
 
-**Source File**: `packages/shared/schema/src/feature.ts` (CreateFeatureProgressionRequest definition)
+**Source File**: `packages/shared/schema/src/feature.ts` (UpdateFeatureProgressionsRequestSchema definition)
 
 ## 🔗 **Cross-System Integration**
 
@@ -305,37 +306,47 @@ The feature system integrates with the spellcasting system through validation sc
 
 ### **Feat System Integration**
 
-The feature system integrates with the feat system through validation schemas:
+The feature system integrates with the feat system through the unified entity approach:
 
-**FeatSchema**: Validates feat data in feature choices and effects
-**FeatReferenceValidation**: Ensures valid feat references in feature components
-**FeatTypeValidation**: Validates feat types and categories
+**FeatSchema**: Validates feat data in feature entities (when appliesTo === Feat)
+**FeatReferenceValidation**: Ensures valid feat references in feature entities
+**FeatTypeValidation**: Validates feat types and categories through entity relationships
 
 ### **Item System Integration**
 
-The feature system integrates with the item system through validation schemas:
+The feature system integrates with the item system through the unified entity approach:
 
-**ItemSchema**: Validates item data in feature effects
-**ItemReferenceValidation**: Ensures valid item references in feature components
-**ItemTypeValidation**: Validates item types and categories
+**ItemSchema**: Validates item data in feature entities (when appliesTo === Item)
+**ItemReferenceValidation**: Ensures valid item references in feature entities
+**ItemTypeValidation**: Validates item types and categories through entity relationships
+
+### **Feature System Self-Integration**
+
+The feature system supports self-referential relationships through the unified entity approach:
+
+**FeatureSchema**: Validates feature data in feature entities (when appliesTo === Feature)
+**FeatureReferenceValidation**: Ensures valid feature references in feature entities
+**FeatureTypeValidation**: Validates feature types and categories through entity relationships
 
 ## 📊 **Error Handling**
 
 The feature system follows the shared [Error Handling Patterns](../application-overview/validation-schemas.md#error-handling) with feature-specific error scenarios:
 
-**Validation Errors**: Detailed field-specific error messages
-**Business Logic Errors**: Feature-specific business rule violations
-**Cross-System Errors**: Integration errors with related systems
-**Type Safety Errors**: TypeScript type safety violations
+**Validation Errors**: Detailed field-specific error messages for all entity types
+**Business Logic Errors**: Feature-specific business rule violations including entity type constraints
+**Cross-System Errors**: Integration errors with related systems (spellcasting, feats, items)
+**Type Safety Errors**: TypeScript type safety violations for unified entity approach
+**Entity Validation Errors**: Specific validation errors for entity type and appliesTo combinations
 
 ## 🔧 **Performance Considerations**
 
 The feature system implements validation performance optimizations following the shared [Performance Optimization](../application-overview/performance-optimization.md) patterns:
 
-**Efficient Validation**: Optimized validation logic for complex schemas
-**Caching**: Appropriate caching for validation results
-**Lazy Validation**: Lazy validation for large datasets
-**Batch Validation**: Batch validation for bulk operations
+**Efficient Validation**: Optimized validation logic for unified entity schemas
+**Caching**: Appropriate caching for validation results and entity type lookups
+**Lazy Validation**: Lazy validation for large datasets with complex entity relationships
+**Batch Validation**: Batch validation for bulk operations with multiple entities
+**Entity Type Optimization**: Efficient validation based on entity type and appliesTo combinations
 
 ## 🔗 **Related Documentation**
 

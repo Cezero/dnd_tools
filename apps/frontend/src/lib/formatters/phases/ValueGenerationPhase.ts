@@ -7,7 +7,7 @@ import {
     BreakdownComponentType,
     EntityType,
     FORMULA_MAP,
-    CumulativeValueType
+    ConditionalScalingValueType
 } from '@shared/static-data';
 
 import { calculatorRegistry } from '../calculator-registry';
@@ -156,7 +156,7 @@ export class ValueGenerationPhase {
             // Handle valuesRepresent logic: set either value or appliesToId based on formula.valuesRepresent
             const calculatedEntity: CalculatedEntity = {
                 ...formulaEntity,
-                ...(formula.valuesRepresent === CumulativeValueType.AppliesToId
+                ...(formula.valuesRepresent === ConditionalScalingValueType.AppliesToId
                     ? { appliesToId: singleValue as number }
                     : { value: singleValue }), // Can be number or string
                 calculatedValue: singleValue

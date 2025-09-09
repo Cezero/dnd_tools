@@ -2,7 +2,7 @@ import type {
     FormulaParamsData,
     FeatureEntity
 } from '@shared/schema';
-import { FORMULA_MAP, BreakdownComponentType, EntityType, DisplayType, CumulativeValueType } from '@shared/static-data';
+import { FORMULA_MAP, BreakdownComponentType, EntityType, DisplayType, ConditionalScalingValueType } from '@shared/static-data';
 
 import { FormulaCalculatorImpl } from './calculators';
 import { buildFormulaParams } from './formula-utils';
@@ -150,7 +150,7 @@ export class ProgressionGeneratorImpl implements ProgressionGenerator {
     private createModifiedEntity(
         originalEntity: FeatureEntity | undefined,
         value: number | string,
-        valuesRepresent: CumulativeValueType | undefined,
+        valuesRepresent: ConditionalScalingValueType | undefined,
         groupingId: number
     ): FeatureEntity {
         if (!originalEntity) {
@@ -191,7 +191,7 @@ export class ProgressionGeneratorImpl implements ProgressionGenerator {
         return {
             ...originalEntity, // Copy all original properties
             // Override appropriate field based on valuesRepresent
-            ...(valuesRepresent === CumulativeValueType.AppliesToId
+            ...(valuesRepresent === ConditionalScalingValueType.AppliesToId
                 ? { appliesToId: value as number }
                 : { value: value as number }
             ),

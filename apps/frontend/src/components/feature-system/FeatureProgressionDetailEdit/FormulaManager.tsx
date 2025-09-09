@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 import { ValidatedInput, ValidatedCustomSelect, ValidatedCustomCheckbox } from '@/components/forms';
 import type { FeatureEntity, FeatureProgression, Feature } from '@shared/schema';
-import { ABILITY_SELECT_LIST, FormulaId, EntityType, CumulativeValueType, CUMULATIVE_VALUE_TYPE_SELECT_LIST } from '@shared/static-data';
+import { ABILITY_SELECT_LIST, FormulaId, EntityType, ConditionalScalingValueType, CONDITIONAL_SCALING_VALUE_TYPE_SELECT_LIST } from '@shared/static-data';
 import type { SelectOption } from '@shared/static-data';
 
 import { ArrayPairEditor } from '../ArrayPairEditor';
@@ -158,7 +158,7 @@ export function FormulaManager({
 
                     case FormulaId.CONDITIONAL_SCALING: {
                         const valuesRepresent = entity.formulaParams?.valuesRepresent;
-                        const isAppliesToId = valuesRepresent === CumulativeValueType.AppliesToId;
+                        const isAppliesToId = valuesRepresent === ConditionalScalingValueType.AppliesToId;
 
                         return (
                             <div className="grid grid-cols-1 gap-3">
@@ -206,8 +206,8 @@ export function FormulaManager({
                                             <ValidatedCustomSelect
                                                 field={`${entityKey}.${index}.formulaParams.valuesRepresent`}
                                                 label="Values Represent"
-                                                options={CUMULATIVE_VALUE_TYPE_SELECT_LIST}
-                                                placeholder={valuesRepresent === CumulativeValueType.AppliesToId ? "Applies To ID" : "Value"}
+                                                options={CONDITIONAL_SCALING_VALUE_TYPE_SELECT_LIST}
+                                                placeholder={valuesRepresent === ConditionalScalingValueType.AppliesToId ? "Applies To ID" : "Value"}
                                                 componentExtraClassName="flex items-center gap-2"
                                                 nested
                                             />

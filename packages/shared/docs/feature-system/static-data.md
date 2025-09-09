@@ -4,9 +4,9 @@
 
 ## 📋 **Overview**
 
-The feature system static data provides enums, types, and utility functions that define the behavior and capabilities of the feature system. This includes modifier types, bonus types, choice behaviors, formula definitions, and various utility functions for feature calculations and management.
+The feature system static data provides enums, types, and utility functions that define the behavior and capabilities of the feature system. This includes entity types, applies-to types, bonus types, condition types, and various utility functions for feature calculations and management.
 
-The static data layer serves as the foundation for type safety, validation, and consistent behavior across the feature system. It defines the vocabulary and rules that govern how features interact with characters and other game systems.
+The static data layer serves as the foundation for type safety, validation, and consistent behavior across the feature system. It defines the vocabulary and rules that govern how features interact with characters and other game systems through the unified entity approach.
 
 **Source File**: `packages/shared/static-data/src/FeatureData.ts`
 
@@ -27,41 +27,56 @@ Defines the source types for feature progressions, determining how features are 
 
 **Source File**: `packages/shared/static-data/src/FeatureData.ts` (FeatureSourceType definition)
 
-### **ModifierType**
+### **EntityType**
 
-Defines the types of modifiers that features can provide, affecting how they are calculated and applied.
+Defines the types of entities that features can provide, affecting how they are calculated and applied through the unified entity approach.
 
-**Purpose**: Categorizes different types of mechanical effects that features can provide to characters.
+**Purpose**: Categorizes different types of mechanical effects that features can provide to characters using a single, flexible model.
 
-**Modifier Categories**:
+**Entity Categories**:
 
-**Bonus Modifiers (0)**: Numerical bonuses and penalties that follow stacking rules
+**Bonus Entities (0)**: Numerical bonuses and penalties that follow stacking rules
 - **Examples**: +2 to attack rolls, +4 to Strength, -1 to AC
 - **Stacking**: Multiple bonuses of different types stack, same types don't
-- **Compatibility**: Ability, Skill, SavingThrow, AC, Attack, Damage, DamageReduction, Initiative
+- **Compatibility**: Ability, Skill, SavingThrow, AC, Attack, Damage, DamageReduction, Initiative, SpellSvDC
 
-**Quantity Modifiers (1)**: Counts, amounts, and resources that represent discrete values
+**Quantity Entities (1)**: Counts, amounts, and resources that represent discrete values
 - **Examples**: 30ft movement speed, 3d6 damage, 2 targets
 - **Stacking**: Highest value applies (no stacking)
-- **Compatibility**: MovementSpeed, HitDice, Uses, Targets, Distance, ExtraAttacks, Healing, SpellResistance, UnarmedDamage
+- **Compatibility**: MovementSpeed, HitDice, Uses, Targets, Distance, ExtraAttacks, Healing, SpellResistance, Damage
 
-**Replacement Modifiers (2)**: Values that replace existing character statistics
+**Replacement Entities (2)**: Values that replace existing character statistics
 - **Examples**: Replace unarmed damage with 1d6, replace base speed with 40ft
 - **Stacking**: Overwrites existing values completely
 - **Compatibility**: Damage, UnarmedDamage, MovementSpeed, Ability
 
-**Other Modifiers (3)**: Special cases and complex effects that require custom handling
+**Other Entities (3)**: Special cases and complex effects that require custom handling
 - **Examples**: Direct feat grants, language grants, special abilities
 - **Stacking**: Custom logic per effect type
-- **Compatibility**: Other, BonusLanguage, AutomaticLanguage, Feat
+- **Compatibility**: Other, BonusLanguage, AutomaticLanguage, WeaponFamiliarity, Feat, SizeCategory, CreatureType, DamageType
 
-**Source File**: `packages/shared/static-data/src/FeatureData.ts` (ModifierType definition)
+**Proficiency Entities (4)**: Proficiency bonuses and abilities
+- **Examples**: Weapon proficiencies, armor proficiencies
+- **Stacking**: Custom logic for proficiency handling
+- **Compatibility**: Feat (when used as proficiencies)
 
-### **ModifierAppliesToType**
+**Choice Entities (5)**: Player choice mechanics
+- **Examples**: Feat choices, feature choices, creature type choices
+- **Stacking**: N/A (choice-based)
+- **Compatibility**: Feat, Feature, CreatureType
 
-Defines what a modifier applies to, determining the target of the modification.
+**Allocation Entities (6)**: Resource allocation mechanics
+- **Examples**: Point allocation to feats, features, or creature types
+- **Stacking**: N/A (allocation-based)
+- **Compatibility**: Feat, Feature, CreatureType
 
-**Purpose**: Specifies the target system or statistic that a modifier affects, enabling precise application of feature effects.
+**Source File**: `packages/shared/static-data/src/FeatureData.ts` (EntityType definition)
+
+### **EntityAppliesToType**
+
+Defines what an entity applies to, determining the target of the modification through the unified entity approach.
+
+**Purpose**: Specifies the target system or statistic that an entity affects, enabling precise application of feature effects.
 
 **Target Categories**:
 
@@ -71,6 +86,7 @@ Defines what a modifier applies to, determining the target of the modification.
 - **`AC` (3)**: Armor Class and defensive bonuses
 - **`DamageReduction` (6)**: Damage reduction and resistance
 - **`Initiative` (7)**: Initiative rolls and turn order
+- **`SpellSvDC` (26)**: Spell Save DC
 
 **Character Abilities**:
 - **`Ability` (0)**: Core ability scores (STR, DEX, CON, etc.)
@@ -92,11 +108,16 @@ Defines what a modifier applies to, determining the target of the modification.
 **Special Effects**:
 - **`SpellResistance` (19)**: Spell Resistance (SR)
 - **`Feat` (21)**: Direct feat grants
+- **`Feature` (25)**: Direct feature grants
 - **`BonusLanguage` (14)**: Languages requiring INT modifier
 - **`AutomaticLanguage` (15)**: Languages granted automatically
+- **`WeaponFamiliarity` (16)**: Weapon familiarity effects
+- **`SizeCategory` (22)**: Size category effects
+- **`CreatureType` (23)**: Creature type effects
+- **`DamageType` (24)**: Damage type effects
 - **`Other` (13)**: Special cases and complex effects
 
-**Source File**: `packages/shared/static-data/src/FeatureData.ts` (ModifierAppliesToType definition)
+**Source File**: `packages/shared/static-data/src/FeatureData.ts` (EntityAppliesToType definition)
 
 ### **FeatureBonusType**
 
@@ -106,27 +127,25 @@ Defines bonus types for stacking rules, determining how multiple bonuses of the 
 
 **Bonus Categories**:
 
-**Combat Bonuses**:
+**Always Stacking Bonuses**:
 - **`Dodge` (0)**: Dodge bonuses to AC (stack with all others)
-- **`Armor` (6)**: Armor bonuses to AC
-- **`Shield` (15)**: Shield bonuses to AC
-- **`Deflection` (7)**: Deflection bonuses to AC
-- **`NaturalArmor` (10)**: Natural armor bonuses to AC
-
-**Circumstance Bonuses**:
 - **`Circumstance` (1)**: Circumstance bonuses (stack with all others)
+
+**Non-Stacking Bonuses** (highest applies):
 - **`Enhancement` (2)**: Enhancement bonuses
 - **`Morale` (3)**: Morale bonuses
 - **`Competence` (4)**: Competence bonuses
+- **`Alchemical` (5)**: Alchemical bonuses
+- **`Armor` (6)**: Armor bonuses to AC
+- **`Deflection` (7)**: Deflection bonuses to AC
 - **`Insight` (8)**: Insight bonuses
 - **`Luck` (9)**: Luck bonuses
+- **`NaturalArmor` (10)**: Natural armor bonuses to AC
 - **`Profane` (11)**: Profane bonuses
-- **`Sacred` (14)**: Sacred bonuses
-
-**Special Bonuses**:
-- **`Alchemical` (5)**: Alchemical bonuses
 - **`Racial` (12)**: Racial bonuses
 - **`Resistance` (13)**: Resistance bonuses
+- **`Sacred` (14)**: Sacred bonuses
+- **`Shield` (15)**: Shield bonuses to AC
 - **`Size` (16)**: Size-based bonuses
 - **`Other` (17)**: Other bonus types
 
@@ -134,59 +153,27 @@ Defines bonus types for stacking rules, determining how multiple bonuses of the 
 
 **Source File**: `packages/shared/static-data/src/FeatureData.ts` (FeatureBonusType definition)
 
-## 🎯 **Choice System Enums**
+## 🎯 **Condition System Enums**
 
-### **FeatureChoiceType**
+### **FeatureEntityConditionType**
 
-Defines the types of choices that features can provide to players.
+Defines the types of conditions that can be applied to feature entities.
 
-**Purpose**: Categorizes different types of player choices for character customization.
+**Purpose**: Enables conditional application of feature entities based on specific game conditions.
 
-**Choice Types**:
-- **`Feat` (0)**: Feat selection choices
-- **`Feature` (1)**: Feature selection choices
-- **`CreatureType` (2)**: Creature type selection choices
+**Condition Types**:
+- **`material` (0)**: Material-based conditions (metal, stone)
+- **`attack_type` (1)**: Attack type conditions (melee, ranged, etc.)
+- **`character_size` (2)**: Character size requirements
+- **`target` (3)**: Target-based conditions (nearby allies, enemies, etc.)
+- **`environment` (4)**: Environment-based conditions (forest, grassland, etc.)
+- **`spell_school` (5)**: Spell school requirements
+- **`creature_type` (6)**: Creature type conditions
+- **`source` (7)**: Source-based conditions (traps, fear, spells, poison)
 
-**Usage**: Determines the available options and validation rules for player choices in feature progressions.
+**Usage**: Enables complex conditional logic for entity application based on various game conditions.
 
-**Source File**: `packages/shared/static-data/src/FeatureData.ts` (FeatureChoiceType definition)
-
-### **FeatureChoiceBehavior**
-
-Defines how choice selections behave and are managed.
-
-**Purpose**: Specifies the behavior pattern for player choices, affecting selection logic and validation.
-
-**Behavior Types**:
-- **`Single` (0)**: Single selection from available options
-- **`Multiple` (1)**: Multiple selections from available options
-- **`Allocation` (2)**: Resource allocation choices with limited points
-
-**Usage**: Determines the selection interface and validation rules for feature choices.
-
-**Source File**: `packages/shared/static-data/src/FeatureData.ts` (FeatureChoiceBehavior definition)
-
-## ✨ **Special Effect Enums**
-
-### **FeatureSpecialEffectType**
-
-Defines the types of special effects that features can provide.
-
-**Purpose**: Categorizes non-numeric effects that don't fit into the modifier system.
-
-**Effect Types**:
-- **`Proficiency` (0)**: Weapon, armor, or skill proficiencies
-- **`FavoredEnemy` (1)**: Favored enemy bonuses and abilities
-- **`ConditionalUpgrade` (2)**: Conditional feature upgrades
-- **`TurnUndead` (3)**: Turn undead abilities
-- **`WildShapeForm` (4)**: Wild shape form options
-- **`WildShapeSize` (5)**: Wild shape size options
-- **`WeaponFamiliarity` (7)**: Weapon familiarity effects
-- **`Other` (6)**: Other special effects
-
-**Usage**: Enables special abilities and traits that require custom handling beyond simple modifiers.
-
-**Source File**: `packages/shared/static-data/src/FeatureData.ts` (FeatureSpecialEffectType definition)
+**Source File**: `packages/shared/static-data/src/FeatureData.ts` (FeatureEntityConditionType definition)
 
 ## 📋 **Prerequisite Enums**
 
@@ -210,39 +197,145 @@ Defines the types of prerequisites that features can require.
 
 ## 🔧 **Formula System Enums**
 
-### **FormulaId**
+### **ConditionalScalingValueType**
 
-Defines the mathematical formulas used for feature progression calculations.
+Defines what values represent in conditional scaling formulas.
 
-**Purpose**: Provides standardized mathematical patterns for features that scale with character level or other factors.
+**Purpose**: Specifies how values in formula parameters should be interpreted for complex scaling calculations.
 
-**Formula Types**:
-- **Linear Scaling**: Features that scale linearly with level
-- **Conditional Scaling**: Features with level-based thresholds
-- **Ability-Based**: Features dependent on ability scores
-- **Dice Scaling**: Features with dice-based progression
+**Value Types**:
+- **`Value` (0)**: Values represent numeric values (default behavior)
+- **`AppliesToId` (1)**: Values represent appliesToId lookups for complex entity relationships
 
-**Usage**: Enables complex mathematical progression patterns for feature effects.
+**Usage**: Enables complex mathematical progression patterns for feature effects with different value interpretations.
 
-**Source File**: `packages/shared/static-data/src/FeatureData.ts` (FormulaId definition)
+**Source File**: `packages/shared/static-data/src/FeatureData.ts` (ConditionalScalingValueType definition)
 
-### **FeatureModifierConditionType**
+## 🎯 **Choice and Filter Enums**
 
-Defines the types of conditions that can be applied to modifiers.
+### **FeatureFeatChoiceFilter**
 
-**Purpose**: Enables conditional application of modifiers based on specific game conditions.
+Defines filtering options for feat choices in feature entities.
 
-**Condition Types**:
-- **`Trigger` (0)**: Specific triggers or events
-- **`AttackType` (1)**: Type of attack (melee, ranged, etc.)
-- **`CharacterSize` (2)**: Character size requirements
-- **`Feature` (4)**: Feature-based conditions
-- **`SpellSchool` (5)**: Spell school requirements
-- **`Other` (3)**: Other condition types
+**Purpose**: Specifies how feat choices should be filtered when presenting options to players.
 
-**Usage**: Enables complex conditional logic for modifier application.
+**Filter Types**:
+- **`Any` (0)**: Any feat can be chosen
+- **`FighterBonus` (1)**: Only fighter bonus feats can be chosen
+- **`MetamagicOrItemCreation` (2)**: Only metamagic or item creation feats can be chosen
 
-**Source File**: `packages/shared/static-data/src/FeatureData.ts` (FeatureModifierConditionType definition)
+**Usage**: Enables specialized feat choice filtering for different feature types and class abilities.
+
+**Source File**: `packages/shared/static-data/src/FeatureData.ts` (FeatureFeatChoiceFilter definition)
+
+## 🎯 **Condition Value Enums**
+
+### **MaterialType**
+
+Defines material types for material-based conditions.
+
+**Purpose**: Specifies material types that can be used in material-based feature entity conditions.
+
+**Material Types**:
+- **`metal` (0)**: Metal-based conditions
+- **`stone` (1)**: Stone-based conditions
+
+**Usage**: Enables material-specific feature effects and conditions.
+
+**Source File**: `packages/shared/static-data/src/FeatureData.ts` (MaterialType definition)
+
+### **EnvironmentType**
+
+Defines environment types for environment-based conditions.
+
+**Purpose**: Specifies environment types that can be used in environment-based feature entity conditions.
+
+**Environment Types**:
+- **`forest` (0)**: Forest environments
+- **`grassland` (1)**: Grassland environments
+- **`mountains` (2)**: Mountain environments
+- **`ocean` (3)**: Ocean environments
+- **`plains` (4)**: Plains environments
+- **`swamp` (5)**: Swamp environments
+- **`underground` (6)**: Underground environments
+- **`urban` (7)**: Urban environments
+
+**Usage**: Enables environment-specific feature effects and conditions.
+
+**Source File**: `packages/shared/static-data/src/FeatureData.ts` (EnvironmentType definition)
+
+### **SourceType**
+
+Defines source types for source-based conditions.
+
+**Purpose**: Specifies source types that can be used in source-based feature entity conditions.
+
+**Source Types**:
+- **`traps` (0)**: Trap-based conditions
+- **`fear` (1)**: Fear-based conditions
+- **`spells` (2)**: Spell-based conditions
+- **`poison` (3)**: Poison-based conditions
+
+**Usage**: Enables source-specific feature effects and conditions.
+
+**Source File**: `packages/shared/static-data/src/FeatureData.ts` (SourceType definition)
+
+### **TargetType**
+
+Defines target types for target-based conditions.
+
+**Purpose**: Specifies target types that can be used in target-based feature entity conditions.
+
+**Target Types**:
+- **`nearby_allies` (0)**: Affects allies within range
+- **`nearby_enemies` (1)**: Affects enemies within range
+- **`touched_creature` (2)**: Affects a creature you touch
+- **`line_of_sight` (3)**: Affects creatures you can see
+
+**Usage**: Enables target-specific feature effects and conditions.
+
+**Source File**: `packages/shared/static-data/src/FeatureData.ts` (TargetType definition)
+
+### **AttackType**
+
+Defines attack types for attack-based conditions.
+
+**Purpose**: Specifies attack types that can be used in attack-based feature entity conditions.
+
+**Attack Types**:
+- **`MELEE` (1)**: Melee attacks
+- **`RANGED` (2)**: Ranged attacks
+- **`SNEAK_ATTACK` (3)**: Sneak attacks
+- **`CHARGE` (4)**: Charge attacks
+- **`FLURRY_OF_BLOWS` (5)**: Flurry of blows
+- **`POWER_ATTACK` (6)**: Power attacks
+- **`TWO_WEAPON_FIGHTING` (7)**: Two-weapon fighting
+- **`GRAPPLE` (8)**: Grapple attacks
+- **`TRIP` (9)**: Trip attacks
+- **`DISARM` (10)**: Disarm attacks
+- **`SUNDER` (11)**: Sunder attacks
+- **`BULL_RUSH` (12)**: Bull rush attacks
+- **`OVERRUN` (13)**: Overrun attacks
+- **`AID_ANOTHER` (14)**: Aid another actions
+- **`FEINT` (15)**: Feint actions
+- **`UNARMED_ATTACK` (16)**: Unarmed attacks
+- **`THROWN` (17)**: Thrown attacks
+
+**Usage**: Enables attack-specific feature effects and conditions.
+
+**Source File**: `packages/shared/static-data/src/FeatureData.ts` (AttackType definition)
+
+### **CreatureType**
+
+Defines creature types for creature-based conditions.
+
+**Purpose**: Specifies creature types that can be used in creature-based feature entity conditions.
+
+**Creature Types**: Includes all standard D&D creature types such as Aberration, Animal, Construct, Dragon, Elemental, Fey, Giant, Humanoid subtypes, Magical Beast, Monstrous Humanoid, Ooze, Outsider subtypes, Plant, Undead, and Vermin.
+
+**Usage**: Enables creature-specific feature effects and conditions, particularly useful for favored enemy abilities and similar features.
+
+**Source File**: `packages/shared/static-data/src/FeatureData.ts` (CreatureType definition)
 
 ## 🎨 **Utility Functions**
 
@@ -252,7 +345,7 @@ The static data includes utility functions for formatting feature information:
 
 **Name Select Options**: Functions for creating select option lists from enum data
 **Display Name Mapping**: Maps enum values to user-friendly display names
-**Type Compatibility**: Functions for checking modifier type compatibility
+**Type Compatibility**: Functions for checking entity type compatibility with applies-to types
 **Validation Helpers**: Utility functions for validating enum values
 
 **Source File**: `packages/shared/static-data/src/FeatureData.ts` (Utility function definitions)
@@ -261,13 +354,19 @@ The static data includes utility functions for formatting feature information:
 
 Pre-formatted select lists for user interface components:
 
-**MODIFIER_SELECT_LIST**: Select options for modifier types
-**MODIFIER_APPLIES_TO_SELECT_LIST**: Select options for modifier targets
-**BONUS_TYPE_SELECT_LIST**: Select options for bonus types
-**CHOICE_TYPE_SELECT_LIST**: Select options for choice types
-**CHOICE_BEHAVIOR_SELECT_LIST**: Select options for choice behaviors
-**SPECIAL_EFFECT_SELECT_LIST**: Select options for special effect types
-**PREREQUISITE_SELECT_LIST**: Select options for prerequisite types
+**ENTITY_TYPE_SELECT_LIST**: Select options for entity types
+**ENTITY_APPLIES_TO_SELECT_LIST**: Select options for entity targets
+**FEATURE_BONUS_SELECT_LIST**: Select options for bonus types
+**FEATURE_ENTITY_CONDITION_SELECT_LIST**: Select options for condition types
+**FEATURE_PRE_REQ_SELECT_LIST**: Select options for prerequisite types
+**FEATURE_FEAT_CHOICE_FILTER_SELECT_LIST**: Select options for feat choice filters
+**CONDITIONAL_SCALING_VALUE_TYPE_SELECT_LIST**: Select options for scaling value types
+**MATERIAL_TYPE_SELECT_LIST**: Select options for material types
+**ENVIRONMENT_TYPE_SELECT_LIST**: Select options for environment types
+**SOURCE_TYPE_SELECT_LIST**: Select options for source types
+**TARGET_TYPE_SELECT_LIST**: Select options for target types
+**ATTACK_TYPE_SELECT_LIST**: Select options for attack types
+**CREATURE_TYPE_SELECT_LIST**: Select options for creature types
 
 **Source File**: `packages/shared/static-data/src/FeatureData.ts` (Select list definitions)
 
@@ -277,37 +376,37 @@ Pre-formatted select lists for user interface components:
 
 The static data integrates with the database layer:
 
-**Enum Validation**: Ensures database values match enum definitions
-**Type Safety**: Provides TypeScript types for database operations
+**Enum Validation**: Ensures database values match enum definitions for entity types, applies-to types, and bonus types
+**Type Safety**: Provides TypeScript types for database operations with unified entity approach
 **Constraint Enforcement**: Enforces enum constraints in database operations
-**Relationship Validation**: Validates enum-based relationships
+**Relationship Validation**: Validates enum-based relationships between entity types and applies-to types
 
 ### **Validation Integration**
 
 The static data supports the validation layer:
 
-**Schema Integration**: Provides enum values for Zod schemas
-**Type Generation**: Generates TypeScript types for validation
-**Error Messages**: Provides enum-specific error messages
-**Constraint Validation**: Validates enum constraints in requests
+**Schema Integration**: Provides enum values for Zod schemas including entity types and applies-to types
+**Type Generation**: Generates TypeScript types for validation with unified entity approach
+**Error Messages**: Provides enum-specific error messages for entity validation
+**Constraint Validation**: Validates enum constraints in requests including type compatibility
 
 ### **Frontend Integration**
 
 The static data supports frontend components:
 
-**Select Components**: Provides formatted data for dropdowns
-**Display Components**: Provides display names and formatting
-**Form Validation**: Provides validation rules for forms
-**Type Safety**: Ensures type safety in frontend components
+**Select Components**: Provides formatted data for dropdowns including entity types, applies-to types, and condition types
+**Display Components**: Provides display names and formatting for all enum types
+**Form Validation**: Provides validation rules for forms with unified entity approach
+**Type Safety**: Ensures type safety in frontend components with entity type compatibility
 
 ### **Backend Integration**
 
 The static data supports backend operations:
 
-**Business Logic**: Provides enum values for business rules
-**Calculation Logic**: Provides enum values for calculations
-**API Responses**: Provides formatted data for API responses
-**Error Handling**: Provides enum-specific error handling
+**Business Logic**: Provides enum values for business rules including entity type compatibility
+**Calculation Logic**: Provides enum values for calculations with unified entity approach
+**API Responses**: Provides formatted data for API responses including all enum types
+**Error Handling**: Provides enum-specific error handling for entity validation
 
 ## 📊 **Performance Considerations**
 
@@ -316,10 +415,11 @@ The feature system static data follows shared performance optimization principle
 **For complete documentation on performance optimization, see**: [Performance Optimization](../application-overview/performance-optimization.md)
 
 **Feature-Specific Performance Benefits**:
-- **Fast Enum Lookups**: Direct access to enum values for modifier types, bonus types, and choice behaviors
-- **Efficient Select Lists**: Pre-formatted select lists for UI components
-- **Optimized Validation**: Fast enum validation for feature data
+- **Fast Enum Lookups**: Direct access to enum values for entity types, applies-to types, and bonus types
+- **Efficient Select Lists**: Pre-formatted select lists for UI components including all enum types
+- **Optimized Validation**: Fast enum validation for feature data with unified entity approach
 - **Reduced API Calls**: Static data eliminates need for backend requests for enum definitions and select options
+- **Type Compatibility Matrix**: Pre-computed compatibility matrix for entity types and applies-to types
 
 ## 🔧 **Maintenance and Updates**
 
@@ -328,7 +428,8 @@ The feature system static data follows shared maintenance and extension practice
 **For complete documentation on maintenance and extension, see**: [Maintenance and Extension](../application-overview/maintenance-and-extension.md)
 
 **Feature-Specific Maintenance Considerations**:
-- **Enum Value Management**: Adding new enum values for modifier types, bonus types, and choice behaviors
+- **Enum Value Management**: Adding new enum values for entity types, applies-to types, and condition types
 - **Backward Compatibility**: Ensuring new enum values don't break existing feature data
 - **Validation Updates**: Updating validation schemas when new enum values are added
 - **UI Component Updates**: Updating select lists and form components when enum values change
+- **Type Compatibility Updates**: Updating the entity type compatibility matrix when new applies-to types are added

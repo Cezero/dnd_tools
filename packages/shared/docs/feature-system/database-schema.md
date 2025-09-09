@@ -4,11 +4,11 @@
 
 ## 📋 **Overview**
 
-The feature system database schema provides a flexible framework for defining character features, their progression, modifiers, choices, and special effects. The schema supports complex feature interactions while maintaining data integrity through proper relationships and constraints.
+The feature system database schema provides a flexible framework for defining character features, their progression, and their effects. The schema uses a unified entity approach where all feature effects (modifiers, choices, special effects) are handled through a single `FeatureEntity` model, providing consistency and flexibility.
 
 The schema is designed to handle the complexity of D&D character features, including level-based progression, player choices, mathematical formulas, and integration with other game systems like spellcasting and character advancement.
 
-**Source File**: `prisma/schema.prisma` (Feature-related models)
+**Source File**: `apps/backend/prisma/schema.prisma` (Feature-related models)
 
 ## 🏗️ **Core Models**
 
@@ -26,12 +26,11 @@ The core feature definition containing basic information about character abiliti
 
 **Relationships**:
 - **`progressions`**: Links to feature progressions that grant this feature
-- **`featureChoice`**: Links to choices that reference this feature
 - **`prerequisites`**: Links to prerequisites required for this feature
 
-**Usage**: Core feature definitions that are referenced by progressions, choices, and other feature system components.
+**Usage**: Core feature definitions that are referenced by progressions and other feature system components.
 
-**Source File**: `prisma/schema.prisma` (Feature model)
+**Source File**: `apps/backend/prisma/schema.prisma` (Feature model)
 
 ### **FeatureProgression Model**
 
@@ -40,6 +39,7 @@ Defines when and how features are granted to characters, including level-based p
 **Purpose**: Connects features to their sources (classes, races) and defines when they are acquired during character advancement.
 
 **Key Fields**:
+- **`id`**: Unique identifier for the feature progression
 - **`sourceType`**: Type of source (Race, Class, Template)
 - **`level`**: Character level when feature is granted
 - **`featureId`**: Reference to the feature being granted
@@ -50,58 +50,63 @@ Defines when and how features are granted to characters, including level-based p
 - **`class`**: Links to class that grants this feature
 - **`race`**: Links to race that grants this feature
 - **`feature`**: Links to the feature being granted
-- **`choices`**: Links to choices associated with this progression
 - **`spellcasting`**: Links to spellcasting abilities (if applicable)
-- **`effects`**: Links to special effects for this progression
-- **`modifiers`**: Links to modifiers for this progression
+- **`entities`**: Links to feature entities that define the feature's effects
+- **`characterFeatureChoice`**: Links to character choices for this progression
 
 **Usage**: The central model that connects features to their sources and defines progression patterns.
 
-**Source File**: `prisma/schema.prisma` (FeatureProgression model)
+**Source File**: `apps/backend/prisma/schema.prisma` (FeatureProgression model)
 
-## 🔧 **Modifier Models**
+## 🔧 **Unified Entity Model**
 
-### **FeatureModifier Model**
+### **FeatureEntity Model**
 
-Defines numerical bonuses, quantities, and replacements that features provide to character statistics.
+The unified model that handles all types of feature effects including modifiers, choices, and special effects through a single, flexible structure.
 
-**Purpose**: Provides the mechanical effects of features through various types of modifiers that can be applied to character statistics.
+**Purpose**: Provides a consistent approach for defining all feature effects, whether they are numerical bonuses, player choices, or special abilities.
 
 **Key Fields**:
-- **`featureProgressionId`**: Links to the feature progression
-- **`type`**: Type of modifier (Bonus, Quantity, Replacement, Other)
-- **`value`**: Numerical value of the modifier
-- **`bonusType`**: Bonus type for stacking rules (if applicable)
-- **`appliesTo`**: What the modifier applies to (ability, skill, save, etc.)
+- **`id`**: Unique identifier for the feature entity
+- **`progressionId`**: Links to the feature progression
+- **`appliesTo`**: What the entity applies to (ability, skill, save, etc.) - references @EntityAppliesToType enum
 - **`appliesToId`**: Specific target ID (if applicable)
+- **`appliesToSubId`**: Sub-target ID for complex applications
 - **`formulaParamsId`**: Reference to formula parameters (if formula-based)
+- **`groupingId`**: Groups related entities together (default: 0)
+- **`type`**: Type of entity (Bonus, Quantity, Replacement, Other, Proficiency, Choice, Allocation) - references @EntityType enum
+- **`value`**: Numerical value of the entity (if applicable)
+- **`bonusType`**: Bonus type for stacking rules (if applicable)
+- **`displayInDetail`**: Whether to display this entity in detailed views (default: true)
+- **`filterType`**: Type of filtering for choice options (if applicable)
 
 **Relationships**:
 - **`featureProgression`**: Links to the feature progression
 - **`conditions`**: Links to conditional requirements
 - **`formulaParams`**: Links to formula parameters (if formula-based)
 
-**Usage**: Defines the mechanical effects of features, including bonuses, quantities, and replacements that modify character statistics.
+**Usage**: The unified approach allows a single feature to have multiple effects of different types, all managed through one consistent model. This eliminates the need for separate modifier, choice, and special effect models while providing the same functionality.
 
-**Source File**: `prisma/schema.prisma` (FeatureModifier model)
+**Source File**: `apps/backend/prisma/schema.prisma` (FeatureEntity model)
 
-### **FeatureModifierCondition Model**
+### **FeatureEntityCondition Model**
 
-Defines conditional requirements for when modifiers apply, such as attack types or character states.
+Defines conditional requirements for when feature entities apply, such as attack types or character states.
 
-**Purpose**: Provides conditional logic for when modifiers should be applied, allowing for complex feature mechanics.
+**Purpose**: Provides conditional logic for when feature entities should be applied, allowing for complex feature mechanics.
 
 **Key Fields**:
-- **`featureModifierId`**: Links to the feature modifier
+- **`id`**: Unique identifier for the condition
+- **`featureEntityId`**: Links to the feature entity
 - **`conditionType`**: Type of condition (trigger, attack type, character size, etc.)
 - **`conditionValue`**: Value for the condition
 
 **Relationships**:
-- **`featureModifier`**: Links to the feature modifier
+- **`featureEntity`**: Links to the feature entity
 
-**Usage**: Enables conditional application of modifiers based on various game conditions and character states.
+**Usage**: Enables conditional application of feature entities based on various game conditions and character states.
 
-**Source File**: `prisma/schema.prisma` (FeatureModifierCondition model)
+**Source File**: `apps/backend/prisma/schema.prisma` (FeatureEntityCondition model)
 
 ### **FeatureFormulaParams Model**
 
@@ -110,76 +115,23 @@ Defines mathematical formulas for feature progression, including intervals, thre
 **Purpose**: Supports complex mathematical progression patterns for features that scale with character level or ability scores.
 
 **Key Fields**:
+- **`id`**: Unique identifier for the formula parameters
 - **`formulaId`**: Reference to the formula type
 - **`interval`**: Interval for progression calculations
 - **`formulaStartLevel`**: Starting level for formula calculations
 - **`abilityId`**: Reference to ability score (if ability-dependent)
-- **`thresholds`**: Level thresholds for conditional progression
-- **`values`**: Values corresponding to thresholds
+- **`thresholds`**: Level thresholds for conditional progression (stored as string)
+- **`values`**: Values corresponding to thresholds (stored as string)
+- **`includeProgressionLevel`**: Whether to include progression level in calculations (default: true)
+- **`valuesRepresent`**: What the values represent (conditional scaling value type)
+- **`cumulative`**: Whether values accumulate over time (default: false)
 
 **Relationships**:
-- **`featureModifier`**: Links to feature modifiers using this formula
-- **`featureChoice`**: Links to feature choices using this formula
+- **`featureEntity`**: Links to feature entities using this formula
 
 **Usage**: Enables complex mathematical progression patterns for features that need to scale with character advancement.
 
-**Source File**: `prisma/schema.prisma` (FeatureFormulaParams model)
-
-## 🎯 **Choice Models**
-
-### **FeatureChoice Model**
-
-Defines player selection options for features, including feat choices, feature choices, and other customizable elements.
-
-**Purpose**: Provides player choice mechanics for features that allow customization and character personalization.
-
-**Key Fields**:
-- **`progressionId`**: Links to the feature progression
-- **`label`**: Human-readable label for the choice
-- **`pickCount`**: Number of choices the player can make
-- **`type`**: Type of choice (Feat, Feature, etc.)
-- **`behavior`**: Behavior pattern for the choice (Single, Multiple, etc.)
-- **`featId`**: Reference to feat (if feat choice)
-- **`featureId`**: Reference to feature (if feature choice)
-- **`formulaParamsId`**: Reference to formula parameters (if formula-based)
-- **`filterType`**: Type of filtering for choice options
-
-**Relationships**:
-- **`featureProgression`**: Links to the feature progression
-- **`feat`**: Links to feat (if feat choice)
-- **`feature`**: Links to feature (if feature choice)
-- **`formulaParams`**: Links to formula parameters (if formula-based)
-- **`characterFeatureChoice`**: Links to character choices
-
-**Usage**: Enables player choice mechanics for features, allowing customization of character abilities and traits.
-
-**Source File**: `prisma/schema.prisma` (FeatureChoice model)
-
-## ✨ **Special Effect Models**
-
-### **FeatureSpecialEffect Model**
-
-Defines unique abilities and non-numeric effects that features provide, such as proficiencies, favored enemies, and special abilities.
-
-**Purpose**: Handles non-numeric effects that don't fit into the modifier system, such as proficiencies, special abilities, and unique traits.
-
-**Key Fields**:
-- **`progressionId`**: Links to the feature progression
-- **`effectType`**: Type of special effect
-- **`key`**: Key for the effect (if applicable)
-- **`value`**: String value for the effect (if applicable)
-- **`numericValue`**: Numeric value for the effect (if applicable)
-- **`featId`**: Reference to feat (if feat-related)
-- **`itemId`**: Reference to item (if item-related)
-
-**Relationships**:
-- **`featureProgression`**: Links to the feature progression
-- **`feat`**: Links to feat (if feat-related)
-- **`item`**: Links to item (if item-related)
-
-**Usage**: Handles special abilities, proficiencies, and other non-numeric effects that features can provide.
-
-**Source File**: `prisma/schema.prisma` (FeatureSpecialEffect model)
+**Source File**: `apps/backend/prisma/schema.prisma` (FeatureFormulaParams model)
 
 ## 📋 **Prerequisite Models**
 
@@ -190,6 +142,7 @@ Defines requirements that must be met before a feature can be acquired, such as 
 **Purpose**: Ensures that features are only available when appropriate prerequisites are met, maintaining game balance and logical progression.
 
 **Key Fields**:
+- **`id`**: Unique identifier for the prerequisite
 - **`featureId`**: Links to the feature
 - **`type`**: Type of prerequisite (ability score, skill rank, etc.)
 - **`skillId`**: Reference to skill (if skill-based)
@@ -201,7 +154,7 @@ Defines requirements that must be met before a feature can be acquired, such as 
 
 **Usage**: Defines requirements that must be met before features can be acquired, ensuring proper character progression.
 
-**Source File**: `prisma/schema.prisma` (FeaturePrerequisite model)
+**Source File**: `apps/backend/prisma/schema.prisma` (FeaturePrerequisite model)
 
 ## 🔗 **Integration Models**
 
@@ -212,18 +165,21 @@ Tracks player choices for feature options, storing the specific selections made 
 **Purpose**: Records the specific choices that players make for their characters, enabling character customization and persistence.
 
 **Key Fields**:
+- **`id`**: Unique identifier for the character feature choice
 - **`characterId`**: Links to the character
-- **`featureChoiceId`**: Links to the feature choice
-- **`selectedValue`**: The value selected by the player
-- **`selectedValueId`**: ID of the selected value (if applicable)
+- **`progressionId`**: Links to the feature progression
+- **`advancementId`**: Links to the character advancement
+- **`key`**: Key identifier for the choice (may be replaced with specific identifiers)
+- **`value`**: The value selected by the player (may be replaced with specific identifiers)
+- **`choiceIndex`**: Index of the choice (if applicable)
 
 **Relationships**:
-- **`character`**: Links to the character
-- **`featureChoice`**: Links to the feature choice
+- **`featureProgression`**: Links to the feature progression
+- **`advancement`**: Links to the character advancement
 
 **Usage**: Tracks player choices for feature options, enabling character customization and choice persistence.
 
-**Source File**: `prisma/schema.prisma` (CharacterFeatureChoice model)
+**Source File**: `apps/backend/prisma/schema.prisma` (CharacterFeatureChoice model)
 
 ## 🏗️ **Schema Relationships**
 
@@ -233,19 +189,16 @@ The feature system follows the standard **Relationship Patterns** documented in 
 
 #### **Core Relationships**
 **Feature → FeatureProgression**: Features are granted through progressions
-**FeatureProgression → FeatureModifier**: Progressions provide modifiers
-**FeatureProgression → FeatureChoice**: Progressions can include choices
-**FeatureProgression → FeatureSpecialEffect**: Progressions can include special effects
-**FeatureModifier → FeatureFormulaParams**: Modifiers can use formulas
-**FeatureModifier → FeatureModifierCondition**: Modifiers can have conditions
+**FeatureProgression → FeatureEntity**: Progressions provide entities that define all feature effects
+**FeatureEntity → FeatureFormulaParams**: Entities can use formulas for complex calculations
+**FeatureEntity → FeatureEntityCondition**: Entities can have conditional requirements
 
 #### **Integration Relationships**
 **FeatureProgression → Class**: Class-granted features
 **FeatureProgression → Race**: Race-granted features
 **FeatureProgression → SpellcastingLink**: Spellcasting features
-**FeatureChoice → Feat**: Feat choices
-**FeatureSpecialEffect → Feat**: Feat-related special effects
-**FeatureSpecialEffect → Item**: Item-related special effects
+**FeatureProgression → CharacterFeatureChoice**: Player choices for feature options
+**CharacterFeatureChoice → CharacterAdvancement**: Choices are tied to character advancement
 
 ## 📊 **Data Integrity**
 
@@ -253,10 +206,18 @@ The feature system follows the standard **Data Integrity** patterns documented i
 
 ### **Feature-Specific Constraints**
 
-**Unique Constraints**: Feature slugs must be unique
-**Foreign Key Constraints**: All relationships are properly constrained
-**Nullable Fields**: Appropriate fields are nullable based on usage
-**Cascade Deletes**: Proper cascade behavior for related records
+**Unique Constraints**: 
+- Feature slugs must be unique
+- Character feature choices are unique per advancement, progression, and key combination
+
+**Foreign Key Constraints**: All relationships are properly constrained with appropriate cascade behavior
+
+**Nullable Fields**: Appropriate fields are nullable based on usage:
+- `classId` and `raceId` in FeatureProgression (only one should be set)
+- `appliesToId`, `appliesToSubId`, `formulaParamsId` in FeatureEntity (optional based on entity type)
+- `value`, `bonusType`, `filterType` in FeatureEntity (optional based on entity type)
+
+**Cascade Deletes**: Proper cascade behavior for related records to maintain data integrity
 
 ## 🔧 **Migration Considerations**
 
@@ -264,7 +225,10 @@ The feature system follows the standard **Schema Evolution** patterns documented
 
 ### **Feature-Specific Performance Optimization**
 
-**Efficient Queries**: Optimized for feature lookups and calculations
-**Relationship Performance**: Efficient joins between related models
-**Index Strategy**: Strategic indexing for common query patterns
-**Caching Support**: Schema supports effective caching strategies
+**Efficient Queries**: Optimized for feature lookups and calculations through the unified entity approach
+**Relationship Performance**: Efficient joins between related models, especially FeatureProgression → FeatureEntity relationships
+**Index Strategy**: Strategic indexing for common query patterns:
+- Feature lookups by slug
+- FeatureProgression queries by source type and level
+- FeatureEntity queries by progression and type
+**Caching Support**: Schema supports effective caching strategies for feature calculations and character progression

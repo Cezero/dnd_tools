@@ -13,6 +13,7 @@ import {
     EntityAppliesToType,
     SpecialFeatureId,
 } from '@shared/static-data';
+import pluralize from 'pluralize';
 
 interface ClassDisplayProps {
     cls: DnDClass;
@@ -174,7 +175,13 @@ export function ClassDisplay({
                                                                 <div className="text-sm">
                                                                     {shouldShowDescription ? (
                                                                         // Show full description for first occurrence
-                                                                        <ProcessMarkdown markdown={feature.feature.description} id={`feature-${feature.featureId}`} />
+                                                                        <ProcessMarkdown markdown={feature.feature.description} id={`feature-${feature.featureId}`}
+                                                                            userVars={{
+                                                                                classname: cls.name.toLowerCase(),
+                                                                                classplural: pluralize(cls.name),
+                                                                                classplurallower: pluralize(cls.name).toLowerCase(),
+                                                                            }}
+                                                                        />
                                                                     ) : (
                                                                         // Show just the feature name for subsequent occurrences
                                                                         <strong>{feature.feature.name}</strong>

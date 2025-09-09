@@ -10,17 +10,11 @@ import {
     EntityAppliesToType,
     FeatureEntityConditionType,
     ENTITY_TYPE_COMPATIBILITY,
-    FEATURE_ENTITY_CONDITION_SELECT_LIST,
-    ATTACK_TYPE_SELECT_LIST,
     FORMULA_SELECT_LIST,
-    SIZE_SELECT_LIST,
-    SPELL_SCHOOL_SELECT_LIST,
-    CREATURE_TYPE_SELECT_LIST,
-    SOURCE_TYPE_SELECT_LIST,
-    TARGET_TYPE_SELECT_LIST,
 } from '@shared/static-data';
 
 import { AppliesToSelector } from './AppliesToSelector';
+import { ConditionEditor } from './ConditionEditor';
 import { FormulaManager } from './FormulaManager';
 import type { BaseFormProps } from './types';
 
@@ -283,107 +277,12 @@ export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeatur
             </div>
 
             {showConditions && (
-                <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Conditions</span>
-                        <button
-                            type="button"
-                            onClick={addCondition}
-                            className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
-                        >
-                            Add Condition
-                        </button>
-                    </div>
-
-                    {(entity.conditions || []).length === 0 ? (
-                        <p className="text-gray-500 text-sm">No conditions added</p>
-                    ) : (
-                        <div className="space-y-2">
-                            {(entity.conditions || []).map((condition: FeatureEntityCondition, conditionIndex: number) => (
-                                <div key={conditionIndex} className="flex items-center gap-2 p-2 border border-gray-200 rounded dark:border-gray-600">
-                                    <ValidatedCustomSelect
-                                        field={`entities.${index}.conditions.${conditionIndex}.conditionType`}
-                                        label=""
-                                        options={FEATURE_ENTITY_CONDITION_SELECT_LIST}
-                                        placeholder="Condition type"
-                                        componentExtraClassName="flex-1"
-                                        nested
-                                    />
-                                    {condition.conditionType === FeatureEntityConditionType.character_size ? (
-                                        <ValidatedCustomSelect
-                                            field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
-                                            label=""
-                                            options={SIZE_SELECT_LIST}
-                                            placeholder="Select size"
-                                            componentExtraClassName="flex-1"
-                                            nested
-                                        />
-                                    ) : condition.conditionType === FeatureEntityConditionType.attack_type ? (
-                                        <ValidatedCustomSelect
-                                            field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
-                                            label=""
-                                            options={ATTACK_TYPE_SELECT_LIST}
-                                            placeholder="Select attack type"
-                                            componentExtraClassName="flex-1"
-                                            nested
-                                        />
-                                    ) : condition.conditionType === FeatureEntityConditionType.spell_school ? (
-                                        <ValidatedCustomSelect
-                                            field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
-                                            label=""
-                                            options={SPELL_SCHOOL_SELECT_LIST}
-                                            placeholder="Select spell school"
-                                            componentExtraClassName="flex-1"
-                                            nested
-                                        />
-                                    ) : condition.conditionType === FeatureEntityConditionType.creature_type ? (
-                                        <ValidatedCustomSelect
-                                            field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
-                                            label=""
-                                            options={CREATURE_TYPE_SELECT_LIST}
-                                            placeholder="Select creature type"
-                                            componentExtraClassName="flex-1"
-                                            nested
-                                        />
-                                    ) : condition.conditionType === FeatureEntityConditionType.source ? (
-                                        <ValidatedCustomSelect
-                                            field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
-                                            label=""
-                                            options={SOURCE_TYPE_SELECT_LIST}
-                                            placeholder="Select source"
-                                            componentExtraClassName="flex-1"
-                                            nested
-                                        />
-                                    ) : condition.conditionType === FeatureEntityConditionType.target ? (
-                                        <ValidatedCustomSelect
-                                            field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
-                                            label=""
-                                            options={TARGET_TYPE_SELECT_LIST}
-                                            placeholder="Select target"
-                                            componentExtraClassName="flex-1"
-                                            nested
-                                        />
-                                    ) : (
-                                        <ValidatedInput
-                                            field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
-                                            label=""
-                                            placeholder="Condition value"
-                                            componentExtraClassName="flex-1"
-                                            nested
-                                        />
-                                    )}
-                                    <button
-                                        type="button"
-                                        onClick={() => removeCondition(conditionIndex)}
-                                        className="text-red-500 hover:text-red-700 text-sm px-2"
-                                    >
-                                        ×
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                <ConditionEditor
+                    index={index}
+                    conditions={entity.conditions || []}
+                    onAddCondition={addCondition}
+                    onRemoveCondition={removeCondition}
+                />
             )}
         </div>
     );

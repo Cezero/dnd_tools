@@ -129,46 +129,46 @@ model FeatureProgression {
 }
 
 model FeatureEntity {
-    id               Int     @id @default(autoincrement())
-    progressionId    Int
-    appliesTo        Int
-    appliesToId      Int?
-    appliesToSubId   Int?
-    formulaParamsId  Int?
-    groupingId       Int     @default(0)
-    type             Int
-    value            Int?
-    bonusType        Int?
-    displayInDetail  Boolean @default(true)
-    filterType       Int?
+    id              Int     @id @default(autoincrement())
+    progressionId   Int
+    appliesTo       Int
+    appliesToId     Int?
+    appliesToSubId  Int?
+    formulaParamsId Int?
+    groupingId      Int     @default(0)
+    type            Int
+    value           Int?
+    bonusType       Int?
+    displayInDetail Boolean @default(true)
+    filterType      Int?
 
-    featureProgression      FeatureProgression         @relation(fields: [progressionId], references: [id])
-    conditions              FeatureEntityCondition[]
-    formulaParams           FeatureFormulaParams?      @relation(fields: [formulaParamsId], references: [id])
+    featureProgression FeatureProgression       @relation(fields: [progressionId], references: [id])
+    conditions         FeatureEntityCondition[]
+    formulaParams      FeatureFormulaParams?    @relation(fields: [formulaParamsId], references: [id])
 }
 
 model FeatureFormulaParams {
-    id                Int     @id @default(autoincrement())
-    formulaId         Int
-    interval          Int?
-    formulaStartLevel Int?
-    abilityId         Int?
-    thresholds        String?
-    values            String?
+    id                      Int     @id @default(autoincrement())
+    formulaId               Int
+    interval                Int?
+    formulaStartLevel       Int?
+    abilityId               Int?
+    thresholds              String?
+    values                  String?
     includeProgressionLevel Boolean @default(true)
 
     // Enhanced parameters for complex scaling
-    valuesRepresent Int? // CumulativeValueType enum
+    valuesRepresent Int? // ConditionalScalingValueType enum
     cumulative      Boolean @default(false) // Whether values accumulate
 
-    featureEntity   FeatureEntity[]
+    featureEntity FeatureEntity[]
 }
 
 model FeatureEntityCondition {
-    id                Int @id @default(autoincrement())
-    featureEntityId   Int
-    conditionType     Int
-    conditionValue    Int
+    id              Int @id @default(autoincrement())
+    featureEntityId Int
+    conditionType   Int
+    conditionValue  Int
 
     featureEntity FeatureEntity @relation(fields: [featureEntityId], references: [id])
 }
@@ -381,8 +381,8 @@ model Item {
 
     itemType ItemType @relation(fields: [typeId], references: [id])
 
-    characterItems   CharacterItem[]
-    itemTemplate     ItemTemplate[]
+    characterItems CharacterItem[]
+    itemTemplate   ItemTemplate[]
 }
 
 model ItemType {
@@ -679,13 +679,13 @@ model AdvancementSpell {
 }
 
 model CharacterFeatureChoice {
-    id              Int     @id @default(autoincrement())
-    characterId     Int
-    progressionId   Int
-    advancementId   Int
-    key             String? // these will likely be replaced with specific identifiers
-    value           String? // these will likely be replaced with specific identifiers
-    choiceIndex     Int?
+    id            Int     @id @default(autoincrement())
+    characterId   Int
+    progressionId Int
+    advancementId Int
+    key           String? // these will likely be replaced with specific identifiers
+    value         String? // these will likely be replaced with specific identifiers
+    choiceIndex   Int?
 
     featureProgression FeatureProgression   @relation(fields: [progressionId], references: [id])
     advancement        CharacterAdvancement @relation(fields: [advancementId], references: [id])

@@ -58,11 +58,7 @@ This documentation follows a layered approach, with each layer building upon the
 - **[Common Pitfalls](common-pitfalls.md)** - Common issues and how to avoid them
 
 ### **Formatter System Integration**
-- **[Formatting README](formatting/README.md)** - Overview of the formatter system integration
-- **[Formatting Usage Guidelines](formatting/usage-guidelines.md)** - Guidelines for using the formatter system
-- **[Formatting Refactoring Strategy](formatting/refactoring-strategy.md)** - Strategy for refactoring the formatter system
-- **[Formatting Final Implementation Summary](formatting/final-implementation-summary.md)** - Summary of formatter system implementation
-- **[Formatting Architecture Decisions](formatting/architecture-decisions.md)** - Key architectural decisions and future extensibility
+- **[Formatting System Documentation](../formatting-system/)** - Comprehensive formatting system documentation and integration patterns
 
 ## 🎯 **Key Concepts**
 
@@ -102,13 +98,13 @@ This documentation follows a layered approach, with each layer building upon the
 
 ### **Database Layer**
 
-The feature system uses several interconnected models to represent complex feature relationships:
+The feature system uses a unified entity approach with interconnected models to represent complex feature relationships:
 
 **Feature**: Core feature definitions with names, descriptions, and prerequisites
 **FeatureProgression**: Level-based feature grants with source tracking
-**FeatureModifier**: Numerical bonuses and effects with formula support
-**FeatureChoice**: Player selection options with behavior patterns
-**FeatureSpecialEffect**: Unique abilities and non-numeric effects
+**FeatureEntity**: Unified model for all feature effects (modifiers, choices, special effects) with type-based differentiation
+**FeatureEntityCondition**: Conditional requirements for feature entities
+**FeatureFormulaParams**: Mathematical formulas for feature progression calculations
 
 **Source File**: `apps/backend/prisma/schema.prisma` (Feature-related models)
 
@@ -118,8 +114,8 @@ The system uses Zod schemas to ensure type safety and data integrity across all 
 
 **Feature Schemas**: Validation for core feature data and relationships
 **Progression Schemas**: Validation for level-based feature grants
-**Modifier Schemas**: Validation for numerical bonuses and effects
-**Choice Schemas**: Validation for player selection options
+**Entity Schemas**: Validation for unified feature entities with type-based differentiation
+**Condition Schemas**: Validation for conditional requirements
 **Formula Schemas**: Validation for mathematical progression calculations
 
 **Source File**: `packages/shared/schema/src/feature.ts`
@@ -128,14 +124,14 @@ The system uses Zod schemas to ensure type safety and data integrity across all 
 
 The system provides enums and types that define the feature system's capabilities:
 
-**Modifier Types**: Bonus, quantity, replacement, and other modifier categories
-**Applies To Types**: Targets for modifier application (abilities, skills, saves, etc.)
-**Choice Types**: Different types of player choices (feats, features, etc.)
+**Entity Types**: Bonus, quantity, replacement, other, proficiency, choice, and allocation entity categories
+**Applies To Types**: Targets for entity application (abilities, skills, saves, etc.)
+**Bonus Types**: Bonus stacking rules and categories
+**Condition Types**: Conditional requirement types for feature entities
 **Formula Types**: Mathematical progression patterns and calculations
 
 **Source Files**: 
 - `packages/shared/static-data/src/FeatureData.ts` (enums and types)
-- `packages/shared/static-data/src/FormulaDefinitions.ts` (formula definitions)
 
 ### **Business Logic Layer**
 
@@ -143,7 +139,7 @@ The backend provides comprehensive services for feature management:
 
 **Feature Management**: Create, read, update, and delete feature definitions
 **Progression Management**: Handle level-based feature grants and scaling
-**Modifier Calculation**: Calculate and apply feature modifiers to characters
+**Entity Management**: Handle unified feature entities with type-based processing
 **Choice Management**: Handle player selections and choice validation
 
 **Source Files**: 
@@ -158,7 +154,7 @@ The frontend provides user interfaces for feature management and interaction:
 
 **Feature Creation**: Interfaces for creating and editing feature definitions
 **Progression Setup**: Tools for configuring level-based feature grants
-**Modifier Configuration**: Interfaces for setting up numerical bonuses and effects
+**Entity Configuration**: Interfaces for setting up unified feature entities with type-based differentiation
 **Choice Management**: User interfaces for managing player selection options
 
 **Source Files**: 
@@ -173,47 +169,47 @@ The frontend provides user interfaces for feature management and interaction:
 
 ## 🔗 **Common Patterns**
 
-### **Bonus Modifiers**
+### **Bonus Entities**
 
-Bonus modifiers provide numerical improvements to character statistics:
+Bonus entities provide numerical improvements to character statistics:
 
 **Combat Bonuses**: Attack bonuses, damage bonuses, armor class improvements
 **Skill Bonuses**: Skill check improvements and skill point bonuses
 **Saving Throw Bonuses**: Improvements to fortitude, reflex, and will saves
 **Ability Bonuses**: Temporary or permanent ability score improvements
 
-**Source File**: `packages/shared/static-data/src/FeatureData.ts` (ModifierType and FeatureBonusType enums)
+**Source File**: `packages/shared/static-data/src/FeatureData.ts` (EntityType and FeatureBonusType enums)
 
-### **Quantity Modifiers**
+### **Quantity Entities**
 
-Quantity modifiers provide counts, amounts, and resources:
+Quantity entities provide counts, amounts, and resources:
 
 **Movement Speed**: Base movement speed and speed modifications
 **Uses Per Day**: Daily uses of abilities and special powers
 **Hit Dice**: Temporary hit points and healing resources
 **Targets**: Number of targets for area effects and abilities
 
-**Source File**: `packages/shared/static-data/src/FeatureData.ts` (ModifierAppliesToType enum)
+**Source File**: `packages/shared/static-data/src/FeatureData.ts` (EntityAppliesToType enum)
 
-### **Replacement Modifiers**
+### **Replacement Entities**
 
-Replacement modifiers replace existing values with new ones:
+Replacement entities replace existing values with new ones:
 
 **Damage Replacement**: Replace unarmed damage or weapon damage
 **Speed Replacement**: Replace base movement speed
 **Ability Replacement**: Replace ability score calculations
 **Skill Replacement**: Replace skill rank calculations
 
-### **Feature Choices**
+### **Choice Entities**
 
-Feature choices allow players to customize their characters:
+Choice entities allow players to customize their characters:
 
 **Feat Choices**: Select feats from available options
 **Feature Choices**: Choose between different feature options
-**Skill Choices**: Select skills for specialization
-**Equipment Choices**: Choose equipment or proficiencies
+**Creature Type Choices**: Select creature types for specialized abilities
+**Allocation Choices**: Allocate points to different options
 
-**Source File**: `packages/shared/static-data/src/FeatureData.ts` (FeatureChoiceType and FeatureChoiceBehavior enums)
+**Source File**: `packages/shared/static-data/src/FeatureData.ts` (EntityType and EntityAppliesToType enums)
 
 ## 🔧 **Integration Examples**
 
@@ -259,17 +255,17 @@ Features can grant or modify spellcasting abilities:
 **Appropriate Prerequisites**: Set prerequisites that make sense for the feature's power level
 **Progression Planning**: Consider how the feature will scale with character level
 
-### **Modifier Usage**
+### **Entity Usage**
 
-**Appropriate Types**: Choose the correct modifier type for the intended effect
+**Appropriate Types**: Choose the correct entity type for the intended effect
 **Bonus Stacking**: Use appropriate bonus types that follow stacking rules
-**Specific Targets**: Apply modifiers to specific, well-defined targets
+**Specific Targets**: Apply entities to specific, well-defined targets
 **Formula Integration**: Use formulas for complex progression patterns
 
 ### **Choice Implementation**
 
 **Clear Labels**: Provide clear, descriptive labels for choice options
-**Appropriate Behavior**: Set behavior patterns that match the choice's purpose
+**Appropriate Types**: Set entity types that match the choice's purpose
 **Validation**: Implement proper validation for choice prerequisites
 **Dependencies**: Consider choice dependencies and interactions
 

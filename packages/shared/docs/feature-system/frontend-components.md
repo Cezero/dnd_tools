@@ -31,7 +31,7 @@ The feature system frontend follows the shared [Component Architecture](../appli
 
 **FeatureEdit**: Main feature creation and editing interface
 **FeatureDetail**: Feature display and detail view
-**FeatureProgressionDetailEdit**: Complex progression editing with modifiers, choices, and effects
+**FeatureProgressionDetailEdit**: Complex progression editing with unified feature entities
 **FeaturesTab**: Tab-based feature management for class/race editing
 **ArrayPairEditor**: Utility component for editing array-based data
 **FeatureSystemApi**: API client for backend communication
@@ -91,28 +91,26 @@ Component for displaying feature details and information.
 
 Complex component for editing feature progressions with full relationship support.
 
-**Purpose**: Provides a comprehensive interface for editing feature progressions, including modifiers, choices, effects, and formula parameters.
+**Purpose**: Provides a comprehensive interface for editing feature progressions, including unified feature entities with type-based differentiation and formula parameters.
 
 **Key Features**:
 - **Progression Editing**: Edit progression details and parameters
-- **Modifier Management**: Add, edit, and remove feature modifiers
-- **Choice Management**: Configure feature choices with various types and behaviors
-- **Effect Management**: Add and configure special effects
+- **Entity Management**: Add, edit, and remove feature entities with type-based differentiation
+- **Entity Type Support**: Support for Bonus, Quantity, Replacement, Other, Proficiency, Choice, and Allocation entity types
 - **Formula Integration**: Full integration with the formula system
-- **Condition Management**: Configure conditional modifiers and effects
+- **Condition Management**: Configure conditional requirements for feature entities
 - **Real-time Preview**: Dynamic preview of formula calculations and effects
 
 **Component Structure**:
-- **Form Sections**: Progression details, modifiers, choices, effects
-- **Dynamic Forms**: Dynamic form generation based on modifier types
+- **Form Sections**: Progression details, feature entities with conditions
+- **Dynamic Forms**: Dynamic form generation based on entity types
 - **Formula Calculator**: Integrated formula calculator and preview
 - **Validation**: Comprehensive validation for all form sections
 - **State Management**: Complex state management for nested data
 
 **Key Sub-components**:
-- **ModifierEdit**: Individual modifier editing interface
-- **ChoiceEdit**: Individual choice editing interface
-- **EffectEdit**: Individual effect editing interface
+- **EntityEdit**: Individual feature entity editing interface with type-based forms
+- **ConditionEdit**: Individual condition editing interface
 - **FormulaInput**: Formula parameter input and preview
 
 **Source File**: `apps/frontend/src/components/feature-system/FeatureProgressionDetailEdit.tsx`
@@ -152,7 +150,7 @@ Utility component for editing array-based data with key-value pairs.
 - **Dynamic Sizing**: Dynamic array sizing based on content
 - **Validation**: Real-time validation of array items
 
-**Usage**: Used in feature components for editing arrays of modifiers, choices, and effects.
+**Usage**: Used in feature components for editing arrays of feature entities and conditions.
 
 **Source File**: `apps/frontend/src/components/feature-system/ArrayPairEditor.tsx`
 
@@ -209,8 +207,8 @@ The feature system follows the shared [Form Handling Patterns](../application-ov
 ### **Complex Form Management**
 
 **Nested Forms**: Complex nested forms for feature progressions
-**Dynamic Forms**: Dynamic form generation based on feature types
-**Array Forms**: Array-based forms for modifiers, choices, and effects
+**Dynamic Forms**: Dynamic form generation based on entity types
+**Array Forms**: Array-based forms for feature entities and conditions
 **Conditional Forms**: Conditional form sections based on user selections
 
 ## 🔧 **State Management**
@@ -227,7 +225,7 @@ The feature system follows the shared [State Management Patterns](../application
 ### **Complex State Patterns**
 
 **Nested State**: Complex nested state for feature progressions
-**Array State**: Array state management for modifiers, choices, and effects
+**Array State**: Array state management for feature entities and conditions
 **Conditional State**: Conditional state based on user interactions
 **Shared State**: Shared state between related components
 

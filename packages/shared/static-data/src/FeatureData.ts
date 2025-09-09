@@ -54,6 +54,7 @@ export const EntityAppliesToType = {
     Damage: 5,          // Damage rolls
     DamageReduction: 6, // DR
     Initiative: 7,      // Initiative
+    SpellSvDC: 26,      // Spell Save DC
 
     // Quantity-compatible types
     MovementSpeed: 8,   // Speed in feet
@@ -77,6 +78,7 @@ export const EntityAppliesToType = {
     Other: 13,          // Special cases
     BonusLanguage: 14,  // Languages that require INT modifier
     AutomaticLanguage: 15, // Languages granted automatically
+    WeaponFamiliarity: 16, // Weapon familiarity
 } as const;
 
 export type EntityAppliesToType = typeof EntityAppliesToType[keyof typeof EntityAppliesToType];
@@ -91,6 +93,7 @@ export const ENTITY_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
     [EntityAppliesToType.Damage]: { id: EntityAppliesToType.Damage, name: 'Damage', displayName: 'Dmg' },
     [EntityAppliesToType.DamageReduction]: { id: EntityAppliesToType.DamageReduction, name: 'Damage Reduction', displayName: 'DR' },
     [EntityAppliesToType.Initiative]: { id: EntityAppliesToType.Initiative, name: 'Initiative', displayName: 'Init' },
+    [EntityAppliesToType.SpellSvDC]: { id: EntityAppliesToType.SpellSvDC, name: 'Spell Save DC', displayName: 'Spell Save DC' },
 
     // Quantity-compatible types
     [EntityAppliesToType.MovementSpeed]: { id: EntityAppliesToType.MovementSpeed, name: 'Movement Speed', displayName: 'Move Speed' },
@@ -114,6 +117,7 @@ export const ENTITY_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
     [EntityAppliesToType.Other]: { id: EntityAppliesToType.Other, name: 'Other', displayName: 'Other' },
     [EntityAppliesToType.BonusLanguage]: { id: EntityAppliesToType.BonusLanguage, name: 'Bonus Language', displayName: 'Bonus Language' },
     [EntityAppliesToType.AutomaticLanguage]: { id: EntityAppliesToType.AutomaticLanguage, name: 'Automatic Language', displayName: 'Automatic Language' },
+    [EntityAppliesToType.WeaponFamiliarity]: { id: EntityAppliesToType.WeaponFamiliarity, name: 'Weapon Familiarity', displayName: 'Weapon Familiarity' },
 }
 
 export const ENTITY_APPLIES_TO_LIST = Object.values(ENTITY_APPLIES_TO_TYPES);
@@ -130,6 +134,7 @@ export const ENTITY_TYPE_COMPATIBILITY = {
         EntityAppliesToType.Damage,
         EntityAppliesToType.DamageReduction,
         EntityAppliesToType.Initiative,
+        EntityAppliesToType.SpellSvDC,
     ],
     [EntityType.Quantity]: [
         EntityAppliesToType.MovementSpeed,
@@ -152,6 +157,7 @@ export const ENTITY_TYPE_COMPATIBILITY = {
         EntityAppliesToType.Other,
         EntityAppliesToType.BonusLanguage, // Bonus languages are Other type modifiers
         EntityAppliesToType.AutomaticLanguage, // Automatic languages are Other type modifiers
+        EntityAppliesToType.WeaponFamiliarity, // Weapon familiarity are Other type modifiers
 
         EntityAppliesToType.Feat, // Direct feat grants are Other type modifiers
 
@@ -273,11 +279,11 @@ export const FEATURE_PRE_REQ_LIST = Object.values(FEATURE_PRE_REQ_TYPES);
 export const FEATURE_PRE_REQ_SELECT_LIST = NameSelectOptionList(FEATURE_PRE_REQ_LIST);
 
 export const FeatureEntityConditionType = {
-    trigger: 0,
+    material: 0,
     attack_type: 1,
     character_size: 2,
     target: 3,
-    feature: 4,
+    environment: 4,
     spell_school: 5,
     creature_type: 6,
     source: 7,
@@ -286,23 +292,69 @@ export const FeatureEntityConditionType = {
 export type FeatureEntityConditionType = typeof FeatureEntityConditionType[keyof typeof FeatureEntityConditionType];
 
 export const FEATURE_ENTITY_CONDITION_TYPES: BaseMap<ConditionType> = {
-    [FeatureEntityConditionType.trigger]: { id: FeatureEntityConditionType.trigger, name: 'Trigger', displayName: 'Trigger' },
     [FeatureEntityConditionType.attack_type]: { id: FeatureEntityConditionType.attack_type, name: 'Attack Type', displayName: '' },
     [FeatureEntityConditionType.character_size]: { id: FeatureEntityConditionType.character_size, name: 'Character Size', displayName: '' },
     [FeatureEntityConditionType.target]: { id: FeatureEntityConditionType.target, name: 'Target', displayName: 'Target' },
-    [FeatureEntityConditionType.feature]: { id: FeatureEntityConditionType.feature, name: 'Feature', displayName: 'Feature' },
     [FeatureEntityConditionType.spell_school]: { id: FeatureEntityConditionType.spell_school, name: 'Spell School', displayName: '' },
     [FeatureEntityConditionType.creature_type]: { id: FeatureEntityConditionType.creature_type, name: 'Creature Type', displayName: '' },
     [FeatureEntityConditionType.source]: { id: FeatureEntityConditionType.source, name: 'Source', displayName: 'Source' },
+    [FeatureEntityConditionType.material]: { id: FeatureEntityConditionType.material, name: 'Material', displayName: 'Material' },
+    [FeatureEntityConditionType.environment]: { id: FeatureEntityConditionType.environment, name: 'Environment', displayName: 'Environment' },
 }
 
 export const FEATURE_ENTITY_CONDITION_LIST = Object.values(FEATURE_ENTITY_CONDITION_TYPES);
 export const FEATURE_ENTITY_CONDITION_SELECT_LIST = NameSelectOptionList(FEATURE_ENTITY_CONDITION_LIST);
 
+// Material values for FeatureEntityConditionType.material
+export const MaterialType = {
+    metal: 0,
+    stone: 1,
+} as const;
+
+export type MaterialType = typeof MaterialType[keyof typeof MaterialType];
+
+export const MATERIAL_TYPES: BaseMap<CoreComponent> = {
+    [MaterialType.metal]: { id: MaterialType.metal, name: 'Metal' },
+    [MaterialType.stone]: { id: MaterialType.stone, name: 'Stone' },
+}
+
+export const MATERIAL_TYPE_LIST = Object.values(MATERIAL_TYPES);
+export const MATERIAL_TYPE_SELECT_LIST = NameSelectOptionList(MATERIAL_TYPE_LIST);
+
+// Environment values for FeatureEntityConditionType.environment
+export const EnvironmentType = {
+    forest: 0,
+    grassland: 1,
+    mountains: 2,
+    ocean: 3,
+    plains: 4,
+    swamp: 5,
+    underground: 6,
+    urban: 7,
+} as const;
+
+export type EnvironmentType = typeof EnvironmentType[keyof typeof EnvironmentType];
+
+export const ENVIRONMENT_TYPES: BaseMap<CoreComponent> = {
+    [EnvironmentType.forest]: { id: EnvironmentType.forest, name: 'Forest' },
+    [EnvironmentType.grassland]: { id: EnvironmentType.grassland, name: 'Grassland' },
+    [EnvironmentType.mountains]: { id: EnvironmentType.mountains, name: 'Mountains' },
+    [EnvironmentType.ocean]: { id: EnvironmentType.ocean, name: 'Ocean' },
+    [EnvironmentType.plains]: { id: EnvironmentType.plains, name: 'Plains' },
+    [EnvironmentType.swamp]: { id: EnvironmentType.swamp, name: 'Swamp' },
+    [EnvironmentType.underground]: { id: EnvironmentType.underground, name: 'Underground' },
+    [EnvironmentType.urban]: { id: EnvironmentType.urban, name: 'Urban' },
+}
+
+export const ENVIRONMENT_TYPE_LIST = Object.values(ENVIRONMENT_TYPES);
+export const ENVIRONMENT_TYPE_SELECT_LIST = NameSelectOptionList(ENVIRONMENT_TYPE_LIST);
+
 // Source values for FeatureEntityConditionType.source
 export const SourceType = {
     traps: 0,
     fear: 1,
+    spells: 2,
+    poison: 3,
 } as const;
 
 export type SourceType = typeof SourceType[keyof typeof SourceType];
@@ -310,6 +362,8 @@ export type SourceType = typeof SourceType[keyof typeof SourceType];
 export const SOURCE_TYPES: BaseMap<CoreComponent> = {
     [SourceType.traps]: { id: SourceType.traps, name: 'Traps' },
     [SourceType.fear]: { id: SourceType.fear, name: 'Fear' },
+    [SourceType.spells]: { id: SourceType.spells, name: 'Spells' },
+    [SourceType.poison]: { id: SourceType.poison, name: 'Poison' },
 };
 
 export const SOURCE_TYPE_LIST = Object.values(SOURCE_TYPES);
@@ -353,6 +407,7 @@ export const ATTACK_TYPE_ENUM = {
     AID_ANOTHER: 14,
     FEINT: 15,
     UNARMED_ATTACK: 16,
+    THROWN: 17,
 } as const;
 
 export type AttackType = typeof ATTACK_TYPE_ENUM[keyof typeof ATTACK_TYPE_ENUM];
@@ -374,6 +429,7 @@ export const ATTACK_TYPES: BaseMap<CoreComponent> = {
     [ATTACK_TYPE_ENUM.AID_ANOTHER]: { id: ATTACK_TYPE_ENUM.AID_ANOTHER, name: 'Aid Another' },
     [ATTACK_TYPE_ENUM.FEINT]: { id: ATTACK_TYPE_ENUM.FEINT, name: 'Feint' },
     [ATTACK_TYPE_ENUM.UNARMED_ATTACK]: { id: ATTACK_TYPE_ENUM.UNARMED_ATTACK, name: 'Unarmed Attack' },
+    [ATTACK_TYPE_ENUM.THROWN]: { id: ATTACK_TYPE_ENUM.THROWN, name: 'Thrown' },
 };
 
 export const ATTACK_TYPE_LIST = Object.values(ATTACK_TYPES);
@@ -456,18 +512,18 @@ export const CREATURE_TYPE_LIST = Object.values(CREATURE_TYPES);
 export const CREATURE_TYPE_SELECT_LIST = NameSelectOptionList(CREATURE_TYPE_LIST);
 
 // Cumulative Value Type for enhanced formula parameters
-export const CumulativeValueType = {
+export const ConditionalScalingValueType = {
     Value: 0,        // Default: values represent numeric values (current behavior)
     AppliesToId: 1,  // Values represent appliesToId lookups
     // Future: Could add other types like "ItemId", "SpellId", etc.
 } as const;
 
-export type CumulativeValueType = typeof CumulativeValueType[keyof typeof CumulativeValueType];
+export type ConditionalScalingValueType = typeof ConditionalScalingValueType[keyof typeof ConditionalScalingValueType];
 
-export const CUMULATIVE_VALUE_TYPES: BaseMap<CoreComponent> = {
-    [CumulativeValueType.Value]: { id: CumulativeValueType.Value, name: 'Value' },
-    [CumulativeValueType.AppliesToId]: { id: CumulativeValueType.AppliesToId, name: 'Applies To ID' },
+export const CONDITIONAL_SCALING_VALUE_TYPES: BaseMap<CoreComponent> = {
+    [ConditionalScalingValueType.Value]: { id: ConditionalScalingValueType.Value, name: 'Value' },
+    [ConditionalScalingValueType.AppliesToId]: { id: ConditionalScalingValueType.AppliesToId, name: 'Applies To ID' },
 };
 
-export const CUMULATIVE_VALUE_TYPE_LIST = Object.values(CUMULATIVE_VALUE_TYPES);
-export const CUMULATIVE_VALUE_TYPE_SELECT_LIST = NameSelectOptionList(CUMULATIVE_VALUE_TYPE_LIST);
+export const CONDITIONAL_SCALING_VALUE_TYPE_LIST = Object.values(CONDITIONAL_SCALING_VALUE_TYPES);
+export const CONDITIONAL_SCALING_VALUE_TYPE_SELECT_LIST = NameSelectOptionList(CONDITIONAL_SCALING_VALUE_TYPE_LIST);

@@ -37,9 +37,8 @@ The system separates concerns by **purpose** rather than by **logical layer**, f
 #### **Component Responsibilities**
 - **Features**: Generic concept descriptions (metadata only)
 - **FeatureProgressions**: Specific implementations with level and context
-- **FeatureModifiers**: Numeric bonuses, quantities, and replacements
-- **FeatureChoices**: Player selections and allocations
-- **FeatureSpecialEffects**: Unique abilities that don't fit other categories
+- **FeatureEntities**: Unified model for all feature effects (modifiers, choices, special effects) with type-based differentiation
+- **FeatureEntityConditions**: Conditional requirements for feature entities
 - **FeaturePrerequisites**: Requirements and conditions
 
 #### **Data Flow Architecture**
@@ -47,7 +46,8 @@ The system separates concerns by **purpose** rather than by **logical layer**, f
 Database (Persistence Layer)
 ├── Prisma Schema (strict foreign key relationships)
 ├── Feature tables (generic concepts)
-└── FeatureProgression tables (specific implementations)
+├── FeatureProgression tables (specific implementations)
+└── FeatureEntity tables (unified effects with type differentiation)
 
 Validation Layer
 ├── Zod Schemas (type safety and data quality)
@@ -88,13 +88,10 @@ The architecture prioritizes performance through strategic use of static data an
 erDiagram
     Feature ||--o{ FeatureProgression : "has many"
     Feature ||--o{ FeaturePrerequisite : "has many"
-    FeatureProgression ||--o{ FeatureModifier : "has many"
-    FeatureProgression ||--o{ FeatureChoice : "has many"
-    FeatureProgression ||--o{ FeatureSpecialEffect : "has many"
+    FeatureProgression ||--o{ FeatureEntity : "has many"
     
-    FeatureModifier ||--o{ FeatureModifierCondition : "has many"
-    FeatureModifier ||--o| FeatureFormulaParams : "has optional"
-    FeatureChoice ||--o| FeatureFormulaParams : "has optional"
+    FeatureEntity ||--o{ FeatureEntityCondition : "has many"
+    FeatureEntity ||--o| FeatureFormulaParams : "has optional"
     
     Feature {
         int id PK
@@ -115,42 +112,29 @@ erDiagram
     FeaturePrerequisite {
         int id PK
         int featureId FK
-        int prerequisiteType
-        int prerequisiteValue
-        string description
-    }
-    
-    FeatureModifier {
-        int id PK
-        int featureProgressionId FK
         int type
-        int value
-        int appliesTo
-        int appliesToId
-        int bonusType
+        int skillId FK
+        int minValue
     }
     
-    FeatureChoice {
+    FeatureEntity {
         int id PK
         int progressionId FK
         int type
-        int behavior
-        int pickCount
-        string label
+        int appliesTo
+        int appliesToId
+        int appliesToSubId
+        int value
+        int bonusType
+        int formulaParamsId FK
+        int groupingId
+        boolean displayInDetail
+        int filterType
     }
     
-    FeatureSpecialEffect {
+    FeatureEntityCondition {
         int id PK
-        int featureProgressionId FK
-        int effectType
-        int numericValue
-        string key
-        string value
-    }
-    
-    FeatureModifierCondition {
-        int id PK
-        int featureModifierId FK
+        int featureEntityId FK
         int conditionType
         int conditionValue
     }
@@ -158,10 +142,14 @@ erDiagram
     FeatureFormulaParams {
         int id PK
         int formulaId
+        int interval
+        int formulaStartLevel
+        int abilityId
         string thresholds
         string values
-        int interval
-        int baseValue
+        boolean includeProgressionLevel
+        int valuesRepresent
+        boolean cumulative
     }
 ```
 
@@ -179,23 +167,22 @@ erDiagram
 - **Dependencies**: References single Feature
 - **Examples**: "Elf gets Low-Light Vision at level 1", "Rogue gets Evasion at level 2"
 
-#### **FeatureModifier (Numeric Effects)**
-- **Purpose**: Numeric bonuses, quantities, and replacements
-- **Data**: Type, value, applies to, bonus type, conditions
-- **Dependencies**: References FeatureProgression, optional FormulaParams
-- **Examples**: "+2 to attack rolls", "1d6 sneak attack damage", "30 ft movement speed"
+#### **FeatureEntity (Unified Effects)**
+- **Purpose**: Unified model for all feature effects with type-based differentiation
+- **Data**: Type, applies to, value, bonus type, conditions, formula parameters
+- **Dependencies**: References FeatureProgression, optional FormulaParams, optional Conditions
+- **Entity Types**: Bonus, Quantity, Replacement, Other, Proficiency, Choice, Allocation
+- **Examples**: 
+  - Bonus: "+2 to attack rolls", "+4 to Strength"
+  - Quantity: "1d6 sneak attack damage", "30 ft movement speed"
+  - Choice: "Choose a feat from Fighter bonus feat list"
+  - Other: "Weapon familiarity", "Turn undead", "Wild shape forms"
 
-#### **FeatureChoice (Player Selections)**
-- **Purpose**: Player decisions and allocations
-- **Data**: Choice type, behavior, options, pick count
-- **Dependencies**: References FeatureProgression, optional FormulaParams
-- **Examples**: "Choose a feat from Fighter bonus feat list", "Allocate +2 to favored enemy types"
-
-#### **FeatureSpecialEffect (Unique Abilities)**
-- **Purpose**: Special abilities that don't fit modifiers or choices
-- **Data**: Effect type, parameters, descriptions
-- **Dependencies**: References FeatureProgression
-- **Examples**: "Weapon familiarity", "Turn undead", "Wild shape forms"
+#### **FeatureEntityCondition (Conditional Requirements)**
+- **Purpose**: Conditional requirements for when feature entities apply
+- **Data**: Condition type, condition value
+- **Dependencies**: References FeatureEntity
+- **Examples**: "Only applies to melee attacks", "Only applies to undead creatures"
 
 #### **FeaturePrerequisite (Requirements)**
 - **Purpose**: Conditions that must be met before feature is available
@@ -210,8 +197,7 @@ erDiagram
 Formulas automate common progression patterns, reducing data entry and enabling complex calculations.
 
 #### **Formula Integration Points**
-- **FeatureModifier**: Formulas can drive modifier values
-- **FeatureChoice**: Formulas can drive choice quantities
+- **FeatureEntity**: Formulas can drive entity values and quantities
 - **Character System**: Formulas will drive character calculations
 
 #### **Formula Types**
@@ -346,17 +332,18 @@ Character System Integration
 
 ### **Extension Patterns**
 
-#### **Adding New Modifier Types**
-1. **Add to Enum**: Add new value to `ModifierType` enum
+#### **Adding New Entity Types**
+1. **Add to Enum**: Add new value to `EntityType` enum
 2. **Update UI**: Add to relevant UI forms
 3. **Character System**: Implement character system interpretation
 4. **Validation**: Add validation rules as needed
 
-#### **Adding New Choice Types**
-1. **Add to Enum**: Add new value to `FeatureChoiceType` enum
-2. **Update UI**: Add to choice configuration forms
-3. **Character System**: Implement choice handling logic
-4. **Validation**: Add validation rules as needed
+#### **Adding New Applies-To Types**
+1. **Add to Enum**: Add new value to `EntityAppliesToType` enum
+2. **Update Compatibility**: Add to entity type compatibility matrix
+3. **Update UI**: Add to applies-to selection forms
+4. **Character System**: Implement character system interpretation
+5. **Validation**: Add validation rules as needed
 
 ## Future Architecture Considerations
 

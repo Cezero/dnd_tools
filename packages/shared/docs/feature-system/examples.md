@@ -355,7 +355,7 @@ const wildShapeEnhanced: FeatureProgression = {
 //     formulaId: FormulaId.CONDITIONAL_SCALING,
 //     thresholds: [1, 4, 8, 11, 15, 20], // Level thresholds
 //     values: [1, 2, 3, 4, 5, 6], // Size category IDs: Small, Medium, Large, Huge, Gargantuan, Colossal
-//     valuesRepresent: CumulativeValueType.AppliesToId, // Values represent size category IDs
+//     valuesRepresent: ConditionalScalingValueType.AppliesToId, // Values represent size category IDs
 //     cumulative: true // Values accumulate (Level 8 can do Small, Medium, Large)
 // }
 ```

@@ -11,11 +11,13 @@ export * from './calculator-registry';
 export * from './progression-generators';
 export * from './grouping-strategies';
 export * from './formula-utils';
-export * from './condition-formatters';
-export * from './condition-formatter-registry';
-export * from './display-utils';
+export * from './condition-value-formatters';
+export * from './condition-value-formatter-registry';
+export * from './condition-labelers';
+export * from './condition-labeler-registry';
 export { formatterRegistry } from './formatter-registry';
-export { conditionFormatterRegistry } from './condition-formatter-registry';
+export { conditionValueFormatterRegistry } from './condition-value-formatter-registry';
+export { conditionLabelerRegistry } from './condition-labeler-registry';
 
 // Export phases
 export * from './phases';

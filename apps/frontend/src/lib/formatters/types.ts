@@ -361,3 +361,10 @@ export interface ConditionalValueDetector {
 export interface ConditionFormatter {
     formatCondition(condition: FeatureEntityCondition, formattedValue: string): string;
 }
+
+/**
+ * Interface for condition value formatters - simple function that takes a condition value and returns formatted string
+ */
+export interface ConditionValueFormatter {
+    format(conditionValue: number): string;
+}

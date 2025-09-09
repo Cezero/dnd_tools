@@ -1,11 +1,10 @@
 import pluralize from 'pluralize';
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { FeatApi } from '@/features/feat/FeatApi';
 import { displayStrategyFactory } from '@/lib/formatters';
 import { LanguageService } from '@/lib/LanguageService';
-import { Race, FeatQueryResponse } from '@shared/schema';
+import { Race } from '@shared/schema';
 import { DisplayType, SIZE_MAP, LANGUAGE_MAP, EDITION_MAP, ABILITY_MAP, CLASS_MAP, EntityAppliesToType, ABILITY_LIST, SpecialFeatureId } from '@shared/static-data';
 
 interface RaceDisplayProps {
@@ -112,51 +111,64 @@ export function RaceDisplay({
                     ).length > 0 && (
                             <div className="mt-3">
                                 <h3 className="text-lg font-bold mb-2">{race.name} Racial Features</h3>
-                                <div className="space-y-2">
-                                    {race.features.filter(fp =>
+                                {(() => {
+                                    const actualFeatures = race.features.filter(fp =>
                                         fp.featureId !== SpecialFeatureId.AutomaticLanguage &&
                                         fp.featureId !== SpecialFeatureId.BonusLanguage &&
                                         fp.featureId !== SpecialFeatureId.AbilityAdjustment
-                                    ).map((featureProg, index) => (
-                                        <div key={index} className="gap-2 items-start">
-                                            <div className="w-full prose-custom">
-                                                {featureProg.feature?.description && (
-                                                    <div className="mt-2">
-                                                        <ProcessMarkdown id={`feature-${featureProg.id}`} markdown={featureProg.feature.description} userVars={{
-                                                            racename: race.name,
-                                                            racenamelower: race.name.toLowerCase(),
-                                                            raceplural: pluralize(race.name),
-                                                            raceplurallower: pluralize(race.name).toLowerCase(),
-                                                        }} />
-                                                    </div>
-                                                )}
-                                                {(() => {
-                                                    const hasDetails = featureProg.entities && featureProg.entities.length > 0;
+                                    );
 
-                                                    if (hasDetails) {
-                                                        const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
-                                                        const result = strategy.format(featureProg, undefined);
-                                                        const formattedEntries = result.levelEntries.find(entry => entry.level === featureProg.level)?.items || [];
+                                    if (actualFeatures.length > 0) {
+                                        // Use display strategy to format features
+                                        const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
+                                        const result = strategy.format(actualFeatures, undefined);
 
-                                                        if (formattedEntries.length > 0) {
-                                                            return (
-                                                                <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                                                                    <strong>Details:</strong> {formattedEntries.join(', ')}
-                                                                </div>
-                                                            );
-                                                        }
-                                                    }
-                                                    return null;
-                                                })()}
-                                                {featureProg.entities && featureProg.entities.length > 0 && (
-                                                    <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                                                        <strong>Entities:</strong> {featureProg.entities.length} entity(ies)
+                                        return (
+                                            <div className="space-y-4">
+                                                {/* Render level entries */}
+                                                {result.levelEntries.map((levelEntry) => (
+                                                    <div key={levelEntry.level} className="border border-gray-200 dark:border-gray-600 rounded-md p-3">
+                                                        <h4 className="text-md font-medium mb-2">Level {levelEntry.level}</h4>
+                                                        <div className="space-y-2">
+                                                            {levelEntry.items?.map((item, index) => {
+                                                                // Find the corresponding feature for this item
+                                                                const feature = actualFeatures.find(f => f.featureId === item.featureId);
+                                                                if (!feature) {
+                                                                    return null;
+                                                                }
+
+                                                                // Determine whether to show description or name
+                                                                const shouldShowDescription = item.descriptionLevel === levelEntry.level;
+                                                                return (
+                                                                    <div key={`item-${index}`} className="p-2">
+                                                                        <div className="text-sm">
+                                                                            {shouldShowDescription ? (
+                                                                                // Show full description for first occurrence
+                                                                                <ProcessMarkdown markdown={feature.feature?.description || ''} id={`feature-${feature.id}`} userVars={{
+                                                                                    racename: race.name,
+                                                                                    racenamelower: race.name.toLowerCase(),
+                                                                                    raceplural: pluralize(race.name),
+                                                                                    raceplurallower: pluralize(race.name).toLowerCase(),
+                                                                                }} />
+                                                                            ) : (
+                                                                                // Show just the feature name for subsequent occurrences
+                                                                                <strong>{feature.feature?.name}</strong>
+                                                                            )}
+                                                                            {item.formattedValue && (
+                                                                                <span className="ml-2">{item.formattedValue}</span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
                                                     </div>
-                                                )}
+                                                ))}
                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
                             </div>
                         )}
                     {/* Actions */}

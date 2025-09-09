@@ -8,7 +8,10 @@ import {
     SPELL_SCHOOL_SELECT_LIST,
     CREATURE_TYPE_SELECT_LIST,
     SOURCE_TYPE_SELECT_LIST,
-    FeatureEntityConditionType
+    FeatureEntityConditionType,
+    ENVIRONMENT_TYPE_SELECT_LIST,
+    MATERIAL_TYPE_SELECT_LIST,
+    TARGET_TYPE_SELECT_LIST
 } from '@shared/static-data';
 
 import type { ConditionEditorProps } from './types';
@@ -88,6 +91,33 @@ export function ConditionEditor({
                                     label=""
                                     options={SOURCE_TYPE_SELECT_LIST}
                                     placeholder="Select source"
+                                    componentExtraClassName="flex-1"
+                                    nested
+                                />
+                            ) : condition.conditionType === FeatureEntityConditionType.material ? (
+                                <ValidatedCustomSelect
+                                    field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
+                                    label=""
+                                    options={MATERIAL_TYPE_SELECT_LIST}
+                                    placeholder="Select material"
+                                    componentExtraClassName="flex-1"
+                                    nested
+                                />
+                            ) : condition.conditionType === FeatureEntityConditionType.environment ? (
+                                <ValidatedCustomSelect
+                                    field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
+                                    label=""
+                                    options={ENVIRONMENT_TYPE_SELECT_LIST}
+                                    placeholder="Select environment"
+                                    componentExtraClassName="flex-1"
+                                    nested
+                                />
+                            ) : condition.conditionType === FeatureEntityConditionType.target ? (
+                                <ValidatedCustomSelect
+                                    field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
+                                    label=""
+                                    options={TARGET_TYPE_SELECT_LIST}
+                                    placeholder="Select target"
                                     componentExtraClassName="flex-1"
                                     nested
                                 />

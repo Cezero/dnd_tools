@@ -7,7 +7,7 @@ import {
     ENTITY_TYPE_COMPATIBILITY,
     ENTITY_TYPES,
     FormulaId,
-    CumulativeValueType,
+    ConditionalScalingValueType,
     EntityAppliesToType,
     EntityType
 } from '@shared/static-data';
@@ -65,7 +65,7 @@ export function AppliesToSelector({
             {(() => {
                 // Hide AppliesToId field when using conditional scaling with AppliesToId valuesRepresent
                 const isConditionalScalingWithAppliesToId = formulaId === FormulaId.CONDITIONAL_SCALING &&
-                    valuesRepresent === CumulativeValueType.AppliesToId;
+                    valuesRepresent === ConditionalScalingValueType.AppliesToId;
 
                 if (isConditionalScalingWithAppliesToId) {
                     return null;

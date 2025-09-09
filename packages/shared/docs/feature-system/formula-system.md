@@ -351,9 +351,9 @@ The formula system includes management capabilities:
 
 ## 🔧 **Enhanced Formula Parameters**
 
-### **CumulativeValueType Enum**
+### **ConditionalScalingValueType Enum**
 
-The enhanced formula system introduces semantic value interpretation through the `CumulativeValueType` enum.
+The enhanced formula system introduces semantic value interpretation through the `ConditionalScalingValueType` enum.
 
 **Purpose**: Defines what formula values represent, enabling more sophisticated progression patterns.
 
@@ -361,14 +361,14 @@ The enhanced formula system introduces semantic value interpretation through the
 - **`Value` (0)**: Default behavior - values represent direct numeric or string values
 - **`AppliesToId` (1)**: Values represent IDs to look up in appliesTo enums (e.g., size categories, creature types)
 
-**Source File**: `packages/shared/static-data/src/FeatureData.ts` (CumulativeValueType definition)
+**Source File**: `packages/shared/static-data/src/FeatureData.ts` (ConditionalScalingValueType definition)
 
 ### **Enhanced FeatureFormulaParams**
 
 The `FeatureFormulaParams` model has been extended with new fields for complex scaling patterns.
 
 **New Fields**:
-- **`valuesRepresent`**: CumulativeValueType enum indicating what values represent
+- **`valuesRepresent`**: ConditionalScalingValueType enum indicating what values represent
 - **`cumulative`**: Boolean flag indicating whether values accumulate or replace
 
 **Database Schema**: `backend/prisma/schema.prisma` (FeatureFormulaParams model)
@@ -397,7 +397,7 @@ When `cumulative` is enabled, formulas return arrays of applicable values instea
     formulaId: FormulaId.CONDITIONAL_SCALING,
     thresholds: [1, 4, 8, 11, 15, 20],
     values: [1, 2, 3, 4, 5, 6], // Size category IDs
-    valuesRepresent: CumulativeValueType.AppliesToId,
+    valuesRepresent: ConditionalScalingValueType.AppliesToId,
     cumulative: true
 }
 
@@ -412,7 +412,7 @@ When `cumulative` is enabled, formulas return arrays of applicable values instea
     formulaId: FormulaId.CONDITIONAL_SCALING,
     thresholds: [1, 6, 11, 16],
     values: [1, 2, 3, 4], // BAB values
-    valuesRepresent: CumulativeValueType.Value, // Default
+    valuesRepresent: ConditionalScalingValueType.Value, // Default
     cumulative: false // Default
 }
 
