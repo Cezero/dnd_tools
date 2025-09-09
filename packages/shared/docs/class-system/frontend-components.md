@@ -6,7 +6,7 @@
 
 The class system frontend components provide the user interface for class management, including list views, detailed displays, editing forms, and specialized interfaces for class-specific functionality. The components follow React patterns with TypeScript for type safety.
 
-The frontend implementation follows the shared [Frontend Component Architecture](../application-overview/frontend-components.md) with class-specific business logic and user interface patterns.
+The frontend implementation follows the shared [Frontend Component Architecture](../application-overview/frontend-components.md#shared-component-architecture) with class-specific business logic and user interface patterns.
 
 **Source Files**: 
 - Core Components: `frontend/src/features/class/ClassEdit.tsx`, `frontend/src/features/class/ClassList.tsx`, `frontend/src/features/class/ClassDisplay.tsx`
@@ -42,11 +42,47 @@ The class system frontend follows the shared [Component Architecture](../applica
 
 The primary component for displaying and managing class collections. This component follows the shared [List Components](../application-overview/frontend-components.md#list-components) pattern.
 
+**Props Interface**:
+```typescript
+interface ClassListProps {
+  editionId?: number;
+  isPrestige?: boolean;
+  canCastSpells?: boolean;
+  onClassSelect?: (classId: number) => void;
+  onClassEdit?: (classId: number) => void;
+  onClassDelete?: (classId: number) => void;
+  selectionMode?: 'single' | 'multiple' | 'none';
+  showFilters?: boolean;
+  showActions?: boolean;
+}
+```
+
+**State Management**:
+```typescript
+const [classes, setClasses] = useState<ClassWithSource[]>([]);
+const [loading, setLoading] = useState<boolean>(false);
+const [error, setError] = useState<string | null>(null);
+const [selectedClasses, setSelectedClasses] = useState<number[]>([]);
+const [filters, setFilters] = useState<ClassFilters>({});
+```
+
 **Class-Specific Features**:
 - **Class Attributes**: Sortable columns for class attributes (name, abbreviation, type, etc.) using [GenericList component](../application-overview/generic-list.md)
 - **Class Filtering**: Filter by class type, edition, spellcasting capability through GenericList filter system
 - **Class Selection**: Select classes for bulk operations or detailed viewing with GenericList selection mode
 - **Column Configuration**: Custom column definitions defined in [ClassColumns.ts](../../../apps/frontend/src/features/class/ClassColumns.ts)
+
+**Usage Example**:
+```tsx
+<ClassList 
+  editionId={5}
+  isPrestige={false}
+  onClassSelect={(id) => navigate(`/classes/${id}`)}
+  onClassEdit={(id) => navigate(`/classes/${id}/edit`)}
+  selectionMode="single"
+  showFilters={true}
+/>
+```
 
 **User Workflow**:
 1. **Browse Classes**: View paginated list of available classes
@@ -80,11 +116,50 @@ Comprehensive display component for viewing complete class information. This com
 
 Comprehensive editing interface for creating and modifying classes. This component follows the shared [Edit Components](../application-overview/frontend-components.md#edit-components) pattern.
 
+**Props Interface**:
+```typescript
+interface ClassEditProps {
+  classId?: number;
+  mode: 'create' | 'edit';
+  onSave?: (classData: ClassWithDetails) => void;
+  onCancel?: () => void;
+  initialData?: Partial<ClassWithDetails>;
+  readonly?: boolean;
+}
+```
+
+**State Management**:
+```typescript
+const [classData, setClassData] = useState<ClassWithDetails>(initialData);
+const [activeTab, setActiveTab] = useState<string>('basic');
+const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+const [isDirty, setIsDirty] = useState<boolean>(false);
+const [isSaving, setIsSaving] = useState<boolean>(false);
+```
+
 **Class-Specific Features**:
 - **Class Data Entry**: Forms for entering and modifying class data
 - **Class Validation**: Real-time validation with user-friendly error messages
 - **Class Complex Data**: Handle complex nested data like features and spellcasting
 - **Class User Guidance**: Guide users through the class creation/editing process
+
+**Usage Example**:
+```tsx
+<ClassEdit 
+  mode="create"
+  onSave={(classData) => {
+    console.log('Saving class:', classData);
+    navigate('/classes');
+  }}
+  onCancel={() => navigate('/classes')}
+  initialData={{
+    name: '',
+    abbreviation: '',
+    editionId: 5,
+    isPrestige: false
+  }}
+/>
+```
 
 **User Workflow**:
 1. **Enter Basic Info**: Fill in class name, abbreviation, and basic attributes
@@ -101,6 +176,23 @@ Comprehensive editing interface for creating and modifying classes. This compone
 ### **BasicInfoTab Component**
 
 Tab for managing core class attributes and basic information.
+
+**Props Interface**:
+```typescript
+interface BasicInfoTabProps {
+  classData: ClassWithDetails;
+  onChange: (field: string, value: any) => void;
+  errors: ValidationErrors;
+  readonly?: boolean;
+}
+```
+
+**State Management**:
+```typescript
+const [formData, setFormData] = useState<BasicClassInfo>(classData);
+const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+const [isDirty, setIsDirty] = useState<boolean>(false);
+```
 
 **Purpose and Function**:
 - **Core Attributes**: Manage fundamental class characteristics
@@ -271,7 +363,7 @@ The class system integrates with the feature system through the FeaturesTab:
 **Feature Validation**: Ensure proper feature configuration
 **Feature Display**: Show feature information and requirements
 
-**Related Documentation**: [Feature System Frontend Components](../feature-system/frontend-components.md)
+**Related Documentation**: [Feature System Frontend Components](../feature-system/frontend-components.md#integration-patterns)
 
 ### **Spellcasting System Integration**
 
@@ -282,7 +374,7 @@ The class system integrates with the spellcasting system through the Spellcastin
 **Spells Known**: Configure spells known for spontaneous casters
 **Spellcasting Validation**: Ensure proper spellcasting configuration
 
-**Related Documentation**: [Spellcasting System Frontend Components](../spell-system/frontend-components.md)
+**Related Documentation**: [Spellcasting System Frontend Components](../spell-system/frontend-components.md#spellcasting-progression-components)
 
 ### **Skill System Integration**
 
@@ -303,4 +395,4 @@ The class system integrates with the skill system through the SkillsTab:
 - **[Backend Implementation](backend-implementation.md)** - Class system backend implementation
 - **[Feature Integration](feature-integration.md)** - Class feature system integration
 - **[Spellcasting System](spellcasting-system.md)** - Class spellcasting system integration
-- **[Frontend Component Patterns](../application-overview/frontend-components.md)** - Shared frontend patterns and conventions
+- **[Frontend Component Patterns](../application-overview/frontend-components.md#shared-component-architecture)** - Shared frontend patterns and conventions

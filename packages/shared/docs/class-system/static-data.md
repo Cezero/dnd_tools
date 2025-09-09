@@ -34,15 +34,12 @@ Defines the types of spellcasting that classes can perform, affecting how spells
 **Purpose**: Identifies the spellcasting method used by a class, affecting spell preparation, casting mechanics, and progression patterns.
 
 **Values**:
-- **`Prepared` (0)**: Spells must be prepared in advance (Wizard, Cleric)
-- **`Spontaneous` (1)**: Spells are cast spontaneously from known spells (Sorcerer, Bard)
-- **`Psionic` (2)**: Psionic powers with power point system (Psion, Psychic Warrior)
-- **`Invocations` (3)**: Invocations and eldritch blast (Warlock)
-- **`None` (4)**: No spellcasting capability (Fighter, Barbarian)
+- **`Prepared` (1)**: Spells must be prepared in advance (Wizard, Cleric)
+- **`Spontaneous` (2)**: Spells are cast spontaneously from known spells (Sorcerer, Bard)
 
 **Usage**: Used in the `castingType` field of class models to determine spellcasting mechanics and progression.
 
-**Source File**: `packages/shared/static-data/src/ClassData.ts` (CastingType definition)
+**Source File**: `packages/shared/static-data/src/CommonData.ts` (CastingType definition)
 
 ### **Class Classification**
 
@@ -185,7 +182,7 @@ The class system integrates with the feature system through class features:
 
 **Integration Pattern**: Classes use the feature system to define their abilities, ensuring consistent feature mechanics across all systems.
 
-**Related Documentation**: [Feature System Static Data](../feature-system/static-data.md)
+**Related Documentation**: [Feature System Static Data](../feature-system/static-data.md#integration-with-other-systems)
 
 ### **Spellcasting System Integration**
 
@@ -198,7 +195,7 @@ The class system integrates with the spellcasting system through casting types:
 
 **Integration Pattern**: Classes use the spellcasting system to define their magical capabilities, ensuring consistent spellcasting mechanics.
 
-**Related Documentation**: [Spellcasting System Static Data](../spell-system/static-data.md)
+**Related Documentation**: [Spellcasting System Static Data](../spell-system/static-data.md#casting-types-and-progression)
 
 ### **Character System Integration**
 
@@ -211,7 +208,7 @@ The class system provides the foundation for character advancement:
 
 **Integration Pattern**: The class system provides the framework for character advancement, with other systems providing the specific mechanics.
 
-**Related Documentation**: [Character Management Static Data](../character-management/static-data.md)
+**Related Documentation**: [Character Management Static Data](../character-management/static-data.md#class-integration-and-progression)
 
 ## 🔧 **Performance Considerations**
 
@@ -239,6 +236,6 @@ Progression calculations are optimized for performance:
 - **[Validation Schemas](validation-schemas.md)** - Class system validation rules and schemas
 - **[Backend Implementation](backend-implementation.md)** - Class system backend implementation
 - **[Frontend Components](frontend-components.md)** - Class system frontend implementation
-- **[Feature System Static Data](../feature-system/static-data.md)** - Feature system enums and types
-- **[Spellcasting System Static Data](../spell-system/static-data.md)** - Spellcasting system enums and types
-- **[Static Data Patterns](../application-overview/static-data.md)** - Shared static data patterns and conventions
+- **[Feature System Static Data](../feature-system/static-data.md#integration-with-other-systems)** - Feature system enums and integration patterns
+- **[Spellcasting System Static Data](../spell-system/static-data.md#casting-types-and-progression)** - Spellcasting system enums and progression patterns
+- **[Static Data Patterns](../application-overview/static-data.md#enum-and-reference-data)** - Shared static data patterns and conventions

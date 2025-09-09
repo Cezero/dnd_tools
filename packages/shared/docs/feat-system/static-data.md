@@ -208,31 +208,6 @@ The feat system integrates with the character system through feat selection and 
 
 **Related Documentation**: [Character Management Static Data](../character-management/static-data.md)
 
-### **Ability System Integration**
-
-The feat system integrates with the ability system through prerequisites and benefits:
-
-**Ability Prerequisites**: Feats can require minimum ability scores
-**Ability Benefits**: Feats can provide ability score bonuses
-**Ability Validation**: Ability scores are validated against feat prerequisites
-**Ability Calculation**: Ability modifiers are used in feat calculations
-
-**Integration Pattern**: The feat system integrates with the ability system to validate prerequisites and calculate benefits, ensuring proper ability score usage in feat mechanics.
-
-**Related Documentation**: [Ability System Static Data](../ability-system/static-data.md)
-
-### **Skill System Integration**
-
-The feat system integrates with the skill system through prerequisites and benefits:
-
-**Skill Prerequisites**: Feats can require minimum skill ranks
-**Skill Benefits**: Feats can provide skill bonuses and proficiencies
-**Skill Validation**: Skill ranks are validated against feat prerequisites
-**Skill Calculation**: Skill bonuses are calculated from feat benefits
-
-**Integration Pattern**: The feat system integrates with the skill system to validate prerequisites and calculate benefits, ensuring proper skill usage in feat mechanics.
-
-**Related Documentation**: [Skill System Static Data](../skill-system/static-data.md)
 
 ### **Feature System Integration**
 

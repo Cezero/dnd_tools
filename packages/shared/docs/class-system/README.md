@@ -57,20 +57,59 @@ The system follows a five-layer architecture:
 ## 🚀 **Getting Started**
 
 ### **For Developers**
-1. Start with **[Database Schema](database-schema.md)** to understand the data model
-2. Review **[Validation Schemas](validation-schemas.md)** for type safety requirements
-3. Study **[Backend Implementation](backend-implementation.md)** for API usage patterns
-4. Explore **[Frontend Components](frontend-components.md)** for UI implementation
+1. **Database Layer**: Start with **[Database Schema](database-schema.md)** to understand the data model
+   - **Source Files**: `apps/backend/prisma/schema.prisma` (Class-related models)
+   - **Key Models**: `Class`, `ClassFeature`, `ClassSpellcasting`, `ClassProgression`
+   - **Command**: `npx prisma studio` to explore the database schema
+
+2. **Validation Layer**: Review **[Validation Schemas](validation-schemas.md)** for type safety requirements
+   - **Source Files**: `packages/shared/schema/src/class.ts`
+   - **Key Schemas**: `CreateClassSchema`, `UpdateClassSchema`, `ClassQuerySchema`
+   - **Usage**: All API requests are validated using these Zod schemas
+
+3. **Backend Layer**: Study **[Backend Implementation](backend-implementation.md)** for API usage patterns
+   - **Source Files**: `apps/backend/src/features/class/` (classService.ts, classController.ts, classRoutes.ts)
+   - **API Endpoints**: `GET /classes`, `POST /classes`, `PUT /classes/:id`, `DELETE /classes/:id`
+   - **Example**: `GET /classes?editionId=5&isPrestige=false` to get base classes for 3.5E
+
+4. **Frontend Layer**: Explore **[Frontend Components](frontend-components.md)** for UI implementation
+   - **Source Files**: `apps/frontend/src/features/class/` (ClassList.tsx, ClassEdit.tsx, ClassDetail.tsx)
+   - **API Client**: `apps/frontend/src/features/class/ClassApi.ts` for type-safe API calls
+   - **Example**: `<ClassList editionId={5} onClassSelect={handleSelect} />`
 
 ### **For Content Creators**
-1. Use **[Class Progression](class-progression.md)** for mechanical calculations
-2. Reference **[Spellcasting System](spellcasting-system.md)** for magic mechanics
-3. Review **[Feature Integration](feature-integration.md)** for class features
+1. **Mechanical Calculations**: Use **[Class Progression](class-progression.md)** for mechanical calculations
+   - **Source Files**: `packages/shared/static-data/src/ClassData.ts` (ProgressionType enum)
+   - **Key Functions**: `calculateBAB()`, `calculateSave()`, `calculateSpellSlots()`
+   - **Example**: BAB calculation for Fighter 10: `calculateBAB(10, ProgressionType.Good)` returns 9
+
+2. **Magic Mechanics**: Reference **[Spellcasting System](spellcasting-system.md)** for magic mechanics
+   - **Source Files**: `packages/shared/static-data/src/CommonData.ts` (CastingType enum)
+   - **Casting Types**: `Prepared` (1), `Spontaneous` (2)
+   - **Example**: Wizard uses `CastingType.Prepared`, Sorcerer uses `CastingType.Spontaneous`
+
+3. **Class Features**: Review **[Feature Integration](feature-integration.md)** for class features
+   - **Source Files**: `apps/backend/prisma/schema.prisma` (ClassFeature model)
+   - **Integration**: Classes link to features through `FeatureProgression` model
+   - **Example**: Fighter's "Weapon Specialization" is a class feature with level-based progression
 
 ### **For System Administrators**
-1. Check **[Backend Implementation](backend-implementation.md)** for API endpoints
-2. Review **[Database Schema](database-schema.md)** for data structure
-3. Examine **[Static Data](static-data.md)** for configuration options
+1. **API Management**: Check **[Backend Implementation](backend-implementation.md)** for API endpoints
+   - **Source Files**: `apps/backend/src/features/class/classRoutes.ts`
+   - **Endpoints**: `GET /api/classes`, `POST /api/classes`, `PUT /api/classes/:id`
+   - **Authentication**: All endpoints require valid JWT token
+   - **Rate Limiting**: 100 requests per minute per IP
+
+2. **Database Management**: Review **[Database Schema](database-schema.md)** for data structure
+   - **Source Files**: `apps/backend/prisma/schema.prisma`
+   - **Key Tables**: `Class`, `ClassFeature`, `ClassSpellcasting`, `ClassProgression`
+   - **Backup**: Daily automated backups with 30-day retention
+   - **Migration**: Use `npx prisma migrate dev` for schema changes
+
+3. **Configuration**: Examine **[Static Data](static-data.md)** for configuration options
+   - **Source Files**: `packages/shared/static-data/src/ClassData.ts`
+   - **Key Data**: `CLASS_MAP`, `ProgressionType`, `CastingType`
+   - **Updates**: Static data changes require application restart
 
 ## 📊 **Implementation Status**
 

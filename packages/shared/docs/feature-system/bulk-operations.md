@@ -2,374 +2,226 @@
 
 *Creating, updating, and reading class/race data with features using both individual and bulk operations.*
 
-## Core Principle: Flexible Operations
+## 📋 **Overview**
 
-The feature system supports both **individual CRUD operations** for standalone features and **bulk operations** for class/race feature progressions. The system is designed to handle both patterns efficiently.
+This document provides guidance on using the feature system's bulk operations for efficiently managing class and race feature progressions. The system supports both individual CRUD operations for standalone features and bulk operations for class/race feature progressions.
 
-## Individual Feature Operations
+**Related Documentation:**
+- **[Backend Implementation](backend-implementation.md)** - Feature system backend implementation
+- **[Database Schema](database-schema.md)** - Feature system database models and relationships
+- **[Validation Schemas](validation-schemas.md)** - Feature system validation rules and schemas
+
+## 🎯 **Core Principle: Flexible Operations**
+
+The feature system supports both **individual CRUD operations** for standalone features and **bulk operations** for class/race feature progressions. The system is designed to handle both patterns efficiently, allowing for flexible feature management.
+
+## 🔧 **Individual Feature Operations**
 
 ### **Creating Standalone Features**
-```typescript
-// Create a new feature with prerequisites
-const featureData = {
-    name: "Weapon Focus",
-    slug: "weapon-focus",
-    description: "Provides +1 bonus to attack rolls with a specific weapon",
-    prerequisites: [
-        {
-            type: FeaturePrerequisiteType.Feat,
-            minValue: 1 // Requires at least 1 feat
-        }
-    ]
-};
 
-const result = await FeatureSystemApi.createFeature(featureData);
-console.log(`Created feature with ID: ${result.id}`);
-```
+**Purpose**: Create individual features that can be reused across multiple classes and races.
+
+**Process**: Use the `createFeature` API method to create a new feature with basic information and prerequisites.
+
+**Key Components**:
+- Feature name, slug, and description
+- Prerequisites (if any)
+- Basic feature metadata
+
+**Source File**: See actual implementation in `apps/backend/src/features/featureSystem/featureSystemService.ts`
 
 ### **Updating Standalone Features**
-```typescript
-// Update an existing feature
-const updatedFeature = {
-    name: "Weapon Focus (Longsword)",
-    description: "Provides +1 bonus to attack rolls with longsword",
-    prerequisites: []
-};
 
-await FeatureSystemApi.updateFeature(featureId, updatedFeature);
-```
+**Purpose**: Modify existing features to update their information or prerequisites.
+
+**Process**: Use the `updateFeature` API method to update an existing feature's information.
+
+**Key Components**:
+- Updated feature information
+- Modified prerequisites
+- Preserved feature relationships
+
+**Source File**: See actual implementation in `apps/backend/src/features/featureSystem/featureSystemService.ts`
 
 ### **Reading Standalone Features**
-```typescript
-// Get all features
-const features = await FeatureSystemApi.getAllFeatures();
 
-// Get features by source type (0=class, 1=race)
-const classFeatures = await FeatureSystemApi.getAllFeatures(0);
-const raceFeatures = await FeatureSystemApi.getAllFeatures(1);
+**Purpose**: Retrieve features for display, selection, or management purposes.
 
-// Get specific feature
-const feature = await FeatureSystemApi.getFeatureById(featureId);
-```
+**Process**: Use the `getAllFeatures` API method to retrieve features with optional filtering.
 
-## Bulk Operations for Class/Race Features
+**Key Components**:
+- All features or filtered subsets
+- Source type filtering (class vs race features)
+- Feature metadata and relationships
+
+**Source File**: See actual implementation in `apps/backend/src/features/featureSystem/featureSystemService.ts`
+
+### **Deleting Standalone Features**
+
+**Purpose**: Remove features that are no longer needed.
+
+**Process**: Use the `deleteFeature` API method to remove a feature and all its associated data.
+
+**Key Components**:
+- Feature deletion with cascade to progressions
+- Cleanup of related data
+- Validation of deletion safety
+
+**Source File**: See actual implementation in `apps/backend/src/features/featureSystem/featureSystemService.ts`
+
+## 🔧 **Bulk Operations for Class/Race Features**
 
 ### **Creating a Class with Features**
-```typescript
-const classData = {
-    name: "Fighter",
-    hitDie: 10,
-    skillPoints: 4,
-    features: [
-        // Class skills (special container pattern)
-        {
-            sourceType: 0, // Class
-            level: 1,
-            featureId: SpecialFeatureId.ClassSkill,
-            modifiers: [
-                {
-                    type: ModifierType.Other,
-                    appliesTo: ModifierAppliesToType.Skill,
-                    appliesToId: SKILL_MAP.CLIMB,
-                    value: 0 // No bonus, just marking as class skill
-                },
-                {
-                    type: ModifierType.Other,
-                    appliesTo: ModifierAppliesToType.Skill,
-                    appliesToId: SKILL_MAP.JUMP,
-                    value: 0
-                }
-            ],
-            choices: [],
-            effects: []
-        },
-        // Fighter bonus feat
-        {
-            sourceType: 0, // Class
-            level: 1,
-            featureId: FIGHTER_BONUS_FEAT_FEATURE_ID,
-            modifiers: [],
-            choices: [
-                {
-                    type: ChoiceType.Feat,
-                    behavior: ChoiceBehavior.Single,
-                    label: "Choose a fighter bonus feat",
-                    filterType: FeatureFeatChoiceFilter.FighterBonus
-                }
-            ],
-            effects: []
-        },
-        // Weapon specialization
-        {
-            sourceType: 0, // Class
-            level: 4,
-            featureId: WEAPON_SPECIALIZATION_FEATURE_ID,
-            modifiers: [
-                {
-                    type: ModifierType.Bonus,
-                    appliesTo: ModifierAppliesToType.Damage,
-                    value: 2,
-                    bonusType: FeatureBonusType.Feat
-                }
-            ],
-            choices: [
-                {
-                    type: ChoiceType.Feature,
-                    behavior: ChoiceBehavior.Single,
-                    label: "Choose weapon for specialization"
-                }
-            ],
-            effects: []
-        }
-    ]
-};
 
-await ClassService.createClass(classData);
-```
+**Purpose**: Create a complete class with all its feature progressions in a single operation.
 
-### **Barbarian with Rage**
-```typescript
-const barbarianClass = {
-    name: "Barbarian",
-    hitDie: 12,
-    features: [
-        {
-            sourceType: 0, // Class
-            level: 1,
-            featureId: BARBARIAN_RAGE_FEATURE_ID,
-            modifiers: [
-                {
-                    type: ModifierType.Bonus,
-                    appliesTo: ModifierAppliesToType.Attribute,
-                    appliesToId: ABILITY_MAP.STR,
-                    value: 4,
-                    bonusType: FeatureBonusType.Morale
-                },
-                {
-                    type: ModifierType.Quantity,
-                    appliesTo: ModifierAppliesToType.Uses,
-                    value: 1,
-                    bonusType: FeatureBonusType.Other
-                }
-            ],
-            choices: [],
-            effects: []
-        }
-    ]
-};
+**Process**: Use the `createMultipleFeatureProgressions` method to create all feature progressions for a class at once.
 
-await ClassService.createClass(barbarianClass);
-```
+**Key Components**:
+- Class metadata and basic information
+- Array of feature progressions with entities
+- Transaction safety for data consistency
+- Formula parameter integration
 
-## Updating Class/Race Features
+**Source File**: See actual implementation in `apps/backend/src/features/featureSystem/featureSystemService.ts`
 
-### **Complete Class Update**
-```typescript
-// Same pattern as creation - complete replacement of feature data
-const updatedClassData = {
-    id: 123,
-    name: "Fighter",
-    hitDie: 10,
-    skillPoints: 4,
-    features: [
-        // Complete feature progression data
-        {
-            sourceType: 0,
-            level: 1,
-            featureId: FIGHTER_BONUS_FEAT_FEATURE_ID,
-            modifiers: [],
-            choices: [
-                {
-                    type: ChoiceType.Feat,
-                    behavior: ChoiceBehavior.Single,
-                    label: "Choose a fighter bonus feat",
-                    filterType: FeatureFeatChoiceFilter.FighterBonus
-                }
-            ],
-            effects: []
-        }
-        // ... all other features
-    ]
-};
+### **Creating a Race with Features**
 
-await ClassService.updateClass(updatedClassData, { id: 123 });
-```
+**Purpose**: Create a complete race with all its feature progressions in a single operation.
 
-### **Important: Complete Replacement for Bulk Operations**
-- **All existing features are deleted** and replaced
-- **No partial updates** - send complete feature data
-- **Backend handles cleanup** of old feature data
-- **Atomic operation** - all or nothing
+**Process**: Use the `createMultipleFeatureProgressions` method to create all feature progressions for a race at once.
 
-## Reading Class/Race Data
+**Key Components**:
+- Race metadata and basic information
+- Array of feature progressions with entities
+- Transaction safety for data consistency
+- Formula parameter integration
 
-### **Get Complete Class with Features**
-```typescript
-// Backend returns complete nested data
-const class = await ClassService.getClassById(undefined, { id: 123 });
+**Source File**: See actual implementation in `apps/backend/src/features/featureSystem/featureSystemService.ts`
 
-// class.features contains complete FeatureProgression objects
-// Each progression includes modifiers, choices, effects, and conditions
-console.log(class.features[0].modifiers); // Array of modifiers
-console.log(class.features[0].choices);   // Array of choices
-console.log(class.features[0].effects);   // Array of effects
-```
+### **Updating Class/Race Features**
 
-### **Get All Classes**
-```typescript
-const classes = await ClassService.getAllClasses();
+**Purpose**: Update all feature progressions for a class or race in a single operation.
 
-// Each class includes complete feature data
-classes.forEach(cls => {
-    console.log(`${cls.name}: ${cls.features?.length || 0} features`);
-});
-```
+**Process**: Use the `updateFeatureProgressions` method to update all feature progressions for a specific feature.
 
-## Creating a Race with Features
+**Key Components**:
+- Feature ID and updated progression data
+- Complete replacement of existing progressions
+- Transaction safety for data consistency
+- Validation of updated data
 
-### **Complete Race Creation**
-```typescript
-const dwarfRace = {
-    name: "Dwarf",
-    features: [
-        {
-            sourceType: 1, // Race
-            level: 1,
-            featureId: DWARF_TRAITS_FEATURE_ID,
-            modifiers: [
-                {
-                    type: ModifierType.Bonus,
-                    appliesTo: ModifierAppliesToType.Attribute,
-                    appliesToId: ABILITY_MAP.CON,
-                    value: 2,
-                    bonusType: FeatureBonusType.Racial
-                },
-                {
-                    type: ModifierType.Bonus,
-                    appliesTo: ModifierAppliesToType.Attribute,
-                    appliesToId: ABILITY_MAP.CHA,
-                    value: -2,
-                    bonusType: FeatureBonusType.Racial
-                }
-            ],
-            choices: [],
-            effects: [
-                {
-                    effectType: FeatureSpecialEffectType.Proficiency,
-                    featId: WEAPON_ID.DWARVEN_WARAXE
-                }
-            ]
-        }
-    ]
-};
+**Source File**: See actual implementation in `apps/backend/src/features/featureSystem/featureSystemService.ts`
 
-await RaceService.createRace(dwarfRace);
-```
+### **Deleting Class/Race Features**
 
-## Frontend Integration
+**Purpose**: Remove all feature progressions for a class or race in a single operation.
 
-### **Feature Edit Component**
-```typescript
-// For standalone feature editing
-const handleSave = async () => {
-    try {
-        if (isNewFeature) {
-            await FeatureSystemApi.createFeature(formData);
-        } else {
-            await FeatureSystemApi.updateFeature(featureId, formData);
-        }
-        // Handle success
-    } catch (error) {
-        // Handle error
-    }
-};
-```
+**Process**: Use the `deleteFeatureProgressionsForContext` method to remove all feature progressions for a specific class or race.
 
-### **Class Edit Component**
-```typescript
-// Prepare the complete class data including feature progressions
-const classData = {
-    ...formData,
-    features: featureProgressions.map(prog => {
-        const { id: _, ...progressionData } = prog;
-        return {
-            ...progressionData,
-            // Remove temporary IDs from related entities
-            modifiers: prog.modifiers?.map(mod => {
-                const { id: _, featureProgressionId: __, ...modData } = mod;
-                return modData;
-            }) || [],
-            choices: prog.choices?.map(choice => {
-                const { id: _, progressionId: __, ...choiceData } = choice;
-                return choiceData;
-            }) || [],
-            effects: prog.effects?.map(effect => {
-                const { id: _, progressionId: __, ...effectData } = effect;
-                return effectData;
-            }) || [],
-        };
-    })
-};
+**Key Components**:
+- Context identification (class ID or race ID)
+- Cascade deletion of all related data
+- Transaction safety for data consistency
+- Cleanup of orphaned data
 
-// Send complete data to backend
-await ClassService.createClass(classData);
-```
+**Source File**: See actual implementation in `apps/backend/src/features/featureSystem/featureSystemService.ts`
 
-## Error Handling
+## 🎯 **Bulk Operation Benefits**
 
-### **Validation Errors**
-```typescript
-try {
-    await FeatureSystemApi.createFeature(featureData);
-} catch (error) {
-    if (error.validationErrors) {
-        // Handle schema validation errors
-        error.validationErrors.forEach(err => {
-            console.error(`Validation error: ${err.path} - ${err.message}`);
-        });
-    } else {
-        // Handle other errors
-        console.error('Failed to create feature:', error.message);
-    }
-}
-```
+### **Transaction Safety**
+All bulk operations use database transactions to ensure data consistency. If any part of the operation fails, the entire operation is rolled back, maintaining data integrity.
 
-### **Bulk Operation Errors**
-```typescript
-try {
-    await ClassService.createClass(classData);
-} catch (error) {
-    if (error.validationErrors) {
-        // Handle schema validation errors
-        error.validationErrors.forEach(err => {
-            console.error(`Validation error: ${err.path} - ${err.message}`);
-        });
-    } else {
-        // Handle other errors
-        console.error('Failed to create class:', error.message);
-    }
-}
-```
+### **Performance Optimization**
+Bulk operations are more efficient than individual operations because they:
+- Reduce database round trips
+- Minimize transaction overhead
+- Optimize query execution
+- Reduce network latency
 
-## Key Patterns
+### **Data Consistency**
+Bulk operations ensure that all related data is created, updated, or deleted together, preventing partial updates that could leave the system in an inconsistent state.
 
-1. **Individual Operations**: Use for standalone feature management
-2. **Bulk Operations**: Use for class/race feature progressions
-3. **Complete Data**: Send full nested feature data for bulk operations
-4. **Atomic Operations**: All features are created/updated together in bulk operations
-5. **Backend Cleanup**: Backend handles deletion of old data in bulk operations
-6. **Validation**: Use Zod schemas for validation
-7. **Error Handling**: Handle validation and other errors gracefully
-8. **Class Skills**: Use special container pattern with `SpecialFeatureId.ClassSkill`
+### **Error Handling**
+Bulk operations provide comprehensive error handling that ensures that failures are properly reported and that the system remains in a consistent state.
 
-## Best Practices
+## 🔧 **Implementation Patterns**
 
-1. **Choose the right operation type**: Individual for standalone features, bulk for class/race features
-2. **Prepare complete data** before sending to backend for bulk operations
-3. **Remove temporary IDs** from nested entities
-4. **Validate data** before sending
-5. **Handle errors** appropriately
-6. **Cache results** when reading data
-7. **Document complex features** clearly
+### **Class Creation Pattern**
 
-For more details, see **[class-features.md](class-features.md)**, **[class-skills.md](class-skills.md)**, and **[racial-features.md](racial-features.md)**.
+**Process Flow**:
+1. Create class metadata
+2. Prepare feature progression data
+3. Execute bulk feature progression creation
+4. Validate results
+5. Handle any errors
+
+**Key Considerations**:
+- Ensure all feature progressions are properly configured
+- Validate that all referenced features exist
+- Handle formula parameter integration
+- Ensure transaction safety
+
+### **Race Creation Pattern**
+
+**Process Flow**:
+1. Create race metadata
+2. Prepare feature progression data
+3. Execute bulk feature progression creation
+4. Validate results
+5. Handle any errors
+
+**Key Considerations**:
+- Ensure all feature progressions are properly configured
+- Validate that all referenced features exist
+- Handle formula parameter integration
+- Ensure transaction safety
+
+### **Feature Update Pattern**
+
+**Process Flow**:
+1. Validate updated feature data
+2. Delete existing feature progressions
+3. Create new feature progressions
+4. Validate results
+5. Handle any errors
+
+**Key Considerations**:
+- Ensure data validation before updates
+- Handle cascade deletion properly
+- Maintain referential integrity
+- Ensure transaction safety
+
+## 🎯 **Best Practices**
+
+### **Data Preparation**
+- Validate all data before bulk operations
+- Ensure all referenced entities exist
+- Prepare complete data sets
+- Handle optional fields appropriately
+
+### **Error Handling**
+- Implement comprehensive error handling
+- Provide meaningful error messages
+- Ensure proper rollback on failures
+- Log errors for debugging
+
+### **Performance Considerations**
+- Use bulk operations for large data sets
+- Optimize database queries
+- Consider memory usage for large operations
+- Monitor operation performance
+
+### **Data Validation**
+- Validate all input data
+- Ensure referential integrity
+- Check business rule compliance
+- Handle edge cases appropriately
+
+## 🔗 **Related Documentation**
+
+- **[Backend Implementation](backend-implementation.md)** - Feature system backend implementation
+- **[Database Schema](database-schema.md)** - Feature system database models and relationships
+- **[Validation Schemas](validation-schemas.md)** - Feature system validation rules and schemas
+- **[Examples](examples.md)** - Comprehensive implementation examples
+- **[Common Pitfalls](common-pitfalls.md)** - Common mistakes and how to avoid them

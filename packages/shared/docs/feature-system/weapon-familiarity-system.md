@@ -22,214 +22,112 @@ Weapon familiarity **does not grant proficiency**. For example:
 
 ## Implementation Strategy
 
-### 1. New Special Effect Type
+### 1. Unified Entity Approach
 
-Add `FeatureSpecialEffectType.WeaponFamiliarity` (6) to handle racial weapon familiarity:
+Use the unified `FeatureEntity` model with the existing `EntityAppliesToType.WeaponFamiliarity` to handle racial weapon familiarity. This approach leverages the existing entity system that already has proper support for weapon familiarity.
 
-```typescript
-export const FeatureSpecialEffectType = {
-    Proficiency: 0,
-    FavoredEnemy: 1,
-    ConditionalUpgrade: 2,
-    TurnUndead: 3,
-    WildShapeForm: 4,
-    WildShapeSize: 5,
-    WeaponFamiliarity: 6,  // NEW
-    Other: 7,              // Updated from 6 to 7
-} as const;
-
-export const FEATURE_SPECIAL_EFFECT_TYPES: BaseMap<CoreComponent> = {
-    // ... existing types ...
-    [FeatureSpecialEffectType.WeaponFamiliarity]: { 
-        id: FeatureSpecialEffectType.WeaponFamiliarity, 
-        name: 'Weapon Familiarity' 
-    },
-    [FeatureSpecialEffectType.Other]: { 
-        id: FeatureSpecialEffectType.Other, 
-        name: 'Other' 
-    },
-};
-```
+**Implementation Strategy**: Use `EntityType.Other` with `EntityAppliesToType.WeaponFamiliarity` to represent weapon familiarity effects.
 
 ### 2. Data Model
 
-Use the existing `FeatureSpecialEffect` schema with:
-- `effectType: FeatureSpecialEffectType.WeaponFamiliarity` (6)
-- `numericValue: itemId` - stores the ID of the weapon that benefits from familiarity
+Use the existing `FeatureEntity` schema with:
+- `type: EntityType.Other` - indicates this is a special ability
+- `appliesTo: EntityAppliesToType.WeaponFamiliarity` - indicates this is weapon familiarity
+- `appliesToId: itemId` - stores the ID of the weapon that benefits from familiarity
 - No additional schema changes required
 
 ### 3. UI Implementation
 
 #### FeatureProgressionDetailEdit.tsx Updates
 
-Add exotic weapon selection when `WeaponFamiliarity` effect type is selected:
+Add exotic weapon selection when `EntityType.Other` with `EntityAppliesToType.WeaponFamiliarity` is selected:
 
-```typescript
-// Add state for exotic weapons
-const [exoticWeapons, setExoticWeapons] = useState<ProficiencyItem[]>([]);
-const [loadingExoticWeapons, setLoadingExoticWeapons] = useState(false);
+**Implementation Approach**: The UI should detect when an entity is configured for weapon familiarity and provide appropriate weapon selection options.
 
-const isWeaponFamiliarityEffect = effect.effectType === FeatureSpecialEffectType.WeaponFamiliarity;
+**Key Components**:
+- State management for exotic weapons list
+- Loading mechanism for weapon data
+- Filtering logic for exotic weapons only
+- Integration with existing entity selection UI
 
-// Load exotic weapons when WeaponFamiliarity is selected
-useEffect(() => {
-    if (isWeaponFamiliarityEffect) {
-        loadExoticWeapons();
-    }
-}, [isWeaponFamiliarityEffect]);
-
-const loadExoticWeapons = async () => {
-    setLoadingExoticWeapons(true);
-    try {
-        const items = await ItemService.itemQuery();
-        const exoticWeaponItems = items
-            .filter(item => 
-                item.typeId === ITEM_TYPE_ENUM.WEAPON && 
-                item.weapon?.category === WEAPON_CATEGORY_ENUM.EXOTIC
-            )
-            .map(item => ({
-                id: item.id,
-                name: item.name,
-                typeId: item.typeId,
-                weapon: item.weapon
-            }))
-            .sort((a, b) => a.name.localeCompare(b.name));
-        
-        setExoticWeapons(exoticWeaponItems);
-    } catch (error) {
-        console.error('Failed to load exotic weapons:', error);
-    } finally {
-        setLoadingExoticWeapons(false);
-    }
-};
-```
+**Source File**: See actual implementation in `apps/frontend/src/components/feature-system/FeatureProgressionDetailEdit.tsx`
 
 #### UI Structure
 
-```typescript
-{isWeaponFamiliarityEffect ? (
-    <ValidatedCustomSelect
-        name="numericValue"
-        label="Weapon"
-        value={effect.numericValue || ''}
-        onChange={handleEffectChange}
-        options={exoticWeapons.map(weapon => ({
-            value: weapon.id.toString(),
-            label: weapon.name
-        }))}
-        loading={loadingExoticWeapons}
-        placeholder="Select exotic weapon..."
-        required
-    />
-) : isProficiencyEffect ? (
-    // Existing proficiency effect UI
-) : (
-    // Existing generic effect UI
-)}
-```
+**Implementation Approach**: The UI should provide weapon selection when the entity is configured for weapon familiarity.
+
+**Key Components**:
+- Weapon selection dropdown for exotic weapons
+- Integration with existing entity configuration UI
+- Proper validation and error handling
+- Loading states for weapon data
+
+**Source File**: See actual implementation in `apps/frontend/src/components/feature-system/FeatureProgressionDetailEdit.tsx`
 
 ### 4. Display Logic
 
 #### Formatters.ts Updates
 
-Update `formatProgression` function to handle weapon familiarity effects:
+Update `formatProgression` function to handle weapon familiarity entities:
 
-```typescript
-export function formatProgression(progression: FeatureProgressionWithRelations): string {
-    // ... existing logic ...
-    
-    // Handle weapon familiarity effects
-    const weaponFamiliarityEffects = progression.effects.filter(
-        effect => effect.effectType === FeatureSpecialEffectType.WeaponFamiliarity
-    );
-    
-    if (weaponFamiliarityEffects.length > 0) {
-        const familiarityDetails = weaponFamiliarityEffects
-            .map(effect => {
-                const weaponName = effect.item?.name || `weapon ${effect.numericValue}`;
-                return `treat ${weaponName} as martial weapon`;
-            })
-            .join(', ');
-        
-        note = familiarityDetails;
-    } else if (proficiencyEffects.length > 0) {
-        // ... existing proficiency logic ...
-    } else {
-        // ... existing fallback logic ...
-    }
-    
-    return `${levelText}${note ? ` (${note})` : ''}`;
-}
-```
+**Implementation Approach**: The formatter should detect weapon familiarity entities and display them appropriately.
+
+**Key Components**:
+- Detection of weapon familiarity entities
+- Proper weapon name resolution
+- Integration with existing formatting logic
+- Consistent display format
+
+**Source File**: See actual implementation in `apps/backend/src/utils/formatters.ts`
 
 ### 5. Racial Feature Implementation
 
 #### Dwarf Weapon Familiarity
 
-```typescript
-const dwarfWeaponFamiliarity: FeatureProgression = {
-    level: 1,
-    sourceType: FeatureSourceType.Race,
-    raceId: DWARF_RACE_ID,
-    effects: [
-        {
-            effectType: FeatureSpecialEffectType.WeaponFamiliarity,
-            numericValue: DWARVEN_WARAXE_ITEM_ID,
-            description: "Treat dwarven waraxe as martial weapon"
-        },
-        {
-            effectType: FeatureSpecialEffectType.WeaponFamiliarity,
-            numericValue: DWARVEN_URGROSH_ITEM_ID,
-            description: "Treat dwarven urgrosh as martial weapon"
-        }
-    ]
-};
-```
+**Implementation Approach**: Create feature progressions with entities that grant weapon familiarity for dwarven weapons.
+
+**Key Components**:
+- Feature progression for dwarf race
+- Entities with `EntityType.Other` and `EntityAppliesToType.WeaponFamiliarity`
+- References to specific weapon item IDs
+- Proper descriptions for display
+
+**Source File**: See actual implementation in `apps/backend/src/features/featureSystem/featureSystemService.ts`
 
 #### Gnome Weapon Familiarity
 
-```typescript
-const gnomeWeaponFamiliarity: FeatureProgression = {
-    level: 1,
-    sourceType: FeatureSourceType.Race,
-    raceId: GNOME_RACE_ID,
-    effects: [
-        {
-            effectType: FeatureSpecialEffectType.WeaponFamiliarity,
-            numericValue: GNOME_HOOKED_HAMMER_ITEM_ID,
-            description: "Treat gnome hooked hammer as martial weapon"
-        }
-    ]
-};
-```
+**Implementation Approach**: Create feature progressions with entities that grant weapon familiarity for gnome weapons.
+
+**Key Components**:
+- Feature progression for gnome race
+- Entities with `EntityType.Other` and `EntityAppliesToType.WeaponFamiliarity`
+- References to specific weapon item IDs
+- Proper descriptions for display
+
+**Source File**: See actual implementation in `apps/backend/src/features/featureSystem/featureSystemService.ts`
 
 ### 6. Runtime Logic (Future Implementation)
 
-The character calculation system will need to:
+The character calculation system will need to handle weapon familiarity entities:
 
-```typescript
-// Pseudo-code for character proficiency calculation
-function isProficientWithWeapon(character, weaponId) {
-    // Check for weapon familiarity effects
-    const familiarityEffects = character.getWeaponFamiliarityEffects();
-    const familiarWeapon = familiarityEffects.find(effect => effect.numericValue === weaponId);
-    
-    // If weapon has familiarity, treat it as martial for proficiency purposes
-    const effectiveCategory = familiarWeapon ? WEAPON_CATEGORY_ENUM.MARTIAL : weapon.category;
-    
-    // Check proficiency based on effective category
-    return character.hasProficiencyForCategory(effectiveCategory);
-}
-```
+**Implementation Approach**: The character calculation system should detect weapon familiarity entities and adjust weapon proficiency calculations accordingly.
+
+**Key Components**:
+- Detection of weapon familiarity entities
+- Weapon category adjustment logic
+- Proficiency calculation integration
+- Character sheet display updates
+
+**Source File**: See actual implementation in `apps/backend/src/features/characterCalculation/characterCalculationService.ts`
 
 ## Benefits
 
-1. **Semantic Accuracy**: Clearly represents "weapon familiarity" concept
-2. **Simple Data Model**: Uses existing `numericValue` field for itemId
+1. **Unified Approach**: Uses existing `FeatureEntity` model without requiring new enum values
+2. **Simple Data Model**: Uses existing `appliesToId` field for itemId
 3. **Extensible**: Can handle future weapon familiarity rules
 4. **Clear UI**: Dedicated dropdown for exotic weapons
 5. **Consistent Display**: Uses existing formatting patterns
-6. **No Breaking Changes**: Adds new enum value without affecting existing functionality
+6. **No Breaking Changes**: Uses existing entity types without affecting existing functionality
 
 ## Success Criteria
 
@@ -243,6 +141,5 @@ function isProficientWithWeapon(character, weaponId) {
 ## Related Documentation
 
 - [Feature System Overview](../feature-system/README.md)
-- [Racial Features](../feature-system/racial-features.md)
-- [Special Effects](../feature-system/component-selection.md)
+- [Examples](examples.md) - Comprehensive implementation examples
 - [Project Management](../../project-mgmt/feature-system-implementation-plan.md)

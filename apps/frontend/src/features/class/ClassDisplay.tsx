@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import pluralize from 'pluralize';
+import React from 'react';
 
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { generateClassProgression } from '@/lib/ClassProgression';
@@ -10,10 +11,8 @@ import {
     RPG_DICE,
     EDITION_MAP,
     ABILITY_MAP,
-    EntityAppliesToType,
     SpecialFeatureId,
 } from '@shared/static-data';
-import pluralize from 'pluralize';
 
 interface ClassDisplayProps {
     cls: DnDClass;

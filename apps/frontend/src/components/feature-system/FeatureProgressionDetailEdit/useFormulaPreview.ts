@@ -46,7 +46,6 @@ export function useFormulaPreview() {
             const displayResult = editStrategy.format(
                 mockProgression,
                 {
-                    displayType: DisplayType.Edit,
                     currentLevel: progressionLevel,
                     showBreakdown: false
                 }

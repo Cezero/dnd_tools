@@ -5,7 +5,6 @@ import {
     ENTITY_APPLIES_TO_SELECT_LIST,
     ENTITY_APPLIES_TO_TYPES,
     ENTITY_TYPE_COMPATIBILITY,
-    ENTITY_TYPES,
     FormulaId,
     ConditionalScalingValueType,
     EntityAppliesToType,

@@ -40,22 +40,16 @@ model Skill {
 ```
 
 ### Feature System Integration
-```sql
--- Feature grants the analog skill
-FeatureProgression {
-    featureId: [Wild Empathy feature ID]
-    classId: [Druid or Ranger class ID]
-    level: 1
-}
 
-FeatureModifier {
-    featureProgressionId: [progression ID]
-    appliesTo: ModifierAppliesToType.Skill
-    appliesToId: [Wild Empathy skill ID]
-    type: ModifierType.Other
-    value: 0
-}
-```
+**Implementation Approach**: Use the unified `FeatureEntity` model to represent analog skill grants.
+
+**Key Components**:
+- Feature progression for the analog skill feature
+- Entity with `EntityType.Other` and `EntityAppliesToType.Skill`
+- Reference to the specific skill ID
+- Proper entity configuration for analog skill behavior
+
+**Source File**: See actual implementation in `apps/backend/src/features/featureSystem/featureSystemService.ts`
 
 ## Implementation Strategy
 
@@ -222,7 +216,7 @@ export const characterCalculationService = {
 ## Integration with Existing Systems
 
 ### Feature System
-- Uses existing FeatureModifier system
+- Uses existing unified `FeatureEntity` system
 - Leverages existing class progression patterns
 - Integrates with feature prerequisites
 

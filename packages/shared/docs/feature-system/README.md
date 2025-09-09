@@ -29,19 +29,12 @@ This documentation follows a layered approach, with each layer building upon the
 
 ### **Specialized Documentation**
 - **[Formula System](formula-system.md)** - Mathematical formulas for feature progression
-- **[Modifier System](modifier-system.md)** - Bonus, quantity, and replacement modifiers
-- **[Choice System](choice-system.md)** - Feature choices and selection mechanics
-- **[Special Effects](special-effects.md)** - Special abilities and unique features
 
 ### **Implementation Examples**
 - **[Examples](examples.md)** - Comprehensive examples for implementing D&D features
-- **[Class Features](class-features.md)** - Quick reference patterns for class features
-- **[Racial Features](racial-features.md)** - Quick reference patterns for racial traits
-- **[Monk Class Features Implementation](monk-class-features-implementation.md)** - Detailed monk feature implementation
+- **[Class Implementation Examples](class-implementation-examples.md)** - Real-world implementation analysis using Monk and Bard classes
 
 ### **Implementation Guides**
-- **[Implementation Status](implementation-status.md)** - Current implementation status and completion tracking
-- **[Feature Progression Management](feature-progression-management.md)** - Managing feature progression and scaling
 - **[Bulk Operations](bulk-operations.md)** - Individual and bulk feature operations for classes and races
 - **[Runtime Calculation](runtime-calculation.md)** - Real-time feature calculation and application
 - **[Testing Patterns](testing-patterns.md)** - Testing strategies and patterns for feature system
@@ -51,13 +44,13 @@ This documentation follows a layered approach, with each layer building upon the
 - **[Languages](languages.md)** - Language system and automatic language grants
 - **[Weapon Familiarity System](weapon-familiarity-system.md)** - Weapon proficiency and familiarity mechanics
 - **[Feature-Linked Skill Analogs](feature-linked-skill-analogs.md)** - Skill-like features and analogs
-- **[Direct Feat Grants](direct-feat-grants.md)** - Direct feat granting through features
-- **[Component Selection](component-selection.md)** - Component selection and configuration patterns
 
 ### **Troubleshooting and Best Practices**
 - **[Common Pitfalls](common-pitfalls.md)** - Common issues and how to avoid them
+- **[Documentation Validation Checklist](documentation-validation-checklist.md)** - Validation process and guidelines for maintaining documentation accuracy
 
 ### **Formatter System Integration**
+- **[Formatter Utilities](formatter-utilities.md)** - Formatter system integration and utilities
 - **[Formatting System Documentation](../formatting-system/)** - Comprehensive formatting system documentation and integration patterns
 
 ## 🎯 **Key Concepts**

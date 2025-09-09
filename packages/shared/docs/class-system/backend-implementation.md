@@ -60,29 +60,39 @@ The central service for all class management operations, providing comprehensive
 **Core Methods**:
 
 **getAllClasses**: Retrieves all classes with source book information
+- **Method Signature**: `async getAllClasses(): Promise<{ classes: ClassWithSource[]; total: number }>`
 - **Parameters**: None
 - **Business Logic**: Loads all classes with source book information, orders by name
 - **Returns**: Array of classes with total count and source book data
+- **Example**: `const result = await classService.getAllClasses(); // Returns { classes: [...], total: 95 }`
 
 **getClassById**: Retrieves a specific class by ID with full related data
-- **Parameters**: Class ID
+- **Method Signature**: `async getClassById(id: number): Promise<ClassWithDetails | null>`
+- **Parameters**: `id: number` - Class ID
 - **Business Logic**: Loads class with features, spellcasting progression, and source book information
 - **Returns**: Complete class object with all related data or null
+- **Example**: `const fighter = await classService.getClassById(5); // Returns Fighter class with all details`
 
 **createClass**: Creates a new class with features and spellcasting
-- **Parameters**: Complete class data including features and spellcasting
+- **Method Signature**: `async createClass(data: CreateClassRequest): Promise<{ id: number; message: string }>`
+- **Parameters**: `data: CreateClassRequest` - Complete class data including features and spellcasting
 - **Business Logic**: Creates class in transaction, then creates features and spellcasting through integrated services
 - **Returns**: Created class ID and success message
+- **Example**: `const result = await classService.createClass({ name: 'Paladin', editionId: 5, ... });`
 
 **updateClass**: Updates an existing class
-- **Parameters**: Class ID and updated data
+- **Method Signature**: `async updateClass(id: number, data: UpdateClassRequest): Promise<{ message: string }>`
+- **Parameters**: `id: number` - Class ID, `data: UpdateClassRequest` - Updated data
 - **Business Logic**: Updates class data, handles feature and spellcasting updates through integrated services
 - **Returns**: Success message
+- **Example**: `await classService.updateClass(5, { name: 'Fighter', description: 'Updated description' });`
 
 **deleteClass**: Deletes a class
-- **Parameters**: Class ID
+- **Method Signature**: `async deleteClass(id: number): Promise<{ message: string }>`
+- **Parameters**: `id: number` - Class ID
 - **Business Logic**: Deletes class (cascades to features, spellcasting, etc.)
 - **Returns**: Success message
+- **Example**: `await classService.deleteClass(5); // Deletes Fighter class and all related data`
 
 **Source File**: `src/features/class/classService.ts`
 

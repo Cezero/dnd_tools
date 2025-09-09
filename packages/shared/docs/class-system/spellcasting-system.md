@@ -138,6 +138,39 @@ Managing spell slot consumption during gameplay.
 - **Rest Interface**: Interface for rest and slot recovery
 - **Special Abilities**: Interface for slot-modifying abilities
 
+### **Spellcasting Edge Case Examples**
+
+**Example 1: Level 1 Wizard Spell Access**
+- **Class Level**: 1
+- **Spell Level Access**: 1st level spells only
+- **Base Slots**: 1 × 1st level spell slot
+- **Bonus Slots**: +1 1st level slot if Intelligence ≥ 12
+- **Total Slots**: 1-2 1st level spell slots
+- **Spells Known**: All 1st level wizard spells available for preparation
+
+**Example 2: Maximum Level Cleric (20th Level)**
+- **Class Level**: 20
+- **Spell Level Access**: 1st through 9th level spells
+- **Base Slots**: 4/4/4/4/4/3/3/2/1 (per spell level)
+- **Bonus Slots**: +1 slot per level if Wisdom ≥ 12
+- **Total Slots**: 5/5/5/5/5/4/4/3/2 (with 20 Wisdom)
+- **Domain Spells**: Additional spells from deity domains
+
+**Example 3: Multi-Class Spellcasting (Cleric 5 / Wizard 3)**
+- **Cleric Spellcasting**: 5th level → 3/3/2/1 slots (1st-4th level)
+- **Wizard Spellcasting**: 3rd level → 2/1 slots (1st-2nd level)
+- **Separate Tracking**: Each class maintains separate spell lists and slots
+- **Caster Level**: Cleric caster level 5, Wizard caster level 3
+- **Spell Preparation**: Prepare spells separately for each class
+
+**Example 4: Sorcerer Bonus Spell Calculation**
+- **Class Level**: 10
+- **Charisma Score**: 18 (+4 modifier)
+- **Base Slots**: 5/5/4/4/2 (1st-5th level)
+- **Bonus Slots**: +1 slot per level for 1st-4th level spells
+- **Total Slots**: 6/6/5/5/2 (1st-5th level)
+- **Spells Known**: 6/6/6/4/2 spells known per level
+
 ## 📚 **Spell List Management**
 
 ### **Class Spell Lists**

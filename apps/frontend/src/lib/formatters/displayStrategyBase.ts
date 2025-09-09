@@ -19,7 +19,7 @@ import type {
     ProgressionValue,
     ProcessingConfig,
     ProcessingContext,
-    ProcessingResult,
+    BaseProcessingResult,
     CalculationContext,
     GroupedLevelItem,
     CalculatedValueWithLevel
@@ -179,7 +179,7 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
         entity: FeatureEntity,
         config: ProcessingConfig,
         _context: ProcessingContext
-    ): ProcessingResult {
+    ): BaseProcessingResult {
         try {
             const formatter = this.registryManager.getFormatter(config.entityType, config.subTypeId);
             if (!formatter) {

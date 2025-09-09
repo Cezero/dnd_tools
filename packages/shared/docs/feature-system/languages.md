@@ -27,12 +27,12 @@ Languages in the D&D Tools system are implemented using the **Feature System** w
    appliesTo: null (container progression)
    ```
 
-3. **`FeatureModifier`** - Individual language grants within the language feature
+3. **`FeatureEntity`** - Individual language grants within the language feature
    ```sql
    -- Each language is a modifier
    featureProgressionId: Links to the FeatureProgression
-   type: ModifierType.Other (not a bonus, just granting language)
-   appliesTo: ModifierAppliesToType.BonusLanguage (14) or ModifierAppliesToType.AutomaticLanguage (15)
+   type: EntityType.Other (not a bonus, just granting language)
+   appliesTo: EntityAppliesToType.BonusLanguage (14) or EntityAppliesToType.AutomaticLanguage (15)
    appliesToId: The specific language ID
    value: 0 (no bonus value - just granting language)
    bonusType: null
@@ -57,14 +57,14 @@ Automatic languages are **unconditional grants** that every character knows by d
     appliesTo: null,
     modifiers: [
         {
-            type: ModifierType.Other,
+            type: EntityType.Other,
             appliesTo: ModifierAppliesToType.AutomaticLanguage, // 15
             appliesToId: LANGUAGE_MAP.COMMON,
             value: 0, // No bonus, just granting language
             bonusType: null
         },
         {
-            type: ModifierType.Other,
+            type: EntityType.Other,
             appliesTo: ModifierAppliesToType.AutomaticLanguage, // 15
             appliesToId: LANGUAGE_MAP.ELVEN,
             value: 0,
@@ -92,14 +92,14 @@ Bonus languages are **available for selection** based on Intelligence modifier. 
     appliesTo: null,
     modifiers: [
         {
-            type: ModifierType.Other,
+            type: EntityType.Other,
             appliesTo: ModifierAppliesToType.BonusLanguage, // 14
             appliesToId: LANGUAGE_MAP.DRACONIC,
             value: 0,
             bonusType: null
         },
         {
-            type: ModifierType.Other,
+            type: EntityType.Other,
             appliesTo: ModifierAppliesToType.BonusLanguage, // 14
             appliesToId: LANGUAGE_MAP.GNOLL,
             value: 0,
@@ -128,21 +128,21 @@ Classes can **grant** both automatic and bonus languages. Class language feature
     appliesTo: null,
     modifiers: [
         {
-            type: ModifierType.Other,
+            type: EntityType.Other,
             appliesTo: ModifierAppliesToType.BonusLanguage, // 14
             appliesToId: LANGUAGE_MAP.CELESTIAL,
             value: 0,
             bonusType: null
         },
         {
-            type: ModifierType.Other,
+            type: EntityType.Other,
             appliesTo: ModifierAppliesToType.BonusLanguage, // 14
             appliesToId: LANGUAGE_MAP.ABYSSAL,
             value: 0,
             bonusType: null
         },
         {
-            type: ModifierType.Other,
+            type: EntityType.Other,
             appliesTo: ModifierAppliesToType.BonusLanguage, // 14
             appliesToId: LANGUAGE_MAP.INFERNAL,
             value: 0,
@@ -166,7 +166,7 @@ Classes can **grant** both automatic and bonus languages. Class language feature
     appliesTo: null,
     modifiers: [
         {
-            type: ModifierType.Other,
+            type: EntityType.Other,
             appliesTo: ModifierAppliesToType.AutomaticLanguage, // 15
             appliesToId: LANGUAGE_MAP.DRUIDIC,
             value: 0,
@@ -270,7 +270,7 @@ isClassBonusLanguageFeature(progression: FeatureProgressionWithRelations): boole
 The `raceService` handles languages as part of the bulk feature operations:
 
 1. **Creating/Updating Races**: Languages are included in the `features` array
-2. **Database Storage**: Creates appropriate `FeatureProgression` and `FeatureModifier` records
+2. **Database Storage**: Creates appropriate `FeatureProgression` and `FeatureEntity` records
 3. **No Individual CRUD**: Languages cannot be modified individually
 
 ### **Example Backend Data Structure**
@@ -287,7 +287,7 @@ The `raceService` handles languages as part of the bulk feature operations:
     modifiers: [
         {
             id: 456,
-            type: ModifierType.Other,
+            type: EntityType.Other,
             appliesTo: ModifierAppliesToType.Language, // 14
             appliesToId: LANGUAGE_MAP.COMMON,
             value: 0,
@@ -295,7 +295,7 @@ The `raceService` handles languages as part of the bulk feature operations:
         },
         {
             id: 457,
-            type: ModifierType.Other,
+            type: EntityType.Other,
             appliesTo: ModifierAppliesToType.Language, // 14
             appliesToId: LANGUAGE_MAP.ELVEN,
             value: 0,
@@ -375,8 +375,8 @@ const maxBonusLanguages = Math.max(0, intModifier);
 ## Key Design Principles
 
 ### **1. Container Pattern**
-- One `FeatureProgression` contains multiple `FeatureModifier` records for languages
-- Each modifier represents a different language
+- One `FeatureProgression` contains multiple `FeatureEntity` records for languages
+- Each entity represents a different language
 - The progression acts as a container for all languages of a type
 
 ### **2. Conditional Application**
@@ -385,7 +385,7 @@ const maxBonusLanguages = Math.max(0, intModifier);
 - Conditions are evaluated at runtime during character creation
 
 ### **3. Choice Integration**
-- Bonus languages use `FeatureChoice` for player selection
+- Bonus languages use choice entities for player selection
 - Choice quantity is dynamic based on INT modifier
 - UI can present proper selection widgets
 - Class-granted languages expand existing racial choices via `appliesIfChoiceKey`
@@ -419,14 +419,14 @@ const elfRace = {
             appliesTo: null,
             modifiers: [
                 {
-                    type: ModifierType.Other,
+                    type: EntityType.Other,
                     appliesTo: ModifierAppliesToType.Language, // 14
                     appliesToId: LANGUAGE_MAP.COMMON,
                     value: 0,
                     bonusType: null
                 },
                 {
-                    type: ModifierType.Other,
+                    type: EntityType.Other,
                     appliesTo: ModifierAppliesToType.Language, // 14
                     appliesToId: LANGUAGE_MAP.ELVEN,
                     value: 0,
@@ -445,14 +445,14 @@ const elfRace = {
             appliesTo: null,
             modifiers: [
                 {
-                    type: ModifierType.Other,
+                    type: EntityType.Other,
                     appliesTo: ModifierAppliesToType.Language, // 14
                     appliesToId: LANGUAGE_MAP.DRACONIC,
                     value: 0,
                     bonusType: null,
                     conditions: [
                         {
-                            type: FeatureModifierConditionType.other,
+                            type: FeatureEntityConditionType.other,
                             value: 'int_modifier_greater_than_0'
                         }
                     ]
@@ -492,7 +492,7 @@ const clericClass = {
             appliesTo: null,
             modifiers: [
                 {
-                    type: ModifierType.Other,
+                    type: EntityType.Other,
                     appliesTo: ModifierAppliesToType.Language, // 14
                     appliesToId: LANGUAGE_MAP.CELESTIAL,
                     value: 0,
@@ -501,13 +501,13 @@ const clericClass = {
                     appliesIfChoiceValue: null, // Applies regardless of existing choice
                     conditions: [
                         {
-                            type: FeatureModifierConditionType.other,
+                            type: FeatureEntityConditionType.other,
                             value: 'int_modifier_greater_than_0'
                         }
                     ]
                 },
                 {
-                    type: ModifierType.Other,
+                    type: EntityType.Other,
                     appliesTo: ModifierAppliesToType.Language, // 14
                     appliesToId: LANGUAGE_MAP.ABYSSAL,
                     value: 0,
@@ -516,13 +516,13 @@ const clericClass = {
                     appliesIfChoiceValue: null,
                     conditions: [
                         {
-                            type: FeatureModifierConditionType.other,
+                            type: FeatureEntityConditionType.other,
                             value: 'int_modifier_greater_than_0'
                         }
                     ]
                 },
                 {
-                    type: ModifierType.Other,
+                    type: EntityType.Other,
                     appliesTo: ModifierAppliesToType.Language, // 14
                     appliesToId: LANGUAGE_MAP.INFERNAL,
                     value: 0,
@@ -531,7 +531,7 @@ const clericClass = {
                     appliesIfChoiceValue: null,
                     conditions: [
                         {
-                            type: FeatureModifierConditionType.other,
+                            type: FeatureEntityConditionType.other,
                             value: 'int_modifier_greater_than_0'
                         }
                     ]
@@ -665,4 +665,4 @@ const uniqueBonusLanguages = [...new Set(allBonusLanguages)];
 5. **Maintainable**: Clear separation between race base and class expansions
 6. **No Hardcoded IDs**: Class bonus language features use any feature ID, identified by `appliesIfChoiceKey`
 
-For more details on the feature system, see **[overview.md](overview.md)** and **[component-selection.md](component-selection.md)**.
+For more details on the feature system, see **[README.md](README.md)** and **[Examples](examples.md)**.

@@ -4,7 +4,7 @@
 
 ## Overview
 
-Class skills in the D&D Tools system are implemented using the **Feature System** with a special container pattern. Each class has a single `FeatureProgression` that contains multiple `FeatureModifier` records, each representing a different class skill.
+Class skills in the D&D Tools system are implemented using the **Feature System** with a special container pattern. Each class has a single `FeatureProgression` that contains multiple `FeatureEntity` records, each representing a different class skill.
 
 ## Database Schema Structure
 
@@ -27,12 +27,12 @@ Class skills in the D&D Tools system are implemented using the **Feature System*
    appliesTo: null (container progression)
    ```
 
-3. **`FeatureModifier`** - Individual skills within the class skills feature
+3. **`FeatureEntity`** - Individual skills within the class skills feature
    ```sql
-   -- Each class skill is a modifier
+   -- Each class skill is an entity
    featureProgressionId: Links to the FeatureProgression
-   type: ModifierType.Other (not a bonus, just marking as class skill)
-   appliesTo: ModifierAppliesToType.Skill (1)
+   type: EntityType.Other (not a bonus, just marking as class skill)
+   appliesTo: EntityAppliesToType.Skill (1)
    appliesToId: The specific skill ID (e.g., Climb = 1, Jump = 2)
    value: 0 (no bonus value - just marking as class skill)
    bonusType: null
@@ -123,8 +123,8 @@ addSkill(
     const newModifier = {
         id: Date.now() + Math.random(), // Temporary ID
         featureProgressionId: classSkillsProgression.id,
-        type: ModifierType.Other, // Not a bonus, just marking as class skill
-        appliesTo: ModifierAppliesToType.Skill,
+        type: EntityType.Other, // Not a bonus, just marking as class skill
+        appliesTo: EntityAppliesToType.Skill,
         appliesToId: skillId,
         formulaParamsId: null,
         value: 0, // No bonus value - just marking as class skill
@@ -189,7 +189,7 @@ removeSkill(
 The `classService` handles class skills as part of the bulk feature operations:
 
 1. **Creating/Updating Classes**: Class skills are included in the `features` array
-2. **Database Storage**: Creates appropriate `FeatureProgression` and `FeatureModifier` records
+2. **Database Storage**: Creates appropriate `FeatureProgression` and `FeatureEntity` records
 3. **No Individual CRUD**: Class skills cannot be modified individually
 
 ### **Example Backend Data Structure**
@@ -206,16 +206,16 @@ The `classService` handles class skills as part of the bulk feature operations:
     modifiers: [
         {
             id: 456,
-            type: ModifierType.Other, // 3
-            appliesTo: ModifierAppliesToType.Skill, // 1
+            type: EntityType.Other, // 3
+            appliesTo: EntityAppliesToType.Skill, // 1
             appliesToId: 1, // Climb skill
             value: 0,
             bonusType: null
         },
         {
             id: 457,
-            type: ModifierType.Other,
-            appliesTo: ModifierAppliesToType.Skill,
+            type: EntityType.Other,
+            appliesTo: EntityAppliesToType.Skill,
             appliesToId: 2, // Jump skill
             value: 0,
             bonusType: null
@@ -283,8 +283,8 @@ const classSkills = cls.features
 ## Key Design Principles
 
 ### **1. Container Pattern**
-- One `FeatureProgression` contains multiple `FeatureModifier` records
-- Each modifier represents a different class skill
+- One `FeatureProgression` contains multiple `FeatureEntity` records
+- Each entity represents a different class skill
 - The progression acts as a container for all class skills
 
 ### **2. Special Feature ID**
@@ -293,7 +293,7 @@ const classSkills = cls.features
 - Allows filtering and processing of class skills specifically
 
 ### **3. Modifier-Based Approach**
-- Each class skill is represented as a modifier with `ModifierType.Other`
+- Each class skill is represented as an entity with `EntityType.Other`
 - `value: 0` indicates no bonus value - just marking as class skill
 - `appliesToId` contains the specific skill ID
 
@@ -320,15 +320,15 @@ const fighterClass = {
             appliesTo: null,
             modifiers: [
                 {
-                    type: ModifierType.Other,
-                    appliesTo: ModifierAppliesToType.Skill,
+                    type: EntityType.Other,
+                    appliesTo: EntityAppliesToType.Skill,
                     appliesToId: 1, // Climb
                     value: 0,
                     bonusType: null
                 },
                 {
-                    type: ModifierType.Other,
-                    appliesTo: ModifierAppliesToType.Skill,
+                    type: EntityType.Other,
+                    appliesTo: EntityAppliesToType.Skill,
                     appliesToId: 2, // Jump
                     value: 0,
                     bonusType: null
@@ -406,4 +406,4 @@ const isClassSkill = (skillId: number): boolean => {
 };
 ```
 
-For more details on the feature system, see **[overview.md](overview.md)** and **[component-selection.md](component-selection.md)**.
+For more details on the feature system, see **[README.md](README.md)** and **[Examples](examples.md)**.

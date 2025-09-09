@@ -56,7 +56,6 @@ Defines feat benefit relationships, linking feats to their benefits and effects.
 
 **Relationships**:
 - **`feat`**: Links to the feat
-- **`type`**: Links to the benefit type
 
 **Usage**: Provides feat benefit relationships and calculations.
 
@@ -77,30 +76,11 @@ Defines feat prerequisite relationships, linking feats to their requirements.
 
 **Relationships**:
 - **`feat`**: Links to the feat
-- **`type`**: Links to the prerequisite type
 
 **Usage**: Provides feat prerequisite relationships and validation.
 
 **Source File**: `prisma/schema.prisma` (FeatPrerequisiteMap model)
 
-### **Feat Source Map Model**
-
-Defines source book references for feats, providing proper attribution and page references.
-
-**Purpose**: Links feats to their source books and provides page references for quick lookup.
-
-**Key Fields**:
-- **`featId`**: Reference to the feat
-- **`sourceBookId`**: Reference to the source book
-- **`pageNumber`**: Page number in the source book
-
-**Relationships**:
-- **`feat`**: Links to the feat
-- **`sourceBook`**: Links to the source book
-
-**Usage**: Provides proper attribution for feat content and enables quick reference lookup.
-
-**Source File**: `prisma/schema.prisma` (FeatSourceMap model)
 
 ## 🔗 **Cross-System Relationships**
 
@@ -117,31 +97,7 @@ The feat system integrates with the character system through feat selection and 
 
 **Related Documentation**: [Character Management Database Schema](../character-management/database-schema.md)
 
-### **Ability System Integration**
 
-The feat system integrates with the ability system through prerequisites and benefits:
-
-**Ability Prerequisites**: Feats can require minimum ability scores
-**Ability Benefits**: Feats can provide ability score bonuses
-**Ability Validation**: Ability scores are validated against feat prerequisites
-**Ability Calculation**: Ability modifiers are used in feat calculations
-
-**Integration Pattern**: The feat system integrates with the ability system to determine feat prerequisites and benefits, ensuring proper ability score usage in feat mechanics.
-
-**Related Documentation**: [Ability System Database Schema](../ability-system/database-schema.md)
-
-### **Skill System Integration**
-
-The feat system integrates with the skill system through prerequisites and benefits:
-
-**Skill Prerequisites**: Feats can require minimum skill ranks
-**Skill Benefits**: Feats can provide skill bonuses and proficiencies
-**Skill Validation**: Skill ranks are validated against feat prerequisites
-**Skill Calculation**: Skill bonuses are calculated from feat benefits
-
-**Integration Pattern**: The feat system integrates with the skill system to determine feat prerequisites and benefits, ensuring proper skill usage in feat mechanics.
-
-**Related Documentation**: [Skill System Database Schema](../skill-system/database-schema.md)
 
 ### **Feature System Integration**
 
@@ -156,18 +112,6 @@ The feat system integrates with the feature system for feat-related features:
 
 **Related Documentation**: [Feature System Database Schema](../feature-system/database-schema.md)
 
-### **Source Book System Integration**
-
-The feat system integrates with the source book system for content attribution:
-
-**FeatSourceMap**: Links feats to source books with page references
-**Source Attribution**: Feats are properly attributed to source books
-**Page References**: Page numbers for quick lookup
-**Content Validation**: Source attribution enables content validation
-
-**Integration Pattern**: The feat system maintains proper source attribution, ensuring all feat content is properly credited and traceable.
-
-**Related Documentation**: [Source Book System Database Schema](../source-book-system/database-schema.md)
 
 ## 📊 **Data Integrity Constraints**
 
@@ -176,7 +120,6 @@ The feat system integrates with the source book system for content attribution:
 **Feat Model**: `id` field is the primary key with auto-increment
 **FeatBenefitMap Model**: Composite primary key on `featId` and `index`
 **FeatPrerequisiteMap Model**: Composite primary key on `featId` and `index`
-**FeatSourceMap Model**: Composite primary key on `featId` and `sourceBookId`
 
 ### **Foreign Key Constraints**
 
@@ -216,8 +159,5 @@ The feat system integrates with the source book system for content attribution:
 - **[Backend Implementation](backend-implementation.md)** - Feat system backend implementation
 - **[Frontend Components](frontend-components.md)** - Feat system frontend implementation
 - **[Character Management Database Schema](../character-management/database-schema.md)** - Character system database models
-- **[Ability System Database Schema](../ability-system/database-schema.md)** - Ability system database models
-- **[Skill System Database Schema](../skill-system/database-schema.md)** - Skill system database models
 - **[Feature System Database Schema](../feature-system/database-schema.md)** - Feature system database models
-- **[Source Book System Database Schema](../source-book-system/database-schema.md)** - Source book system database models
 - **[Database Schema Patterns](../application-overview/database-schema.md)** - Shared database patterns and conventions

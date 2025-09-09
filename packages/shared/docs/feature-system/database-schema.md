@@ -87,6 +87,8 @@ The unified model that handles all types of feature effects including modifiers,
 
 **Usage**: The unified approach allows a single feature to have multiple effects of different types, all managed through one consistent model. This eliminates the need for separate modifier, choice, and special effect models while providing the same functionality.
 
+**Real-World Example**: The Monk's "AC Bonus" feature (FeatureProgression ID 16592) demonstrates the unified entity approach with a single entity that applies Wisdom modifier to AC (type: 0=Bonus, appliesTo: 3=AC, formulaParams: ability-based calculation).
+
 **Source File**: `apps/backend/prisma/schema.prisma` (FeatureEntity model)
 
 ### **FeatureEntityCondition Model**
@@ -130,6 +132,11 @@ Defines mathematical formulas for feature progression, including intervals, thre
 - **`featureEntity`**: Links to feature entities using this formula
 
 **Usage**: Enables complex mathematical progression patterns for features that need to scale with character advancement.
+
+**Real-World Examples**: 
+- **Monk AC Bonus**: Uses formulaId 7 with abilityId 5 (Wisdom) to add Wisdom modifier to AC
+- **Monk Unarmed Damage**: Uses formulaId 3 with thresholds [1,4,8,12,16,20] and values ["1d6","1d8","1d10","2d6","2d8","2d10"] for damage progression
+- **Monk Flurry of Blows**: Uses formulaId 3 with thresholds [1,5,9] and values [-2,-1,0] for attack penalty reduction
 
 **Source File**: `apps/backend/prisma/schema.prisma` (FeatureFormulaParams model)
 

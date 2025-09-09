@@ -1,3 +1,5 @@
+import { EntityAppliesToType, USES_GROUPED_LABEL } from '@shared/static-data';
+
 import { formatterRegistry } from '../formatter-registry';
 import { labelerRegistry } from '../labeler-registry';
 import type {
@@ -27,7 +29,12 @@ export class FormattingPhase {
 
             // Skip labeling for cumulative modifiers - they will be labeled after grouping
             const isCumulativeModifier = entity.formulaParams?.cumulative === true;
-            if (!isCumulativeModifier) {
+            // Also skip labeling for entity types that use grouped labelers when they are grouped (groupingId > 0)
+            const usesGroupedLabel = USES_GROUPED_LABEL.includes(entity.appliesTo as EntityAppliesToType);
+            const isGrouped = (entity.groupingId || 0) > 0;
+            const shouldSkipLabeling = isCumulativeModifier || (usesGroupedLabel && isGrouped);
+
+            if (!shouldSkipLabeling) {
                 formattedValue = labelerRegistry.applyLabel(formattedValue, entity, showLabels);
             }
 

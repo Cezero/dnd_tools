@@ -116,3 +116,16 @@ export function groupedChoiceLabeler(formattedItems: string, choiceType: EntityA
 export function grantedFeatLabeler(value: string, _modifier: CalculatedEntity): string {
     return `Granted Feat: ${value}`;
 }
+
+// Labeler for weapon familiarity - adds "Treat" prefix and "as martial weapon(s)" suffix
+export function weaponFamiliarityLabeler(value: string, _modifier: CalculatedEntity): string {
+    return `Treat ${value} as martial weapon`;
+}
+
+// Labeler for grouped weapon familiarity - handles pluralization
+export function groupedWeaponFamiliarityLabeler(formattedItems: string): string {
+    // Check if there are multiple weapons (contains comma)
+    const isPlural = formattedItems.includes(',');
+    const pluralSuffix = isPlural ? 's' : '';
+    return `Treat ${formattedItems} as martial weapon${pluralSuffix}`;
+}

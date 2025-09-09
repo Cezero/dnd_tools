@@ -20,7 +20,8 @@ import {
     ProficiencyFormatter,
     CreatureTypeFormatter,
     SizeCategoryFormatter,
-    DamageTypeFormatter
+    DamageTypeFormatter,
+    WeaponFamiliarityFormatter
 } from './pure-formatters';
 import { generateKey } from './registry-utils';
 import type { BaseFormatter } from './types';
@@ -118,6 +119,7 @@ export class FormatterRegistry implements IFormatterRegistry {
         const creatureTypeFormatter = new CreatureTypeFormatter();
         const sizeCategoryFormatter = new SizeCategoryFormatter();
         const damageTypeFormatter = new DamageTypeFormatter();
+        const weaponFamiliarityFormatter = new WeaponFamiliarityFormatter();
 
         // Bonus-compatible types (using convenience wrapper)
         this.registerBonusFormatter(EntityAppliesToType.Ability, signedValueFormatter);
@@ -156,6 +158,7 @@ export class FormatterRegistry implements IFormatterRegistry {
         this.registerOtherFormatter(EntityAppliesToType.CreatureType, creatureTypeFormatter);
         this.registerOtherFormatter(EntityAppliesToType.SizeCategory, sizeCategoryFormatter);
         this.registerOtherFormatter(EntityAppliesToType.DamageType, damageTypeFormatter);
+        this.registerOtherFormatter(EntityAppliesToType.WeaponFamiliarity, weaponFamiliarityFormatter);
 
         // Proficiency-compatible types
         this.registerProficiencyFormatter(EntityAppliesToType.Feat, proficiencyFormatter);

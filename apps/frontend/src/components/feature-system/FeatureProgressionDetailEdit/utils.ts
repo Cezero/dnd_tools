@@ -1,5 +1,6 @@
-import { FeatApi } from '@/features/feat/FeatApi';
 import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
+import { FeatApi } from '@/features/feat/FeatApi';
+import { ItemApi } from '@/features/item/ItemApi';
 import {
     ABILITY_SELECT_LIST,
     FULL_SKILL_SELECT_LIST,
@@ -11,7 +12,9 @@ import {
     SIZE_SELECT_LIST,
     CREATURE_TYPE_SELECT_LIST,
     EntityAppliesToType,
-    EntityType
+    EntityType,
+    ITEM_TYPE_ENUM,
+    WEAPON_CATEGORY_ENUM
 } from '@shared/static-data';
 import type { SelectOption } from '@shared/static-data';
 
@@ -94,13 +97,28 @@ export async function getAppliesToSelectOptions(appliesTo: EntityAppliesToType, 
                 { value: -1, label: 'Any Size' },
                 ...SIZE_SELECT_LIST
             ];
-        case EntityAppliesToType.CreatureType:
-            return [
-                { value: -1, label: 'Any Creature Type' },
-                ...CREATURE_TYPE_SELECT_LIST
-            ];
         case EntityAppliesToType.DamageType:
             return DAMAGE_TYPE_SELECT_LIST;
+        case EntityAppliesToType.WeaponFamiliarity:
+            try {
+                // Fetch exotic weapons for weapon familiarity
+                const response = await ItemApi.itemQuery({
+                    queryType: 'byCategory',
+                    typeId: ITEM_TYPE_ENUM.WEAPON,
+                    category: WEAPON_CATEGORY_ENUM.EXOTIC
+                });
+                if (response && response.results && response.results.length > 0) {
+                    return response.results.map(weapon => ({
+                        value: weapon.id,
+                        label: weapon.name
+                    }));
+                }
+            } catch (error) {
+                console.error('Failed to load exotic weapons for Weapon Familiarity:', error);
+            }
+            return [
+                { value: -1, label: 'Select an exotic weapon...' }
+            ];
         case EntityAppliesToType.MovementSpeed:
         case EntityAppliesToType.Attack:
         case EntityAppliesToType.Initiative:

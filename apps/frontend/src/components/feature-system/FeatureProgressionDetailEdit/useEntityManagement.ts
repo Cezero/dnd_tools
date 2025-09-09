@@ -1,7 +1,6 @@
 import { useCallback } from 'react';
 
 import type { FeatureProgression } from '@shared/schema';
-import { EntityType } from '@shared/static-data';
 
 import { updateGroupingStateAfterRemoval } from './entityHelpers';
 import { createDefaultEntity } from './formDataTransformers';

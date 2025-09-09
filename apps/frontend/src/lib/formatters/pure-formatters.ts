@@ -395,6 +395,19 @@ export class DamageTypeFormatter implements BaseFormatter {
     }
 }
 
+export class WeaponFamiliarityFormatter implements BaseFormatter {
+    format(modifier: CalculatedEntity): string {
+        // Use the weapon name from the item data
+        if (modifier.item) {
+            return modifier.item.name;
+        }
+
+        // Fallback if weapon data is missing
+        const weaponId = modifier.appliesToId;
+        return `Weapon ID: ${weaponId}`;
+    }
+}
+
 // Utility function for formatting signed values
 function formatSignedValue(value: number): string {
     if (value > 0) {

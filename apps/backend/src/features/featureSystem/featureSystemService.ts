@@ -11,12 +11,26 @@ import {
     FeatureProgression,
     GetFeatureListResponse,
 } from '@shared/schema';
+import { EntityAppliesToType, SpecialFeatureId } from '@shared/static-data';
 
 import type { FeatureSystemService } from './types';
 import { transformFormulaParamsForDatabaseCreate, transformFormulaParamsFromDatabase } from '../../utils/formulaParamTransformers';
 
 
 const prisma = new PrismaClient();
+
+// Helper function to create the special feature filter
+function createSpecialFeatureFilter(): Prisma.FeatureWhereInput['id'] {
+    return {
+        notIn: [
+            SpecialFeatureId.ClassSkill,
+            SpecialFeatureId.ClassProficiency,
+            SpecialFeatureId.AutomaticLanguage,
+            SpecialFeatureId.BonusLanguage,
+            SpecialFeatureId.AbilityAdjustment
+        ]
+    };
+}
 
 export const featureSystemService: FeatureSystemService = {
     // Core Feature CRUD operations
@@ -26,10 +40,8 @@ export const featureSystemService: FeatureSystemService = {
         if (sourceType !== undefined) {
             // If sourceType is specified, show both features with that sourceType AND orphaned features
             whereClause = {
-                // Always filter out special features (IDs 1-5)
-                id: {
-                    notIn: [1, 2, 3, 4, 5]  // switch this to use SpecialFeatureId from static-data
-                },
+                // Always filter out special features
+                id: createSpecialFeatureFilter(),
                 OR: [
                     // Features with progressions of this sourceType
                     {
@@ -50,10 +62,8 @@ export const featureSystemService: FeatureSystemService = {
         } else {
             // If no sourceType specified, also filter out features associated with classes/races (for standalone features)
             whereClause = {
-                // Always filter out special features (IDs 1-5)
-                id: {
-                    notIn: [1, 2, 3, 4, 5]
-                },
+                // Always filter out special features
+                id: createSpecialFeatureFilter(),
                 progressions: {
                     none: {
                         OR: [
@@ -87,10 +97,8 @@ export const featureSystemService: FeatureSystemService = {
         if (sourceType !== undefined) {
             // If sourceType is specified, show both features with that sourceType AND orphaned features
             whereClause = {
-                // Always filter out special features (IDs 1-5)
-                id: {
-                    notIn: [1, 2, 3, 4, 5]
-                },
+                // Always filter out special features
+                id: createSpecialFeatureFilter(),
                 OR: [
                     // Features with progressions of this sourceType
                     {
@@ -111,10 +119,8 @@ export const featureSystemService: FeatureSystemService = {
         } else {
             // If no sourceType specified, also filter out features associated with classes/races (for standalone features)
             whereClause = {
-                // Always filter out special features (IDs 1-5)
-                id: {
-                    notIn: [1, 2, 3, 4, 5]
-                },
+                // Always filter out special features
+                id: createSpecialFeatureFilter(),
                 progressions: {
                     none: {
                         OR: [
@@ -244,7 +250,7 @@ export const featureSystemService: FeatureSystemService = {
             // Create related entities
             if (entities && entities.length > 0) {
                 for (const entity of entities) {
-                    const { conditions, formulaParams, feat, feature, item, ...entityData } = entity;
+                    const { conditions, formulaParams, ...entityData } = entity;
 
                     // Create formula params first if they exist
                     let formulaParamsId = null;
@@ -310,7 +316,7 @@ export const featureSystemService: FeatureSystemService = {
                 // Create related entities
                 if (entities && entities.length > 0) {
                     for (const entity of entities) {
-                        const { conditions, formulaParams, feat, feature, item, ...entityData } = entity;
+                        const { conditions, formulaParams, ...entityData } = entity;
 
                         // Create formula params first if they exist
                         let formulaParamsId = null;
@@ -520,7 +526,7 @@ export const featureSystemService: FeatureSystemService = {
                     // Create related entities
                     if (entities && entities.length > 0) {
                         for (const entity of entities) {
-                            const { conditions, formulaParams, feat, feature, item, ...entityData } = entity;
+                            const { conditions, formulaParams, ...entityData } = entity;
 
                             // Create formula params first if they exist
                             let formulaParamsId = null;
@@ -605,18 +611,25 @@ export const featureSystemService: FeatureSystemService = {
         const itemIds = allEntities
             .filter(e => e.appliesToSubId && e.appliesToSubId > 0)
             .map(e => e.appliesToSubId!);
+
+        // Also fetch items for Weapon Familiarity entities (stored in appliesToId)
+        const weaponFamiliarityItemIds = allEntities
+            .filter(e => e.appliesTo === EntityAppliesToType.WeaponFamiliarity && e.appliesToId !== null && e.appliesToId !== undefined)
+            .map(e => e.appliesToId!)
+            .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
         const featIds = allEntities
-            .filter(e => e.appliesTo === 21 && e.appliesToId !== null && e.appliesToId !== undefined) // EntityAppliesToType.Feat
+            .filter(e => e.appliesTo === EntityAppliesToType.Feat && e.appliesToId !== null && e.appliesToId !== undefined)
             .map(e => e.appliesToId!)
             .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
         const featureIds = allEntities
-            .filter(e => e.appliesTo === 25 && e.appliesToId !== null && e.appliesToId !== undefined) // EntityAppliesToType.Feature
+            .filter(e => e.appliesTo === EntityAppliesToType.Feature && e.appliesToId !== null && e.appliesToId !== undefined)
             .map(e => e.appliesToId!)
             .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
 
         // Fetch items, feats, and features
-        const items = itemIds.length > 0 ? await prisma.item.findMany({
-            where: { id: { in: itemIds } }
+        const allItemIds = [...itemIds, ...weaponFamiliarityItemIds];
+        const items = allItemIds.length > 0 ? await prisma.item.findMany({
+            where: { id: { in: allItemIds } }
         }) : [];
 
         const feats = featIds.length > 0 ? await prisma.feat.findMany({
@@ -641,23 +654,24 @@ export const featureSystemService: FeatureSystemService = {
         // Transform formula parameters and add item/feat data
         const transformedProgressions = progressions.map(progression => ({
             ...progression,
-            entities: progression.entities?.map((entity: Record<string, unknown>) => ({
+            entities: progression.entities?.map(entity => ({
                 ...entity,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                formulaParams: (entity as any).formulaParams
-                    ? transformFormulaParamsFromDatabase((entity as any).formulaParams)
+                formulaParams: entity.formulaParams
+                    ? transformFormulaParamsFromDatabase(entity.formulaParams)
                     : null,
-                // Add item data if appliesToSubId > 0
-                item: (entity as any).appliesToSubId && (entity as any).appliesToSubId > 0
-                    ? itemMap.get((entity as any).appliesToSubId) || null
+                // Add item data if appliesToSubId > 0 OR if it's Weapon Familiarity (appliesToId)
+                item: entity.appliesToSubId && entity.appliesToSubId > 0
+                    ? itemMap.get(entity.appliesToSubId) || null
+                    : entity.appliesTo === EntityAppliesToType.WeaponFamiliarity && entity.appliesToId
+                        ? itemMap.get(entity.appliesToId) || null
+                        : null,
+                // Add feat data if appliesTo === Feat
+                feat: entity.appliesTo === EntityAppliesToType.Feat && entity.appliesToId
+                    ? featMap.get(entity.appliesToId) || null
                     : null,
-                // Add feat data if appliesTo === 21 (Feat)
-                feat: (entity as any).appliesTo === 21
-                    ? featMap.get((entity as any).appliesToId) || null
-                    : null,
-                // Add feature data if appliesTo === 25 (Feature)
-                feature: (entity as any).appliesTo === 25
-                    ? featureMap.get((entity as any).appliesToId) || null
+                // Add feature data if appliesTo === Feature
+                feature: entity.appliesTo === EntityAppliesToType.Feature && entity.appliesToId
+                    ? featureMap.get(entity.appliesToId) || null
                     : null
             }))
         }));

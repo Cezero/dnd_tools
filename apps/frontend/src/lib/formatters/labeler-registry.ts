@@ -1,6 +1,6 @@
 import { EntityAppliesToType, EntityType } from '@shared/static-data';
 
-import { classSkillLabeler, skillModifierLabeler, displayNameLabeler, emptyStringLabeler, bonusLanguageLabeler, automaticLanguageLabeler, abilityModifierLabeler, savingThrowModifierLabeler, creatureTypeLabeler, sizeCategoryLabeler, choiceLabeler, groupedChoiceLabeler, grantedFeatLabeler } from './label-formatters';
+import { classSkillLabeler, skillModifierLabeler, displayNameLabeler, emptyStringLabeler, bonusLanguageLabeler, automaticLanguageLabeler, abilityModifierLabeler, savingThrowModifierLabeler, creatureTypeLabeler, sizeCategoryLabeler, choiceLabeler, groupedChoiceLabeler, grantedFeatLabeler, weaponFamiliarityLabeler, groupedWeaponFamiliarityLabeler } from './label-formatters';
 import { generateKey } from './registry-utils';
 import type { CalculatedEntity } from './types';
 
@@ -26,9 +26,11 @@ interface ILabelerRegistry {
 
 export class LabelerRegistry implements ILabelerRegistry {
     private labelers = new Map<string, Labeler>();
+    private groupedLabelers = new Map<EntityAppliesToType, (formattedItems: string) => string>();
 
     constructor() {
         this.initializeDefaultLabelers();
+        this.initializeDefaultGroupedLabelers();
     }
 
     // Core unified method
@@ -81,6 +83,13 @@ export class LabelerRegistry implements ILabelerRegistry {
     applyGroupedLabel(formattedItems: string, appliesTo: EntityAppliesToType, showLabel: boolean = true): string {
         if (!showLabel) return formattedItems;
 
+        // Check if there's a specific grouped labeler for this appliesTo type
+        const groupedLabeler = this.getGroupedLabeler(appliesTo);
+        if (groupedLabeler) {
+            return groupedLabeler(formattedItems);
+        }
+
+        // Fallback to the default grouped choice labeler
         return groupedChoiceLabeler(formattedItems, appliesTo);
     }
 
@@ -123,6 +132,7 @@ export class LabelerRegistry implements ILabelerRegistry {
         this.registerOtherLabeler(EntityAppliesToType.SizeCategory, sizeCategoryLabeler);
         this.registerOtherLabeler(EntityAppliesToType.CreatureType, creatureTypeLabeler);
         this.registerOtherLabeler(EntityAppliesToType.DamageType, emptyStringLabeler);
+        this.registerOtherLabeler(EntityAppliesToType.WeaponFamiliarity, weaponFamiliarityLabeler);
         this.registerOtherLabeler(EntityAppliesToType.Skill, classSkillLabeler); // Special case for class skills
 
         // EntityType.Proficiency
@@ -131,6 +141,20 @@ export class LabelerRegistry implements ILabelerRegistry {
         // Choice labelers
         this.registerLabeler(EntityType.Choice, choiceLabeler);
         this.registerLabeler(EntityType.Allocation, choiceLabeler);
+    }
+
+    // Grouped labeler methods
+    registerGroupedLabeler(appliesTo: EntityAppliesToType, labeler: (formattedItems: string) => string): void {
+        this.groupedLabelers.set(appliesTo, labeler);
+    }
+
+    getGroupedLabeler(appliesTo: EntityAppliesToType): ((formattedItems: string) => string) | undefined {
+        return this.groupedLabelers.get(appliesTo);
+    }
+
+    private initializeDefaultGroupedLabelers(): void {
+        // Register grouped labelers for entity types that need them
+        this.registerGroupedLabeler(EntityAppliesToType.WeaponFamiliarity, groupedWeaponFamiliarityLabeler);
     }
 }
 

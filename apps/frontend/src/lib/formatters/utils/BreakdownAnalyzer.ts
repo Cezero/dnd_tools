@@ -1,8 +1,4 @@
 import type {
-    FeatureEntity
-} from '@shared/schema';
-
-import type {
     CalculationBreakdown,
     FormattedItemWithLevel
 } from '../types';

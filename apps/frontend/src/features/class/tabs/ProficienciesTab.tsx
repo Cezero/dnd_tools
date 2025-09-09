@@ -8,7 +8,7 @@ import { renderCellValue } from '@/components/generic-list/columnUtils';
 import { ClassProficiencyService } from '@/features/class/ClassProficiencyService';
 import { FeatApi } from '@/features/feat/FeatApi';
 import { displayStrategyFactory } from '@/lib/formatters';
-import type { CharacterSheetDisplayResult, DisplayResult, FormattedEntityResult } from '@/lib/formatters/types';
+import type { CharacterSheetDisplayResult, FormattedEntityResult } from '@/lib/formatters/types';
 import { DisplayType, FeatBenefitType, SpecialFeatureId } from '@shared/static-data';
 
 import type { ClassTabProps } from './types';

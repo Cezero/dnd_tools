@@ -73,6 +73,33 @@ The BAB system calculates iterative attacks for high-level characters.
 - **Multi-classing**: Handle BAB from multiple classes
 - **Real-time Calculation**: Update BAB when class levels change
 
+### **Multi-Class BAB Calculation Examples**
+
+**Example 1: Fighter 5 / Wizard 3**
+- **Fighter BAB**: 5 levels × 1 = 5
+- **Wizard BAB**: 3 levels × 0.5 = 1.5 (rounded down to 1)
+- **Total BAB**: 5 + 1 = 6
+- **Attack Progression**: +6/+1
+
+**Example 2: Cleric 4 / Ranger 4**
+- **Cleric BAB**: 4 levels × 0.75 = 3
+- **Ranger BAB**: 4 levels × 0.75 = 3
+- **Total BAB**: 3 + 3 = 6
+- **Attack Progression**: +6/+1
+
+**Example 3: Fighter 6 / Rogue 4 / Wizard 2**
+- **Fighter BAB**: 6 levels × 1 = 6
+- **Rogue BAB**: 4 levels × 0.5 = 2
+- **Wizard BAB**: 2 levels × 0.5 = 1
+- **Total BAB**: 6 + 2 + 1 = 9
+- **Attack Progression**: +9/+4
+
+**Example 4: Paladin 8 / Sorcerer 4**
+- **Paladin BAB**: 8 levels × 1 = 8
+- **Sorcerer BAB**: 4 levels × 0.5 = 2
+- **Total BAB**: 8 + 2 = 10
+- **Attack Progression**: +10/+5
+
 ## 🛡️ **Saving Throw System**
 
 ### **Progression Types**
@@ -118,6 +145,28 @@ The saving throw system uses two progression patterns for different save types.
 - **Ability Integration**: Integrate with character ability scores
 - **Multi-classing**: Handle saves from multiple classes
 - **Progression Preview**: Show save progression for future levels
+
+### **Multi-Class Saving Throw Calculation Examples**
+
+**Example 1: Fighter 5 / Wizard 3**
+- **Fortitude**: Fighter 5 (Good) = floor(5/2) + 2 = 4, Wizard 3 (Poor) = floor(3/3) = 1 → **Total: 4**
+- **Reflex**: Fighter 5 (Poor) = floor(5/3) = 1, Wizard 3 (Poor) = floor(3/3) = 1 → **Total: 1**
+- **Will**: Fighter 5 (Poor) = floor(5/3) = 1, Wizard 3 (Good) = floor(3/2) + 2 = 3 → **Total: 3**
+
+**Example 2: Cleric 4 / Ranger 4**
+- **Fortitude**: Cleric 4 (Good) = floor(4/2) + 2 = 4, Ranger 4 (Good) = floor(4/2) + 2 = 4 → **Total: 4**
+- **Reflex**: Cleric 4 (Poor) = floor(4/3) = 1, Ranger 4 (Good) = floor(4/2) + 2 = 4 → **Total: 4**
+- **Will**: Cleric 4 (Good) = floor(4/2) + 2 = 4, Ranger 4 (Poor) = floor(4/3) = 1 → **Total: 4**
+
+**Example 3: Rogue 6 / Sorcerer 4**
+- **Fortitude**: Rogue 6 (Poor) = floor(6/3) = 2, Sorcerer 4 (Poor) = floor(4/3) = 1 → **Total: 2**
+- **Reflex**: Rogue 6 (Good) = floor(6/2) + 2 = 5, Sorcerer 4 (Poor) = floor(4/3) = 1 → **Total: 5**
+- **Will**: Rogue 6 (Poor) = floor(6/3) = 2, Sorcerer 4 (Good) = floor(4/2) + 2 = 4 → **Total: 4**
+
+**Example 4: Paladin 8 / Bard 2**
+- **Fortitude**: Paladin 8 (Good) = floor(8/2) + 2 = 6, Bard 2 (Poor) = floor(2/3) = 0 → **Total: 6**
+- **Reflex**: Paladin 8 (Poor) = floor(8/3) = 2, Bard 2 (Good) = floor(2/2) + 2 = 3 → **Total: 3**
+- **Will**: Paladin 8 (Good) = floor(8/2) + 2 = 6, Bard 2 (Good) = floor(2/2) + 2 = 3 → **Total: 6**
 
 ## 📚 **Skill Point System**
 

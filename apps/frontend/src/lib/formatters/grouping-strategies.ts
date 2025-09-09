@@ -1,5 +1,6 @@
 
-import { EntityType } from '@shared/static-data';
+import { EntityType, EntityAppliesToType, USES_GROUPED_LABEL } from '@shared/static-data';
+
 import { labelerRegistry } from './labeler-registry';
 import type {
     FormattedItemWithBreakdown,
@@ -82,6 +83,24 @@ export class EntityGroupingStrategy extends BaseGroupingStrategy {
             // For Choice and Allocation types, use ' | ' delimiter with parentheses
             if (firstItem.entity.type === EntityType.Choice || firstItem.entity.type === EntityType.Allocation) {
                 const formatted = items.map(item => this.formatIndividualItem(item)).join(' | ');
+                return labelerRegistry.applyGroupedLabel(formatted, firstItem.entity.appliesTo, true);
+            }
+
+            // For entity types that use grouped labelers, extract raw data and apply grouped labeler
+            if (USES_GROUPED_LABEL.includes(firstItem.entity.appliesTo as EntityAppliesToType)) {
+                // Extract raw data from the entity data (before individual labeling)
+                const rawData = items
+                    .map(item => {
+                        // For Weapon Familiarity, get the raw weapon name from the entity's item data
+                        if (firstItem.entity.appliesTo === EntityAppliesToType.WeaponFamiliarity && item.entity.item) {
+                            return item.entity.item.name;
+                        }
+                        // Fallback to the formatted value if raw data is missing
+                        return item.formattedValue;
+                    })
+                    .filter(data => data);
+
+                const formatted = rawData.join(', ');
                 return labelerRegistry.applyGroupedLabel(formatted, firstItem.entity.appliesTo, true);
             }
         }

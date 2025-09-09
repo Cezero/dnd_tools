@@ -181,6 +181,11 @@ export const ENTITY_TYPE_COMPATIBILITY = {
     ],
 } as const;
 
+// Entity types that should use grouped labelers when entities are grouped
+export const USES_GROUPED_LABEL: EntityAppliesToType[] = [
+    EntityAppliesToType.WeaponFamiliarity,
+] as const;
+
 export const FeatureBonusType = {
     // Always stacking types
     Dodge: 0,

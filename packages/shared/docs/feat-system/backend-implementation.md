@@ -196,15 +196,6 @@ The feat system manages feat prerequisites through complex relationship handling
 
 **Related Documentation**: [Feat System Static Data](static-data.md)
 
-### **Source Attribution**
-
-The feat system handles source book attribution for proper content credit:
-
-**Source Book References**: Feats are linked to their source books
-**Page Numbers**: Page references for quick lookup in source material
-**Multiple Sources**: Support for feats appearing in multiple sources
-
-**Implementation Pattern**: The system maintains source book references through source map entities, allowing proper attribution and easy lookup of feat origins in published material.
 
 ## 🔗 **Integration Points**
 
@@ -221,31 +212,6 @@ The feat system integrates with the character system through feat selection and 
 
 **Related Documentation**: [Character Management Backend Implementation](../character-management/backend-implementation.md)
 
-### **Ability System Integration**
-
-The feat system integrates with the ability system through prerequisites and benefits:
-
-**Ability Prerequisites**: Feats can require minimum ability scores
-**Ability Benefits**: Feats can provide ability score bonuses
-**Ability Validation**: Ability scores are validated against feat prerequisites
-**Ability Calculation**: Ability modifiers are used in feat calculations
-
-**Integration Pattern**: The feat system integrates with the ability system to validate prerequisites and calculate benefits, ensuring proper ability score usage in feat mechanics.
-
-**Related Documentation**: [Ability System Backend Implementation](../ability-system/backend-implementation.md)
-
-### **Skill System Integration**
-
-The feat system integrates with the skill system through prerequisites and benefits:
-
-**Skill Prerequisites**: Feats can require minimum skill ranks
-**Skill Benefits**: Feats can provide skill bonuses and proficiencies
-**Skill Validation**: Skill ranks are validated against feat prerequisites
-**Skill Calculation**: Skill bonuses are calculated from feat benefits
-
-**Integration Pattern**: The feat system integrates with the skill system to validate prerequisites and calculate benefits, ensuring proper skill usage in feat mechanics.
-
-**Related Documentation**: [Skill System Backend Implementation](../skill-system/backend-implementation.md)
 
 ### **Feature System Integration**
 

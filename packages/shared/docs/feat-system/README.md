@@ -13,10 +13,7 @@
 - **[frontend-components.md](frontend-components.md)** — Frontend React components
 
 ### **Specialized Documentation**
-- **[feat-mechanics.md](feat-mechanics.md)** — Feat rules and mechanics
-- **[feat-prerequisites.md](feat-prerequisites.md)** — Prerequisite system and validation
-- **[feat-benefits.md](feat-benefits.md)** — Benefit system and effects
-- **[feat-integration.md](feat-integration.md)** — Integration with character and feature systems
+*Specialized documentation files are not currently available. Core documentation provides comprehensive coverage of feat mechanics, prerequisites, benefits, and integration.*
 
 ## 🎯 **System Overview**
 

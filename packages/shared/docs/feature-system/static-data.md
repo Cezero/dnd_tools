@@ -36,19 +36,22 @@ Defines the types of entities that features can provide, affecting how they are 
 **Entity Categories**:
 
 **Bonus Entities (0)**: Numerical bonuses and penalties that follow stacking rules
-- **Examples**: +2 to attack rolls, +4 to Strength, -1 to AC
+- **Examples**: +2 to attack rolls, +4 to Strength, -1 to AC, Wisdom modifier to AC (Monk AC Bonus)
 - **Stacking**: Multiple bonuses of different types stack, same types don't
 - **Compatibility**: Ability, Skill, SavingThrow, AC, Attack, Damage, DamageReduction, Initiative, SpellSvDC
+- **Real Example**: Monk AC Bonus applies Wisdom modifier to AC (type: 0, appliesTo: 3=AC, formulaParams: ability-based)
 
 **Quantity Entities (1)**: Counts, amounts, and resources that represent discrete values
-- **Examples**: 30ft movement speed, 3d6 damage, 2 targets
+- **Examples**: 30ft movement speed, 3d6 damage, 2 targets, +10ft movement (Monk Fast Movement)
 - **Stacking**: Highest value applies (no stacking)
 - **Compatibility**: MovementSpeed, HitDice, Uses, Targets, Distance, ExtraAttacks, Healing, SpellResistance, Damage
+- **Real Example**: Monk Fast Movement adds +10ft to movement speed (type: 1, appliesTo: 8=MovementSpeed, value: 10)
 
 **Replacement Entities (2)**: Values that replace existing character statistics
-- **Examples**: Replace unarmed damage with 1d6, replace base speed with 40ft
+- **Examples**: Replace unarmed damage with 1d6, replace base speed with 40ft, progressive unarmed damage (Monk Unarmed Strike)
 - **Stacking**: Overwrites existing values completely
 - **Compatibility**: Damage, UnarmedDamage, MovementSpeed, Ability
+- **Real Example**: Monk Unarmed Strike replaces unarmed damage with progressive dice (type: 2, appliesTo: 20=UnarmedDamage, formulaParams: threshold-based progression)
 
 **Other Entities (3)**: Special cases and complex effects that require custom handling
 - **Examples**: Direct feat grants, language grants, special abilities
@@ -56,14 +59,16 @@ Defines the types of entities that features can provide, affecting how they are 
 - **Compatibility**: Other, BonusLanguage, AutomaticLanguage, WeaponFamiliarity, Feat, SizeCategory, CreatureType, DamageType
 
 **Proficiency Entities (4)**: Proficiency bonuses and abilities
-- **Examples**: Weapon proficiencies, armor proficiencies
+- **Examples**: Weapon proficiencies, armor proficiencies, class skill proficiencies (Monk Class Skills)
 - **Stacking**: Custom logic for proficiency handling
 - **Compatibility**: Feat (when used as proficiencies)
+- **Real Example**: Monk Class Skills grants proficiency in Balance, Climb, Concentration, etc. (type: 4, appliesTo: 1=Skill, appliesToId: specific skill IDs)
 
 **Choice Entities (5)**: Player choice mechanics
-- **Examples**: Feat choices, feature choices, creature type choices
+- **Examples**: Feat choices, feature choices, creature type choices, bonus feat selection (Monk Bonus Feat)
 - **Stacking**: N/A (choice-based)
 - **Compatibility**: Feat, Feature, CreatureType
+- **Real Example**: Monk Bonus Feat allows choice between Improved Grapple or Stunning Fist (type: 5, appliesTo: 21=Feat, appliesToId: specific feat IDs)
 
 **Allocation Entities (6)**: Resource allocation mechanics
 - **Examples**: Point allocation to feats, features, or creature types
@@ -337,6 +342,81 @@ Defines creature types for creature-based conditions.
 
 **Source File**: `packages/shared/static-data/src/FeatureData.ts` (CreatureType definition)
 
+## 🎯 **Feature Progression Patterns**
+
+### **Common Implementation Patterns**
+
+Based on analysis of actual class implementations (Monk, Bard, and Druid classes), several common patterns emerge for implementing D&D class features:
+
+### **Uses/Day and Uses/Week Modeling Patterns**
+
+#### **Linear Scaling Pattern**
+**Use Case**: Features that scale linearly since the feature started
+**Formula**: @FormulaId.LINEAR_SCALING (1)
+**Real Example**: Bardic Music uses per day (1 use at 1st level, +1 per level)
+**Implementation**: `formulaId: 1, interval: 1, includeProgressionLevel: true`
+
+#### **Complex Threshold Pattern**
+**Use Case**: Features with non-linear progression at specific level milestones
+**Formula**: @FormulaId.THRESHOLD_BASED (3)
+**Real Example**: Druid Wild Shape uses per day with complex progression [5,6,7,10,14,18] → [1,2,3,4,5,6]
+**Implementation**: `formulaId: 3, thresholds: [5, 6, 7, 10, 14, 18], values: [1, 2, 3, 4, 5, 6]`
+
+#### **Interval-Based Pattern**
+**Use Case**: Features that improve at regular level intervals
+**Formula**: @FormulaId.EVERY_N_LEVELS (2)
+**Real Example**: Bardic Music abilities improving every 3 levels
+**Implementation**: `formulaId: 2, interval: 3, includeProgressionLevel: true`
+
+#### **Delayed Progression Pattern**
+**Use Case**: Features that start at different levels than the base feature
+**Formula**: Any formula type with `formulaStartLevel` parameter
+**Real Example**: Bardic Music abilities starting at 8th level
+**Implementation**: `formulaStartLevel: 8, includeProgressionLevel: true`
+
+### **Cross-System Integration Patterns**
+
+#### **Language System Integration**
+**Use Case**: Features that grant language access
+**Entity Type**: @EntityType.Other (3)
+**AppliesTo Types**: @EntityAppliesToType.Language (14), @EntityAppliesToType.Language (15), @EntityAppliesToType.Language (22)
+**Real Example**: Druid Bonus Languages (Sylvan, Druidic)
+**Implementation**: `type: 3, appliesTo: 14/15/22, appliesToId: language ID`
+
+#### **Skill System Integration**
+**Use Case**: Features that provide skill bonuses or proficiencies
+**Entity Type**: @EntityType.Bonus (0) or @EntityType.Other (3)
+**AppliesTo Type**: @EntityAppliesToType.Skill (1)
+**Real Example**: Druid Nature Sense (+2 to Knowledge nature and Survival)
+**Implementation**: `type: 0, appliesTo: 1, appliesToId: skill ID, value: bonus amount`
+
+#### **Use System Integration**
+**Use Case**: Features that provide uses/day or uses/week resources
+**Entity Type**: @EntityType.Quantity (1)
+**AppliesTo Type**: @EntityAppliesToType.Uses (10)
+**Real Example**: Bardic Music uses, Druid Wild Shape uses
+**Implementation**: `type: 1, appliesTo: 10, appliesToId: use type ID, formulaParams: scaling formula`
+
+### **Complex Scaling and Delayed Progression Patterns**
+
+#### **Complex Threshold Progression**
+**Use Case**: Features with non-linear progression at specific level milestones
+**Formula**: @FormulaId.THRESHOLD_BASED (3)
+**Real Example**: Druid Wild Shape uses per day with complex progression
+**Implementation**: `formulaId: 3, thresholds: [5, 6, 7, 10, 14, 18], values: [1, 2, 3, 4, 5, 6]`
+
+#### **Delayed Progression Pattern**
+**Use Case**: Features that start at different levels than the base feature
+**Formula**: Any formula type with `formulaStartLevel` parameter
+**Real Example**: Bardic Music abilities starting at 8th level
+**Implementation**: `formulaStartLevel: 8, includeProgressionLevel: true`
+
+#### **Ability-Based Scaling Pattern**
+**Use Case**: Features that scale with level plus ability modifier
+**Formula**: @FormulaId.LEVEL_PLUS_ABILITY (11)
+**Real Example**: Druid Wild Empathy bonus = druid level + Charisma modifier
+**Implementation**: `formulaId: 11, abilityId: 6, includeProgressionLevel: true`
+
 ## 🎨 **Utility Functions**
 
 ### **Display Formatting**
@@ -349,26 +429,6 @@ The static data includes utility functions for formatting feature information:
 **Validation Helpers**: Utility functions for validating enum values
 
 **Source File**: `packages/shared/static-data/src/FeatureData.ts` (Utility function definitions)
-
-### **Select Lists**
-
-Pre-formatted select lists for user interface components:
-
-**ENTITY_TYPE_SELECT_LIST**: Select options for entity types
-**ENTITY_APPLIES_TO_SELECT_LIST**: Select options for entity targets
-**FEATURE_BONUS_SELECT_LIST**: Select options for bonus types
-**FEATURE_ENTITY_CONDITION_SELECT_LIST**: Select options for condition types
-**FEATURE_PRE_REQ_SELECT_LIST**: Select options for prerequisite types
-**FEATURE_FEAT_CHOICE_FILTER_SELECT_LIST**: Select options for feat choice filters
-**CONDITIONAL_SCALING_VALUE_TYPE_SELECT_LIST**: Select options for scaling value types
-**MATERIAL_TYPE_SELECT_LIST**: Select options for material types
-**ENVIRONMENT_TYPE_SELECT_LIST**: Select options for environment types
-**SOURCE_TYPE_SELECT_LIST**: Select options for source types
-**TARGET_TYPE_SELECT_LIST**: Select options for target types
-**ATTACK_TYPE_SELECT_LIST**: Select options for attack types
-**CREATURE_TYPE_SELECT_LIST**: Select options for creature types
-
-**Source File**: `packages/shared/static-data/src/FeatureData.ts` (Select list definitions)
 
 ## 🔗 **Integration Points**
 
@@ -388,11 +448,11 @@ The static data supports the validation layer:
 **Schema Integration**: Provides enum values for Zod schemas including entity types and applies-to types
 **Type Generation**: Generates TypeScript types for validation with unified entity approach
 **Error Messages**: Provides enum-specific error messages for entity validation
-**Constraint Validation**: Validates enum constraints in requests including type compatibility
+**Cross-System Validation**: Validates cross-system references (skill IDs, language IDs, etc.)
 
 ### **Frontend Integration**
 
-The static data supports frontend components:
+The static data supports frontend operations:
 
 **Select Components**: Provides formatted data for dropdowns including entity types, applies-to types, and condition types
 **Display Components**: Provides display names and formatting for all enum types
@@ -407,6 +467,14 @@ The static data supports backend operations:
 **Calculation Logic**: Provides enum values for calculations with unified entity approach
 **API Responses**: Provides formatted data for API responses including all enum types
 **Error Handling**: Provides enum-specific error handling for entity validation
+
+## 📚 **Related Documentation**
+
+- **[Database Schema](database-schema.md)** - Feature system database models and relationships
+- **[Validation Schemas](validation-schemas.md)** - Zod validation rules and types
+- **[Class Implementation Examples](class-implementation-examples.md)** - Real-world implementation analysis using Monk, Bard, and Druid classes
+- **[Backend Implementation](backend-implementation.md)** - Feature system backend implementation
+- **[Frontend Components](frontend-components.md)** - Feature system frontend implementation
 
 ## 📊 **Performance Considerations**
 

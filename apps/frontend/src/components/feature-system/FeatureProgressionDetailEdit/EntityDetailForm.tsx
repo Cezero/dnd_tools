@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 
 import { useFormContext, ValidatedCustomSelect, ValidatedInput, CustomCheckbox } from '@/components/forms';
 import { FeatApi } from '@/features/feat/FeatApi';
+import { ItemApi } from '@/features/item/ItemApi';
 import type { FeatureEntity, FeatureEntityCondition, FeatureProgression } from '@shared/schema';
 import {
     ENTITY_TYPE_SELECT_LIST,
@@ -96,6 +97,22 @@ export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeatur
                             )
                         }));
                     }
+                } else if (entity.appliesTo === EntityAppliesToType.WeaponFamiliarity) {
+                    // Check if we already have full weapon data
+                    if (entity.item && entity.item.id === entity.appliesToId) {
+                        return; // Already have the full data
+                    }
+
+                    // Fetch full weapon data
+                    const weaponData = await ItemApi.getItemById(undefined, { id: entity.appliesToId });
+                    if (weaponData) {
+                        setFormData(prev => ({
+                            ...prev,
+                            entities: (prev.entities as FeatureEntity[] || []).map((ent, i) =>
+                                i === index ? { ...ent, item: weaponData } : ent
+                            )
+                        }));
+                    }
                 }
                 // Add other entity type fetching logic as needed
             } catch (error) {
@@ -104,7 +121,7 @@ export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeatur
         };
 
         fetchFullEntityData();
-    }, [entity.appliesTo, entity.appliesToId, entity.feat, index, setFormData]);
+    }, [entity.appliesTo, entity.appliesToId, entity.feat, entity.item, index, setFormData]);
 
 
     // Safety check - if entity doesn't exist, don't render

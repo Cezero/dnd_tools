@@ -26,8 +26,8 @@ async function calculateCharacterModifiers(
         
         for (const modifier of modifiers) {
             // Check choice dependencies
-            // Note: Choice dependencies are handled through FeatureChoice system
-            // Modifiers are applied based on the choices made in the FeatureChoice
+            // Note: Choice dependencies are handled through choice entities
+            // Entities are applied based on the choices made in the choice system
             
             // Check runtime conditions
             if (!evaluateConditions(modifier.conditions, context)) {
@@ -64,19 +64,19 @@ interface RuntimeContext {
 ### **Condition Evaluation**
 ```typescript
 function evaluateConditions(
-    conditions: FeatureModifierCondition[],
+    conditions: FeatureEntityCondition[],
     context: RuntimeContext
 ): boolean {
     return conditions.every(condition => {
         switch (condition.conditionType) {
-            case FeatureModifierConditionType.trigger:
-                return context.activeTokens.includes(condition.conditionValue);
-                
-            case FeatureModifierConditionType.attack_type:
+            case FeatureEntityConditionType.attack_type:
                 return context.attackType?.includes(condition.conditionValue) ?? false;
                 
-            case FeatureModifierConditionType.other:
-                return evaluateCustomCondition(condition.conditionValue, context);
+            case FeatureEntityConditionType.character_size:
+                return context.characterSize === condition.conditionValue;
+                
+            case FeatureEntityConditionType.creature_type:
+                return context.creatureType === condition.conditionValue;
                 
             default:
                 return true;
@@ -214,21 +214,21 @@ async function getCharacterChoice(
 ### **Batch Processing**
 ```typescript
 async function processModifiersBatch(
-    modifiers: FeatureModifier[],
+    entities: FeatureEntity[],
     context: RuntimeContext
-): Promise<FeatureModifier[]> {
-    const validModifiers = [];
+): Promise<FeatureEntity[]> {
+    const validEntities = [];
     
     // Process in batches of 100
-    for (let i = 0; i < modifiers.length; i += 100) {
-        const batch = modifiers.slice(i, i + 100);
+    for (let i = 0; i < entities.length; i += 100) {
+        const batch = entities.slice(i, i + 100);
         const batchResults = await Promise.all(
-            batch.map(mod => evaluateModifier(mod, context))
+            batch.map(entity => evaluateEntity(entity, context))
         );
-        validModifiers.push(...batchResults.filter(Boolean));
+        validEntities.push(...batchResults.filter(Boolean));
     }
     
-    return validModifiers;
+    return validEntities;
 }
 ```
 

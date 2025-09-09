@@ -32,7 +32,7 @@ This document provides a systematic validation process to ensure that the featur
 - [ ] All field names and types match the actual Prisma schema
 - [ ] All relationships are correctly documented
 - [ ] All constraints and indexes are accurately described
-- [ ] No references to non-existent models (FeatureModifier, FeatureChoice, FeatureSpecialEffect, FeatureModifierCondition)
+- [ ] No references to non-existent models (all references use unified FeatureEntity approach)
 - [ ] FeatureEntity model is properly documented with all fields
 - [ ] FeatureEntityCondition model is properly documented
 - [ ] FeatureFormulaParams model is properly documented
@@ -42,7 +42,7 @@ This document provides a systematic validation process to ensure that the featur
 - [ ] All documented schemas exist in `packages/shared/schema/src/feature.ts`
 - [ ] All schema field names and types match actual Zod schemas
 - [ ] All validation rules are accurately described
-- [ ] No references to non-existent schemas (FeatureModifierSchema, FeatureChoiceSchema, FeatureSpecialEffectSchema, FeatureModifierConditionSchema)
+- [ ] No references to non-existent schemas (all references use unified FeatureEntitySchema approach)
 - [ ] FeatureEntitySchema is properly documented with all fields
 - [ ] FeatureEntityConditionSchema is properly documented
 - [ ] FeatureFormulaParamsSchema is properly documented
@@ -52,7 +52,7 @@ This document provides a systematic validation process to ensure that the featur
 - [ ] All documented enums exist in `packages/shared/static-data/src/FeatureData.ts`
 - [ ] All enum values and names match actual static data
 - [ ] All utility functions are accurately documented
-- [ ] No references to non-existent enums (ModifierType, FeatureChoiceType, FeatureChoiceBehavior, FeatureSpecialEffectType, FeatureModifierConditionType)
+- [ ] No references to non-existent enums (all references use actual EntityType, EntityAppliesToType, FeatureEntityConditionType enums)
 - [ ] EntityType enum is properly documented with all values
 - [ ] EntityAppliesToType enum is properly documented
 - [ ] FeatureEntityConditionType enum is properly documented
@@ -137,7 +137,7 @@ Perform regular validation to prevent documentation drift:
 ## 🚨 **Common Issues to Watch For**
 
 ### **Model References**
-- References to non-existent models (FeatureModifier, FeatureChoice, FeatureSpecialEffect)
+- References to non-existent models (all should use unified FeatureEntity approach)
 - Incorrect model field names or types
 - Missing models that actually exist (FeatureEntity, FeatureEntityCondition)
 
@@ -240,14 +240,14 @@ Use this section to track validation activities:
 - FeatureEntityCondition
 - FeatureFormulaParams
 - FeaturePrerequisite
-- CharacterFeatureChoice
+- CharacterFeatureChoice (exists and is properly documented)
 
 ### **Key Schemas to Document**
 - FeatureEntitySchema
 - FeatureEntityConditionSchema
 - FeatureFormulaParamsSchema
 - FeaturePrerequisiteSchema
-- CharacterFeatureChoiceSchema
+- CharacterFeatureChoiceSchema (exists and is properly documented)
 
 ### **Key Enums to Document**
 - EntityType
