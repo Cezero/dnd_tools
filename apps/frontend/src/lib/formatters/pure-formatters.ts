@@ -14,6 +14,7 @@ import {
     FeatBenefitType,
     CREATURE_TYPES,
     SIZE_MAP,
+    SPELL_ID_LIST,
 } from '@shared/static-data';
 
 import type { BaseFormatter, CalculatedEntity } from './types';
@@ -106,6 +107,29 @@ export class FeatFormatter implements BaseFormatter {
         // Fallback to appliesToId if feat data is missing
         const featId = modifier.appliesToId;
         return `${featId || value} (feat name not found)`;
+    }
+}
+
+export class SpellFormatter implements BaseFormatter {
+    format(modifier: CalculatedEntity): string {
+        const value = modifier.value;
+
+        // Use included spell data if available (from backend)
+        if (modifier.spell) {
+            return modifier.spell.name;
+        }
+
+        // Fallback: Look up spell name from static data using appliesToId
+        const spellId = modifier.appliesToId;
+        if (spellId) {
+            const spell = SPELL_ID_LIST.find((s) => s.id === spellId);
+            if (spell) {
+                return spell.name;
+            }
+        }
+
+        // Fallback if spell not found
+        return `${spellId || value} (spell name not found)`;
     }
 }
 
@@ -405,6 +429,13 @@ export class WeaponFamiliarityFormatter implements BaseFormatter {
         // Fallback if weapon data is missing
         const weaponId = modifier.appliesToId;
         return `Weapon ID: ${weaponId}`;
+    }
+}
+
+export class SpellSaveDCFormatter implements BaseFormatter {
+    format(modifier: CalculatedEntity): string {
+        const value = typeof modifier.value === 'string' ? parseInt(modifier.value, 10) || 0 : modifier.value;
+        return formatSignedValue(value);
     }
 }
 

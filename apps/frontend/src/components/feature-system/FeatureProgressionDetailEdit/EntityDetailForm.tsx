@@ -17,6 +17,7 @@ import {
 import { AppliesToSelector } from './AppliesToSelector';
 import { ConditionEditor } from './ConditionEditor';
 import { FormulaManager } from './FormulaManager';
+import { getAppliesToSubIdSelectOptions } from './utils';
 import type { BaseFormProps } from './types';
 
 export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeature, progression: _progression }: BaseFormProps) {
@@ -164,7 +165,7 @@ export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeatur
         <div className="space-y-2">
 
             {/* Main entity fields in a compact grid */}
-            <div className="grid grid-cols-[1fr_.75fr_1.5fr_1.5fr] gap-2">
+            <div className="flex items-center gap-2">
                 <div>
                     <ValidatedCustomSelect
                         field={`entities.${index}.type`}
@@ -182,7 +183,7 @@ export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeatur
                         label="Value"
                         type="number"
                         componentExtraClassName="flex items-center gap-2"
-                        inputExtraClassName="w-16"
+                        inputExtraClassName="w-16 p-1"
                         nested
                     />
                 </div>
@@ -222,18 +223,32 @@ export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeatur
             <div className="grid grid-cols-2 gap-2">
                 {/* Applies To Sub ID - only show for specific combinations */}
                 {(() => {
-                    const shouldShowAppliesToSubId = entity.type === EntityType.Proficiency && entity.appliesTo === EntityAppliesToType.Feat;
+                    const subIdOptions = getAppliesToSubIdSelectOptions(entity.appliesTo, entity.appliesToId);
+                    const shouldShowAppliesToSubId = (entity.type === EntityType.Proficiency && entity.appliesTo === EntityAppliesToType.Feat) || subIdOptions.length > 0;
 
                     if (shouldShowAppliesToSubId) {
-                        return (
-                            <ValidatedInput
-                                field={`entities.${index}.appliesToSubId`}
-                                label="Applies To Sub ID"
-                                type="number"
-                                componentExtraClassName="flex items-center gap-2"
-                                nested
-                            />
-                        );
+                        if (subIdOptions.length > 0) {
+                            return (
+                                <ValidatedCustomSelect
+                                    field={`entities.${index}.appliesToSubId`}
+                                    label="Applies To Sub ID"
+                                    options={subIdOptions}
+                                    placeholder="Select subtype..."
+                                    componentExtraClassName="flex items-center gap-2"
+                                    nested
+                                />
+                            );
+                        } else {
+                            return (
+                                <ValidatedInput
+                                    field={`entities.${index}.appliesToSubId`}
+                                    label="Applies To Sub ID"
+                                    type="number"
+                                    componentExtraClassName="flex items-center gap-2"
+                                    nested
+                                />
+                            );
+                        }
                     }
                     return null;
                 })()}

@@ -20,12 +20,12 @@ exports.Prisma = Prisma
 exports.$Enums = {}
 
 /**
- * Prisma Client JS version: 6.11.1
- * Query Engine version: f40f79ec31188888a2e33acda0ecc8fd10a853a9
+ * Prisma Client JS version: 6.16.0
+ * Query Engine version: 1c57fdcd7e44b29b9313256c76699e91c3ac3c43
  */
 Prisma.prismaVersion = {
-  client: "6.11.1",
-  engine: "f40f79ec31188888a2e33acda0ecc8fd10a853a9"
+  client: "6.16.0",
+  engine: "1c57fdcd7e44b29b9313256c76699e91c3ac3c43"
 }
 
 Prisma.PrismaClientKnownRequestError = () => {
@@ -230,7 +230,7 @@ exports.Prisma.FeaturePrerequisiteScalarFieldEnum = {
   id: 'id',
   featureId: 'featureId',
   type: 'type',
-  skillId: 'skillId',
+  appliesToId: 'appliesToId',
   minValue: 'minValue'
 };
 
@@ -511,7 +511,9 @@ exports.Prisma.CharacterAdvancementScalarFieldEnum = {
 exports.Prisma.AdvancementSkillScalarFieldEnum = {
   advancementId: 'advancementId',
   skillId: 'skillId',
-  pointsSpent: 'pointsSpent'
+  skillSubId: 'skillSubId',
+  pointsSpent: 'pointsSpent',
+  customSubtype: 'customSubtype'
 };
 
 exports.Prisma.AdvancementFeatScalarFieldEnum = {
@@ -732,6 +734,10 @@ exports.Prisma.UserCharacterOrderByRelevanceFieldEnum = {
 
 exports.Prisma.CharacterAdvancementOrderByRelevanceFieldEnum = {
   notes: 'notes'
+};
+
+exports.Prisma.AdvancementSkillOrderByRelevanceFieldEnum = {
+  customSubtype: 'customSubtype'
 };
 
 exports.Prisma.CharacterFeatureChoiceOrderByRelevanceFieldEnum = {

@@ -1,13 +1,21 @@
 import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState, useRef } from 'react';
 
 import { AnalogSkillService } from '@/features/character/AnalogSkillService';
+import { ClassSkillService } from '@/features/class/ClassSkillService';
 import type { RaceSummary, Race, DnDClass, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse } from '@shared/schema';
 import {
     SKILL_LIST,
     ABILITY_MAP,
     GetAbilityModifier,
-    GetAbilityModifierString
+    GetAbilityModifierString,
+    CRAFT_SKILL_MAP,
+    KNOWLEDGE_SKILL_MAP,
+    SkillSubType,
+    SKILL_SUB_TYPE_COMPATIBILITY,
+    Skill,
+    SpecialFeatureId,
+    EntityAppliesToType
 } from '@shared/static-data';
 
 interface SkillsTabProps {
@@ -33,13 +41,45 @@ export function SkillsTab({
     const advancement = targetAdvancement || character.advancements[0];
     const isNewCharacter = !targetAdvancement; // If no target advancement, we're creating a new character
 
-    // Check if a skill is a class skill
-    const isSkillClassSkill = useCallback((skillId: number): boolean => {
-        if (!advancement?.classId || !selectedClassDetails) return false;
+    // Check if a skill is a class skill using the feature system
+    const isSkillClassSkill = useCallback((skillId: number, _skillSubId?: number | null): boolean => {
+        if (!selectedClassDetails?.features) return false;
 
-        // Check if the skill is in the class's skill list
-        return selectedClassDetails.skills?.some(classSkill => classSkill.skillId === skillId) || false;
-    }, [advancement?.classId, selectedClassDetails]);
+        // Use ClassSkillService to check if the skill is a class skill
+        const classSkills = ClassSkillService.getClassSkills(selectedClassDetails.features);
+        return classSkills.includes(skillId);
+    }, [selectedClassDetails]);
+
+    // Check if a specific skill subtype is a class skill
+    const isSkillSubtypeClassSkill = useCallback((skillId: number, skillSubId: number | null): boolean => {
+        if (!selectedClassDetails?.features) return false;
+
+        // Check if the parent skill is a class skill with appliesToSubId: -1 (all subtypes)
+        const classSkillProgressions = selectedClassDetails.features.filter(prog =>
+            prog.featureId === SpecialFeatureId.ClassSkill &&
+            prog.entities?.some(entity =>
+                entity.appliesTo === EntityAppliesToType.Skill &&
+                entity.appliesToId === skillId &&
+                entity.appliesToSubId === -1
+            )
+        );
+
+        if (classSkillProgressions.length > 0) {
+            return true; // All subtypes are class skills
+        }
+
+        // Check if the specific subtype is a class skill
+        const specificSubtypeProgressions = selectedClassDetails.features.filter(prog =>
+            prog.featureId === SpecialFeatureId.ClassSkill &&
+            prog.entities?.some(entity =>
+                entity.appliesTo === EntityAppliesToType.Skill &&
+                entity.appliesToId === skillId &&
+                entity.appliesToSubId === skillSubId
+            )
+        );
+
+        return specificSubtypeProgressions.length > 0;
+    }, [selectedClassDetails]);
 
     // Get ability score
     const getAbilityScore = useCallback((abilityId: number): number => {
@@ -48,9 +88,42 @@ export function SkillsTab({
     }, [character.abilityScores]);
 
     // Get skill ranks from advancement
-    const getSkillRanks = (skillId: number): number => {
-        const skillEntry = advancement?.skills.find(skill => skill.skillId === skillId);
+    const getSkillRanks = (skillId: number, skillSubId?: number | null, customSubtype?: string | null): number => {
+        const skillEntry = advancement?.skills.find(skill =>
+            skill.skillId === skillId &&
+            skill.skillSubId === skillSubId &&
+            skill.customSubtype === customSubtype
+        );
         return skillEntry?.pointsSpent || 0;
+    };
+
+    // Get skill subtype name for display
+    const getSkillSubtypeName = (skillId: number, skillSubId?: number | null, customSubtype?: string | null): string => {
+        if (SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.skillSubId].includes(skillId as 6 | 19) && skillSubId) {
+            if (skillId === 6) { // Skill.Craft
+                const craftSubtype = CRAFT_SKILL_MAP[skillSubId as keyof typeof CRAFT_SKILL_MAP];
+                return craftSubtype ? craftSubtype.name : '';
+            }
+            if (skillId === 19) { // Skill.Knowledge
+                const knowledgeSubtype = KNOWLEDGE_SKILL_MAP[skillSubId as keyof typeof KNOWLEDGE_SKILL_MAP];
+                return knowledgeSubtype ? knowledgeSubtype.name : '';
+            }
+        }
+        if (SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.customSubtype].includes(skillId as 32 | 33) && customSubtype) {
+            return customSubtype;
+        }
+        return '';
+    };
+
+    // Check if a skill needs custom subtypes
+    const skillNeedsCustomSubtype = useCallback((skillId: number): boolean => {
+        return SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.skillSubId].includes(skillId as 6 | 19) ||
+            SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.customSubtype].includes(skillId as 32 | 33);
+    }, []);
+
+    // Get all skill entries for a skill (including subtypes)
+    const getSkillEntries = (skillId: number) => {
+        return advancement?.skills.filter(skill => skill.skillId === skillId) || [];
     };
 
     // Calculate skill points available
@@ -98,7 +171,11 @@ export function SkillsTab({
         let totalSpent = 0;
 
         advancement.skills.forEach(skillEntry => {
-            const isClassSkill = isSkillClassSkill(skillEntry.skillId);
+            // For skills with subtypes, check if the specific subtype is a class skill
+            const isClassSkill = skillNeedsCustomSubtype(skillEntry.skillId)
+                ? isSkillSubtypeClassSkill(skillEntry.skillId, skillEntry.skillSubId)
+                : isSkillClassSkill(skillEntry.skillId);
+
             const pointsSpent = skillEntry.pointsSpent;
 
             if (isClassSkill) {
@@ -111,7 +188,7 @@ export function SkillsTab({
         });
 
         return totalSpent;
-    }, [advancement?.skills, isSkillClassSkill]);
+    }, [advancement?.skills, isSkillClassSkill, isSkillSubtypeClassSkill, skillNeedsCustomSubtype]);
 
     // Calculate remaining skill points
     const skillPointsRemaining = useMemo(() => {
@@ -119,13 +196,17 @@ export function SkillsTab({
     }, [skillPointsAvailable, skillPointsSpent]);
 
     // Get maximum ranks allowed for a skill
-    const getMaxRanks = (skillId: number): number => {
+    const getMaxRanks = (skillId: number, skillSubId?: number | null): number => {
         // Speak Language has no max rank limit
-        if (skillId === 38) { // Speak Language skill ID
+        if (skillId === Skill.SpeakLanguage) {
             return Infinity;
         }
 
-        const isClassSkill = isSkillClassSkill(skillId);
+        // For skills with subtypes, check if the specific subtype is a class skill
+        const isClassSkill = skillNeedsCustomSubtype(skillId)
+            ? isSkillSubtypeClassSkill(skillId, skillSubId)
+            : isSkillClassSkill(skillId);
+
         const characterLevel = character.advancements.length;
 
         if (isClassSkill) {
@@ -136,11 +217,11 @@ export function SkillsTab({
     };
 
     // Handle skill rank change
-    const handleSkillChange = (skillId: number, newRanks: number) => {
+    const handleSkillChange = (skillId: number, newRanks: number, skillSubId?: number | null, customSubtype?: string | null) => {
         const skill = SKILL_LIST.find(s => s.id === skillId);
         if (!skill || !advancement) return;
 
-        const maxRanks = getMaxRanks(skillId);
+        const maxRanks = getMaxRanks(skillId, skillSubId);
 
         // Validate maximum ranks
         if (newRanks > maxRanks) {
@@ -152,12 +233,27 @@ export function SkillsTab({
             newRanks = 0;
         }
 
+        // For skills with custom subtypes, if we're adding ranks to a base row (no subtype), create a new subtype
+        if (skillNeedsCustomSubtype(skillId) && newRanks > 0 && !skillSubId && !customSubtype) {
+            // This is adding ranks to a base row - create a new subtype entry
+            if (SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.customSubtype].includes(skillId as 32 | 33)) {
+                // For Perform/Profession, create with empty custom subtype (user will edit it)
+                customSubtype = '';
+            } else if (SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.skillSubId].includes(skillId as 6 | 19)) {
+                // For Craft/Knowledge, we need to prompt for subtype selection
+                // For now, we'll create with skillSubId = 1 (first option)
+                skillSubId = 1;
+            }
+        }
+
         // Calculate points needed
-        const isClassSkill = isSkillClassSkill(skillId);
+        const isClassSkill = skillNeedsCustomSubtype(skillId)
+            ? isSkillSubtypeClassSkill(skillId, skillSubId)
+            : isSkillClassSkill(skillId);
         const pointsNeeded = isClassSkill ? newRanks : newRanks * 2;
 
         // Check if we have enough skill points
-        const currentPoints = getSkillRanks(skillId);
+        const currentPoints = getSkillRanks(skillId, skillSubId, customSubtype);
         const currentCost = isClassSkill ? currentPoints : currentPoints * 2;
         const costDifference = pointsNeeded - currentCost;
 
@@ -167,7 +263,11 @@ export function SkillsTab({
 
         // Update the advancement's skills
         const updatedSkills = [...(advancement.skills || [])];
-        const existingIndex = updatedSkills.findIndex(s => s.skillId === skillId);
+        const existingIndex = updatedSkills.findIndex(s =>
+            s.skillId === skillId &&
+            s.skillSubId === skillSubId &&
+            s.customSubtype === customSubtype
+        );
 
         if (existingIndex >= 0) {
             if (newRanks === 0) {
@@ -185,6 +285,8 @@ export function SkillsTab({
             updatedSkills.push({
                 advancementId: advancement.id,
                 skillId: skillId,
+                skillSubId: skillSubId || null,
+                customSubtype: customSubtype || null,
                 pointsSpent: newRanks
             });
         }
@@ -209,20 +311,22 @@ export function SkillsTab({
     };
 
     // Handle skill increment/decrement
-    const handleSkillIncrement = (skillId: number, increment: boolean) => {
+    const handleSkillIncrement = (skillId: number, increment: boolean, skillSubId?: number | null, customSubtype?: string | null) => {
         const skill = SKILL_LIST.find(s => s.id === skillId);
         if (!skill) return;
 
-        const isClassSkill = isSkillClassSkill(skillId);
-        const maxRanks = getMaxRanks(skillId);
+        const isClassSkill = skillNeedsCustomSubtype(skillId)
+            ? isSkillSubtypeClassSkill(skillId, skillSubId)
+            : isSkillClassSkill(skillId);
+        const maxRanks = getMaxRanks(skillId, skillSubId);
         const step = isClassSkill ? 1.0 : 0.5;
 
-        const currentValue = getSkillRanks(skillId);
+        const currentValue = getSkillRanks(skillId, skillSubId, customSubtype);
         const newValue = increment
             ? Math.min(maxRanks, currentValue + step)
             : Math.max(0, currentValue - step);
 
-        handleSkillChange(skillId, newValue);
+        handleSkillChange(skillId, newValue, skillSubId, customSubtype);
     };
 
     // Get ability modifier for a skill
@@ -269,6 +373,46 @@ export function SkillsTab({
         return SKILL_LIST.filter(skill => !AnalogSkillService.isAnalogSkill(skill.id));
     };
 
+    // Generate skill rows for rendering (handles custom subtypes)
+    const generateSkillRows = () => {
+        const rows: Array<{ skillId: number; skillSubId?: number | null; customSubtype?: string | null; key: string }> = [];
+
+        getAllocatableSkills().forEach(skill => {
+            if (skillNeedsCustomSubtype(skill.id)) {
+                // For skills with custom subtypes, show existing entries first
+                const skillEntries = getSkillEntries(skill.id);
+
+                // Add a row for each existing entry
+                skillEntries.forEach(entry => {
+                    rows.push({
+                        skillId: skill.id,
+                        skillSubId: entry.skillSubId,
+                        customSubtype: entry.customSubtype,
+                        key: `skill-${skill.id}-${entry.skillSubId || 'null'}-${entry.customSubtype || 'null'}`
+                    });
+                });
+
+                // Always show a base row for adding new subtypes
+                rows.push({
+                    skillId: skill.id,
+                    skillSubId: null,
+                    customSubtype: null,
+                    key: `skill-${skill.id}-base`
+                });
+            } else {
+                // For regular skills, show a single row
+                rows.push({
+                    skillId: skill.id,
+                    skillSubId: null,
+                    customSubtype: null,
+                    key: `skill-${skill.id}`
+                });
+            }
+        });
+
+        return rows;
+    };
+
     // Get analog skills for display
     const getAnalogSkills = () => {
         return AnalogSkillService.getCharacterAnalogSkills(character);
@@ -295,93 +439,184 @@ export function SkillsTab({
         }
     };
 
-    // SkillRow component
-    const SkillRow = ({ skillId }: { skillId: number }) => {
+    // SkillRow component for skills with custom subtypes
+    const SkillRow = ({ skillId, skillSubId, customSubtype, _isBaseRow = false }: {
+        skillId: number;
+        skillSubId?: number | null;
+        customSubtype?: string | null;
+        _isBaseRow?: boolean;
+    }) => {
+        // State for subtype editing - must be at the top
+        const [editingSubtype, setEditingSubtype] = useState(false);
+        const [editValue, setEditValue] = useState('');
+        const [inputPosition, setInputPosition] = useState({ x: 0, y: 0, width: 0 });
+        const inputRef = useRef<HTMLInputElement>(null);
+        const skillNameRef = useRef<HTMLDivElement>(null);
+
+        // Focus input when editing starts
+        React.useEffect(() => {
+            if (editingSubtype && inputRef.current) {
+                inputRef.current.focus();
+            }
+        }, [editingSubtype]);
+
         const skill = SKILL_LIST.find(s => s.id === skillId);
         if (!skill) return <></>;
 
         const isAnalogSkill = AnalogSkillService.isAnalogSkill(skillId);
-        const isClassSkill = isSkillClassSkill(skillId);
-        const maxRanks = getMaxRanks(skillId);
-        const ranks = getSkillRanks(skillId);
+        const isClassSkill = skillNeedsCustomSubtype(skillId)
+            ? isSkillSubtypeClassSkill(skillId, skillSubId)
+            : isSkillClassSkill(skillId);
+        const maxRanks = getMaxRanks(skillId, skillSubId);
+        const ranks = getSkillRanks(skillId, skillSubId, customSubtype);
         const total = getSkillTotal(skillId);
 
-        // For analog skills, get additional info
+        // Get skill name with subtype
+        const skillName = getSkillSubtypeName(skillId, skillSubId, customSubtype);
+        const displayName = skillName ? `${skill.name} (${skillName})` : skill.name;
 
+        // Handle subtype editing for Perform/Profession skills
+        const handleSubtypeClick = () => {
+            if (!skillNeedsCustomSubtype(skillId) || !skillNameRef.current) return;
+
+            // Calculate position of the skill name element
+            const rect = skillNameRef.current.getBoundingClientRect();
+            setInputPosition({
+                x: rect.left,
+                y: rect.top,
+                width: rect.width
+            });
+
+            setEditingSubtype(true);
+            setEditValue(customSubtype || '');
+        };
+
+        const handleSubtypeSave = () => {
+            if (!skillNeedsCustomSubtype(skillId)) return;
+
+            // Update the custom subtype
+            handleSkillChange(skillId, ranks, skillSubId, editValue);
+            setEditingSubtype(false);
+            setEditValue('');
+        };
+
+        const handleSubtypeCancel = () => {
+            setEditingSubtype(false);
+            setEditValue('');
+        };
 
         return (
-            <div
-                className={`grid grid-cols-[2fr_1fr_1fr_1fr] gap-2 px-3 py-2 items-center border-b border-gray-200 dark:border-gray-700 ${isAnalogSkill
-                    ? 'bg-purple-100 dark:bg-purple-900/30'
-                    : isClassSkill
-                        ? 'bg-blue-100 dark:bg-blue-900/30'
-                        : 'hover:bg-gray-50 dark:hover:bg-gray-700'
-                    }`}
-            >
-                <div className="flex items-center">
-                    <div className="text-sm font-medium">
-                        {skill.name}
-                    </div>
-                    {isAnalogSkill && (
-                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-200">
-                            A
-                        </span>
-                    )}
-                    {isClassSkill && !isAnalogSkill && (
-                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200">
-                            C
-                        </span>
-                    )}
-                </div>
-                <div className="grid grid-cols-[48px_16px]">
-                    {isAnalogSkill ? (
-                        <div className="w-12 py-1 text-sm border rounded text-center bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400">
-                            -
+            <>
+                <div
+                    className={`grid grid-cols-[2fr_1fr_1fr_1fr] gap-2 px-3 py-2 items-center border-b border-gray-200 dark:border-gray-700 ${isAnalogSkill
+                        ? 'bg-purple-100 dark:bg-purple-900/30'
+                        : isClassSkill
+                            ? 'bg-blue-100 dark:bg-blue-900/30'
+                            : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
+                >
+                    <div className="flex items-center">
+                        <div
+                            ref={skillNameRef}
+                            onClick={skillNeedsCustomSubtype(skillId) ? handleSubtypeClick : undefined}
+                            className={`text-sm font-medium ${skillNeedsCustomSubtype(skillId) ? 'hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer' : ''}`}
+                            title={skillNeedsCustomSubtype(skillId) ? 'Click to modify subtype' : undefined}
+                        >
+                            {displayName}
                         </div>
-                    ) : (
-                        <>
-                            <input
-                                type="number"
-                                step="0.5"
-                                min="0"
-                                max={maxRanks}
-                                value={ranks}
-                                onChange={(e) => handleSkillChange(skillId, parseFloat(e.target.value) || 0)}
-                                className={`w-12 py-1 text-sm border rounded text-center bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${isClassSkill
-                                    ? 'border-blue-300 dark:border-blue-600'
-                                    : 'border-gray-300 dark:border-gray-600'
-                                    }`}
-                            />
-                            <div className="flex flex-col justify-center gap-1.5">
-                                <button
-                                    type="button"
-                                    className="w-4 h-3 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:text-white text-xs flex items-center justify-center rounded-t"
-                                    onClick={() => handleSkillIncrement(skillId, true)}
-                                >
-                                    <ChevronUpIcon className="h-3 w-3" />
-                                </button>
-                                <button
-                                    type="button"
-                                    className="w-4 h-3 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:text-white text-xs flex items-center justify-center rounded-b"
-                                    onClick={() => handleSkillIncrement(skillId, false)}
-                                >
-                                    <ChevronDownIcon className="h-3 w-3" />
-                                </button>
+                        {isAnalogSkill && (
+                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-200">
+                                A
+                            </span>
+                        )}
+                        {isClassSkill && !isAnalogSkill && (
+                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200">
+                                C
+                            </span>
+                        )}
+                    </div>
+                    <div className="grid grid-cols-[48px_16px]">
+                        {isAnalogSkill ? (
+                            <div className="w-12 py-1 text-sm border rounded text-center bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400">
+                                -
                             </div>
-                        </>
-                    )}
+                        ) : (
+                            <>
+                                <input
+                                    type="number"
+                                    step="0.5"
+                                    min="0"
+                                    max={maxRanks}
+                                    value={ranks}
+                                    onChange={(e) => handleSkillChange(skillId, parseFloat(e.target.value) || 0, skillSubId, customSubtype)}
+                                    className={`w-12 py-1 text-sm border rounded text-center bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${isClassSkill
+                                        ? 'border-blue-300 dark:border-blue-600'
+                                        : 'border-gray-300 dark:border-gray-600'
+                                        }`}
+                                />
+                                <div className="flex flex-col justify-center gap-1.5">
+                                    <button
+                                        type="button"
+                                        className="w-4 h-3 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:text-white text-xs flex items-center justify-center rounded-t"
+                                        onClick={() => handleSkillIncrement(skillId, true, skillSubId, customSubtype)}
+                                    >
+                                        <ChevronUpIcon className="h-3 w-3" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="w-4 h-3 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:text-white text-xs flex items-center justify-center rounded-b"
+                                        onClick={() => handleSkillIncrement(skillId, false, skillSubId, customSubtype)}
+                                    >
+                                        <ChevronDownIcon className="h-3 w-3" />
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                    <div className="text-sm">
+                        {skill.abilityId === 0 ? '' : `${ABILITY_MAP[skill.abilityId]?.abbreviation} ${GetAbilityModifierString(getAbilityScore(skill.abilityId))}`}
+                    </div>
+                    <div className={`w-12 text-sm font-medium rounded px-2 py-1 text-center ${total === null ? '' : 'border border-gray-300 dark:border-gray-600'}`}>
+                        {total === null ? '' : (
+                            <span className={total > 0 ? 'text-green-600 dark:text-green-400' : total < 0 ? 'text-red-600 dark:text-red-400' : ''}>
+                                {total >= 0 ? `+${total}` : total.toString()}
+                            </span>
+                        )}
+                    </div>
                 </div>
-                <div className="text-sm">
-                    {skill.abilityId === 0 ? '' : `${ABILITY_MAP[skill.abilityId]?.abbreviation} ${GetAbilityModifierString(getAbilityScore(skill.abilityId))}`}
-                </div>
-                <div className={`w-12 text-sm font-medium rounded px-2 py-1 text-center ${total === null ? '' : 'border border-gray-300 dark:border-gray-600'}`}>
-                    {total === null ? '' : (
-                        <span className={total > 0 ? 'text-green-600 dark:text-green-400' : total < 0 ? 'text-red-600 dark:text-red-400' : ''}>
-                            {total >= 0 ? `+${total}` : total.toString()}
-                        </span>
-                    )}
-                </div>
-            </div>
+
+                {/* Floating input for subtype editing (Perform/Profession) */}
+                {editingSubtype && (
+                    <div
+                        className="fixed z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg"
+                        style={{
+                            left: inputPosition.x,
+                            top: inputPosition.y,
+                            width: inputPosition.width,
+                            minWidth: '200px'
+                        }}
+                    >
+                        <div className="flex items-center relative p-2">
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        handleSubtypeSave();
+                                    } else if (e.key === 'Escape') {
+                                        handleSubtypeCancel();
+                                    }
+                                }}
+                                onBlur={handleSubtypeSave}
+                                placeholder="Enter subtype name..."
+                                className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
+                    </div>
+                )}
+            </>
         );
     };
 
@@ -497,35 +732,59 @@ export function SkillsTab({
 
                         {/* Skills Tables - Responsive Columns */}
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                            {/* First Column */}
-                            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                                {generateColumnHeaders()}
-                                <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                                    {getAllocatableSkills().slice(0, Math.ceil(getAllocatableSkills().length / 3)).map(skill => (
-                                        <SkillRow key={skill.id} skillId={skill.id} />
-                                    ))}
-                                </div>
-                            </div>
+                            {(() => {
+                                const skillRows = generateSkillRows();
+                                const rowsPerColumn = Math.ceil(skillRows.length / 3);
 
-                            {/* Second Column */}
-                            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                                {generateColumnHeaders()}
-                                <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                                    {getAllocatableSkills().slice(Math.ceil(getAllocatableSkills().length / 3), Math.ceil(getAllocatableSkills().length * 2 / 3)).map(skill => (
-                                        <SkillRow key={skill.id} skillId={skill.id} />
-                                    ))}
-                                </div>
-                            </div>
+                                return (
+                                    <>
+                                        {/* First Column */}
+                                        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                                            {generateColumnHeaders()}
+                                            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                                                {skillRows.slice(0, rowsPerColumn).map(row => (
+                                                    <SkillRow
+                                                        key={row.key}
+                                                        skillId={row.skillId}
+                                                        skillSubId={row.skillSubId}
+                                                        customSubtype={row.customSubtype}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
 
-                            {/* Third Column */}
-                            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden md:col-span-2 xl:col-span-1">
-                                {generateColumnHeaders()}
-                                <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                                    {getAllocatableSkills().slice(Math.ceil(getAllocatableSkills().length * 2 / 3)).map(skill => (
-                                        <SkillRow key={skill.id} skillId={skill.id} />
-                                    ))}
-                                </div>
-                            </div>
+                                        {/* Second Column */}
+                                        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                                            {generateColumnHeaders()}
+                                            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                                                {skillRows.slice(rowsPerColumn, rowsPerColumn * 2).map(row => (
+                                                    <SkillRow
+                                                        key={row.key}
+                                                        skillId={row.skillId}
+                                                        skillSubId={row.skillSubId}
+                                                        customSubtype={row.customSubtype}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Third Column */}
+                                        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden md:col-span-2 xl:col-span-1">
+                                            {generateColumnHeaders()}
+                                            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                                                {skillRows.slice(rowsPerColumn * 2).map(row => (
+                                                    <SkillRow
+                                                        key={row.key}
+                                                        skillId={row.skillId}
+                                                        skillSubId={row.skillSubId}
+                                                        customSubtype={row.customSubtype}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                );
+                            })()}
                         </div>
 
                         {/* Analog Skills Section */}
@@ -538,7 +797,12 @@ export function SkillsTab({
                                     {generateColumnHeaders()}
                                     <div className="divide-y divide-gray-200 dark:divide-gray-700">
                                         {getAnalogSkills().map(analogSkill => (
-                                            <SkillRow key={analogSkill.skillId} skillId={analogSkill.skillId} />
+                                            <SkillRow
+                                                key={analogSkill.skillId}
+                                                skillId={analogSkill.skillId}
+                                                skillSubId={null}
+                                                customSubtype={null}
+                                            />
                                         ))}
                                     </div>
                                 </div>

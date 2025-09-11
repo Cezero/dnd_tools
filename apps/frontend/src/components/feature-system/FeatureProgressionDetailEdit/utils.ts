@@ -14,9 +14,38 @@ import {
     EntityAppliesToType,
     EntityType,
     ITEM_TYPE_ENUM,
-    WEAPON_CATEGORY_ENUM
+    WEAPON_CATEGORY_ENUM,
+    SPELL_ID_LIST,
+    CRAFT_SKILL_SELECT_LIST,
+    KNOWLEDGE_SKILL_SELECT_LIST,
+    Skill
 } from '@shared/static-data';
 import type { SelectOption } from '@shared/static-data';
+
+/**
+ * Get the appropriate select options for AppliesToSubId based on the appliesTo and appliesToId
+ */
+export function getAppliesToSubIdSelectOptions(appliesTo: EntityAppliesToType, appliesToId: number | null): SelectOption[] {
+    // Only show appliesToSubId for specific combinations
+    if (appliesTo === EntityAppliesToType.Skill && appliesToId) {
+        if (appliesToId === Skill.Craft) {
+            return [
+                { value: -1, label: 'All Craft Subtypes' },
+                ...CRAFT_SKILL_SELECT_LIST
+            ];
+        }
+        if (appliesToId === Skill.Knowledge) {
+            return [
+                { value: -1, label: 'All Knowledge Subtypes' },
+                ...KNOWLEDGE_SKILL_SELECT_LIST
+            ];
+        }
+    }
+
+    // For other combinations (like Feat proficiency), return empty array
+    // The existing logic in EntityDetailForm will handle these cases
+    return [];
+}
 
 /**
  * Get the appropriate select options for AppliesToId based on the appliesTo type
@@ -72,6 +101,11 @@ export async function getAppliesToSelectOptions(appliesTo: EntityAppliesToType, 
             return [
                 { value: -1, label: 'Select a feat...' }
             ];
+        case EntityAppliesToType.Spell:
+            return SPELL_ID_LIST.map(spell => ({
+                value: spell.id,
+                label: spell.name
+            }));
         case EntityAppliesToType.Feature:
             try {
                 const response = await FeatureSystemApi.getFeatures(undefined, undefined);

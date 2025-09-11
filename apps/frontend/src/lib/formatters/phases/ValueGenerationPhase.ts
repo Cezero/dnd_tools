@@ -7,7 +7,8 @@ import {
     BreakdownComponentType,
     EntityType,
     FORMULA_MAP,
-    ConditionalScalingValueType
+    ConditionalScalingValueType,
+    FormulaId
 } from '@shared/static-data';
 
 import { calculatorRegistry } from '../calculator-registry';
@@ -268,6 +269,13 @@ export class ValueGenerationPhase {
             progressionLevel,
             character: mockCharacter
         };
+
+        // Special handling for CONDITIONAL_SCALING formulas
+        // return the thresholds and values as the changingValues
+        // since we want to always include the threshold entries even if the value doesn't change
+        if (formula.formulaId === FormulaId.CONDITIONAL_SCALING) {
+            return formula.thresholds?.map((threshold, index) => [threshold, formula.values?.[index] as number]) || [];
+        }
 
         // Single loop: build array of [level, value] tuples for non-null values
         const changingValues: Array<[number, number]> = [];

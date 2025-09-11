@@ -174,14 +174,13 @@ model FeatureEntityCondition {
 }
 
 model FeaturePrerequisite {
-    id        Int  @id @default(autoincrement())
-    featureId Int
-    type      Int
-    skillId   Int?
-    minValue  Int
+    id          Int  @id @default(autoincrement())
+    featureId   Int
+    type        Int
+    appliesToId Int?
+    minValue    Int
 
     feature Feature @relation(fields: [featureId], references: [id])
-    skill   Skill?  @relation(fields: [skillId], references: [id])
 }
 
 // =================
@@ -282,8 +281,7 @@ model Skill {
     trainedOnly       Boolean?
     isAnalog          Boolean  @default(false)
 
-    advSkills           AdvancementSkill[]
-    featurePrerequisite FeaturePrerequisite[]
+    advSkills AdvancementSkill[]
 }
 
 // =================
@@ -650,7 +648,9 @@ model CharacterAdvancement {
 model AdvancementSkill {
     advancementId Int
     skillId       Int
+    skillSubId    Int?
     pointsSpent   Int
+    customSubtype String? // NEW: For custom subtypes
 
     advancement CharacterAdvancement @relation(fields: [advancementId], references: [id])
     skill       Skill                @relation(fields: [skillId], references: [id])

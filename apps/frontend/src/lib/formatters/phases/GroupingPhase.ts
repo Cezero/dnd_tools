@@ -2,7 +2,7 @@ import type {
     FeatureProgression,
     FeatureEntityCondition
 } from '@shared/schema';
-import { FeatureEntityConditionType } from '@shared/static-data';
+import { FeatureEntityConditionType, EntityAppliesToType } from '@shared/static-data';
 
 import { conditionLabelerRegistry } from '../condition-labeler-registry';
 import { conditionValueFormatterRegistry } from '../condition-value-formatter-registry';
@@ -10,7 +10,8 @@ import { EntityGroupingStrategy } from '../grouping-strategies';
 import { labelerRegistry } from '../labeler-registry';
 import type {
     FormattedItemWithLevel,
-    GroupedLevelItem
+    GroupedLevelItem,
+    CalculatedEntity
 } from '../types';
 
 /**
@@ -64,7 +65,8 @@ export class GroupingPhase {
                         if (item.entity.conditions && item.entity.conditions.length > 0) {
                             formattedValue = this.formatConditions(
                                 item.entity.conditions,
-                                item.formattedValue
+                                item.formattedValue,
+                                item.entity
                             );
                         }
 
@@ -117,7 +119,8 @@ export class GroupingPhase {
                             // Apply conditions to the entire grouped result
                             formattedValue = this.formatConditions(
                                 firstEntity.conditions,
-                                formattedValue
+                                formattedValue,
+                                firstEntity
                             );
                         }
                     }
@@ -168,12 +171,14 @@ export class GroupingPhase {
      */
     private formatConditions(
         conditions: FeatureEntityCondition[],
-        formattedValue: string
+        formattedValue: string,
+        entity: CalculatedEntity
     ): string {
         if (conditions.length === 0) {
             return formattedValue;
         }
 
+        let hasSpellSchoolCondition = false;
         // Step 1: Group conditions by type
         const conditionsByType = new Map<FeatureEntityConditionType, number[]>();
         for (const condition of conditions) {
@@ -187,6 +192,9 @@ export class GroupingPhase {
 
         // Step 2: Process each condition type
         for (const [conditionType, conditionValues] of conditionsByType) {
+            if (conditionType === FeatureEntityConditionType.spell_school) {
+                hasSpellSchoolCondition = true;
+            }
             // Step 2a: Format each condition value
             const formatter = conditionValueFormatterRegistry.getFormatter(conditionType);
             const formattedValues = conditionValues
@@ -195,9 +203,9 @@ export class GroupingPhase {
                 .join(', ');
 
             if (formattedValues) {
-                // Step 2b: Apply labeler to the formatted values
-                const labeler = conditionLabelerRegistry.getLabeler(conditionType);
-                const labeledCondition = labeler ? labeler(formattedValues) : formattedValues;
+                // Step 2b: Apply labeler to the formatted values with entity context
+                const labeler = conditionLabelerRegistry.getLabeler(conditionType, entity.appliesTo);
+                const labeledCondition = labeler ? labeler(formattedValues, entity) : formattedValues;
                 formattedConditions.push(labeledCondition);
             }
         }
@@ -205,6 +213,10 @@ export class GroupingPhase {
         // Step 3: Combine with the main formatted value
         if (formattedConditions.length === 0) {
             return formattedValue;
+        }
+
+        if (hasSpellSchoolCondition && entity.appliesTo === EntityAppliesToType.SpellSvDC) {
+            return `${formattedConditions.join(' ')} ${formattedValue}`;
         }
 
         return `${formattedValue} ${formattedConditions.join(' ')}`;

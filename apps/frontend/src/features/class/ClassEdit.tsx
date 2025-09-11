@@ -10,6 +10,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
 
 import { FeatureProgressionDetailEdit } from '@/components/feature-system';
+import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import {
     ValidatedForm,
     useValidatedForm,
@@ -230,24 +231,57 @@ export default function ClassEdit() {
     /**
      * Handles adding a feature to the class by creating a default level 1 progression.
      */
-    const handleAddFeature = useCallback((feature: { id: number; name: string; description: string; slug: string }) => {
-        const defaultProgression: FeatureProgression = {
-            id: Date.now() + Math.random(), // Temporary ID for frontend
-            sourceType: 1, // 1 for Class
-            classId: parseInt(id || '0'),
-            raceId: null,
-            level: 1, // Default to level 1
-            featureId: feature.id,
-            feature: {
-                id: feature.id,
-                name: feature.name,
-                description: feature.description,
-                slug: feature.slug,
-            },
-            entities: [],
-        };
+    const handleAddFeature = useCallback(async (feature: { id: number; name: string; description: string; slug: string }) => {
+        try {
+            // Fetch the feature's existing progressions to copy entities
+            const existingProgressions = await FeatureSystemApi.getFeatureProgressions(undefined, { id: feature.id });
 
-        setFeatureProgressions(prev => [...prev, defaultProgression]);
+            // Find the first progression with entities to copy, or use empty entities
+            const sourceProgression = existingProgressions.find(p => p.entities && p.entities.length > 0);
+            const entitiesToCopy = sourceProgression?.entities || [];
+
+            const defaultProgression: FeatureProgression = {
+                id: Date.now() + Math.random(), // Temporary ID for frontend
+                sourceType: 1, // 1 for Class
+                classId: parseInt(id || '0'),
+                raceId: null,
+                level: 1, // Default to level 1
+                featureId: feature.id,
+                feature: {
+                    id: feature.id,
+                    name: feature.name,
+                    description: feature.description,
+                    slug: feature.slug,
+                    prerequisites: sourceProgression?.feature?.prerequisites || []
+                },
+                entities: entitiesToCopy.map(entity => ({
+                    ...entity,
+                    id: Date.now() + Math.random(), // New temporary ID
+                    progressionId: 0 // Will be set when progression is saved
+                }))
+            };
+
+            setFeatureProgressions(prev => [...prev, defaultProgression]);
+        } catch (error) {
+            console.error('Failed to fetch feature progressions:', error);
+            // Fallback to creating progression without entities
+            const defaultProgression: FeatureProgression = {
+                id: Date.now() + Math.random(),
+                sourceType: 1,
+                classId: parseInt(id || '0'),
+                raceId: null,
+                level: 1,
+                featureId: feature.id,
+                feature: {
+                    id: feature.id,
+                    name: feature.name,
+                    description: feature.description,
+                    slug: feature.slug,
+                },
+                entities: [],
+            };
+            setFeatureProgressions(prev => [...prev, defaultProgression]);
+        }
     }, [id]);
 
     /**
@@ -662,6 +696,7 @@ export default function ClassEdit() {
                     setPreSelectedFeature(undefined);
                 }}
                 preSelectedFeature={preSelectedFeature}
+                showSourceTypeSelector={false}
             />
         </div>
     );

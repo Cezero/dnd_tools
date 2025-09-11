@@ -1,4 +1,4 @@
-import { ZodSchema, ZodTypeAny } from "zod";
+import { z } from "zod";
 
 
 export interface ApiOptions<TRequest = unknown, TParams = unknown> {
@@ -9,9 +9,9 @@ export interface ApiOptions<TRequest = unknown, TParams = unknown> {
     method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     headers?: Record<string, string>;
 
-    requestSchema?: ZodSchema<TRequest>;
-    paramsSchema?: ZodSchema<TParams>;
-    responseSchema?: ZodTypeAny;
+    requestSchema?: z.ZodType;
+    paramsSchema?: z.ZodType;
+    responseSchema?: z.ZodType;
 
     signal?: AbortSignal;
 

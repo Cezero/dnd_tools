@@ -54,6 +54,13 @@ export function detectEntityChanges(
         changes.hasChanges = true;
     }
 
+    // Check if appliesTo changed to Spell
+    if (newEntity.appliesTo === EntityAppliesToType.Spell &&
+        originalEntity.appliesTo !== EntityAppliesToType.Spell) {
+        // Spell grants only need ID and name from static data - no fetching required
+        changes.hasChanges = true;
+    }
+
     // Check if feature ID changed
     if (newEntity.appliesTo === EntityAppliesToType.Feature &&
         originalEntity.appliesTo === EntityAppliesToType.Feature &&
@@ -62,6 +69,14 @@ export function detectEntityChanges(
         if (!newEntity.feature || newEntity.feature.id !== newEntity.appliesToId) {
             changes.needsFeatureFetch = true;
         }
+        changes.hasChanges = true;
+    }
+
+    // Check if spell ID changed
+    if (newEntity.appliesTo === EntityAppliesToType.Spell &&
+        originalEntity.appliesTo === EntityAppliesToType.Spell &&
+        newEntity.appliesToId !== originalEntity.appliesToId) {
+        // Spell grants only need ID and name from static data - no fetching required
         changes.hasChanges = true;
     }
 
@@ -132,3 +147,4 @@ export function hasFullFeatureData(entity: FeatureEntity): boolean {
         entity.feature !== undefined &&
         entity.feature.id === entity.appliesToId;
 }
+

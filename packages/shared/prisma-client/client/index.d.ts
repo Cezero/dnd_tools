@@ -337,7 +337,7 @@ export const TextAlignment: typeof $Enums.TextAlignment
  */
 export class PrismaClient<
   ClientOptions extends Prisma.PrismaClientOptions = Prisma.PrismaClientOptions,
-  U = 'log' extends keyof ClientOptions ? ClientOptions['log'] extends Array<Prisma.LogLevel | Prisma.LogDefinition> ? Prisma.GetEvents<ClientOptions['log']> : never : never,
+  const U = 'log' extends keyof ClientOptions ? ClientOptions['log'] extends Array<Prisma.LogLevel | Prisma.LogDefinition> ? Prisma.GetEvents<ClientOptions['log']> : never : never,
   ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs
 > {
   [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['other'] }
@@ -369,13 +369,6 @@ export class PrismaClient<
    * Disconnect from the database
    */
   $disconnect(): $Utils.JsPromise<void>;
-
-  /**
-   * Add a middleware
-   * @deprecated since 4.16.0. For new code, prefer client extensions instead.
-   * @see https://pris.ly/d/extensions
-   */
-  $use(cb: Prisma.Middleware): void
 
 /**
    * Executes a prepared raw query and returns the number of affected rows.
@@ -1023,8 +1016,8 @@ export namespace Prisma {
   export import Exact = $Public.Exact
 
   /**
-   * Prisma Client JS version: 6.11.1
-   * Query Engine version: f40f79ec31188888a2e33acda0ecc8fd10a853a9
+   * Prisma Client JS version: 6.16.0
+   * Query Engine version: 1c57fdcd7e44b29b9313256c76699e91c3ac3c43
    */
   export type PrismaVersion = {
     client: string
@@ -4954,16 +4947,24 @@ export namespace Prisma {
     /**
      * @example
      * ```
-     * // Defaults to stdout
+     * // Shorthand for `emit: 'stdout'`
      * log: ['query', 'info', 'warn', 'error']
      * 
-     * // Emit as events
+     * // Emit as events only
      * log: [
-     *   { emit: 'stdout', level: 'query' },
-     *   { emit: 'stdout', level: 'info' },
-     *   { emit: 'stdout', level: 'warn' }
-     *   { emit: 'stdout', level: 'error' }
+     *   { emit: 'event', level: 'query' },
+     *   { emit: 'event', level: 'info' },
+     *   { emit: 'event', level: 'warn' }
+     *   { emit: 'event', level: 'error' }
      * ]
+     * 
+     * / Emit as events and log to stdout
+     * og: [
+     *  { emit: 'stdout', level: 'query' },
+     *  { emit: 'stdout', level: 'info' },
+     *  { emit: 'stdout', level: 'warn' }
+     *  { emit: 'stdout', level: 'error' }
+     * 
      * ```
      * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/logging#the-log-option).
      */
@@ -4978,6 +4979,10 @@ export namespace Prisma {
       timeout?: number
       isolationLevel?: Prisma.TransactionIsolationLevel
     }
+    /**
+     * Instance of a Driver Adapter, e.g., like one provided by `@prisma/adapter-planetscale`
+     */
+    adapter?: runtime.SqlDriverAdapterFactory | null
     /**
      * Global configuration for omitting model fields by default.
      * 
@@ -5056,10 +5061,15 @@ export namespace Prisma {
     emit: 'stdout' | 'event'
   }
 
-  export type GetLogType<T extends LogLevel | LogDefinition> = T extends LogDefinition ? T['emit'] extends 'event' ? T['level'] : never : never
-  export type GetEvents<T extends any> = T extends Array<LogLevel | LogDefinition> ?
-    GetLogType<T[0]> | GetLogType<T[1]> | GetLogType<T[2]> | GetLogType<T[3]>
-    : never
+  export type CheckIsLogLevel<T> = T extends LogLevel ? T : never;
+
+  export type GetLogType<T> = CheckIsLogLevel<
+    T extends LogDefinition ? T['level'] : T
+  >;
+
+  export type GetEvents<T extends any[]> = T extends Array<LogLevel | LogDefinition>
+    ? GetLogType<T[number]>
+    : never;
 
   export type QueryEvent = {
     timestamp: Date
@@ -5099,25 +5109,6 @@ export namespace Prisma {
     | 'runCommandRaw'
     | 'findRaw'
     | 'groupBy'
-
-  /**
-   * These options are being passed into the middleware as "params"
-   */
-  export type MiddlewareParams = {
-    model?: ModelName
-    action: PrismaAction
-    args: any
-    dataPath: string[]
-    runInTransaction: boolean
-  }
-
-  /**
-   * The `T` type makes sure, that the `return proceed` is not forgotten in the middleware implementation
-   */
-  export type Middleware<T = any> = (
-    params: MiddlewareParams,
-    next: (params: MiddlewareParams) => $Utils.JsPromise<T>,
-  ) => $Utils.JsPromise<T>
 
   // tested in getLogLevel.test.ts
   export function getLogLevel(log: Array<LogLevel | LogDefinition>): LogLevel | undefined;
@@ -5512,12 +5503,10 @@ export namespace Prisma {
 
   export type SkillCountOutputType = {
     advSkills: number
-    featurePrerequisite: number
   }
 
   export type SkillCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     advSkills?: boolean | SkillCountOutputTypeCountAdvSkillsArgs
-    featurePrerequisite?: boolean | SkillCountOutputTypeCountFeaturePrerequisiteArgs
   }
 
   // Custom InputTypes
@@ -5536,13 +5525,6 @@ export namespace Prisma {
    */
   export type SkillCountOutputTypeCountAdvSkillsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: AdvancementSkillWhereInput
-  }
-
-  /**
-   * SkillCountOutputType without action
-   */
-  export type SkillCountOutputTypeCountFeaturePrerequisiteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: FeaturePrerequisiteWhereInput
   }
 
 
@@ -17816,7 +17798,7 @@ export namespace Prisma {
     id: number | null
     featureId: number | null
     type: number | null
-    skillId: number | null
+    appliesToId: number | null
     minValue: number | null
   }
 
@@ -17824,7 +17806,7 @@ export namespace Prisma {
     id: number | null
     featureId: number | null
     type: number | null
-    skillId: number | null
+    appliesToId: number | null
     minValue: number | null
   }
 
@@ -17832,7 +17814,7 @@ export namespace Prisma {
     id: number | null
     featureId: number | null
     type: number | null
-    skillId: number | null
+    appliesToId: number | null
     minValue: number | null
   }
 
@@ -17840,7 +17822,7 @@ export namespace Prisma {
     id: number | null
     featureId: number | null
     type: number | null
-    skillId: number | null
+    appliesToId: number | null
     minValue: number | null
   }
 
@@ -17848,7 +17830,7 @@ export namespace Prisma {
     id: number
     featureId: number
     type: number
-    skillId: number
+    appliesToId: number
     minValue: number
     _all: number
   }
@@ -17858,7 +17840,7 @@ export namespace Prisma {
     id?: true
     featureId?: true
     type?: true
-    skillId?: true
+    appliesToId?: true
     minValue?: true
   }
 
@@ -17866,7 +17848,7 @@ export namespace Prisma {
     id?: true
     featureId?: true
     type?: true
-    skillId?: true
+    appliesToId?: true
     minValue?: true
   }
 
@@ -17874,7 +17856,7 @@ export namespace Prisma {
     id?: true
     featureId?: true
     type?: true
-    skillId?: true
+    appliesToId?: true
     minValue?: true
   }
 
@@ -17882,7 +17864,7 @@ export namespace Prisma {
     id?: true
     featureId?: true
     type?: true
-    skillId?: true
+    appliesToId?: true
     minValue?: true
   }
 
@@ -17890,7 +17872,7 @@ export namespace Prisma {
     id?: true
     featureId?: true
     type?: true
-    skillId?: true
+    appliesToId?: true
     minValue?: true
     _all?: true
   }
@@ -17985,7 +17967,7 @@ export namespace Prisma {
     id: number
     featureId: number
     type: number
-    skillId: number | null
+    appliesToId: number | null
     minValue: number
     _count: FeaturePrerequisiteCountAggregateOutputType | null
     _avg: FeaturePrerequisiteAvgAggregateOutputType | null
@@ -18012,10 +17994,9 @@ export namespace Prisma {
     id?: boolean
     featureId?: boolean
     type?: boolean
-    skillId?: boolean
+    appliesToId?: boolean
     minValue?: boolean
     feature?: boolean | FeatureDefaultArgs<ExtArgs>
-    skill?: boolean | FeaturePrerequisite$skillArgs<ExtArgs>
   }, ExtArgs["result"]["featurePrerequisite"]>
 
 
@@ -18024,27 +18005,25 @@ export namespace Prisma {
     id?: boolean
     featureId?: boolean
     type?: boolean
-    skillId?: boolean
+    appliesToId?: boolean
     minValue?: boolean
   }
 
-  export type FeaturePrerequisiteOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "featureId" | "type" | "skillId" | "minValue", ExtArgs["result"]["featurePrerequisite"]>
+  export type FeaturePrerequisiteOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "featureId" | "type" | "appliesToId" | "minValue", ExtArgs["result"]["featurePrerequisite"]>
   export type FeaturePrerequisiteInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     feature?: boolean | FeatureDefaultArgs<ExtArgs>
-    skill?: boolean | FeaturePrerequisite$skillArgs<ExtArgs>
   }
 
   export type $FeaturePrerequisitePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "FeaturePrerequisite"
     objects: {
       feature: Prisma.$FeaturePayload<ExtArgs>
-      skill: Prisma.$SkillPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
       featureId: number
       type: number
-      skillId: number | null
+      appliesToId: number | null
       minValue: number
     }, ExtArgs["result"]["featurePrerequisite"]>
     composites: {}
@@ -18387,7 +18366,6 @@ export namespace Prisma {
   export interface Prisma__FeaturePrerequisiteClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     feature<T extends FeatureDefaultArgs<ExtArgs> = {}>(args?: Subset<T, FeatureDefaultArgs<ExtArgs>>): Prisma__FeatureClient<$Result.GetResult<Prisma.$FeaturePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-    skill<T extends FeaturePrerequisite$skillArgs<ExtArgs> = {}>(args?: Subset<T, FeaturePrerequisite$skillArgs<ExtArgs>>): Prisma__SkillClient<$Result.GetResult<Prisma.$SkillPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -18420,7 +18398,7 @@ export namespace Prisma {
     readonly id: FieldRef<"FeaturePrerequisite", 'Int'>
     readonly featureId: FieldRef<"FeaturePrerequisite", 'Int'>
     readonly type: FieldRef<"FeaturePrerequisite", 'Int'>
-    readonly skillId: FieldRef<"FeaturePrerequisite", 'Int'>
+    readonly appliesToId: FieldRef<"FeaturePrerequisite", 'Int'>
     readonly minValue: FieldRef<"FeaturePrerequisite", 'Int'>
   }
     
@@ -18762,25 +18740,6 @@ export namespace Prisma {
      * Limit how many FeaturePrerequisites to delete.
      */
     limit?: number
-  }
-
-  /**
-   * FeaturePrerequisite.skill
-   */
-  export type FeaturePrerequisite$skillArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Skill
-     */
-    select?: SkillSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Skill
-     */
-    omit?: SkillOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: SkillInclude<ExtArgs> | null
-    where?: SkillWhereInput
   }
 
   /**
@@ -25096,7 +25055,6 @@ export namespace Prisma {
     trainedOnly?: boolean
     isAnalog?: boolean
     advSkills?: boolean | Skill$advSkillsArgs<ExtArgs>
-    featurePrerequisite?: boolean | Skill$featurePrerequisiteArgs<ExtArgs>
     _count?: boolean | SkillCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["skill"]>
 
@@ -25123,7 +25081,6 @@ export namespace Prisma {
   export type SkillOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "abilityId" | "checkDescription" | "actionDescription" | "retryTypeId" | "retryDescription" | "specialNotes" | "synergyNotes" | "untrainedNotes" | "affectedByArmor" | "description" | "restrictionNotes" | "trainedOnly" | "isAnalog", ExtArgs["result"]["skill"]>
   export type SkillInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     advSkills?: boolean | Skill$advSkillsArgs<ExtArgs>
-    featurePrerequisite?: boolean | Skill$featurePrerequisiteArgs<ExtArgs>
     _count?: boolean | SkillCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -25131,7 +25088,6 @@ export namespace Prisma {
     name: "Skill"
     objects: {
       advSkills: Prisma.$AdvancementSkillPayload<ExtArgs>[]
-      featurePrerequisite: Prisma.$FeaturePrerequisitePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -25490,7 +25446,6 @@ export namespace Prisma {
   export interface Prisma__SkillClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     advSkills<T extends Skill$advSkillsArgs<ExtArgs> = {}>(args?: Subset<T, Skill$advSkillsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AdvancementSkillPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    featurePrerequisite<T extends Skill$featurePrerequisiteArgs<ExtArgs> = {}>(args?: Subset<T, Skill$featurePrerequisiteArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$FeaturePrerequisitePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -25899,30 +25854,6 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: AdvancementSkillScalarFieldEnum | AdvancementSkillScalarFieldEnum[]
-  }
-
-  /**
-   * Skill.featurePrerequisite
-   */
-  export type Skill$featurePrerequisiteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the FeaturePrerequisite
-     */
-    select?: FeaturePrerequisiteSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the FeaturePrerequisite
-     */
-    omit?: FeaturePrerequisiteOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: FeaturePrerequisiteInclude<ExtArgs> | null
-    where?: FeaturePrerequisiteWhereInput
-    orderBy?: FeaturePrerequisiteOrderByWithRelationInput | FeaturePrerequisiteOrderByWithRelationInput[]
-    cursor?: FeaturePrerequisiteWhereUniqueInput
-    take?: number
-    skip?: number
-    distinct?: FeaturePrerequisiteScalarFieldEnum | FeaturePrerequisiteScalarFieldEnum[]
   }
 
   /**
@@ -50560,31 +50491,39 @@ export namespace Prisma {
   export type AdvancementSkillAvgAggregateOutputType = {
     advancementId: number | null
     skillId: number | null
+    skillSubId: number | null
     pointsSpent: number | null
   }
 
   export type AdvancementSkillSumAggregateOutputType = {
     advancementId: number | null
     skillId: number | null
+    skillSubId: number | null
     pointsSpent: number | null
   }
 
   export type AdvancementSkillMinAggregateOutputType = {
     advancementId: number | null
     skillId: number | null
+    skillSubId: number | null
     pointsSpent: number | null
+    customSubtype: string | null
   }
 
   export type AdvancementSkillMaxAggregateOutputType = {
     advancementId: number | null
     skillId: number | null
+    skillSubId: number | null
     pointsSpent: number | null
+    customSubtype: string | null
   }
 
   export type AdvancementSkillCountAggregateOutputType = {
     advancementId: number
     skillId: number
+    skillSubId: number
     pointsSpent: number
+    customSubtype: number
     _all: number
   }
 
@@ -50592,31 +50531,39 @@ export namespace Prisma {
   export type AdvancementSkillAvgAggregateInputType = {
     advancementId?: true
     skillId?: true
+    skillSubId?: true
     pointsSpent?: true
   }
 
   export type AdvancementSkillSumAggregateInputType = {
     advancementId?: true
     skillId?: true
+    skillSubId?: true
     pointsSpent?: true
   }
 
   export type AdvancementSkillMinAggregateInputType = {
     advancementId?: true
     skillId?: true
+    skillSubId?: true
     pointsSpent?: true
+    customSubtype?: true
   }
 
   export type AdvancementSkillMaxAggregateInputType = {
     advancementId?: true
     skillId?: true
+    skillSubId?: true
     pointsSpent?: true
+    customSubtype?: true
   }
 
   export type AdvancementSkillCountAggregateInputType = {
     advancementId?: true
     skillId?: true
+    skillSubId?: true
     pointsSpent?: true
+    customSubtype?: true
     _all?: true
   }
 
@@ -50709,7 +50656,9 @@ export namespace Prisma {
   export type AdvancementSkillGroupByOutputType = {
     advancementId: number
     skillId: number
+    skillSubId: number | null
     pointsSpent: number
+    customSubtype: string | null
     _count: AdvancementSkillCountAggregateOutputType | null
     _avg: AdvancementSkillAvgAggregateOutputType | null
     _sum: AdvancementSkillSumAggregateOutputType | null
@@ -50734,7 +50683,9 @@ export namespace Prisma {
   export type AdvancementSkillSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     advancementId?: boolean
     skillId?: boolean
+    skillSubId?: boolean
     pointsSpent?: boolean
+    customSubtype?: boolean
     advancement?: boolean | CharacterAdvancementDefaultArgs<ExtArgs>
     skill?: boolean | SkillDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["advancementSkill"]>
@@ -50744,10 +50695,12 @@ export namespace Prisma {
   export type AdvancementSkillSelectScalar = {
     advancementId?: boolean
     skillId?: boolean
+    skillSubId?: boolean
     pointsSpent?: boolean
+    customSubtype?: boolean
   }
 
-  export type AdvancementSkillOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"advancementId" | "skillId" | "pointsSpent", ExtArgs["result"]["advancementSkill"]>
+  export type AdvancementSkillOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"advancementId" | "skillId" | "skillSubId" | "pointsSpent" | "customSubtype", ExtArgs["result"]["advancementSkill"]>
   export type AdvancementSkillInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     advancement?: boolean | CharacterAdvancementDefaultArgs<ExtArgs>
     skill?: boolean | SkillDefaultArgs<ExtArgs>
@@ -50762,7 +50715,9 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       advancementId: number
       skillId: number
+      skillSubId: number | null
       pointsSpent: number
+      customSubtype: string | null
     }, ExtArgs["result"]["advancementSkill"]>
     composites: {}
   }
@@ -51136,7 +51091,9 @@ export namespace Prisma {
   interface AdvancementSkillFieldRefs {
     readonly advancementId: FieldRef<"AdvancementSkill", 'Int'>
     readonly skillId: FieldRef<"AdvancementSkill", 'Int'>
+    readonly skillSubId: FieldRef<"AdvancementSkill", 'Int'>
     readonly pointsSpent: FieldRef<"AdvancementSkill", 'Int'>
+    readonly customSubtype: FieldRef<"AdvancementSkill", 'String'>
   }
     
 
@@ -59808,7 +59765,7 @@ export namespace Prisma {
     id: 'id',
     featureId: 'featureId',
     type: 'type',
-    skillId: 'skillId',
+    appliesToId: 'appliesToId',
     minValue: 'minValue'
   };
 
@@ -60185,7 +60142,9 @@ export namespace Prisma {
   export const AdvancementSkillScalarFieldEnum: {
     advancementId: 'advancementId',
     skillId: 'skillId',
-    pointsSpent: 'pointsSpent'
+    skillSubId: 'skillSubId',
+    pointsSpent: 'pointsSpent',
+    customSubtype: 'customSubtype'
   };
 
   export type AdvancementSkillScalarFieldEnum = (typeof AdvancementSkillScalarFieldEnum)[keyof typeof AdvancementSkillScalarFieldEnum]
@@ -60502,6 +60461,13 @@ export namespace Prisma {
   };
 
   export type CharacterAdvancementOrderByRelevanceFieldEnum = (typeof CharacterAdvancementOrderByRelevanceFieldEnum)[keyof typeof CharacterAdvancementOrderByRelevanceFieldEnum]
+
+
+  export const AdvancementSkillOrderByRelevanceFieldEnum: {
+    customSubtype: 'customSubtype'
+  };
+
+  export type AdvancementSkillOrderByRelevanceFieldEnum = (typeof AdvancementSkillOrderByRelevanceFieldEnum)[keyof typeof AdvancementSkillOrderByRelevanceFieldEnum]
 
 
   export const CharacterFeatureChoiceOrderByRelevanceFieldEnum: {
@@ -61416,20 +61382,18 @@ export namespace Prisma {
     id?: IntFilter<"FeaturePrerequisite"> | number
     featureId?: IntFilter<"FeaturePrerequisite"> | number
     type?: IntFilter<"FeaturePrerequisite"> | number
-    skillId?: IntNullableFilter<"FeaturePrerequisite"> | number | null
+    appliesToId?: IntNullableFilter<"FeaturePrerequisite"> | number | null
     minValue?: IntFilter<"FeaturePrerequisite"> | number
     feature?: XOR<FeatureScalarRelationFilter, FeatureWhereInput>
-    skill?: XOR<SkillNullableScalarRelationFilter, SkillWhereInput> | null
   }
 
   export type FeaturePrerequisiteOrderByWithRelationInput = {
     id?: SortOrder
     featureId?: SortOrder
     type?: SortOrder
-    skillId?: SortOrderInput | SortOrder
+    appliesToId?: SortOrderInput | SortOrder
     minValue?: SortOrder
     feature?: FeatureOrderByWithRelationInput
-    skill?: SkillOrderByWithRelationInput
   }
 
   export type FeaturePrerequisiteWhereUniqueInput = Prisma.AtLeast<{
@@ -61439,17 +61403,16 @@ export namespace Prisma {
     NOT?: FeaturePrerequisiteWhereInput | FeaturePrerequisiteWhereInput[]
     featureId?: IntFilter<"FeaturePrerequisite"> | number
     type?: IntFilter<"FeaturePrerequisite"> | number
-    skillId?: IntNullableFilter<"FeaturePrerequisite"> | number | null
+    appliesToId?: IntNullableFilter<"FeaturePrerequisite"> | number | null
     minValue?: IntFilter<"FeaturePrerequisite"> | number
     feature?: XOR<FeatureScalarRelationFilter, FeatureWhereInput>
-    skill?: XOR<SkillNullableScalarRelationFilter, SkillWhereInput> | null
   }, "id">
 
   export type FeaturePrerequisiteOrderByWithAggregationInput = {
     id?: SortOrder
     featureId?: SortOrder
     type?: SortOrder
-    skillId?: SortOrderInput | SortOrder
+    appliesToId?: SortOrderInput | SortOrder
     minValue?: SortOrder
     _count?: FeaturePrerequisiteCountOrderByAggregateInput
     _avg?: FeaturePrerequisiteAvgOrderByAggregateInput
@@ -61465,7 +61428,7 @@ export namespace Prisma {
     id?: IntWithAggregatesFilter<"FeaturePrerequisite"> | number
     featureId?: IntWithAggregatesFilter<"FeaturePrerequisite"> | number
     type?: IntWithAggregatesFilter<"FeaturePrerequisite"> | number
-    skillId?: IntNullableWithAggregatesFilter<"FeaturePrerequisite"> | number | null
+    appliesToId?: IntNullableWithAggregatesFilter<"FeaturePrerequisite"> | number | null
     minValue?: IntWithAggregatesFilter<"FeaturePrerequisite"> | number
   }
 
@@ -61846,7 +61809,6 @@ export namespace Prisma {
     trainedOnly?: BoolNullableFilter<"Skill"> | boolean | null
     isAnalog?: BoolFilter<"Skill"> | boolean
     advSkills?: AdvancementSkillListRelationFilter
-    featurePrerequisite?: FeaturePrerequisiteListRelationFilter
   }
 
   export type SkillOrderByWithRelationInput = {
@@ -61866,7 +61828,6 @@ export namespace Prisma {
     trainedOnly?: SortOrderInput | SortOrder
     isAnalog?: SortOrder
     advSkills?: AdvancementSkillOrderByRelationAggregateInput
-    featurePrerequisite?: FeaturePrerequisiteOrderByRelationAggregateInput
     _relevance?: SkillOrderByRelevanceInput
   }
 
@@ -61890,7 +61851,6 @@ export namespace Prisma {
     trainedOnly?: BoolNullableFilter<"Skill"> | boolean | null
     isAnalog?: BoolFilter<"Skill"> | boolean
     advSkills?: AdvancementSkillListRelationFilter
-    featurePrerequisite?: FeaturePrerequisiteListRelationFilter
   }, "id">
 
   export type SkillOrderByWithAggregationInput = {
@@ -63543,7 +63503,9 @@ export namespace Prisma {
     NOT?: AdvancementSkillWhereInput | AdvancementSkillWhereInput[]
     advancementId?: IntFilter<"AdvancementSkill"> | number
     skillId?: IntFilter<"AdvancementSkill"> | number
+    skillSubId?: IntNullableFilter<"AdvancementSkill"> | number | null
     pointsSpent?: IntFilter<"AdvancementSkill"> | number
+    customSubtype?: StringNullableFilter<"AdvancementSkill"> | string | null
     advancement?: XOR<CharacterAdvancementScalarRelationFilter, CharacterAdvancementWhereInput>
     skill?: XOR<SkillScalarRelationFilter, SkillWhereInput>
   }
@@ -63551,9 +63513,12 @@ export namespace Prisma {
   export type AdvancementSkillOrderByWithRelationInput = {
     advancementId?: SortOrder
     skillId?: SortOrder
+    skillSubId?: SortOrderInput | SortOrder
     pointsSpent?: SortOrder
+    customSubtype?: SortOrderInput | SortOrder
     advancement?: CharacterAdvancementOrderByWithRelationInput
     skill?: SkillOrderByWithRelationInput
+    _relevance?: AdvancementSkillOrderByRelevanceInput
   }
 
   export type AdvancementSkillWhereUniqueInput = Prisma.AtLeast<{
@@ -63563,7 +63528,9 @@ export namespace Prisma {
     NOT?: AdvancementSkillWhereInput | AdvancementSkillWhereInput[]
     advancementId?: IntFilter<"AdvancementSkill"> | number
     skillId?: IntFilter<"AdvancementSkill"> | number
+    skillSubId?: IntNullableFilter<"AdvancementSkill"> | number | null
     pointsSpent?: IntFilter<"AdvancementSkill"> | number
+    customSubtype?: StringNullableFilter<"AdvancementSkill"> | string | null
     advancement?: XOR<CharacterAdvancementScalarRelationFilter, CharacterAdvancementWhereInput>
     skill?: XOR<SkillScalarRelationFilter, SkillWhereInput>
   }, "advancementId_skillId">
@@ -63571,7 +63538,9 @@ export namespace Prisma {
   export type AdvancementSkillOrderByWithAggregationInput = {
     advancementId?: SortOrder
     skillId?: SortOrder
+    skillSubId?: SortOrderInput | SortOrder
     pointsSpent?: SortOrder
+    customSubtype?: SortOrderInput | SortOrder
     _count?: AdvancementSkillCountOrderByAggregateInput
     _avg?: AdvancementSkillAvgOrderByAggregateInput
     _max?: AdvancementSkillMaxOrderByAggregateInput
@@ -63585,7 +63554,9 @@ export namespace Prisma {
     NOT?: AdvancementSkillScalarWhereWithAggregatesInput | AdvancementSkillScalarWhereWithAggregatesInput[]
     advancementId?: IntWithAggregatesFilter<"AdvancementSkill"> | number
     skillId?: IntWithAggregatesFilter<"AdvancementSkill"> | number
+    skillSubId?: IntNullableWithAggregatesFilter<"AdvancementSkill"> | number | null
     pointsSpent?: IntWithAggregatesFilter<"AdvancementSkill"> | number
+    customSubtype?: StringNullableWithAggregatesFilter<"AdvancementSkill"> | string | null
   }
 
   export type AdvancementFeatWhereInput = {
@@ -64933,31 +64904,31 @@ export namespace Prisma {
 
   export type FeaturePrerequisiteCreateInput = {
     type: number
+    appliesToId?: number | null
     minValue: number
     feature: FeatureCreateNestedOneWithoutPrerequisitesInput
-    skill?: SkillCreateNestedOneWithoutFeaturePrerequisiteInput
   }
 
   export type FeaturePrerequisiteUncheckedCreateInput = {
     id?: number
     featureId: number
     type: number
-    skillId?: number | null
+    appliesToId?: number | null
     minValue: number
   }
 
   export type FeaturePrerequisiteUpdateInput = {
     type?: IntFieldUpdateOperationsInput | number
+    appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
     minValue?: IntFieldUpdateOperationsInput | number
     feature?: FeatureUpdateOneRequiredWithoutPrerequisitesNestedInput
-    skill?: SkillUpdateOneWithoutFeaturePrerequisiteNestedInput
   }
 
   export type FeaturePrerequisiteUncheckedUpdateInput = {
     id?: IntFieldUpdateOperationsInput | number
     featureId?: IntFieldUpdateOperationsInput | number
     type?: IntFieldUpdateOperationsInput | number
-    skillId?: NullableIntFieldUpdateOperationsInput | number | null
+    appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
     minValue?: IntFieldUpdateOperationsInput | number
   }
 
@@ -64965,12 +64936,13 @@ export namespace Prisma {
     id?: number
     featureId: number
     type: number
-    skillId?: number | null
+    appliesToId?: number | null
     minValue: number
   }
 
   export type FeaturePrerequisiteUpdateManyMutationInput = {
     type?: IntFieldUpdateOperationsInput | number
+    appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
     minValue?: IntFieldUpdateOperationsInput | number
   }
 
@@ -64978,7 +64950,7 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     featureId?: IntFieldUpdateOperationsInput | number
     type?: IntFieldUpdateOperationsInput | number
-    skillId?: NullableIntFieldUpdateOperationsInput | number | null
+    appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
     minValue?: IntFieldUpdateOperationsInput | number
   }
 
@@ -65336,7 +65308,6 @@ export namespace Prisma {
     trainedOnly?: boolean | null
     isAnalog?: boolean
     advSkills?: AdvancementSkillCreateNestedManyWithoutSkillInput
-    featurePrerequisite?: FeaturePrerequisiteCreateNestedManyWithoutSkillInput
   }
 
   export type SkillUncheckedCreateInput = {
@@ -65356,7 +65327,6 @@ export namespace Prisma {
     trainedOnly?: boolean | null
     isAnalog?: boolean
     advSkills?: AdvancementSkillUncheckedCreateNestedManyWithoutSkillInput
-    featurePrerequisite?: FeaturePrerequisiteUncheckedCreateNestedManyWithoutSkillInput
   }
 
   export type SkillUpdateInput = {
@@ -65375,7 +65345,6 @@ export namespace Prisma {
     trainedOnly?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isAnalog?: BoolFieldUpdateOperationsInput | boolean
     advSkills?: AdvancementSkillUpdateManyWithoutSkillNestedInput
-    featurePrerequisite?: FeaturePrerequisiteUpdateManyWithoutSkillNestedInput
   }
 
   export type SkillUncheckedUpdateInput = {
@@ -65395,7 +65364,6 @@ export namespace Prisma {
     trainedOnly?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isAnalog?: BoolFieldUpdateOperationsInput | boolean
     advSkills?: AdvancementSkillUncheckedUpdateManyWithoutSkillNestedInput
-    featurePrerequisite?: FeaturePrerequisiteUncheckedUpdateManyWithoutSkillNestedInput
   }
 
   export type SkillCreateManyInput = {
@@ -66999,7 +66967,9 @@ export namespace Prisma {
   }
 
   export type AdvancementSkillCreateInput = {
+    skillSubId?: number | null
     pointsSpent: number
+    customSubtype?: string | null
     advancement: CharacterAdvancementCreateNestedOneWithoutSkillsInput
     skill: SkillCreateNestedOneWithoutAdvSkillsInput
   }
@@ -67007,11 +66977,15 @@ export namespace Prisma {
   export type AdvancementSkillUncheckedCreateInput = {
     advancementId: number
     skillId: number
+    skillSubId?: number | null
     pointsSpent: number
+    customSubtype?: string | null
   }
 
   export type AdvancementSkillUpdateInput = {
+    skillSubId?: NullableIntFieldUpdateOperationsInput | number | null
     pointsSpent?: IntFieldUpdateOperationsInput | number
+    customSubtype?: NullableStringFieldUpdateOperationsInput | string | null
     advancement?: CharacterAdvancementUpdateOneRequiredWithoutSkillsNestedInput
     skill?: SkillUpdateOneRequiredWithoutAdvSkillsNestedInput
   }
@@ -67019,23 +66993,31 @@ export namespace Prisma {
   export type AdvancementSkillUncheckedUpdateInput = {
     advancementId?: IntFieldUpdateOperationsInput | number
     skillId?: IntFieldUpdateOperationsInput | number
+    skillSubId?: NullableIntFieldUpdateOperationsInput | number | null
     pointsSpent?: IntFieldUpdateOperationsInput | number
+    customSubtype?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type AdvancementSkillCreateManyInput = {
     advancementId: number
     skillId: number
+    skillSubId?: number | null
     pointsSpent: number
+    customSubtype?: string | null
   }
 
   export type AdvancementSkillUpdateManyMutationInput = {
+    skillSubId?: NullableIntFieldUpdateOperationsInput | number | null
     pointsSpent?: IntFieldUpdateOperationsInput | number
+    customSubtype?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type AdvancementSkillUncheckedUpdateManyInput = {
     advancementId?: IntFieldUpdateOperationsInput | number
     skillId?: IntFieldUpdateOperationsInput | number
+    skillSubId?: NullableIntFieldUpdateOperationsInput | number | null
     pointsSpent?: IntFieldUpdateOperationsInput | number
+    customSubtype?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type AdvancementFeatCreateInput = {
@@ -68432,16 +68414,11 @@ export namespace Prisma {
     conditionValue?: SortOrder
   }
 
-  export type SkillNullableScalarRelationFilter = {
-    is?: SkillWhereInput | null
-    isNot?: SkillWhereInput | null
-  }
-
   export type FeaturePrerequisiteCountOrderByAggregateInput = {
     id?: SortOrder
     featureId?: SortOrder
     type?: SortOrder
-    skillId?: SortOrder
+    appliesToId?: SortOrder
     minValue?: SortOrder
   }
 
@@ -68449,7 +68426,7 @@ export namespace Prisma {
     id?: SortOrder
     featureId?: SortOrder
     type?: SortOrder
-    skillId?: SortOrder
+    appliesToId?: SortOrder
     minValue?: SortOrder
   }
 
@@ -68457,7 +68434,7 @@ export namespace Prisma {
     id?: SortOrder
     featureId?: SortOrder
     type?: SortOrder
-    skillId?: SortOrder
+    appliesToId?: SortOrder
     minValue?: SortOrder
   }
 
@@ -68465,7 +68442,7 @@ export namespace Prisma {
     id?: SortOrder
     featureId?: SortOrder
     type?: SortOrder
-    skillId?: SortOrder
+    appliesToId?: SortOrder
     minValue?: SortOrder
   }
 
@@ -68473,7 +68450,7 @@ export namespace Prisma {
     id?: SortOrder
     featureId?: SortOrder
     type?: SortOrder
-    skillId?: SortOrder
+    appliesToId?: SortOrder
     minValue?: SortOrder
   }
 
@@ -70350,6 +70327,12 @@ export namespace Prisma {
     isNot?: SkillWhereInput
   }
 
+  export type AdvancementSkillOrderByRelevanceInput = {
+    fields: AdvancementSkillOrderByRelevanceFieldEnum | AdvancementSkillOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
   export type AdvancementSkillAdvancementIdSkillIdCompoundUniqueInput = {
     advancementId: number
     skillId: number
@@ -70358,30 +70341,38 @@ export namespace Prisma {
   export type AdvancementSkillCountOrderByAggregateInput = {
     advancementId?: SortOrder
     skillId?: SortOrder
+    skillSubId?: SortOrder
     pointsSpent?: SortOrder
+    customSubtype?: SortOrder
   }
 
   export type AdvancementSkillAvgOrderByAggregateInput = {
     advancementId?: SortOrder
     skillId?: SortOrder
+    skillSubId?: SortOrder
     pointsSpent?: SortOrder
   }
 
   export type AdvancementSkillMaxOrderByAggregateInput = {
     advancementId?: SortOrder
     skillId?: SortOrder
+    skillSubId?: SortOrder
     pointsSpent?: SortOrder
+    customSubtype?: SortOrder
   }
 
   export type AdvancementSkillMinOrderByAggregateInput = {
     advancementId?: SortOrder
     skillId?: SortOrder
+    skillSubId?: SortOrder
     pointsSpent?: SortOrder
+    customSubtype?: SortOrder
   }
 
   export type AdvancementSkillSumOrderByAggregateInput = {
     advancementId?: SortOrder
     skillId?: SortOrder
+    skillSubId?: SortOrder
     pointsSpent?: SortOrder
   }
 
@@ -71830,28 +71821,12 @@ export namespace Prisma {
     connect?: FeatureWhereUniqueInput
   }
 
-  export type SkillCreateNestedOneWithoutFeaturePrerequisiteInput = {
-    create?: XOR<SkillCreateWithoutFeaturePrerequisiteInput, SkillUncheckedCreateWithoutFeaturePrerequisiteInput>
-    connectOrCreate?: SkillCreateOrConnectWithoutFeaturePrerequisiteInput
-    connect?: SkillWhereUniqueInput
-  }
-
   export type FeatureUpdateOneRequiredWithoutPrerequisitesNestedInput = {
     create?: XOR<FeatureCreateWithoutPrerequisitesInput, FeatureUncheckedCreateWithoutPrerequisitesInput>
     connectOrCreate?: FeatureCreateOrConnectWithoutPrerequisitesInput
     upsert?: FeatureUpsertWithoutPrerequisitesInput
     connect?: FeatureWhereUniqueInput
     update?: XOR<XOR<FeatureUpdateToOneWithWhereWithoutPrerequisitesInput, FeatureUpdateWithoutPrerequisitesInput>, FeatureUncheckedUpdateWithoutPrerequisitesInput>
-  }
-
-  export type SkillUpdateOneWithoutFeaturePrerequisiteNestedInput = {
-    create?: XOR<SkillCreateWithoutFeaturePrerequisiteInput, SkillUncheckedCreateWithoutFeaturePrerequisiteInput>
-    connectOrCreate?: SkillCreateOrConnectWithoutFeaturePrerequisiteInput
-    upsert?: SkillUpsertWithoutFeaturePrerequisiteInput
-    disconnect?: SkillWhereInput | boolean
-    delete?: SkillWhereInput | boolean
-    connect?: SkillWhereUniqueInput
-    update?: XOR<XOR<SkillUpdateToOneWithWhereWithoutFeaturePrerequisiteInput, SkillUpdateWithoutFeaturePrerequisiteInput>, SkillUncheckedUpdateWithoutFeaturePrerequisiteInput>
   }
 
   export type SpellDescriptorMapCreateNestedManyWithoutSpellInput = {
@@ -72281,25 +72256,11 @@ export namespace Prisma {
     connect?: AdvancementSkillWhereUniqueInput | AdvancementSkillWhereUniqueInput[]
   }
 
-  export type FeaturePrerequisiteCreateNestedManyWithoutSkillInput = {
-    create?: XOR<FeaturePrerequisiteCreateWithoutSkillInput, FeaturePrerequisiteUncheckedCreateWithoutSkillInput> | FeaturePrerequisiteCreateWithoutSkillInput[] | FeaturePrerequisiteUncheckedCreateWithoutSkillInput[]
-    connectOrCreate?: FeaturePrerequisiteCreateOrConnectWithoutSkillInput | FeaturePrerequisiteCreateOrConnectWithoutSkillInput[]
-    createMany?: FeaturePrerequisiteCreateManySkillInputEnvelope
-    connect?: FeaturePrerequisiteWhereUniqueInput | FeaturePrerequisiteWhereUniqueInput[]
-  }
-
   export type AdvancementSkillUncheckedCreateNestedManyWithoutSkillInput = {
     create?: XOR<AdvancementSkillCreateWithoutSkillInput, AdvancementSkillUncheckedCreateWithoutSkillInput> | AdvancementSkillCreateWithoutSkillInput[] | AdvancementSkillUncheckedCreateWithoutSkillInput[]
     connectOrCreate?: AdvancementSkillCreateOrConnectWithoutSkillInput | AdvancementSkillCreateOrConnectWithoutSkillInput[]
     createMany?: AdvancementSkillCreateManySkillInputEnvelope
     connect?: AdvancementSkillWhereUniqueInput | AdvancementSkillWhereUniqueInput[]
-  }
-
-  export type FeaturePrerequisiteUncheckedCreateNestedManyWithoutSkillInput = {
-    create?: XOR<FeaturePrerequisiteCreateWithoutSkillInput, FeaturePrerequisiteUncheckedCreateWithoutSkillInput> | FeaturePrerequisiteCreateWithoutSkillInput[] | FeaturePrerequisiteUncheckedCreateWithoutSkillInput[]
-    connectOrCreate?: FeaturePrerequisiteCreateOrConnectWithoutSkillInput | FeaturePrerequisiteCreateOrConnectWithoutSkillInput[]
-    createMany?: FeaturePrerequisiteCreateManySkillInputEnvelope
-    connect?: FeaturePrerequisiteWhereUniqueInput | FeaturePrerequisiteWhereUniqueInput[]
   }
 
   export type NullableBoolFieldUpdateOperationsInput = {
@@ -72320,20 +72281,6 @@ export namespace Prisma {
     deleteMany?: AdvancementSkillScalarWhereInput | AdvancementSkillScalarWhereInput[]
   }
 
-  export type FeaturePrerequisiteUpdateManyWithoutSkillNestedInput = {
-    create?: XOR<FeaturePrerequisiteCreateWithoutSkillInput, FeaturePrerequisiteUncheckedCreateWithoutSkillInput> | FeaturePrerequisiteCreateWithoutSkillInput[] | FeaturePrerequisiteUncheckedCreateWithoutSkillInput[]
-    connectOrCreate?: FeaturePrerequisiteCreateOrConnectWithoutSkillInput | FeaturePrerequisiteCreateOrConnectWithoutSkillInput[]
-    upsert?: FeaturePrerequisiteUpsertWithWhereUniqueWithoutSkillInput | FeaturePrerequisiteUpsertWithWhereUniqueWithoutSkillInput[]
-    createMany?: FeaturePrerequisiteCreateManySkillInputEnvelope
-    set?: FeaturePrerequisiteWhereUniqueInput | FeaturePrerequisiteWhereUniqueInput[]
-    disconnect?: FeaturePrerequisiteWhereUniqueInput | FeaturePrerequisiteWhereUniqueInput[]
-    delete?: FeaturePrerequisiteWhereUniqueInput | FeaturePrerequisiteWhereUniqueInput[]
-    connect?: FeaturePrerequisiteWhereUniqueInput | FeaturePrerequisiteWhereUniqueInput[]
-    update?: FeaturePrerequisiteUpdateWithWhereUniqueWithoutSkillInput | FeaturePrerequisiteUpdateWithWhereUniqueWithoutSkillInput[]
-    updateMany?: FeaturePrerequisiteUpdateManyWithWhereWithoutSkillInput | FeaturePrerequisiteUpdateManyWithWhereWithoutSkillInput[]
-    deleteMany?: FeaturePrerequisiteScalarWhereInput | FeaturePrerequisiteScalarWhereInput[]
-  }
-
   export type AdvancementSkillUncheckedUpdateManyWithoutSkillNestedInput = {
     create?: XOR<AdvancementSkillCreateWithoutSkillInput, AdvancementSkillUncheckedCreateWithoutSkillInput> | AdvancementSkillCreateWithoutSkillInput[] | AdvancementSkillUncheckedCreateWithoutSkillInput[]
     connectOrCreate?: AdvancementSkillCreateOrConnectWithoutSkillInput | AdvancementSkillCreateOrConnectWithoutSkillInput[]
@@ -72346,20 +72293,6 @@ export namespace Prisma {
     update?: AdvancementSkillUpdateWithWhereUniqueWithoutSkillInput | AdvancementSkillUpdateWithWhereUniqueWithoutSkillInput[]
     updateMany?: AdvancementSkillUpdateManyWithWhereWithoutSkillInput | AdvancementSkillUpdateManyWithWhereWithoutSkillInput[]
     deleteMany?: AdvancementSkillScalarWhereInput | AdvancementSkillScalarWhereInput[]
-  }
-
-  export type FeaturePrerequisiteUncheckedUpdateManyWithoutSkillNestedInput = {
-    create?: XOR<FeaturePrerequisiteCreateWithoutSkillInput, FeaturePrerequisiteUncheckedCreateWithoutSkillInput> | FeaturePrerequisiteCreateWithoutSkillInput[] | FeaturePrerequisiteUncheckedCreateWithoutSkillInput[]
-    connectOrCreate?: FeaturePrerequisiteCreateOrConnectWithoutSkillInput | FeaturePrerequisiteCreateOrConnectWithoutSkillInput[]
-    upsert?: FeaturePrerequisiteUpsertWithWhereUniqueWithoutSkillInput | FeaturePrerequisiteUpsertWithWhereUniqueWithoutSkillInput[]
-    createMany?: FeaturePrerequisiteCreateManySkillInputEnvelope
-    set?: FeaturePrerequisiteWhereUniqueInput | FeaturePrerequisiteWhereUniqueInput[]
-    disconnect?: FeaturePrerequisiteWhereUniqueInput | FeaturePrerequisiteWhereUniqueInput[]
-    delete?: FeaturePrerequisiteWhereUniqueInput | FeaturePrerequisiteWhereUniqueInput[]
-    connect?: FeaturePrerequisiteWhereUniqueInput | FeaturePrerequisiteWhereUniqueInput[]
-    update?: FeaturePrerequisiteUpdateWithWhereUniqueWithoutSkillInput | FeaturePrerequisiteUpdateWithWhereUniqueWithoutSkillInput[]
-    updateMany?: FeaturePrerequisiteUpdateManyWithWhereWithoutSkillInput | FeaturePrerequisiteUpdateManyWithWhereWithoutSkillInput[]
-    deleteMany?: FeaturePrerequisiteScalarWhereInput | FeaturePrerequisiteScalarWhereInput[]
   }
 
   export type FeatBenefitMapCreateNestedManyWithoutFeatInput = {
@@ -76341,14 +76274,14 @@ export namespace Prisma {
 
   export type FeaturePrerequisiteCreateWithoutFeatureInput = {
     type: number
+    appliesToId?: number | null
     minValue: number
-    skill?: SkillCreateNestedOneWithoutFeaturePrerequisiteInput
   }
 
   export type FeaturePrerequisiteUncheckedCreateWithoutFeatureInput = {
     id?: number
     type: number
-    skillId?: number | null
+    appliesToId?: number | null
     minValue: number
   }
 
@@ -76401,7 +76334,7 @@ export namespace Prisma {
     id?: IntFilter<"FeaturePrerequisite"> | number
     featureId?: IntFilter<"FeaturePrerequisite"> | number
     type?: IntFilter<"FeaturePrerequisite"> | number
-    skillId?: IntNullableFilter<"FeaturePrerequisite"> | number | null
+    appliesToId?: IntNullableFilter<"FeaturePrerequisite"> | number | null
     minValue?: IntFilter<"FeaturePrerequisite"> | number
   }
 
@@ -77130,48 +77063,6 @@ export namespace Prisma {
     create: XOR<FeatureCreateWithoutPrerequisitesInput, FeatureUncheckedCreateWithoutPrerequisitesInput>
   }
 
-  export type SkillCreateWithoutFeaturePrerequisiteInput = {
-    name: string
-    abilityId?: number
-    checkDescription?: string | null
-    actionDescription?: string | null
-    retryTypeId?: number | null
-    retryDescription?: string | null
-    specialNotes?: string | null
-    synergyNotes?: string | null
-    untrainedNotes?: string | null
-    affectedByArmor?: boolean
-    description?: string | null
-    restrictionNotes?: string | null
-    trainedOnly?: boolean | null
-    isAnalog?: boolean
-    advSkills?: AdvancementSkillCreateNestedManyWithoutSkillInput
-  }
-
-  export type SkillUncheckedCreateWithoutFeaturePrerequisiteInput = {
-    id?: number
-    name: string
-    abilityId?: number
-    checkDescription?: string | null
-    actionDescription?: string | null
-    retryTypeId?: number | null
-    retryDescription?: string | null
-    specialNotes?: string | null
-    synergyNotes?: string | null
-    untrainedNotes?: string | null
-    affectedByArmor?: boolean
-    description?: string | null
-    restrictionNotes?: string | null
-    trainedOnly?: boolean | null
-    isAnalog?: boolean
-    advSkills?: AdvancementSkillUncheckedCreateNestedManyWithoutSkillInput
-  }
-
-  export type SkillCreateOrConnectWithoutFeaturePrerequisiteInput = {
-    where: SkillWhereUniqueInput
-    create: XOR<SkillCreateWithoutFeaturePrerequisiteInput, SkillUncheckedCreateWithoutFeaturePrerequisiteInput>
-  }
-
   export type FeatureUpsertWithoutPrerequisitesInput = {
     update: XOR<FeatureUpdateWithoutPrerequisitesInput, FeatureUncheckedUpdateWithoutPrerequisitesInput>
     create: XOR<FeatureCreateWithoutPrerequisitesInput, FeatureUncheckedCreateWithoutPrerequisitesInput>
@@ -77196,54 +77087,6 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
     progressions?: FeatureProgressionUncheckedUpdateManyWithoutFeatureNestedInput
-  }
-
-  export type SkillUpsertWithoutFeaturePrerequisiteInput = {
-    update: XOR<SkillUpdateWithoutFeaturePrerequisiteInput, SkillUncheckedUpdateWithoutFeaturePrerequisiteInput>
-    create: XOR<SkillCreateWithoutFeaturePrerequisiteInput, SkillUncheckedCreateWithoutFeaturePrerequisiteInput>
-    where?: SkillWhereInput
-  }
-
-  export type SkillUpdateToOneWithWhereWithoutFeaturePrerequisiteInput = {
-    where?: SkillWhereInput
-    data: XOR<SkillUpdateWithoutFeaturePrerequisiteInput, SkillUncheckedUpdateWithoutFeaturePrerequisiteInput>
-  }
-
-  export type SkillUpdateWithoutFeaturePrerequisiteInput = {
-    name?: StringFieldUpdateOperationsInput | string
-    abilityId?: IntFieldUpdateOperationsInput | number
-    checkDescription?: NullableStringFieldUpdateOperationsInput | string | null
-    actionDescription?: NullableStringFieldUpdateOperationsInput | string | null
-    retryTypeId?: NullableIntFieldUpdateOperationsInput | number | null
-    retryDescription?: NullableStringFieldUpdateOperationsInput | string | null
-    specialNotes?: NullableStringFieldUpdateOperationsInput | string | null
-    synergyNotes?: NullableStringFieldUpdateOperationsInput | string | null
-    untrainedNotes?: NullableStringFieldUpdateOperationsInput | string | null
-    affectedByArmor?: BoolFieldUpdateOperationsInput | boolean
-    description?: NullableStringFieldUpdateOperationsInput | string | null
-    restrictionNotes?: NullableStringFieldUpdateOperationsInput | string | null
-    trainedOnly?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    isAnalog?: BoolFieldUpdateOperationsInput | boolean
-    advSkills?: AdvancementSkillUpdateManyWithoutSkillNestedInput
-  }
-
-  export type SkillUncheckedUpdateWithoutFeaturePrerequisiteInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    name?: StringFieldUpdateOperationsInput | string
-    abilityId?: IntFieldUpdateOperationsInput | number
-    checkDescription?: NullableStringFieldUpdateOperationsInput | string | null
-    actionDescription?: NullableStringFieldUpdateOperationsInput | string | null
-    retryTypeId?: NullableIntFieldUpdateOperationsInput | number | null
-    retryDescription?: NullableStringFieldUpdateOperationsInput | string | null
-    specialNotes?: NullableStringFieldUpdateOperationsInput | string | null
-    synergyNotes?: NullableStringFieldUpdateOperationsInput | string | null
-    untrainedNotes?: NullableStringFieldUpdateOperationsInput | string | null
-    affectedByArmor?: BoolFieldUpdateOperationsInput | boolean
-    description?: NullableStringFieldUpdateOperationsInput | string | null
-    restrictionNotes?: NullableStringFieldUpdateOperationsInput | string | null
-    trainedOnly?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    isAnalog?: BoolFieldUpdateOperationsInput | boolean
-    advSkills?: AdvancementSkillUncheckedUpdateManyWithoutSkillNestedInput
   }
 
   export type SpellDescriptorMapCreateWithoutSpellInput = {
@@ -78238,13 +78081,17 @@ export namespace Prisma {
   }
 
   export type AdvancementSkillCreateWithoutSkillInput = {
+    skillSubId?: number | null
     pointsSpent: number
+    customSubtype?: string | null
     advancement: CharacterAdvancementCreateNestedOneWithoutSkillsInput
   }
 
   export type AdvancementSkillUncheckedCreateWithoutSkillInput = {
     advancementId: number
+    skillSubId?: number | null
     pointsSpent: number
+    customSubtype?: string | null
   }
 
   export type AdvancementSkillCreateOrConnectWithoutSkillInput = {
@@ -78254,29 +78101,6 @@ export namespace Prisma {
 
   export type AdvancementSkillCreateManySkillInputEnvelope = {
     data: AdvancementSkillCreateManySkillInput | AdvancementSkillCreateManySkillInput[]
-    skipDuplicates?: boolean
-  }
-
-  export type FeaturePrerequisiteCreateWithoutSkillInput = {
-    type: number
-    minValue: number
-    feature: FeatureCreateNestedOneWithoutPrerequisitesInput
-  }
-
-  export type FeaturePrerequisiteUncheckedCreateWithoutSkillInput = {
-    id?: number
-    featureId: number
-    type: number
-    minValue: number
-  }
-
-  export type FeaturePrerequisiteCreateOrConnectWithoutSkillInput = {
-    where: FeaturePrerequisiteWhereUniqueInput
-    create: XOR<FeaturePrerequisiteCreateWithoutSkillInput, FeaturePrerequisiteUncheckedCreateWithoutSkillInput>
-  }
-
-  export type FeaturePrerequisiteCreateManySkillInputEnvelope = {
-    data: FeaturePrerequisiteCreateManySkillInput | FeaturePrerequisiteCreateManySkillInput[]
     skipDuplicates?: boolean
   }
 
@@ -78302,23 +78126,9 @@ export namespace Prisma {
     NOT?: AdvancementSkillScalarWhereInput | AdvancementSkillScalarWhereInput[]
     advancementId?: IntFilter<"AdvancementSkill"> | number
     skillId?: IntFilter<"AdvancementSkill"> | number
+    skillSubId?: IntNullableFilter<"AdvancementSkill"> | number | null
     pointsSpent?: IntFilter<"AdvancementSkill"> | number
-  }
-
-  export type FeaturePrerequisiteUpsertWithWhereUniqueWithoutSkillInput = {
-    where: FeaturePrerequisiteWhereUniqueInput
-    update: XOR<FeaturePrerequisiteUpdateWithoutSkillInput, FeaturePrerequisiteUncheckedUpdateWithoutSkillInput>
-    create: XOR<FeaturePrerequisiteCreateWithoutSkillInput, FeaturePrerequisiteUncheckedCreateWithoutSkillInput>
-  }
-
-  export type FeaturePrerequisiteUpdateWithWhereUniqueWithoutSkillInput = {
-    where: FeaturePrerequisiteWhereUniqueInput
-    data: XOR<FeaturePrerequisiteUpdateWithoutSkillInput, FeaturePrerequisiteUncheckedUpdateWithoutSkillInput>
-  }
-
-  export type FeaturePrerequisiteUpdateManyWithWhereWithoutSkillInput = {
-    where: FeaturePrerequisiteScalarWhereInput
-    data: XOR<FeaturePrerequisiteUpdateManyMutationInput, FeaturePrerequisiteUncheckedUpdateManyWithoutSkillInput>
+    customSubtype?: StringNullableFilter<"AdvancementSkill"> | string | null
   }
 
   export type FeatBenefitMapCreateWithoutFeatInput = {
@@ -81541,13 +81351,17 @@ export namespace Prisma {
   }
 
   export type AdvancementSkillCreateWithoutAdvancementInput = {
+    skillSubId?: number | null
     pointsSpent: number
+    customSubtype?: string | null
     skill: SkillCreateNestedOneWithoutAdvSkillsInput
   }
 
   export type AdvancementSkillUncheckedCreateWithoutAdvancementInput = {
     skillId: number
+    skillSubId?: number | null
     pointsSpent: number
+    customSubtype?: string | null
   }
 
   export type AdvancementSkillCreateOrConnectWithoutAdvancementInput = {
@@ -81914,7 +81728,6 @@ export namespace Prisma {
     restrictionNotes?: string | null
     trainedOnly?: boolean | null
     isAnalog?: boolean
-    featurePrerequisite?: FeaturePrerequisiteCreateNestedManyWithoutSkillInput
   }
 
   export type SkillUncheckedCreateWithoutAdvSkillsInput = {
@@ -81933,7 +81746,6 @@ export namespace Prisma {
     restrictionNotes?: string | null
     trainedOnly?: boolean | null
     isAnalog?: boolean
-    featurePrerequisite?: FeaturePrerequisiteUncheckedCreateNestedManyWithoutSkillInput
   }
 
   export type SkillCreateOrConnectWithoutAdvSkillsInput = {
@@ -82009,7 +81821,6 @@ export namespace Prisma {
     restrictionNotes?: NullableStringFieldUpdateOperationsInput | string | null
     trainedOnly?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isAnalog?: BoolFieldUpdateOperationsInput | boolean
-    featurePrerequisite?: FeaturePrerequisiteUpdateManyWithoutSkillNestedInput
   }
 
   export type SkillUncheckedUpdateWithoutAdvSkillsInput = {
@@ -82028,7 +81839,6 @@ export namespace Prisma {
     restrictionNotes?: NullableStringFieldUpdateOperationsInput | string | null
     trainedOnly?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isAnalog?: BoolFieldUpdateOperationsInput | boolean
-    featurePrerequisite?: FeaturePrerequisiteUncheckedUpdateManyWithoutSkillNestedInput
   }
 
   export type CharacterAdvancementCreateWithoutFeatsInput = {
@@ -83717,7 +83527,7 @@ export namespace Prisma {
   export type FeaturePrerequisiteCreateManyFeatureInput = {
     id?: number
     type: number
-    skillId?: number | null
+    appliesToId?: number | null
     minValue: number
   }
 
@@ -83752,21 +83562,21 @@ export namespace Prisma {
 
   export type FeaturePrerequisiteUpdateWithoutFeatureInput = {
     type?: IntFieldUpdateOperationsInput | number
+    appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
     minValue?: IntFieldUpdateOperationsInput | number
-    skill?: SkillUpdateOneWithoutFeaturePrerequisiteNestedInput
   }
 
   export type FeaturePrerequisiteUncheckedUpdateWithoutFeatureInput = {
     id?: IntFieldUpdateOperationsInput | number
     type?: IntFieldUpdateOperationsInput | number
-    skillId?: NullableIntFieldUpdateOperationsInput | number | null
+    appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
     minValue?: IntFieldUpdateOperationsInput | number
   }
 
   export type FeaturePrerequisiteUncheckedUpdateManyWithoutFeatureInput = {
     id?: IntFieldUpdateOperationsInput | number
     type?: IntFieldUpdateOperationsInput | number
-    skillId?: NullableIntFieldUpdateOperationsInput | number | null
+    appliesToId?: NullableIntFieldUpdateOperationsInput | number | null
     minValue?: IntFieldUpdateOperationsInput | number
   }
 
@@ -84106,49 +83916,30 @@ export namespace Prisma {
 
   export type AdvancementSkillCreateManySkillInput = {
     advancementId: number
+    skillSubId?: number | null
     pointsSpent: number
-  }
-
-  export type FeaturePrerequisiteCreateManySkillInput = {
-    id?: number
-    featureId: number
-    type: number
-    minValue: number
+    customSubtype?: string | null
   }
 
   export type AdvancementSkillUpdateWithoutSkillInput = {
+    skillSubId?: NullableIntFieldUpdateOperationsInput | number | null
     pointsSpent?: IntFieldUpdateOperationsInput | number
+    customSubtype?: NullableStringFieldUpdateOperationsInput | string | null
     advancement?: CharacterAdvancementUpdateOneRequiredWithoutSkillsNestedInput
   }
 
   export type AdvancementSkillUncheckedUpdateWithoutSkillInput = {
     advancementId?: IntFieldUpdateOperationsInput | number
+    skillSubId?: NullableIntFieldUpdateOperationsInput | number | null
     pointsSpent?: IntFieldUpdateOperationsInput | number
+    customSubtype?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type AdvancementSkillUncheckedUpdateManyWithoutSkillInput = {
     advancementId?: IntFieldUpdateOperationsInput | number
+    skillSubId?: NullableIntFieldUpdateOperationsInput | number | null
     pointsSpent?: IntFieldUpdateOperationsInput | number
-  }
-
-  export type FeaturePrerequisiteUpdateWithoutSkillInput = {
-    type?: IntFieldUpdateOperationsInput | number
-    minValue?: IntFieldUpdateOperationsInput | number
-    feature?: FeatureUpdateOneRequiredWithoutPrerequisitesNestedInput
-  }
-
-  export type FeaturePrerequisiteUncheckedUpdateWithoutSkillInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    featureId?: IntFieldUpdateOperationsInput | number
-    type?: IntFieldUpdateOperationsInput | number
-    minValue?: IntFieldUpdateOperationsInput | number
-  }
-
-  export type FeaturePrerequisiteUncheckedUpdateManyWithoutSkillInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    featureId?: IntFieldUpdateOperationsInput | number
-    type?: IntFieldUpdateOperationsInput | number
-    minValue?: IntFieldUpdateOperationsInput | number
+    customSubtype?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type FeatBenefitMapCreateManyFeatInput = {
@@ -84937,7 +84728,9 @@ export namespace Prisma {
 
   export type AdvancementSkillCreateManyAdvancementInput = {
     skillId: number
+    skillSubId?: number | null
     pointsSpent: number
+    customSubtype?: string | null
   }
 
   export type AdvancementFeatCreateManyAdvancementInput = {
@@ -84958,18 +84751,24 @@ export namespace Prisma {
   }
 
   export type AdvancementSkillUpdateWithoutAdvancementInput = {
+    skillSubId?: NullableIntFieldUpdateOperationsInput | number | null
     pointsSpent?: IntFieldUpdateOperationsInput | number
+    customSubtype?: NullableStringFieldUpdateOperationsInput | string | null
     skill?: SkillUpdateOneRequiredWithoutAdvSkillsNestedInput
   }
 
   export type AdvancementSkillUncheckedUpdateWithoutAdvancementInput = {
     skillId?: IntFieldUpdateOperationsInput | number
+    skillSubId?: NullableIntFieldUpdateOperationsInput | number | null
     pointsSpent?: IntFieldUpdateOperationsInput | number
+    customSubtype?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type AdvancementSkillUncheckedUpdateManyWithoutAdvancementInput = {
     skillId?: IntFieldUpdateOperationsInput | number
+    skillSubId?: NullableIntFieldUpdateOperationsInput | number | null
     pointsSpent?: IntFieldUpdateOperationsInput | number
+    customSubtype?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type AdvancementFeatUpdateWithoutAdvancementInput = {

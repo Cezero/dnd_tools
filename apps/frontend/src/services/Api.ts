@@ -1,4 +1,4 @@
-import { z, type ZodTypeAny } from 'zod';
+import { z, type ZodType } from 'zod';
 
 import type { ApiOptions } from './types';
 
@@ -33,9 +33,9 @@ export const Api = async <TResponse = unknown, TRequest = unknown, TParams = unk
     if (options.params && options.paramsSchema) {
         let validatedParams: TParams;
         if (!options.skipRequestValidation) {
-            validatedParams = options.paramsSchema.parse(options.params);
+            validatedParams = options.paramsSchema.parse(options.params) as TParams;
         } else {
-            validatedParams = options.params;
+            validatedParams = options.params as TParams;
         }
         for (const [key, value] of Object.entries(validatedParams)) {
             url = url.replace(`:${key}`, String(value));
@@ -44,7 +44,7 @@ export const Api = async <TResponse = unknown, TRequest = unknown, TParams = unk
 
     // Validate input if schema is provided
     if (!options.skipRequestValidation && options.requestSchema) {
-        const validated = options.requestSchema.parse(options.query ?? options.body);
+        const validated = options.requestSchema.parse(options.query ?? options.body) as TRequest;
         if (options.query) options.query = validated;
         if (options.body) options.body = validated;
     }
@@ -88,7 +88,7 @@ export const Api = async <TResponse = unknown, TRequest = unknown, TParams = unk
         console.log('data', data);
         // Validate output if schema is provided
         if (options.responseSchema) {
-            return options.responseSchema.parse(data);
+            return options.responseSchema.parse(data) as TResponse;
         }
 
         return data;
@@ -99,9 +99,9 @@ export const Api = async <TResponse = unknown, TRequest = unknown, TParams = unk
 };
 
 export function typedApi<
-    TRequestSchema extends ZodTypeAny | undefined,
-    TResponseSchema extends ZodTypeAny,
-    TParamsSchema extends ZodTypeAny | undefined = undefined
+    TRequestSchema extends ZodType | undefined,
+    TResponseSchema extends ZodType,
+    TParamsSchema extends ZodType | undefined = undefined
 >(
     config: {
         path: string;
@@ -111,9 +111,9 @@ export function typedApi<
         responseSchema: TResponseSchema;
     }
 ) {
-    type RequestType = TRequestSchema extends ZodTypeAny ? z.infer<TRequestSchema> : undefined;
+    type RequestType = TRequestSchema extends ZodType ? z.infer<TRequestSchema> : undefined;
     type ResponseType = z.infer<TResponseSchema>;
-    type ParamsType = TParamsSchema extends ZodTypeAny ? z.infer<TParamsSchema> : undefined;
+    type ParamsType = TParamsSchema extends ZodType ? z.infer<TParamsSchema> : undefined;
 
     return async function (
         requestData: RequestType extends undefined ? void : RequestType,

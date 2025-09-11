@@ -77,36 +77,62 @@ export class EntityGroupingStrategy extends BaseGroupingStrategy {
     }
 
     protected formatGroupedItems(items: FormattedItemWithBreakdown[]): string {
+        // Sort items alphabetically by their formatted value
+        const sortedItems = [...items].sort((a, b) => {
+            const aValue = this.formatIndividualItem(a);
+            const bValue = this.formatIndividualItem(b);
+            return aValue.localeCompare(bValue);
+        });
+
         // Use different delimiters based on entity type
-        const firstItem = items[0];
+        const firstItem = sortedItems[0];
         if (firstItem && firstItem.entity) {
             // For Choice and Allocation types, use ' | ' delimiter with parentheses
             if (firstItem.entity.type === EntityType.Choice || firstItem.entity.type === EntityType.Allocation) {
-                const formatted = items.map(item => this.formatIndividualItem(item)).join(' | ');
+                const formatted = sortedItems.map(item => this.formatIndividualItem(item)).join(' | ');
                 return labelerRegistry.applyGroupedLabel(formatted, firstItem.entity.appliesTo, true);
             }
 
-            // For entity types that use grouped labelers, extract raw data and apply grouped labeler
-            if (USES_GROUPED_LABEL.includes(firstItem.entity.appliesTo as EntityAppliesToType)) {
+            // Check if any entity in the group uses grouped labelers
+            const groupedLabelType = sortedItems.find(item =>
+                USES_GROUPED_LABEL.includes(item.entity.appliesTo as EntityAppliesToType)
+            )?.entity.appliesTo as EntityAppliesToType;
+
+            if (groupedLabelType) {
                 // Extract raw data from the entity data (before individual labeling)
-                const rawData = items
+                const rawData = sortedItems
                     .map(item => {
                         // For Weapon Familiarity, get the raw weapon name from the entity's item data
-                        if (firstItem.entity.appliesTo === EntityAppliesToType.WeaponFamiliarity && item.entity.item) {
+                        if (item.entity.appliesTo === EntityAppliesToType.WeaponFamiliarity && item.entity.item) {
+                            return item.entity.item.name;
+                        }
+                        // For Uses, get the formatted value (which includes the frequency)
+                        if (item.entity.appliesTo === EntityAppliesToType.Uses) {
+                            return item.formattedValue;
+                        }
+                        // For other entities, get the raw data (spell names, etc.)
+                        if (item.entity.spell) {
+                            return item.entity.spell.name;
+                        }
+                        if (item.entity.feat) {
+                            return item.entity.feat.name;
+                        }
+                        if (item.entity.item) {
                             return item.entity.item.name;
                         }
                         // Fallback to the formatted value if raw data is missing
                         return item.formattedValue;
                     })
-                    .filter(data => data);
+                    .filter(data => data)
+                    .sort((a, b) => a.localeCompare(b)); // Sort the raw data alphabetically
 
                 const formatted = rawData.join(', ');
-                return labelerRegistry.applyGroupedLabel(formatted, firstItem.entity.appliesTo, true);
+                return labelerRegistry.applyGroupedLabel(formatted, groupedLabelType, true);
             }
         }
 
         // For all other types, use ', ' delimiter
-        return items.map(item => this.formatIndividualItem(item)).join(', ');
+        return sortedItems.map(item => this.formatIndividualItem(item)).join(', ');
     }
 }
 

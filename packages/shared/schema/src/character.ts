@@ -79,7 +79,9 @@ export const CharacterAdvancementSchema = z.object({
 export const AdvancementSkillSchema = z.object({
     advancementId: z.number().int().positive('Advancement ID must be a positive integer'),
     skillId: z.number().int().positive('Skill ID must be a positive integer'),
+    skillSubId: z.number().int().positive('Skill subtype ID must be a positive integer').optional(),
     pointsSpent: z.number().int().min(0, 'Points spent must be a non-negative integer'),
+    customSubtype: z.string().max(100, 'Custom subtype must be less than 100 characters').optional(),
 });
 
 export const AdvancementFeatSchema = z.object({
@@ -213,7 +215,7 @@ export const UpdateCharacterAbilityScoreSchema = CreateCharacterAbilityScoreSche
 
 // Character context for formatter calculations
 export const CharacterContextSchema = z.object({
-    abilityScores: z.record(z.nativeEnum(AbilityId), z.number().int()), // abilityId -> score
+    abilityScores: z.record(z.enum(AbilityId), z.number().int()), // abilityId -> score
     classLevels: z.record(z.number().int(), z.number().int()), // classId -> level
     raceId: z.number().int().optional(),
     sizeId: z.number().int().optional(), // Maps directly to FeatureModifierCondition.conditionValue

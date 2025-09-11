@@ -9,8 +9,8 @@ import { ItemSchema } from "./item";
 export const FeaturePrerequisiteSchema = z.object({
     id: z.number().int().positive('Prerequisite ID must be a positive integer'),
     featureId: z.number().int().positive('Feature ID must be a positive integer'),
-    type: z.nativeEnum(FeaturePrerequisiteType),
-    skillId: z.number().int().nullable(),
+    type: z.enum(FeaturePrerequisiteType),
+    appliesToId: z.number().int().nullable(),
     minValue: z.number().int(),
 });
 
@@ -46,7 +46,7 @@ export const FeatureFormulaParamsSchema = z.object({
     values: z.array(z.union([z.string(), z.number()])).nullable(),
 
     // Enhanced parameters for complex scaling
-    valuesRepresent: z.nativeEnum(ConditionalScalingValueType).optional().nullable(),
+    valuesRepresent: z.enum(ConditionalScalingValueType).optional().nullable(),
     cumulative: z.boolean().default(false),
 
     // Control whether to include the progression level in the formula calculation
@@ -56,19 +56,19 @@ export const FeatureFormulaParamsSchema = z.object({
 export const FeatureEntityConditionSchema = z.object({
     id: z.number().int().positive('Condition ID must be a positive integer'),
     featureEntityId: z.number().int().positive('Entity ID must be a positive integer'),
-    conditionType: z.nativeEnum(FeatureEntityConditionType),
+    conditionType: z.enum(FeatureEntityConditionType),
     conditionValue: z.number().int(),
 });
 
 export const FeatureEntitySchema = z.object({
     id: z.number().int().positive('Entity ID must be a positive integer'),
     progressionId: z.number().int().positive('Progression ID must be a positive integer'),
-    type: z.nativeEnum(EntityType),
-    appliesTo: z.nativeEnum(EntityAppliesToType),
+    type: z.enum(EntityType),
+    appliesTo: z.enum(EntityAppliesToType),
     appliesToId: z.number().int().nullable(),
     appliesToSubId: z.number().int().nullable(),
     value: z.number().int().nullable(),
-    bonusType: z.nativeEnum(FeatureBonusType).nullable(),
+    bonusType: z.enum(FeatureBonusType).nullable(),
     formulaParamsId: z.number().int().optional().nullable(),
     groupingId: z.number().int().default(0),
     displayInDetail: z.boolean().default(true),
@@ -78,6 +78,10 @@ export const FeatureEntitySchema = z.object({
     // Optional related entities
     item: ItemSchema.optional().nullable(),  // When appliesTo === Item
     feat: FeatSchema.optional().nullable(),  // When appliesTo === Feat
+    spell: z.object({
+        id: z.number().int().positive('Spell ID must be a positive integer'),
+        name: z.string().min(1, 'Spell name is required')
+    }).optional().nullable(),  // When appliesTo === Spell (minimal data only)
     feature: FeatureSchema.optional().nullable(),  // When appliesTo === Feature (FULL schema)
     formulaParams: FeatureFormulaParamsSchema.optional().nullable(),
 });
@@ -85,7 +89,7 @@ export const FeatureEntitySchema = z.object({
 // Feature Progression Schema (the main one used for bulk operations)
 export const FeatureProgressionSchema = z.object({
     id: z.number().int().positive('Progression ID must be a positive integer'),
-    sourceType: z.number().int().min(0, 'Source type must be at least 0').max(1, 'Source type must be at most 1'),
+    sourceType: z.number().int().min(0, 'Source type must be at least 0').max(3, 'Source type must be at most 3'),
     level: z.number().int().min(1, 'Level must be at least 1').max(20, 'Level must be at most 20'),
     featureId: z.number().int().positive('Feature ID must be a positive integer'),
     classId: z.number().int().nullable(),
@@ -109,7 +113,7 @@ export const CreateFeatureFormulaParamsSchema = FeatureFormulaParamsSchema.omit(
 }).extend({
     thresholds: z.array(z.number().int()).nullable().optional(),
     values: z.array(z.union([z.string(), z.number()])).nullable().optional(),
-    valuesRepresent: z.nativeEnum(ConditionalScalingValueType).optional().nullable(),
+    valuesRepresent: z.enum(ConditionalScalingValueType).optional().nullable(),
     cumulative: z.boolean().optional(),
 });
 
@@ -151,7 +155,7 @@ export const FeatureSlugParamSchema = z.object({
 });
 
 export const FeatureQuerySchema = z.object({
-    sourceType: z.nativeEnum(FeatureSourceType).optional(),
+    sourceType: z.enum(FeatureSourceType).optional(),
 });
 
 // Request schemas for feature management

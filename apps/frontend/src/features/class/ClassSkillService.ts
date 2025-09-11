@@ -29,7 +29,8 @@ export const ClassSkillService = {
         featureProgressions: FeatureProgression[],
         setFeatureProgressions: (progressions: FeatureProgression[]) => void,
         skillId: number,
-        classId: number
+        classId: number,
+        subtypeId?: number | null
     ) {
         // Check if class skills progression already exists
         let classSkillsProgression = featureProgressions.find(fp =>
@@ -56,13 +57,15 @@ export const ClassSkillService = {
             };
         }
 
-        // Check if this specific skill is already added
+        // Check if this specific skill with subtype is already added
         const existingSkillEntity = classSkillsProgression.entities?.find(e =>
-            e.appliesTo === EntityAppliesToType.Skill && e.appliesToId === skillId
+            e.appliesTo === EntityAppliesToType.Skill &&
+            e.appliesToId === skillId &&
+            e.appliesToSubId === subtypeId
         );
 
         if (existingSkillEntity) {
-            // Skill already exists, don't add duplicate
+            // Skill with this subtype already exists, don't add duplicate
             return;
         }
 
@@ -75,7 +78,7 @@ export const ClassSkillService = {
             appliesToId: skillId,
             value: 0, // No bonus value - just marking as class skill
             bonusType: null, // No bonus type needed
-            appliesToSubId: null,
+            appliesToSubId: subtypeId || null,
             displayInDetail: true,
             filterType: null,
             groupingId: 1, // Group all class skills together as one feature

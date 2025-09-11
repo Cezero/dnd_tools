@@ -18,7 +18,7 @@ export function initializeFormData(
     // If no progression, create empty structure with required fields
     return {
         id: 0,
-        sourceType: FeatureSourceType.Class,
+        sourceType: FeatureSourceType.None,
         classId: 0,
         raceId: null,
         level: 1,

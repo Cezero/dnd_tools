@@ -2,9 +2,9 @@ import { Dialog } from '@base-ui-components/react/dialog';
 import { ScrollArea } from '@base-ui-components/react/scroll-area';
 import React, { useState, useCallback } from 'react';
 
-import { ValidatedInput, ValidatedForm } from '@/components/forms';
+import { ValidatedInput, ValidatedForm, ValidatedCustomSelect } from '@/components/forms';
 import type { FeatureProgression, Feature, FeaturePrerequisite, FeatureEntity } from '@shared/schema';
-import { FeaturePrerequisiteType, EntityType } from '@shared/static-data';
+import { FeaturePrerequisiteType, EntityType, FEATURE_SOURCE_SELECT_LIST, ABILITY_MAP, SKILL_MAP } from '@shared/static-data';
 
 // Import our refactored components and hooks
 import { EntityDetailForm } from './EntityDetailForm';
@@ -20,6 +20,7 @@ interface FeatureProgressionDetailEditProps {
     progression: FeatureProgression | null;
     onSave: (progression: FeatureProgression) => void;
     preSelectedFeature?: Feature;
+    showSourceTypeSelector?: boolean;
 }
 
 export function FeatureProgressionDetailEdit({
@@ -27,7 +28,8 @@ export function FeatureProgressionDetailEdit({
     onClose,
     progression,
     onSave,
-    preSelectedFeature
+    preSelectedFeature,
+    showSourceTypeSelector = true
 }: FeatureProgressionDetailEditProps) {
     // Use our custom hooks
     const {
@@ -133,8 +135,8 @@ export function FeatureProgressionDetailEdit({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Check for malformed data - every FeatureProgression should have a featureId
-        if (!formData.featureId) {
+        // Check for malformed data - every FeatureProgression should have a featureId (0 is valid for new features)
+        if (formData.featureId === null || formData.featureId === undefined) {
             console.error('Malformed FeatureProgression: missing featureId', {
                 formData,
                 progression,
@@ -174,10 +176,12 @@ export function FeatureProgressionDetailEdit({
 
             switch (prereq.type) {
                 case FeaturePrerequisiteType.SkillRanks:
-                    text = `Skill ${prereq.minValue} ranks`;
+                    const skillName = prereq.appliesToId ? SKILL_MAP[prereq.appliesToId]?.name || 'Unknown Skill' : 'Skill';
+                    text = `${skillName} ${prereq.minValue} ranks`;
                     break;
                 case FeaturePrerequisiteType.AbilityScore:
-                    text = `Ability ${prereq.minValue}+`;
+                    const abilityName = prereq.appliesToId ? ABILITY_MAP[prereq.appliesToId]?.abbreviation || 'Unknown' : 'Ability';
+                    text = `${abilityName} ${prereq.minValue}+`;
                     break;
                 case FeaturePrerequisiteType.CharacterLevel:
                     text = `Character Level ${prereq.minValue}+`;
@@ -255,15 +259,39 @@ export function FeatureProgressionDetailEdit({
                                             className="space-y-6 p-6"
                                         >
                                             <div className="space-y-4">
-                                                <ValidatedInput
-                                                    field="level"
-                                                    label="Level"
-                                                    type="number"
-                                                    min={1}
-                                                    max={20}
-                                                    required
-                                                    componentExtraClassName="flex items-center gap-2"
-                                                />
+                                                {showSourceTypeSelector ? (
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <ValidatedInput
+                                                            field="level"
+                                                            label="Level"
+                                                            type="number"
+                                                            min={1}
+                                                            max={20}
+                                                            required
+                                                            componentExtraClassName="flex items-center gap-2"
+                                                        />
+                                                        <ValidatedCustomSelect
+                                                            field="sourceType"
+                                                            label="Source Type"
+                                                            required
+                                                            options={FEATURE_SOURCE_SELECT_LIST}
+                                                            placeholder="Select source type"
+                                                            componentExtraClassName="flex items-center gap-2"
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <div>
+                                                        <ValidatedInput
+                                                            field="level"
+                                                            label="Level"
+                                                            type="number"
+                                                            min={1}
+                                                            max={20}
+                                                            required
+                                                            componentExtraClassName="flex items-center gap-2"
+                                                        />
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {/* Unified Entity Approach */}

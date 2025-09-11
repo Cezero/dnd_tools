@@ -29,11 +29,6 @@ export interface AppliesToType extends CoreComponent {
     displayName?: string | null;
 }
 
-// Extended type for condition types with optional display names
-export interface ConditionType extends CoreComponent {
-    displayName?: string | null;
-}
-
 export interface CoreComponentAbbreviation extends CoreComponent {
     abbreviation: string;
 }
@@ -119,7 +114,7 @@ export interface ClassNameMap {
     [key: string]: string;
 }
 
-export interface Skill extends CoreComponent {
+export interface SkillDetail extends CoreComponent {
     abilityId: number;
     trainedOnly: boolean;
     isAnalog: boolean;
@@ -164,7 +159,9 @@ export type SpellRangeMap = BaseMap<CoreComponentAbbreviation>;
 export type SpellSchoolMap = BaseMap<CoreComponentAbbreviation>;
 export type SpellSubschoolMap = BaseMap<SpellSubschool>;
 export type SpellSubschoolSelectMap = SelectOptionMap<SelectOption>;
-export type SkillMap = BaseMap<Skill>;
+export type SkillMap = BaseMap<SkillDetail>;
+export type CraftSkillMap = BaseMap<CoreComponent>;
+export type KnowledgeSkillMap = BaseMap<CoreComponent>;
 export type SourceBookMap = BaseMap<SourceBook>;
 export type ClassMap = BaseMap<Class>;
 export type DiceThemeMap = { [key: string]: DiceTheme };

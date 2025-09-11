@@ -9,7 +9,7 @@ import { EntityAppliesToType, EntityType } from '@shared/static-data';
 
 // CalculatedEntity extends FeatureEntity but allows value to be string for formatted display
 export interface CalculatedEntity extends Omit<FeatureEntity, 'value'> {
-    value: number | string | null;
+    value?: number | string | null;
     calculatedValue?: number | string | null; // Original calculated result
 }
 

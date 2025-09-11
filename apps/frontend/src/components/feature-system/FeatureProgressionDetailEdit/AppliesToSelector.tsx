@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
-import { ValidatedCustomSelect } from '@/components/forms';
+import { ValidatedCustomSelect, CustomSelect, useFormContext } from '@/components/forms';
+import type { FeatureEntity } from '@shared/schema';
 import {
     ENTITY_APPLIES_TO_SELECT_LIST,
     ENTITY_APPLIES_TO_TYPES,
@@ -12,6 +13,7 @@ import {
 } from '@shared/static-data';
 import type { SelectOption } from '@shared/static-data';
 
+import { SpellSearchInput } from './SpellSearchInput';
 import type { AppliesToSelectorProps } from './types';
 import { getAppliesToSelectOptions } from './utils';
 
@@ -23,6 +25,7 @@ export function AppliesToSelector({
     valuesRepresent
 }: AppliesToSelectorProps) {
     const [appliesToIdOptions, setAppliesToIdOptions] = useState<SelectOption[]>([]);
+    const { formData, setFormData } = useFormContext();
     // Helper function to get the appropriate appliesTo options based on entityType
     const getAppliesToOptions = (entityType: EntityType | null) => {
         if (entityType === null || entityType === undefined) return ENTITY_APPLIES_TO_SELECT_LIST;
@@ -47,7 +50,7 @@ export function AppliesToSelector({
     }, [appliesTo, entityType]);
 
     return (
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
             <div>
                 <ValidatedCustomSelect
                     key={`appliesTo-${index}-${entityType}`}
@@ -72,20 +75,45 @@ export function AppliesToSelector({
 
                 return appliesToIdOptions.length > 0 ? (
                     <div>
-                        <ValidatedCustomSelect
-                            key={`appliesToId-${index}-${appliesTo}`}
-                            field={`entities.${index}.appliesToId`}
-                            label={(() => {
-                                if (appliesTo === EntityAppliesToType.Damage && entityType === EntityType.Quantity) { // Damage + Quantity
-                                    return 'Dice';
-                                }
-                                return appliesTo !== null && appliesTo !== undefined ? ENTITY_APPLIES_TO_TYPES[appliesTo]?.name || 'Target' : 'Target';
-                            })()}
-                            options={appliesToIdOptions}
-                            placeholder="Select"
-                            componentExtraClassName="flex items-center gap-2"
-                            nested
-                        />
+                        {appliesTo === EntityAppliesToType.Spell ? (
+                            <SpellSearchInput
+                                key={`appliesToId-${index}-${appliesTo}`}
+                                value={formData?.entities?.[index]?.appliesToId || null}
+                                onValueChange={(value) => {
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        entities: (prev.entities as FeatureEntity[] || []).map((ent, i) =>
+                                            i === index ? { ...ent, appliesToId: value } : ent
+                                        )
+                                    }));
+                                }}
+                                label="Spell"
+                                placeholder="Search for a spell..."
+                                componentExtraClassName="flex items-center gap-2"
+                            />
+                        ) : (
+                            <CustomSelect
+                                key={`appliesToId-${index}-${appliesTo}`}
+                                value={formData?.entities?.[index]?.appliesToId || null}
+                                onValueChange={(value) => {
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        entities: (prev.entities as FeatureEntity[] || []).map((ent, i) =>
+                                            i === index ? { ...ent, appliesToId: value } : ent
+                                        )
+                                    }));
+                                }}
+                                label={(() => {
+                                    if (appliesTo === EntityAppliesToType.Damage && entityType === EntityType.Quantity) { // Damage + Quantity
+                                        return 'Dice';
+                                    }
+                                    return appliesTo !== null && appliesTo !== undefined ? ENTITY_APPLIES_TO_TYPES[appliesTo]?.name || 'Target' : 'Target';
+                                })()}
+                                options={appliesToIdOptions}
+                                placeholder="Select"
+                                componentExtraClassName="flex items-center gap-2"
+                            />
+                        )}
                     </div>
                 ) : null;
             })()}

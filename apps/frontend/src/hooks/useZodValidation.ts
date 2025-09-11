@@ -50,7 +50,7 @@ export function useZodValidation<T extends z.ZodSchema>(
             return true;
         } catch (error) {
             if (error instanceof z.ZodError) {
-                const message = error.errors[0]?.message || 'Invalid value';
+                const message = error.issues[0]?.message || 'Invalid value';
                 setErrors(prev => ({ ...prev, [fieldName]: message }));
             }
             return false;
@@ -68,7 +68,7 @@ export function useZodValidation<T extends z.ZodSchema>(
             console.log('Validation error:', error);
             if (error instanceof z.ZodError) {
                 const newErrors: Record<string, string> = {};
-                error.errors.forEach(err => {
+                error.issues.forEach(err => {
                     const field = err.path.join('.');
                     newErrors[field] = err.message;
                 });

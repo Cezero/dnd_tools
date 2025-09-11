@@ -8,6 +8,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
 import { FeatureProgressionDetailEdit } from '@/components/feature-system';
+import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import {
     ValidatedForm,
     useValidatedForm
@@ -220,24 +221,57 @@ export function RaceEdit() {
     /**
      * Handles adding a feature to the race.
      */
-    const handleAddFeature = useCallback((feature: { id: number; name: string; description: string; slug: string }) => {
-        const newProgression: FeatureProgression = {
-            id: Date.now() + Math.random(), // Temporary ID for frontend
-            sourceType: FeatureSourceType.Race,
-            classId: null,
-            raceId: parseInt(id || '0'),
-            level: 1, // Default to level 1
-            featureId: feature.id,
-            feature: {
-                id: feature.id,
-                name: feature.name,
-                description: feature.description,
-                slug: feature.slug,
-            },
-            entities: []
-        };
+    const handleAddFeature = useCallback(async (feature: { id: number; name: string; description: string; slug: string }) => {
+        try {
+            // Fetch the feature's existing progressions to copy entities
+            const existingProgressions = await FeatureSystemApi.getFeatureProgressions(undefined, { id: feature.id });
 
-        setFeatureProgressions(prev => [...prev, newProgression]);
+            // Find the first progression with entities to copy, or use empty entities
+            const sourceProgression = existingProgressions.find(p => p.entities && p.entities.length > 0);
+            const entitiesToCopy = sourceProgression?.entities || [];
+
+            const newProgression: FeatureProgression = {
+                id: Date.now() + Math.random(), // Temporary ID for frontend
+                sourceType: FeatureSourceType.Race,
+                classId: null,
+                raceId: parseInt(id || '0'),
+                level: 1, // Default to level 1
+                featureId: feature.id,
+                feature: {
+                    id: feature.id,
+                    name: feature.name,
+                    description: feature.description,
+                    slug: feature.slug,
+                    prerequisites: sourceProgression?.feature?.prerequisites || []
+                },
+                entities: entitiesToCopy.map(entity => ({
+                    ...entity,
+                    id: Date.now() + Math.random(), // New temporary ID
+                    progressionId: 0 // Will be set when progression is saved
+                }))
+            };
+
+            setFeatureProgressions(prev => [...prev, newProgression]);
+        } catch (error) {
+            console.error('Failed to fetch feature progressions:', error);
+            // Fallback to creating progression without entities
+            const newProgression: FeatureProgression = {
+                id: Date.now() + Math.random(),
+                sourceType: FeatureSourceType.Race,
+                classId: null,
+                raceId: parseInt(id || '0'),
+                level: 1,
+                featureId: feature.id,
+                feature: {
+                    id: feature.id,
+                    name: feature.name,
+                    description: feature.description,
+                    slug: feature.slug,
+                },
+                entities: []
+            };
+            setFeatureProgressions(prev => [...prev, newProgression]);
+        }
     }, [id]);
 
     /**
@@ -599,6 +633,7 @@ export function RaceEdit() {
                     setPreSelectedFeature(undefined);
                 }}
                 preSelectedFeature={preSelectedFeature}
+                showSourceTypeSelector={false}
             />
         </div>
     );

@@ -13,7 +13,7 @@ import {
 } from '@/components/forms';
 import { displayStrategyFactory } from '@/lib/formatters';
 import { CreateFeatureRequest, CreateFeatureSchema, UpdateFeatureRequest, UpdateFeatureSchema, GetFeatureResponse, FeatureProgression, FeaturePrerequisite } from '@shared/schema';
-import { DisplayType, FEATURE_PRE_REQ_SELECT_LIST, FeaturePrerequisiteType, FULL_SKILL_SELECT_LIST, FeatureSourceType } from '@shared/static-data';
+import { DisplayType, FEATURE_PRE_REQ_SELECT_LIST, FeaturePrerequisiteType, FULL_SKILL_SELECT_LIST, FeatureSourceType, ABILITY_SELECT_LIST } from '@shared/static-data';
 
 type FeatureFormData = CreateFeatureRequest | UpdateFeatureRequest;
 
@@ -141,7 +141,7 @@ export function FeatureEdit() {
     const addPrerequisite = () => {
         const newPrerequisite = {
             type: FeaturePrerequisiteType.SkillRanks,
-            skillId: null,
+            appliesToId: null,
             minValue: 1,
         };
         setFormData(prev => ({
@@ -572,11 +572,25 @@ function PrerequisiteDetailForm({ index }: PrerequisiteDetailFormProps) {
                 {prerequisite.type === FeaturePrerequisiteType.SkillRanks && (
                     <div>
                         <ValidatedCustomSelect
-                            field={`prerequisites.${index}.skillId`}
+                            field={`prerequisites.${index}.appliesToId`}
                             label="Skill"
                             required
                             options={FULL_SKILL_SELECT_LIST}
                             placeholder="Select skill"
+                            componentExtraClassName="flex items-center gap-2"
+                            nested
+                        />
+                    </div>
+                )}
+
+                {prerequisite.type === FeaturePrerequisiteType.AbilityScore && (
+                    <div>
+                        <ValidatedCustomSelect
+                            field={`prerequisites.${index}.appliesToId`}
+                            label="Ability Score"
+                            required
+                            options={ABILITY_SELECT_LIST}
+                            placeholder="Select ability score"
                             componentExtraClassName="flex items-center gap-2"
                             nested
                         />

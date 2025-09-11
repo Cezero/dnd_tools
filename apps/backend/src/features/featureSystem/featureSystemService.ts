@@ -250,7 +250,7 @@ export const featureSystemService: FeatureSystemService = {
             // Create related entities
             if (entities && entities.length > 0) {
                 for (const entity of entities) {
-                    const { conditions, formulaParams, ...entityData } = entity;
+                    const { conditions, formulaParams, spell: _spell, ...entityData } = entity;
 
                     // Create formula params first if they exist
                     let formulaParamsId = null;
@@ -316,7 +316,7 @@ export const featureSystemService: FeatureSystemService = {
                 // Create related entities
                 if (entities && entities.length > 0) {
                     for (const entity of entities) {
-                        const { conditions, formulaParams, ...entityData } = entity;
+                        const { conditions, formulaParams, spell: _spell, ...entityData } = entity;
 
                         // Create formula params first if they exist
                         let formulaParamsId = null;
@@ -526,7 +526,7 @@ export const featureSystemService: FeatureSystemService = {
                     // Create related entities
                     if (entities && entities.length > 0) {
                         for (const entity of entities) {
-                            const { conditions, formulaParams, ...entityData } = entity;
+                            const { conditions, formulaParams, spell: _spell, ...entityData } = entity;
 
                             // Create formula params first if they exist
                             let formulaParamsId = null;
@@ -625,6 +625,10 @@ export const featureSystemService: FeatureSystemService = {
             .filter(e => e.appliesTo === EntityAppliesToType.Feature && e.appliesToId !== null && e.appliesToId !== undefined)
             .map(e => e.appliesToId!)
             .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
+        const spellIds = allEntities
+            .filter(e => e.appliesTo === EntityAppliesToType.Spell && e.appliesToId !== null && e.appliesToId !== undefined)
+            .map(e => e.appliesToId!)
+            .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
 
         // Fetch items, feats, and features
         const allItemIds = [...itemIds, ...weaponFamiliarityItemIds];
@@ -646,10 +650,20 @@ export const featureSystemService: FeatureSystemService = {
             }
         }) : [];
 
+        const spells = spellIds.length > 0 ? await prisma.spell.findMany({
+            where: { id: { in: spellIds } },
+            select: {
+                id: true,
+                name: true
+            }
+        }) : [];
+
+
         // Create lookup maps
         const itemMap = new Map(items.map(item => [item.id, item]));
         const featMap = new Map(feats.map(feat => [feat.id, feat]));
         const featureMap = new Map(features.map(feature => [feature.id, feature]));
+        const spellMap = new Map(spells.map(spell => [spell.id, spell]));
 
         // Transform formula parameters and add item/feat data
         const transformedProgressions = progressions.map(progression => ({
@@ -672,6 +686,10 @@ export const featureSystemService: FeatureSystemService = {
                 // Add feature data if appliesTo === Feature
                 feature: entity.appliesTo === EntityAppliesToType.Feature && entity.appliesToId
                     ? featureMap.get(entity.appliesToId) || null
+                    : null,
+                // Add spell data if appliesTo === Spell (minimal data only)
+                spell: entity.appliesTo === EntityAppliesToType.Spell && entity.appliesToId
+                    ? spellMap.get(entity.appliesToId) || null
                     : null
             }))
         }));

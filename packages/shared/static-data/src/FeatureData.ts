@@ -1,4 +1,4 @@
-import { AppliesToType, BaseMap, CoreComponent, ConditionType } from "./types";
+import { AppliesToType, BaseMap, CoreComponent } from "./types";
 import { NameSelectOptionList } from "./Util";
 
 export const SpecialFeatureId = {
@@ -15,9 +15,20 @@ export const FeatureSourceType = {
     Race: 0,
     Class: 1,
     Template: 2,
+    None: 3,
 } as const;
 
 export type FeatureSourceType = typeof FeatureSourceType[keyof typeof FeatureSourceType];
+
+export const FEATURE_SOURCE_TYPES: BaseMap<CoreComponent> = {
+    [FeatureSourceType.Race]: { id: FeatureSourceType.Race, name: 'Race' },
+    [FeatureSourceType.Class]: { id: FeatureSourceType.Class, name: 'Class' },
+    [FeatureSourceType.Template]: { id: FeatureSourceType.Template, name: 'Template' },
+    [FeatureSourceType.None]: { id: FeatureSourceType.None, name: 'None' },
+}
+
+export const FEATURE_SOURCE_LIST = Object.values(FEATURE_SOURCE_TYPES);
+export const FEATURE_SOURCE_SELECT_LIST = NameSelectOptionList(FEATURE_SOURCE_LIST);
 
 export const EntityType = {
     Bonus: 0,        // Numeric bonuses/penalties (STR+4, AC+2, etc.)
@@ -67,6 +78,7 @@ export const EntityAppliesToType = {
     SpellResistance: 19, // Spell Resistance (SR)
     UnarmedDamage: 20,  // Unarmed strike damage dice
     Feat: 21,           // Direct feat grants (e.g., Ranger Track, Endurance)
+    Spell: 27,          // Direct spell grants (e.g., Domain spells, bonus spells)
     Feature: 25,        // Direct feature grants (e.g., Ranger Endurance)
 
     // New types for complex abilities
@@ -106,6 +118,7 @@ export const ENTITY_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
     [EntityAppliesToType.SpellResistance]: { id: EntityAppliesToType.SpellResistance, name: 'Spell Resistance', displayName: 'SR' },
     [EntityAppliesToType.UnarmedDamage]: { id: EntityAppliesToType.UnarmedDamage, name: 'Unarmed Damage', displayName: 'Unarmed Dmg' },
     [EntityAppliesToType.Feat]: { id: EntityAppliesToType.Feat, name: 'Feat', displayName: 'Feat' },
+    [EntityAppliesToType.Spell]: { id: EntityAppliesToType.Spell, name: 'Spell', displayName: 'Spell' },
     [EntityAppliesToType.Feature]: { id: EntityAppliesToType.Feature, name: 'Feature', displayName: 'Feature' },
 
     // New types for complex abilities
@@ -160,6 +173,7 @@ export const ENTITY_TYPE_COMPATIBILITY = {
         EntityAppliesToType.WeaponFamiliarity, // Weapon familiarity are Other type modifiers
 
         EntityAppliesToType.Feat, // Direct feat grants are Other type modifiers
+        EntityAppliesToType.Spell, // Direct spell grants are Other type modifiers
 
         // New complex ability types
         EntityAppliesToType.SizeCategory,
@@ -184,6 +198,7 @@ export const ENTITY_TYPE_COMPATIBILITY = {
 // Entity types that should use grouped labelers when entities are grouped
 export const USES_GROUPED_LABEL: EntityAppliesToType[] = [
     EntityAppliesToType.WeaponFamiliarity,
+    EntityAppliesToType.Uses,
 ] as const;
 
 export const FeatureBonusType = {
@@ -296,15 +311,15 @@ export const FeatureEntityConditionType = {
 
 export type FeatureEntityConditionType = typeof FeatureEntityConditionType[keyof typeof FeatureEntityConditionType];
 
-export const FEATURE_ENTITY_CONDITION_TYPES: BaseMap<ConditionType> = {
-    [FeatureEntityConditionType.attack_type]: { id: FeatureEntityConditionType.attack_type, name: 'Attack Type', displayName: '' },
-    [FeatureEntityConditionType.character_size]: { id: FeatureEntityConditionType.character_size, name: 'Character Size', displayName: '' },
-    [FeatureEntityConditionType.target]: { id: FeatureEntityConditionType.target, name: 'Target', displayName: 'Target' },
-    [FeatureEntityConditionType.spell_school]: { id: FeatureEntityConditionType.spell_school, name: 'Spell School', displayName: '' },
-    [FeatureEntityConditionType.creature_type]: { id: FeatureEntityConditionType.creature_type, name: 'Creature Type', displayName: '' },
-    [FeatureEntityConditionType.source]: { id: FeatureEntityConditionType.source, name: 'Source', displayName: 'Source' },
-    [FeatureEntityConditionType.material]: { id: FeatureEntityConditionType.material, name: 'Material', displayName: 'Material' },
-    [FeatureEntityConditionType.environment]: { id: FeatureEntityConditionType.environment, name: 'Environment', displayName: 'Environment' },
+export const FEATURE_ENTITY_CONDITION_TYPES: BaseMap<CoreComponent> = {
+    [FeatureEntityConditionType.attack_type]: { id: FeatureEntityConditionType.attack_type, name: 'Attack Type' },
+    [FeatureEntityConditionType.character_size]: { id: FeatureEntityConditionType.character_size, name: 'Character Size' },
+    [FeatureEntityConditionType.target]: { id: FeatureEntityConditionType.target, name: 'Target' },
+    [FeatureEntityConditionType.spell_school]: { id: FeatureEntityConditionType.spell_school, name: 'Spell School' },
+    [FeatureEntityConditionType.creature_type]: { id: FeatureEntityConditionType.creature_type, name: 'Creature Type' },
+    [FeatureEntityConditionType.source]: { id: FeatureEntityConditionType.source, name: 'Source' },
+    [FeatureEntityConditionType.material]: { id: FeatureEntityConditionType.material, name: 'Material' },
+    [FeatureEntityConditionType.environment]: { id: FeatureEntityConditionType.environment, name: 'Environment' },
 }
 
 export const FEATURE_ENTITY_CONDITION_LIST = Object.values(FEATURE_ENTITY_CONDITION_TYPES);
@@ -474,6 +489,7 @@ export const CreatureType = {
     Plant: 30,
     Undead: 31,
     Vermin: 32,
+    Kobold: 33,
 } as const;
 
 export type CreatureType = typeof CreatureType[keyof typeof CreatureType];
@@ -511,6 +527,7 @@ export const CREATURE_TYPES: BaseMap<CoreComponent> = {
     [CreatureType.Plant]: { id: CreatureType.Plant, name: 'Plant' },
     [CreatureType.Undead]: { id: CreatureType.Undead, name: 'Undead' },
     [CreatureType.Vermin]: { id: CreatureType.Vermin, name: 'Vermin' },
+    [CreatureType.Kobold]: { id: CreatureType.Kobold, name: 'Kobold' },
 };
 
 export const CREATURE_TYPE_LIST = Object.values(CREATURE_TYPES);
