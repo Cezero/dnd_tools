@@ -237,6 +237,7 @@ export const LANGUAGE_MAP: LanguageMap = {
     18: { id: 18, name: 'Sylvan', typicalSpeakers: 'Dryads, brownies, leprechauns', alphabet: 'Elven' },
     19: { id: 19, name: 'Terran', typicalSpeakers: 'Xorns and other earth-based creatures', alphabet: 'Dwarven' },
     20: { id: 20, name: 'Undercommon', typicalSpeakers: 'Drow', alphabet: 'Elven' },
+    21: { id: 21, name: 'Feline', typicalSpeakers: 'Catfolk', alphabet: 'Common' },
 }
 
 export const LANGUAGE_LIST = Object.values(LANGUAGE_MAP);

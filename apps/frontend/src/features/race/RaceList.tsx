@@ -86,9 +86,17 @@ export function RaceList(): React.JSX.Element {
                                             fromPage: 'races'
                                         }
                                     });
+                                },
+                                delete: async (feature) => {
+                                    try {
+                                        await FeatureSystemApi.deleteFeature(undefined, { id: feature.id });
+                                        // The GenericList will handle refreshing the data
+                                    } catch (error) {
+                                        console.error('Failed to delete feature:', error);
+                                        alert('Failed to delete feature.');
+                                    }
                                 }
                             }}
-                            deleteServiceFunction={createIdDeleteServiceFunction(FeatureSystemApi.deleteFeature)}
                         />
                     </div>
                 </>

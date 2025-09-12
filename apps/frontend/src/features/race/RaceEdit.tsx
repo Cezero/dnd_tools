@@ -59,10 +59,13 @@ export function RaceEdit() {
         name: '',
         editionId: 1,
         isVisible: true,
-        description: '',
+        description: null,
         sizeId: 5, // Default to Medium
         speed: 30, // Default to 30
         favoredClassId: -1,
+        levelAdjustment: 0, // Default to 0
+        sources: null,
+        features: null,
     }), []);
 
     const [formData, setFormData] = useState<RaceFormData>(initialFormData);
@@ -457,7 +460,7 @@ export function RaceEdit() {
             // Prepare the complete race data including feature progressions
             const raceData = {
                 ...formData,
-                features: featureProgressions.map(prog => {
+                features: featureProgressions.length > 0 ? featureProgressions.map(prog => {
                     const { id: _, ...progressionData } = prog;
                     return {
                         ...progressionData,
@@ -466,7 +469,7 @@ export function RaceEdit() {
                             return entityData;
                         }) || [],
                     };
-                })
+                }) : null
             };
 
             if (id === 'new') {

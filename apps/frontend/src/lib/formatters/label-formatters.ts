@@ -196,3 +196,8 @@ export function groupedUsesLabeler(formattedItems: string): string {
 export function spellSaveDCLabeler(value: string, _modifier: CalculatedEntity): string {
     return `DC: ${value}`;
 }
+
+// Labeler for resistance - shows "Resistance to [type] [value]" for both individual and grouped
+export function groupedResistanceLabeler(formattedItems: string): string {
+    return `Resistance to ${formattedItems}`;
+}

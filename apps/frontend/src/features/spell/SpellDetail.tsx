@@ -5,7 +5,7 @@ import { useAuthAuto } from '@/components/auth';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { SpellApi } from '@/features/spell/SpellApi';
 import { GetSpellResponse } from '@shared/schema';
-import { SpellSchoolNameList, SpellDescriptorNameList, SpellComponentAbbrList } from '@shared/static-data';
+import { SpellSchoolNameList, SpellDescriptorNameList, SpellComponentAbbrList, GetSourceDisplay } from '@shared/static-data';
 
 import { GetClassLevelAbbr } from './spellUtil';
 
@@ -58,7 +58,14 @@ export function SpellDetail(): React.JSX.Element {
         <div className="pt-8">
             <div className={outerContainerClasses}>
                 <div className={innerCellContentClasses}>
-                    <h1 className="text-2xl font-bold mb-2">{spell.name}</h1>
+                    <div className="flex justify-between items-start mb-2">
+                        <h1 className="text-2xl font-bold">{spell.name}</h1>
+                        {spell.sourceBookInfo && spell.sourceBookInfo.length > 0 && (
+                            <div className="text-right">
+                                <p><strong>Source:</strong> {GetSourceDisplay(spell.sourceBookInfo.map(s => ({ bookId: s.sourceBookId, pageNumber: s.pageNumber })), true)}</p>
+                            </div>
+                        )}
+                    </div>
                     <p>
                         {spell.schoolIds && SpellSchoolNameList(spell.schoolIds.map(s => s.schoolId))}
                         {spell.subSchoolIds && (() => {

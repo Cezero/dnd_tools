@@ -28983,6 +28983,7 @@ export namespace Prisma {
     sizeId: number | null
     speed: number | null
     favoredClassId: number | null
+    levelAdjustment: number | null
   }
 
   export type RaceSumAggregateOutputType = {
@@ -28991,6 +28992,7 @@ export namespace Prisma {
     sizeId: number | null
     speed: number | null
     favoredClassId: number | null
+    levelAdjustment: number | null
   }
 
   export type RaceMinAggregateOutputType = {
@@ -29002,6 +29004,7 @@ export namespace Prisma {
     sizeId: number | null
     speed: number | null
     favoredClassId: number | null
+    levelAdjustment: number | null
   }
 
   export type RaceMaxAggregateOutputType = {
@@ -29013,6 +29016,7 @@ export namespace Prisma {
     sizeId: number | null
     speed: number | null
     favoredClassId: number | null
+    levelAdjustment: number | null
   }
 
   export type RaceCountAggregateOutputType = {
@@ -29024,6 +29028,7 @@ export namespace Prisma {
     sizeId: number
     speed: number
     favoredClassId: number
+    levelAdjustment: number
     _all: number
   }
 
@@ -29034,6 +29039,7 @@ export namespace Prisma {
     sizeId?: true
     speed?: true
     favoredClassId?: true
+    levelAdjustment?: true
   }
 
   export type RaceSumAggregateInputType = {
@@ -29042,6 +29048,7 @@ export namespace Prisma {
     sizeId?: true
     speed?: true
     favoredClassId?: true
+    levelAdjustment?: true
   }
 
   export type RaceMinAggregateInputType = {
@@ -29053,6 +29060,7 @@ export namespace Prisma {
     sizeId?: true
     speed?: true
     favoredClassId?: true
+    levelAdjustment?: true
   }
 
   export type RaceMaxAggregateInputType = {
@@ -29064,6 +29072,7 @@ export namespace Prisma {
     sizeId?: true
     speed?: true
     favoredClassId?: true
+    levelAdjustment?: true
   }
 
   export type RaceCountAggregateInputType = {
@@ -29075,6 +29084,7 @@ export namespace Prisma {
     sizeId?: true
     speed?: true
     favoredClassId?: true
+    levelAdjustment?: true
     _all?: true
   }
 
@@ -29173,6 +29183,7 @@ export namespace Prisma {
     sizeId: number
     speed: number
     favoredClassId: number
+    levelAdjustment: number
     _count: RaceCountAggregateOutputType | null
     _avg: RaceAvgAggregateOutputType | null
     _sum: RaceSumAggregateOutputType | null
@@ -29203,6 +29214,7 @@ export namespace Prisma {
     sizeId?: boolean
     speed?: boolean
     favoredClassId?: boolean
+    levelAdjustment?: boolean
     sources?: boolean | Race$sourcesArgs<ExtArgs>
     userCharacter?: boolean | Race$userCharacterArgs<ExtArgs>
     featureProgression?: boolean | Race$featureProgressionArgs<ExtArgs>
@@ -29220,9 +29232,10 @@ export namespace Prisma {
     sizeId?: boolean
     speed?: boolean
     favoredClassId?: boolean
+    levelAdjustment?: boolean
   }
 
-  export type RaceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "editionId" | "isVisible" | "description" | "sizeId" | "speed" | "favoredClassId", ExtArgs["result"]["race"]>
+  export type RaceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "editionId" | "isVisible" | "description" | "sizeId" | "speed" | "favoredClassId" | "levelAdjustment", ExtArgs["result"]["race"]>
   export type RaceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     sources?: boolean | Race$sourcesArgs<ExtArgs>
     userCharacter?: boolean | Race$userCharacterArgs<ExtArgs>
@@ -29246,6 +29259,7 @@ export namespace Prisma {
       sizeId: number
       speed: number
       favoredClassId: number
+      levelAdjustment: number
     }, ExtArgs["result"]["race"]>
     composites: {}
   }
@@ -29626,6 +29640,7 @@ export namespace Prisma {
     readonly sizeId: FieldRef<"Race", 'Int'>
     readonly speed: FieldRef<"Race", 'Int'>
     readonly favoredClassId: FieldRef<"Race", 'Int'>
+    readonly levelAdjustment: FieldRef<"Race", 'Int'>
   }
     
 
@@ -59902,7 +59917,8 @@ export namespace Prisma {
     description: 'description',
     sizeId: 'sizeId',
     speed: 'speed',
-    favoredClassId: 'favoredClassId'
+    favoredClassId: 'favoredClassId',
+    levelAdjustment: 'levelAdjustment'
   };
 
   export type RaceScalarFieldEnum = (typeof RaceScalarFieldEnum)[keyof typeof RaceScalarFieldEnum]
@@ -62117,6 +62133,7 @@ export namespace Prisma {
     sizeId?: IntFilter<"Race"> | number
     speed?: IntFilter<"Race"> | number
     favoredClassId?: IntFilter<"Race"> | number
+    levelAdjustment?: IntFilter<"Race"> | number
     sources?: RaceSourceMapListRelationFilter
     userCharacter?: UserCharacterListRelationFilter
     featureProgression?: FeatureProgressionListRelationFilter
@@ -62131,6 +62148,7 @@ export namespace Prisma {
     sizeId?: SortOrder
     speed?: SortOrder
     favoredClassId?: SortOrder
+    levelAdjustment?: SortOrder
     sources?: RaceSourceMapOrderByRelationAggregateInput
     userCharacter?: UserCharacterOrderByRelationAggregateInput
     featureProgression?: FeatureProgressionOrderByRelationAggregateInput
@@ -62149,6 +62167,7 @@ export namespace Prisma {
     sizeId?: IntFilter<"Race"> | number
     speed?: IntFilter<"Race"> | number
     favoredClassId?: IntFilter<"Race"> | number
+    levelAdjustment?: IntFilter<"Race"> | number
     sources?: RaceSourceMapListRelationFilter
     userCharacter?: UserCharacterListRelationFilter
     featureProgression?: FeatureProgressionListRelationFilter
@@ -62163,6 +62182,7 @@ export namespace Prisma {
     sizeId?: SortOrder
     speed?: SortOrder
     favoredClassId?: SortOrder
+    levelAdjustment?: SortOrder
     _count?: RaceCountOrderByAggregateInput
     _avg?: RaceAvgOrderByAggregateInput
     _max?: RaceMaxOrderByAggregateInput
@@ -62182,6 +62202,7 @@ export namespace Prisma {
     sizeId?: IntWithAggregatesFilter<"Race"> | number
     speed?: IntWithAggregatesFilter<"Race"> | number
     favoredClassId?: IntWithAggregatesFilter<"Race"> | number
+    levelAdjustment?: IntWithAggregatesFilter<"Race"> | number
   }
 
   export type RaceSourceMapWhereInput = {
@@ -65641,6 +65662,7 @@ export namespace Prisma {
     sizeId?: number
     speed?: number
     favoredClassId?: number
+    levelAdjustment?: number
     sources?: RaceSourceMapCreateNestedManyWithoutRaceInput
     userCharacter?: UserCharacterCreateNestedManyWithoutRaceInput
     featureProgression?: FeatureProgressionCreateNestedManyWithoutRaceInput
@@ -65655,6 +65677,7 @@ export namespace Prisma {
     sizeId?: number
     speed?: number
     favoredClassId?: number
+    levelAdjustment?: number
     sources?: RaceSourceMapUncheckedCreateNestedManyWithoutRaceInput
     userCharacter?: UserCharacterUncheckedCreateNestedManyWithoutRaceInput
     featureProgression?: FeatureProgressionUncheckedCreateNestedManyWithoutRaceInput
@@ -65668,6 +65691,7 @@ export namespace Prisma {
     sizeId?: IntFieldUpdateOperationsInput | number
     speed?: IntFieldUpdateOperationsInput | number
     favoredClassId?: IntFieldUpdateOperationsInput | number
+    levelAdjustment?: IntFieldUpdateOperationsInput | number
     sources?: RaceSourceMapUpdateManyWithoutRaceNestedInput
     userCharacter?: UserCharacterUpdateManyWithoutRaceNestedInput
     featureProgression?: FeatureProgressionUpdateManyWithoutRaceNestedInput
@@ -65682,6 +65706,7 @@ export namespace Prisma {
     sizeId?: IntFieldUpdateOperationsInput | number
     speed?: IntFieldUpdateOperationsInput | number
     favoredClassId?: IntFieldUpdateOperationsInput | number
+    levelAdjustment?: IntFieldUpdateOperationsInput | number
     sources?: RaceSourceMapUncheckedUpdateManyWithoutRaceNestedInput
     userCharacter?: UserCharacterUncheckedUpdateManyWithoutRaceNestedInput
     featureProgression?: FeatureProgressionUncheckedUpdateManyWithoutRaceNestedInput
@@ -65696,6 +65721,7 @@ export namespace Prisma {
     sizeId?: number
     speed?: number
     favoredClassId?: number
+    levelAdjustment?: number
   }
 
   export type RaceUpdateManyMutationInput = {
@@ -65706,6 +65732,7 @@ export namespace Prisma {
     sizeId?: IntFieldUpdateOperationsInput | number
     speed?: IntFieldUpdateOperationsInput | number
     favoredClassId?: IntFieldUpdateOperationsInput | number
+    levelAdjustment?: IntFieldUpdateOperationsInput | number
   }
 
   export type RaceUncheckedUpdateManyInput = {
@@ -65717,6 +65744,7 @@ export namespace Prisma {
     sizeId?: IntFieldUpdateOperationsInput | number
     speed?: IntFieldUpdateOperationsInput | number
     favoredClassId?: IntFieldUpdateOperationsInput | number
+    levelAdjustment?: IntFieldUpdateOperationsInput | number
   }
 
   export type RaceSourceMapCreateInput = {
@@ -69071,6 +69099,7 @@ export namespace Prisma {
     sizeId?: SortOrder
     speed?: SortOrder
     favoredClassId?: SortOrder
+    levelAdjustment?: SortOrder
   }
 
   export type RaceAvgOrderByAggregateInput = {
@@ -69079,6 +69108,7 @@ export namespace Prisma {
     sizeId?: SortOrder
     speed?: SortOrder
     favoredClassId?: SortOrder
+    levelAdjustment?: SortOrder
   }
 
   export type RaceMaxOrderByAggregateInput = {
@@ -69090,6 +69120,7 @@ export namespace Prisma {
     sizeId?: SortOrder
     speed?: SortOrder
     favoredClassId?: SortOrder
+    levelAdjustment?: SortOrder
   }
 
   export type RaceMinOrderByAggregateInput = {
@@ -69101,6 +69132,7 @@ export namespace Prisma {
     sizeId?: SortOrder
     speed?: SortOrder
     favoredClassId?: SortOrder
+    levelAdjustment?: SortOrder
   }
 
   export type RaceSumOrderByAggregateInput = {
@@ -69109,6 +69141,7 @@ export namespace Prisma {
     sizeId?: SortOrder
     speed?: SortOrder
     favoredClassId?: SortOrder
+    levelAdjustment?: SortOrder
   }
 
   export type RaceScalarRelationFilter = {
@@ -76404,6 +76437,7 @@ export namespace Prisma {
     sizeId?: number
     speed?: number
     favoredClassId?: number
+    levelAdjustment?: number
     sources?: RaceSourceMapCreateNestedManyWithoutRaceInput
     userCharacter?: UserCharacterCreateNestedManyWithoutRaceInput
   }
@@ -76417,6 +76451,7 @@ export namespace Prisma {
     sizeId?: number
     speed?: number
     favoredClassId?: number
+    levelAdjustment?: number
     sources?: RaceSourceMapUncheckedCreateNestedManyWithoutRaceInput
     userCharacter?: UserCharacterUncheckedCreateNestedManyWithoutRaceInput
   }
@@ -76613,6 +76648,7 @@ export namespace Prisma {
     sizeId?: IntFieldUpdateOperationsInput | number
     speed?: IntFieldUpdateOperationsInput | number
     favoredClassId?: IntFieldUpdateOperationsInput | number
+    levelAdjustment?: IntFieldUpdateOperationsInput | number
     sources?: RaceSourceMapUpdateManyWithoutRaceNestedInput
     userCharacter?: UserCharacterUpdateManyWithoutRaceNestedInput
   }
@@ -76626,6 +76662,7 @@ export namespace Prisma {
     sizeId?: IntFieldUpdateOperationsInput | number
     speed?: IntFieldUpdateOperationsInput | number
     favoredClassId?: IntFieldUpdateOperationsInput | number
+    levelAdjustment?: IntFieldUpdateOperationsInput | number
     sources?: RaceSourceMapUncheckedUpdateManyWithoutRaceNestedInput
     userCharacter?: UserCharacterUncheckedUpdateManyWithoutRaceNestedInput
   }
@@ -78657,6 +78694,7 @@ export namespace Prisma {
     sizeId?: number
     speed?: number
     favoredClassId?: number
+    levelAdjustment?: number
     userCharacter?: UserCharacterCreateNestedManyWithoutRaceInput
     featureProgression?: FeatureProgressionCreateNestedManyWithoutRaceInput
   }
@@ -78670,6 +78708,7 @@ export namespace Prisma {
     sizeId?: number
     speed?: number
     favoredClassId?: number
+    levelAdjustment?: number
     userCharacter?: UserCharacterUncheckedCreateNestedManyWithoutRaceInput
     featureProgression?: FeatureProgressionUncheckedCreateNestedManyWithoutRaceInput
   }
@@ -78726,6 +78765,7 @@ export namespace Prisma {
     sizeId?: IntFieldUpdateOperationsInput | number
     speed?: IntFieldUpdateOperationsInput | number
     favoredClassId?: IntFieldUpdateOperationsInput | number
+    levelAdjustment?: IntFieldUpdateOperationsInput | number
     userCharacter?: UserCharacterUpdateManyWithoutRaceNestedInput
     featureProgression?: FeatureProgressionUpdateManyWithoutRaceNestedInput
   }
@@ -78739,6 +78779,7 @@ export namespace Prisma {
     sizeId?: IntFieldUpdateOperationsInput | number
     speed?: IntFieldUpdateOperationsInput | number
     favoredClassId?: IntFieldUpdateOperationsInput | number
+    levelAdjustment?: IntFieldUpdateOperationsInput | number
     userCharacter?: UserCharacterUncheckedUpdateManyWithoutRaceNestedInput
     featureProgression?: FeatureProgressionUncheckedUpdateManyWithoutRaceNestedInput
   }
@@ -80904,6 +80945,7 @@ export namespace Prisma {
     sizeId?: number
     speed?: number
     favoredClassId?: number
+    levelAdjustment?: number
     sources?: RaceSourceMapCreateNestedManyWithoutRaceInput
     featureProgression?: FeatureProgressionCreateNestedManyWithoutRaceInput
   }
@@ -80917,6 +80959,7 @@ export namespace Prisma {
     sizeId?: number
     speed?: number
     favoredClassId?: number
+    levelAdjustment?: number
     sources?: RaceSourceMapUncheckedCreateNestedManyWithoutRaceInput
     featureProgression?: FeatureProgressionUncheckedCreateNestedManyWithoutRaceInput
   }
@@ -81049,6 +81092,7 @@ export namespace Prisma {
     sizeId?: IntFieldUpdateOperationsInput | number
     speed?: IntFieldUpdateOperationsInput | number
     favoredClassId?: IntFieldUpdateOperationsInput | number
+    levelAdjustment?: IntFieldUpdateOperationsInput | number
     sources?: RaceSourceMapUpdateManyWithoutRaceNestedInput
     featureProgression?: FeatureProgressionUpdateManyWithoutRaceNestedInput
   }
@@ -81062,6 +81106,7 @@ export namespace Prisma {
     sizeId?: IntFieldUpdateOperationsInput | number
     speed?: IntFieldUpdateOperationsInput | number
     favoredClassId?: IntFieldUpdateOperationsInput | number
+    levelAdjustment?: IntFieldUpdateOperationsInput | number
     sources?: RaceSourceMapUncheckedUpdateManyWithoutRaceNestedInput
     featureProgression?: FeatureProgressionUncheckedUpdateManyWithoutRaceNestedInput
   }

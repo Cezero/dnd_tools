@@ -124,6 +124,7 @@ export interface SourceBook extends CoreComponentAbbreviation {
     editionId: number;
     hasSpells: boolean;
     hasClasses: boolean;
+    hasRaces: boolean;
 }
 
 export interface Class extends CoreComponentAbbreviation {

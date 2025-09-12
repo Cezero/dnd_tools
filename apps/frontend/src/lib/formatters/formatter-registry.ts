@@ -23,7 +23,8 @@ import {
     SizeCategoryFormatter,
     DamageTypeFormatter,
     WeaponFamiliarityFormatter,
-    SpellSaveDCFormatter
+    SpellSaveDCFormatter,
+    ResistanceFormatter
 } from './pure-formatters';
 import { generateKey } from './registry-utils';
 import type { BaseFormatter } from './types';
@@ -123,6 +124,7 @@ export class FormatterRegistry implements IFormatterRegistry {
         const damageTypeFormatter = new DamageTypeFormatter();
         const weaponFamiliarityFormatter = new WeaponFamiliarityFormatter();
         const spellSaveDCFormatter = new SpellSaveDCFormatter();
+        const resistanceFormatter = new ResistanceFormatter();
 
         // Bonus-compatible types (using convenience wrapper)
         this.registerBonusFormatter(EntityAppliesToType.Ability, signedValueFormatter);
@@ -134,6 +136,7 @@ export class FormatterRegistry implements IFormatterRegistry {
         this.registerBonusFormatter(EntityAppliesToType.DamageReduction, damageReductionFormatter);
         this.registerBonusFormatter(EntityAppliesToType.Initiative, signedValueFormatter);
         this.registerBonusFormatter(EntityAppliesToType.SpellSvDC, spellSaveDCFormatter);
+        this.registerBonusFormatter(EntityAppliesToType.Resistance, resistanceFormatter);
         this.registerBonusFormatter(EntityAppliesToType.Damage, damageBonusFormatter);
 
         // Quantity-compatible types

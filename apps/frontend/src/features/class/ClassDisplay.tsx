@@ -12,6 +12,7 @@ import {
     EDITION_MAP,
     ABILITY_MAP,
     SpecialFeatureId,
+    GetSourceDisplay,
 } from '@shared/static-data';
 
 interface ClassDisplayProps {
@@ -49,6 +50,9 @@ export function ClassDisplay({
                             </div>
                             <div className="text-right">
                                 <p><strong>Edition:</strong> {EDITION_MAP[cls.editionId]?.abbreviation}</p>
+                                {cls.sourceBookInfo && cls.sourceBookInfo.length > 0 && (
+                                    <p><strong>Source:</strong> {GetSourceDisplay(cls.sourceBookInfo.map(s => ({ bookId: s.sourceBookId, pageNumber: s.pageNumber })), true)}</p>
+                                )}
                                 <p><strong>Display:</strong> {cls.isVisible ? 'Yes' : 'No'}</p>
                                 <p><strong>Prestige Class:</strong> {cls.isPrestige ? 'Yes' : 'No'}</p>
                                 <p><strong>Caster:</strong> {cls.canCastSpells ? 'Yes' : 'No'}</p>

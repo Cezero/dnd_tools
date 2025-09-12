@@ -1,6 +1,6 @@
 import { EntityAppliesToType, EntityType } from '@shared/static-data';
 
-import { classSkillLabeler, skillModifierLabeler, displayNameLabeler, emptyStringLabeler, bonusLanguageLabeler, automaticLanguageLabeler, abilityModifierLabeler, savingThrowModifierLabeler, creatureTypeLabeler, sizeCategoryLabeler, choiceLabeler, groupedChoiceLabeler, grantedFeatLabeler, weaponFamiliarityLabeler, groupedWeaponFamiliarityLabeler, groupedUsesLabeler, spellSaveDCLabeler } from './label-formatters';
+import { classSkillLabeler, skillModifierLabeler, displayNameLabeler, emptyStringLabeler, bonusLanguageLabeler, automaticLanguageLabeler, abilityModifierLabeler, savingThrowModifierLabeler, creatureTypeLabeler, sizeCategoryLabeler, choiceLabeler, groupedChoiceLabeler, grantedFeatLabeler, weaponFamiliarityLabeler, groupedWeaponFamiliarityLabeler, groupedUsesLabeler, spellSaveDCLabeler, groupedResistanceLabeler } from './label-formatters';
 import { generateKey } from './registry-utils';
 import type { CalculatedEntity } from './types';
 
@@ -107,6 +107,7 @@ export class LabelerRegistry implements ILabelerRegistry {
         this.registerBonusLabeler(EntityAppliesToType.SpellSvDC, spellSaveDCLabeler);
         this.registerBonusLabeler(EntityAppliesToType.SavingThrow, savingThrowModifierLabeler);
         this.registerBonusLabeler(EntityAppliesToType.Skill, skillModifierLabeler); // Special case for skills
+        this.registerBonusLabeler(EntityAppliesToType.Resistance, groupedResistanceLabeler);
 
         // EntityType.Quantity - use displayName labeler for most types
         this.registerQuantityLabeler(EntityAppliesToType.MovementSpeed, displayNameLabeler);
@@ -157,6 +158,7 @@ export class LabelerRegistry implements ILabelerRegistry {
         // Register grouped labelers for entity types that need them
         this.registerGroupedLabeler(EntityAppliesToType.WeaponFamiliarity, groupedWeaponFamiliarityLabeler);
         this.registerGroupedLabeler(EntityAppliesToType.Uses, groupedUsesLabeler);
+        this.registerGroupedLabeler(EntityAppliesToType.Resistance, groupedResistanceLabeler);
     }
 }
 

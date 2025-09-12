@@ -80,8 +80,9 @@ export const ValidatedInput = forwardRef<HTMLInputElement | HTMLTextAreaElement,
                 value = numValue;
             }
 
-            setFormData(prev => setNestedValue(prev, field, value));
-            validation.validateField(field, value);
+            const newFormData = setNestedValue(formData, field, value);
+            setFormData(newFormData);
+            validation.validateField(field, value, newFormData);
         };
 
         const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -93,7 +94,7 @@ export const ValidatedInput = forwardRef<HTMLInputElement | HTMLTextAreaElement,
                 value = numValue;
             }
 
-            validation.validateField(field, value);
+            validation.validateField(field, value, formData);
         };
 
         const inputClassName = `${inputExtraClassName}

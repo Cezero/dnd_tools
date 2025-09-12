@@ -18,7 +18,8 @@ import {
     SPELL_ID_LIST,
     CRAFT_SKILL_SELECT_LIST,
     KNOWLEDGE_SKILL_SELECT_LIST,
-    Skill
+    Skill,
+    ENERGY_DAMAGE_SELECT_LIST
 } from '@shared/static-data';
 import type { SelectOption } from '@shared/static-data';
 
@@ -76,6 +77,8 @@ export async function getAppliesToSelectOptions(appliesTo: EntityAppliesToType, 
             return entityType === EntityType.Quantity ? RPG_DICE_SELECT_LIST : DAMAGE_TYPE_SELECT_LIST;
         case EntityAppliesToType.DamageReduction:
             return DAMAGE_TYPE_SELECT_LIST;
+        case EntityAppliesToType.Resistance:
+            return ENERGY_DAMAGE_SELECT_LIST;
         case EntityAppliesToType.AC:
             return [];
         case EntityAppliesToType.Uses:
@@ -138,8 +141,8 @@ export async function getAppliesToSelectOptions(appliesTo: EntityAppliesToType, 
                 // Fetch exotic weapons for weapon familiarity
                 const response = await ItemApi.itemQuery({
                     queryType: 'byCategory',
-                    typeId: ITEM_TYPE_ENUM.WEAPON,
-                    category: WEAPON_CATEGORY_ENUM.EXOTIC
+                    typeId: ITEM_TYPE_ENUM.Weapon,
+                    category: WEAPON_CATEGORY_ENUM.Exotic
                 });
                 if (response && response.results && response.results.length > 0) {
                     return response.results.map(weapon => ({

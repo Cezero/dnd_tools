@@ -336,14 +336,15 @@ model FeatPrerequisiteMap {
 // =================
 
 model Race {
-    id             Int     @id @default(autoincrement())
-    name           String
-    editionId      Int?
-    isVisible      Boolean @default(true)
-    description    String? @db.Text
-    sizeId         Int     @default(5)
-    speed          Int     @default(30)
-    favoredClassId Int     @default(0)
+    id              Int     @id @default(autoincrement())
+    name            String
+    editionId       Int?
+    isVisible       Boolean @default(true)
+    description     String? @db.Text
+    sizeId          Int     @default(5)
+    speed           Int     @default(30)
+    favoredClassId  Int     @default(0)
+    levelAdjustment Int     @default(0)
 
     sources            RaceSourceMap[]
     userCharacter      UserCharacter[]

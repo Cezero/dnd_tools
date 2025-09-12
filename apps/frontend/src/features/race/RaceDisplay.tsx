@@ -4,8 +4,9 @@ import React from 'react';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { displayStrategyFactory } from '@/lib/formatters';
 import { LanguageService } from '@/lib/LanguageService';
+import { CharacterUtils } from '@/features/character/CharacterUtils';
 import { Race } from '@shared/schema';
-import { DisplayType, SIZE_MAP, LANGUAGE_MAP, EDITION_MAP, ABILITY_MAP, CLASS_MAP, EntityAppliesToType, ABILITY_LIST, SpecialFeatureId } from '@shared/static-data';
+import { DisplayType, SIZE_MAP, LANGUAGE_MAP, EDITION_MAP, CLASS_MAP, SpecialFeatureId, GetSourceDisplay } from '@shared/static-data';
 
 interface RaceDisplayProps {
     race: Race;
@@ -41,14 +42,19 @@ export function RaceDisplay({
                             <h1 className="text-2xl font-bold">{race.name}</h1>
                             <div className="text-right">
                                 <p><strong>Edition:</strong> {EDITION_MAP[race.editionId]?.abbreviation}</p>
+                                {race.sources && race.sources.length > 0 && (
+                                    <p><strong>Source:</strong> {GetSourceDisplay(race.sources.map(s => ({ bookId: s.sourceBookId, pageNumber: s.pageNumber })), true)}</p>
+                                )}
                                 <p><strong>Display:</strong> {race.isVisible ? 'Yes' : 'No'}</p>
                             </div>
                         </div>
                     )}
+
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <p><strong>Size:</strong> {SIZE_MAP[race.sizeId]?.name}</p>
                             <p><strong>Speed:</strong> {race.speed}</p>
+                            <p><strong>Level Adjustment:</strong> {race.levelAdjustment && race.levelAdjustment > 0 ? `+${race.levelAdjustment}` : (race.levelAdjustment || 0)}</p>
                             <p><strong>Favored Class:</strong> {race.favoredClassId === -1 ? 'Any' : CLASS_MAP[race.favoredClassId]?.name}</p>
                         </div>
                         <div>
@@ -69,35 +75,7 @@ export function RaceDisplay({
                                 })()
                             }</p>
                             <p><strong>Ability Adjustments:</strong> {
-                                (() => {
-                                    const abilityFeatures = race.features?.filter(fp =>
-                                        fp.featureId === SpecialFeatureId.AbilityAdjustment &&
-                                        fp.entities?.some(e => e.appliesTo === EntityAppliesToType.Ability)
-                                    ) || [];
-
-                                    const adjustments: Array<{ abilityId: number; value: number }> = [];
-
-                                    // Collect all ability adjustments with their actual ability IDs
-                                    for (const ability of ABILITY_LIST) {
-                                        const abilityFeature = abilityFeatures.find(fp =>
-                                            fp.featureId === SpecialFeatureId.AbilityAdjustment &&
-                                            fp.entities?.some(e => e.appliesTo === EntityAppliesToType.Ability && e.appliesToId === ability.id)
-                                        );
-                                        const abilityEntity = abilityFeature?.entities?.find(e =>
-                                            e.appliesTo === EntityAppliesToType.Ability && e.appliesToId === ability.id
-                                        );
-                                        if (abilityEntity && abilityEntity.value !== 0) {
-                                            adjustments.push({
-                                                abilityId: ability.id,
-                                                value: abilityEntity.value
-                                            });
-                                        }
-                                    }
-
-                                    return adjustments.length > 0
-                                        ? adjustments.map(adj => `${ABILITY_MAP[adj.abilityId]?.abbreviation} ${adj.value > 0 ? '+' : ''}${adj.value}`).join(', ')
-                                        : 'None';
-                                })()
+                                CharacterUtils.getFormattedAbilityAdjustments(race.features || [])
                             }</p>
                         </div>
                     </div>

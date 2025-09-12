@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useDiceBox } from '@/components/dice-box';
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
+import { LanguageService } from '@/lib/LanguageService';
 import type { RaceSummary, Race, CharacterWithAllDetailsResponse } from '@shared/schema';
 import {
     ABILITY_LIST,
@@ -14,8 +15,11 @@ import {
     GetPointBuyCost,
     LANGUAGE_MAP,
     SIZE_MAP,
-    CLASS_MAP
+    CLASS_MAP,
+    SpecialFeatureId
 } from '@shared/static-data';
+
+import { CharacterUtils } from '../CharacterUtils';
 
 interface AbilitiesRaceTabProps {
     character: CharacterWithAllDetailsResponse;
@@ -378,24 +382,18 @@ export function AbilitiesRaceTab({
     };
 
     const getAutomaticLanguages = (): number[] => {
-        if (!selectedRaceDetails?.languages) return [];
-        return selectedRaceDetails.languages
-            .filter(lang => lang.isAutomatic)
-            .map(lang => lang.languageId);
+        if (!selectedRaceDetails?.features) return [];
+        return LanguageService.getAutomaticLanguages(selectedRaceDetails.features);
     };
 
     const getBonusLanguages = (): number[] => {
-        if (!selectedRaceDetails?.languages) return [];
-        return selectedRaceDetails.languages
-            .filter(lang => !lang.isAutomatic)
-            .map(lang => lang.languageId);
+        if (!selectedRaceDetails?.features) return [];
+        return LanguageService.getBonusLanguages(selectedRaceDetails.features);
     };
 
     const getAbilityAdjustments = (): string => {
-        if (!selectedRaceDetails?.abilityAdjustments) return 'None';
-        return selectedRaceDetails.abilityAdjustments
-            .map(adj => `${ABILITY_MAP[adj.abilityId]?.abbreviation} ${adj.value > 0 ? '+' : ''}${adj.value}`)
-            .join(', ');
+        if (!selectedRaceDetails?.features) return 'None';
+        return CharacterUtils.getFormattedAbilityAdjustments(selectedRaceDetails.features);
     };
 
     const getFavoredClass = (): string => {
@@ -409,9 +407,8 @@ export function AbilitiesRaceTab({
     };
 
     const getRacialModifier = (abilityId: number): number => {
-        if (!selectedRaceDetails?.abilityAdjustments) return 0;
-        const adjustment = selectedRaceDetails.abilityAdjustments.find(adj => adj.abilityId === abilityId);
-        return adjustment?.value || 0;
+        if (!selectedRaceDetails?.features) return 0;
+        return CharacterUtils.getAbilityAdjustment(selectedRaceDetails.features, abilityId);
     };
 
     const getAdjustedAbilityValue = (abilityId: number): number | null => {
@@ -807,33 +804,36 @@ export function AbilitiesRaceTab({
                                     </div>
                                 )}
 
-                                {/* Racial Traits */}
-                                {selectedRaceDetails.traits && selectedRaceDetails.traits.length > 0 && (
-                                    <div className="mt-4">
-                                        <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-2">
-                                            {selectedRaceDetails.name} Racial Traits
-                                        </h4>
-                                        <div className="space-y-2">
-                                            {selectedRaceDetails.traits.map(trait => (
-                                                <div key={trait.traitSlug} className="text-sm">
-                                                    <div className="prose-custom max-w-none">
-                                                        <ProcessMarkdown
-                                                            id={`trait-${trait.traitSlug}-description`}
-                                                            markdown={trait.trait?.description || ''}
-                                                            userVars={{
-                                                                racename: selectedRaceDetails.name,
-                                                                racenamelower: selectedRaceDetails.name.toLowerCase(),
-                                                                raceplural: selectedRaceDetails.name + 's',
-                                                                raceplurallower: selectedRaceDetails.name.toLowerCase() + 's',
-                                                                value: trait.value
-                                                            }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            ))}
+                                {/* Racial Features */}
+                                {selectedRaceDetails.features && selectedRaceDetails.features.filter(fp =>
+                                    fp.featureId !== SpecialFeatureId.AutomaticLanguage &&
+                                    fp.featureId !== SpecialFeatureId.BonusLanguage &&
+                                    fp.featureId !== SpecialFeatureId.AbilityAdjustment
+                                ).length > 0 && (
+                                        <div className="mt-4">
+                                            <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-2">
+                                                {selectedRaceDetails.name} Racial Features
+                                            </h4>
+                                            <div className="space-y-2">
+                                                {selectedRaceDetails.features
+                                                    .filter(fp =>
+                                                        fp.featureId !== SpecialFeatureId.AutomaticLanguage &&
+                                                        fp.featureId !== SpecialFeatureId.BonusLanguage &&
+                                                        fp.featureId !== SpecialFeatureId.AbilityAdjustment
+                                                    )
+                                                    .map(feature => (
+                                                        <div key={feature.id} className="text-sm">
+                                                            <div className="prose-custom max-w-none">
+                                                                <ProcessMarkdown
+                                                                    id={`feature-${feature.id}-description`}
+                                                                    markdown={feature.feature?.description || ''}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
                             </>
                         )}
                     </div>

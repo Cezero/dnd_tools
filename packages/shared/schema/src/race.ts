@@ -15,6 +15,7 @@ export const BaseRaceSchema = z.object({
     favoredClassId: z.number().int().min(-1, 'Favored class ID must be -1 or greater'),
     editionId: z.number().int().positive('Edition ID must be a positive integer').nullable(),
     isVisible: z.boolean().default(true),
+    levelAdjustment: z.number().int().min(0, 'Level adjustment must be non-negative').max(100, 'Level adjustment must be less than 100').optional().default(0),
     sources: z.array(SourceMapSchema).nullable(),
     features: z.array(FeatureProgressionSchema).nullable(),
 });

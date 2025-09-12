@@ -439,6 +439,21 @@ export class SpellSaveDCFormatter implements BaseFormatter {
     }
 }
 
+export class ResistanceFormatter implements BaseFormatter {
+    format(modifier: CalculatedEntity): string {
+        const value = modifier.value;
+
+        if (modifier.appliesToId !== null && modifier.appliesToId !== undefined) {
+            const damageType = DAMAGE_TYPES[modifier.appliesToId];
+            if (damageType) {
+                return `${damageType.name.toLowerCase()} ${value}`;
+            }
+        }
+
+        return `${value}`;
+    }
+}
+
 // Utility function for formatting signed values
 function formatSignedValue(value: number): string {
     if (value > 0) {

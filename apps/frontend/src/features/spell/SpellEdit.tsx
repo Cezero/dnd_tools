@@ -9,7 +9,8 @@ import {
     ValidatedInput,
     useValidatedForm,
     CustomSelect,
-    CustomCheckbox
+    CustomCheckbox,
+    SourceEditor
 } from '@/components/forms';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { SpellApi } from '@/features/spell/SpellApi';
@@ -520,6 +521,15 @@ export function SpellEdit() {
                             />
                         ))}
                     </div>
+                </div>
+
+                {/* Source References */}
+                <div className="mt-4">
+                    <SourceEditor
+                        sources={formData?.sourceBookInfo || []}
+                        onSourcesChange={(sources) => setFormData(prev => ({ ...prev, sourceBookInfo: sources }))}
+                        sourceType="spells"
+                    />
                 </div>
 
                 {/* Description */}

@@ -3,7 +3,8 @@ import React from 'react';
 import {
     ValidatedInput,
     CustomSelect,
-    CustomCheckbox
+    CustomCheckbox,
+    SourceEditor
 } from '@/components/forms';
 import { generateClassProgression } from '@/lib/ClassProgression';
 import { ClassProgressionTable } from '@/lib/ClassProgressionTable';
@@ -156,6 +157,15 @@ export function BasicInfoTab({
                             label="Can Cast Spells"
                             checked={formData.canCastSpells as boolean}
                             onCheckedChange={(checked) => setFormData({ ...formData, canCastSpells: checked })}
+                        />
+                    </div>
+
+                    {/* Source References */}
+                    <div>
+                        <SourceEditor
+                            sources={formData.sourceBookInfo || []}
+                            onSourcesChange={(sources) => setFormData({ ...formData, sourceBookInfo: sources })}
+                            sourceType="classes"
                         />
                     </div>
                     <div>

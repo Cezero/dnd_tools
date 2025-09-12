@@ -11,6 +11,7 @@ export function FeaturesTab(props: RaceTabProps): React.JSX.Element {
             {...props}
             contextType={FeatureSourceType.Race}
             contextId={props.raceId || 0}
+            parentType="race"
             title="Race Features"
             emptyMessage="No race features found"
             excludeSpecialFeatures={[

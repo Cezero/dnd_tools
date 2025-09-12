@@ -1,5 +1,5 @@
 import type { CharacterWithAllDetailsResponse } from '@shared/schema';
-import { SKILL_MAP, ABILITY_MAP, GetAbilityModifier } from '@shared/static-data';
+import { SKILL_MAP, ABILITY_MAP, GetAbilityModifier, Skill } from '@shared/static-data';
 
 export interface AnalogSkillInfo {
     skillId: number;
@@ -39,7 +39,7 @@ export const AnalogSkillService = {
                 // Check if this class grants the analog skill
                 // This would typically be done by checking feature progressions
                 // For now, we'll hardcode the Wild Empathy check
-                if (skillId === 46) { // Wild Empathy
+                if (skillId === Skill.WildEmpathy) { // Wild Empathy
                     const className = this.getClassNameById(advancement.classId);
                     if (className === 'Druid' || className === 'Ranger') {
                         grantedByClasses.push(className);

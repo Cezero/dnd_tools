@@ -18,6 +18,7 @@ interface FeaturesTabProps {
     // Context-specific props
     contextType: FeatureSourceType;
     contextId: number;
+    parentType?: 'class' | 'race';
 
     // UI text props
     title: string;
@@ -39,6 +40,7 @@ export function FeaturesTab({
     onAddFeature,
     contextType,
     contextId,
+    parentType,
     title,
     emptyMessage,
     excludeSpecialFeatures = [],
@@ -249,6 +251,7 @@ export function FeaturesTab({
                 }}
                 initialSelectedIds={featureProgressions.map(p => p.featureId)}
                 parentId={contextId}
+                parentType={parentType}
                 serviceFunction={async () => {
                     const response = await FeatureSystemApi.getFeatures({ sourceType: contextType });
                     return response;

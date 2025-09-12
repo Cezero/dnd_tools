@@ -334,7 +334,8 @@ exports.Prisma.RaceScalarFieldEnum = {
   description: 'description',
   sizeId: 'sizeId',
   speed: 'speed',
-  favoredClassId: 'favoredClassId'
+  favoredClassId: 'favoredClassId',
+  levelAdjustment: 'levelAdjustment'
 };
 
 exports.Prisma.RaceSourceMapScalarFieldEnum = {

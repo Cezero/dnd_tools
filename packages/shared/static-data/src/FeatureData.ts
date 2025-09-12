@@ -66,6 +66,7 @@ export const EntityAppliesToType = {
     DamageReduction: 6, // DR
     Initiative: 7,      // Initiative
     SpellSvDC: 26,      // Spell Save DC
+    Resistance: 28,     // Resistance
 
     // Quantity-compatible types
     MovementSpeed: 8,   // Speed in feet
@@ -106,7 +107,7 @@ export const ENTITY_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
     [EntityAppliesToType.DamageReduction]: { id: EntityAppliesToType.DamageReduction, name: 'Damage Reduction', displayName: 'DR' },
     [EntityAppliesToType.Initiative]: { id: EntityAppliesToType.Initiative, name: 'Initiative', displayName: 'Init' },
     [EntityAppliesToType.SpellSvDC]: { id: EntityAppliesToType.SpellSvDC, name: 'Spell Save DC', displayName: 'Spell Save DC' },
-
+    [EntityAppliesToType.Resistance]: { id: EntityAppliesToType.Resistance, name: 'Resistance', displayName: 'Resistance' },
     // Quantity-compatible types
     [EntityAppliesToType.MovementSpeed]: { id: EntityAppliesToType.MovementSpeed, name: 'Movement Speed', displayName: 'Move Speed' },
     [EntityAppliesToType.HitDice]: { id: EntityAppliesToType.HitDice, name: 'Hit Dice', displayName: 'HD' },
@@ -148,6 +149,7 @@ export const ENTITY_TYPE_COMPATIBILITY = {
         EntityAppliesToType.DamageReduction,
         EntityAppliesToType.Initiative,
         EntityAppliesToType.SpellSvDC,
+        EntityAppliesToType.Resistance,
     ],
     [EntityType.Quantity]: [
         EntityAppliesToType.MovementSpeed,
@@ -199,6 +201,7 @@ export const ENTITY_TYPE_COMPATIBILITY = {
 export const USES_GROUPED_LABEL: EntityAppliesToType[] = [
     EntityAppliesToType.WeaponFamiliarity,
     EntityAppliesToType.Uses,
+    EntityAppliesToType.Resistance,
 ] as const;
 
 export const FeatureBonusType = {
@@ -549,3 +552,21 @@ export const CONDITIONAL_SCALING_VALUE_TYPES: BaseMap<CoreComponent> = {
 
 export const CONDITIONAL_SCALING_VALUE_TYPE_LIST = Object.values(CONDITIONAL_SCALING_VALUE_TYPES);
 export const CONDITIONAL_SCALING_VALUE_TYPE_SELECT_LIST = NameSelectOptionList(CONDITIONAL_SCALING_VALUE_TYPE_LIST);
+
+// Uses Frequency Types for feature modifiers
+export const USES_FREQUENCY_ENUM = {
+    PER_DAY: 1,
+    PER_WEEK: 2,
+    PER_LEVEL: 3,
+    PER_ENCOUNTER: 4,
+} as const;
+
+export const USES_FREQUENCIES: BaseMap<CoreComponent> = {
+    [USES_FREQUENCY_ENUM.PER_DAY]: { id: USES_FREQUENCY_ENUM.PER_DAY, name: 'day' },
+    [USES_FREQUENCY_ENUM.PER_WEEK]: { id: USES_FREQUENCY_ENUM.PER_WEEK, name: 'week' },
+    [USES_FREQUENCY_ENUM.PER_LEVEL]: { id: USES_FREQUENCY_ENUM.PER_LEVEL, name: 'level' },
+    [USES_FREQUENCY_ENUM.PER_ENCOUNTER]: { id: USES_FREQUENCY_ENUM.PER_ENCOUNTER, name: 'encounter' },
+};
+
+export const USES_FREQUENCY_LIST = Object.values(USES_FREQUENCIES);
+export const USES_FREQUENCY_SELECT_LIST = NameSelectOptionList(USES_FREQUENCY_LIST);

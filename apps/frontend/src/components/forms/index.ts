@@ -33,4 +33,9 @@ export {
     type CustomNestedContextSelectProps,
 } from './CustomNestedContextSelect';
 
-export { SliderControl } from './SliderControl'; 
+export { SliderControl } from './SliderControl';
+
+export {
+    SourceEditor,
+    type SourceEditorProps,
+} from './SourceEditor'; 

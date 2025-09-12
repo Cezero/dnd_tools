@@ -36,7 +36,7 @@ export function useZodValidation<T extends z.ZodSchema>(
     }, [schema]);
 
     // Validate a single field
-    const validateField = useCallback((fieldName: string, value: unknown): boolean => {
+    const validateField = useCallback((fieldName: string, value: unknown, fullFormData?: unknown): boolean => {
         const fieldSchema = fieldSchemas[fieldName];
         if (!fieldSchema) return true;
 
@@ -45,6 +45,19 @@ export function useZodValidation<T extends z.ZodSchema>(
             setErrors(prev => {
                 const newErrors = { ...prev };
                 delete newErrors[fieldName];
+
+                // If we have full form data and no more errors, re-validate the entire form
+                // to ensure the overall validation state is correct
+                if (fullFormData && Object.keys(newErrors).length === 0) {
+                    try {
+                        schema.parse(fullFormData);
+                        // Form is now valid, ensure no errors remain
+                        return {};
+                    } catch {
+                        // Form still has other errors, keep the current state
+                    }
+                }
+
                 return newErrors;
             });
             return true;
@@ -55,7 +68,7 @@ export function useZodValidation<T extends z.ZodSchema>(
             }
             return false;
         }
-    }, [fieldSchemas]);
+    }, [fieldSchemas, schema]);
 
     // Validate entire form
     const validateForm = useCallback((data: unknown): boolean => {

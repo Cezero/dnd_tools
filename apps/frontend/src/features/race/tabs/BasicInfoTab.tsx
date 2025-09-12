@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { ValidatedInput } from '@/components/forms';
+import { ValidatedInput, SourceEditor } from '@/components/forms';
 import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
 import { EDITION_SELECT_LIST_FULL, SIZE_SELECT_LIST, GetBaseClassesByEdition } from '@shared/static-data';
 
@@ -86,9 +86,30 @@ export function BasicInfoTab({
                                 checked={formData.isVisible as boolean}
                                 onCheckedChange={(checked) => setFormData({ ...formData, isVisible: checked })}
                             />
+                            <ValidatedInput
+                                field="levelAdjustment"
+                                label="Level Adjustment"
+                                componentExtraClassName="flex items-center gap-2"
+                                labelExtraClassName="w-30"
+                                inputExtraClassName="w-auto"
+                                type="number"
+                                min={0}
+                                max={100}
+                                step={1}
+                                placeholder="0"
+                            />
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* Source References */}
+            <div>
+                <SourceEditor
+                    sources={formData.sources || []}
+                    onSourcesChange={(sources) => setFormData({ ...formData, sources })}
+                    sourceType="races"
+                />
             </div>
         </div>
     );

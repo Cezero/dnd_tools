@@ -1,6 +1,7 @@
 import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import React, { useMemo, useCallback, useState, useRef } from 'react';
 
+import { CustomSelect } from '@/components/forms/FormComponents';
 import { AnalogSkillService } from '@/features/character/AnalogSkillService';
 import { ClassSkillService } from '@/features/class/ClassSkillService';
 import type { RaceSummary, Race, DnDClass, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse } from '@shared/schema';
@@ -87,14 +88,32 @@ export function SkillsTab({
         return abilityScore?.value ?? 10; // Default to 10 if not set
     }, [character.abilityScores]);
 
-    // Get skill ranks from advancement
-    const getSkillRanks = (skillId: number, skillSubId?: number | null, customSubtype?: string | null): number => {
+    // Get actual points spent for a skill (for internal calculations)
+    const getSkillPointsSpent = (skillId: number, skillSubId?: number | null, customSubtype?: string | null): number => {
         const skillEntry = advancement?.skills.find(skill =>
             skill.skillId === skillId &&
             skill.skillSubId === skillSubId &&
             skill.customSubtype === customSubtype
         );
         return skillEntry?.pointsSpent || 0;
+    };
+
+    // Get skill ranks from advancement (for display)
+    const getSkillRanks = (skillId: number, skillSubId?: number | null, customSubtype?: string | null): number => {
+        const pointsSpent = getSkillPointsSpent(skillId, skillSubId, customSubtype);
+
+        // Check if this is a class skill
+        const isClassSkill = skillNeedsCustomSubtype(skillId)
+            ? isSkillSubtypeClassSkill(skillId, skillSubId)
+            : isSkillClassSkill(skillId);
+
+        if (isClassSkill) {
+            // Class skills: 1 point = 1 rank
+            return pointsSpent;
+        } else {
+            // Cross-class skills: 2 points = 1 rank
+            return pointsSpent * 0.5;
+        }
     };
 
     // Get skill subtype name for display
@@ -109,7 +128,7 @@ export function SkillsTab({
                 return knowledgeSubtype ? knowledgeSubtype.name : '';
             }
         }
-        if (SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.customSubtype].includes(skillId as 32 | 33) && customSubtype) {
+        if (SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.customSubtype].includes(skillId as 32 | 33) && customSubtype && customSubtype !== '__placeholder__') {
             return customSubtype;
         }
         return '';
@@ -171,24 +190,14 @@ export function SkillsTab({
         let totalSpent = 0;
 
         advancement.skills.forEach(skillEntry => {
-            // For skills with subtypes, check if the specific subtype is a class skill
-            const isClassSkill = skillNeedsCustomSubtype(skillEntry.skillId)
-                ? isSkillSubtypeClassSkill(skillEntry.skillId, skillEntry.skillSubId)
-                : isSkillClassSkill(skillEntry.skillId);
-
             const pointsSpent = skillEntry.pointsSpent;
 
-            if (isClassSkill) {
-                // Class skills cost 1 point per rank
-                totalSpent += pointsSpent;
-            } else {
-                // Cross-class skills cost 2 points per rank
-                totalSpent += pointsSpent * 2;
-            }
+            // pointsSpent already represents the actual skill points spent
+            totalSpent += pointsSpent;
         });
 
         return totalSpent;
-    }, [advancement?.skills, isSkillClassSkill, isSkillSubtypeClassSkill, skillNeedsCustomSubtype]);
+    }, [advancement?.skills]);
 
     // Calculate remaining skill points
     const skillPointsRemaining = useMemo(() => {
@@ -237,8 +246,8 @@ export function SkillsTab({
         if (skillNeedsCustomSubtype(skillId) && newRanks > 0 && !skillSubId && !customSubtype) {
             // This is adding ranks to a base row - create a new subtype entry
             if (SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.customSubtype].includes(skillId as 32 | 33)) {
-                // For Perform/Profession, create with empty custom subtype (user will edit it)
-                customSubtype = '';
+                // For Perform/Profession, create with placeholder custom subtype (user will edit it)
+                customSubtype = '__placeholder__';
             } else if (SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.skillSubId].includes(skillId as 6 | 19)) {
                 // For Craft/Knowledge, we need to prompt for subtype selection
                 // For now, we'll create with skillSubId = 1 (first option)
@@ -253,9 +262,8 @@ export function SkillsTab({
         const pointsNeeded = isClassSkill ? newRanks : newRanks * 2;
 
         // Check if we have enough skill points
-        const currentPoints = getSkillRanks(skillId, skillSubId, customSubtype);
-        const currentCost = isClassSkill ? currentPoints : currentPoints * 2;
-        const costDifference = pointsNeeded - currentCost;
+        const currentPointsSpent = getSkillPointsSpent(skillId, skillSubId, customSubtype);
+        const costDifference = pointsNeeded - currentPointsSpent;
 
         if (costDifference > skillPointsRemaining) {
             return; // Don't update if not enough points
@@ -277,7 +285,7 @@ export function SkillsTab({
                 // Update existing skill
                 updatedSkills[existingIndex] = {
                     ...updatedSkills[existingIndex],
-                    pointsSpent: newRanks
+                    pointsSpent: pointsNeeded
                 };
             }
         } else if (newRanks > 0) {
@@ -287,7 +295,7 @@ export function SkillsTab({
                 skillId: skillId,
                 skillSubId: skillSubId || null,
                 customSubtype: customSubtype || null,
-                pointsSpent: newRanks
+                pointsSpent: pointsNeeded
             });
         }
 
@@ -329,20 +337,9 @@ export function SkillsTab({
         handleSkillChange(skillId, newValue, skillSubId, customSubtype);
     };
 
-    // Get ability modifier for a skill
-    const getSkillAbilityModifier = (skillId: number): number | null => {
-        const skill = SKILL_LIST.find(s => s.id === skillId);
-        if (!skill) return null;
-
-        // Special case: skills with abilityId 0 (like Speak Language) have no ability modifier
-        if (skill.abilityId === 0) return null;
-
-        const abilityScore = getAbilityScore(skill.abilityId);
-        return GetAbilityModifier(abilityScore);
-    };
 
     // Get total skill bonus (ranks + ability modifier)
-    const getSkillTotal = (skillId: number): number | null => {
+    const getSkillTotal = (skillId: number, _skillSubId?: number | null, _customSubtype?: string | null): number | null => {
         const skill = SKILL_LIST.find(s => s.id === skillId);
         if (!skill) return 0;
 
@@ -351,13 +348,19 @@ export function SkillsTab({
             return AnalogSkillService.calculateAnalogSkillTotal(character, skillId);
         }
 
-        const ranks = getSkillRanks(skillId);
-        const abilityModifier = getSkillAbilityModifier(skillId);
-
         // Special case: skills with abilityId 0 (like Speak Language) have no total
         if (skill.abilityId === 0) return null;
 
-        return Math.floor(ranks) + (abilityModifier ?? 0);
+        // Use ClassSkillService for proper multi-class aware calculation
+        const abilityScore = getAbilityScore(skill.abilityId);
+
+        // Create a map of class details for the calculation
+        const classDetailsMap = new Map();
+        if (selectedClassDetails && targetAdvancement?.classId) {
+            classDetailsMap.set(targetAdvancement.classId, selectedClassDetails);
+        }
+
+        return ClassSkillService.calculateSkillTotal(character, skillId, abilityScore, classDetailsMap);
     };
 
     // Format skill ranks display (handle half ranks)
@@ -450,6 +453,7 @@ export function SkillsTab({
         const [editingSubtype, setEditingSubtype] = useState(false);
         const [editValue, setEditValue] = useState('');
         const [inputPosition, setInputPosition] = useState({ x: 0, y: 0, width: 0 });
+        const [showSubtypeSelect, setShowSubtypeSelect] = useState(false);
         const inputRef = useRef<HTMLInputElement>(null);
         const skillNameRef = useRef<HTMLDivElement>(null);
 
@@ -469,33 +473,91 @@ export function SkillsTab({
             : isSkillClassSkill(skillId);
         const maxRanks = getMaxRanks(skillId, skillSubId);
         const ranks = getSkillRanks(skillId, skillSubId, customSubtype);
-        const total = getSkillTotal(skillId);
+        const total = getSkillTotal(skillId, skillSubId, customSubtype);
 
         // Get skill name with subtype
         const skillName = getSkillSubtypeName(skillId, skillSubId, customSubtype);
-        const displayName = skillName ? `${skill.name} (${skillName})` : skill.name;
+        let displayName = skill.name;
 
-        // Handle subtype editing for Perform/Profession skills
+        if (skillName) {
+            displayName = `${skill.name} (${skillName})`;
+        } else if (customSubtype === '__placeholder__') {
+            // For placeholder custom subtypes, show (-) to indicate it needs editing
+            displayName = `${skill.name} (-)`;
+        }
+
+        // Handle subtype editing for Perform/Profession skills (text input)
         const handleSubtypeClick = () => {
             if (!skillNeedsCustomSubtype(skillId) || !skillNameRef.current) return;
 
-            // Calculate position of the skill name element
-            const rect = skillNameRef.current.getBoundingClientRect();
-            setInputPosition({
-                x: rect.left,
-                y: rect.top,
-                width: rect.width
-            });
+            // Show text input for Perform/Profession skills (custom subtypes)
+            if (SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.customSubtype].includes(skillId as 32 | 33)) {
+                // Calculate position of the skill name element
+                const rect = skillNameRef.current.getBoundingClientRect();
+                setInputPosition({
+                    x: rect.left,
+                    y: rect.top,
+                    width: rect.width
+                });
 
-            setEditingSubtype(true);
-            setEditValue(customSubtype || '');
+                setEditingSubtype(true);
+                // If it's a placeholder, show empty string in input, otherwise show the actual value
+                setEditValue(customSubtype === '__placeholder__' ? '' : (customSubtype || ''));
+            } else if (SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.skillSubId].includes(skillId as 6 | 19)) {
+                // Show CustomSelect for Craft/Knowledge skills
+                const rect = skillNameRef.current.getBoundingClientRect();
+                setInputPosition({
+                    x: rect.left,
+                    y: rect.top,
+                    width: rect.width
+                });
+                setShowSubtypeSelect(true);
+            }
         };
 
         const handleSubtypeSave = () => {
             if (!skillNeedsCustomSubtype(skillId)) return;
 
-            // Update the custom subtype
-            handleSkillChange(skillId, ranks, skillSubId, editValue);
+            // If the user didn't enter anything and it was a placeholder, keep it as placeholder
+            const finalValue = editValue.trim() === '' && customSubtype === '__placeholder__'
+                ? '__placeholder__'
+                : editValue.trim();
+
+            // If we're editing an existing entry, update it rather than create a new one
+            if (customSubtype !== null && ranks > 0) {
+                // Update the existing entry with the new custom subtype
+                const updatedSkills = [...(advancement?.skills || [])];
+                const existingIndex = updatedSkills.findIndex(s =>
+                    s.skillId === skillId &&
+                    s.skillSubId === skillSubId &&
+                    s.customSubtype === customSubtype
+                );
+
+                if (existingIndex >= 0) {
+                    // Update the existing entry with the new custom subtype
+                    updatedSkills[existingIndex] = {
+                        ...updatedSkills[existingIndex],
+                        customSubtype: finalValue
+                    };
+
+                    // Update the advancement
+                    const updatedAdvancement = {
+                        ...advancement,
+                        skills: updatedSkills
+                    };
+
+                    if (onAdvancementUpdate) {
+                        onAdvancementUpdate(updatedAdvancement);
+                    } else {
+                        onUpdate({
+                            advancements: [updatedAdvancement]
+                        });
+                    }
+                }
+            } else {
+                // For new entries or base rows, use the normal flow
+                handleSkillChange(skillId, ranks, skillSubId, finalValue);
+            }
             setEditingSubtype(false);
             setEditValue('');
         };
@@ -503,6 +565,62 @@ export function SkillsTab({
         const handleSubtypeCancel = () => {
             setEditingSubtype(false);
             setEditValue('');
+        };
+
+        // Handle Craft/Knowledge subtype selection
+        const handleSubtypeSelect = (selectedSubId: number) => {
+            // If we're editing an existing entry, we need to update it rather than create a new one
+            if (skillSubId !== null && ranks > 0) {
+                // Update the existing entry by removing the old one and creating a new one with the new subtype
+                const updatedSkills = [...(advancement?.skills || [])];
+                const existingIndex = updatedSkills.findIndex(s =>
+                    s.skillId === skillId &&
+                    s.skillSubId === skillSubId &&
+                    s.customSubtype === customSubtype
+                );
+
+                if (existingIndex >= 0) {
+                    // Update the existing entry with the new subtype
+                    updatedSkills[existingIndex] = {
+                        ...updatedSkills[existingIndex],
+                        skillSubId: selectedSubId
+                    };
+
+                    // Update the advancement
+                    const updatedAdvancement = {
+                        ...advancement,
+                        skills: updatedSkills
+                    };
+
+                    if (onAdvancementUpdate) {
+                        onAdvancementUpdate(updatedAdvancement);
+                    } else {
+                        onUpdate({
+                            advancements: [updatedAdvancement]
+                        });
+                    }
+                }
+            } else {
+                // For new entries or base rows, use the normal flow
+                handleSkillChange(skillId, ranks, selectedSubId, customSubtype);
+            }
+            setShowSubtypeSelect(false);
+        };
+
+        // Get subtype options for Craft/Knowledge skills
+        const getSubtypeOptions = () => {
+            if (skillId === 6) { // Craft
+                return Object.entries(CRAFT_SKILL_MAP).map(([id, craft]) => ({
+                    value: parseInt(id),
+                    label: craft.name
+                }));
+            } else if (skillId === 19) { // Knowledge
+                return Object.entries(KNOWLEDGE_SKILL_MAP).map(([id, knowledge]) => ({
+                    value: parseInt(id),
+                    label: knowledge.name
+                }));
+            }
+            return [];
         };
 
         return (
@@ -612,6 +730,29 @@ export function SkillsTab({
                                 onBlur={handleSubtypeSave}
                                 placeholder="Enter subtype name..."
                                 className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* Floating CustomSelect for Craft/Knowledge subtype selection */}
+                {showSubtypeSelect && (
+                    <div
+                        className="fixed z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg"
+                        style={{
+                            left: inputPosition.x,
+                            top: inputPosition.y,
+                            width: inputPosition.width,
+                            minWidth: '200px'
+                        }}
+                    >
+                        <div className="p-2">
+                            <CustomSelect<number>
+                                value={skillSubId || 0}
+                                onValueChange={handleSubtypeSelect}
+                                options={getSubtypeOptions()}
+                                placeholder="Select subtype..."
+                                componentExtraClassName="w-full"
                             />
                         </div>
                     </div>
