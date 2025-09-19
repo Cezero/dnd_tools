@@ -11,6 +11,7 @@ import {
 
 import type { RaceService } from './types';
 import { featureSystemService } from '../featureSystem/featureSystemService';
+import type { FeatureProgressionContext } from '../featureSystem/types';
 
 
 
@@ -91,7 +92,8 @@ export const raceService: RaceService = {
 
         // Create feature progressions using consolidated feature system service
         if (features && features.length > 0) {
-            await featureSystemService.createMultipleFeatureProgressions(features, { raceId: result.id });
+            const context: FeatureProgressionContext = { raceId: result.id };
+            await featureSystemService.createMultipleFeatureProgressions(features, context);
         }
 
         return { id: result.id.toString(), message: 'Race created successfully' };
@@ -102,7 +104,8 @@ export const raceService: RaceService = {
 
         await prisma.$transaction(async (tx) => {
             // Delete existing feature progressions using consolidated feature system service
-            await featureSystemService.deleteFeatureProgressionsForContext({ raceId: id.id }, tx);
+            const deleteContext: FeatureProgressionContext = { raceId: id.id };
+            await featureSystemService.deleteFeatureProgressionsForContext(deleteContext, tx);
 
             // Delete existing race source maps
             await tx.raceSourceMap.deleteMany({ where: { raceId: id.id } });
@@ -123,7 +126,8 @@ export const raceService: RaceService = {
 
             // Create new feature progressions using consolidated feature system service
             if (features && features.length > 0) {
-                await featureSystemService.createMultipleFeatureProgressions(features, { raceId: id.id }, tx);
+                const createContext: FeatureProgressionContext = { raceId: id.id };
+                await featureSystemService.createMultipleFeatureProgressions(features, createContext, tx);
             }
         });
 

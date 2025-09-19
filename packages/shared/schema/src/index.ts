@@ -13,3 +13,6 @@ export * from './sourcebook.js';
 export * from './item.js';
 export * from './feature.js';
 export * from './spellcasting.js';
+export * from './variantClass.js';
+export * from './domain.js';
+export * from './deity.js';

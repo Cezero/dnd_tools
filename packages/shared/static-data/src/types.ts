@@ -125,6 +125,8 @@ export interface SourceBook extends CoreComponentAbbreviation {
     hasSpells: boolean;
     hasClasses: boolean;
     hasRaces: boolean;
+    hasDomains: boolean;
+    hasDeities: boolean;
 }
 
 export interface Class extends CoreComponentAbbreviation {
@@ -167,3 +169,5 @@ export type SourceBookMap = BaseMap<SourceBook>;
 export type ClassMap = BaseMap<Class>;
 export type DiceThemeMap = { [key: string]: DiceTheme };
 export type CastingTypeMap = BaseMap<CoreComponent>;
+export type PantheonMap = BaseMap<CoreComponent>;
+export type SettingMap = BaseMap<CoreComponent>;

@@ -1,4 +1,4 @@
-import { SKILL_MAP, ABILITY_MAP, SAVING_THROW_MAP, DAMAGE_TYPES, EntityAppliesToType, ENTITY_APPLIES_TO_TYPES, CRAFT_SKILL_MAP, KNOWLEDGE_SKILL_MAP, SkillSubType, SKILL_SUB_TYPE_COMPATIBILITY } from '@shared/static-data';
+import { SKILL_MAP, ABILITY_MAP, SAVING_THROW_MAP, DAMAGE_TYPES, EntityAppliesToType, ENTITY_APPLIES_TO_TYPES, CRAFT_SKILL_MAP, KNOWLEDGE_SKILL_MAP, SkillSubType, SKILL_SUB_TYPE_COMPATIBILITY, SPELL_SCHOOL_MAP } from '@shared/static-data';
 
 import type { CalculatedEntity } from './types';
 
@@ -143,6 +143,17 @@ export function choiceLabeler(value: string, _choice: CalculatedEntity): string 
     return `Select ${value}`;
 }
 
+// Labeler for Caster Level modifiers - shows domain name from SPELL_SCHOOL_MAP
+export function casterLevelLabeler(value: string, modifier: CalculatedEntity): string {
+    if (modifier.appliesToId) {
+        const domainName = SPELL_SCHOOL_MAP[modifier.appliesToId]?.name;
+        if (domainName) {
+            return `Caster Level (${domainName}): ${value}`;
+        }
+    }
+    return `Caster Level: ${value}`;
+}
+
 // Labeler for grouped choices - adds "Choose a ${choiceType}: (${formatted})" format
 export function groupedChoiceLabeler(formattedItems: string, choiceType: EntityAppliesToType): string {
     const choiceTypeName = ENTITY_APPLIES_TO_TYPES[choiceType]?.name || 'Option';
@@ -200,4 +211,9 @@ export function spellSaveDCLabeler(value: string, _modifier: CalculatedEntity): 
 // Labeler for resistance - shows "Resistance to [type] [value]" for both individual and grouped
 export function groupedResistanceLabeler(formattedItems: string): string {
     return `Resistance to ${formattedItems}`;
+}
+
+// Labeler for domain grants - adds "Domain:" prefix
+export function domainLabeler(value: string, _modifier: CalculatedEntity): string {
+    return `Domain: ${value}`;
 }

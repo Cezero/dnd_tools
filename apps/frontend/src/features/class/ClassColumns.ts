@@ -1,53 +1,20 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter, createEqualsFilter, createArrayIdFilter } from '@/components/generic-list/filterFunctions';
+import { getSourceBookOptionsForClasses } from '@/utils';
 import { ClassSummary } from '@shared/schema';
 import {
     RPG_DICE_SELECT_LIST,
     ABILITY_SELECT_LIST,
     EDITION_SELECT_LIST_FULL,
     SOURCE_BOOK_WITH_CLASSES_SELECT_LIST,
-    SOURCE_BOOK_MAP,
     RPG_DICE,
     EDITION_MAP,
     ABILITY_MAP,
     GetSourceDisplay,
-    FilterType
+    FilterType,
+    isVariantId
 } from '@shared/static-data';
-
-// Function to get source book options filtered by current edition selection
-const getSourceBookOptionsForEdition = (currentFilters: Array<{ id: string; value: unknown }>) => {
-    // Find the current edition filter
-    const editionFilter = currentFilters.find(f => f.id === 'editionId');
-    let selectedEditionIds: number[] = [];
-
-    if (editionFilter) {
-        if (editionFilter.value && typeof editionFilter.value === 'object' && 'values' in editionFilter.value) {
-            selectedEditionIds = (editionFilter.value as { values: number[] }).values;
-        } else if (Array.isArray(editionFilter.value)) {
-            selectedEditionIds = editionFilter.value as number[];
-        } else if (editionFilter.value) {
-            selectedEditionIds = [editionFilter.value as number];
-        }
-    }
-
-    // If no edition is selected, show all source books with classes
-    if (selectedEditionIds.length === 0) {
-        return SOURCE_BOOK_WITH_CLASSES_SELECT_LIST;
-    }
-
-    // Filter source books to only include those that:
-    // 1. Have classes (hasClasses: true)
-    // 2. Match the selected edition(s)
-    const filteredSourceBooks = Object.values(SOURCE_BOOK_MAP).filter(book =>
-        book.hasClasses && selectedEditionIds.includes(book.editionId)
-    );
-
-    return filteredSourceBooks.map(book => ({
-        value: book.id,
-        label: `${book.name}`
-    }));
-};
 
 export const CLASS_COLUMNS: ColumnDef<ClassSummary, unknown>[] = [
     {
@@ -62,6 +29,26 @@ export const CLASS_COLUMNS: ColumnDef<ClassSummary, unknown>[] = [
             required: true,
             filterType: FilterType.TEXT_INPUT,
             placeholder: 'Filter by name...'
+        },
+    },
+    {
+        accessorKey: 'id',
+        header: 'Type',
+        enableSorting: true,
+        enableColumnFilter: true,
+        enableResizing: true,
+        size: 100,
+        filterFn: createEqualsFilter<ClassSummary>(),
+        cell: info => {
+            const id = info.getValue() as number;
+            return isVariantId(id) ? 'Variant' : 'Base';
+        },
+        meta: {
+            filterType: FilterType.SINGLE_SELECT,
+            options: [
+                { value: 'variant', label: 'Variant' },
+                { value: 'base', label: 'Base' }
+            ]
         },
     },
     {
@@ -209,13 +196,14 @@ export const CLASS_COLUMNS: ColumnDef<ClassSummary, unknown>[] = [
         cell: info => {
             const sourceBookInfo = info.getValue() as { sourceBookId: number; pageNumber: number }[];
             if (sourceBookInfo && sourceBookInfo.length > 0) {
-                return GetSourceDisplay(sourceBookInfo.map(s => ({ bookId: s.sourceBookId, pageNumber: s.pageNumber })), true);
+                return GetSourceDisplay(sourceBookInfo, true);
             }
             return '';
         },
         meta: {
             filterType: FilterType.MULTI_SELECT,
-            options: getSourceBookOptionsForEdition,
+            options: (currentFilters: Array<{ id: string; value: unknown }>) =>
+                getSourceBookOptionsForClasses(currentFilters, SOURCE_BOOK_WITH_CLASSES_SELECT_LIST),
         },
     },
 

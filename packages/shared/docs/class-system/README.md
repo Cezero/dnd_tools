@@ -17,6 +17,7 @@ This documentation follows a layered approach, building from the database founda
 - **[Spellcasting System](spellcasting-system.md)** — Magic system mechanics and progression
 - **[Class Progression](class-progression.md)** — Combat and saving throw calculations
 - **[Feature Integration](feature-integration.md)** — Class feature system integration
+- **[Variant Class System](../variant-class-system/README.md)** — Variant class system integration
 
 ## 🎯 **System Overview**
 
@@ -43,6 +44,22 @@ The Class System integrates with the [Feature Formatting System](../feature-syst
 **Related Documentation**:
 - [Feature Formatting System](../feature-system/formatting/README.md) - Complete formatting system overview
 - [Feature System Documentation](../feature-system/README.md) - Main feature system documentation
+
+### **Variant Class Integration**
+
+The Class System integrates with the [Variant Class System](../variant-class-system/README.md) to support Unearthed Arcana variant classes like Cloistered Cleric. The integration uses custom ID generation and override-based storage to minimize data duplication while providing full flexibility for class modifications.
+
+**Integration Points**:
+- **Unified Resolution**: Variants resolve to complete DnDClass objects through the class service
+- **Custom ID Generation**: Uses `baseClassId * 100000 + variantId` for unique variant identification
+- **Override System**: Stores only differences from base classes, not complete class data
+- **Feature Integration**: Leverages the feature system for variant feature management
+- **Spell Integration**: Integrates with the spell system for variant spell list modifications
+
+**Related Documentation**:
+- [Variant Class System](../variant-class-system/README.md) - Complete variant class system overview
+- [Variant Class Database Schema](../variant-class-system/database-schema.md) - Variant class database structure
+- [Variant Class Backend Implementation](../variant-class-system/backend-implementation.md) - Variant class backend services
 
 ### **Layered Implementation**
 

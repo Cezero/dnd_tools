@@ -40,6 +40,8 @@ model Class {
   charSpellPrep           CharacterSpellPreparation[]
   spellcastingProgression SpellcastingProgression[]
   classSpellsKnown        SpellcastingProgression[]   @relation("classSpellsKnown")
+  variants                ClassVariant[]
+  deityClasses            DeityClassMap[]
 }
 
 model SpellcastingProgression {
@@ -98,6 +100,76 @@ model SpellLevelMap {
 }
 
 // =================
+// Class Variant related
+// =================
+
+model ClassVariant {
+  id           Int     @id // Custom ID: baseClassId * 100000 + variantId
+  name         String
+  abbreviation String
+  baseClassId  Int
+  description  String? @db.Text
+
+  // Override fields for class properties
+  hitDie          Int?
+  skillPoints     Int?
+  babProgression  Int?
+  fortProgression Int?
+  refProgression  Int?
+  willProgression Int?
+
+  baseClass                   Class                                    @relation(fields: [baseClassId], references: [id])
+  featureProgressionOverrides ClassVariantFeatureProgressionOverride[]
+  spellOverrides              ClassVariantSpellOverride[]
+  sourceBookInfo              ClassVariantSourceMap[]
+
+  @@unique([name, baseClassId])
+}
+
+model ClassVariantFeatureProgressionOverride {
+  id                            Int                                             @id @default(autoincrement())
+  variantId                     Int
+  originalFeatureProgressionId  Int?
+  replacementFeatureProgression FeatureProgression[]
+  removeEntities                ClassVariantFeatureProgressionRemoveEntityMap[]
+
+  variant                    ClassVariant        @relation(fields: [variantId], references: [id])
+  originalFeatureProgression FeatureProgression? @relation("OriginalFeature", fields: [originalFeatureProgressionId], references: [id])
+}
+
+model ClassVariantFeatureProgressionRemoveEntityMap {
+  classVariantFeatureProgressionOverrideId Int
+  featureEntityId                          Int
+
+  classVariantFeatureProgressionOverride ClassVariantFeatureProgressionOverride @relation(fields: [classVariantFeatureProgressionOverrideId], references: [id])
+
+  @@id([classVariantFeatureProgressionOverrideId, featureEntityId])
+}
+
+model ClassVariantSpellOverride {
+  id        Int @id @default(autoincrement())
+  variantId Int
+  spellId   Int
+  level     Int
+
+  variant ClassVariant @relation(fields: [variantId], references: [id])
+  spell   Spell        @relation(fields: [spellId], references: [id])
+
+  @@unique([variantId, spellId, level])
+}
+
+model ClassVariantSourceMap {
+  variantId    Int
+  pageNumber   Int?
+  sourceBookId Int
+
+  variant    ClassVariant @relation(fields: [variantId], references: [id])
+  sourceBook SourceBook?  @relation(fields: [sourceBookId], references: [id])
+
+  @@id([variantId, sourceBookId])
+}
+
+// =================
 // Feature related
 // =================
 
@@ -112,20 +184,25 @@ model Feature {
 }
 
 model FeatureProgression {
-  id         Int  @id @default(autoincrement())
-  sourceType Int
-  level      Int
-  featureId  Int
-  classId    Int?
-  raceId     Int?
+  id                Int  @id @default(autoincrement())
+  sourceType        Int
+  level             Int
+  featureId         Int
+  classId           Int?
+  raceId            Int?
+  variantOverrideId Int?
+  domainId          Int? // NEW: Reference to domain for domain-granted features
 
-  class Class? @relation(fields: [classId], references: [id])
-  race  Race?  @relation(fields: [raceId], references: [id])
+  class                Class?                                  @relation(fields: [classId], references: [id])
+  race                 Race?                                   @relation(fields: [raceId], references: [id])
+  classVariantOverride ClassVariantFeatureProgressionOverride? @relation(fields: [variantOverrideId], references: [id])
+  domain               Domain?                                 @relation(fields: [domainId], references: [id]) // NEW: Domain relationship
 
-  feature                Feature                  @relation(fields: [featureId], references: [id])
+  feature                Feature                                  @relation(fields: [featureId], references: [id])
   spellcasting           SpellcastingLink?
   characterFeatureChoice CharacterFeatureChoice[]
   entities               FeatureEntity[]
+  originalOverrides      ClassVariantFeatureProgressionOverride[] @relation("OriginalFeature")
 }
 
 model FeatureEntity {
@@ -205,14 +282,16 @@ model Spell {
   effect          String?
   target          String?
 
-  descriptorIds  SpellDescriptorMap[]
-  levelMapping   SpellLevelMap[]
-  schoolIds      SpellSchoolMap[]
-  sourceBookInfo SpellSourceMap[]
-  subSchoolIds   SpellSubschoolMap[]
-  componentIds   SpellComponentMap[]
-  advSpells      AdvancementSpell[]
-  charSpellPrep  CharacterSpellPreparation[]
+  descriptorIds    SpellDescriptorMap[]
+  levelMapping     SpellLevelMap[]
+  schoolIds        SpellSchoolMap[]
+  sourceBookInfo   SpellSourceMap[]
+  subSchoolIds     SpellSubschoolMap[]
+  componentIds     SpellComponentMap[]
+  advSpells        AdvancementSpell[]
+  charSpellPrep    CharacterSpellPreparation[]
+  variantOverrides ClassVariantSpellOverride[]
+  domainSpells     DomainSpell[] // NEW: Domain spell associations
 }
 
 model SpellDescriptorMap {
@@ -349,6 +428,7 @@ model Race {
   sources            RaceSourceMap[]
   userCharacter      UserCharacter[]
   featureProgression FeatureProgression[]
+  deityRaces         DeityRaceMap[]
 }
 
 model RaceSourceMap {
@@ -380,8 +460,9 @@ model Item {
 
   itemType ItemType @relation(fields: [typeId], references: [id])
 
-  characterItems CharacterItem[]
-  itemTemplate   ItemTemplate[]
+  characterItems      CharacterItem[]
+  itemTemplate        ItemTemplate[]
+  deityFavoredWeapons DeityFavoredWeaponMap[]
 }
 
 model ItemType {
@@ -522,9 +603,12 @@ model SourceBook {
   description  String?   @db.Text
   isVisible    Boolean   @default(true)
 
-  classes ClassSourceMap[]
-  races   RaceSourceMap[]
-  spells  SpellSourceMap[]
+  classes       ClassSourceMap[]
+  races         RaceSourceMap[]
+  spells        SpellSourceMap[]
+  classVariants ClassVariantSourceMap[]
+  domains       DomainSourceMap[] // NEW: Domain source references
+  deities       DeitySourceMap[] // NEW: Deity source references
 }
 
 // =================
@@ -595,6 +679,7 @@ model UserCharacter {
   name        String
   raceId      Int
   alignmentId Int
+  deityId     Int? // Optional deity worship
   xp          Int     @default(0)
   age         Int?
   height      Int?
@@ -609,8 +694,9 @@ model UserCharacter {
   advancements   CharacterAdvancement[]
   preparedSpells CharacterSpellPreparation[]
 
-  race Race @relation(fields: [raceId], references: [id])
-  user User @relation(fields: [userId], references: [id])
+  race  Race   @relation(fields: [raceId], references: [id])
+  deity Deity? @relation(fields: [deityId], references: [id])
+  user  User   @relation(fields: [userId], references: [id])
 }
 
 model UserCharacterAbilityScore {
@@ -695,17 +781,20 @@ model CharacterFeatureChoice {
 }
 
 model CharacterSpellPreparation {
-  characterId Int
-  classId     Int // The class whose slot was used
-  spellId     Int
-  spellLevel  Int // Actual slot level used (post-metamagic)
-  quantity    Int
-  prepKey     String // Unique identifier for this exact combination
-  slotType    Int    @default(1)
+  characterId   Int
+  classId       Int // The class whose slot was used
+  spellId       Int
+  spellLevel    Int // Actual slot level used (post-metamagic)
+  quantity      Int
+  prepKey       String // Unique identifier for this exact combination
+  slotType      Int     @default(1)
+  isDomainSpell Boolean @default(false) // NEW: Is this a domain spell?
+  domainId      Int? // NEW: Which domain (if domain spell)
 
   character  UserCharacter               @relation(fields: [characterId], references: [id])
   class      Class                       @relation(fields: [classId], references: [id])
   spell      Spell                       @relation(fields: [spellId], references: [id])
+  domain     Domain?                     @relation(fields: [domainId], references: [id]) // NEW: Domain relationship
   metamagics SpellPreparationMetamagic[]
 
   @@id([characterId, prepKey])
@@ -801,4 +890,115 @@ model UserDiceConfigOverride {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, propertyName]) // One override per property per user
+}
+
+// =================
+// Divine Domains and Deities
+// =================
+
+model Domain {
+  id        Int    @id @default(autoincrement())
+  name      String
+  editionId Int
+
+  domainSpells               DomainSpell[]
+  deityDomains               DeityDomain[]
+  featureProgressions        FeatureProgression[]
+  sourceBookInfo             DomainSourceMap[]
+  characterSpellPreparations CharacterSpellPreparation[]
+}
+
+model DomainSpell {
+  id         Int @id @default(autoincrement())
+  domainId   Int
+  spellId    Int
+  spellLevel Int // 1-9
+
+  domain Domain @relation(fields: [domainId], references: [id])
+  spell  Spell  @relation(fields: [spellId], references: [id])
+
+  @@unique([domainId, spellLevel])
+}
+
+model Deity {
+  id          Int     @id @default(autoincrement())
+  name        String
+  title       String?
+  alignmentId Int
+  description String? @db.Text
+  editionId   Int
+  pantheonId  Int?
+
+  domains        DeityDomain[]
+  characters     UserCharacter[]
+  sourceBookInfo DeitySourceMap[]
+  deityClasses   DeityClassMap[]
+  deityRaces     DeityRaceMap[]
+  favoredWeapons DeityFavoredWeaponMap[]
+}
+
+model DeityDomain {
+  id       Int @id @default(autoincrement())
+  deityId  Int
+  domainId Int
+
+  deity  Deity  @relation(fields: [deityId], references: [id])
+  domain Domain @relation(fields: [domainId], references: [id])
+
+  @@unique([deityId, domainId])
+}
+
+model DeityClassMap {
+  id      Int @id @default(autoincrement())
+  deityId Int
+  classId Int
+
+  deity Deity @relation(fields: [deityId], references: [id])
+  class Class @relation(fields: [classId], references: [id])
+
+  @@unique([deityId, classId])
+}
+
+model DeityFavoredWeaponMap {
+  id      Int @id @default(autoincrement())
+  deityId Int
+  itemId  Int
+
+  deity Deity @relation(fields: [deityId], references: [id])
+  item  Item  @relation(fields: [itemId], references: [id])
+
+  @@unique([deityId, itemId])
+}
+
+model DeityRaceMap {
+  id      Int @id @default(autoincrement())
+  deityId Int
+  raceId  Int
+
+  deity Deity @relation(fields: [deityId], references: [id])
+  race  Race  @relation(fields: [raceId], references: [id])
+
+  @@unique([deityId, raceId])
+}
+
+model DomainSourceMap {
+  domainId     Int
+  sourceBookId Int
+  pageNumber   Int?
+
+  domain     Domain     @relation(fields: [domainId], references: [id])
+  sourceBook SourceBook @relation(fields: [sourceBookId], references: [id])
+
+  @@id([domainId, sourceBookId])
+}
+
+model DeitySourceMap {
+  deityId      Int
+  sourceBookId Int
+  pageNumber   Int?
+
+  deity      Deity      @relation(fields: [deityId], references: [id])
+  sourceBook SourceBook @relation(fields: [sourceBookId], references: [id])
+
+  @@id([deityId, sourceBookId])
 }

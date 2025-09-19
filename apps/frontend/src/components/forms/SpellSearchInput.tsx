@@ -1,7 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDownIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect, useRef } from 'react';
+
 import { SPELL_ID_LIST } from '@shared/static-data';
-import type { Spell } from '@shared/schema';
+
+type SpellListItem = {
+    id: number;
+    name: string;
+    editionId: number;
+};
 
 interface SpellSearchInputProps {
     value: number | null;
@@ -10,6 +16,7 @@ interface SpellSearchInputProps {
     placeholder?: string;
     disabled?: boolean;
     componentExtraClassName?: string;
+    spellList?: SpellListItem[]; // Optional prop for filtering
 }
 
 export function SpellSearchInput({
@@ -18,17 +25,18 @@ export function SpellSearchInput({
     label = 'Spell',
     placeholder = 'Search for a spell...',
     disabled = false,
-    componentExtraClassName = ''
+    componentExtraClassName = '',
+    spellList
 }: SpellSearchInputProps) {
     const [searchTerm, setSearchTerm] = useState('');
-    const [filteredSpells, setFilteredSpells] = useState<Spell[]>([]);
+    const [filteredSpells, setFilteredSpells] = useState<SpellListItem[]>([]);
     const [isOpen, setIsOpen] = useState(false);
-    const [selectedSpell, setSelectedSpell] = useState<Spell | null>(null);
+    const [selectedSpell, setSelectedSpell] = useState<SpellListItem | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Use static spell data
-    const spells = SPELL_ID_LIST;
+    // Use provided spell list or fallback to static data
+    const spells = spellList || SPELL_ID_LIST;
 
     // Filter spells based on search term
     useEffect(() => {
@@ -75,7 +83,7 @@ export function SpellSearchInput({
     };
 
     // Handle spell selection
-    const handleSpellSelect = (spell: Spell) => {
+    const handleSpellSelect = (spell: SpellListItem) => {
         setSelectedSpell(spell);
         setSearchTerm(spell.name);
         setIsOpen(false);
@@ -160,11 +168,6 @@ export function SpellSearchInput({
                                     <div className="font-medium text-gray-900 dark:text-gray-100">
                                         {spell.name}
                                     </div>
-                                    {spell.summary && (
-                                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                            {spell.summary}
-                                        </div>
-                                    )}
                                 </button>
                             ))
                         ) : searchTerm.length > 0 ? (

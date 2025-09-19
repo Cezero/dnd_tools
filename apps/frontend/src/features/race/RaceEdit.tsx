@@ -172,6 +172,7 @@ export function RaceEdit() {
                     raceId: parseInt(id || '0'),
                     level: 1,
                     classId: null,
+                    domainId: null, // Set domainId to null for race-based progressions
                     featureId: featureId,
                     sourceType: FeatureSourceType.Race,
                     feature: {
@@ -238,6 +239,7 @@ export function RaceEdit() {
                 sourceType: FeatureSourceType.Race,
                 classId: null,
                 raceId: parseInt(id || '0'),
+                domainId: null, // Set domainId to null for race-based progressions
                 level: 1, // Default to level 1
                 featureId: feature.id,
                 feature: {
@@ -263,6 +265,7 @@ export function RaceEdit() {
                 sourceType: FeatureSourceType.Race,
                 classId: null,
                 raceId: parseInt(id || '0'),
+                domainId: null, // Set domainId to null for race-based progressions
                 level: 1,
                 featureId: feature.id,
                 feature: {
@@ -413,6 +416,7 @@ export function RaceEdit() {
                     id: Date.now() + Math.random(),
                     raceId: parseInt(id || '0'),
                     classId: null,
+                    domainId: null, // Set domainId to null for race-based progressions
                     level: 1,
                     featureId: SpecialFeatureId.AbilityAdjustment,
                     // REMOVED: appliesTo and appliesToType - redundant fields removed from schema
@@ -465,7 +469,7 @@ export function RaceEdit() {
                     return {
                         ...progressionData,
                         entities: prog.entities?.map(entity => {
-                            const { id: _, progressionId: __, feat: _feat, feature: _feature, item: _item, ...entityData } = entity;
+                            const { id: _, progressionId: __, feat: _feat, feature: _feature, item: _item, domain: _domain, ...entityData } = entity;
                             return entityData;
                         }) || [],
                     };

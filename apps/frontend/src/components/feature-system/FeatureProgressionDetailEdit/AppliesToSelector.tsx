@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-import { ValidatedCustomSelect, CustomSelect, useFormContext } from '@/components/forms';
+import { ValidatedCustomSelect, CustomSelect, useFormContext, SpellSearchInput } from '@/components/forms';
 import type { FeatureEntity } from '@shared/schema';
 import {
     ENTITY_APPLIES_TO_SELECT_LIST,
@@ -13,7 +13,6 @@ import {
 } from '@shared/static-data';
 import type { SelectOption } from '@shared/static-data';
 
-import { SpellSearchInput } from './SpellSearchInput';
 import type { AppliesToSelectorProps } from './types';
 import { getAppliesToSelectOptions } from './utils';
 
@@ -98,9 +97,25 @@ export function AppliesToSelector({
                                 onValueChange={(value) => {
                                     setFormData(prev => ({
                                         ...prev,
-                                        entities: (prev.entities as FeatureEntity[] || []).map((ent, i) =>
-                                            i === index ? { ...ent, appliesToId: value } : ent
-                                        )
+                                        entities: (prev.entities as FeatureEntity[] || []).map((ent, i) => {
+                                            if (i === index) {
+                                                const updatedEntity = { ...ent, appliesToId: value };
+
+                                                // If this is a domain selection, populate the domain object
+                                                if (appliesTo === EntityAppliesToType.Domain && value) {
+                                                    const selectedDomain = appliesToIdOptions.find(option => option.value === value);
+                                                    if (selectedDomain) {
+                                                        updatedEntity.domain = {
+                                                            id: value,
+                                                            name: selectedDomain.label
+                                                        };
+                                                    }
+                                                }
+
+                                                return updatedEntity;
+                                            }
+                                            return ent;
+                                        })
                                     }));
                                 }}
                                 label={(() => {

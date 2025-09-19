@@ -8,6 +8,8 @@ import { routes as itemRoutes } from '@/features/item/ItemConfig';
 import { routes as raceRoutes } from '@/features/race/RaceConfig';
 import { routes as skillRoutes } from '@/features/skill/SkillConfig';
 import { routes as spellRoutes } from '@/features/spell/SpellConfig';
+import { routes as domainRoutes } from '@/features/domain/DomainConfig';
+import { routes as deityRoutes } from '@/features/deity/DeityConfig';
 import { RouteConfig } from '@/types';
 
 export const FeatureRoutes: RouteConfig[] = [
@@ -19,6 +21,8 @@ export const FeatureRoutes: RouteConfig[] = [
     ...classRoutes,
     ...raceRoutes,
     ...itemRoutes,
+    ...domainRoutes,
+    ...deityRoutes,
     ...featureSystemRoutes,
     ...profileRoutes,
 ]; 

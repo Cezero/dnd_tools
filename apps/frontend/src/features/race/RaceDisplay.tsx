@@ -2,9 +2,9 @@ import pluralize from 'pluralize';
 import React from 'react';
 
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
+import { CharacterUtils } from '@/features/character/CharacterUtils';
 import { displayStrategyFactory } from '@/lib/formatters';
 import { LanguageService } from '@/lib/LanguageService';
-import { CharacterUtils } from '@/features/character/CharacterUtils';
 import { Race } from '@shared/schema';
 import { DisplayType, SIZE_MAP, LANGUAGE_MAP, EDITION_MAP, CLASS_MAP, SpecialFeatureId, GetSourceDisplay } from '@shared/static-data';
 
@@ -43,7 +43,7 @@ export function RaceDisplay({
                             <div className="text-right">
                                 <p><strong>Edition:</strong> {EDITION_MAP[race.editionId]?.abbreviation}</p>
                                 {race.sources && race.sources.length > 0 && (
-                                    <p><strong>Source:</strong> {GetSourceDisplay(race.sources.map(s => ({ bookId: s.sourceBookId, pageNumber: s.pageNumber })), true)}</p>
+                                    <p><strong>Source:</strong> {GetSourceDisplay(race.sources, true)}</p>
                                 )}
                                 <p><strong>Display:</strong> {race.isVisible ? 'Yes' : 'No'}</p>
                             </div>

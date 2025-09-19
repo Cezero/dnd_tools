@@ -1,4 +1,5 @@
 import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
+import { DomainApi } from '@/features/domain/DomainApi';
 import { FeatApi } from '@/features/feat/FeatApi';
 import { ItemApi } from '@/features/item/ItemApi';
 import {
@@ -19,7 +20,8 @@ import {
     CRAFT_SKILL_SELECT_LIST,
     KNOWLEDGE_SKILL_SELECT_LIST,
     Skill,
-    ENERGY_DAMAGE_SELECT_LIST
+    ENERGY_DAMAGE_SELECT_LIST,
+    SPELL_SCHOOL_SELECT_LIST
 } from '@shared/static-data';
 import type { SelectOption } from '@shared/static-data';
 
@@ -79,6 +81,8 @@ export async function getAppliesToSelectOptions(appliesTo: EntityAppliesToType, 
             return DAMAGE_TYPE_SELECT_LIST;
         case EntityAppliesToType.Resistance:
             return ENERGY_DAMAGE_SELECT_LIST;
+        case EntityAppliesToType.CasterLevel:
+            return SPELL_SCHOOL_SELECT_LIST;
         case EntityAppliesToType.AC:
             return [];
         case EntityAppliesToType.Uses:
@@ -103,6 +107,21 @@ export async function getAppliesToSelectOptions(appliesTo: EntityAppliesToType, 
             }
             return [
                 { value: -1, label: 'Select a feat...' }
+            ];
+        case EntityAppliesToType.Domain:
+            try {
+                const domains = await DomainApi.getDomains({});
+                if (domains && domains.results && domains.results.length > 0) {
+                    return domains.results.map(domain => ({
+                        value: domain.id,
+                        label: domain.name
+                    }));
+                }
+            } catch (error) {
+                console.error('Failed to load domains for AppliesToId options:', error);
+            }
+            return [
+                { value: -1, label: 'Select a domain...' }
             ];
         case EntityAppliesToType.Spell:
             return SPELL_ID_LIST.map(spell => ({

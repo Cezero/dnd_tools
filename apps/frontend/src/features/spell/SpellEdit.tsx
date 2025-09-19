@@ -15,7 +15,7 @@ import {
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { SpellApi } from '@/features/spell/SpellApi';
 import { SpellLevelMapping, GetSpellResponse, UpdateSpellSchema, UpdateSpellRequest, SpellIdParamSchema } from '@shared/schema';
-import { SPELL_DESCRIPTOR_LIST, SPELL_COMPONENT_LIST, SPELL_RANGE_LIST, SPELL_RANGE_MAP, SPELL_SUBSCHOOL_LIST_BY_SCHOOL_ID, CLASS_LIST, CLASS_MAP, SPELL_SCHOOL_SELECT_LIST, SelectOption } from '@shared/static-data';
+import { SPELL_DESCRIPTOR_LIST, SPELL_COMPONENT_LIST, SPELL_RANGE_LIST, SPELL_RANGE_MAP, SPELL_SUBSCHOOL_LIST_BY_SCHOOL_ID, CLASS_LIST, CLASS_MAP, SPELL_SCHOOL_SELECT_LIST, SelectOption, SourceType } from '@shared/static-data';
 
 export function SpellEdit() {
     const { id } = useParams();
@@ -528,7 +528,7 @@ export function SpellEdit() {
                     <SourceEditor
                         sources={formData?.sourceBookInfo || []}
                         onSourcesChange={(sources) => setFormData(prev => ({ ...prev, sourceBookInfo: sources }))}
-                        sourceType="spells"
+                        sourceType={SourceType.Spells}
                     />
                 </div>
 

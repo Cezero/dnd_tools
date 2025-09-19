@@ -1,44 +1,28 @@
-import React, { useState, useEffect } from 'react';
 import { TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { CustomSelect, ValidatedInput } from './index';
-import {
-    SOURCE_BOOK_WITH_CLASSES_SELECT_LIST,
-    SOURCE_BOOK_WITH_SPELLS_SELECT_LIST,
-    SOURCE_BOOK_WITH_RACES_SELECT_LIST,
-    SOURCE_BOOK_MAP,
-    GetSourceDisplay
-} from '@shared/static-data';
+import React, { useState } from 'react';
+
 import type { SourceMap } from '@shared/schema';
+import {
+    SOURCE_BOOK_MAP,
+    GetSourceBookList,
+    SourceType
+} from '@shared/static-data';
+
+import { CustomSelect } from './index';
 
 export interface SourceEditorProps {
     sources: SourceMap[];
     onSourcesChange: (sources: SourceMap[]) => void;
-    sourceType: 'classes' | 'spells' | 'races';
+    sourceType: SourceType;
     className?: string;
 }
 
 export function SourceEditor({ sources, onSourcesChange, sourceType, className = '' }: SourceEditorProps) {
-    const [selectedBookId, setSelectedBookId] = useState<string>('');
+    const [selectedBookId, setSelectedBookId] = useState<number>(0);
     const [pageNumber, setPageNumber] = useState<string>('');
 
-    // Get the appropriate source book list based on type
-    const getSourceBookList = () => {
-        switch (sourceType) {
-            case 'classes':
-                return SOURCE_BOOK_WITH_CLASSES_SELECT_LIST;
-            case 'spells':
-                return SOURCE_BOOK_WITH_SPELLS_SELECT_LIST;
-            case 'races':
-                return SOURCE_BOOK_WITH_RACES_SELECT_LIST;
-            default:
-                return SOURCE_BOOK_WITH_CLASSES_SELECT_LIST;
-        }
-    };
-
-    const sourceBookList = getSourceBookList();
-
     // Filter out already selected books
-    const availableBooks = sourceBookList.filter(book =>
+    const availableBooks = GetSourceBookList(sourceType).filter(book =>
         !sources.some(source => source.sourceBookId === book.value)
     );
 
@@ -46,12 +30,12 @@ export function SourceEditor({ sources, onSourcesChange, sourceType, className =
         if (!selectedBookId) return;
 
         const newSource: SourceMap = {
-            sourceBookId: parseInt(selectedBookId),
+            sourceBookId: selectedBookId,
             pageNumber: pageNumber ? parseInt(pageNumber) : null
         };
 
         onSourcesChange([...sources, newSource]);
-        setSelectedBookId('');
+        setSelectedBookId(0);
         setPageNumber('');
     };
 

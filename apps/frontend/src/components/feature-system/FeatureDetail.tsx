@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
+import { DetailPage } from '@/components/common/DetailPage';
 import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { displayStrategyFactory } from '@/lib/formatters';
@@ -70,117 +71,70 @@ export function FeatureDetail() {
         }
     };
 
-    if (isLoading) return (
-        <div className="pt-8">
-            <div className="w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-600 rounded-lg shadow-lg p-1">
-                <div className="p-3 bg-content border-content rounded-lg border w-full">
-                    Loading...
-                </div>
-            </div>
-        </div>
-    );
-
-    if (!feature) return (
-        <div className="pt-8">
-            <div className="w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-600 rounded-lg shadow-lg p-1">
-                <div className="p-3 bg-content border-content rounded-lg border w-full">
-                    <p>Feature not found.</p>
-                    <Link to={getBackLink()} className="text-blue-500 hover:text-blue-700">
-                        {getBackText()}
-                    </Link>
-                </div>
-            </div>
-        </div>
-    );
-
     return (
-        <div className="pt-8">
-            <div className="w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-600 rounded-lg shadow-lg p-1">
-                <div className="p-3 bg-content border-content rounded-lg border w-full">
-                    <div className="flex justify-between items-start mb-4">
-                        <div>
-                            <h1 className="text-2xl font-bold mb-2">{feature.name}</h1>
-                            <p className="text-gray-600 dark:text-gray-400 text-sm">Slug: {feature.slug}</p>
-                        </div>
-                        {isAdmin && (
-                            <div className="flex space-x-2">
-                                <button
-                                    onClick={handleEdit}
-                                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                                >
-                                    Edit
-                                </button>
-                                <button
-                                    onClick={handleBack}
-                                    className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-                                >
-                                    {getBackText()}
-                                </button>
-                            </div>
-                        )}
-                    </div>
-
-                    {feature.description && (
-                        <div className="mb-6">
-                            <h2 className="text-lg font-semibold mb-2">Description</h2>
-                            <ProcessMarkdown
-                                markdown={feature.description}
-                                id={`feature-${feature.slug}-description`}
-                            />
-                        </div>
-                    )}
-
-                    {/* Feature Progressions */}
-                    {featureProgressions.length > 0 && (
-                        <div className="mb-6">
-                            <h2 className="text-lg font-semibold mb-2">Progressions</h2>
-                            <div className="space-y-4">
-                                {featureProgressions.map((progression) => (
-                                    <div key={progression.id} className="border border-gray-200 rounded-md dark:border-gray-600 p-4">
-                                        <div className="mb-2">
-                                            <h3 className="text-lg font-medium">
-                                                Level {progression.level}
-                                            </h3>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                Source Type: {Object.keys(FeatureSourceType).find(key => FeatureSourceType[key as keyof typeof FeatureSourceType] === progression.sourceType) || `Unknown (${progression.sourceType})`}
-                                            </p>
-                                        </div>
-                                        <div className="space-y-2">
-                                            {progression.entities && progression.entities.length > 0 && (
-                                                <div>
-                                                    <h4 className="font-medium">Entities:</h4>
-                                                    <ul className="text-sm text-gray-600 dark:text-gray-400">
-                                                        {progression.entities.map((entity, index) => {
-                                                            const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
-                                                            const formatter = strategy.format({ ...progression, entities: [entity] });
-                                                            return (
-                                                                <li key={index}>
-                                                                    {formatter.levelEntries[0]?.items[0]?.formattedValue || 'No preview'}
-                                                                </li>
-                                                            );
-                                                        })}
-                                                    </ul>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {fromListParams && (
-                        <div className="mt-4">
-                            <Link
-                                to={getBackLink()}
-                                className="text-blue-500 hover:text-blue-700"
-                            >
-                                ← {getBackText()}
-                            </Link>
-                        </div>
-                    )}
+        <DetailPage
+            isLoading={isLoading}
+            item={feature}
+            itemName="Feature"
+            isAdmin={isAdmin}
+            onBack={handleBack}
+            onEdit={handleEdit}
+        >
+            <div className="flex justify-between items-start mb-4">
+                <div>
+                    <h1 className="text-2xl font-bold mb-2">{feature!.name}</h1>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">Slug: {feature!.slug}</p>
                 </div>
             </div>
-        </div>
+
+            {feature!.description && (
+                <div className="mb-6">
+                    <h2 className="text-lg font-semibold mb-2">Description</h2>
+                    <ProcessMarkdown
+                        markdown={feature!.description}
+                        id={`feature-${feature!.slug}-description`}
+                    />
+                </div>
+            )}
+
+            {/* Feature Progressions */}
+            {featureProgressions.length > 0 && (
+                <div className="mb-6">
+                    <h2 className="text-lg font-semibold mb-2">Progressions</h2>
+                    <div className="space-y-4">
+                        {featureProgressions.map((progression) => (
+                            <div key={progression.id} className="border border-gray-200 rounded-md dark:border-gray-600 p-4">
+                                <div className="mb-2">
+                                    <h3 className="text-lg font-medium">
+                                        Level {progression.level}
+                                    </h3>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                        Source Type: {Object.keys(FeatureSourceType).find(key => FeatureSourceType[key as keyof typeof FeatureSourceType] === progression.sourceType) || `Unknown (${progression.sourceType})`}
+                                    </p>
+                                </div>
+                                <div className="space-y-2">
+                                    {progression.entities && progression.entities.length > 0 && (
+                                        <div>
+                                            <h4 className="font-medium">Entities:</h4>
+                                            <ul className="text-sm text-gray-600 dark:text-gray-400">
+                                                {progression.entities.map((entity, index) => {
+                                                    const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
+                                                    const formatter = strategy.format({ ...progression, entities: [entity] });
+                                                    return (
+                                                        <li key={index}>
+                                                            {formatter.levelEntries[0]?.items[0]?.formattedValue || 'No preview'}
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </DetailPage>
     );
 } 

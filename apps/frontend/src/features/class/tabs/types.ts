@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { useZodValidation } from '@/hooks/useZodValidation';
-import type { CreateClassRequest, UpdateClassRequest, FeatureProgression, SpellcastingProgressionWithSlots } from '@shared/schema';
+import type { CreateClassRequest, UpdateClassRequest, FeatureProgression, SpellcastingProgressionWithSlots, ClassVariantSpellOverrideCreate } from '@shared/schema';
 
 // Type definitions for the form state
 export type ClassFormData = CreateClassRequest | UpdateClassRequest;
@@ -47,4 +47,13 @@ export interface ClassTabProps {
     onRemoveProgression?: (progressionId: number) => void;
     onAddFeature?: (feature: { id: number; name: string; description: string; slug: string }) => void;
     classId?: number;
+    // Variant-specific props
+    isVariant?: boolean;
+    setIsVariant?: (isVariant: boolean) => void;
+    baseClassId?: number;
+    setBaseClassId?: (baseClassId: number) => void;
+    availableBaseClasses?: Array<{ id: number; name: string }>;
+    // Spell override props
+    spellOverrides?: ClassVariantSpellOverrideCreate[];
+    onSpellOverridesUpdate?: (overrides: ClassVariantSpellOverrideCreate[]) => void;
 }

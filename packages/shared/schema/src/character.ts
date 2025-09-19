@@ -32,6 +32,7 @@ export const BaseCharacterSchema = z.object({
         .trim(),
     raceId: z.number().int().positive('Race ID must be a positive integer'),
     alignmentId: z.number().int().positive('Alignment ID must be a positive integer'),
+    deityId: z.number().int().positive('Deity ID must be a positive integer').nullable(),
     age: z.number().int().min(0, 'Age must be a non-negative integer').max(1000, 'Age must be less than 1000').nullable(),
     height: z.number().int().min(1, 'Height must be a positive integer').max(1000, 'Height must be less than 1000').nullable(),
     weight: z.number().int().min(1, 'Weight must be a positive integer').max(10000, 'Weight must be less than 10000').nullable(),
@@ -79,9 +80,9 @@ export const CharacterAdvancementSchema = z.object({
 export const AdvancementSkillSchema = z.object({
     advancementId: z.number().int().positive('Advancement ID must be a positive integer'),
     skillId: z.number().int().positive('Skill ID must be a positive integer'),
-    skillSubId: z.number().int().positive('Skill subtype ID must be a positive integer').optional(),
+    skillSubId: z.number().int().positive('Skill subtype ID must be a positive integer').nullable(),
     pointsSpent: z.number().int().min(0, 'Points spent must be a non-negative integer'),
-    customSubtype: z.string().max(100, 'Custom subtype must be less than 100 characters').optional(),
+    customSubtype: z.string().max(100, 'Custom subtype must be less than 100 characters').nullable(),
 });
 
 export const AdvancementFeatSchema = z.object({
@@ -98,11 +99,10 @@ export const AdvancementSpellSchema = z.object({
 export const CharacterFeatureChoiceSchema = z.object({
     id: z.number().int().positive('Character feature choice ID must be a positive integer'),
     characterId: z.number().int().positive('Character ID must be a positive integer'),
-    featureChoiceId: z.number().int().positive('Feature choice ID must be a positive integer'),
     progressionId: z.number().int().positive('Progression ID must be a positive integer'),
     advancementId: z.number().int().positive('Advancement ID must be a positive integer'),
     key: z.string().nullable(),
-    value: z.string().min(1, 'Value is required'),
+    value: z.string().nullable(),
     choiceIndex: z.number().int().nullable(),
 });
 
@@ -123,6 +123,8 @@ export const CharacterSpellPreparationSchema = z.object({
     quantity: z.number().int().min(1, 'Quantity must be a positive integer'),
     prepKey: z.string().min(1, 'Preparation key is required'),
     slotType: z.number().int().min(1, 'Slot type must be a positive integer').default(1),
+    isDomainSpell: z.boolean().default(false), // NEW: Is this a domain spell?
+    domainId: z.number().int().positive('Domain ID must be a positive integer').nullable(), // NEW: Which domain (if domain spell)
 });
 
 export const SpellPreparationMetamagicSchema = z.object({
@@ -222,6 +224,11 @@ export const CharacterContextSchema = z.object({
 });
 
 export type CharacterIdParamRequest = z.infer<typeof CharacterIdParamSchema>;
+export type AdvancementIdParamRequest = z.infer<typeof AdvancementIdParamSchema>;
+export type CharacterIdParam2Request = z.infer<typeof CharacterIdParamSchema2>;
+export type SpellPreparationParamRequest = z.infer<typeof SpellPreparationParamSchema>;
+export type AbilityIdParamRequest = z.infer<typeof AbilityIdParamSchema>;
+
 export type CreateCharacterRequest = z.infer<typeof CreateCharacterSchema>;
 export type UpdateCharacterRequest = z.infer<typeof UpdateCharacterSchema>;
 export type Character = z.infer<typeof CharacterSchema>;

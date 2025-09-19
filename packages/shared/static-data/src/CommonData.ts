@@ -243,14 +243,24 @@ export const LANGUAGE_MAP: LanguageMap = {
 export const LANGUAGE_LIST = Object.values(LANGUAGE_MAP);
 export const LANGUAGE_SELECT_LIST = NameSelectOptionList(LANGUAGE_LIST);
 
+export const EDITION_IDS = {
+    ODND: 1,
+    ADND: 2,
+    ADND_2E: 3,
+    DND_3E: 4,
+    DND_3_5E: 5,
+    DND_4E: 6,
+    DND_5E: 7,
+} as const;
+
 export const EDITION_MAP: EditionMap = {
-    1: { id: 1, name: 'Original Dungeons & Dragons', abbreviation: 'OD&D' },
-    2: { id: 2, name: 'Advanced Dungeons & Dragons', abbreviation: 'AD&D' },
-    3: { id: 3, name: 'Advanced Dungeons & Dragon 2nd Edition', abbreviation: 'AD&D 2E' },
-    4: { id: 4, name: 'Dungeons & Dragons 3rd Edition', abbreviation: 'D&D 3E' },
-    5: { id: 5, name: 'Dungeons & Dragons 3.5 Edition', abbreviation: 'D&D 3.5E' },
-    6: { id: 6, name: 'Dungeons & Dragons 4th Edition', abbreviation: 'D&D 4E' },
-    7: { id: 7, name: 'Dungeons & Dragons 5th Edition', abbreviation: 'D&D 5E' },
+    [EDITION_IDS.ODND]: { id: EDITION_IDS.ODND, name: 'Original Dungeons & Dragons', abbreviation: 'OD&D' },
+    [EDITION_IDS.ADND]: { id: EDITION_IDS.ADND, name: 'Advanced Dungeons & Dragons', abbreviation: 'AD&D' },
+    [EDITION_IDS.ADND_2E]: { id: EDITION_IDS.ADND_2E, name: 'Advanced Dungeons & Dragon 2nd Edition', abbreviation: 'AD&D 2E' },
+    [EDITION_IDS.DND_3E]: { id: EDITION_IDS.DND_3E, name: 'Dungeons & Dragons 3rd Edition', abbreviation: 'D&D 3E' },
+    [EDITION_IDS.DND_3_5E]: { id: EDITION_IDS.DND_3_5E, name: 'Dungeons & Dragons 3.5 Edition', abbreviation: 'D&D 3.5E' },
+    [EDITION_IDS.DND_4E]: { id: EDITION_IDS.DND_4E, name: 'Dungeons & Dragons 4th Edition', abbreviation: 'D&D 4E' },
+    [EDITION_IDS.DND_5E]: { id: EDITION_IDS.DND_5E, name: 'Dungeons & Dragons 5th Edition', abbreviation: 'D&D 5E' },
 }
 
 export const EDITION_LIST = Object.values(EDITION_MAP);
@@ -260,8 +270,8 @@ export const EDITION_SELECT_LIST_FULL = AbbreviationSelectOptionList(EDITION_LIS
 // Combine 3E and 3.5E into one option and filter out 3.5E
 export const EDITION_SELECT_LIST = EDITION_LIST.map(edition => ({
     value: edition.id,
-    label: (edition.id === 4 ? '3E/3.5E Combined' : edition.abbreviation)
-})).filter(e => e.value !== 5);
+    label: (edition.id === EDITION_IDS.DND_3E ? '3E/3.5E Combined' : edition.abbreviation)
+})).filter(e => e.value !== EDITION_IDS.DND_3_5E);
 
 export const CastingType = {
     Prepared: 1,

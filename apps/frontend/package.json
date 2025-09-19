@@ -34,6 +34,7 @@
     "@shared/prisma-client": "workspace:*",
     "@shared/schema": "workspace:*",
     "@shared/static-data": "workspace:*",
+    "@shared/utils": "workspace:*",
     "@tailwindcss/forms": "^0.5.10",
     "@tailwindcss/typography": "^0.5.16",
     "@tanstack/react-table": "^8.21.3",

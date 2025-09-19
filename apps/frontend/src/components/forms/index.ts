@@ -38,4 +38,9 @@ export { SliderControl } from './SliderControl';
 export {
     SourceEditor,
     type SourceEditorProps,
-} from './SourceEditor'; 
+} from './SourceEditor';
+
+export {
+    SpellSearchInput,
+    type SpellSearchInputProps,
+} from './SpellSearchInput'; 

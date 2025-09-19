@@ -1,11 +1,11 @@
-import { Response } from 'express';
+import { Response, NextFunction } from 'express';
 
 import {
+    ValidatedNoInput,
     ValidatedParamsT,
-    ValidatedParamsBodyT,
     ValidatedBodyT,
-    ValidatedNoInput
-} from '@/util/validated-types'
+    ValidatedParamsBodyT,
+} from '@/util/validated-types';
 import {
     Race,
     RaceIdParamRequest,
@@ -20,7 +20,7 @@ import { raceService } from './raceService';
 /**
  * Fetches all races from the database with pagination and filtering.
  */
-export async function GetAllRaces(req: ValidatedNoInput<GetAllRacesResponse>, res: Response) {
+export async function GetAllRaces(req: ValidatedNoInput<GetAllRacesResponse>, res: Response, _next: NextFunction) {
     const races = await raceService.getAllRaces();
     res.json(races);
 }
@@ -28,7 +28,7 @@ export async function GetAllRaces(req: ValidatedNoInput<GetAllRacesResponse>, re
 /**
  * Fetches a single race by its ID.
  */
-export async function GetRaceById(req: ValidatedParamsT<RaceIdParamRequest, Race>, res: Response) {
+export async function GetRaceById(req: ValidatedParamsT<RaceIdParamRequest, Race>, res: Response, _next: NextFunction) {
     const race = await raceService.getRaceById(req.params);
 
     if (!race) {
@@ -42,7 +42,7 @@ export async function GetRaceById(req: ValidatedParamsT<RaceIdParamRequest, Race
 /**
  * Updates an existing race.
  */
-export async function UpdateRace(req: ValidatedParamsBodyT<RaceIdParamRequest, UpdateRaceRequest, UpdateResponse>, res: Response) {
+export async function UpdateRace(req: ValidatedParamsBodyT<RaceIdParamRequest, UpdateRaceRequest, UpdateResponse>, res: Response, _next: NextFunction) {
     await raceService.updateRace(req.params, req.body);
     res.json({ message: 'Race updated successfully' });
 }
@@ -50,7 +50,7 @@ export async function UpdateRace(req: ValidatedParamsBodyT<RaceIdParamRequest, U
 /**
  * Creates a new race.
  */
-export async function CreateRace(req: ValidatedBodyT<CreateRaceRequest, CreateResponse>, res: Response) {
+export async function CreateRace(req: ValidatedBodyT<CreateRaceRequest, CreateResponse>, res: Response, _next: NextFunction) {
     const result = await raceService.createRace(req.body);
     res.status(201).json(result);
 }
@@ -58,7 +58,7 @@ export async function CreateRace(req: ValidatedBodyT<CreateRaceRequest, CreateRe
 /**
  * Deletes a race.
  */
-export async function DeleteRace(req: ValidatedParamsT<RaceIdParamRequest, UpdateResponse>, res: Response) {
+export async function DeleteRace(req: ValidatedParamsT<RaceIdParamRequest, UpdateResponse>, res: Response, _next: NextFunction) {
     const result = await raceService.deleteRace(req.params);
     res.json(result);
 }

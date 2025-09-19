@@ -56,6 +56,20 @@ export const SpellIdParamSchema = z.object({
     id: z.string().transform((val: string) => parseInt(val)),
 });
 
+export const ClassSpellListEntrySchema = z.object({
+    spellId: z.number().int().positive('Spell ID must be a positive integer'),
+    level: z.number().int().min(0, 'Level must be non-negative').max(9, 'Level must be at most 9'),
+});
+
+export const ClassSpellListResponseSchema = QueryResponseSchema.extend({
+    results: z.array(ClassSpellListEntrySchema),
+});
+
+export const SpellClassParamSchema = z.object({
+    classId: z.string().transform((val: string) => parseInt(val)),
+    level: z.string().transform((val: string) => parseInt(val)).optional(),
+});
+
 export const UpdateSpellSchema = SpellSchema.omit({
     id: true
 }).partial();
@@ -65,6 +79,7 @@ export const GetSpellResponseSchema = SpellSchema.omit({
 });
 
 export type SpellIdParamRequest = z.infer<typeof SpellIdParamSchema>;
+export type SpellClassParamRequest = z.infer<typeof SpellClassParamSchema>;
 export type UpdateSpellRequest = z.infer<typeof UpdateSpellSchema>;
 export type GetSpellResponse = z.infer<typeof GetSpellResponseSchema>;
 export type GetAllSpellsResponse = z.infer<typeof GetAllSpellsResponseSchema>;
@@ -74,3 +89,5 @@ export type SpellSubschoolMap = z.infer<typeof SpellSubschoolMapSchema>;
 export type SpellDescriptorMap = z.infer<typeof SpellDescriptorMapSchema>;
 export type SpellComponentMap = z.infer<typeof SpellComponentMapSchema>;
 export type SpellLevelMapping = z.infer<typeof SpellLevelMappingSchema>;
+export type ClassSpellListEntry = z.infer<typeof ClassSpellListEntrySchema>;
+export type ClassSpellListResponse = z.infer<typeof ClassSpellListResponseSchema>;

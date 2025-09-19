@@ -40,8 +40,16 @@ export function ClassFeatureAssoc({ isOpen, onClose, onSave, initialSelectedFeat
             parentId={classId}
             parentType="class"
             serviceFunction={async () => {
-                const response = await FeatureSystemApi.getFeatures({ sourceType: FeatureSourceType.Class });
-                return response;
+                // Get both Class and ClassVariant features
+                const [classFeatures, variantFeatures] = await Promise.all([
+                    FeatureSystemApi.getFeatures({ sourceType: FeatureSourceType.Class }),
+                    FeatureSystemApi.getFeatures({ sourceType: FeatureSourceType.ClassVariant })
+                ]);
+                const allFeatures = [...classFeatures.results, ...variantFeatures.results];
+                return {
+                    results: allFeatures,
+                    total: allFeatures.length
+                };
             }}
             storageKey="classFeatureSelectionList"
             itemDesc="feature"

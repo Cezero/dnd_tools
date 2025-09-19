@@ -1,7 +1,7 @@
 import { Response } from 'express';
 
 import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedNoInput } from '@/util/validated-types'
-import { SpellIdParamRequest, UpdateSpellRequest, GetSpellResponse, GetAllSpellsResponse } from '@shared/schema';
+import { SpellIdParamRequest, SpellClassParamRequest, UpdateSpellRequest, GetSpellResponse, GetAllSpellsResponse, ClassSpellListResponse } from '@shared/schema';
 
 import { spellService } from './spellService';
 
@@ -29,4 +29,14 @@ export async function UpdateSpell(req: ValidatedParamsBodyT<SpellIdParamRequest,
 export async function DeleteSpell(req: ValidatedParamsT<SpellIdParamRequest>, res: Response) {
     await spellService.deleteSpell({ id: req.params.id });
     res.json({ message: 'Spell deleted successfully' });
+}
+
+export async function GetSpellsForClass(req: ValidatedParamsT<SpellClassParamRequest, ClassSpellListResponse>, res: Response) {
+    try {
+        const { classId, level } = req.params;
+        const result = await spellService.getSpellsForClass(classId, level);
+        res.json(result);
+    } catch (_error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
 }

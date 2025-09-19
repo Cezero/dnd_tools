@@ -79,6 +79,10 @@
         "./diceBox": {
             "types": "./dist/diceBox.d.ts",
             "import": "./dist/diceBox.js"
+        },
+        "./variantClass": {
+            "types": "./dist/variantClass.d.ts",
+            "import": "./dist/variantClass.js"
         }
     }
 }

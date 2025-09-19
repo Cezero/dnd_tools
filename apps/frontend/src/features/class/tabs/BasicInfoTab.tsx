@@ -13,6 +13,8 @@ import {
     EDITION_SELECT_LIST_FULL,
     BAB_PROGRESSION_SELECT_LIST,
     SAVE_PROGRESSION_SELECT_LIST,
+    EDITION_IDS,
+    SourceType,
 } from '@shared/static-data';
 
 import type { ClassTabProps } from './types';
@@ -20,7 +22,12 @@ import type { ClassTabProps } from './types';
 export function BasicInfoTab({
     formData,
     setFormData,
-    isLoading: _isLoading = false
+    isLoading: _isLoading = false,
+    isVariant,
+    setIsVariant,
+    baseClassId,
+    setBaseClassId,
+    availableBaseClasses
 }: ClassTabProps): React.JSX.Element {
     const progressionConfig = {
         babProgression: formData.babProgression,
@@ -148,6 +155,41 @@ export function BasicInfoTab({
                             checked={formData.isPrestige as boolean}
                             onCheckedChange={(checked) => setFormData({ ...formData, isPrestige: checked })}
                         />
+                        {/* Variant Toggle - only show for new classes and 3.5E edition */}
+                        {formData.editionId === EDITION_IDS.DND_3_5E && (
+                            <CustomCheckbox
+                                label="This is a variant class"
+                                checked={isVariant || false}
+                                onCheckedChange={(checked) => setIsVariant?.(checked)}
+                            />
+                        )}
+                        {/* Base Class Selector - only show when creating a variant */}
+                        {isVariant && availableBaseClasses && setBaseClassId && (
+                            <div className="space-y-2">
+                                <label htmlFor="baseClassId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Base Class *
+                                </label>
+                                <select
+                                    id="baseClassId"
+                                    value={baseClassId || 0}
+                                    onChange={(e) => setBaseClassId(parseInt(e.target.value))}
+                                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    required
+                                >
+                                    <option value={0}>Select a base class...</option>
+                                    {availableBaseClasses.map((baseClass) => (
+                                        <option key={baseClass.id} value={baseClass.id}>
+                                            {baseClass.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {baseClassId === 0 && (
+                                    <p className="text-sm text-red-600 dark:text-red-400">
+                                        Please select a base class for the variant
+                                    </p>
+                                )}
+                            </div>
+                        )}
                         <CustomCheckbox
                             label="Visible in Lists"
                             checked={formData.isVisible as boolean}
@@ -160,14 +202,6 @@ export function BasicInfoTab({
                         />
                     </div>
 
-                    {/* Source References */}
-                    <div>
-                        <SourceEditor
-                            sources={formData.sourceBookInfo || []}
-                            onSourcesChange={(sources) => setFormData({ ...formData, sourceBookInfo: sources })}
-                            sourceType="classes"
-                        />
-                    </div>
                     <div>
                         <h4 className="text-md font-medium mb-2">Class Progression Preview</h4>
                         <ClassProgressionTable
@@ -175,6 +209,15 @@ export function BasicInfoTab({
                         />
                     </div>
                 </div>
+            </div>
+
+            {/* Source References - moved to bottom */}
+            <div className="mt-8">
+                <SourceEditor
+                    sources={formData.sourceBookInfo || []}
+                    onSourcesChange={(sources) => setFormData({ ...formData, sourceBookInfo: sources })}
+                    sourceType={SourceType.Classes}
+                />
             </div>
         </div>
     );

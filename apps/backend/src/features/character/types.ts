@@ -46,4 +46,5 @@ export interface CharacterService {
     updateCharacterAbilityScore: (id: number, data: UpdateCharacterAbilityScoreRequest) => Promise<UpdateResponse>;
     deleteCharacterAbilityScore: (id: number) => Promise<UpdateResponse>;
     getCharacterAbilityScores: (characterId: number) => Promise<CharacterAbilityScoreResponse[]>;
+
 } 

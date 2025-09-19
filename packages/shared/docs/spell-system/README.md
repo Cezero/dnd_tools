@@ -17,6 +17,7 @@
 - **[spell-preparation.md](spell-preparation.md)** — Spell preparation and metamagic
 - **[spell-lists.md](spell-lists.md)** — Class spell lists and spell access
 - **[spell-integration.md](spell-integration.md)** — Integration with class and character systems
+- **[Variant Class System](../variant-class-system/README.md)** — Variant class spell override integration
 
 ## 🎯 **System Overview**
 
@@ -43,6 +44,23 @@ Spell (Spell Definition)
 - **Preparation System**: Characters can prepare spells with metamagic modifications
 - **Source Attribution**: All spell content is properly attributed to source books
 - **D&D 3.5 Compliance**: Complete adherence to D&D 3.5 spell rules and mechanics
+- **Variant Class Support**: Spell lists can be modified for variant classes through overrides
+
+### **Variant Class Integration**
+
+The Spell System integrates with the [Variant Class System](../variant-class-system/README.md) to support spell list modifications for variant classes. The integration uses an override-based approach that allows variant classes to add or remove spells from their base class spell lists.
+
+**Integration Points**:
+- **Spell Override System**: Variant classes can add or remove spells from their spell lists
+- **Level-Based Organization**: Spells are organized by level with support for additions and removals
+- **Unified Resolution**: The `getSpellsForClass()` endpoint automatically resolves variant spell lists
+- **Override Management**: Frontend components provide intuitive spell list management for variants
+- **Display Integration**: Variant spell modifications are displayed in class detail views
+
+**Related Documentation**:
+- [Variant Class System](../variant-class-system/README.md) - Complete variant class system overview
+- [Variant Class Spell Overrides](../variant-class-system/frontend-implementation.md) - Frontend spell override management
+- [Variant Class Backend Implementation](../variant-class-system/backend-implementation.md) - Backend spell resolution
 
 ## 🚀 **Getting Started**
 

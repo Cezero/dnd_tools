@@ -2,14 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
-import { DnDClass } from '@shared/schema';
+import { DnDClass, ClassVariant } from '@shared/schema';
+import { isVariantId } from '@shared/static-data';
 
 import { ClassApi } from './ClassApi';
+import { VariantClassApi } from './VariantClassApi';
 import { ClassDisplay } from './ClassDisplay';
 
 export default function ClassDetail() {
     const { id } = useParams();
     const [cls, setCls] = useState<DnDClass | null>(null);
+    const [variantData, setVariantData] = useState<ClassVariant | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const { isAdmin } = useAuthAuto();
     const navigate = useNavigate();
@@ -19,8 +22,21 @@ export default function ClassDetail() {
     useEffect(() => {
         const Initialize = async () => {
             try {
+                // Use unified API call - backend will determine if it's a variant from the ID
                 const data = await ClassApi.getClassById(undefined, { id: parseInt(id!) });
                 setCls(data);
+
+                // If this is a variant class, also fetch the variant data for spell overrides
+                if (isVariantId(parseInt(id!))) {
+                    try {
+                        const variant = await VariantClassApi.getVariantById(undefined, { id: parseInt(id!) });
+                        setVariantData(variant);
+                    } catch (variantError) {
+                        console.error('Failed to fetch variant data:', variantError);
+                        // Don't fail the whole component if variant data fails
+                    }
+                }
+
                 setIsLoading(false);
             } catch (error) {
                 console.error('Failed to initialize or fetch class:', error);
@@ -61,6 +77,7 @@ export default function ClassDetail() {
     return (
         <ClassDisplay
             cls={cls}
+            variantData={variantData}
             showHeader={true}
             showActions={true}
             onBack={handleBack}

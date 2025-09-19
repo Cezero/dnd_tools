@@ -1,0 +1,27 @@
+{
+    "name": "@shared/utils",
+    "version": "1.0.0",
+    "description": "Shared utility functions for D&D Tools",
+    "main": "dist/index.js",
+    "module": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "type": "module",
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch",
+        "clean": "rm -rf dist"
+    },
+    "dependencies": {
+        "@shared/static-data": "workspace:*",
+        "@shared/schema": "workspace:*"
+    },
+    "devDependencies": {
+        "typescript": "^5.9.2"
+    },
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    }
+}

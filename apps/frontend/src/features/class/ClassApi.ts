@@ -7,6 +7,7 @@ import {
     CreateResponseSchema,
     UpdateResponseSchema,
     GetAllClassesResponseSchema,
+    GetAllClassesQuerySchema,
 } from '@shared/schema';
 
 /**
@@ -30,9 +31,10 @@ import {
  * await ClassService.deleteClass(undefined, { id: 123 });
  */
 export const ClassApi = {
-    getClasses: typedApi({
-        path: '/classes',
-        method: 'GET',
+    getClasses: typedApi<typeof GetAllClassesQuerySchema, typeof GetAllClassesResponseSchema>({
+        path: '/classes/query',
+        method: 'POST',
+        requestSchema: GetAllClassesQuerySchema,
         responseSchema: GetAllClassesResponseSchema,
     }),
 

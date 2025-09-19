@@ -7,11 +7,13 @@ import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { GenericList } from '@/components/generic-list/GenericList';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { ClassSummary, Feature } from '@shared/schema';
+import { FeatureSourceType, isVariantId } from '@shared/static-data';
 
 import { ClassApi } from './ClassApi';
 import { CLASS_COLUMNS } from './ClassColumns';
 import { routes } from './ClassConfig';
 import { FEATURE_COLUMNS } from './FeatureColumns';
+import { VariantClassApi } from './VariantClassApi';
 
 export default function ClassList(): React.JSX.Element {
     const navigate = useNavigate();
@@ -30,6 +32,7 @@ export default function ClassList(): React.JSX.Element {
             }
         });
     };
+
 
 
 
@@ -58,6 +61,41 @@ export default function ClassList(): React.JSX.Element {
                     itemDesc="class"
                     routes={routes}
                     deleteServiceFunction={createIdDeleteServiceFunction(ClassApi.deleteClass)}
+                    functions={{
+                        edit: (item) => {
+                            navigate(`/classes/${item.id}/edit`, {
+                                state: {
+                                    fromListParams: location.search
+                                }
+                            });
+                        },
+                        detail: (item) => {
+                            navigate(`/classes/${item.id}`, {
+                                state: {
+                                    fromListParams: location.search
+                                }
+                            });
+                        },
+                        delete: async (item) => {
+                            if (isVariantId(item.id)) {
+                                try {
+                                    await VariantClassApi.deleteVariant(undefined, { id: item.id });
+                                    // The GenericList will handle refreshing the data
+                                } catch (error) {
+                                    console.error('Failed to delete variant:', error);
+                                    alert('Failed to delete variant.');
+                                }
+                            } else {
+                                try {
+                                    await ClassApi.deleteClass(undefined, { id: item.id });
+                                    // The GenericList will handle refreshing the data
+                                } catch (error) {
+                                    console.error('Failed to delete class:', error);
+                                    alert('Failed to delete class.');
+                                }
+                            }
+                        }
+                    }}
                 />
             </div>
 
@@ -76,7 +114,18 @@ export default function ClassList(): React.JSX.Element {
                         <GenericList<Feature>
                             storageKey="features-list"
                             columns={FEATURE_COLUMNS}
-                            serviceFunction={() => FeatureSystemApi.getFeatures({ sourceType: 1 })}
+                            serviceFunction={async () => {
+                                // Get both Class and ClassVariant features
+                                const [classFeatures, variantFeatures] = await Promise.all([
+                                    FeatureSystemApi.getFeatures({ sourceType: FeatureSourceType.Class }), // Class
+                                    FeatureSystemApi.getFeatures({ sourceType: FeatureSourceType.ClassVariant })  // ClassVariant
+                                ]);
+                                const allFeatures = [...classFeatures.results, ...variantFeatures.results];
+                                return {
+                                    results: allFeatures,
+                                    total: allFeatures.length
+                                };
+                            }}
                             itemDesc="feature"
                             routes={[
                                 { path: 'features/:id', component: FeatureDetail, exact: true, requireAuth: true, requireAdmin: true, routeType: 'detail' },

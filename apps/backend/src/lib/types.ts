@@ -1,4 +1,4 @@
-import { z, ZodSchema } from "zod";
+import { z, ZodType } from "zod";
 
-export type InferOrDefault<T extends ZodSchema | undefined, Fallback> =
-    T extends ZodSchema ? z.infer<T> : Fallback;
+export type InferOrDefault<T extends ZodType | undefined, Fallback> =
+    T extends ZodType ? z.infer<T> : Fallback;

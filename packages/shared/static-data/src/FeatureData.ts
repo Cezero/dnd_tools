@@ -16,6 +16,8 @@ export const FeatureSourceType = {
     Class: 1,
     Template: 2,
     None: 3,
+    ClassVariant: 4,
+    Domain: 5, // NEW: Domain-granted features
 } as const;
 
 export type FeatureSourceType = typeof FeatureSourceType[keyof typeof FeatureSourceType];
@@ -25,6 +27,8 @@ export const FEATURE_SOURCE_TYPES: BaseMap<CoreComponent> = {
     [FeatureSourceType.Class]: { id: FeatureSourceType.Class, name: 'Class' },
     [FeatureSourceType.Template]: { id: FeatureSourceType.Template, name: 'Template' },
     [FeatureSourceType.None]: { id: FeatureSourceType.None, name: 'None' },
+    [FeatureSourceType.ClassVariant]: { id: FeatureSourceType.ClassVariant, name: 'Class Variant' },
+    [FeatureSourceType.Domain]: { id: FeatureSourceType.Domain, name: 'Domain' },
 }
 
 export const FEATURE_SOURCE_LIST = Object.values(FEATURE_SOURCE_TYPES);
@@ -67,6 +71,7 @@ export const EntityAppliesToType = {
     Initiative: 7,      // Initiative
     SpellSvDC: 26,      // Spell Save DC
     Resistance: 28,     // Resistance
+    CasterLevel: 30,    // Caster Level
 
     // Quantity-compatible types
     MovementSpeed: 8,   // Speed in feet
@@ -78,9 +83,6 @@ export const EntityAppliesToType = {
     Healing: 18,        // Healing hit points per day
     SpellResistance: 19, // Spell Resistance (SR)
     UnarmedDamage: 20,  // Unarmed strike damage dice
-    Feat: 21,           // Direct feat grants (e.g., Ranger Track, Endurance)
-    Spell: 27,          // Direct spell grants (e.g., Domain spells, bonus spells)
-    Feature: 25,        // Direct feature grants (e.g., Ranger Endurance)
 
     // New types for complex abilities
     SizeCategory: 22,
@@ -89,9 +91,13 @@ export const EntityAppliesToType = {
 
     // Other
     Other: 13,          // Special cases
-    BonusLanguage: 14,  // Languages that require INT modifier
-    AutomaticLanguage: 15, // Languages granted automatically
+    BonusLanguage: 14,  // Languages that can be chosen
+    AutomaticLanguage: 15, // Languages that are granted automatically
     WeaponFamiliarity: 16, // Weapon familiarity
+    Feat: 21,           // Direct feat grants (e.g., Ranger Track, Endurance)
+    Spell: 27,          // Direct spell grants (e.g., Domain spells, bonus spells)
+    Feature: 25,        // Direct feature grants (e.g., Ranger Endurance)
+    Domain: 29,         // NEW: Domain grants by other systems (loose coupling)
 } as const;
 
 export type EntityAppliesToType = typeof EntityAppliesToType[keyof typeof EntityAppliesToType];
@@ -108,6 +114,7 @@ export const ENTITY_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
     [EntityAppliesToType.Initiative]: { id: EntityAppliesToType.Initiative, name: 'Initiative', displayName: 'Init' },
     [EntityAppliesToType.SpellSvDC]: { id: EntityAppliesToType.SpellSvDC, name: 'Spell Save DC', displayName: 'Spell Save DC' },
     [EntityAppliesToType.Resistance]: { id: EntityAppliesToType.Resistance, name: 'Resistance', displayName: 'Resistance' },
+    [EntityAppliesToType.CasterLevel]: { id: EntityAppliesToType.CasterLevel, name: 'Caster Level', displayName: 'Caster Level' },
     // Quantity-compatible types
     [EntityAppliesToType.MovementSpeed]: { id: EntityAppliesToType.MovementSpeed, name: 'Movement Speed', displayName: 'Move Speed' },
     [EntityAppliesToType.HitDice]: { id: EntityAppliesToType.HitDice, name: 'Hit Dice', displayName: 'HD' },
@@ -118,9 +125,6 @@ export const ENTITY_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
     [EntityAppliesToType.Healing]: { id: EntityAppliesToType.Healing, name: 'Healing', displayName: 'Healing' },
     [EntityAppliesToType.SpellResistance]: { id: EntityAppliesToType.SpellResistance, name: 'Spell Resistance', displayName: 'SR' },
     [EntityAppliesToType.UnarmedDamage]: { id: EntityAppliesToType.UnarmedDamage, name: 'Unarmed Damage', displayName: 'Unarmed Dmg' },
-    [EntityAppliesToType.Feat]: { id: EntityAppliesToType.Feat, name: 'Feat', displayName: 'Feat' },
-    [EntityAppliesToType.Spell]: { id: EntityAppliesToType.Spell, name: 'Spell', displayName: 'Spell' },
-    [EntityAppliesToType.Feature]: { id: EntityAppliesToType.Feature, name: 'Feature', displayName: 'Feature' },
 
     // New types for complex abilities
     [EntityAppliesToType.SizeCategory]: { id: EntityAppliesToType.SizeCategory, name: 'Size Category', displayName: 'Size Category' },
@@ -132,6 +136,10 @@ export const ENTITY_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
     [EntityAppliesToType.BonusLanguage]: { id: EntityAppliesToType.BonusLanguage, name: 'Bonus Language', displayName: 'Bonus Language' },
     [EntityAppliesToType.AutomaticLanguage]: { id: EntityAppliesToType.AutomaticLanguage, name: 'Automatic Language', displayName: 'Automatic Language' },
     [EntityAppliesToType.WeaponFamiliarity]: { id: EntityAppliesToType.WeaponFamiliarity, name: 'Weapon Familiarity', displayName: 'Weapon Familiarity' },
+    [EntityAppliesToType.Feat]: { id: EntityAppliesToType.Feat, name: 'Feat', displayName: 'Feat' },
+    [EntityAppliesToType.Spell]: { id: EntityAppliesToType.Spell, name: 'Spell', displayName: 'Spell' },
+    [EntityAppliesToType.Feature]: { id: EntityAppliesToType.Feature, name: 'Feature', displayName: 'Feature' },
+    [EntityAppliesToType.Domain]: { id: EntityAppliesToType.Domain, name: 'Domain', displayName: 'Domain' },
 }
 
 export const ENTITY_APPLIES_TO_LIST = Object.values(ENTITY_APPLIES_TO_TYPES);
@@ -150,6 +158,7 @@ export const ENTITY_TYPE_COMPATIBILITY = {
         EntityAppliesToType.Initiative,
         EntityAppliesToType.SpellSvDC,
         EntityAppliesToType.Resistance,
+        EntityAppliesToType.CasterLevel,
     ],
     [EntityType.Quantity]: [
         EntityAppliesToType.MovementSpeed,
@@ -173,9 +182,10 @@ export const ENTITY_TYPE_COMPATIBILITY = {
         EntityAppliesToType.BonusLanguage, // Bonus languages are Other type modifiers
         EntityAppliesToType.AutomaticLanguage, // Automatic languages are Other type modifiers
         EntityAppliesToType.WeaponFamiliarity, // Weapon familiarity are Other type modifiers
-
+        EntityAppliesToType.Skill, // Skill grants are Other type modifiers
         EntityAppliesToType.Feat, // Direct feat grants are Other type modifiers
         EntityAppliesToType.Spell, // Direct spell grants are Other type modifiers
+        EntityAppliesToType.Domain, // Direct domain grants are Other type modifiers
 
         // New complex ability types
         EntityAppliesToType.SizeCategory,
@@ -189,6 +199,7 @@ export const ENTITY_TYPE_COMPATIBILITY = {
         EntityAppliesToType.Feat, // Choice between feats
         EntityAppliesToType.Feature, // Choice between features
         EntityAppliesToType.CreatureType, // Choice between creature types (e.g., Ranger favored enemy)
+        EntityAppliesToType.Domain, // Choice between domains
     ],
     [EntityType.Allocation]: [
         EntityAppliesToType.Feat, // Allocation to feats
@@ -373,24 +384,24 @@ export const ENVIRONMENT_TYPE_LIST = Object.values(ENVIRONMENT_TYPES);
 export const ENVIRONMENT_TYPE_SELECT_LIST = NameSelectOptionList(ENVIRONMENT_TYPE_LIST);
 
 // Source values for FeatureEntityConditionType.source
-export const SourceType = {
+export const ConditionSourceType = {
     traps: 0,
     fear: 1,
     spells: 2,
     poison: 3,
 } as const;
 
-export type SourceType = typeof SourceType[keyof typeof SourceType];
+export type ConditionSourceType = typeof ConditionSourceType[keyof typeof ConditionSourceType];
 
-export const SOURCE_TYPES: BaseMap<CoreComponent> = {
-    [SourceType.traps]: { id: SourceType.traps, name: 'Traps' },
-    [SourceType.fear]: { id: SourceType.fear, name: 'Fear' },
-    [SourceType.spells]: { id: SourceType.spells, name: 'Spells' },
-    [SourceType.poison]: { id: SourceType.poison, name: 'Poison' },
+export const CONDITION_SOURCE_TYPES: BaseMap<CoreComponent> = {
+    [ConditionSourceType.traps]: { id: ConditionSourceType.traps, name: 'Traps' },
+    [ConditionSourceType.fear]: { id: ConditionSourceType.fear, name: 'Fear' },
+    [ConditionSourceType.spells]: { id: ConditionSourceType.spells, name: 'Spells' },
+    [ConditionSourceType.poison]: { id: ConditionSourceType.poison, name: 'Poison' },
 };
 
-export const SOURCE_TYPE_LIST = Object.values(SOURCE_TYPES);
-export const SOURCE_TYPE_SELECT_LIST = NameSelectOptionList(SOURCE_TYPE_LIST);
+export const CONDITION_SOURCE_TYPE_LIST = Object.values(CONDITION_SOURCE_TYPES);
+export const CONDITION_SOURCE_TYPE_SELECT_LIST = NameSelectOptionList(CONDITION_SOURCE_TYPE_LIST);
 
 // Target values for FeatureEntityConditionType.target
 export const TargetType = {

@@ -45,6 +45,14 @@ export const ClassSummarySchema = BaseClassSchema.omit({
     id: z.number().int().positive('Class ID must be a positive integer'),
 });
 
+export const GetAllClassesQuerySchema = z.object({
+    baseClassesOnly: z.boolean().optional(),
+    isVisible: z.boolean().optional(),
+    isPrestige: z.boolean().optional(),
+    editionId: z.number().int().positive().optional(),
+    editionIds: z.array(z.number().int().positive()).optional(),
+});
+
 export const GetAllClassesResponseSchema = QueryResponseSchema.extend({
     results: z.array(ClassSummarySchema),
 });
@@ -71,6 +79,7 @@ export const CreateClassSchema = BaseClassSchema.omit({
 
 export type ClassSummary = z.infer<typeof ClassSummarySchema>;
 export type ClassIdParamRequest = z.infer<typeof ClassIdParamSchema>;
+export type GetAllClassesQuery = z.infer<typeof GetAllClassesQuerySchema>;
 export type GetAllClassesResponse = z.infer<typeof GetAllClassesResponseSchema>;
 export type CreateClassRequest = z.infer<typeof CreateClassSchema>;
 export type UpdateClassRequest = z.infer<typeof UpdateClassSchema>;

@@ -1,6 +1,11 @@
-import { Response } from 'express';
+import { Response, NextFunction } from 'express';
 
-import { ValidatedNoInput, ValidatedBodyT, ValidatedParamsBodyT, ValidatedParamsT } from '@/util/validated-types';
+import {
+    ValidatedNoInput,
+    ValidatedParamsT,
+    ValidatedBodyT,
+    ValidatedParamsBodyT,
+} from '@/util/validated-types';
 import {
     CreateDiceBoxAdminConfigRequest,
     UpdateDiceBoxAdminConfigRequest,
@@ -12,7 +17,7 @@ import { DiceBoxService } from './diceBoxService';
 
 export class DiceBoxController {
     // Get available admin dice configurations for user selection
-    static async getAvailableConfigs(req: ValidatedNoInput, res: Response): Promise<void> {
+    static async getAvailableConfigs(req: ValidatedNoInput, res: Response, _next: NextFunction): Promise<void> {
         try {
             const configs = await DiceBoxService.getAvailableConfigs();
             res.json(configs);
@@ -22,7 +27,7 @@ export class DiceBoxController {
     }
 
     // Get user's dice configuration
-    static async getUserDiceConfig(req: ValidatedNoInput, res: Response): Promise<void> {
+    static async getUserDiceConfig(req: ValidatedNoInput, res: Response, _next: NextFunction): Promise<void> {
         try {
             const userId = req.user!.id; // Safe to use ! because requireAuth middleware guarantees user exists
             const config = await DiceBoxService.getUserDiceConfig(userId);
@@ -33,7 +38,7 @@ export class DiceBoxController {
     }
 
     // Update user's dice configuration
-    static async updateUserDiceConfig(req: ValidatedBodyT<UpdateUserDiceConfigRequest>, res: Response): Promise<void> {
+    static async updateUserDiceConfig(req: ValidatedBodyT<UpdateUserDiceConfigRequest>, res: Response, _next: NextFunction): Promise<void> {
         try {
             const userId = req.user!.id; // Safe to use ! because requireAuth middleware guarantees user exists
             const { diceConfigBase, diceConfigOverrides } = req.body;
@@ -45,7 +50,7 @@ export class DiceBoxController {
     }
 
     // Get the current DiceBox admin configuration
-    static async getAdminConfig(req: ValidatedNoInput, res: Response): Promise<void> {
+    static async getAdminConfig(req: ValidatedNoInput, res: Response, _next: NextFunction): Promise<void> {
         try {
             const config = await DiceBoxService.getAdminConfig();
             res.json(config);
@@ -55,7 +60,7 @@ export class DiceBoxController {
     }
 
     // Create a new DiceBox admin configuration
-    static async createAdminConfig(req: ValidatedBodyT<CreateDiceBoxAdminConfigRequest>, res: Response): Promise<void> {
+    static async createAdminConfig(req: ValidatedBodyT<CreateDiceBoxAdminConfigRequest>, res: Response, _next: NextFunction): Promise<void> {
         try {
             await DiceBoxService.createAdminConfig(req.body);
             res.json({ message: 'Dice configuration created successfully' });
@@ -65,10 +70,9 @@ export class DiceBoxController {
     }
 
     // Update an existing DiceBox admin configuration
-    static async updateAdminConfig(req: ValidatedParamsBodyT<DiceBoxConfigIdParamRequest, UpdateDiceBoxAdminConfigRequest>, res: Response): Promise<void> {
+    static async updateAdminConfig(req: ValidatedParamsBodyT<DiceBoxConfigIdParamRequest, UpdateDiceBoxAdminConfigRequest>, res: Response, _next: NextFunction): Promise<void> {
         try {
-            const configId = req.params.id;
-            await DiceBoxService.updateAdminConfig(configId, req.body);
+            await DiceBoxService.updateAdminConfig(req.params.id, req.body);
             res.json({ message: 'Dice configuration updated successfully' });
         } catch (_error) {
             res.status(500).json({ error: 'Internal server error' });
@@ -76,7 +80,7 @@ export class DiceBoxController {
     }
 
     // Get the full DiceBox configuration for frontend use
-    static async getFullConfig(req: ValidatedNoInput, res: Response): Promise<void> {
+    static async getFullConfig(req: ValidatedNoInput, res: Response, _next: NextFunction): Promise<void> {
         try {
             const config = await DiceBoxService.getFullConfig();
 
@@ -92,10 +96,9 @@ export class DiceBoxController {
     }
 
     // Delete a DiceBox admin configuration
-    static async deleteAdminConfig(req: ValidatedParamsT<DiceBoxConfigIdParamRequest>, res: Response): Promise<void> {
+    static async deleteAdminConfig(req: ValidatedParamsT<DiceBoxConfigIdParamRequest>, res: Response, _next: NextFunction): Promise<void> {
         try {
-            const configId = req.params.id;
-            await DiceBoxService.deleteAdminConfig(configId);
+            await DiceBoxService.deleteAdminConfig(req.params.id);
             res.json({ message: 'Dice configuration deleted successfully' });
         } catch (_error) {
             res.status(500).json({ error: 'Internal server error' });

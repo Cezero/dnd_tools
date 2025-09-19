@@ -7,7 +7,7 @@ import {
     SIZE_SELECT_LIST,
     SPELL_SCHOOL_SELECT_LIST,
     CREATURE_TYPE_SELECT_LIST,
-    SOURCE_TYPE_SELECT_LIST,
+    CONDITION_SOURCE_TYPE_SELECT_LIST,
     FeatureEntityConditionType,
     ENVIRONMENT_TYPE_SELECT_LIST,
     MATERIAL_TYPE_SELECT_LIST,
@@ -89,7 +89,7 @@ export function ConditionEditor({
                                 <ValidatedCustomSelect
                                     field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
                                     label=""
-                                    options={SOURCE_TYPE_SELECT_LIST}
+                                    options={CONDITION_SOURCE_TYPE_SELECT_LIST}
                                     placeholder="Select source"
                                     componentExtraClassName="flex-1"
                                     nested

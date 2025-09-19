@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { ClassApi } from '@/features/class/ClassApi';
 import { ClassDisplay } from '@/features/class/ClassDisplay';
-import type { DnDClass, CharacterWithAllDetailsResponse } from '@shared/schema';
+import type { DnDClass, CharacterWithAllDetailsResponse, GetAllClassesResponse } from '@shared/schema';
 import {
     CLASS_MAP,
-    GetBaseClassesByEdition
+    EDITION_IDS,
+    GetBaseClassesByEdition,
+    isVariantId
 } from '@shared/static-data';
 
 interface ClassTabProps {
@@ -23,9 +25,35 @@ export function ClassTab({
     onClassDetailsChange
 }: ClassTabProps): React.JSX.Element {
     const [isLoadingClass, setIsLoadingClass] = useState(false);
+    const [allowVariants, setAllowVariants] = useState(false);
+    const [allClasses, setAllClasses] = useState<GetAllClassesResponse['results']>([]);
+    const [isLoadingClasses, setIsLoadingClasses] = useState(false);
 
     // Get the current class from the first advancement
     const currentClassId = character.advancements[0]?.classId || null;
+
+    // Load all classes when variants are enabled
+    useEffect(() => {
+        const loadAllClasses = async () => {
+            if (!allowVariants) return;
+
+            setIsLoadingClasses(true);
+            try {
+                const response = await ClassApi.getClasses({
+                    editionId: 5, // Default to 3.5e
+                    baseClassesOnly: false // Include variants
+                });
+                setAllClasses(response.results);
+            } catch (error) {
+                console.error('Failed to load classes:', error);
+                setAllClasses([]);
+            } finally {
+                setIsLoadingClasses(false);
+            }
+        };
+
+        loadAllClasses();
+    }, [allowVariants]);
 
     const handleClassChange = async (classId: number | null) => {
         if (classId === null) {
@@ -81,30 +109,72 @@ export function ClassTab({
         }
     };
 
-    // Use user's preferred edition, default to edition 5 (3.5e) if not set
-    const preferredEdition = 5; // Default to 3.5e
-    const classOptions = GetBaseClassesByEdition(preferredEdition).map(cls => ({
-        value: cls.value,
-        label: cls.label
-    }));
+    // Get class options based on whether variants are enabled
+    const getClassOptions = () => {
+        if (allowVariants && allClasses.length > 0) {
+            return allClasses.map(cls => ({
+                value: cls.id,
+                label: cls.name,
+                isVariant: isVariantId(cls.id)
+            }));
+        } else {
+            // Use user's preferred edition, default to edition 5 (3.5e) if not set
+            const preferredEdition = EDITION_IDS.DND_3_5E; // Default to 3.5e
+            return GetBaseClassesByEdition(preferredEdition).map(cls => ({
+                value: cls.value,
+                label: cls.label,
+                isVariant: false
+            }));
+        }
+    };
+
+    const classOptions = getClassOptions();
 
     return (
         <div className="p-4">
             {/* Class Selection */}
             <div className="bg-white dark:bg-gray-800 p-4">
+                {/* Variant Toggle */}
+                <div className="mb-4">
+                    <label className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            checked={allowVariants}
+                            onChange={(e) => setAllowVariants(e.target.checked)}
+                            className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                        />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Allow variant classes
+                        </span>
+                    </label>
+                    {allowVariants && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Variant classes are modifications to base classes (e.g., Cloistered Cleric)
+                        </p>
+                    )}
+                </div>
+
                 <CustomSelect
                     value={currentClassId}
                     onValueChange={handleClassChange}
                     label="Class:"
                     labelExtraClassName="text-xl font-semibold"
-                    options={classOptions}
-                    placeholder="Select a class..."
+                    options={classOptions.map(option => ({
+                        value: option.value,
+                        label: option.isVariant ? `${option.label} (Variant)` : option.label
+                    }))}
+                    placeholder={isLoadingClasses ? "Loading classes..." : "Select a class..."}
                     componentExtraClassName="flex items-center gap-2"
-                    disabled={isLoadingClass}
+                    disabled={isLoadingClass || isLoadingClasses}
                 />
                 {isLoadingClass && (
                     <p className="text-sm text-blue-600 dark:text-blue-400 italic">
                         Loading class details...
+                    </p>
+                )}
+                {isLoadingClasses && (
+                    <p className="text-sm text-blue-600 dark:text-blue-400 italic">
+                        Loading classes...
                     </p>
                 )}
             </div>

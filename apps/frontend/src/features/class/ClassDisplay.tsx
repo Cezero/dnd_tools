@@ -1,11 +1,12 @@
 import pluralize from 'pluralize';
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { generateClassProgression } from '@/lib/ClassProgression';
 import { ClassProgressionTable } from '@/lib/ClassProgressionTable';
 import { displayStrategyFactory } from '@/lib/formatters';
-import { DnDClass } from '@shared/schema';
+import { DnDClass, ClassVariant } from '@shared/schema';
 import {
     DisplayType,
     RPG_DICE,
@@ -13,10 +14,13 @@ import {
     ABILITY_MAP,
     SpecialFeatureId,
     GetSourceDisplay,
+    CASTING_TYPE_MAP,
+    SPELL_ID_LIST,
 } from '@shared/static-data';
 
 interface ClassDisplayProps {
     cls: DnDClass;
+    variantData?: ClassVariant | null;
     showHeader?: boolean;
     showActions?: boolean;
     onBack?: () => void;
@@ -27,6 +31,7 @@ interface ClassDisplayProps {
 
 export function ClassDisplay({
     cls,
+    variantData,
     showHeader = true,
     showActions = false,
     onBack,
@@ -46,12 +51,12 @@ export function ClassDisplay({
                                 <p><strong>Hit Die:</strong> {RPG_DICE[cls.hitDie]?.name}</p>
                                 <p><strong>Skill Points:</strong> {cls.skillPoints}</p>
                                 <p><strong>Casting Ability:</strong> {ABILITY_MAP[cls.castingAbilityId]?.name || 'None'}</p>
-                                <p><strong>Casting Type:</strong> {cls.castingType || 'None'}</p>
+                                <p><strong>Casting Type:</strong> {cls.castingType ? CASTING_TYPE_MAP[cls.castingType]?.name || 'Unknown' : 'None'}</p>
                             </div>
                             <div className="text-right">
                                 <p><strong>Edition:</strong> {EDITION_MAP[cls.editionId]?.abbreviation}</p>
                                 {cls.sourceBookInfo && cls.sourceBookInfo.length > 0 && (
-                                    <p><strong>Source:</strong> {GetSourceDisplay(cls.sourceBookInfo.map(s => ({ bookId: s.sourceBookId, pageNumber: s.pageNumber })), true)}</p>
+                                    <p><strong>Source:</strong> {GetSourceDisplay(cls.sourceBookInfo, true)}</p>
                                 )}
                                 <p><strong>Display:</strong> {cls.isVisible ? 'Yes' : 'No'}</p>
                                 <p><strong>Prestige Class:</strong> {cls.isPrestige ? 'Yes' : 'No'}</p>
@@ -134,7 +139,84 @@ export function ClassDisplay({
                         return null;
                     })()}
 
+                    {/* Added Spells Section (for variant classes) */}
+                    {variantData?.spellOverrides && variantData.spellOverrides.length > 0 && (() => {
+                        // Group spell overrides by level
+                        const addedSpells = variantData.spellOverrides.filter(override => override.level > 0);
+                        const removedSpells = variantData.spellOverrides.filter(override => override.level === -1);
 
+                        // Group added spells by level
+                        const addedByLevel = addedSpells.reduce((acc, override) => {
+                            if (!acc[override.level]) {
+                                acc[override.level] = [];
+                            }
+                            acc[override.level].push(override.spellId);
+                            return acc;
+                        }, {} as Record<number, number[]>);
+
+                        // Group removed spells by level (they're all level -1, but we'll show them as "removed")
+                        const removedSpellIds = removedSpells.map(override => override.spellId);
+
+                        return (
+                            <>
+                                {Object.keys(addedByLevel).length > 0 && (
+                                    <div className="mt-4">
+                                        <h3 className="text-lg font-semibold mb-2">Added Spells</h3>
+                                        <div className="flex flex-wrap gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md">
+                                            <span className="text-sm">
+                                                {Object.entries(addedByLevel)
+                                                    .sort(([a], [b]) => parseInt(a) - parseInt(b))
+                                                    .map(([level, spellIds], levelIndex) => {
+                                                        const levelText = level === '1' ? '1st' : level === '2' ? '2nd' : level === '3' ? '3rd' : `${level}th`;
+                                                        const spellNames = (spellIds as number[]).map(id => {
+                                                            const spell = SPELL_ID_LIST.find(s => s.id === id);
+                                                            const spellName = spell?.name || `Unknown Spell (${id})`;
+                                                            return (
+                                                                <Link key={id} to={`/spells/${id}`} className="entity-link">
+                                                                    {spellName}
+                                                                </Link>
+                                                            );
+                                                        });
+                                                        return (
+                                                            <span key={level}>
+                                                                {levelText} - {spellNames.map((link, index) => (
+                                                                    <React.Fragment key={index}>
+                                                                        {link}
+                                                                        {index < spellNames.length - 1 && ', '}
+                                                                    </React.Fragment>
+                                                                ))}
+                                                                {levelIndex < Object.entries(addedByLevel).length - 1 && '; '}
+                                                            </span>
+                                                        );
+                                                    })}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                                {removedSpellIds.length > 0 && (
+                                    <div className="mt-4">
+                                        <h3 className="text-lg font-semibold mb-2">Removed Spells</h3>
+                                        <div className="flex flex-wrap gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md">
+                                            <span className="text-sm">
+                                                {removedSpellIds.map((id, index) => {
+                                                    const spell = SPELL_ID_LIST.find(s => s.id === id);
+                                                    const spellName = spell?.name || `Unknown Spell (${id})`;
+                                                    return (
+                                                        <React.Fragment key={id}>
+                                                            <Link to={`/spells/${id}`} className="entity-link">
+                                                                {spellName}
+                                                            </Link>
+                                                            {index < removedSpellIds.length - 1 && ', '}
+                                                        </React.Fragment>
+                                                    );
+                                                })}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        );
+                    })()}
 
                     {/* Class Features Section */}
                     {(() => {

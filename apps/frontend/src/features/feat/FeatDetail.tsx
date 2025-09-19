@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
+import { DetailPage } from '@/components/common/DetailPage';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { FeatApi } from '@/features/feat/FeatApi';
 import { Feat } from '@shared/schema';
@@ -44,97 +45,80 @@ export function FeatDetail() {
         Initialize();
     }, [id, location.state]);
 
-    const innerCellContentClasses = "p-3 bg-content border-content rounded-lg border w-full";
-    const outerContainerClasses = "w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-600 rounded-lg shadow-lg p-1";
+    const handleBack = () => {
+        navigate(`/feats${fromListParams ? `?${fromListParams}` : ''}`);
+    };
 
-    if (isLoading) return (
-        <div className="pt-8">
-            <div className={outerContainerClasses}>
-                <div className={innerCellContentClasses}>
-                    Loading...
-                </div>
-            </div>
-        </div>
-    );
-    if (!feat) return (
-        <div className="pt-8">
-            <div className={outerContainerClasses}>
-                <div className={innerCellContentClasses}>
-                    Feat not found
-                </div>
-            </div>
-        </div>
-    );
+    const handleEdit = () => {
+        navigate(`/feats/${id}/edit`, { state: { fromListParams: fromListParams } });
+    };
 
     return (
-        <div className="pt-8">
-            <div className={outerContainerClasses}>
-                <div className={innerCellContentClasses}>
-                    <div className="space-y-2">
-                        <div className="flex justify-between items-start mb-2">
-                            <h1 className="text-2xl font-bold">{feat.name}</h1>
-                            <div className="text-right">
-                                <p><strong>Type:</strong> {FEAT_TYPES[feat.typeId]?.name || feat.typeId}</p>
-                                <p><strong>Multi-Times:</strong> {feat.repeatable ? 'Yes' : 'No'}</p>
-                                {feat.fighterBonus && <p><strong>Fighter Bonus Feat</strong></p>}
-                            </div>
-                        </div>
-                        <div>
-                            <ProcessMarkdown markdown={feat.description || ''} id='description' />
-                        </div>
-                        {feat.benefit && (
-                            <div>
-                                <h3 className="text-lg font-semibold">Benefit</h3>
-                                <ProcessMarkdown markdown={feat.benefit} id='benefit' />
-                            </div>
-                        )}
-                        {feat.benefits && feat.benefits.length > 0 && (
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    {feat.benefits.map((benefit, index) => (
-                                        <div key={index} className="rounded border p-1 dark:border-gray-500">
-                                            {FEAT_BENEFIT_TYPE_BY_ID[benefit.typeId]}: {FeatOptions(benefit.typeId).find(option => option.value === benefit.referenceId)?.label || ''} {benefit.typeId !== FeatBenefitType.PROFICIENCY && benefit.amount && benefit.amount > 0 ? `+${benefit.amount}` : benefit.typeId !== FeatBenefitType.PROFICIENCY && benefit.amount ? `${benefit.amount}` : ''}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                        {feat.normalEffect && (
-                            <div>
-                                <h3 className="text-lg font-semibold">Normal</h3>
-                                <ProcessMarkdown markdown={feat.normalEffect} id='normal' />
-                            </div>
-                        )}
-                        {feat.specialEffect && (
-                            <div>
-                                <h3 className="text-lg font-semibold">Special</h3>
-                                <ProcessMarkdown markdown={feat.specialEffect} id='special' />
-                            </div>
-                        )}
-                        {feat.prereqs && feat.prereqs.length > 0 && (
-                            <div>
-                                <h3 className="text-lg font-semibold">Prerequisite</h3>
-                                {feat.prerequisites && (
-                                    <ProcessMarkdown markdown={feat.prerequisites} id='prerequisites' />
-                                )}
-                                <div className="flex items-center gap-2 mt-2">
-                                    {feat.prereqs.map((prereq, index) => (
-                                        <div key={index} className="rounded border p-1 dark:border-gray-500">
-                                            {prereqDisplayTexts[index] || 'Loading...'}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                    <div className="mt-4 text-right">
-                        <button type="button" onClick={() => navigate(`/feats${fromListParams ? `?${fromListParams}` : ''}`)} className="inline-block px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 border dark:border-gray-500">Back to List</button>
-                        {isAdmin && (
-                            <Link to={`/feats/${id}/edit`} state={{ fromListParams: fromListParams }} className="ml-4 inline-block px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 border dark:border-gray-500">Edit Feat</Link>
-                        )}
+        <DetailPage
+            isLoading={isLoading}
+            item={feat}
+            itemName="Feat"
+            isAdmin={isAdmin}
+            onBack={handleBack}
+            onEdit={handleEdit}
+        >
+            <div className="space-y-2">
+                <div className="flex justify-between items-start mb-2">
+                    <h1 className="text-2xl font-bold">{feat!.name}</h1>
+                    <div className="text-right">
+                        <p><strong>Type:</strong> {FEAT_TYPES[feat!.typeId]?.name || feat!.typeId}</p>
+                        <p><strong>Multi-Times:</strong> {feat!.repeatable ? 'Yes' : 'No'}</p>
+                        {feat!.fighterBonus && <p><strong>Fighter Bonus Feat</strong></p>}
                     </div>
                 </div>
+                <div>
+                    <ProcessMarkdown markdown={feat!.description || ''} id='description' />
+                </div>
+                {feat!.benefit && (
+                    <div>
+                        <h3 className="text-lg font-semibold">Benefit</h3>
+                        <ProcessMarkdown markdown={feat!.benefit} id='benefit' />
+                    </div>
+                )}
+                {feat!.benefits && feat!.benefits.length > 0 && (
+                    <div>
+                        <div className="flex items-center gap-2">
+                            {feat!.benefits.map((benefit, index) => (
+                                <div key={index} className="rounded border p-1 dark:border-gray-500">
+                                    {FEAT_BENEFIT_TYPE_BY_ID[benefit.typeId]}: {FeatOptions(benefit.typeId).find(option => option.value === benefit.referenceId)?.label || ''} {benefit.typeId !== FeatBenefitType.PROFICIENCY && benefit.amount && benefit.amount > 0 ? `+${benefit.amount}` : benefit.typeId !== FeatBenefitType.PROFICIENCY && benefit.amount ? `${benefit.amount}` : ''}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+                {feat!.normalEffect && (
+                    <div>
+                        <h3 className="text-lg font-semibold">Normal</h3>
+                        <ProcessMarkdown markdown={feat!.normalEffect} id='normal' />
+                    </div>
+                )}
+                {feat!.specialEffect && (
+                    <div>
+                        <h3 className="text-lg font-semibold">Special</h3>
+                        <ProcessMarkdown markdown={feat!.specialEffect} id='special' />
+                    </div>
+                )}
+                {feat!.prereqs && feat!.prereqs.length > 0 && (
+                    <div>
+                        <h3 className="text-lg font-semibold">Prerequisite</h3>
+                        {feat!.prerequisites && (
+                            <ProcessMarkdown markdown={feat!.prerequisites} id='prerequisites' />
+                        )}
+                        <div className="flex items-center gap-2 mt-2">
+                            {feat!.prereqs.map((prereq, index) => (
+                                <div key={index} className="rounded border p-1 dark:border-gray-500">
+                                    {prereqDisplayTexts[index] || 'Loading...'}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
-        </div>
+        </DetailPage>
     );
 } 

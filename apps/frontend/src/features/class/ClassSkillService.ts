@@ -46,7 +46,7 @@ export class ClassSkillService {
         if (!classSkillsProgression) {
             // Create the main class skills progression if it doesn't exist
             classSkillsProgression = {
-                id: Date.now() + Math.random(), // Temporary ID for frontend state
+                id: Math.floor(Date.now() + Math.random() * 1000), // Temporary ID for frontend state
                 featureId: SpecialFeatureId.ClassSkill,
                 sourceType: 1, // 1 for Class
                 classId: classId,
@@ -77,7 +77,7 @@ export class ClassSkillService {
 
         // Add the skill as an entity to the progression
         const newEntity = {
-            id: Date.now() + Math.random(), // Temporary ID
+            id: Math.floor(Date.now() + Math.random() * 1000), // Temporary ID
             progressionId: classSkillsProgression.id,
             type: EntityType.Other, // Not a bonus, just marking as class skill
             appliesTo: EntityAppliesToType.Skill,

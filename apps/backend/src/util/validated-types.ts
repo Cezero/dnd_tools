@@ -87,3 +87,35 @@ export type ValidatedNoInput<ResBody = unknown> = Request<
     ParsedQs                // query
 >;
 
+// === Headers Only ===
+export type ValidatedHeaders<
+    H extends ZodSchema,
+    ResBody = unknown
+> = Request<Record<string, string>, ResBody, unknown, ParsedQs> & {
+    headers: Infer<H>;
+};
+
+export type ValidatedHeadersT<
+    H,
+    ResBody = unknown
+> = Request<Record<string, string>, ResBody, unknown, ParsedQs> & {
+    headers: H;
+};
+
+// === Headers + Body ===
+export type ValidatedHeadersBody<
+    H extends ZodSchema,
+    B extends ZodSchema,
+    ResBody = unknown
+> = Request<Record<string, string>, ResBody, Infer<B>, ParsedQs> & {
+    headers: Infer<H>;
+};
+
+export type ValidatedHeadersBodyT<
+    H,
+    B,
+    ResBody = unknown
+> = Request<Record<string, string>, ResBody, B, ParsedQs> & {
+    headers: H;
+};
+

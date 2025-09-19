@@ -1,6 +1,6 @@
 import { EntityAppliesToType, EntityType } from '@shared/static-data';
 
-import { classSkillLabeler, skillModifierLabeler, displayNameLabeler, emptyStringLabeler, bonusLanguageLabeler, automaticLanguageLabeler, abilityModifierLabeler, savingThrowModifierLabeler, creatureTypeLabeler, sizeCategoryLabeler, choiceLabeler, groupedChoiceLabeler, grantedFeatLabeler, weaponFamiliarityLabeler, groupedWeaponFamiliarityLabeler, groupedUsesLabeler, spellSaveDCLabeler, groupedResistanceLabeler } from './label-formatters';
+import { classSkillLabeler, skillModifierLabeler, displayNameLabeler, emptyStringLabeler, bonusLanguageLabeler, automaticLanguageLabeler, abilityModifierLabeler, savingThrowModifierLabeler, creatureTypeLabeler, sizeCategoryLabeler, choiceLabeler, groupedChoiceLabeler, grantedFeatLabeler, weaponFamiliarityLabeler, groupedWeaponFamiliarityLabeler, groupedUsesLabeler, spellSaveDCLabeler, groupedResistanceLabeler, domainLabeler, casterLevelLabeler } from './label-formatters';
 import { generateKey } from './registry-utils';
 import type { CalculatedEntity } from './types';
 
@@ -108,6 +108,7 @@ export class LabelerRegistry implements ILabelerRegistry {
         this.registerBonusLabeler(EntityAppliesToType.SavingThrow, savingThrowModifierLabeler);
         this.registerBonusLabeler(EntityAppliesToType.Skill, skillModifierLabeler); // Special case for skills
         this.registerBonusLabeler(EntityAppliesToType.Resistance, groupedResistanceLabeler);
+        this.registerBonusLabeler(EntityAppliesToType.CasterLevel, casterLevelLabeler);
 
         // EntityType.Quantity - use displayName labeler for most types
         this.registerQuantityLabeler(EntityAppliesToType.MovementSpeed, displayNameLabeler);
@@ -136,6 +137,7 @@ export class LabelerRegistry implements ILabelerRegistry {
         this.registerOtherLabeler(EntityAppliesToType.DamageType, emptyStringLabeler);
         this.registerOtherLabeler(EntityAppliesToType.WeaponFamiliarity, weaponFamiliarityLabeler);
         this.registerOtherLabeler(EntityAppliesToType.Skill, classSkillLabeler); // Special case for class skills
+        this.registerOtherLabeler(EntityAppliesToType.Domain, domainLabeler); // Domain grants
 
         // EntityType.Proficiency
         this.registerProficiencyLabeler(EntityAppliesToType.Feat, emptyStringLabeler);

@@ -19,8 +19,10 @@ export function initializeFormData(
     return {
         id: 0,
         sourceType: FeatureSourceType.None,
-        classId: 0,
+        classId: null,
         raceId: null,
+        domainId: null,
+        variantOverrideId: null,
         level: 1,
         featureId: preSelectedFeature?.id || 0,
         entities: [],

@@ -1,6 +1,7 @@
 import { PrismaClient } from '@shared/prisma-client';
 import {
     GetAllClassesResponse,
+    GetAllClassesQuery,
     CreateClassRequest,
     UpdateClassRequest,
     ClassIdParamRequest,
@@ -9,38 +10,110 @@ import {
     CreateSpellcastingProgressionRequest,
     CreateSpellcastingSlotRequest,
 } from '@shared/schema';
+import { isVariantId } from '@shared/static-data';
 
 import type { ClassService } from './types';
-import { transformFormulaParamsFromDatabase } from '../../utils/formulaParamTransformers';
+import { VariantClassService } from './variantClassService.js';
 import { featureSystemService } from '../featureSystem/featureSystemService';
-
+import type { FeatureProgressionContext } from '../featureSystem/types';
 
 const prisma = new PrismaClient();
+const variantClassService = new VariantClassService(prisma);
 
 export const classService: ClassService = {
-    async getAllClasses(): Promise<GetAllClassesResponse> {
-        const [classes] = await Promise.all([
-            prisma.class.findMany({
+    async getAllClasses(query?: GetAllClassesQuery): Promise<GetAllClassesResponse> {
+        const baseClassesOnly = query?.baseClassesOnly || false;
+
+        // Build where clause for base classes
+        const whereClause: Omit<Partial<GetAllClassesQuery>, 'editionId'> & { editionId?: number | { in: number[] } } = {};
+        if (query?.isVisible !== undefined) {
+            whereClause.isVisible = query.isVisible;
+        }
+        if (query?.isPrestige !== undefined) {
+            whereClause.isPrestige = query.isPrestige;
+        }
+        if (query?.editionId !== undefined) {
+            whereClause.editionId = query.editionId;
+        }
+        if (query?.editionIds !== undefined && query.editionIds.length > 0) {
+            whereClause.editionId = { in: query.editionIds };
+        }
+
+        const classesPromise = prisma.class.findMany({
+            where: whereClause,
+            orderBy: { name: 'asc' },
+            include: {
+                sourceBookInfo: {
+                    select: {
+                        sourceBookId: true,
+                        pageNumber: true
+                    }
+                },
+            }
+        });
+
+        const variantsPromise = baseClassesOnly
+            ? Promise.resolve([])
+            : prisma.classVariant.findMany({
                 orderBy: { name: 'asc' },
                 include: {
-                    sourceBookInfo: {
-                        select: {
-                            sourceBookId: true,
-                            pageNumber: true
+                    baseClass: {
+                        include: {
+                            sourceBookInfo: {
+                                select: {
+                                    sourceBookId: true,
+                                    pageNumber: true
+                                }
+                            },
                         }
-                    },
+                    }
                 }
-            }),
-            prisma.class.count(),
-        ]);
+            });
+
+        const [classes, variants] = await Promise.all([classesPromise, variantsPromise]);
+
+        // Combine classes and variants into a single list
+        const allItems = [
+            // Base classes (unchanged)
+            ...classes,
+            // Variants with resolved class data and custom IDs
+            ...variants.map(variant => {
+                return {
+                    ...variant.baseClass,
+                    id: variant.id, // Use the custom ID that was calculated during creation
+                    name: variant.name, // Use variant name
+                    description: variant.description || variant.baseClass.description,
+                    // Apply variant overrides to summary fields
+                    hitDie: variant.hitDie ?? variant.baseClass.hitDie,
+                    skillPoints: variant.skillPoints ?? variant.baseClass.skillPoints,
+                    babProgression: variant.babProgression ?? variant.baseClass.babProgression,
+                    fortProgression: variant.fortProgression ?? variant.baseClass.fortProgression,
+                    refProgression: variant.refProgression ?? variant.baseClass.refProgression,
+                    willProgression: variant.willProgression ?? variant.baseClass.willProgression,
+                };
+            })
+        ];
+
+        // Sort combined list by name
+        allItems.sort((a, b) => a.name.localeCompare(b.name));
 
         return {
-            total: classes.length,
-            results: classes as GetAllClassesResponse['results'],
+            total: allItems.length,
+            results: allItems as GetAllClassesResponse['results'],
         };
     },
 
-    async getClassById(query: ClassIdParamRequest) {
+    async getClassById(query: ClassIdParamRequest): Promise<DnDClass | null> {
+        const id = query.id;
+
+        // Check if this is a custom variant ID
+        if (isVariantId(id)) {
+            // For variant IDs, we need to look up the variant directly by its custom ID
+            // The resolveClassWithVariantById method will handle the base class lookup
+            return await variantClassService.resolveClassWithVariantById(id);
+        }
+
+        // Otherwise, return base class as normal
         const classData = await prisma.class.findUnique({
             where: { id: query.id },
             include: {
@@ -76,6 +149,9 @@ export const classService: ClassService = {
             features,
             spellcastingProgression: classData.spellcastingProgression ?? null,
             spellsKnownProgression: classData.classSpellsKnown ?? null,
+            baseClassId: null,
+            variantId: null,
+            isVariant: false,
         };
 
         return transformedClassData as DnDClass;
@@ -100,7 +176,8 @@ export const classService: ClassService = {
 
             // Create feature progressions using consolidated feature system service
             if (features && features.length > 0) {
-                await featureSystemService.createMultipleFeatureProgressions(features, { classId: classResult.id });
+                const context: FeatureProgressionContext = { classId: classResult.id };
+                await featureSystemService.createMultipleFeatureProgressions(features, context);
             }
 
             // Create spellcasting progression (spell slots)
@@ -166,7 +243,8 @@ export const classService: ClassService = {
             await tx.classSourceMap.deleteMany({ where: { classId: query.id } });
 
             // Delete existing feature progressions using consolidated feature system service
-            await featureSystemService.deleteFeatureProgressionsForContext({ classId: query.id }, tx);
+            const deleteContext: FeatureProgressionContext = { classId: query.id };
+            await featureSystemService.deleteFeatureProgressionsForContext(deleteContext, tx);
 
             // Delete existing spellcasting progression and slots
             const existingSpellcastingProgressions = await tx.spellcastingProgression.findMany({
@@ -226,7 +304,8 @@ export const classService: ClassService = {
 
             // Create new feature progressions using consolidated feature system service
             if (features && features.length > 0) {
-                await featureSystemService.createMultipleFeatureProgressions(features, { classId: query.id }, tx);
+                const createContext: FeatureProgressionContext = { classId: query.id };
+                await featureSystemService.createMultipleFeatureProgressions(features, createContext, tx);
             }
 
             // Create new spellcasting progression (spell slots)

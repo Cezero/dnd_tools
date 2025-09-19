@@ -6,7 +6,23 @@
 
 The Feature System is the core mechanism for defining and managing character abilities, bonuses, and special effects. It provides a flexible framework for creating class features, racial traits, feat benefits, and other character capabilities through a combination of modifiers, choices, and special effects.
 
-The system enables complex character customization by allowing features to scale with level, provide player choices, and integrate with other game systems like spellcasting and character progression.
+The system enables complex character customization by allowing features to scale with level, provide player choices, and integrate with other game systems like spellcasting and character progression. The system also supports variant class feature overrides through the variant class system.
+
+### **Variant Class Integration**
+
+The Feature System integrates with the [Variant Class System](../variant-class-system/README.md) to support feature modifications for variant classes. The integration uses context objects to properly link variant features to their override records, maintaining referential integrity throughout the system.
+
+**Integration Points**:
+- **Feature Source Types**: Uses `FeatureSourceType.ClassVariant` for variant features
+- **Context Management**: Passes `variantOverrideId` context for proper foreign key relationships
+- **Override Resolution**: Leverages feature system service for proper feature population
+- **Feature Creation**: Uses `FeatureSystemApi` for creating new features in variants
+- **Feature Modification**: Uses existing ClassEdit patterns for feature editing in variants
+
+**Related Documentation**:
+- [Variant Class System](../variant-class-system/README.md) - Complete variant class system overview
+- [Variant Class Feature Overrides](../variant-class-system/backend-implementation.md) - Backend feature override management
+- [Variant Class Frontend Implementation](../variant-class-system/frontend-implementation.md) - Frontend feature override management
 
 **Source Files**: 
 - Database: `apps/backend/prisma/schema.prisma` (Feature-related models)
@@ -29,6 +45,7 @@ This documentation follows a layered approach, with each layer building upon the
 
 ### **Specialized Documentation**
 - **[Formula System](formula-system.md)** - Mathematical formulas for feature progression
+- **[Variant Class System](../variant-class-system/README.md)** - Variant class feature override integration
 
 ### **Implementation Examples**
 - **[Examples](examples.md)** - Comprehensive examples for implementing D&D features

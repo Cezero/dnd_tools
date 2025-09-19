@@ -40,14 +40,16 @@ export function SkillEdit() {
         abilityId: 1,
         trainedOnly: false,
         affectedByArmor: false,
-        checkDescription: '',
-        actionDescription: '',
+        isAnalog: false,
+        checkDescription: null,
+        actionDescription: null,
         retryTypeId: null,
-        retryDescription: '',
-        specialNotes: '',
-        synergyNotes: '',
-        untrainedNotes: '',
-        description: '',
+        retryDescription: null,
+        specialNotes: null,
+        synergyNotes: null,
+        untrainedNotes: null,
+        restrictionNotes: null,
+        description: null,
         ...(id !== 'new' && { id: parseInt(id) })
     }), [id]);
 
@@ -210,6 +212,13 @@ export function SkillEdit() {
                                     onCheckedChange={(checked) => setFormData(prev => ({ ...prev, affectedByArmor: checked }))}
                                 />
                             </div>
+                            <div className="flex items-center gap-2">
+                                <CustomCheckbox
+                                    label="Analog"
+                                    checked={formData.isAnalog as boolean}
+                                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isAnalog: checked }))}
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -218,7 +227,7 @@ export function SkillEdit() {
                         value={formData.description || ''}
                         id="description"
                         label="Description"
-                        onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
+                        onChange={(value) => setFormData(prev => ({ ...prev, description: value || null }))}
                     />
                     {form.validation.getError('description') && (
                         <span className="text-red-500 text-sm">{form.validation.getError('description')}</span>
@@ -227,7 +236,7 @@ export function SkillEdit() {
                         value={formData.checkDescription || ''}
                         id="check"
                         label="Check"
-                        onChange={(value) => setFormData(prev => ({ ...prev, checkDescription: value }))}
+                        onChange={(value) => setFormData(prev => ({ ...prev, checkDescription: value || null }))}
                     />
                     {form.validation.getError('checkDescription') && (
                         <span className="text-red-500 text-sm">{form.validation.getError('checkDescription')}</span>
@@ -236,7 +245,7 @@ export function SkillEdit() {
                         value={formData.actionDescription || ''}
                         id="action"
                         label="Action"
-                        onChange={(value) => setFormData(prev => ({ ...prev, actionDescription: value }))}
+                        onChange={(value) => setFormData(prev => ({ ...prev, actionDescription: value || null }))}
                     />
                     {form.validation.getError('actionDescription') && (
                         <span className="text-red-500 text-sm">{form.validation.getError('actionDescription')}</span>
@@ -254,7 +263,7 @@ export function SkillEdit() {
                         value={formData.retryDescription || ''}
                         id="retry"
                         label="Retry"
-                        onChange={(value) => setFormData(prev => ({ ...prev, retryDescription: value }))}
+                        onChange={(value) => setFormData(prev => ({ ...prev, retryDescription: value || null }))}
                     />
                     {form.validation.getError('retryDescription') && (
                         <span className="text-red-500 text-sm">{form.validation.getError('retryDescription')}</span>
@@ -263,7 +272,7 @@ export function SkillEdit() {
                         value={formData.specialNotes || ''}
                         id="special"
                         label="Special"
-                        onChange={(value) => setFormData(prev => ({ ...prev, specialNotes: value }))}
+                        onChange={(value) => setFormData(prev => ({ ...prev, specialNotes: value || null }))}
                     />
                     {form.validation.getError('specialNotes') && (
                         <span className="text-red-500 text-sm">{form.validation.getError('specialNotes')}</span>
@@ -272,7 +281,7 @@ export function SkillEdit() {
                         value={formData.synergyNotes || ''}
                         id="synergy"
                         label="Synergy"
-                        onChange={(value) => setFormData(prev => ({ ...prev, synergyNotes: value }))}
+                        onChange={(value) => setFormData(prev => ({ ...prev, synergyNotes: value || null }))}
                     />
                     {form.validation.getError('synergyNotes') && (
                         <span className="text-red-500 text-sm">{form.validation.getError('synergyNotes')}</span>
@@ -281,7 +290,7 @@ export function SkillEdit() {
                         value={formData.untrainedNotes || ''}
                         id="untrained"
                         label="Untrained"
-                        onChange={(value) => setFormData(prev => ({ ...prev, untrainedNotes: value }))}
+                        onChange={(value) => setFormData(prev => ({ ...prev, untrainedNotes: value || null }))}
                     />
                     {form.validation.getError('untrainedNotes') && (
                         <span className="text-red-500 text-sm">{form.validation.getError('untrainedNotes')}</span>
@@ -290,7 +299,7 @@ export function SkillEdit() {
                         value={formData.restrictionNotes || ''}
                         id="restriction"
                         label="Restriction"
-                        onChange={(value) => setFormData(prev => ({ ...prev, restrictionNotes: value }))}
+                        onChange={(value) => setFormData(prev => ({ ...prev, restrictionNotes: value || null }))}
                     />
                     {form.validation.getError('restrictionNotes') && (
                         <span className="text-red-500 text-sm">{form.validation.getError('restrictionNotes')}</span>

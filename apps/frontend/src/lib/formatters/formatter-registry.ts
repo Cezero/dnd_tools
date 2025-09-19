@@ -8,6 +8,7 @@ import {
     FeatureEntityFormatter,
     LanguageFormatter,
     FeatFormatter,
+    DomainFormatter,
     SpellFormatter,
     UsesFormatter,
     TargetsFormatter,
@@ -109,6 +110,7 @@ export class FormatterRegistry implements IFormatterRegistry {
         const emptyStringFormatter = new EmptyStringFormatter();
         const languageFormatter = new LanguageFormatter();
         const featFormatter = new FeatFormatter();
+        const domainFormatter = new DomainFormatter();
         const usesFormatter = new UsesFormatter();
         const targetsFormatter = new TargetsFormatter();
         const valueFormatter = new ValueFormatter();
@@ -137,6 +139,7 @@ export class FormatterRegistry implements IFormatterRegistry {
         this.registerBonusFormatter(EntityAppliesToType.Initiative, signedValueFormatter);
         this.registerBonusFormatter(EntityAppliesToType.SpellSvDC, spellSaveDCFormatter);
         this.registerBonusFormatter(EntityAppliesToType.Resistance, resistanceFormatter);
+        this.registerBonusFormatter(EntityAppliesToType.CasterLevel, signedValueFormatter);
         this.registerBonusFormatter(EntityAppliesToType.Damage, damageBonusFormatter);
 
         // Quantity-compatible types
@@ -161,6 +164,7 @@ export class FormatterRegistry implements IFormatterRegistry {
         this.registerOtherFormatter(EntityAppliesToType.BonusLanguage, languageFormatter);
         this.registerOtherFormatter(EntityAppliesToType.AutomaticLanguage, languageFormatter);
         this.registerOtherFormatter(EntityAppliesToType.Feat, featFormatter);
+        this.registerOtherFormatter(EntityAppliesToType.Domain, domainFormatter);
         this.registerOtherFormatter(EntityAppliesToType.Spell, new SpellFormatter());
         this.registerOtherFormatter(EntityAppliesToType.Skill, emptyStringFormatter);
         this.registerOtherFormatter(EntityAppliesToType.CreatureType, creatureTypeFormatter);
@@ -174,6 +178,7 @@ export class FormatterRegistry implements IFormatterRegistry {
         // Choice-compatible types
         const featureEntityFormatter = new FeatureEntityFormatter();
         this.registerEntityFormatter(EntityType.Choice, EntityAppliesToType.Feat, featureEntityFormatter);
+        this.registerEntityFormatter(EntityType.Choice, EntityAppliesToType.Domain, featureEntityFormatter);
         this.registerEntityFormatter(EntityType.Choice, EntityAppliesToType.Spell, featureEntityFormatter);
         this.registerEntityFormatter(EntityType.Choice, EntityAppliesToType.Feature, featureEntityFormatter);
         this.registerEntityFormatter(EntityType.Choice, EntityAppliesToType.CreatureType, featureEntityFormatter);

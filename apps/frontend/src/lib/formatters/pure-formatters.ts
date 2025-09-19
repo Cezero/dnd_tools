@@ -110,6 +110,21 @@ export class FeatFormatter implements BaseFormatter {
     }
 }
 
+export class DomainFormatter implements BaseFormatter {
+    format(modifier: CalculatedEntity): string {
+        const value = modifier.value;
+
+        // Handle general domains - use included entity data
+        if (modifier.domain) {
+            return modifier.domain.name;
+        }
+
+        // Fallback to appliesToId if domain data is missing
+        const domainId = modifier.appliesToId;
+        return `${domainId || value} (domain name not found)`;
+    }
+}
+
 export class SpellFormatter implements BaseFormatter {
     format(modifier: CalculatedEntity): string {
         const value = modifier.value;
@@ -256,6 +271,8 @@ export class FeatureEntityFormatter implements BaseFormatter {
         switch (choice.appliesTo) {
             case EntityAppliesToType.Feat:
                 return this.getFeatName(choice);
+            case EntityAppliesToType.Domain:
+                return this.getDomainName(choice);
             case EntityAppliesToType.Feature:
                 return this.getFeatureName(choice);
             case EntityAppliesToType.CreatureType:
@@ -279,6 +296,21 @@ export class FeatureEntityFormatter implements BaseFormatter {
 
         // Priority 5: Fall back to "Bonus Feat" when no filter type is set
         return 'Bonus Feat';
+    }
+
+    private getDomainName(choice: CalculatedEntity): string {
+        // Priority 1: Use included entity data (specific domain selected)
+        if (choice.domain) {
+            return choice.domain.name;
+        }
+
+        // Priority 2: Use static data filter type name (filter type is set)
+        if (choice.filterType && FEATURE_FEAT_CHOICE_FILTER_TYPES[choice.filterType]) {
+            return FEATURE_FEAT_CHOICE_FILTER_TYPES[choice.filterType].name;
+        }
+
+        // Priority 3: Fall back to "Domain Choice" when no filter type is set
+        return 'Domain Choice';
     }
 
     private getFeatureName(choice: CalculatedEntity): string {
@@ -322,6 +354,8 @@ export class FeatureEntityFormatter implements BaseFormatter {
         switch (choice.appliesTo) {
             case EntityAppliesToType.Feat:
                 return this.getFeatName(choice);
+            case EntityAppliesToType.Domain:
+                return this.getDomainName(choice);
             case EntityAppliesToType.Feature:
                 return this.getFeatureName(choice);
             case EntityAppliesToType.CreatureType:

@@ -60,6 +60,13 @@ export const characterService: CharacterService = {
                         name: true,
                     },
                 },
+                deity: {
+                    select: {
+                        id: true,
+                        name: true,
+                        alignmentId: true,
+                    },
+                },
             },
         });
 
@@ -74,6 +81,13 @@ export const characterService: CharacterService = {
                     select: {
                         id: true,
                         name: true,
+                    },
+                },
+                deity: {
+                    select: {
+                        id: true,
+                        name: true,
+                        alignmentId: true,
                     },
                 },
                 abilityScores: true,
@@ -94,7 +108,7 @@ export const characterService: CharacterService = {
             },
         });
 
-        return character as CharacterWithAllDetailsResponse;
+        return character;
     },
 
     async createCharacter(data: CreateCharacterRequest): Promise<CreateResponse> {
@@ -266,4 +280,5 @@ export const characterService: CharacterService = {
 
         return abilities as CharacterAbilityScoreResponse[];
     },
+
 }; 

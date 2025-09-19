@@ -40,6 +40,7 @@ export const Skill = {
     UseRope: 45,
     WildEmpathy: 48,
     BardicKnowledge: 49,
+    Lore: 51,
 } as const;
 
 export type Skill = (typeof Skill)[keyof typeof Skill];
@@ -83,6 +84,7 @@ export const SKILL_MAP: SkillMap = {
     [Skill.UseRope]: { id: Skill.UseRope, name: 'Use Rope', abilityId: 2, trainedOnly: false, isAnalog: false },
     [Skill.WildEmpathy]: { id: Skill.WildEmpathy, name: 'Wild Empathy', abilityId: 6, trainedOnly: true, isAnalog: true },
     [Skill.BardicKnowledge]: { id: Skill.BardicKnowledge, name: 'Bardic Knowledge', abilityId: 4, trainedOnly: true, isAnalog: true },
+    [Skill.Lore]: { id: Skill.Lore, name: 'Lore', abilityId: 4, trainedOnly: true, isAnalog: true },
 };
 
 export const SKILL_LIST = Object.values(SKILL_MAP);

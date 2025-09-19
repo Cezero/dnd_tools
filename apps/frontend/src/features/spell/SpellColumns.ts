@@ -1,6 +1,7 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createArrayIdFilter, createEqualsFilter, createContainsFilter } from '@/components/generic-list/filterFunctions';
+import { getSourceBookOptionsForSpells } from '@/utils';
 import { Spell } from '@shared/schema/spell';
 import {
     SPELL_SCHOOL_SELECT_LIST,
@@ -113,12 +114,13 @@ export const SPELL_COLUMNS: ColumnDef<Spell, unknown>[] = [
         filterFn: createArrayIdFilter<Spell>('sourceBookId'),
         cell: info => {
             const sources = info.getValue() as { sourceBookId: number, pageNumber: number }[];
-            const labels = GetSourceDisplay(sources.map(s => ({ bookId: s.sourceBookId, pageNumber: s.pageNumber })), true);
+            const labels = GetSourceDisplay(sources, true);
             return labels;
         },
         meta: {
             filterType: FilterType.MULTI_SELECT,
-            options: SOURCE_BOOK_WITH_SPELLS_SELECT_LIST,
+            options: (currentFilters: Array<{ id: string; value: unknown }>) =>
+                getSourceBookOptionsForSpells(currentFilters, SOURCE_BOOK_WITH_SPELLS_SELECT_LIST),
         },
     },
     {

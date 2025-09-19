@@ -7,16 +7,34 @@ import {
     RouterOptions,
 } from 'express';
 import type { ParsedQs } from 'qs';
-import { ZodSchema } from 'zod';
+import { ZodType } from 'zod';
 
 import { InferOrDefault } from './types';
 
-type Schemas = {
-    params?: ZodSchema;
-    query?: ZodSchema;
-    body?: ZodSchema;
-    headers?: ZodSchema;
+type ValidatedRequest<
+    P extends ZodType | undefined = undefined,
+    Q extends ZodType | undefined = undefined,
+    B extends ZodType | undefined = undefined,
+    H extends ZodType | undefined = undefined
+> = Request<
+    InferOrDefault<P, Record<string, string>>,
+    unknown,
+    InferOrDefault<B, unknown>,
+    InferOrDefault<Q, ParsedQs>
+> & {
+    headers: InferOrDefault<H, Record<string, string | string[] | undefined>>;
 };
+
+type ValidatedHandler<
+    P extends ZodType | undefined = undefined,
+    Q extends ZodType | undefined = undefined,
+    B extends ZodType | undefined = undefined,
+    H extends ZodType | undefined = undefined
+> = (
+    req: ValidatedRequest<P, Q, B, H>,
+    res: Response,
+    next: NextFunction
+) => Promise<void> | void;
 
 function stripUndefinedKeys<T extends object>(input: T): Partial<T> {
     return Object.fromEntries(
@@ -25,22 +43,13 @@ function stripUndefinedKeys<T extends object>(input: T): Partial<T> {
 }
 
 export function buildValidatedHandler<
-    P extends ZodSchema | undefined = undefined,
-    Q extends ZodSchema | undefined = undefined,
-    B extends ZodSchema | undefined = undefined,
-    ResBody = unknown
+    P extends ZodType | undefined = undefined,
+    Q extends ZodType | undefined = undefined,
+    B extends ZodType | undefined = undefined,
+    H extends ZodType | undefined = undefined
 >(
-    schemas: Schemas,
-    handler: (
-        req: Request<
-            InferOrDefault<P, Record<string, string>>,
-            ResBody,
-            InferOrDefault<B, unknown>,
-            InferOrDefault<Q, ParsedQs>
-        >,
-        res: Response<ResBody>,
-        next: NextFunction
-    ) => Promise<void>
+    schemas: { params?: P; query?: Q; body?: B; headers?: H },
+    handler: ValidatedHandler<P, Q, B, H>
 ): RequestHandler {
     const wrapped: RequestHandler = async (req, res, next) => {
         try {
@@ -51,15 +60,10 @@ export function buildValidatedHandler<
                     ? schemas.query.parse(stripUndefinedKeys(req.query))
                     : req.query,
                 body: schemas.body ? schemas.body.parse(stripUndefinedKeys(req.body)) : req.body,
-                headers: schemas.headers ? schemas.headers.parse(req.headers) : req.headers,
+                headers: schemas.headers ? schemas.headers.parse(stripUndefinedKeys(req.headers)) : req.headers,
             };
 
-            await handler(parsedReq as unknown as Request<
-                InferOrDefault<P, Record<string, string>>,
-                ResBody,
-                InferOrDefault<B, unknown>,
-                InferOrDefault<Q, ParsedQs>
-            >, res, next);
+            await handler(parsedReq as ValidatedRequest<P, Q, B, H>, res, next);
         } catch (err) {
             next(err);
         }
@@ -72,51 +76,50 @@ export function buildValidatedRouter(options?: RouterOptions) {
     const router = Router(options);
 
     function register<
-        P extends ZodSchema | undefined = undefined,
-        Q extends ZodSchema | undefined = undefined,
-        B extends ZodSchema | undefined = undefined,
-        ResBody = unknown
+        P extends ZodType | undefined = undefined,
+        Q extends ZodType | undefined = undefined,
+        B extends ZodType | undefined = undefined,
+        H extends ZodType | undefined = undefined
     >(
         method: 'get' | 'post' | 'put' | 'patch' | 'delete',
         path: string,
         ...handlers: [
             ...RequestHandler[], // middleware
-            Schemas,
-            (
-                req: Request<
-                    InferOrDefault<P, Record<string, string>>,
-                    ResBody,
-                    InferOrDefault<B, unknown>,
-                    InferOrDefault<Q, ParsedQs>
-                >,
-                res: Response<ResBody>,
-                next: NextFunction
-            ) => Promise<void>
+            { params?: P; query?: Q; body?: B; headers?: H },
+            ValidatedHandler<P, Q, B, H>
         ]
     ) {
-        const schemas = handlers[handlers.length - 2] as Schemas;
-        const routeHandler = handlers[handlers.length - 1] as (
-            req: Request,
-            res: Response,
-            next: NextFunction
-        ) => Promise<void>;
+        const schemas = handlers[handlers.length - 2] as { params?: P; query?: Q; body?: B; headers?: H };
+        const routeHandler = handlers[handlers.length - 1] as ValidatedHandler<P, Q, B, H>;
 
         const middleware = handlers.slice(0, -2) as RequestHandler[];
 
-        const validated = buildValidatedHandler<P, Q, B, ResBody>(
-            schemas,
-            routeHandler
-        );
+        const validated = buildValidatedHandler(schemas, routeHandler);
 
         router[method](path, ...middleware, validated);
     }
 
     return {
         router,
-        get: register.bind(null, 'get'),
-        post: register.bind(null, 'post'),
-        put: register.bind(null, 'put'),
-        patch: register.bind(null, 'patch'),
-        delete: register.bind(null, 'delete'),
+        get: <P extends ZodType | undefined = undefined, Q extends ZodType | undefined = undefined, B extends ZodType | undefined = undefined, H extends ZodType | undefined = undefined>(
+            path: string,
+            ...handlers: [...RequestHandler[], { params?: P; query?: Q; body?: B; headers?: H }, ValidatedHandler<P, Q, B, H>]
+        ) => register<P, Q, B, H>('get', path, ...handlers),
+        post: <P extends ZodType | undefined = undefined, Q extends ZodType | undefined = undefined, B extends ZodType | undefined = undefined, H extends ZodType | undefined = undefined>(
+            path: string,
+            ...handlers: [...RequestHandler[], { params?: P; query?: Q; body?: B; headers?: H }, ValidatedHandler<P, Q, B, H>]
+        ) => register<P, Q, B, H>('post', path, ...handlers),
+        put: <P extends ZodType | undefined = undefined, Q extends ZodType | undefined = undefined, B extends ZodType | undefined = undefined, H extends ZodType | undefined = undefined>(
+            path: string,
+            ...handlers: [...RequestHandler[], { params?: P; query?: Q; body?: B; headers?: H }, ValidatedHandler<P, Q, B, H>]
+        ) => register<P, Q, B, H>('put', path, ...handlers),
+        patch: <P extends ZodType | undefined = undefined, Q extends ZodType | undefined = undefined, B extends ZodType | undefined = undefined, H extends ZodType | undefined = undefined>(
+            path: string,
+            ...handlers: [...RequestHandler[], { params?: P; query?: Q; body?: B; headers?: H }, ValidatedHandler<P, Q, B, H>]
+        ) => register<P, Q, B, H>('patch', path, ...handlers),
+        delete: <P extends ZodType | undefined = undefined, Q extends ZodType | undefined = undefined, B extends ZodType | undefined = undefined, H extends ZodType | undefined = undefined>(
+            path: string,
+            ...handlers: [...RequestHandler[], { params?: P; query?: Q; body?: B; headers?: H }, ValidatedHandler<P, Q, B, H>]
+        ) => register<P, Q, B, H>('delete', path, ...handlers),
     };
 }

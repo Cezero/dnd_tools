@@ -1,7 +1,7 @@
 import { Response } from 'express';
 
-import { ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types'
-import { LoginUserRequest, RegisterUserRequest, AuthServiceResult } from '@shared/schema';
+import { ValidatedBodyT, ValidatedHeadersT } from '@/util/validated-types'
+import { LoginUserRequest, RegisterUserRequest, AuthServiceResult, AuthHeaderRequest } from '@shared/schema';
 
 import { authService } from './authService';
 
@@ -42,7 +42,7 @@ export async function LoginUser(req: ValidatedBodyT<LoginUserRequest>, res: Resp
 }
 
 // Get User from Token
-export async function GetUserFromToken(req: ValidatedNoInput<AuthServiceResult>, res: Response) {
+export async function GetUserFromToken(req: ValidatedHeadersT<AuthHeaderRequest, AuthServiceResult>, res: Response) {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
         res.status(401).json({ error: 'No token provided' });
@@ -61,7 +61,7 @@ export async function GetUserFromToken(req: ValidatedNoInput<AuthServiceResult>,
 }
 
 // Refresh Token
-export async function RefreshToken(req: ValidatedNoInput<AuthServiceResult>, res: Response) {
+export async function RefreshToken(req: ValidatedHeadersT<AuthHeaderRequest, AuthServiceResult>, res: Response) {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
         res.status(401).json({ error: 'No token provided' });

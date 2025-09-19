@@ -16,6 +16,85 @@ export type TableConfig = {
     pagination: PaginationState;
 };
 
+/**
+ * Validates and fixes column order to ensure it matches the current column definitions
+ * @param storedOrder - The column order from localStorage
+ * @param validColumns - The current valid column IDs
+ * @returns A valid column order array
+ */
+function validateAndFixColumnOrder(storedOrder: string[], validColumns: string[]): string[] {
+    // If no stored order, return the default
+    if (!storedOrder || storedOrder.length === 0) {
+        return validColumns;
+    }
+
+    // Filter out invalid columns (columns that no longer exist)
+    const validStoredColumns = storedOrder.filter(columnId => validColumns.includes(columnId));
+
+    // Find missing columns (new columns that weren't in the stored order)
+    const missingColumns = validColumns.filter(columnId => !storedOrder.includes(columnId));
+
+    // Combine valid stored columns with missing columns
+    const fixedOrder = [...validStoredColumns, ...missingColumns];
+
+    // If the order is significantly different, log a warning
+    if (validStoredColumns.length !== storedOrder.length || missingColumns.length > 0) {
+        console.warn(`Column order validation fixed ${storedOrder.length - validStoredColumns.length} invalid columns and added ${missingColumns.length} missing columns for storage key`);
+    }
+
+    return fixedOrder;
+}
+
+/**
+ * Validates and fixes column visibility state to remove references to non-existent columns
+ * @param storedVisibility - The column visibility state from localStorage
+ * @param validColumns - The current valid column IDs
+ * @returns A valid column visibility state
+ */
+function validateAndFixColumnVisibility(storedVisibility: VisibilityState, validColumns: string[]): VisibilityState {
+    const fixedVisibility: VisibilityState = {};
+    let removedCount = 0;
+
+    for (const [columnId, isVisible] of Object.entries(storedVisibility)) {
+        if (validColumns.includes(columnId)) {
+            fixedVisibility[columnId] = isVisible;
+        } else {
+            removedCount++;
+        }
+    }
+
+    if (removedCount > 0) {
+        console.warn(`Column visibility validation removed ${removedCount} invalid column references for storage key`);
+    }
+
+    return fixedVisibility;
+}
+
+/**
+ * Validates and fixes column sizing state to remove references to non-existent columns
+ * @param storedSizing - The column sizing state from localStorage
+ * @param validColumns - The current valid column IDs
+ * @returns A valid column sizing state
+ */
+function validateAndFixColumnSizing(storedSizing: ColumnSizingState, validColumns: string[]): ColumnSizingState {
+    const fixedSizing: ColumnSizingState = {};
+    let removedCount = 0;
+
+    for (const [columnId, size] of Object.entries(storedSizing)) {
+        if (validColumns.includes(columnId)) {
+            fixedSizing[columnId] = size;
+        } else {
+            removedCount++;
+        }
+    }
+
+    if (removedCount > 0) {
+        console.warn(`Column sizing validation removed ${removedCount} invalid column references for storage key`);
+    }
+
+    return fixedSizing;
+}
+
 export function usePersistentTableState(
     storageKey: string,
     defaultColumnOrder: string[],
@@ -38,16 +117,32 @@ export function usePersistentTableState(
         if (saved) {
             try {
                 const parsed: Partial<TableConfig> = JSON.parse(saved);
-                if (parsed.columnVisibility) setColumnVisibility(parsed.columnVisibility);
+
+                // Validate and fix column visibility
+                if (parsed.columnVisibility) {
+                    const validatedVisibility = validateAndFixColumnVisibility(parsed.columnVisibility, defaultColumnOrder);
+                    setColumnVisibility(validatedVisibility);
+                }
+
                 if (parsed.columnFilters) {
                     setColumnFilters(parsed.columnFilters);
                 }
                 if (parsed.sorting) setSorting(parsed.sorting);
-                if (parsed.columnSizing) setColumnSizing(parsed.columnSizing);
+
+                // Validate and fix column sizing
+                if (parsed.columnSizing) {
+                    const validatedSizing = validateAndFixColumnSizing(parsed.columnSizing, defaultColumnOrder);
+                    setColumnSizing(validatedSizing);
+                }
+
                 if (parsed.columnOrder && parsed.columnOrder.some(id => id === null || id === '')) {
                     throw new Error('Corrupted column order');
                 }
-                if (parsed.columnOrder) setColumnOrder(parsed.columnOrder);
+                if (parsed.columnOrder) {
+                    // Validate and fix the column order against current column definitions
+                    const validatedOrder = validateAndFixColumnOrder(parsed.columnOrder, defaultColumnOrder);
+                    setColumnOrder(validatedOrder);
+                }
                 if (parsed.pagination) {
                     // Only restore pagination if it's valid
                     if (typeof parsed.pagination.pageSize === 'number' && parsed.pagination.pageSize > 0) {

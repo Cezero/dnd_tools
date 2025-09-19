@@ -60,7 +60,7 @@ export function errorHandler(
     if (error instanceof ZodError) {
         res.status(400).json({
             success: false,
-            error: error.errors,
+            error: error.issues,
         });
         return;
     }

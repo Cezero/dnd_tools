@@ -1,6 +1,6 @@
 import {
     MATERIAL_TYPES,
-    SOURCE_TYPES,
+    CONDITION_SOURCE_TYPES,
     SIZE_MAP,
     CREATURE_TYPES,
     SPELL_SCHOOL_MAP,
@@ -25,7 +25,7 @@ export class MaterialValueFormatter implements ConditionValueFormatter {
  */
 export class SourceValueFormatter implements ConditionValueFormatter {
     format(conditionValue: number): string {
-        return SOURCE_TYPES[conditionValue]?.name || '';
+        return CONDITION_SOURCE_TYPES[conditionValue]?.name || '';
     }
 }
 

@@ -83,17 +83,23 @@ export const FeatureEntitySchema = z.object({
         name: z.string().min(1, 'Spell name is required')
     }).optional().nullable(),  // When appliesTo === Spell (minimal data only)
     feature: FeatureSchema.optional().nullable(),  // When appliesTo === Feature (FULL schema)
+    domain: z.object({
+        id: z.number().int().positive('Domain ID must be a positive integer'),
+        name: z.string().min(1, 'Domain name is required')
+    }).optional().nullable(),  // NEW: When appliesTo === Domain (minimal data only)
     formulaParams: FeatureFormulaParamsSchema.optional().nullable(),
 });
 
 // Feature Progression Schema (the main one used for bulk operations)
 export const FeatureProgressionSchema = z.object({
     id: z.number().int().positive('Progression ID must be a positive integer'),
-    sourceType: z.number().int().min(0, 'Source type must be at least 0').max(3, 'Source type must be at most 3'),
+    sourceType: z.enum(FeatureSourceType),
     level: z.number().int().min(1, 'Level must be at least 1').max(20, 'Level must be at most 20'),
     featureId: z.number().int().positive('Feature ID must be a positive integer'),
     classId: z.number().int().nullable(),
     raceId: z.number().int().nullable(),
+    variantOverrideId: z.number().int().nullable(),
+    domainId: z.number().int().nullable(), // NEW: Reference to domain for domain-granted features
     feature: FeatureSchema.optional(),
     class: z.object({
         name: z.string(),
@@ -123,7 +129,12 @@ export const CreateFeatureEntitySchema = FeatureEntitySchema.omit({
     conditions: true,
     formulaParams: true,
     formulaParamsId: true,
+    // Display-only fields that should be filtered out:
     item: true,
+    feat: true,
+    feature: true,
+    spell: true,
+    domain: true,
 }).extend({
     conditions: z.array(CreateFeatureEntityConditionSchema).optional(),
     formulaParams: CreateFeatureFormulaParamsSchema.optional().nullable(),
@@ -138,6 +149,8 @@ export const CreateFeatureProgressionSchema = FeatureProgressionSchema.omit({
 }).extend({
     entities: z.array(CreateFeatureEntitySchema).optional(),
 });
+
+export const UpdateFeatureProgressionSchema = CreateFeatureProgressionSchema.partial();
 
 // Feature with relations (used for feature detail views)
 export const FeatureWithRelationsSchema = FeatureSchema.extend({
@@ -155,7 +168,7 @@ export const FeatureSlugParamSchema = z.object({
 });
 
 export const FeatureQuerySchema = z.object({
-    sourceType: z.enum(FeatureSourceType).optional(),
+    sourceType: z.string().transform((val: string) => parseInt(val)).optional(),
 });
 
 // Request schemas for feature management
@@ -168,12 +181,7 @@ export const CreateFeatureSchema = FeatureSchema.omit({
     })).optional(),
 });
 
-export const UpdateFeatureSchema = FeatureSchema.partial().extend({
-    prerequisites: z.array(FeaturePrerequisiteSchema.omit({
-        id: true,
-        featureId: true,
-    })).optional(),
-});
+export const UpdateFeatureSchema = CreateFeatureSchema.partial();
 
 // Response schemas
 export const GetAllFeaturesResponseSchema = QueryResponseSchema.extend({
@@ -186,7 +194,7 @@ export const GetFeatureResponseSchema = FeatureSchema.extend({
 
 // Feature Progression management schemas
 export const UpdateFeatureProgressionsRequestSchema = z.object({
-    progressions: z.array(CreateFeatureProgressionSchema),
+    progressions: z.array(UpdateFeatureProgressionSchema),
 });
 
 export const GetFeatureProgressionsResponseSchema = z.array(FeatureProgressionSchema);
@@ -203,6 +211,7 @@ export const CreateFeatureProgressionFormSchema = CreateFeatureProgressionSchema
 export type Feature = z.infer<typeof FeatureSchema>;
 export type FeatureIdParamRequest = z.infer<typeof FeatureIdParamSchema>;
 export type FeatureSlugParamRequest = z.infer<typeof FeatureSlugParamSchema>;
+export type FeatureQueryRequest = z.infer<typeof FeatureQuerySchema>;
 export type GetAllFeaturesResponse = z.infer<typeof GetAllFeaturesResponseSchema>;
 export type CreateFeatureRequest = z.infer<typeof CreateFeatureSchema>;
 export type UpdateFeatureRequest = z.infer<typeof UpdateFeatureSchema>;
@@ -217,6 +226,7 @@ export type FeatureEntity = z.infer<typeof FeatureEntitySchema>;
 export type CreateFeatureEntityRequest = z.infer<typeof CreateFeatureEntitySchema>;
 export type CreateFeatureEntityConditionRequest = z.infer<typeof CreateFeatureEntityConditionSchema>;
 export type CreateFeatureFormulaParamsRequest = z.infer<typeof CreateFeatureFormulaParamsSchema>;
+export type UpdateFeatureProgression = z.infer<typeof UpdateFeatureProgressionSchema>;
 
 export type FeatureEntityCondition = z.infer<typeof FeatureEntityConditionSchema>;
 export type FeatureFormulaParams = z.infer<typeof FeatureFormulaParamsSchema>;

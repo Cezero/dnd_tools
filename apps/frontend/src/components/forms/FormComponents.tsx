@@ -210,7 +210,7 @@ export function CustomSelect<T = string | number>({
                         {icon}
                     </Select.Icon>
                 </Select.Trigger>
-                <Select.Positioner>
+                <Select.Positioner className="z-99">
                     <Select.Popup className={`${popupExtraClassName} absolute pt-1 pb-1 pr-1 max-h-60 overflow-auto rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800`}>
                         {options.map((option) => (
                             <Select.Item

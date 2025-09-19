@@ -2,7 +2,8 @@ import { buildValidatedRouter } from '@/lib/buildValidatedRouter.js';
 import {
     ClassIdParamSchema,
     CreateClassSchema,
-    UpdateClassSchema
+    UpdateClassSchema,
+    GetAllClassesQuerySchema
 } from '@shared/schema';
 
 import {
@@ -18,7 +19,7 @@ import { requireAdmin } from '../../middleware/authMiddleware.js';
 const { router: ClassRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
 
 // Class Read Routes
-get('/', {}, GetAllClasses);
+post('/query', { body: GetAllClassesQuerySchema }, GetAllClasses);
 get('/:id', { params: ClassIdParamSchema }, GetClassById);
 
 // Class Write Routes

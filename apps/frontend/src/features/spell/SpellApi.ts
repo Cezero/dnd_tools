@@ -1,35 +1,13 @@
 import { typedApi } from '@/services/Api';
 import {
     SpellIdParamSchema,
+    SpellClassParamSchema,
     UpdateSpellSchema,
     GetSpellResponseSchema,
     GetAllSpellsResponseSchema,
     UpdateResponseSchema,
 } from '@shared/schema';
 
-/**
- * SpellService with path parameter support
- * 
- * Usage examples:
- * 
- * // Get spells with query parameters
- * const spells = await SpellService.getSpells({ page: 1, limit: 10 });
- * 
- * // Get spell by ID (path parameter)
- * const spell = await SpellService.getSpellById(undefined, { id: 123 });
- * 
- * // Create spell
- * const newSpell = await SpellService.createSpell({ name: "Magic Missile", baseLevel: 1 });
- * 
- * // Update spell (path parameter + body)
- * const updatedSpell = await SpellService.updateSpell(
- *   { name: "Updated Magic Missile" }, 
- *   { id: 123 }
- * );
- * 
- * // Delete spell (path parameter)
- * await SpellService.deleteSpell(undefined, { id: 123 });
- */
 export const SpellApi = {
     getAllSpells: typedApi({
         path: '/spells',
@@ -60,5 +38,13 @@ export const SpellApi = {
         method: 'DELETE',
         paramsSchema: SpellIdParamSchema,
         responseSchema: UpdateResponseSchema,
+    }),
+
+    // Get spells for class (base class or variant)
+    getSpellsForClass: typedApi<undefined, typeof GetAllSpellsResponseSchema, typeof SpellClassParamSchema>({
+        path: '/spells/class/:classId',
+        method: 'GET',
+        paramsSchema: SpellClassParamSchema,
+        responseSchema: GetAllSpellsResponseSchema,
     }),
 }; 

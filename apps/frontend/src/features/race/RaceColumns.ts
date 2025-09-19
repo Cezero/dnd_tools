@@ -1,14 +1,17 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter, createEqualsFilter, createArrayIdFilter } from '@/components/generic-list/filterFunctions';
+import { getSourceBookOptionsForRaces } from '@/utils';
 import { RaceSummary } from '@shared/schema';
 import {
     EDITION_SELECT_LIST,
     CLASS_SELECT_LIST,
     SIZE_SELECT_LIST,
+    SOURCE_BOOK_WITH_RACES_SELECT_LIST,
     EDITION_MAP,
     CLASS_MAP,
     SIZE_MAP,
+    GetSourceDisplay,
     FilterType
 } from '@shared/static-data';
 
@@ -42,6 +45,27 @@ export const RACE_COLUMNS: ColumnDef<RaceSummary, unknown>[] = [
         meta: {
             filterType: FilterType.MULTI_SELECT,
             options: EDITION_SELECT_LIST,
+        },
+    },
+    {
+        accessorKey: 'sourceBookInfo',
+        header: 'Source',
+        enableSorting: true,
+        enableColumnFilter: true,
+        enableResizing: true,
+        size: 150,
+        filterFn: createArrayIdFilter<RaceSummary>('sourceBookId'),
+        cell: info => {
+            const sourceBookInfo = info.getValue() as { sourceBookId: number; pageNumber: number }[];
+            if (sourceBookInfo && sourceBookInfo.length > 0) {
+                return GetSourceDisplay(sourceBookInfo, true);
+            }
+            return '';
+        },
+        meta: {
+            filterType: FilterType.MULTI_SELECT,
+            options: (currentFilters: Array<{ id: string; value: unknown }>) =>
+                getSourceBookOptionsForRaces(currentFilters, SOURCE_BOOK_WITH_RACES_SELECT_LIST),
         },
     },
     {

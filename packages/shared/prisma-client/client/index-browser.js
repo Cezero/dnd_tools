@@ -175,6 +175,44 @@ exports.Prisma.SpellLevelMapScalarFieldEnum = {
   isVisible: 'isVisible'
 };
 
+exports.Prisma.ClassVariantScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  abbreviation: 'abbreviation',
+  baseClassId: 'baseClassId',
+  description: 'description',
+  hitDie: 'hitDie',
+  skillPoints: 'skillPoints',
+  babProgression: 'babProgression',
+  fortProgression: 'fortProgression',
+  refProgression: 'refProgression',
+  willProgression: 'willProgression'
+};
+
+exports.Prisma.ClassVariantFeatureProgressionOverrideScalarFieldEnum = {
+  id: 'id',
+  variantId: 'variantId',
+  originalFeatureProgressionId: 'originalFeatureProgressionId'
+};
+
+exports.Prisma.ClassVariantFeatureProgressionRemoveEntityMapScalarFieldEnum = {
+  classVariantFeatureProgressionOverrideId: 'classVariantFeatureProgressionOverrideId',
+  featureEntityId: 'featureEntityId'
+};
+
+exports.Prisma.ClassVariantSpellOverrideScalarFieldEnum = {
+  id: 'id',
+  variantId: 'variantId',
+  spellId: 'spellId',
+  level: 'level'
+};
+
+exports.Prisma.ClassVariantSourceMapScalarFieldEnum = {
+  variantId: 'variantId',
+  pageNumber: 'pageNumber',
+  sourceBookId: 'sourceBookId'
+};
+
 exports.Prisma.FeatureScalarFieldEnum = {
   id: 'id',
   slug: 'slug',
@@ -188,7 +226,9 @@ exports.Prisma.FeatureProgressionScalarFieldEnum = {
   level: 'level',
   featureId: 'featureId',
   classId: 'classId',
-  raceId: 'raceId'
+  raceId: 'raceId',
+  variantOverrideId: 'variantOverrideId',
+  domainId: 'domainId'
 };
 
 exports.Prisma.FeatureEntityScalarFieldEnum = {
@@ -479,6 +519,7 @@ exports.Prisma.UserCharacterScalarFieldEnum = {
   name: 'name',
   raceId: 'raceId',
   alignmentId: 'alignmentId',
+  deityId: 'deityId',
   xp: 'xp',
   age: 'age',
   height: 'height',
@@ -544,7 +585,9 @@ exports.Prisma.CharacterSpellPreparationScalarFieldEnum = {
   spellLevel: 'spellLevel',
   quantity: 'quantity',
   prepKey: 'prepKey',
-  slotType: 'slotType'
+  slotType: 'slotType',
+  isDomainSpell: 'isDomainSpell',
+  domainId: 'domainId'
 };
 
 exports.Prisma.SpellPreparationMetamagicScalarFieldEnum = {
@@ -597,6 +640,65 @@ exports.Prisma.UserDiceConfigOverrideScalarFieldEnum = {
   propertyValue: 'propertyValue'
 };
 
+exports.Prisma.DomainScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  editionId: 'editionId'
+};
+
+exports.Prisma.DomainSpellScalarFieldEnum = {
+  id: 'id',
+  domainId: 'domainId',
+  spellId: 'spellId',
+  spellLevel: 'spellLevel'
+};
+
+exports.Prisma.DeityScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  title: 'title',
+  alignmentId: 'alignmentId',
+  description: 'description',
+  editionId: 'editionId',
+  pantheonId: 'pantheonId'
+};
+
+exports.Prisma.DeityDomainScalarFieldEnum = {
+  id: 'id',
+  deityId: 'deityId',
+  domainId: 'domainId'
+};
+
+exports.Prisma.DeityClassMapScalarFieldEnum = {
+  id: 'id',
+  deityId: 'deityId',
+  classId: 'classId'
+};
+
+exports.Prisma.DeityFavoredWeaponMapScalarFieldEnum = {
+  id: 'id',
+  deityId: 'deityId',
+  itemId: 'itemId'
+};
+
+exports.Prisma.DeityRaceMapScalarFieldEnum = {
+  id: 'id',
+  deityId: 'deityId',
+  raceId: 'raceId'
+};
+
+exports.Prisma.DomainSourceMapScalarFieldEnum = {
+  domainId: 'domainId',
+  sourceBookId: 'sourceBookId',
+  pageNumber: 'pageNumber'
+};
+
+exports.Prisma.DeitySourceMapScalarFieldEnum = {
+  deityId: 'deityId',
+  sourceBookId: 'sourceBookId',
+  pageNumber: 'pageNumber'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -615,6 +717,12 @@ exports.Prisma.ClassOrderByRelevanceFieldEnum = {
 
 exports.Prisma.SpellcastingLinkOrderByRelevanceFieldEnum = {
   inheritedFrom: 'inheritedFrom'
+};
+
+exports.Prisma.ClassVariantOrderByRelevanceFieldEnum = {
+  name: 'name',
+  abbreviation: 'abbreviation',
+  description: 'description'
 };
 
 exports.Prisma.FeatureOrderByRelevanceFieldEnum = {
@@ -770,6 +878,16 @@ exports.Prisma.UserDiceConfigOverrideOrderByRelevanceFieldEnum = {
   propertyName: 'propertyName',
   propertyValue: 'propertyValue'
 };
+
+exports.Prisma.DomainOrderByRelevanceFieldEnum = {
+  name: 'name'
+};
+
+exports.Prisma.DeityOrderByRelevanceFieldEnum = {
+  name: 'name',
+  title: 'title',
+  description: 'description'
+};
 exports.ItemPropertyType = exports.$Enums.ItemPropertyType = {
   Material: 'Material',
   Enhancement: 'Enhancement',
@@ -798,6 +916,11 @@ exports.Prisma.ModelName = {
   SpellcastingLink: 'SpellcastingLink',
   ClassSourceMap: 'ClassSourceMap',
   SpellLevelMap: 'SpellLevelMap',
+  ClassVariant: 'ClassVariant',
+  ClassVariantFeatureProgressionOverride: 'ClassVariantFeatureProgressionOverride',
+  ClassVariantFeatureProgressionRemoveEntityMap: 'ClassVariantFeatureProgressionRemoveEntityMap',
+  ClassVariantSpellOverride: 'ClassVariantSpellOverride',
+  ClassVariantSourceMap: 'ClassVariantSourceMap',
   Feature: 'Feature',
   FeatureProgression: 'FeatureProgression',
   FeatureEntity: 'FeatureEntity',
@@ -843,7 +966,16 @@ exports.Prisma.ModelName = {
   SpellPreparationMetamagic: 'SpellPreparationMetamagic',
   User: 'User',
   DiceBoxAdminConfig: 'DiceBoxAdminConfig',
-  UserDiceConfigOverride: 'UserDiceConfigOverride'
+  UserDiceConfigOverride: 'UserDiceConfigOverride',
+  Domain: 'Domain',
+  DomainSpell: 'DomainSpell',
+  Deity: 'Deity',
+  DeityDomain: 'DeityDomain',
+  DeityClassMap: 'DeityClassMap',
+  DeityFavoredWeaponMap: 'DeityFavoredWeaponMap',
+  DeityRaceMap: 'DeityRaceMap',
+  DomainSourceMap: 'DomainSourceMap',
+  DeitySourceMap: 'DeitySourceMap'
 };
 
 /**
