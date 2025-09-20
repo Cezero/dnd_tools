@@ -159,4 +159,5 @@ wheels/
 
 backup/
 prisma-client/
+.vscode/
 
