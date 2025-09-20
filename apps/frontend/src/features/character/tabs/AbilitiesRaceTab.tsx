@@ -15,10 +15,14 @@ import {
     GetPointBuyCost,
     LANGUAGE_MAP,
     SIZE_MAP,
-    CLASS_MAP,
-    SpecialFeatureId
+    SpecialFeatureId,
+    PointBuyOptions,
+    AbilityGenerationMethod,
+    ABILITY_GENERATION_METHOD_LIST,
+    POINT_BUY_OPTIONS_LIST
 } from '@shared/static-data';
 
+import { getClassById } from '../../class/ClassUtils';
 import { CharacterUtils } from '../CharacterUtils';
 
 interface AbilitiesRaceTabProps {
@@ -35,22 +39,41 @@ export function AbilitiesRaceTab({
     selectedRaceDetails
 }: AbilitiesRaceTabProps): React.JSX.Element {
     const { rollDice, rollDiceGroups, isReady, isRolling, lastResult, onRollComplete } = useDiceBox();
-    const [generationMethod, setGenerationMethod] = useState<string>('manual');
+    const [generationMethod, setGenerationMethod] = useState<AbilityGenerationMethod>(AbilityGenerationMethod.manual);
     const [rolledValues, setRolledValues] = useState<number[]>([]);
     const [isRollingAbilitySet, setIsRollingAbilitySet] = useState(false);
     const [_pendingRolls, setPendingRolls] = useState<Set<string>>(new Set());
     const [_assignedAbilitiesForOrder, setAssignedAbilitiesForOrder] = useState<Set<string>>(new Set());
     const [showChevrons, setShowChevrons] = useState(true);
-    const [pointBuyConfig, setPointBuyConfig] = useState<string>('Challenging');
+    const [pointBuyConfig, setPointBuyConfig] = useState<PointBuyOptions>(PointBuyOptions.Challenging);
     const [customPointBuy, setCustomPointBuy] = useState<number>(22);
+    const [favoredClassData, setFavoredClassData] = useState<{ id: number; name: string } | null>(null);
+
+    // Load favored class data when race changes
+    useEffect(() => {
+        const loadFavoredClass = async () => {
+            if (selectedRaceDetails?.favoredClassId && selectedRaceDetails.favoredClassId !== -1) {
+                const classData = await getClassById(selectedRaceDetails.favoredClassId);
+                if (classData) {
+                    setFavoredClassData({ id: classData.id, name: classData.name });
+                } else {
+                    setFavoredClassData(null);
+                }
+            } else {
+                setFavoredClassData(null);
+            }
+        };
+
+        loadFavoredClass();
+    }, [selectedRaceDetails?.favoredClassId]);
 
     const getPointBuyLimit = useCallback((): number => {
         switch (pointBuyConfig) {
-            case 'Low-powered': return 15;
-            case 'Challenging': return 22;
-            case 'Tougher': return 28;
-            case 'High-powered': return 32;
-            case 'Custom': return customPointBuy;
+            case PointBuyOptions.LowPowered: return 15;
+            case PointBuyOptions.Challenging: return 22;
+            case PointBuyOptions.Tougher: return 28;
+            case PointBuyOptions.HighPowered: return 32;
+            case PointBuyOptions.Custom: return customPointBuy;
             default: return 22;
         }
     }, [pointBuyConfig, customPointBuy]);
@@ -96,7 +119,7 @@ export function AbilitiesRaceTab({
 
     const handleAbilityChange = useCallback((abilityId: number, value: number) => {
         // Enforce 8-18 range for Point Buy
-        if (generationMethod === 'point-buy') {
+        if (generationMethod === AbilityGenerationMethod.pointBuy) {
             value = Math.max(8, Math.min(18, value));
 
             // Check if this would increase the ability score
@@ -124,7 +147,7 @@ export function AbilitiesRaceTab({
             // Handle both single result and array of results
             const results = Array.isArray(result) ? result : [result];
 
-            if (generationMethod === 'roll-3d6-order') {
+            if (generationMethod === AbilityGenerationMethod.inorder) {
                 // Handle 3d6 order - assign all results at once
                 const newAbilityScores = [...character.abilityScores];
                 let allAssigned = true;
@@ -156,7 +179,7 @@ export function AbilitiesRaceTab({
                     onUpdate({ abilityScores: newAbilityScores });
                     setIsRollingAbilitySet(false);
                 }
-            } else if (generationMethod === 'roll-3d6-arrange' || generationMethod === 'roll-4d6-drop') {
+            } else if (generationMethod === AbilityGenerationMethod.arrange || generationMethod === AbilityGenerationMethod.drop) {
                 // Handle arrange and drop methods - add to pool
                 const newValues = [...rolledValues];
                 results.forEach(result => {
@@ -173,7 +196,7 @@ export function AbilitiesRaceTab({
                 if (allComplete) {
                     setIsRollingAbilitySet(false);
                 }
-            } else if (generationMethod === 'manual') {
+            } else if (generationMethod === AbilityGenerationMethod.manual) {
                 // Handle individual ability rolls in manual method
                 results.forEach(result => {
                     // Check if the group is an ability name (for individual rolls)
@@ -203,15 +226,15 @@ export function AbilitiesRaceTab({
         });
     };
 
-    const handleGenerationMethodChange = (method: string) => {
+    const handleGenerationMethodChange = (method: AbilityGenerationMethod) => {
         setGenerationMethod(method);
         // Clear rolled values when changing method, but preserve assigned abilities
         setRolledValues([]);
         // Don't reset abilities - let the new method work with existing assignments
-        setShowChevrons(method === 'manual' || method === 'point-buy');
+        setShowChevrons(method === AbilityGenerationMethod.manual || method === AbilityGenerationMethod.pointBuy);
 
         // Auto-populate abilities to 8 when switching to Point Buy if all are undefined
-        if (method === 'point-buy') {
+        if (method === AbilityGenerationMethod.pointBuy) {
             const allUndefined = ABILITY_LIST.every(ability => getAbilityScore(ability.id) === null);
             if (allUndefined) {
                 const newAbilityScores = ABILITY_LIST.map(ability => ({
@@ -233,14 +256,14 @@ export function AbilitiesRaceTab({
         // Clear all assigned abilities when rolling new values
         onUpdate({ abilityScores: [] });
 
-        const diceFormula = generationMethod === 'roll-4d6-drop' ? '4d6dl1' : '3d6';
+        const diceFormula = generationMethod === AbilityGenerationMethod.drop ? '4d6dl1' : '3d6';
         const numRolls = 6;
 
         // Create arrays for notations and groups
         const notations = Array(numRolls).fill(diceFormula);
 
         let groups: string[];
-        if (generationMethod === 'roll-3d6-order') {
+        if (generationMethod === AbilityGenerationMethod.inorder) {
             // Use ability names as group names for 3d6 order
             groups = ABILITY_LIST.map(ability => ability.name);
         } else {
@@ -329,43 +352,22 @@ export function AbilitiesRaceTab({
         }
     };
 
-    const getGenerationMethodDescription = (method: string): string => {
+    const getGenerationMethodDescription = (method: AbilityGenerationMethod): string => {
         switch (method) {
-            case 'manual':
+            case AbilityGenerationMethod.manual:
                 return 'Enter ability scores manually. You can roll individual dice for each ability or type in values directly.';
-            case 'roll-3d6-order':
+            case AbilityGenerationMethod.inorder:
                 return 'Roll 3d6 for each ability in order.';
-            case 'roll-3d6-arrange':
+            case AbilityGenerationMethod.arrange:
                 return 'Roll 3d6 six times, then arrange the results as desired among your abilities.';
-            case 'roll-4d6-drop':
+            case AbilityGenerationMethod.drop:
                 return 'Roll 4d6 and drop the lowest die six times, then arrange the results as desired among your abilities.';
-            case 'point-buy':
+            case AbilityGenerationMethod.pointBuy:
                 return 'Use the point buy method to assign ability scores. The DM will determine the number of points you are allowed to spend.';
             default:
                 return '';
         }
     };
-
-    const generationMethodOptions = [
-        { value: 'roll-3d6-order', label: '3d6 Order' },
-        { value: 'roll-3d6-arrange', label: '3d6 Arrange' },
-        { value: 'roll-4d6-drop', label: '4d6 Drop' },
-        { value: 'point-buy', label: 'Point Buy' },
-        { value: 'manual', label: 'Manual' }
-    ];
-
-    const pointBuyOptions = [
-        { value: 'Low-powered', label: 'Low-powered' },
-        { value: 'Challenging', label: 'Challenging' },
-        { value: 'Tougher', label: 'Tougher' },
-        { value: 'High-powered', label: 'High-powered' },
-        { value: 'Custom', label: 'Custom' }
-    ];
-
-    const raceOptions = races.map(race => ({
-        value: race.id,
-        label: race.name
-    }));
 
     // Helper functions using race data
     const getSizeForRace = (raceId: number): string => {
@@ -398,7 +400,8 @@ export function AbilitiesRaceTab({
 
     const getFavoredClass = (): string => {
         if (!selectedRaceDetails) return 'None';
-        return selectedRaceDetails.favoredClassId === -1 ? 'Any' : CLASS_MAP[selectedRaceDetails.favoredClassId]?.name || 'None';
+        if (selectedRaceDetails.favoredClassId === -1) return 'Any';
+        return favoredClassData?.name || 'Loading...';
     };
 
     const truncateDescription = (description: string | null): string => {
@@ -446,19 +449,21 @@ export function AbilitiesRaceTab({
                             <CustomSelect
                                 value={generationMethod}
                                 onValueChange={handleGenerationMethodChange}
-                                options={generationMethodOptions}
+                                options={ABILITY_GENERATION_METHOD_LIST}
+                                useAbbreviation={false}
                                 label="Generation Method"
                                 labelExtraClassName="w-40 mb-1"
                                 placeholder="Select generation method..."
                                 componentExtraClassName="flex items-center"
                                 itemTextExtraClassName="w-26"
                             />
-                            {generationMethod === 'point-buy' ? (
+                            {generationMethod === AbilityGenerationMethod.pointBuy ? (
                                 <div className="flex items-center gap-2">
-                                    <CustomSelect<string>
+                                    <CustomSelect
                                         value={pointBuyConfig}
-                                        onValueChange={setPointBuyConfig}
-                                        options={pointBuyOptions}
+                                        onValueChange={(value) => setPointBuyConfig(value as PointBuyOptions)}
+                                        options={POINT_BUY_OPTIONS_LIST}
+                                        useAbbreviation={false}
                                         placeholder="Point Pool..."
                                         componentExtraClassName="w-36"
                                         itemTextExtraClassName="w-28"
@@ -466,15 +471,15 @@ export function AbilitiesRaceTab({
                                     <div className="relative">
                                         <input
                                             type="number"
-                                            value={pointBuyConfig === 'Custom' ? customPointBuy : getPointBuyLimit()}
+                                            value={pointBuyConfig === PointBuyOptions.Custom ? customPointBuy : getPointBuyLimit()}
                                             onChange={(e) => setCustomPointBuy(parseInt(e.target.value) || 22)}
-                                            disabled={pointBuyConfig !== 'Custom'}
+                                            disabled={pointBuyConfig !== PointBuyOptions.Custom}
                                             className="w-12 py-1 border border-gray-300 dark:border-gray-600 rounded text-center bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-600 disabled:text-gray-500 dark:disabled:text-gray-400 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                             min="1"
                                             max="100"
                                             placeholder="Points"
                                         />
-                                        {pointBuyConfig === 'Custom' && (
+                                        {pointBuyConfig === PointBuyOptions.Custom && (
                                             <div className="absolute right-[-3px] top-0 bottom-0 flex flex-col justify-center gap-1.5">
                                                 <button
                                                     type="button"
@@ -502,7 +507,7 @@ export function AbilitiesRaceTab({
                                         )}
                                     </div>
                                 </div>
-                            ) : (generationMethod === 'roll-3d6-arrange' || generationMethod === 'roll-4d6-drop' || generationMethod === 'roll-3d6-order') && (
+                            ) : (generationMethod === AbilityGenerationMethod.arrange || generationMethod === AbilityGenerationMethod.drop || generationMethod === AbilityGenerationMethod.inorder) && (
                                 <button
                                     onClick={handleRollAbilitySet}
                                     disabled={!isReady || isRollingAbilitySet}
@@ -565,7 +570,7 @@ export function AbilitiesRaceTab({
                                                 <div className="flex flex-col justify-center gap-1.5">
                                                     <button
                                                         type="button"
-                                                        disabled={generationMethod === 'point-buy' && getRemainingPoints() <= 0}
+                                                        disabled={generationMethod === AbilityGenerationMethod.pointBuy && getRemainingPoints() <= 0}
                                                         className="w-4 h-3 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:text-white text-xs flex items-center justify-center rounded-t disabled:opacity-50 disabled:cursor-not-allowed"
                                                         onClick={() => {
                                                             const currentValue = getAbilityScore(ability.id);
@@ -617,7 +622,7 @@ export function AbilitiesRaceTab({
                                         </div>
 
                                         {/* Point Cost (Point Buy only) */}
-                                        {generationMethod === 'point-buy' && (
+                                        {generationMethod === AbilityGenerationMethod.pointBuy && (
                                             <div>
                                                 <div className="text-sm text-gray-500 w-8 text-center">Cost</div>
                                                 <div className="w-8 py-1 text-center">
@@ -627,7 +632,7 @@ export function AbilitiesRaceTab({
                                         )}
 
                                         {/* Roll Button */}
-                                        {generationMethod === 'manual' && (
+                                        {generationMethod === AbilityGenerationMethod.manual && (
                                             <div>
                                                 <div className="text-sm">&nbsp;</div>
                                                 <button
@@ -645,7 +650,7 @@ export function AbilitiesRaceTab({
                         </div>
 
                         {/* Rolled Values Pool - Right Column */}
-                        {(generationMethod === 'roll-3d6-arrange' || generationMethod === 'roll-4d6-drop') && (
+                        {(generationMethod === AbilityGenerationMethod.arrange || generationMethod === AbilityGenerationMethod.drop) && (
                             <div className="w-40 flex flex-col gap-2">
                                 <h4 className="text-md text-center font-semibold">Available Values</h4>
                                 <div
@@ -677,7 +682,7 @@ export function AbilitiesRaceTab({
                         )}
 
                         {/* Point Buy Cost Chart - Right Column */}
-                        {generationMethod === 'point-buy' && (
+                        {generationMethod === AbilityGenerationMethod.pointBuy && (
                             <div className="flex flex-col">
                                 <h4 className="text-md text-center font-semibold">Point Buy Costs</h4>
                                 <div className="grid grid-cols-2 gap-x-2">
@@ -725,7 +730,7 @@ export function AbilitiesRaceTab({
                     </div>
 
                     {/* Total Points Spent (Point Buy only) */}
-                    {generationMethod === 'point-buy' && (
+                    {generationMethod === AbilityGenerationMethod.pointBuy && (
                         <div className="ml-2 flex flex-row gap-4 items-center mt-2">
                             <div className="w-64"></div>
                             <div className="border border-dotted border-gray-300 dark:border-gray-600 rounded-lg flex flex-row gap-1">
@@ -761,22 +766,20 @@ export function AbilitiesRaceTab({
                 <div className="space-y-6">
                     {/* Race Selection */}
                     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-6">
-                        <CustomSelect<number>
+                        <CustomSelect
                             value={character.raceId}
                             onValueChange={handleRaceChange}
-                            options={raceOptions}
+                            options={races}
                             label="Race"
                             placeholder="Select"
                             labelExtraClassName='text-lg font-semibold'
                             componentExtraClassName="flex items-center mb-4 gap-2"
-                            triggerExtraClassName='w-24'
                             itemTextExtraClassName='w-16'
                         />
 
                         {/* Race Details Panel */}
                         {character.raceId > 0 && selectedRaceDetails && (
                             <>
-
                                 {/* Key Attributes */}
                                 <div className="grid grid-cols-2 gap-4 mb-4">
                                     <div className="space-y-2 text-sm">

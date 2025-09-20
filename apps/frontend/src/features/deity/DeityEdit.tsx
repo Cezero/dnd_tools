@@ -14,9 +14,10 @@ import { DomainApi } from '@/features/domain/DomainApi';
 import { ItemApi } from '@/features/item/ItemApi';
 import { RaceApi } from '@/features/race/RaceApi';
 import { CreateDeityRequest, UpdateDeityRequest, UpdateDeitySchema, CreateDeitySchema } from '@shared/schema';
-import { EDITION_SELECT_LIST_FULL, ALIGNMENT_SELECT_LIST, AlignmentId, EDITION_IDS, SourceType, PANTHEON_SELECT_LIST, ITEM_TYPE_ENUM, GetBaseClassesByEdition, CLASS_MAP } from '@shared/static-data';
+import { EDITION_LIST_FULL, ALIGNMENT_LIST, AlignmentId, EditionId, SourceType, PANTHEON_LIST, ITEM_TYPE_ENUM, CoreComponent } from '@shared/static-data';
 
 import { DeityApi } from './DeityApi';
+import { getClassById, getBaseClassesForEdition } from '../class/ClassUtils';
 
 // Type definitions for the form state
 type DeityFormData = CreateDeityRequest | UpdateDeityRequest;
@@ -32,6 +33,8 @@ export function DeityEdit() {
     const [domains, setDomains] = useState<{ id: number; name: string }[]>([]);
     const [weapons, setWeapons] = useState<{ id: number; name: string }[]>([]);
     const [races, setRaces] = useState<{ id: number; name: string }[]>([]);
+    const [classData, setClassData] = useState<Record<number, CoreComponent>>({});
+    const [availableClasses, setAvailableClasses] = useState<CoreComponent[]>([]);
 
     const fromListParams = location.state?.fromListParams || '';
 
@@ -44,7 +47,7 @@ export function DeityEdit() {
         title: '',
         alignmentId: AlignmentId.LawfulGood,
         description: '',
-        editionId: EDITION_IDS.ODND,
+        editionId: EditionId.ODND,
         pantheonId: null,
         sourceBookInfo: [],
         classIds: [],
@@ -86,6 +89,32 @@ export function DeityEdit() {
                 setDomains(domainsResponse.results.map(d => ({ id: d.id, name: d.name })));
                 setWeapons(weaponsResponse.results.map(w => ({ id: w.id, name: w.name })));
                 setRaces(racesResponse.results.map(r => ({ id: r.id, name: r.name })));
+
+                // Load available classes for the current edition
+                const classes = await getBaseClassesForEdition(formData.editionId);
+                setAvailableClasses(classes.map(c => ({ id: c.id, name: c.name })));
+
+                // Load class data for deity classes
+                if (id !== 'new') {
+                    const fetchedDeity = await DeityApi.getDeityById(undefined, { id: parseInt(id) });
+                    if (fetchedDeity.classIds && fetchedDeity.classIds.length > 0) {
+                        const classPromises = fetchedDeity.classIds.map(async (classId) => {
+                            const data = await getClassById(classId);
+                            return { classId, data };
+                        });
+
+                        const results = await Promise.all(classPromises);
+                        const classMap: Record<number, { id: number; name: string }> = {};
+
+                        results.forEach(({ classId, data }) => {
+                            if (data) {
+                                classMap[classId] = { id: data.id, name: data.name };
+                            }
+                        });
+
+                        setClassData(classMap);
+                    }
+                }
 
                 // Fetch deity if editing
                 if (id === 'new') {
@@ -208,9 +237,9 @@ export function DeityEdit() {
                         <div>
                             <CustomSelect
                                 label="Alignment"
-                                options={ALIGNMENT_SELECT_LIST}
+                                options={ALIGNMENT_LIST}
                                 value={formData.alignmentId}
-                                onValueChange={(value) => setFormData({ ...formData, alignmentId: value })}
+                                onValueChange={(value) => setFormData({ ...formData, alignmentId: value as AlignmentId })}
                                 componentExtraClassName="flex items-center gap-2"
                                 labelExtraClassName="w-30"
                             />
@@ -219,7 +248,7 @@ export function DeityEdit() {
                         <div>
                             <CustomSelect
                                 label="Pantheon"
-                                options={PANTHEON_SELECT_LIST}
+                                options={PANTHEON_LIST}
                                 value={formData.pantheonId}
                                 onValueChange={(value) => setFormData({ ...formData, pantheonId: value })}
                                 componentExtraClassName="flex items-center gap-2"
@@ -233,7 +262,7 @@ export function DeityEdit() {
                                 {/* Display combined list of classes and races */}
                                 {(() => {
                                     const allWorshippers = [
-                                        ...(formData.classIds || []).map(id => ({ id, name: CLASS_MAP[id]?.name || 'Unknown Class', type: 'class' as const })),
+                                        ...(formData.classIds || []).map(id => ({ id, name: classData[id]?.name || 'Unknown Class', type: 'class' as const })),
                                         ...(formData.raceIds || []).map(id => ({ id, name: races.find(r => r.id === id)?.name || 'Unknown Race', type: 'race' as const }))
                                     ].sort((a, b) => a.name.localeCompare(b.name));
 
@@ -278,10 +307,9 @@ export function DeityEdit() {
                                             setFormData({ ...formData, classIds: newClassIds });
                                         }
                                     }}
-                                    options={GetBaseClassesByEdition(formData.editionId)
-                                        .filter(c => !(formData.classIds || []).includes(c.value))
-                                        .sort((a, b) => a.label.localeCompare(b.label))
-                                        .map(c => ({ value: c.value, label: c.label }))}
+                                    options={availableClasses
+                                        .filter(c => !(formData.classIds || []).includes(c.id))
+                                        .sort((a, b) => a.name.localeCompare(b.name))}
                                     placeholder="Add Class"
                                 />
 
@@ -301,7 +329,7 @@ export function DeityEdit() {
                                     options={races
                                         .filter(r => !(formData.raceIds || []).includes(r.id))
                                         .sort((a, b) => a.name.localeCompare(b.name))
-                                        .map(r => ({ value: r.id, label: r.name }))}
+                                        .map(r => ({ id: r.id, name: r.name }))}
                                     placeholder="Add Race"
                                 />
                             </div>
@@ -346,7 +374,7 @@ export function DeityEdit() {
                                     options={domains
                                         .filter(d => !(formData.domainIds || []).includes(d.id))
                                         .sort((a, b) => a.name.localeCompare(b.name))
-                                        .map(d => ({ value: d.id, label: d.name }))}
+                                        .map(d => ({ id: d.id, name: d.name }))}
                                     placeholder="Add"
                                 />
                             </div>
@@ -391,7 +419,7 @@ export function DeityEdit() {
                                     options={weapons
                                         .filter(w => !(formData.favoredWeaponIds || []).includes(w.id))
                                         .sort((a, b) => a.name.localeCompare(b.name))
-                                        .map(w => ({ value: w.id, label: w.name }))}
+                                        .map(w => ({ id: w.id, name: w.name }))}
                                     placeholder="Add"
                                 />
                             </div>
@@ -403,7 +431,7 @@ export function DeityEdit() {
                         <div>
                             <CustomSelect
                                 label="Edition"
-                                options={EDITION_SELECT_LIST_FULL}
+                                options={EDITION_LIST_FULL}
                                 value={formData.editionId}
                                 onValueChange={(value) => setFormData({ ...formData, editionId: value })}
                                 componentExtraClassName="flex items-center gap-2"

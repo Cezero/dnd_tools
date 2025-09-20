@@ -343,6 +343,11 @@ export type DomainSourceMap = $Result.DefaultSelection<Prisma.$DomainSourceMapPa
  * 
  */
 export type DeitySourceMap = $Result.DefaultSelection<Prisma.$DeitySourceMapPayload>
+/**
+ * Model CharacterDisallowedSource
+ * 
+ */
+export type CharacterDisallowedSource = $Result.DefaultSelection<Prisma.$CharacterDisallowedSourcePayload>
 
 /**
  * Enums
@@ -1168,6 +1173,16 @@ export class PrismaClient<
     * ```
     */
   get deitySourceMap(): Prisma.DeitySourceMapDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.characterDisallowedSource`: Exposes CRUD operations for the **CharacterDisallowedSource** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more CharacterDisallowedSources
+    * const characterDisallowedSources = await prisma.characterDisallowedSource.findMany()
+    * ```
+    */
+  get characterDisallowedSource(): Prisma.CharacterDisallowedSourceDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -1673,7 +1688,8 @@ export namespace Prisma {
     DeityFavoredWeaponMap: 'DeityFavoredWeaponMap',
     DeityRaceMap: 'DeityRaceMap',
     DomainSourceMap: 'DomainSourceMap',
-    DeitySourceMap: 'DeitySourceMap'
+    DeitySourceMap: 'DeitySourceMap',
+    CharacterDisallowedSource: 'CharacterDisallowedSource'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1692,7 +1708,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "class" | "spellcastingProgression" | "spellcastingSlot" | "spellcastingLink" | "classSourceMap" | "spellLevelMap" | "classVariant" | "classVariantFeatureProgressionOverride" | "classVariantFeatureProgressionRemoveEntityMap" | "classVariantSpellOverride" | "classVariantSourceMap" | "feature" | "featureProgression" | "featureEntity" | "featureFormulaParams" | "featureEntityCondition" | "featurePrerequisite" | "spell" | "spellDescriptorMap" | "spellSchoolMap" | "spellSourceMap" | "spellSubschoolMap" | "spellComponentMap" | "skill" | "feat" | "featBenefitMap" | "featPrerequisiteMap" | "race" | "raceSourceMap" | "item" | "itemType" | "armor" | "weapon" | "itemProperty" | "itemPropertyAppliesTo" | "itemPropertyIncompatibility" | "itemTemplate" | "itemTemplateProperty" | "characterItem" | "characterItemProperty" | "sourceBook" | "referenceTable" | "referenceTableColumn" | "referenceTableRow" | "referenceTableCell" | "userCharacter" | "userCharacterAbilityScore" | "characterAdvancement" | "advancementSkill" | "advancementFeat" | "advancementSpell" | "characterFeatureChoice" | "characterSpellPreparation" | "spellPreparationMetamagic" | "user" | "diceBoxAdminConfig" | "userDiceConfigOverride" | "domain" | "domainSpell" | "deity" | "deityDomain" | "deityClassMap" | "deityFavoredWeaponMap" | "deityRaceMap" | "domainSourceMap" | "deitySourceMap"
+      modelProps: "class" | "spellcastingProgression" | "spellcastingSlot" | "spellcastingLink" | "classSourceMap" | "spellLevelMap" | "classVariant" | "classVariantFeatureProgressionOverride" | "classVariantFeatureProgressionRemoveEntityMap" | "classVariantSpellOverride" | "classVariantSourceMap" | "feature" | "featureProgression" | "featureEntity" | "featureFormulaParams" | "featureEntityCondition" | "featurePrerequisite" | "spell" | "spellDescriptorMap" | "spellSchoolMap" | "spellSourceMap" | "spellSubschoolMap" | "spellComponentMap" | "skill" | "feat" | "featBenefitMap" | "featPrerequisiteMap" | "race" | "raceSourceMap" | "item" | "itemType" | "armor" | "weapon" | "itemProperty" | "itemPropertyAppliesTo" | "itemPropertyIncompatibility" | "itemTemplate" | "itemTemplateProperty" | "characterItem" | "characterItemProperty" | "sourceBook" | "referenceTable" | "referenceTableColumn" | "referenceTableRow" | "referenceTableCell" | "userCharacter" | "userCharacterAbilityScore" | "characterAdvancement" | "advancementSkill" | "advancementFeat" | "advancementSpell" | "characterFeatureChoice" | "characterSpellPreparation" | "spellPreparationMetamagic" | "user" | "diceBoxAdminConfig" | "userDiceConfigOverride" | "domain" | "domainSpell" | "deity" | "deityDomain" | "deityClassMap" | "deityFavoredWeaponMap" | "deityRaceMap" | "domainSourceMap" | "deitySourceMap" | "characterDisallowedSource"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -6052,6 +6068,72 @@ export namespace Prisma {
           }
         }
       }
+      CharacterDisallowedSource: {
+        payload: Prisma.$CharacterDisallowedSourcePayload<ExtArgs>
+        fields: Prisma.CharacterDisallowedSourceFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.CharacterDisallowedSourceFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CharacterDisallowedSourcePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.CharacterDisallowedSourceFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CharacterDisallowedSourcePayload>
+          }
+          findFirst: {
+            args: Prisma.CharacterDisallowedSourceFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CharacterDisallowedSourcePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.CharacterDisallowedSourceFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CharacterDisallowedSourcePayload>
+          }
+          findMany: {
+            args: Prisma.CharacterDisallowedSourceFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CharacterDisallowedSourcePayload>[]
+          }
+          create: {
+            args: Prisma.CharacterDisallowedSourceCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CharacterDisallowedSourcePayload>
+          }
+          createMany: {
+            args: Prisma.CharacterDisallowedSourceCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.CharacterDisallowedSourceDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CharacterDisallowedSourcePayload>
+          }
+          update: {
+            args: Prisma.CharacterDisallowedSourceUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CharacterDisallowedSourcePayload>
+          }
+          deleteMany: {
+            args: Prisma.CharacterDisallowedSourceDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.CharacterDisallowedSourceUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.CharacterDisallowedSourceUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CharacterDisallowedSourcePayload>
+          }
+          aggregate: {
+            args: Prisma.CharacterDisallowedSourceAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateCharacterDisallowedSource>
+          }
+          groupBy: {
+            args: Prisma.CharacterDisallowedSourceGroupByArgs<ExtArgs>
+            result: $Utils.Optional<CharacterDisallowedSourceGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.CharacterDisallowedSourceCountArgs<ExtArgs>
+            result: $Utils.Optional<CharacterDisallowedSourceCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -6214,6 +6296,7 @@ export namespace Prisma {
     deityRaceMap?: DeityRaceMapOmit
     domainSourceMap?: DomainSourceMapOmit
     deitySourceMap?: DeitySourceMapOmit
+    characterDisallowedSource?: CharacterDisallowedSourceOmit
   }
 
   /* Types for Logging */
@@ -7160,6 +7243,7 @@ export namespace Prisma {
     classVariants: number
     domains: number
     deities: number
+    characterDisallowedSources: number
   }
 
   export type SourceBookCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -7169,6 +7253,7 @@ export namespace Prisma {
     classVariants?: boolean | SourceBookCountOutputTypeCountClassVariantsArgs
     domains?: boolean | SourceBookCountOutputTypeCountDomainsArgs
     deities?: boolean | SourceBookCountOutputTypeCountDeitiesArgs
+    characterDisallowedSources?: boolean | SourceBookCountOutputTypeCountCharacterDisallowedSourcesArgs
   }
 
   // Custom InputTypes
@@ -7222,6 +7307,13 @@ export namespace Prisma {
    */
   export type SourceBookCountOutputTypeCountDeitiesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: DeitySourceMapWhereInput
+  }
+
+  /**
+   * SourceBookCountOutputType without action
+   */
+  export type SourceBookCountOutputTypeCountCharacterDisallowedSourcesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CharacterDisallowedSourceWhereInput
   }
 
 
@@ -7345,6 +7437,7 @@ export namespace Prisma {
     characterItems: number
     advancements: number
     preparedSpells: number
+    disallowedSources: number
   }
 
   export type UserCharacterCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -7352,6 +7445,7 @@ export namespace Prisma {
     characterItems?: boolean | UserCharacterCountOutputTypeCountCharacterItemsArgs
     advancements?: boolean | UserCharacterCountOutputTypeCountAdvancementsArgs
     preparedSpells?: boolean | UserCharacterCountOutputTypeCountPreparedSpellsArgs
+    disallowedSources?: boolean | UserCharacterCountOutputTypeCountDisallowedSourcesArgs
   }
 
   // Custom InputTypes
@@ -7391,6 +7485,13 @@ export namespace Prisma {
    */
   export type UserCharacterCountOutputTypeCountPreparedSpellsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: CharacterSpellPreparationWhereInput
+  }
+
+  /**
+   * UserCharacterCountOutputType without action
+   */
+  export type UserCharacterCountOutputTypeCountDisallowedSourcesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CharacterDisallowedSourceWhereInput
   }
 
 
@@ -49159,6 +49260,7 @@ export namespace Prisma {
     classVariants?: boolean | SourceBook$classVariantsArgs<ExtArgs>
     domains?: boolean | SourceBook$domainsArgs<ExtArgs>
     deities?: boolean | SourceBook$deitiesArgs<ExtArgs>
+    characterDisallowedSources?: boolean | SourceBook$characterDisallowedSourcesArgs<ExtArgs>
     _count?: boolean | SourceBookCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["sourceBook"]>
 
@@ -49182,6 +49284,7 @@ export namespace Prisma {
     classVariants?: boolean | SourceBook$classVariantsArgs<ExtArgs>
     domains?: boolean | SourceBook$domainsArgs<ExtArgs>
     deities?: boolean | SourceBook$deitiesArgs<ExtArgs>
+    characterDisallowedSources?: boolean | SourceBook$characterDisallowedSourcesArgs<ExtArgs>
     _count?: boolean | SourceBookCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -49194,6 +49297,7 @@ export namespace Prisma {
       classVariants: Prisma.$ClassVariantSourceMapPayload<ExtArgs>[]
       domains: Prisma.$DomainSourceMapPayload<ExtArgs>[]
       deities: Prisma.$DeitySourceMapPayload<ExtArgs>[]
+      characterDisallowedSources: Prisma.$CharacterDisallowedSourcePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -49549,6 +49653,7 @@ export namespace Prisma {
     classVariants<T extends SourceBook$classVariantsArgs<ExtArgs> = {}>(args?: Subset<T, SourceBook$classVariantsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ClassVariantSourceMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     domains<T extends SourceBook$domainsArgs<ExtArgs> = {}>(args?: Subset<T, SourceBook$domainsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DomainSourceMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     deities<T extends SourceBook$deitiesArgs<ExtArgs> = {}>(args?: Subset<T, SourceBook$deitiesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DeitySourceMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    characterDisallowedSources<T extends SourceBook$characterDisallowedSourcesArgs<ExtArgs> = {}>(args?: Subset<T, SourceBook$characterDisallowedSourcesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CharacterDisallowedSourcePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -50069,6 +50174,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: DeitySourceMapScalarFieldEnum | DeitySourceMapScalarFieldEnum[]
+  }
+
+  /**
+   * SourceBook.characterDisallowedSources
+   */
+  export type SourceBook$characterDisallowedSourcesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CharacterDisallowedSource
+     */
+    select?: CharacterDisallowedSourceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CharacterDisallowedSource
+     */
+    omit?: CharacterDisallowedSourceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CharacterDisallowedSourceInclude<ExtArgs> | null
+    where?: CharacterDisallowedSourceWhereInput
+    orderBy?: CharacterDisallowedSourceOrderByWithRelationInput | CharacterDisallowedSourceOrderByWithRelationInput[]
+    cursor?: CharacterDisallowedSourceWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CharacterDisallowedSourceScalarFieldEnum | CharacterDisallowedSourceScalarFieldEnum[]
   }
 
   /**
@@ -54052,6 +54181,7 @@ export namespace Prisma {
     age: number | null
     height: number | null
     weight: number | null
+    editionId: number | null
   }
 
   export type UserCharacterSumAggregateOutputType = {
@@ -54064,6 +54194,7 @@ export namespace Prisma {
     age: number | null
     height: number | null
     weight: number | null
+    editionId: number | null
   }
 
   export type UserCharacterMinAggregateOutputType = {
@@ -54081,6 +54212,10 @@ export namespace Prisma {
     hair: string | null
     gender: string | null
     notes: string | null
+    editionId: number | null
+    allowVariantClasses: boolean | null
+    isGestalt: boolean | null
+    ignoreLevelAdjustment: boolean | null
   }
 
   export type UserCharacterMaxAggregateOutputType = {
@@ -54098,6 +54233,10 @@ export namespace Prisma {
     hair: string | null
     gender: string | null
     notes: string | null
+    editionId: number | null
+    allowVariantClasses: boolean | null
+    isGestalt: boolean | null
+    ignoreLevelAdjustment: boolean | null
   }
 
   export type UserCharacterCountAggregateOutputType = {
@@ -54115,6 +54254,10 @@ export namespace Prisma {
     hair: number
     gender: number
     notes: number
+    editionId: number
+    allowVariantClasses: number
+    isGestalt: number
+    ignoreLevelAdjustment: number
     _all: number
   }
 
@@ -54129,6 +54272,7 @@ export namespace Prisma {
     age?: true
     height?: true
     weight?: true
+    editionId?: true
   }
 
   export type UserCharacterSumAggregateInputType = {
@@ -54141,6 +54285,7 @@ export namespace Prisma {
     age?: true
     height?: true
     weight?: true
+    editionId?: true
   }
 
   export type UserCharacterMinAggregateInputType = {
@@ -54158,6 +54303,10 @@ export namespace Prisma {
     hair?: true
     gender?: true
     notes?: true
+    editionId?: true
+    allowVariantClasses?: true
+    isGestalt?: true
+    ignoreLevelAdjustment?: true
   }
 
   export type UserCharacterMaxAggregateInputType = {
@@ -54175,6 +54324,10 @@ export namespace Prisma {
     hair?: true
     gender?: true
     notes?: true
+    editionId?: true
+    allowVariantClasses?: true
+    isGestalt?: true
+    ignoreLevelAdjustment?: true
   }
 
   export type UserCharacterCountAggregateInputType = {
@@ -54192,6 +54345,10 @@ export namespace Prisma {
     hair?: true
     gender?: true
     notes?: true
+    editionId?: true
+    allowVariantClasses?: true
+    isGestalt?: true
+    ignoreLevelAdjustment?: true
     _all?: true
   }
 
@@ -54296,6 +54453,10 @@ export namespace Prisma {
     hair: string | null
     gender: string | null
     notes: string | null
+    editionId: number | null
+    allowVariantClasses: boolean
+    isGestalt: boolean
+    ignoreLevelAdjustment: boolean
     _count: UserCharacterCountAggregateOutputType | null
     _avg: UserCharacterAvgAggregateOutputType | null
     _sum: UserCharacterSumAggregateOutputType | null
@@ -54332,10 +54493,15 @@ export namespace Prisma {
     hair?: boolean
     gender?: boolean
     notes?: boolean
+    editionId?: boolean
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
     abilityScores?: boolean | UserCharacter$abilityScoresArgs<ExtArgs>
     characterItems?: boolean | UserCharacter$characterItemsArgs<ExtArgs>
     advancements?: boolean | UserCharacter$advancementsArgs<ExtArgs>
     preparedSpells?: boolean | UserCharacter$preparedSpellsArgs<ExtArgs>
+    disallowedSources?: boolean | UserCharacter$disallowedSourcesArgs<ExtArgs>
     race?: boolean | RaceDefaultArgs<ExtArgs>
     deity?: boolean | UserCharacter$deityArgs<ExtArgs>
     user?: boolean | UserDefaultArgs<ExtArgs>
@@ -54359,14 +54525,19 @@ export namespace Prisma {
     hair?: boolean
     gender?: boolean
     notes?: boolean
+    editionId?: boolean
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
   }
 
-  export type UserCharacterOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "name" | "raceId" | "alignmentId" | "deityId" | "xp" | "age" | "height" | "weight" | "eyes" | "hair" | "gender" | "notes", ExtArgs["result"]["userCharacter"]>
+  export type UserCharacterOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "name" | "raceId" | "alignmentId" | "deityId" | "xp" | "age" | "height" | "weight" | "eyes" | "hair" | "gender" | "notes" | "editionId" | "allowVariantClasses" | "isGestalt" | "ignoreLevelAdjustment", ExtArgs["result"]["userCharacter"]>
   export type UserCharacterInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     abilityScores?: boolean | UserCharacter$abilityScoresArgs<ExtArgs>
     characterItems?: boolean | UserCharacter$characterItemsArgs<ExtArgs>
     advancements?: boolean | UserCharacter$advancementsArgs<ExtArgs>
     preparedSpells?: boolean | UserCharacter$preparedSpellsArgs<ExtArgs>
+    disallowedSources?: boolean | UserCharacter$disallowedSourcesArgs<ExtArgs>
     race?: boolean | RaceDefaultArgs<ExtArgs>
     deity?: boolean | UserCharacter$deityArgs<ExtArgs>
     user?: boolean | UserDefaultArgs<ExtArgs>
@@ -54380,6 +54551,7 @@ export namespace Prisma {
       characterItems: Prisma.$CharacterItemPayload<ExtArgs>[]
       advancements: Prisma.$CharacterAdvancementPayload<ExtArgs>[]
       preparedSpells: Prisma.$CharacterSpellPreparationPayload<ExtArgs>[]
+      disallowedSources: Prisma.$CharacterDisallowedSourcePayload<ExtArgs>[]
       race: Prisma.$RacePayload<ExtArgs>
       deity: Prisma.$DeityPayload<ExtArgs> | null
       user: Prisma.$UserPayload<ExtArgs>
@@ -54399,6 +54571,10 @@ export namespace Prisma {
       hair: string | null
       gender: string | null
       notes: string | null
+      editionId: number | null
+      allowVariantClasses: boolean
+      isGestalt: boolean
+      ignoreLevelAdjustment: boolean
     }, ExtArgs["result"]["userCharacter"]>
     composites: {}
   }
@@ -54743,6 +54919,7 @@ export namespace Prisma {
     characterItems<T extends UserCharacter$characterItemsArgs<ExtArgs> = {}>(args?: Subset<T, UserCharacter$characterItemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CharacterItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     advancements<T extends UserCharacter$advancementsArgs<ExtArgs> = {}>(args?: Subset<T, UserCharacter$advancementsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CharacterAdvancementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     preparedSpells<T extends UserCharacter$preparedSpellsArgs<ExtArgs> = {}>(args?: Subset<T, UserCharacter$preparedSpellsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CharacterSpellPreparationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    disallowedSources<T extends UserCharacter$disallowedSourcesArgs<ExtArgs> = {}>(args?: Subset<T, UserCharacter$disallowedSourcesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CharacterDisallowedSourcePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     race<T extends RaceDefaultArgs<ExtArgs> = {}>(args?: Subset<T, RaceDefaultArgs<ExtArgs>>): Prisma__RaceClient<$Result.GetResult<Prisma.$RacePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     deity<T extends UserCharacter$deityArgs<ExtArgs> = {}>(args?: Subset<T, UserCharacter$deityArgs<ExtArgs>>): Prisma__DeityClient<$Result.GetResult<Prisma.$DeityPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
@@ -54789,6 +54966,10 @@ export namespace Prisma {
     readonly hair: FieldRef<"UserCharacter", 'String'>
     readonly gender: FieldRef<"UserCharacter", 'String'>
     readonly notes: FieldRef<"UserCharacter", 'String'>
+    readonly editionId: FieldRef<"UserCharacter", 'Int'>
+    readonly allowVariantClasses: FieldRef<"UserCharacter", 'Boolean'>
+    readonly isGestalt: FieldRef<"UserCharacter", 'Boolean'>
+    readonly ignoreLevelAdjustment: FieldRef<"UserCharacter", 'Boolean'>
   }
     
 
@@ -55225,6 +55406,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: CharacterSpellPreparationScalarFieldEnum | CharacterSpellPreparationScalarFieldEnum[]
+  }
+
+  /**
+   * UserCharacter.disallowedSources
+   */
+  export type UserCharacter$disallowedSourcesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CharacterDisallowedSource
+     */
+    select?: CharacterDisallowedSourceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CharacterDisallowedSource
+     */
+    omit?: CharacterDisallowedSourceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CharacterDisallowedSourceInclude<ExtArgs> | null
+    where?: CharacterDisallowedSourceWhereInput
+    orderBy?: CharacterDisallowedSourceOrderByWithRelationInput | CharacterDisallowedSourceOrderByWithRelationInput[]
+    cursor?: CharacterDisallowedSourceWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CharacterDisallowedSourceScalarFieldEnum | CharacterDisallowedSourceScalarFieldEnum[]
   }
 
   /**
@@ -75530,6 +75735,959 @@ export namespace Prisma {
 
 
   /**
+   * Model CharacterDisallowedSource
+   */
+
+  export type AggregateCharacterDisallowedSource = {
+    _count: CharacterDisallowedSourceCountAggregateOutputType | null
+    _avg: CharacterDisallowedSourceAvgAggregateOutputType | null
+    _sum: CharacterDisallowedSourceSumAggregateOutputType | null
+    _min: CharacterDisallowedSourceMinAggregateOutputType | null
+    _max: CharacterDisallowedSourceMaxAggregateOutputType | null
+  }
+
+  export type CharacterDisallowedSourceAvgAggregateOutputType = {
+    id: number | null
+    characterId: number | null
+    sourceBookId: number | null
+  }
+
+  export type CharacterDisallowedSourceSumAggregateOutputType = {
+    id: number | null
+    characterId: number | null
+    sourceBookId: number | null
+  }
+
+  export type CharacterDisallowedSourceMinAggregateOutputType = {
+    id: number | null
+    characterId: number | null
+    sourceBookId: number | null
+  }
+
+  export type CharacterDisallowedSourceMaxAggregateOutputType = {
+    id: number | null
+    characterId: number | null
+    sourceBookId: number | null
+  }
+
+  export type CharacterDisallowedSourceCountAggregateOutputType = {
+    id: number
+    characterId: number
+    sourceBookId: number
+    _all: number
+  }
+
+
+  export type CharacterDisallowedSourceAvgAggregateInputType = {
+    id?: true
+    characterId?: true
+    sourceBookId?: true
+  }
+
+  export type CharacterDisallowedSourceSumAggregateInputType = {
+    id?: true
+    characterId?: true
+    sourceBookId?: true
+  }
+
+  export type CharacterDisallowedSourceMinAggregateInputType = {
+    id?: true
+    characterId?: true
+    sourceBookId?: true
+  }
+
+  export type CharacterDisallowedSourceMaxAggregateInputType = {
+    id?: true
+    characterId?: true
+    sourceBookId?: true
+  }
+
+  export type CharacterDisallowedSourceCountAggregateInputType = {
+    id?: true
+    characterId?: true
+    sourceBookId?: true
+    _all?: true
+  }
+
+  export type CharacterDisallowedSourceAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CharacterDisallowedSource to aggregate.
+     */
+    where?: CharacterDisallowedSourceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CharacterDisallowedSources to fetch.
+     */
+    orderBy?: CharacterDisallowedSourceOrderByWithRelationInput | CharacterDisallowedSourceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: CharacterDisallowedSourceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CharacterDisallowedSources from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CharacterDisallowedSources.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned CharacterDisallowedSources
+    **/
+    _count?: true | CharacterDisallowedSourceCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: CharacterDisallowedSourceAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: CharacterDisallowedSourceSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: CharacterDisallowedSourceMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: CharacterDisallowedSourceMaxAggregateInputType
+  }
+
+  export type GetCharacterDisallowedSourceAggregateType<T extends CharacterDisallowedSourceAggregateArgs> = {
+        [P in keyof T & keyof AggregateCharacterDisallowedSource]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateCharacterDisallowedSource[P]>
+      : GetScalarType<T[P], AggregateCharacterDisallowedSource[P]>
+  }
+
+
+
+
+  export type CharacterDisallowedSourceGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CharacterDisallowedSourceWhereInput
+    orderBy?: CharacterDisallowedSourceOrderByWithAggregationInput | CharacterDisallowedSourceOrderByWithAggregationInput[]
+    by: CharacterDisallowedSourceScalarFieldEnum[] | CharacterDisallowedSourceScalarFieldEnum
+    having?: CharacterDisallowedSourceScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: CharacterDisallowedSourceCountAggregateInputType | true
+    _avg?: CharacterDisallowedSourceAvgAggregateInputType
+    _sum?: CharacterDisallowedSourceSumAggregateInputType
+    _min?: CharacterDisallowedSourceMinAggregateInputType
+    _max?: CharacterDisallowedSourceMaxAggregateInputType
+  }
+
+  export type CharacterDisallowedSourceGroupByOutputType = {
+    id: number
+    characterId: number
+    sourceBookId: number
+    _count: CharacterDisallowedSourceCountAggregateOutputType | null
+    _avg: CharacterDisallowedSourceAvgAggregateOutputType | null
+    _sum: CharacterDisallowedSourceSumAggregateOutputType | null
+    _min: CharacterDisallowedSourceMinAggregateOutputType | null
+    _max: CharacterDisallowedSourceMaxAggregateOutputType | null
+  }
+
+  type GetCharacterDisallowedSourceGroupByPayload<T extends CharacterDisallowedSourceGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<CharacterDisallowedSourceGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof CharacterDisallowedSourceGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], CharacterDisallowedSourceGroupByOutputType[P]>
+            : GetScalarType<T[P], CharacterDisallowedSourceGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type CharacterDisallowedSourceSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    characterId?: boolean
+    sourceBookId?: boolean
+    character?: boolean | UserCharacterDefaultArgs<ExtArgs>
+    sourceBook?: boolean | SourceBookDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["characterDisallowedSource"]>
+
+
+
+  export type CharacterDisallowedSourceSelectScalar = {
+    id?: boolean
+    characterId?: boolean
+    sourceBookId?: boolean
+  }
+
+  export type CharacterDisallowedSourceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "characterId" | "sourceBookId", ExtArgs["result"]["characterDisallowedSource"]>
+  export type CharacterDisallowedSourceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    character?: boolean | UserCharacterDefaultArgs<ExtArgs>
+    sourceBook?: boolean | SourceBookDefaultArgs<ExtArgs>
+  }
+
+  export type $CharacterDisallowedSourcePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "CharacterDisallowedSource"
+    objects: {
+      character: Prisma.$UserCharacterPayload<ExtArgs>
+      sourceBook: Prisma.$SourceBookPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      characterId: number
+      sourceBookId: number
+    }, ExtArgs["result"]["characterDisallowedSource"]>
+    composites: {}
+  }
+
+  type CharacterDisallowedSourceGetPayload<S extends boolean | null | undefined | CharacterDisallowedSourceDefaultArgs> = $Result.GetResult<Prisma.$CharacterDisallowedSourcePayload, S>
+
+  type CharacterDisallowedSourceCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<CharacterDisallowedSourceFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: CharacterDisallowedSourceCountAggregateInputType | true
+    }
+
+  export interface CharacterDisallowedSourceDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['CharacterDisallowedSource'], meta: { name: 'CharacterDisallowedSource' } }
+    /**
+     * Find zero or one CharacterDisallowedSource that matches the filter.
+     * @param {CharacterDisallowedSourceFindUniqueArgs} args - Arguments to find a CharacterDisallowedSource
+     * @example
+     * // Get one CharacterDisallowedSource
+     * const characterDisallowedSource = await prisma.characterDisallowedSource.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends CharacterDisallowedSourceFindUniqueArgs>(args: SelectSubset<T, CharacterDisallowedSourceFindUniqueArgs<ExtArgs>>): Prisma__CharacterDisallowedSourceClient<$Result.GetResult<Prisma.$CharacterDisallowedSourcePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one CharacterDisallowedSource that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {CharacterDisallowedSourceFindUniqueOrThrowArgs} args - Arguments to find a CharacterDisallowedSource
+     * @example
+     * // Get one CharacterDisallowedSource
+     * const characterDisallowedSource = await prisma.characterDisallowedSource.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends CharacterDisallowedSourceFindUniqueOrThrowArgs>(args: SelectSubset<T, CharacterDisallowedSourceFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CharacterDisallowedSourceClient<$Result.GetResult<Prisma.$CharacterDisallowedSourcePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first CharacterDisallowedSource that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CharacterDisallowedSourceFindFirstArgs} args - Arguments to find a CharacterDisallowedSource
+     * @example
+     * // Get one CharacterDisallowedSource
+     * const characterDisallowedSource = await prisma.characterDisallowedSource.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends CharacterDisallowedSourceFindFirstArgs>(args?: SelectSubset<T, CharacterDisallowedSourceFindFirstArgs<ExtArgs>>): Prisma__CharacterDisallowedSourceClient<$Result.GetResult<Prisma.$CharacterDisallowedSourcePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first CharacterDisallowedSource that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CharacterDisallowedSourceFindFirstOrThrowArgs} args - Arguments to find a CharacterDisallowedSource
+     * @example
+     * // Get one CharacterDisallowedSource
+     * const characterDisallowedSource = await prisma.characterDisallowedSource.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends CharacterDisallowedSourceFindFirstOrThrowArgs>(args?: SelectSubset<T, CharacterDisallowedSourceFindFirstOrThrowArgs<ExtArgs>>): Prisma__CharacterDisallowedSourceClient<$Result.GetResult<Prisma.$CharacterDisallowedSourcePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more CharacterDisallowedSources that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CharacterDisallowedSourceFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all CharacterDisallowedSources
+     * const characterDisallowedSources = await prisma.characterDisallowedSource.findMany()
+     * 
+     * // Get first 10 CharacterDisallowedSources
+     * const characterDisallowedSources = await prisma.characterDisallowedSource.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const characterDisallowedSourceWithIdOnly = await prisma.characterDisallowedSource.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends CharacterDisallowedSourceFindManyArgs>(args?: SelectSubset<T, CharacterDisallowedSourceFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CharacterDisallowedSourcePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a CharacterDisallowedSource.
+     * @param {CharacterDisallowedSourceCreateArgs} args - Arguments to create a CharacterDisallowedSource.
+     * @example
+     * // Create one CharacterDisallowedSource
+     * const CharacterDisallowedSource = await prisma.characterDisallowedSource.create({
+     *   data: {
+     *     // ... data to create a CharacterDisallowedSource
+     *   }
+     * })
+     * 
+     */
+    create<T extends CharacterDisallowedSourceCreateArgs>(args: SelectSubset<T, CharacterDisallowedSourceCreateArgs<ExtArgs>>): Prisma__CharacterDisallowedSourceClient<$Result.GetResult<Prisma.$CharacterDisallowedSourcePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many CharacterDisallowedSources.
+     * @param {CharacterDisallowedSourceCreateManyArgs} args - Arguments to create many CharacterDisallowedSources.
+     * @example
+     * // Create many CharacterDisallowedSources
+     * const characterDisallowedSource = await prisma.characterDisallowedSource.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends CharacterDisallowedSourceCreateManyArgs>(args?: SelectSubset<T, CharacterDisallowedSourceCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a CharacterDisallowedSource.
+     * @param {CharacterDisallowedSourceDeleteArgs} args - Arguments to delete one CharacterDisallowedSource.
+     * @example
+     * // Delete one CharacterDisallowedSource
+     * const CharacterDisallowedSource = await prisma.characterDisallowedSource.delete({
+     *   where: {
+     *     // ... filter to delete one CharacterDisallowedSource
+     *   }
+     * })
+     * 
+     */
+    delete<T extends CharacterDisallowedSourceDeleteArgs>(args: SelectSubset<T, CharacterDisallowedSourceDeleteArgs<ExtArgs>>): Prisma__CharacterDisallowedSourceClient<$Result.GetResult<Prisma.$CharacterDisallowedSourcePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one CharacterDisallowedSource.
+     * @param {CharacterDisallowedSourceUpdateArgs} args - Arguments to update one CharacterDisallowedSource.
+     * @example
+     * // Update one CharacterDisallowedSource
+     * const characterDisallowedSource = await prisma.characterDisallowedSource.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends CharacterDisallowedSourceUpdateArgs>(args: SelectSubset<T, CharacterDisallowedSourceUpdateArgs<ExtArgs>>): Prisma__CharacterDisallowedSourceClient<$Result.GetResult<Prisma.$CharacterDisallowedSourcePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more CharacterDisallowedSources.
+     * @param {CharacterDisallowedSourceDeleteManyArgs} args - Arguments to filter CharacterDisallowedSources to delete.
+     * @example
+     * // Delete a few CharacterDisallowedSources
+     * const { count } = await prisma.characterDisallowedSource.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends CharacterDisallowedSourceDeleteManyArgs>(args?: SelectSubset<T, CharacterDisallowedSourceDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more CharacterDisallowedSources.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CharacterDisallowedSourceUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many CharacterDisallowedSources
+     * const characterDisallowedSource = await prisma.characterDisallowedSource.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends CharacterDisallowedSourceUpdateManyArgs>(args: SelectSubset<T, CharacterDisallowedSourceUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one CharacterDisallowedSource.
+     * @param {CharacterDisallowedSourceUpsertArgs} args - Arguments to update or create a CharacterDisallowedSource.
+     * @example
+     * // Update or create a CharacterDisallowedSource
+     * const characterDisallowedSource = await prisma.characterDisallowedSource.upsert({
+     *   create: {
+     *     // ... data to create a CharacterDisallowedSource
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the CharacterDisallowedSource we want to update
+     *   }
+     * })
+     */
+    upsert<T extends CharacterDisallowedSourceUpsertArgs>(args: SelectSubset<T, CharacterDisallowedSourceUpsertArgs<ExtArgs>>): Prisma__CharacterDisallowedSourceClient<$Result.GetResult<Prisma.$CharacterDisallowedSourcePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of CharacterDisallowedSources.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CharacterDisallowedSourceCountArgs} args - Arguments to filter CharacterDisallowedSources to count.
+     * @example
+     * // Count the number of CharacterDisallowedSources
+     * const count = await prisma.characterDisallowedSource.count({
+     *   where: {
+     *     // ... the filter for the CharacterDisallowedSources we want to count
+     *   }
+     * })
+    **/
+    count<T extends CharacterDisallowedSourceCountArgs>(
+      args?: Subset<T, CharacterDisallowedSourceCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], CharacterDisallowedSourceCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a CharacterDisallowedSource.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CharacterDisallowedSourceAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends CharacterDisallowedSourceAggregateArgs>(args: Subset<T, CharacterDisallowedSourceAggregateArgs>): Prisma.PrismaPromise<GetCharacterDisallowedSourceAggregateType<T>>
+
+    /**
+     * Group by CharacterDisallowedSource.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CharacterDisallowedSourceGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends CharacterDisallowedSourceGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: CharacterDisallowedSourceGroupByArgs['orderBy'] }
+        : { orderBy?: CharacterDisallowedSourceGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, CharacterDisallowedSourceGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCharacterDisallowedSourceGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the CharacterDisallowedSource model
+   */
+  readonly fields: CharacterDisallowedSourceFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for CharacterDisallowedSource.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__CharacterDisallowedSourceClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    character<T extends UserCharacterDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserCharacterDefaultArgs<ExtArgs>>): Prisma__UserCharacterClient<$Result.GetResult<Prisma.$UserCharacterPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    sourceBook<T extends SourceBookDefaultArgs<ExtArgs> = {}>(args?: Subset<T, SourceBookDefaultArgs<ExtArgs>>): Prisma__SourceBookClient<$Result.GetResult<Prisma.$SourceBookPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the CharacterDisallowedSource model
+   */
+  interface CharacterDisallowedSourceFieldRefs {
+    readonly id: FieldRef<"CharacterDisallowedSource", 'Int'>
+    readonly characterId: FieldRef<"CharacterDisallowedSource", 'Int'>
+    readonly sourceBookId: FieldRef<"CharacterDisallowedSource", 'Int'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * CharacterDisallowedSource findUnique
+   */
+  export type CharacterDisallowedSourceFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CharacterDisallowedSource
+     */
+    select?: CharacterDisallowedSourceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CharacterDisallowedSource
+     */
+    omit?: CharacterDisallowedSourceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CharacterDisallowedSourceInclude<ExtArgs> | null
+    /**
+     * Filter, which CharacterDisallowedSource to fetch.
+     */
+    where: CharacterDisallowedSourceWhereUniqueInput
+  }
+
+  /**
+   * CharacterDisallowedSource findUniqueOrThrow
+   */
+  export type CharacterDisallowedSourceFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CharacterDisallowedSource
+     */
+    select?: CharacterDisallowedSourceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CharacterDisallowedSource
+     */
+    omit?: CharacterDisallowedSourceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CharacterDisallowedSourceInclude<ExtArgs> | null
+    /**
+     * Filter, which CharacterDisallowedSource to fetch.
+     */
+    where: CharacterDisallowedSourceWhereUniqueInput
+  }
+
+  /**
+   * CharacterDisallowedSource findFirst
+   */
+  export type CharacterDisallowedSourceFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CharacterDisallowedSource
+     */
+    select?: CharacterDisallowedSourceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CharacterDisallowedSource
+     */
+    omit?: CharacterDisallowedSourceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CharacterDisallowedSourceInclude<ExtArgs> | null
+    /**
+     * Filter, which CharacterDisallowedSource to fetch.
+     */
+    where?: CharacterDisallowedSourceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CharacterDisallowedSources to fetch.
+     */
+    orderBy?: CharacterDisallowedSourceOrderByWithRelationInput | CharacterDisallowedSourceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CharacterDisallowedSources.
+     */
+    cursor?: CharacterDisallowedSourceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CharacterDisallowedSources from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CharacterDisallowedSources.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CharacterDisallowedSources.
+     */
+    distinct?: CharacterDisallowedSourceScalarFieldEnum | CharacterDisallowedSourceScalarFieldEnum[]
+  }
+
+  /**
+   * CharacterDisallowedSource findFirstOrThrow
+   */
+  export type CharacterDisallowedSourceFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CharacterDisallowedSource
+     */
+    select?: CharacterDisallowedSourceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CharacterDisallowedSource
+     */
+    omit?: CharacterDisallowedSourceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CharacterDisallowedSourceInclude<ExtArgs> | null
+    /**
+     * Filter, which CharacterDisallowedSource to fetch.
+     */
+    where?: CharacterDisallowedSourceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CharacterDisallowedSources to fetch.
+     */
+    orderBy?: CharacterDisallowedSourceOrderByWithRelationInput | CharacterDisallowedSourceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CharacterDisallowedSources.
+     */
+    cursor?: CharacterDisallowedSourceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CharacterDisallowedSources from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CharacterDisallowedSources.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CharacterDisallowedSources.
+     */
+    distinct?: CharacterDisallowedSourceScalarFieldEnum | CharacterDisallowedSourceScalarFieldEnum[]
+  }
+
+  /**
+   * CharacterDisallowedSource findMany
+   */
+  export type CharacterDisallowedSourceFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CharacterDisallowedSource
+     */
+    select?: CharacterDisallowedSourceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CharacterDisallowedSource
+     */
+    omit?: CharacterDisallowedSourceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CharacterDisallowedSourceInclude<ExtArgs> | null
+    /**
+     * Filter, which CharacterDisallowedSources to fetch.
+     */
+    where?: CharacterDisallowedSourceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CharacterDisallowedSources to fetch.
+     */
+    orderBy?: CharacterDisallowedSourceOrderByWithRelationInput | CharacterDisallowedSourceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing CharacterDisallowedSources.
+     */
+    cursor?: CharacterDisallowedSourceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CharacterDisallowedSources from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CharacterDisallowedSources.
+     */
+    skip?: number
+    distinct?: CharacterDisallowedSourceScalarFieldEnum | CharacterDisallowedSourceScalarFieldEnum[]
+  }
+
+  /**
+   * CharacterDisallowedSource create
+   */
+  export type CharacterDisallowedSourceCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CharacterDisallowedSource
+     */
+    select?: CharacterDisallowedSourceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CharacterDisallowedSource
+     */
+    omit?: CharacterDisallowedSourceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CharacterDisallowedSourceInclude<ExtArgs> | null
+    /**
+     * The data needed to create a CharacterDisallowedSource.
+     */
+    data: XOR<CharacterDisallowedSourceCreateInput, CharacterDisallowedSourceUncheckedCreateInput>
+  }
+
+  /**
+   * CharacterDisallowedSource createMany
+   */
+  export type CharacterDisallowedSourceCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many CharacterDisallowedSources.
+     */
+    data: CharacterDisallowedSourceCreateManyInput | CharacterDisallowedSourceCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * CharacterDisallowedSource update
+   */
+  export type CharacterDisallowedSourceUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CharacterDisallowedSource
+     */
+    select?: CharacterDisallowedSourceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CharacterDisallowedSource
+     */
+    omit?: CharacterDisallowedSourceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CharacterDisallowedSourceInclude<ExtArgs> | null
+    /**
+     * The data needed to update a CharacterDisallowedSource.
+     */
+    data: XOR<CharacterDisallowedSourceUpdateInput, CharacterDisallowedSourceUncheckedUpdateInput>
+    /**
+     * Choose, which CharacterDisallowedSource to update.
+     */
+    where: CharacterDisallowedSourceWhereUniqueInput
+  }
+
+  /**
+   * CharacterDisallowedSource updateMany
+   */
+  export type CharacterDisallowedSourceUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update CharacterDisallowedSources.
+     */
+    data: XOR<CharacterDisallowedSourceUpdateManyMutationInput, CharacterDisallowedSourceUncheckedUpdateManyInput>
+    /**
+     * Filter which CharacterDisallowedSources to update
+     */
+    where?: CharacterDisallowedSourceWhereInput
+    /**
+     * Limit how many CharacterDisallowedSources to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * CharacterDisallowedSource upsert
+   */
+  export type CharacterDisallowedSourceUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CharacterDisallowedSource
+     */
+    select?: CharacterDisallowedSourceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CharacterDisallowedSource
+     */
+    omit?: CharacterDisallowedSourceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CharacterDisallowedSourceInclude<ExtArgs> | null
+    /**
+     * The filter to search for the CharacterDisallowedSource to update in case it exists.
+     */
+    where: CharacterDisallowedSourceWhereUniqueInput
+    /**
+     * In case the CharacterDisallowedSource found by the `where` argument doesn't exist, create a new CharacterDisallowedSource with this data.
+     */
+    create: XOR<CharacterDisallowedSourceCreateInput, CharacterDisallowedSourceUncheckedCreateInput>
+    /**
+     * In case the CharacterDisallowedSource was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<CharacterDisallowedSourceUpdateInput, CharacterDisallowedSourceUncheckedUpdateInput>
+  }
+
+  /**
+   * CharacterDisallowedSource delete
+   */
+  export type CharacterDisallowedSourceDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CharacterDisallowedSource
+     */
+    select?: CharacterDisallowedSourceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CharacterDisallowedSource
+     */
+    omit?: CharacterDisallowedSourceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CharacterDisallowedSourceInclude<ExtArgs> | null
+    /**
+     * Filter which CharacterDisallowedSource to delete.
+     */
+    where: CharacterDisallowedSourceWhereUniqueInput
+  }
+
+  /**
+   * CharacterDisallowedSource deleteMany
+   */
+  export type CharacterDisallowedSourceDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CharacterDisallowedSources to delete
+     */
+    where?: CharacterDisallowedSourceWhereInput
+    /**
+     * Limit how many CharacterDisallowedSources to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * CharacterDisallowedSource without action
+   */
+  export type CharacterDisallowedSourceDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CharacterDisallowedSource
+     */
+    select?: CharacterDisallowedSourceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CharacterDisallowedSource
+     */
+    omit?: CharacterDisallowedSourceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CharacterDisallowedSourceInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -76085,7 +77243,11 @@ export namespace Prisma {
     eyes: 'eyes',
     hair: 'hair',
     gender: 'gender',
-    notes: 'notes'
+    notes: 'notes',
+    editionId: 'editionId',
+    allowVariantClasses: 'allowVariantClasses',
+    isGestalt: 'isGestalt',
+    ignoreLevelAdjustment: 'ignoreLevelAdjustment'
   };
 
   export type UserCharacterScalarFieldEnum = (typeof UserCharacterScalarFieldEnum)[keyof typeof UserCharacterScalarFieldEnum]
@@ -76318,6 +77480,15 @@ export namespace Prisma {
   };
 
   export type DeitySourceMapScalarFieldEnum = (typeof DeitySourceMapScalarFieldEnum)[keyof typeof DeitySourceMapScalarFieldEnum]
+
+
+  export const CharacterDisallowedSourceScalarFieldEnum: {
+    id: 'id',
+    characterId: 'characterId',
+    sourceBookId: 'sourceBookId'
+  };
+
+  export type CharacterDisallowedSourceScalarFieldEnum = (typeof CharacterDisallowedSourceScalarFieldEnum)[keyof typeof CharacterDisallowedSourceScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -79379,6 +80550,7 @@ export namespace Prisma {
     classVariants?: ClassVariantSourceMapListRelationFilter
     domains?: DomainSourceMapListRelationFilter
     deities?: DeitySourceMapListRelationFilter
+    characterDisallowedSources?: CharacterDisallowedSourceListRelationFilter
   }
 
   export type SourceBookOrderByWithRelationInput = {
@@ -79395,6 +80567,7 @@ export namespace Prisma {
     classVariants?: ClassVariantSourceMapOrderByRelationAggregateInput
     domains?: DomainSourceMapOrderByRelationAggregateInput
     deities?: DeitySourceMapOrderByRelationAggregateInput
+    characterDisallowedSources?: CharacterDisallowedSourceOrderByRelationAggregateInput
     _relevance?: SourceBookOrderByRelevanceInput
   }
 
@@ -79415,6 +80588,7 @@ export namespace Prisma {
     classVariants?: ClassVariantSourceMapListRelationFilter
     domains?: DomainSourceMapListRelationFilter
     deities?: DeitySourceMapListRelationFilter
+    characterDisallowedSources?: CharacterDisallowedSourceListRelationFilter
   }, "id">
 
   export type SourceBookOrderByWithAggregationInput = {
@@ -79694,10 +80868,15 @@ export namespace Prisma {
     hair?: StringNullableFilter<"UserCharacter"> | string | null
     gender?: StringNullableFilter<"UserCharacter"> | string | null
     notes?: StringNullableFilter<"UserCharacter"> | string | null
+    editionId?: IntNullableFilter<"UserCharacter"> | number | null
+    allowVariantClasses?: BoolFilter<"UserCharacter"> | boolean
+    isGestalt?: BoolFilter<"UserCharacter"> | boolean
+    ignoreLevelAdjustment?: BoolFilter<"UserCharacter"> | boolean
     abilityScores?: UserCharacterAbilityScoreListRelationFilter
     characterItems?: CharacterItemListRelationFilter
     advancements?: CharacterAdvancementListRelationFilter
     preparedSpells?: CharacterSpellPreparationListRelationFilter
+    disallowedSources?: CharacterDisallowedSourceListRelationFilter
     race?: XOR<RaceScalarRelationFilter, RaceWhereInput>
     deity?: XOR<DeityNullableScalarRelationFilter, DeityWhereInput> | null
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
@@ -79718,10 +80897,15 @@ export namespace Prisma {
     hair?: SortOrderInput | SortOrder
     gender?: SortOrderInput | SortOrder
     notes?: SortOrderInput | SortOrder
+    editionId?: SortOrderInput | SortOrder
+    allowVariantClasses?: SortOrder
+    isGestalt?: SortOrder
+    ignoreLevelAdjustment?: SortOrder
     abilityScores?: UserCharacterAbilityScoreOrderByRelationAggregateInput
     characterItems?: CharacterItemOrderByRelationAggregateInput
     advancements?: CharacterAdvancementOrderByRelationAggregateInput
     preparedSpells?: CharacterSpellPreparationOrderByRelationAggregateInput
+    disallowedSources?: CharacterDisallowedSourceOrderByRelationAggregateInput
     race?: RaceOrderByWithRelationInput
     deity?: DeityOrderByWithRelationInput
     user?: UserOrderByWithRelationInput
@@ -79746,10 +80930,15 @@ export namespace Prisma {
     hair?: StringNullableFilter<"UserCharacter"> | string | null
     gender?: StringNullableFilter<"UserCharacter"> | string | null
     notes?: StringNullableFilter<"UserCharacter"> | string | null
+    editionId?: IntNullableFilter<"UserCharacter"> | number | null
+    allowVariantClasses?: BoolFilter<"UserCharacter"> | boolean
+    isGestalt?: BoolFilter<"UserCharacter"> | boolean
+    ignoreLevelAdjustment?: BoolFilter<"UserCharacter"> | boolean
     abilityScores?: UserCharacterAbilityScoreListRelationFilter
     characterItems?: CharacterItemListRelationFilter
     advancements?: CharacterAdvancementListRelationFilter
     preparedSpells?: CharacterSpellPreparationListRelationFilter
+    disallowedSources?: CharacterDisallowedSourceListRelationFilter
     race?: XOR<RaceScalarRelationFilter, RaceWhereInput>
     deity?: XOR<DeityNullableScalarRelationFilter, DeityWhereInput> | null
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
@@ -79770,6 +80959,10 @@ export namespace Prisma {
     hair?: SortOrderInput | SortOrder
     gender?: SortOrderInput | SortOrder
     notes?: SortOrderInput | SortOrder
+    editionId?: SortOrderInput | SortOrder
+    allowVariantClasses?: SortOrder
+    isGestalt?: SortOrder
+    ignoreLevelAdjustment?: SortOrder
     _count?: UserCharacterCountOrderByAggregateInput
     _avg?: UserCharacterAvgOrderByAggregateInput
     _max?: UserCharacterMaxOrderByAggregateInput
@@ -79795,6 +80988,10 @@ export namespace Prisma {
     hair?: StringNullableWithAggregatesFilter<"UserCharacter"> | string | null
     gender?: StringNullableWithAggregatesFilter<"UserCharacter"> | string | null
     notes?: StringNullableWithAggregatesFilter<"UserCharacter"> | string | null
+    editionId?: IntNullableWithAggregatesFilter<"UserCharacter"> | number | null
+    allowVariantClasses?: BoolWithAggregatesFilter<"UserCharacter"> | boolean
+    isGestalt?: BoolWithAggregatesFilter<"UserCharacter"> | boolean
+    ignoreLevelAdjustment?: BoolWithAggregatesFilter<"UserCharacter"> | boolean
   }
 
   export type UserCharacterAbilityScoreWhereInput = {
@@ -81104,6 +82301,57 @@ export namespace Prisma {
     deityId?: IntWithAggregatesFilter<"DeitySourceMap"> | number
     sourceBookId?: IntWithAggregatesFilter<"DeitySourceMap"> | number
     pageNumber?: IntNullableWithAggregatesFilter<"DeitySourceMap"> | number | null
+  }
+
+  export type CharacterDisallowedSourceWhereInput = {
+    AND?: CharacterDisallowedSourceWhereInput | CharacterDisallowedSourceWhereInput[]
+    OR?: CharacterDisallowedSourceWhereInput[]
+    NOT?: CharacterDisallowedSourceWhereInput | CharacterDisallowedSourceWhereInput[]
+    id?: IntFilter<"CharacterDisallowedSource"> | number
+    characterId?: IntFilter<"CharacterDisallowedSource"> | number
+    sourceBookId?: IntFilter<"CharacterDisallowedSource"> | number
+    character?: XOR<UserCharacterScalarRelationFilter, UserCharacterWhereInput>
+    sourceBook?: XOR<SourceBookScalarRelationFilter, SourceBookWhereInput>
+  }
+
+  export type CharacterDisallowedSourceOrderByWithRelationInput = {
+    id?: SortOrder
+    characterId?: SortOrder
+    sourceBookId?: SortOrder
+    character?: UserCharacterOrderByWithRelationInput
+    sourceBook?: SourceBookOrderByWithRelationInput
+  }
+
+  export type CharacterDisallowedSourceWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    characterId_sourceBookId?: CharacterDisallowedSourceCharacterIdSourceBookIdCompoundUniqueInput
+    AND?: CharacterDisallowedSourceWhereInput | CharacterDisallowedSourceWhereInput[]
+    OR?: CharacterDisallowedSourceWhereInput[]
+    NOT?: CharacterDisallowedSourceWhereInput | CharacterDisallowedSourceWhereInput[]
+    characterId?: IntFilter<"CharacterDisallowedSource"> | number
+    sourceBookId?: IntFilter<"CharacterDisallowedSource"> | number
+    character?: XOR<UserCharacterScalarRelationFilter, UserCharacterWhereInput>
+    sourceBook?: XOR<SourceBookScalarRelationFilter, SourceBookWhereInput>
+  }, "id" | "characterId_sourceBookId">
+
+  export type CharacterDisallowedSourceOrderByWithAggregationInput = {
+    id?: SortOrder
+    characterId?: SortOrder
+    sourceBookId?: SortOrder
+    _count?: CharacterDisallowedSourceCountOrderByAggregateInput
+    _avg?: CharacterDisallowedSourceAvgOrderByAggregateInput
+    _max?: CharacterDisallowedSourceMaxOrderByAggregateInput
+    _min?: CharacterDisallowedSourceMinOrderByAggregateInput
+    _sum?: CharacterDisallowedSourceSumOrderByAggregateInput
+  }
+
+  export type CharacterDisallowedSourceScalarWhereWithAggregatesInput = {
+    AND?: CharacterDisallowedSourceScalarWhereWithAggregatesInput | CharacterDisallowedSourceScalarWhereWithAggregatesInput[]
+    OR?: CharacterDisallowedSourceScalarWhereWithAggregatesInput[]
+    NOT?: CharacterDisallowedSourceScalarWhereWithAggregatesInput | CharacterDisallowedSourceScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"CharacterDisallowedSource"> | number
+    characterId?: IntWithAggregatesFilter<"CharacterDisallowedSource"> | number
+    sourceBookId?: IntWithAggregatesFilter<"CharacterDisallowedSource"> | number
   }
 
   export type ClassCreateInput = {
@@ -83712,6 +84960,7 @@ export namespace Prisma {
     classVariants?: ClassVariantSourceMapCreateNestedManyWithoutSourceBookInput
     domains?: DomainSourceMapCreateNestedManyWithoutSourceBookInput
     deities?: DeitySourceMapCreateNestedManyWithoutSourceBookInput
+    characterDisallowedSources?: CharacterDisallowedSourceCreateNestedManyWithoutSourceBookInput
   }
 
   export type SourceBookUncheckedCreateInput = {
@@ -83728,6 +84977,7 @@ export namespace Prisma {
     classVariants?: ClassVariantSourceMapUncheckedCreateNestedManyWithoutSourceBookInput
     domains?: DomainSourceMapUncheckedCreateNestedManyWithoutSourceBookInput
     deities?: DeitySourceMapUncheckedCreateNestedManyWithoutSourceBookInput
+    characterDisallowedSources?: CharacterDisallowedSourceUncheckedCreateNestedManyWithoutSourceBookInput
   }
 
   export type SourceBookUpdateInput = {
@@ -83743,6 +84993,7 @@ export namespace Prisma {
     classVariants?: ClassVariantSourceMapUpdateManyWithoutSourceBookNestedInput
     domains?: DomainSourceMapUpdateManyWithoutSourceBookNestedInput
     deities?: DeitySourceMapUpdateManyWithoutSourceBookNestedInput
+    characterDisallowedSources?: CharacterDisallowedSourceUpdateManyWithoutSourceBookNestedInput
   }
 
   export type SourceBookUncheckedUpdateInput = {
@@ -83759,6 +85010,7 @@ export namespace Prisma {
     classVariants?: ClassVariantSourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
     domains?: DomainSourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
     deities?: DeitySourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
+    characterDisallowedSources?: CharacterDisallowedSourceUncheckedUpdateManyWithoutSourceBookNestedInput
   }
 
   export type SourceBookCreateManyInput = {
@@ -84012,10 +85264,15 @@ export namespace Prisma {
     hair?: string | null
     gender?: string | null
     notes?: string | null
+    editionId?: number | null
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
     abilityScores?: UserCharacterAbilityScoreCreateNestedManyWithoutCharacterInput
     characterItems?: CharacterItemCreateNestedManyWithoutCharacterInput
     advancements?: CharacterAdvancementCreateNestedManyWithoutCharacterInput
     preparedSpells?: CharacterSpellPreparationCreateNestedManyWithoutCharacterInput
+    disallowedSources?: CharacterDisallowedSourceCreateNestedManyWithoutCharacterInput
     race: RaceCreateNestedOneWithoutUserCharacterInput
     deity?: DeityCreateNestedOneWithoutCharactersInput
     user: UserCreateNestedOneWithoutCharactersInput
@@ -84036,10 +85293,15 @@ export namespace Prisma {
     hair?: string | null
     gender?: string | null
     notes?: string | null
+    editionId?: number | null
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
     abilityScores?: UserCharacterAbilityScoreUncheckedCreateNestedManyWithoutCharacterInput
     characterItems?: CharacterItemUncheckedCreateNestedManyWithoutCharacterInput
     advancements?: CharacterAdvancementUncheckedCreateNestedManyWithoutCharacterInput
     preparedSpells?: CharacterSpellPreparationUncheckedCreateNestedManyWithoutCharacterInput
+    disallowedSources?: CharacterDisallowedSourceUncheckedCreateNestedManyWithoutCharacterInput
   }
 
   export type UserCharacterUpdateInput = {
@@ -84053,10 +85315,15 @@ export namespace Prisma {
     hair?: NullableStringFieldUpdateOperationsInput | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    allowVariantClasses?: BoolFieldUpdateOperationsInput | boolean
+    isGestalt?: BoolFieldUpdateOperationsInput | boolean
+    ignoreLevelAdjustment?: BoolFieldUpdateOperationsInput | boolean
     abilityScores?: UserCharacterAbilityScoreUpdateManyWithoutCharacterNestedInput
     characterItems?: CharacterItemUpdateManyWithoutCharacterNestedInput
     advancements?: CharacterAdvancementUpdateManyWithoutCharacterNestedInput
     preparedSpells?: CharacterSpellPreparationUpdateManyWithoutCharacterNestedInput
+    disallowedSources?: CharacterDisallowedSourceUpdateManyWithoutCharacterNestedInput
     race?: RaceUpdateOneRequiredWithoutUserCharacterNestedInput
     deity?: DeityUpdateOneWithoutCharactersNestedInput
     user?: UserUpdateOneRequiredWithoutCharactersNestedInput
@@ -84077,10 +85344,15 @@ export namespace Prisma {
     hair?: NullableStringFieldUpdateOperationsInput | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    allowVariantClasses?: BoolFieldUpdateOperationsInput | boolean
+    isGestalt?: BoolFieldUpdateOperationsInput | boolean
+    ignoreLevelAdjustment?: BoolFieldUpdateOperationsInput | boolean
     abilityScores?: UserCharacterAbilityScoreUncheckedUpdateManyWithoutCharacterNestedInput
     characterItems?: CharacterItemUncheckedUpdateManyWithoutCharacterNestedInput
     advancements?: CharacterAdvancementUncheckedUpdateManyWithoutCharacterNestedInput
     preparedSpells?: CharacterSpellPreparationUncheckedUpdateManyWithoutCharacterNestedInput
+    disallowedSources?: CharacterDisallowedSourceUncheckedUpdateManyWithoutCharacterNestedInput
   }
 
   export type UserCharacterCreateManyInput = {
@@ -84098,6 +85370,10 @@ export namespace Prisma {
     hair?: string | null
     gender?: string | null
     notes?: string | null
+    editionId?: number | null
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
   }
 
   export type UserCharacterUpdateManyMutationInput = {
@@ -84111,6 +85387,10 @@ export namespace Prisma {
     hair?: NullableStringFieldUpdateOperationsInput | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    allowVariantClasses?: BoolFieldUpdateOperationsInput | boolean
+    isGestalt?: BoolFieldUpdateOperationsInput | boolean
+    ignoreLevelAdjustment?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type UserCharacterUncheckedUpdateManyInput = {
@@ -84128,6 +85408,10 @@ export namespace Prisma {
     hair?: NullableStringFieldUpdateOperationsInput | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    allowVariantClasses?: BoolFieldUpdateOperationsInput | boolean
+    isGestalt?: BoolFieldUpdateOperationsInput | boolean
+    ignoreLevelAdjustment?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type UserCharacterAbilityScoreCreateInput = {
@@ -85318,6 +86602,44 @@ export namespace Prisma {
     deityId?: IntFieldUpdateOperationsInput | number
     sourceBookId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type CharacterDisallowedSourceCreateInput = {
+    character: UserCharacterCreateNestedOneWithoutDisallowedSourcesInput
+    sourceBook: SourceBookCreateNestedOneWithoutCharacterDisallowedSourcesInput
+  }
+
+  export type CharacterDisallowedSourceUncheckedCreateInput = {
+    id?: number
+    characterId: number
+    sourceBookId: number
+  }
+
+  export type CharacterDisallowedSourceUpdateInput = {
+    character?: UserCharacterUpdateOneRequiredWithoutDisallowedSourcesNestedInput
+    sourceBook?: SourceBookUpdateOneRequiredWithoutCharacterDisallowedSourcesNestedInput
+  }
+
+  export type CharacterDisallowedSourceUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    characterId?: IntFieldUpdateOperationsInput | number
+    sourceBookId?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type CharacterDisallowedSourceCreateManyInput = {
+    id?: number
+    characterId: number
+    sourceBookId: number
+  }
+
+  export type CharacterDisallowedSourceUpdateManyMutationInput = {
+
+  }
+
+  export type CharacterDisallowedSourceUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    characterId?: IntFieldUpdateOperationsInput | number
+    sourceBookId?: IntFieldUpdateOperationsInput | number
   }
 
   export type IntFilter<$PrismaModel = never> = {
@@ -87917,11 +89239,21 @@ export namespace Prisma {
     none?: DeitySourceMapWhereInput
   }
 
+  export type CharacterDisallowedSourceListRelationFilter = {
+    every?: CharacterDisallowedSourceWhereInput
+    some?: CharacterDisallowedSourceWhereInput
+    none?: CharacterDisallowedSourceWhereInput
+  }
+
   export type DomainSourceMapOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
   export type DeitySourceMapOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type CharacterDisallowedSourceOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -88244,6 +89576,10 @@ export namespace Prisma {
     hair?: SortOrder
     gender?: SortOrder
     notes?: SortOrder
+    editionId?: SortOrder
+    allowVariantClasses?: SortOrder
+    isGestalt?: SortOrder
+    ignoreLevelAdjustment?: SortOrder
   }
 
   export type UserCharacterAvgOrderByAggregateInput = {
@@ -88256,6 +89592,7 @@ export namespace Prisma {
     age?: SortOrder
     height?: SortOrder
     weight?: SortOrder
+    editionId?: SortOrder
   }
 
   export type UserCharacterMaxOrderByAggregateInput = {
@@ -88273,6 +89610,10 @@ export namespace Prisma {
     hair?: SortOrder
     gender?: SortOrder
     notes?: SortOrder
+    editionId?: SortOrder
+    allowVariantClasses?: SortOrder
+    isGestalt?: SortOrder
+    ignoreLevelAdjustment?: SortOrder
   }
 
   export type UserCharacterMinOrderByAggregateInput = {
@@ -88290,6 +89631,10 @@ export namespace Prisma {
     hair?: SortOrder
     gender?: SortOrder
     notes?: SortOrder
+    editionId?: SortOrder
+    allowVariantClasses?: SortOrder
+    isGestalt?: SortOrder
+    ignoreLevelAdjustment?: SortOrder
   }
 
   export type UserCharacterSumOrderByAggregateInput = {
@@ -88302,6 +89647,7 @@ export namespace Prisma {
     age?: SortOrder
     height?: SortOrder
     weight?: SortOrder
+    editionId?: SortOrder
   }
 
   export type UserCharacterAbilityScoreCountOrderByAggregateInput = {
@@ -89343,6 +90689,41 @@ export namespace Prisma {
     deityId?: SortOrder
     sourceBookId?: SortOrder
     pageNumber?: SortOrder
+  }
+
+  export type CharacterDisallowedSourceCharacterIdSourceBookIdCompoundUniqueInput = {
+    characterId: number
+    sourceBookId: number
+  }
+
+  export type CharacterDisallowedSourceCountOrderByAggregateInput = {
+    id?: SortOrder
+    characterId?: SortOrder
+    sourceBookId?: SortOrder
+  }
+
+  export type CharacterDisallowedSourceAvgOrderByAggregateInput = {
+    id?: SortOrder
+    characterId?: SortOrder
+    sourceBookId?: SortOrder
+  }
+
+  export type CharacterDisallowedSourceMaxOrderByAggregateInput = {
+    id?: SortOrder
+    characterId?: SortOrder
+    sourceBookId?: SortOrder
+  }
+
+  export type CharacterDisallowedSourceMinOrderByAggregateInput = {
+    id?: SortOrder
+    characterId?: SortOrder
+    sourceBookId?: SortOrder
+  }
+
+  export type CharacterDisallowedSourceSumOrderByAggregateInput = {
+    id?: SortOrder
+    characterId?: SortOrder
+    sourceBookId?: SortOrder
   }
 
   export type FeatureProgressionCreateNestedManyWithoutClassInput = {
@@ -92513,6 +93894,13 @@ export namespace Prisma {
     connect?: DeitySourceMapWhereUniqueInput | DeitySourceMapWhereUniqueInput[]
   }
 
+  export type CharacterDisallowedSourceCreateNestedManyWithoutSourceBookInput = {
+    create?: XOR<CharacterDisallowedSourceCreateWithoutSourceBookInput, CharacterDisallowedSourceUncheckedCreateWithoutSourceBookInput> | CharacterDisallowedSourceCreateWithoutSourceBookInput[] | CharacterDisallowedSourceUncheckedCreateWithoutSourceBookInput[]
+    connectOrCreate?: CharacterDisallowedSourceCreateOrConnectWithoutSourceBookInput | CharacterDisallowedSourceCreateOrConnectWithoutSourceBookInput[]
+    createMany?: CharacterDisallowedSourceCreateManySourceBookInputEnvelope
+    connect?: CharacterDisallowedSourceWhereUniqueInput | CharacterDisallowedSourceWhereUniqueInput[]
+  }
+
   export type ClassSourceMapUncheckedCreateNestedManyWithoutSourceBookInput = {
     create?: XOR<ClassSourceMapCreateWithoutSourceBookInput, ClassSourceMapUncheckedCreateWithoutSourceBookInput> | ClassSourceMapCreateWithoutSourceBookInput[] | ClassSourceMapUncheckedCreateWithoutSourceBookInput[]
     connectOrCreate?: ClassSourceMapCreateOrConnectWithoutSourceBookInput | ClassSourceMapCreateOrConnectWithoutSourceBookInput[]
@@ -92553,6 +93941,13 @@ export namespace Prisma {
     connectOrCreate?: DeitySourceMapCreateOrConnectWithoutSourceBookInput | DeitySourceMapCreateOrConnectWithoutSourceBookInput[]
     createMany?: DeitySourceMapCreateManySourceBookInputEnvelope
     connect?: DeitySourceMapWhereUniqueInput | DeitySourceMapWhereUniqueInput[]
+  }
+
+  export type CharacterDisallowedSourceUncheckedCreateNestedManyWithoutSourceBookInput = {
+    create?: XOR<CharacterDisallowedSourceCreateWithoutSourceBookInput, CharacterDisallowedSourceUncheckedCreateWithoutSourceBookInput> | CharacterDisallowedSourceCreateWithoutSourceBookInput[] | CharacterDisallowedSourceUncheckedCreateWithoutSourceBookInput[]
+    connectOrCreate?: CharacterDisallowedSourceCreateOrConnectWithoutSourceBookInput | CharacterDisallowedSourceCreateOrConnectWithoutSourceBookInput[]
+    createMany?: CharacterDisallowedSourceCreateManySourceBookInputEnvelope
+    connect?: CharacterDisallowedSourceWhereUniqueInput | CharacterDisallowedSourceWhereUniqueInput[]
   }
 
   export type NullableDateTimeFieldUpdateOperationsInput = {
@@ -92643,6 +94038,20 @@ export namespace Prisma {
     deleteMany?: DeitySourceMapScalarWhereInput | DeitySourceMapScalarWhereInput[]
   }
 
+  export type CharacterDisallowedSourceUpdateManyWithoutSourceBookNestedInput = {
+    create?: XOR<CharacterDisallowedSourceCreateWithoutSourceBookInput, CharacterDisallowedSourceUncheckedCreateWithoutSourceBookInput> | CharacterDisallowedSourceCreateWithoutSourceBookInput[] | CharacterDisallowedSourceUncheckedCreateWithoutSourceBookInput[]
+    connectOrCreate?: CharacterDisallowedSourceCreateOrConnectWithoutSourceBookInput | CharacterDisallowedSourceCreateOrConnectWithoutSourceBookInput[]
+    upsert?: CharacterDisallowedSourceUpsertWithWhereUniqueWithoutSourceBookInput | CharacterDisallowedSourceUpsertWithWhereUniqueWithoutSourceBookInput[]
+    createMany?: CharacterDisallowedSourceCreateManySourceBookInputEnvelope
+    set?: CharacterDisallowedSourceWhereUniqueInput | CharacterDisallowedSourceWhereUniqueInput[]
+    disconnect?: CharacterDisallowedSourceWhereUniqueInput | CharacterDisallowedSourceWhereUniqueInput[]
+    delete?: CharacterDisallowedSourceWhereUniqueInput | CharacterDisallowedSourceWhereUniqueInput[]
+    connect?: CharacterDisallowedSourceWhereUniqueInput | CharacterDisallowedSourceWhereUniqueInput[]
+    update?: CharacterDisallowedSourceUpdateWithWhereUniqueWithoutSourceBookInput | CharacterDisallowedSourceUpdateWithWhereUniqueWithoutSourceBookInput[]
+    updateMany?: CharacterDisallowedSourceUpdateManyWithWhereWithoutSourceBookInput | CharacterDisallowedSourceUpdateManyWithWhereWithoutSourceBookInput[]
+    deleteMany?: CharacterDisallowedSourceScalarWhereInput | CharacterDisallowedSourceScalarWhereInput[]
+  }
+
   export type ClassSourceMapUncheckedUpdateManyWithoutSourceBookNestedInput = {
     create?: XOR<ClassSourceMapCreateWithoutSourceBookInput, ClassSourceMapUncheckedCreateWithoutSourceBookInput> | ClassSourceMapCreateWithoutSourceBookInput[] | ClassSourceMapUncheckedCreateWithoutSourceBookInput[]
     connectOrCreate?: ClassSourceMapCreateOrConnectWithoutSourceBookInput | ClassSourceMapCreateOrConnectWithoutSourceBookInput[]
@@ -92725,6 +94134,20 @@ export namespace Prisma {
     update?: DeitySourceMapUpdateWithWhereUniqueWithoutSourceBookInput | DeitySourceMapUpdateWithWhereUniqueWithoutSourceBookInput[]
     updateMany?: DeitySourceMapUpdateManyWithWhereWithoutSourceBookInput | DeitySourceMapUpdateManyWithWhereWithoutSourceBookInput[]
     deleteMany?: DeitySourceMapScalarWhereInput | DeitySourceMapScalarWhereInput[]
+  }
+
+  export type CharacterDisallowedSourceUncheckedUpdateManyWithoutSourceBookNestedInput = {
+    create?: XOR<CharacterDisallowedSourceCreateWithoutSourceBookInput, CharacterDisallowedSourceUncheckedCreateWithoutSourceBookInput> | CharacterDisallowedSourceCreateWithoutSourceBookInput[] | CharacterDisallowedSourceUncheckedCreateWithoutSourceBookInput[]
+    connectOrCreate?: CharacterDisallowedSourceCreateOrConnectWithoutSourceBookInput | CharacterDisallowedSourceCreateOrConnectWithoutSourceBookInput[]
+    upsert?: CharacterDisallowedSourceUpsertWithWhereUniqueWithoutSourceBookInput | CharacterDisallowedSourceUpsertWithWhereUniqueWithoutSourceBookInput[]
+    createMany?: CharacterDisallowedSourceCreateManySourceBookInputEnvelope
+    set?: CharacterDisallowedSourceWhereUniqueInput | CharacterDisallowedSourceWhereUniqueInput[]
+    disconnect?: CharacterDisallowedSourceWhereUniqueInput | CharacterDisallowedSourceWhereUniqueInput[]
+    delete?: CharacterDisallowedSourceWhereUniqueInput | CharacterDisallowedSourceWhereUniqueInput[]
+    connect?: CharacterDisallowedSourceWhereUniqueInput | CharacterDisallowedSourceWhereUniqueInput[]
+    update?: CharacterDisallowedSourceUpdateWithWhereUniqueWithoutSourceBookInput | CharacterDisallowedSourceUpdateWithWhereUniqueWithoutSourceBookInput[]
+    updateMany?: CharacterDisallowedSourceUpdateManyWithWhereWithoutSourceBookInput | CharacterDisallowedSourceUpdateManyWithWhereWithoutSourceBookInput[]
+    deleteMany?: CharacterDisallowedSourceScalarWhereInput | CharacterDisallowedSourceScalarWhereInput[]
   }
 
   export type ReferenceTableColumnCreateNestedManyWithoutTableInput = {
@@ -93039,6 +94462,13 @@ export namespace Prisma {
     connect?: CharacterSpellPreparationWhereUniqueInput | CharacterSpellPreparationWhereUniqueInput[]
   }
 
+  export type CharacterDisallowedSourceCreateNestedManyWithoutCharacterInput = {
+    create?: XOR<CharacterDisallowedSourceCreateWithoutCharacterInput, CharacterDisallowedSourceUncheckedCreateWithoutCharacterInput> | CharacterDisallowedSourceCreateWithoutCharacterInput[] | CharacterDisallowedSourceUncheckedCreateWithoutCharacterInput[]
+    connectOrCreate?: CharacterDisallowedSourceCreateOrConnectWithoutCharacterInput | CharacterDisallowedSourceCreateOrConnectWithoutCharacterInput[]
+    createMany?: CharacterDisallowedSourceCreateManyCharacterInputEnvelope
+    connect?: CharacterDisallowedSourceWhereUniqueInput | CharacterDisallowedSourceWhereUniqueInput[]
+  }
+
   export type RaceCreateNestedOneWithoutUserCharacterInput = {
     create?: XOR<RaceCreateWithoutUserCharacterInput, RaceUncheckedCreateWithoutUserCharacterInput>
     connectOrCreate?: RaceCreateOrConnectWithoutUserCharacterInput
@@ -93083,6 +94513,13 @@ export namespace Prisma {
     connectOrCreate?: CharacterSpellPreparationCreateOrConnectWithoutCharacterInput | CharacterSpellPreparationCreateOrConnectWithoutCharacterInput[]
     createMany?: CharacterSpellPreparationCreateManyCharacterInputEnvelope
     connect?: CharacterSpellPreparationWhereUniqueInput | CharacterSpellPreparationWhereUniqueInput[]
+  }
+
+  export type CharacterDisallowedSourceUncheckedCreateNestedManyWithoutCharacterInput = {
+    create?: XOR<CharacterDisallowedSourceCreateWithoutCharacterInput, CharacterDisallowedSourceUncheckedCreateWithoutCharacterInput> | CharacterDisallowedSourceCreateWithoutCharacterInput[] | CharacterDisallowedSourceUncheckedCreateWithoutCharacterInput[]
+    connectOrCreate?: CharacterDisallowedSourceCreateOrConnectWithoutCharacterInput | CharacterDisallowedSourceCreateOrConnectWithoutCharacterInput[]
+    createMany?: CharacterDisallowedSourceCreateManyCharacterInputEnvelope
+    connect?: CharacterDisallowedSourceWhereUniqueInput | CharacterDisallowedSourceWhereUniqueInput[]
   }
 
   export type UserCharacterAbilityScoreUpdateManyWithoutCharacterNestedInput = {
@@ -93139,6 +94576,20 @@ export namespace Prisma {
     update?: CharacterSpellPreparationUpdateWithWhereUniqueWithoutCharacterInput | CharacterSpellPreparationUpdateWithWhereUniqueWithoutCharacterInput[]
     updateMany?: CharacterSpellPreparationUpdateManyWithWhereWithoutCharacterInput | CharacterSpellPreparationUpdateManyWithWhereWithoutCharacterInput[]
     deleteMany?: CharacterSpellPreparationScalarWhereInput | CharacterSpellPreparationScalarWhereInput[]
+  }
+
+  export type CharacterDisallowedSourceUpdateManyWithoutCharacterNestedInput = {
+    create?: XOR<CharacterDisallowedSourceCreateWithoutCharacterInput, CharacterDisallowedSourceUncheckedCreateWithoutCharacterInput> | CharacterDisallowedSourceCreateWithoutCharacterInput[] | CharacterDisallowedSourceUncheckedCreateWithoutCharacterInput[]
+    connectOrCreate?: CharacterDisallowedSourceCreateOrConnectWithoutCharacterInput | CharacterDisallowedSourceCreateOrConnectWithoutCharacterInput[]
+    upsert?: CharacterDisallowedSourceUpsertWithWhereUniqueWithoutCharacterInput | CharacterDisallowedSourceUpsertWithWhereUniqueWithoutCharacterInput[]
+    createMany?: CharacterDisallowedSourceCreateManyCharacterInputEnvelope
+    set?: CharacterDisallowedSourceWhereUniqueInput | CharacterDisallowedSourceWhereUniqueInput[]
+    disconnect?: CharacterDisallowedSourceWhereUniqueInput | CharacterDisallowedSourceWhereUniqueInput[]
+    delete?: CharacterDisallowedSourceWhereUniqueInput | CharacterDisallowedSourceWhereUniqueInput[]
+    connect?: CharacterDisallowedSourceWhereUniqueInput | CharacterDisallowedSourceWhereUniqueInput[]
+    update?: CharacterDisallowedSourceUpdateWithWhereUniqueWithoutCharacterInput | CharacterDisallowedSourceUpdateWithWhereUniqueWithoutCharacterInput[]
+    updateMany?: CharacterDisallowedSourceUpdateManyWithWhereWithoutCharacterInput | CharacterDisallowedSourceUpdateManyWithWhereWithoutCharacterInput[]
+    deleteMany?: CharacterDisallowedSourceScalarWhereInput | CharacterDisallowedSourceScalarWhereInput[]
   }
 
   export type RaceUpdateOneRequiredWithoutUserCharacterNestedInput = {
@@ -93221,6 +94672,20 @@ export namespace Prisma {
     update?: CharacterSpellPreparationUpdateWithWhereUniqueWithoutCharacterInput | CharacterSpellPreparationUpdateWithWhereUniqueWithoutCharacterInput[]
     updateMany?: CharacterSpellPreparationUpdateManyWithWhereWithoutCharacterInput | CharacterSpellPreparationUpdateManyWithWhereWithoutCharacterInput[]
     deleteMany?: CharacterSpellPreparationScalarWhereInput | CharacterSpellPreparationScalarWhereInput[]
+  }
+
+  export type CharacterDisallowedSourceUncheckedUpdateManyWithoutCharacterNestedInput = {
+    create?: XOR<CharacterDisallowedSourceCreateWithoutCharacterInput, CharacterDisallowedSourceUncheckedCreateWithoutCharacterInput> | CharacterDisallowedSourceCreateWithoutCharacterInput[] | CharacterDisallowedSourceUncheckedCreateWithoutCharacterInput[]
+    connectOrCreate?: CharacterDisallowedSourceCreateOrConnectWithoutCharacterInput | CharacterDisallowedSourceCreateOrConnectWithoutCharacterInput[]
+    upsert?: CharacterDisallowedSourceUpsertWithWhereUniqueWithoutCharacterInput | CharacterDisallowedSourceUpsertWithWhereUniqueWithoutCharacterInput[]
+    createMany?: CharacterDisallowedSourceCreateManyCharacterInputEnvelope
+    set?: CharacterDisallowedSourceWhereUniqueInput | CharacterDisallowedSourceWhereUniqueInput[]
+    disconnect?: CharacterDisallowedSourceWhereUniqueInput | CharacterDisallowedSourceWhereUniqueInput[]
+    delete?: CharacterDisallowedSourceWhereUniqueInput | CharacterDisallowedSourceWhereUniqueInput[]
+    connect?: CharacterDisallowedSourceWhereUniqueInput | CharacterDisallowedSourceWhereUniqueInput[]
+    update?: CharacterDisallowedSourceUpdateWithWhereUniqueWithoutCharacterInput | CharacterDisallowedSourceUpdateWithWhereUniqueWithoutCharacterInput[]
+    updateMany?: CharacterDisallowedSourceUpdateManyWithWhereWithoutCharacterInput | CharacterDisallowedSourceUpdateManyWithWhereWithoutCharacterInput[]
+    deleteMany?: CharacterDisallowedSourceScalarWhereInput | CharacterDisallowedSourceScalarWhereInput[]
   }
 
   export type UserCharacterCreateNestedOneWithoutAbilityScoresInput = {
@@ -94513,6 +95978,34 @@ export namespace Prisma {
     upsert?: SourceBookUpsertWithoutDeitiesInput
     connect?: SourceBookWhereUniqueInput
     update?: XOR<XOR<SourceBookUpdateToOneWithWhereWithoutDeitiesInput, SourceBookUpdateWithoutDeitiesInput>, SourceBookUncheckedUpdateWithoutDeitiesInput>
+  }
+
+  export type UserCharacterCreateNestedOneWithoutDisallowedSourcesInput = {
+    create?: XOR<UserCharacterCreateWithoutDisallowedSourcesInput, UserCharacterUncheckedCreateWithoutDisallowedSourcesInput>
+    connectOrCreate?: UserCharacterCreateOrConnectWithoutDisallowedSourcesInput
+    connect?: UserCharacterWhereUniqueInput
+  }
+
+  export type SourceBookCreateNestedOneWithoutCharacterDisallowedSourcesInput = {
+    create?: XOR<SourceBookCreateWithoutCharacterDisallowedSourcesInput, SourceBookUncheckedCreateWithoutCharacterDisallowedSourcesInput>
+    connectOrCreate?: SourceBookCreateOrConnectWithoutCharacterDisallowedSourcesInput
+    connect?: SourceBookWhereUniqueInput
+  }
+
+  export type UserCharacterUpdateOneRequiredWithoutDisallowedSourcesNestedInput = {
+    create?: XOR<UserCharacterCreateWithoutDisallowedSourcesInput, UserCharacterUncheckedCreateWithoutDisallowedSourcesInput>
+    connectOrCreate?: UserCharacterCreateOrConnectWithoutDisallowedSourcesInput
+    upsert?: UserCharacterUpsertWithoutDisallowedSourcesInput
+    connect?: UserCharacterWhereUniqueInput
+    update?: XOR<XOR<UserCharacterUpdateToOneWithWhereWithoutDisallowedSourcesInput, UserCharacterUpdateWithoutDisallowedSourcesInput>, UserCharacterUncheckedUpdateWithoutDisallowedSourcesInput>
+  }
+
+  export type SourceBookUpdateOneRequiredWithoutCharacterDisallowedSourcesNestedInput = {
+    create?: XOR<SourceBookCreateWithoutCharacterDisallowedSourcesInput, SourceBookUncheckedCreateWithoutCharacterDisallowedSourcesInput>
+    connectOrCreate?: SourceBookCreateOrConnectWithoutCharacterDisallowedSourcesInput
+    upsert?: SourceBookUpsertWithoutCharacterDisallowedSourcesInput
+    connect?: SourceBookWhereUniqueInput
+    update?: XOR<XOR<SourceBookUpdateToOneWithWhereWithoutCharacterDisallowedSourcesInput, SourceBookUpdateWithoutCharacterDisallowedSourcesInput>, SourceBookUncheckedUpdateWithoutCharacterDisallowedSourcesInput>
   }
 
   export type NestedIntFilter<$PrismaModel = never> = {
@@ -96002,6 +97495,7 @@ export namespace Prisma {
     classVariants?: ClassVariantSourceMapCreateNestedManyWithoutSourceBookInput
     domains?: DomainSourceMapCreateNestedManyWithoutSourceBookInput
     deities?: DeitySourceMapCreateNestedManyWithoutSourceBookInput
+    characterDisallowedSources?: CharacterDisallowedSourceCreateNestedManyWithoutSourceBookInput
   }
 
   export type SourceBookUncheckedCreateWithoutClassesInput = {
@@ -96017,6 +97511,7 @@ export namespace Prisma {
     classVariants?: ClassVariantSourceMapUncheckedCreateNestedManyWithoutSourceBookInput
     domains?: DomainSourceMapUncheckedCreateNestedManyWithoutSourceBookInput
     deities?: DeitySourceMapUncheckedCreateNestedManyWithoutSourceBookInput
+    characterDisallowedSources?: CharacterDisallowedSourceUncheckedCreateNestedManyWithoutSourceBookInput
   }
 
   export type SourceBookCreateOrConnectWithoutClassesInput = {
@@ -96115,6 +97610,7 @@ export namespace Prisma {
     classVariants?: ClassVariantSourceMapUpdateManyWithoutSourceBookNestedInput
     domains?: DomainSourceMapUpdateManyWithoutSourceBookNestedInput
     deities?: DeitySourceMapUpdateManyWithoutSourceBookNestedInput
+    characterDisallowedSources?: CharacterDisallowedSourceUpdateManyWithoutSourceBookNestedInput
   }
 
   export type SourceBookUncheckedUpdateWithoutClassesInput = {
@@ -96130,6 +97626,7 @@ export namespace Prisma {
     classVariants?: ClassVariantSourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
     domains?: DomainSourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
     deities?: DeitySourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
+    characterDisallowedSources?: CharacterDisallowedSourceUncheckedUpdateManyWithoutSourceBookNestedInput
   }
 
   export type SpellCreateWithoutLevelMappingInput = {
@@ -97200,6 +98697,7 @@ export namespace Prisma {
     spells?: SpellSourceMapCreateNestedManyWithoutSourceBookInput
     domains?: DomainSourceMapCreateNestedManyWithoutSourceBookInput
     deities?: DeitySourceMapCreateNestedManyWithoutSourceBookInput
+    characterDisallowedSources?: CharacterDisallowedSourceCreateNestedManyWithoutSourceBookInput
   }
 
   export type SourceBookUncheckedCreateWithoutClassVariantsInput = {
@@ -97215,6 +98713,7 @@ export namespace Prisma {
     spells?: SpellSourceMapUncheckedCreateNestedManyWithoutSourceBookInput
     domains?: DomainSourceMapUncheckedCreateNestedManyWithoutSourceBookInput
     deities?: DeitySourceMapUncheckedCreateNestedManyWithoutSourceBookInput
+    characterDisallowedSources?: CharacterDisallowedSourceUncheckedCreateNestedManyWithoutSourceBookInput
   }
 
   export type SourceBookCreateOrConnectWithoutClassVariantsInput = {
@@ -97288,6 +98787,7 @@ export namespace Prisma {
     spells?: SpellSourceMapUpdateManyWithoutSourceBookNestedInput
     domains?: DomainSourceMapUpdateManyWithoutSourceBookNestedInput
     deities?: DeitySourceMapUpdateManyWithoutSourceBookNestedInput
+    characterDisallowedSources?: CharacterDisallowedSourceUpdateManyWithoutSourceBookNestedInput
   }
 
   export type SourceBookUncheckedUpdateWithoutClassVariantsInput = {
@@ -97303,6 +98803,7 @@ export namespace Prisma {
     spells?: SpellSourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
     domains?: DomainSourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
     deities?: DeitySourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
+    characterDisallowedSources?: CharacterDisallowedSourceUncheckedUpdateManyWithoutSourceBookNestedInput
   }
 
   export type FeatureProgressionCreateWithoutFeatureInput = {
@@ -99073,6 +100574,7 @@ export namespace Prisma {
     classVariants?: ClassVariantSourceMapCreateNestedManyWithoutSourceBookInput
     domains?: DomainSourceMapCreateNestedManyWithoutSourceBookInput
     deities?: DeitySourceMapCreateNestedManyWithoutSourceBookInput
+    characterDisallowedSources?: CharacterDisallowedSourceCreateNestedManyWithoutSourceBookInput
   }
 
   export type SourceBookUncheckedCreateWithoutSpellsInput = {
@@ -99088,6 +100590,7 @@ export namespace Prisma {
     classVariants?: ClassVariantSourceMapUncheckedCreateNestedManyWithoutSourceBookInput
     domains?: DomainSourceMapUncheckedCreateNestedManyWithoutSourceBookInput
     deities?: DeitySourceMapUncheckedCreateNestedManyWithoutSourceBookInput
+    characterDisallowedSources?: CharacterDisallowedSourceUncheckedCreateNestedManyWithoutSourceBookInput
   }
 
   export type SourceBookCreateOrConnectWithoutSpellsInput = {
@@ -99184,6 +100687,7 @@ export namespace Prisma {
     classVariants?: ClassVariantSourceMapUpdateManyWithoutSourceBookNestedInput
     domains?: DomainSourceMapUpdateManyWithoutSourceBookNestedInput
     deities?: DeitySourceMapUpdateManyWithoutSourceBookNestedInput
+    characterDisallowedSources?: CharacterDisallowedSourceUpdateManyWithoutSourceBookNestedInput
   }
 
   export type SourceBookUncheckedUpdateWithoutSpellsInput = {
@@ -99199,6 +100703,7 @@ export namespace Prisma {
     classVariants?: ClassVariantSourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
     domains?: DomainSourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
     deities?: DeitySourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
+    characterDisallowedSources?: CharacterDisallowedSourceUncheckedUpdateManyWithoutSourceBookNestedInput
   }
 
   export type SpellCreateWithoutSubSchoolIdsInput = {
@@ -99879,10 +101384,15 @@ export namespace Prisma {
     hair?: string | null
     gender?: string | null
     notes?: string | null
+    editionId?: number | null
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
     abilityScores?: UserCharacterAbilityScoreCreateNestedManyWithoutCharacterInput
     characterItems?: CharacterItemCreateNestedManyWithoutCharacterInput
     advancements?: CharacterAdvancementCreateNestedManyWithoutCharacterInput
     preparedSpells?: CharacterSpellPreparationCreateNestedManyWithoutCharacterInput
+    disallowedSources?: CharacterDisallowedSourceCreateNestedManyWithoutCharacterInput
     deity?: DeityCreateNestedOneWithoutCharactersInput
     user: UserCreateNestedOneWithoutCharactersInput
   }
@@ -99901,10 +101411,15 @@ export namespace Prisma {
     hair?: string | null
     gender?: string | null
     notes?: string | null
+    editionId?: number | null
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
     abilityScores?: UserCharacterAbilityScoreUncheckedCreateNestedManyWithoutCharacterInput
     characterItems?: CharacterItemUncheckedCreateNestedManyWithoutCharacterInput
     advancements?: CharacterAdvancementUncheckedCreateNestedManyWithoutCharacterInput
     preparedSpells?: CharacterSpellPreparationUncheckedCreateNestedManyWithoutCharacterInput
+    disallowedSources?: CharacterDisallowedSourceUncheckedCreateNestedManyWithoutCharacterInput
   }
 
   export type UserCharacterCreateOrConnectWithoutRaceInput = {
@@ -100032,6 +101547,10 @@ export namespace Prisma {
     hair?: StringNullableFilter<"UserCharacter"> | string | null
     gender?: StringNullableFilter<"UserCharacter"> | string | null
     notes?: StringNullableFilter<"UserCharacter"> | string | null
+    editionId?: IntNullableFilter<"UserCharacter"> | number | null
+    allowVariantClasses?: BoolFilter<"UserCharacter"> | boolean
+    isGestalt?: BoolFilter<"UserCharacter"> | boolean
+    ignoreLevelAdjustment?: BoolFilter<"UserCharacter"> | boolean
   }
 
   export type FeatureProgressionUpsertWithWhereUniqueWithoutRaceInput = {
@@ -100121,6 +101640,7 @@ export namespace Prisma {
     classVariants?: ClassVariantSourceMapCreateNestedManyWithoutSourceBookInput
     domains?: DomainSourceMapCreateNestedManyWithoutSourceBookInput
     deities?: DeitySourceMapCreateNestedManyWithoutSourceBookInput
+    characterDisallowedSources?: CharacterDisallowedSourceCreateNestedManyWithoutSourceBookInput
   }
 
   export type SourceBookUncheckedCreateWithoutRacesInput = {
@@ -100136,6 +101656,7 @@ export namespace Prisma {
     classVariants?: ClassVariantSourceMapUncheckedCreateNestedManyWithoutSourceBookInput
     domains?: DomainSourceMapUncheckedCreateNestedManyWithoutSourceBookInput
     deities?: DeitySourceMapUncheckedCreateNestedManyWithoutSourceBookInput
+    characterDisallowedSources?: CharacterDisallowedSourceUncheckedCreateNestedManyWithoutSourceBookInput
   }
 
   export type SourceBookCreateOrConnectWithoutRacesInput = {
@@ -100206,6 +101727,7 @@ export namespace Prisma {
     classVariants?: ClassVariantSourceMapUpdateManyWithoutSourceBookNestedInput
     domains?: DomainSourceMapUpdateManyWithoutSourceBookNestedInput
     deities?: DeitySourceMapUpdateManyWithoutSourceBookNestedInput
+    characterDisallowedSources?: CharacterDisallowedSourceUpdateManyWithoutSourceBookNestedInput
   }
 
   export type SourceBookUncheckedUpdateWithoutRacesInput = {
@@ -100221,6 +101743,7 @@ export namespace Prisma {
     classVariants?: ClassVariantSourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
     domains?: DomainSourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
     deities?: DeitySourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
+    characterDisallowedSources?: CharacterDisallowedSourceUncheckedUpdateManyWithoutSourceBookNestedInput
   }
 
   export type ArmorCreateWithoutItemInput = {
@@ -101410,9 +102933,14 @@ export namespace Prisma {
     hair?: string | null
     gender?: string | null
     notes?: string | null
+    editionId?: number | null
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
     abilityScores?: UserCharacterAbilityScoreCreateNestedManyWithoutCharacterInput
     advancements?: CharacterAdvancementCreateNestedManyWithoutCharacterInput
     preparedSpells?: CharacterSpellPreparationCreateNestedManyWithoutCharacterInput
+    disallowedSources?: CharacterDisallowedSourceCreateNestedManyWithoutCharacterInput
     race: RaceCreateNestedOneWithoutUserCharacterInput
     deity?: DeityCreateNestedOneWithoutCharactersInput
     user: UserCreateNestedOneWithoutCharactersInput
@@ -101433,9 +102961,14 @@ export namespace Prisma {
     hair?: string | null
     gender?: string | null
     notes?: string | null
+    editionId?: number | null
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
     abilityScores?: UserCharacterAbilityScoreUncheckedCreateNestedManyWithoutCharacterInput
     advancements?: CharacterAdvancementUncheckedCreateNestedManyWithoutCharacterInput
     preparedSpells?: CharacterSpellPreparationUncheckedCreateNestedManyWithoutCharacterInput
+    disallowedSources?: CharacterDisallowedSourceUncheckedCreateNestedManyWithoutCharacterInput
   }
 
   export type UserCharacterCreateOrConnectWithoutCharacterItemsInput = {
@@ -101516,9 +103049,14 @@ export namespace Prisma {
     hair?: NullableStringFieldUpdateOperationsInput | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    allowVariantClasses?: BoolFieldUpdateOperationsInput | boolean
+    isGestalt?: BoolFieldUpdateOperationsInput | boolean
+    ignoreLevelAdjustment?: BoolFieldUpdateOperationsInput | boolean
     abilityScores?: UserCharacterAbilityScoreUpdateManyWithoutCharacterNestedInput
     advancements?: CharacterAdvancementUpdateManyWithoutCharacterNestedInput
     preparedSpells?: CharacterSpellPreparationUpdateManyWithoutCharacterNestedInput
+    disallowedSources?: CharacterDisallowedSourceUpdateManyWithoutCharacterNestedInput
     race?: RaceUpdateOneRequiredWithoutUserCharacterNestedInput
     deity?: DeityUpdateOneWithoutCharactersNestedInput
     user?: UserUpdateOneRequiredWithoutCharactersNestedInput
@@ -101539,9 +103077,14 @@ export namespace Prisma {
     hair?: NullableStringFieldUpdateOperationsInput | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    allowVariantClasses?: BoolFieldUpdateOperationsInput | boolean
+    isGestalt?: BoolFieldUpdateOperationsInput | boolean
+    ignoreLevelAdjustment?: BoolFieldUpdateOperationsInput | boolean
     abilityScores?: UserCharacterAbilityScoreUncheckedUpdateManyWithoutCharacterNestedInput
     advancements?: CharacterAdvancementUncheckedUpdateManyWithoutCharacterNestedInput
     preparedSpells?: CharacterSpellPreparationUncheckedUpdateManyWithoutCharacterNestedInput
+    disallowedSources?: CharacterDisallowedSourceUncheckedUpdateManyWithoutCharacterNestedInput
   }
 
   export type ItemUpsertWithoutCharacterItemsInput = {
@@ -101842,6 +103385,25 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type CharacterDisallowedSourceCreateWithoutSourceBookInput = {
+    character: UserCharacterCreateNestedOneWithoutDisallowedSourcesInput
+  }
+
+  export type CharacterDisallowedSourceUncheckedCreateWithoutSourceBookInput = {
+    id?: number
+    characterId: number
+  }
+
+  export type CharacterDisallowedSourceCreateOrConnectWithoutSourceBookInput = {
+    where: CharacterDisallowedSourceWhereUniqueInput
+    create: XOR<CharacterDisallowedSourceCreateWithoutSourceBookInput, CharacterDisallowedSourceUncheckedCreateWithoutSourceBookInput>
+  }
+
+  export type CharacterDisallowedSourceCreateManySourceBookInputEnvelope = {
+    data: CharacterDisallowedSourceCreateManySourceBookInput | CharacterDisallowedSourceCreateManySourceBookInput[]
+    skipDuplicates?: boolean
+  }
+
   export type ClassSourceMapUpsertWithWhereUniqueWithoutSourceBookInput = {
     where: ClassSourceMapWhereUniqueInput
     update: XOR<ClassSourceMapUpdateWithoutSourceBookInput, ClassSourceMapUncheckedUpdateWithoutSourceBookInput>
@@ -101954,6 +103516,31 @@ export namespace Prisma {
     deityId?: IntFilter<"DeitySourceMap"> | number
     sourceBookId?: IntFilter<"DeitySourceMap"> | number
     pageNumber?: IntNullableFilter<"DeitySourceMap"> | number | null
+  }
+
+  export type CharacterDisallowedSourceUpsertWithWhereUniqueWithoutSourceBookInput = {
+    where: CharacterDisallowedSourceWhereUniqueInput
+    update: XOR<CharacterDisallowedSourceUpdateWithoutSourceBookInput, CharacterDisallowedSourceUncheckedUpdateWithoutSourceBookInput>
+    create: XOR<CharacterDisallowedSourceCreateWithoutSourceBookInput, CharacterDisallowedSourceUncheckedCreateWithoutSourceBookInput>
+  }
+
+  export type CharacterDisallowedSourceUpdateWithWhereUniqueWithoutSourceBookInput = {
+    where: CharacterDisallowedSourceWhereUniqueInput
+    data: XOR<CharacterDisallowedSourceUpdateWithoutSourceBookInput, CharacterDisallowedSourceUncheckedUpdateWithoutSourceBookInput>
+  }
+
+  export type CharacterDisallowedSourceUpdateManyWithWhereWithoutSourceBookInput = {
+    where: CharacterDisallowedSourceScalarWhereInput
+    data: XOR<CharacterDisallowedSourceUpdateManyMutationInput, CharacterDisallowedSourceUncheckedUpdateManyWithoutSourceBookInput>
+  }
+
+  export type CharacterDisallowedSourceScalarWhereInput = {
+    AND?: CharacterDisallowedSourceScalarWhereInput | CharacterDisallowedSourceScalarWhereInput[]
+    OR?: CharacterDisallowedSourceScalarWhereInput[]
+    NOT?: CharacterDisallowedSourceScalarWhereInput | CharacterDisallowedSourceScalarWhereInput[]
+    id?: IntFilter<"CharacterDisallowedSource"> | number
+    characterId?: IntFilter<"CharacterDisallowedSource"> | number
+    sourceBookId?: IntFilter<"CharacterDisallowedSource"> | number
   }
 
   export type ReferenceTableColumnCreateWithoutTableInput = {
@@ -102538,6 +104125,25 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type CharacterDisallowedSourceCreateWithoutCharacterInput = {
+    sourceBook: SourceBookCreateNestedOneWithoutCharacterDisallowedSourcesInput
+  }
+
+  export type CharacterDisallowedSourceUncheckedCreateWithoutCharacterInput = {
+    id?: number
+    sourceBookId: number
+  }
+
+  export type CharacterDisallowedSourceCreateOrConnectWithoutCharacterInput = {
+    where: CharacterDisallowedSourceWhereUniqueInput
+    create: XOR<CharacterDisallowedSourceCreateWithoutCharacterInput, CharacterDisallowedSourceUncheckedCreateWithoutCharacterInput>
+  }
+
+  export type CharacterDisallowedSourceCreateManyCharacterInputEnvelope = {
+    data: CharacterDisallowedSourceCreateManyCharacterInput | CharacterDisallowedSourceCreateManyCharacterInput[]
+    skipDuplicates?: boolean
+  }
+
   export type RaceCreateWithoutUserCharacterInput = {
     name: string
     editionId?: number | null
@@ -102710,6 +104316,22 @@ export namespace Prisma {
     data: XOR<CharacterSpellPreparationUpdateManyMutationInput, CharacterSpellPreparationUncheckedUpdateManyWithoutCharacterInput>
   }
 
+  export type CharacterDisallowedSourceUpsertWithWhereUniqueWithoutCharacterInput = {
+    where: CharacterDisallowedSourceWhereUniqueInput
+    update: XOR<CharacterDisallowedSourceUpdateWithoutCharacterInput, CharacterDisallowedSourceUncheckedUpdateWithoutCharacterInput>
+    create: XOR<CharacterDisallowedSourceCreateWithoutCharacterInput, CharacterDisallowedSourceUncheckedCreateWithoutCharacterInput>
+  }
+
+  export type CharacterDisallowedSourceUpdateWithWhereUniqueWithoutCharacterInput = {
+    where: CharacterDisallowedSourceWhereUniqueInput
+    data: XOR<CharacterDisallowedSourceUpdateWithoutCharacterInput, CharacterDisallowedSourceUncheckedUpdateWithoutCharacterInput>
+  }
+
+  export type CharacterDisallowedSourceUpdateManyWithWhereWithoutCharacterInput = {
+    where: CharacterDisallowedSourceScalarWhereInput
+    data: XOR<CharacterDisallowedSourceUpdateManyMutationInput, CharacterDisallowedSourceUncheckedUpdateManyWithoutCharacterInput>
+  }
+
   export type RaceUpsertWithoutUserCharacterInput = {
     update: XOR<RaceUpdateWithoutUserCharacterInput, RaceUncheckedUpdateWithoutUserCharacterInput>
     create: XOR<RaceCreateWithoutUserCharacterInput, RaceUncheckedCreateWithoutUserCharacterInput>
@@ -102837,9 +104459,14 @@ export namespace Prisma {
     hair?: string | null
     gender?: string | null
     notes?: string | null
+    editionId?: number | null
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
     characterItems?: CharacterItemCreateNestedManyWithoutCharacterInput
     advancements?: CharacterAdvancementCreateNestedManyWithoutCharacterInput
     preparedSpells?: CharacterSpellPreparationCreateNestedManyWithoutCharacterInput
+    disallowedSources?: CharacterDisallowedSourceCreateNestedManyWithoutCharacterInput
     race: RaceCreateNestedOneWithoutUserCharacterInput
     deity?: DeityCreateNestedOneWithoutCharactersInput
     user: UserCreateNestedOneWithoutCharactersInput
@@ -102860,9 +104487,14 @@ export namespace Prisma {
     hair?: string | null
     gender?: string | null
     notes?: string | null
+    editionId?: number | null
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
     characterItems?: CharacterItemUncheckedCreateNestedManyWithoutCharacterInput
     advancements?: CharacterAdvancementUncheckedCreateNestedManyWithoutCharacterInput
     preparedSpells?: CharacterSpellPreparationUncheckedCreateNestedManyWithoutCharacterInput
+    disallowedSources?: CharacterDisallowedSourceUncheckedCreateNestedManyWithoutCharacterInput
   }
 
   export type UserCharacterCreateOrConnectWithoutAbilityScoresInput = {
@@ -102892,9 +104524,14 @@ export namespace Prisma {
     hair?: NullableStringFieldUpdateOperationsInput | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    allowVariantClasses?: BoolFieldUpdateOperationsInput | boolean
+    isGestalt?: BoolFieldUpdateOperationsInput | boolean
+    ignoreLevelAdjustment?: BoolFieldUpdateOperationsInput | boolean
     characterItems?: CharacterItemUpdateManyWithoutCharacterNestedInput
     advancements?: CharacterAdvancementUpdateManyWithoutCharacterNestedInput
     preparedSpells?: CharacterSpellPreparationUpdateManyWithoutCharacterNestedInput
+    disallowedSources?: CharacterDisallowedSourceUpdateManyWithoutCharacterNestedInput
     race?: RaceUpdateOneRequiredWithoutUserCharacterNestedInput
     deity?: DeityUpdateOneWithoutCharactersNestedInput
     user?: UserUpdateOneRequiredWithoutCharactersNestedInput
@@ -102915,9 +104552,14 @@ export namespace Prisma {
     hair?: NullableStringFieldUpdateOperationsInput | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    allowVariantClasses?: BoolFieldUpdateOperationsInput | boolean
+    isGestalt?: BoolFieldUpdateOperationsInput | boolean
+    ignoreLevelAdjustment?: BoolFieldUpdateOperationsInput | boolean
     characterItems?: CharacterItemUncheckedUpdateManyWithoutCharacterNestedInput
     advancements?: CharacterAdvancementUncheckedUpdateManyWithoutCharacterNestedInput
     preparedSpells?: CharacterSpellPreparationUncheckedUpdateManyWithoutCharacterNestedInput
+    disallowedSources?: CharacterDisallowedSourceUncheckedUpdateManyWithoutCharacterNestedInput
   }
 
   export type UserCharacterCreateWithoutAdvancementsInput = {
@@ -102931,9 +104573,14 @@ export namespace Prisma {
     hair?: string | null
     gender?: string | null
     notes?: string | null
+    editionId?: number | null
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
     abilityScores?: UserCharacterAbilityScoreCreateNestedManyWithoutCharacterInput
     characterItems?: CharacterItemCreateNestedManyWithoutCharacterInput
     preparedSpells?: CharacterSpellPreparationCreateNestedManyWithoutCharacterInput
+    disallowedSources?: CharacterDisallowedSourceCreateNestedManyWithoutCharacterInput
     race: RaceCreateNestedOneWithoutUserCharacterInput
     deity?: DeityCreateNestedOneWithoutCharactersInput
     user: UserCreateNestedOneWithoutCharactersInput
@@ -102954,9 +104601,14 @@ export namespace Prisma {
     hair?: string | null
     gender?: string | null
     notes?: string | null
+    editionId?: number | null
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
     abilityScores?: UserCharacterAbilityScoreUncheckedCreateNestedManyWithoutCharacterInput
     characterItems?: CharacterItemUncheckedCreateNestedManyWithoutCharacterInput
     preparedSpells?: CharacterSpellPreparationUncheckedCreateNestedManyWithoutCharacterInput
+    disallowedSources?: CharacterDisallowedSourceUncheckedCreateNestedManyWithoutCharacterInput
   }
 
   export type UserCharacterCreateOrConnectWithoutAdvancementsInput = {
@@ -103197,9 +104849,14 @@ export namespace Prisma {
     hair?: NullableStringFieldUpdateOperationsInput | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    allowVariantClasses?: BoolFieldUpdateOperationsInput | boolean
+    isGestalt?: BoolFieldUpdateOperationsInput | boolean
+    ignoreLevelAdjustment?: BoolFieldUpdateOperationsInput | boolean
     abilityScores?: UserCharacterAbilityScoreUpdateManyWithoutCharacterNestedInput
     characterItems?: CharacterItemUpdateManyWithoutCharacterNestedInput
     preparedSpells?: CharacterSpellPreparationUpdateManyWithoutCharacterNestedInput
+    disallowedSources?: CharacterDisallowedSourceUpdateManyWithoutCharacterNestedInput
     race?: RaceUpdateOneRequiredWithoutUserCharacterNestedInput
     deity?: DeityUpdateOneWithoutCharactersNestedInput
     user?: UserUpdateOneRequiredWithoutCharactersNestedInput
@@ -103220,9 +104877,14 @@ export namespace Prisma {
     hair?: NullableStringFieldUpdateOperationsInput | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    allowVariantClasses?: BoolFieldUpdateOperationsInput | boolean
+    isGestalt?: BoolFieldUpdateOperationsInput | boolean
+    ignoreLevelAdjustment?: BoolFieldUpdateOperationsInput | boolean
     abilityScores?: UserCharacterAbilityScoreUncheckedUpdateManyWithoutCharacterNestedInput
     characterItems?: CharacterItemUncheckedUpdateManyWithoutCharacterNestedInput
     preparedSpells?: CharacterSpellPreparationUncheckedUpdateManyWithoutCharacterNestedInput
+    disallowedSources?: CharacterDisallowedSourceUncheckedUpdateManyWithoutCharacterNestedInput
   }
 
   export type ClassUpsertWithoutCharAdvancementsInput = {
@@ -104108,9 +105770,14 @@ export namespace Prisma {
     hair?: string | null
     gender?: string | null
     notes?: string | null
+    editionId?: number | null
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
     abilityScores?: UserCharacterAbilityScoreCreateNestedManyWithoutCharacterInput
     characterItems?: CharacterItemCreateNestedManyWithoutCharacterInput
     advancements?: CharacterAdvancementCreateNestedManyWithoutCharacterInput
+    disallowedSources?: CharacterDisallowedSourceCreateNestedManyWithoutCharacterInput
     race: RaceCreateNestedOneWithoutUserCharacterInput
     deity?: DeityCreateNestedOneWithoutCharactersInput
     user: UserCreateNestedOneWithoutCharactersInput
@@ -104131,9 +105798,14 @@ export namespace Prisma {
     hair?: string | null
     gender?: string | null
     notes?: string | null
+    editionId?: number | null
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
     abilityScores?: UserCharacterAbilityScoreUncheckedCreateNestedManyWithoutCharacterInput
     characterItems?: CharacterItemUncheckedCreateNestedManyWithoutCharacterInput
     advancements?: CharacterAdvancementUncheckedCreateNestedManyWithoutCharacterInput
+    disallowedSources?: CharacterDisallowedSourceUncheckedCreateNestedManyWithoutCharacterInput
   }
 
   export type UserCharacterCreateOrConnectWithoutPreparedSpellsInput = {
@@ -104327,9 +105999,14 @@ export namespace Prisma {
     hair?: NullableStringFieldUpdateOperationsInput | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    allowVariantClasses?: BoolFieldUpdateOperationsInput | boolean
+    isGestalt?: BoolFieldUpdateOperationsInput | boolean
+    ignoreLevelAdjustment?: BoolFieldUpdateOperationsInput | boolean
     abilityScores?: UserCharacterAbilityScoreUpdateManyWithoutCharacterNestedInput
     characterItems?: CharacterItemUpdateManyWithoutCharacterNestedInput
     advancements?: CharacterAdvancementUpdateManyWithoutCharacterNestedInput
+    disallowedSources?: CharacterDisallowedSourceUpdateManyWithoutCharacterNestedInput
     race?: RaceUpdateOneRequiredWithoutUserCharacterNestedInput
     deity?: DeityUpdateOneWithoutCharactersNestedInput
     user?: UserUpdateOneRequiredWithoutCharactersNestedInput
@@ -104350,9 +106027,14 @@ export namespace Prisma {
     hair?: NullableStringFieldUpdateOperationsInput | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    allowVariantClasses?: BoolFieldUpdateOperationsInput | boolean
+    isGestalt?: BoolFieldUpdateOperationsInput | boolean
+    ignoreLevelAdjustment?: BoolFieldUpdateOperationsInput | boolean
     abilityScores?: UserCharacterAbilityScoreUncheckedUpdateManyWithoutCharacterNestedInput
     characterItems?: CharacterItemUncheckedUpdateManyWithoutCharacterNestedInput
     advancements?: CharacterAdvancementUncheckedUpdateManyWithoutCharacterNestedInput
+    disallowedSources?: CharacterDisallowedSourceUncheckedUpdateManyWithoutCharacterNestedInput
   }
 
   export type ClassUpsertWithoutCharSpellPrepInput = {
@@ -104688,10 +106370,15 @@ export namespace Prisma {
     hair?: string | null
     gender?: string | null
     notes?: string | null
+    editionId?: number | null
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
     abilityScores?: UserCharacterAbilityScoreCreateNestedManyWithoutCharacterInput
     characterItems?: CharacterItemCreateNestedManyWithoutCharacterInput
     advancements?: CharacterAdvancementCreateNestedManyWithoutCharacterInput
     preparedSpells?: CharacterSpellPreparationCreateNestedManyWithoutCharacterInput
+    disallowedSources?: CharacterDisallowedSourceCreateNestedManyWithoutCharacterInput
     race: RaceCreateNestedOneWithoutUserCharacterInput
     deity?: DeityCreateNestedOneWithoutCharactersInput
   }
@@ -104710,10 +106397,15 @@ export namespace Prisma {
     hair?: string | null
     gender?: string | null
     notes?: string | null
+    editionId?: number | null
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
     abilityScores?: UserCharacterAbilityScoreUncheckedCreateNestedManyWithoutCharacterInput
     characterItems?: CharacterItemUncheckedCreateNestedManyWithoutCharacterInput
     advancements?: CharacterAdvancementUncheckedCreateNestedManyWithoutCharacterInput
     preparedSpells?: CharacterSpellPreparationUncheckedCreateNestedManyWithoutCharacterInput
+    disallowedSources?: CharacterDisallowedSourceUncheckedCreateNestedManyWithoutCharacterInput
   }
 
   export type UserCharacterCreateOrConnectWithoutUserInput = {
@@ -105465,10 +107157,15 @@ export namespace Prisma {
     hair?: string | null
     gender?: string | null
     notes?: string | null
+    editionId?: number | null
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
     abilityScores?: UserCharacterAbilityScoreCreateNestedManyWithoutCharacterInput
     characterItems?: CharacterItemCreateNestedManyWithoutCharacterInput
     advancements?: CharacterAdvancementCreateNestedManyWithoutCharacterInput
     preparedSpells?: CharacterSpellPreparationCreateNestedManyWithoutCharacterInput
+    disallowedSources?: CharacterDisallowedSourceCreateNestedManyWithoutCharacterInput
     race: RaceCreateNestedOneWithoutUserCharacterInput
     user: UserCreateNestedOneWithoutCharactersInput
   }
@@ -105487,10 +107184,15 @@ export namespace Prisma {
     hair?: string | null
     gender?: string | null
     notes?: string | null
+    editionId?: number | null
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
     abilityScores?: UserCharacterAbilityScoreUncheckedCreateNestedManyWithoutCharacterInput
     characterItems?: CharacterItemUncheckedCreateNestedManyWithoutCharacterInput
     advancements?: CharacterAdvancementUncheckedCreateNestedManyWithoutCharacterInput
     preparedSpells?: CharacterSpellPreparationUncheckedCreateNestedManyWithoutCharacterInput
+    disallowedSources?: CharacterDisallowedSourceUncheckedCreateNestedManyWithoutCharacterInput
   }
 
   export type UserCharacterCreateOrConnectWithoutDeityInput = {
@@ -106336,6 +108038,7 @@ export namespace Prisma {
     spells?: SpellSourceMapCreateNestedManyWithoutSourceBookInput
     classVariants?: ClassVariantSourceMapCreateNestedManyWithoutSourceBookInput
     deities?: DeitySourceMapCreateNestedManyWithoutSourceBookInput
+    characterDisallowedSources?: CharacterDisallowedSourceCreateNestedManyWithoutSourceBookInput
   }
 
   export type SourceBookUncheckedCreateWithoutDomainsInput = {
@@ -106351,6 +108054,7 @@ export namespace Prisma {
     spells?: SpellSourceMapUncheckedCreateNestedManyWithoutSourceBookInput
     classVariants?: ClassVariantSourceMapUncheckedCreateNestedManyWithoutSourceBookInput
     deities?: DeitySourceMapUncheckedCreateNestedManyWithoutSourceBookInput
+    characterDisallowedSources?: CharacterDisallowedSourceUncheckedCreateNestedManyWithoutSourceBookInput
   }
 
   export type SourceBookCreateOrConnectWithoutDomainsInput = {
@@ -106411,6 +108115,7 @@ export namespace Prisma {
     spells?: SpellSourceMapUpdateManyWithoutSourceBookNestedInput
     classVariants?: ClassVariantSourceMapUpdateManyWithoutSourceBookNestedInput
     deities?: DeitySourceMapUpdateManyWithoutSourceBookNestedInput
+    characterDisallowedSources?: CharacterDisallowedSourceUpdateManyWithoutSourceBookNestedInput
   }
 
   export type SourceBookUncheckedUpdateWithoutDomainsInput = {
@@ -106426,6 +108131,7 @@ export namespace Prisma {
     spells?: SpellSourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
     classVariants?: ClassVariantSourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
     deities?: DeitySourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
+    characterDisallowedSources?: CharacterDisallowedSourceUncheckedUpdateManyWithoutSourceBookNestedInput
   }
 
   export type DeityCreateWithoutSourceBookInfoInput = {
@@ -106474,6 +108180,7 @@ export namespace Prisma {
     spells?: SpellSourceMapCreateNestedManyWithoutSourceBookInput
     classVariants?: ClassVariantSourceMapCreateNestedManyWithoutSourceBookInput
     domains?: DomainSourceMapCreateNestedManyWithoutSourceBookInput
+    characterDisallowedSources?: CharacterDisallowedSourceCreateNestedManyWithoutSourceBookInput
   }
 
   export type SourceBookUncheckedCreateWithoutDeitiesInput = {
@@ -106489,6 +108196,7 @@ export namespace Prisma {
     spells?: SpellSourceMapUncheckedCreateNestedManyWithoutSourceBookInput
     classVariants?: ClassVariantSourceMapUncheckedCreateNestedManyWithoutSourceBookInput
     domains?: DomainSourceMapUncheckedCreateNestedManyWithoutSourceBookInput
+    characterDisallowedSources?: CharacterDisallowedSourceUncheckedCreateNestedManyWithoutSourceBookInput
   }
 
   export type SourceBookCreateOrConnectWithoutDeitiesInput = {
@@ -106559,6 +108267,7 @@ export namespace Prisma {
     spells?: SpellSourceMapUpdateManyWithoutSourceBookNestedInput
     classVariants?: ClassVariantSourceMapUpdateManyWithoutSourceBookNestedInput
     domains?: DomainSourceMapUpdateManyWithoutSourceBookNestedInput
+    characterDisallowedSources?: CharacterDisallowedSourceUpdateManyWithoutSourceBookNestedInput
   }
 
   export type SourceBookUncheckedUpdateWithoutDeitiesInput = {
@@ -106574,6 +108283,199 @@ export namespace Prisma {
     spells?: SpellSourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
     classVariants?: ClassVariantSourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
     domains?: DomainSourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
+    characterDisallowedSources?: CharacterDisallowedSourceUncheckedUpdateManyWithoutSourceBookNestedInput
+  }
+
+  export type UserCharacterCreateWithoutDisallowedSourcesInput = {
+    name: string
+    alignmentId: number
+    xp?: number
+    age?: number | null
+    height?: number | null
+    weight?: number | null
+    eyes?: string | null
+    hair?: string | null
+    gender?: string | null
+    notes?: string | null
+    editionId?: number | null
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
+    abilityScores?: UserCharacterAbilityScoreCreateNestedManyWithoutCharacterInput
+    characterItems?: CharacterItemCreateNestedManyWithoutCharacterInput
+    advancements?: CharacterAdvancementCreateNestedManyWithoutCharacterInput
+    preparedSpells?: CharacterSpellPreparationCreateNestedManyWithoutCharacterInput
+    race: RaceCreateNestedOneWithoutUserCharacterInput
+    deity?: DeityCreateNestedOneWithoutCharactersInput
+    user: UserCreateNestedOneWithoutCharactersInput
+  }
+
+  export type UserCharacterUncheckedCreateWithoutDisallowedSourcesInput = {
+    id?: number
+    userId: number
+    name: string
+    raceId: number
+    alignmentId: number
+    deityId?: number | null
+    xp?: number
+    age?: number | null
+    height?: number | null
+    weight?: number | null
+    eyes?: string | null
+    hair?: string | null
+    gender?: string | null
+    notes?: string | null
+    editionId?: number | null
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
+    abilityScores?: UserCharacterAbilityScoreUncheckedCreateNestedManyWithoutCharacterInput
+    characterItems?: CharacterItemUncheckedCreateNestedManyWithoutCharacterInput
+    advancements?: CharacterAdvancementUncheckedCreateNestedManyWithoutCharacterInput
+    preparedSpells?: CharacterSpellPreparationUncheckedCreateNestedManyWithoutCharacterInput
+  }
+
+  export type UserCharacterCreateOrConnectWithoutDisallowedSourcesInput = {
+    where: UserCharacterWhereUniqueInput
+    create: XOR<UserCharacterCreateWithoutDisallowedSourcesInput, UserCharacterUncheckedCreateWithoutDisallowedSourcesInput>
+  }
+
+  export type SourceBookCreateWithoutCharacterDisallowedSourcesInput = {
+    name: string
+    abbreviation: string
+    releaseDate?: Date | string | null
+    editionId?: number | null
+    description?: string | null
+    isVisible?: boolean
+    classes?: ClassSourceMapCreateNestedManyWithoutSourceBookInput
+    races?: RaceSourceMapCreateNestedManyWithoutSourceBookInput
+    spells?: SpellSourceMapCreateNestedManyWithoutSourceBookInput
+    classVariants?: ClassVariantSourceMapCreateNestedManyWithoutSourceBookInput
+    domains?: DomainSourceMapCreateNestedManyWithoutSourceBookInput
+    deities?: DeitySourceMapCreateNestedManyWithoutSourceBookInput
+  }
+
+  export type SourceBookUncheckedCreateWithoutCharacterDisallowedSourcesInput = {
+    id?: number
+    name: string
+    abbreviation: string
+    releaseDate?: Date | string | null
+    editionId?: number | null
+    description?: string | null
+    isVisible?: boolean
+    classes?: ClassSourceMapUncheckedCreateNestedManyWithoutSourceBookInput
+    races?: RaceSourceMapUncheckedCreateNestedManyWithoutSourceBookInput
+    spells?: SpellSourceMapUncheckedCreateNestedManyWithoutSourceBookInput
+    classVariants?: ClassVariantSourceMapUncheckedCreateNestedManyWithoutSourceBookInput
+    domains?: DomainSourceMapUncheckedCreateNestedManyWithoutSourceBookInput
+    deities?: DeitySourceMapUncheckedCreateNestedManyWithoutSourceBookInput
+  }
+
+  export type SourceBookCreateOrConnectWithoutCharacterDisallowedSourcesInput = {
+    where: SourceBookWhereUniqueInput
+    create: XOR<SourceBookCreateWithoutCharacterDisallowedSourcesInput, SourceBookUncheckedCreateWithoutCharacterDisallowedSourcesInput>
+  }
+
+  export type UserCharacterUpsertWithoutDisallowedSourcesInput = {
+    update: XOR<UserCharacterUpdateWithoutDisallowedSourcesInput, UserCharacterUncheckedUpdateWithoutDisallowedSourcesInput>
+    create: XOR<UserCharacterCreateWithoutDisallowedSourcesInput, UserCharacterUncheckedCreateWithoutDisallowedSourcesInput>
+    where?: UserCharacterWhereInput
+  }
+
+  export type UserCharacterUpdateToOneWithWhereWithoutDisallowedSourcesInput = {
+    where?: UserCharacterWhereInput
+    data: XOR<UserCharacterUpdateWithoutDisallowedSourcesInput, UserCharacterUncheckedUpdateWithoutDisallowedSourcesInput>
+  }
+
+  export type UserCharacterUpdateWithoutDisallowedSourcesInput = {
+    name?: StringFieldUpdateOperationsInput | string
+    alignmentId?: IntFieldUpdateOperationsInput | number
+    xp?: IntFieldUpdateOperationsInput | number
+    age?: NullableIntFieldUpdateOperationsInput | number | null
+    height?: NullableIntFieldUpdateOperationsInput | number | null
+    weight?: NullableIntFieldUpdateOperationsInput | number | null
+    eyes?: NullableStringFieldUpdateOperationsInput | string | null
+    hair?: NullableStringFieldUpdateOperationsInput | string | null
+    gender?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    allowVariantClasses?: BoolFieldUpdateOperationsInput | boolean
+    isGestalt?: BoolFieldUpdateOperationsInput | boolean
+    ignoreLevelAdjustment?: BoolFieldUpdateOperationsInput | boolean
+    abilityScores?: UserCharacterAbilityScoreUpdateManyWithoutCharacterNestedInput
+    characterItems?: CharacterItemUpdateManyWithoutCharacterNestedInput
+    advancements?: CharacterAdvancementUpdateManyWithoutCharacterNestedInput
+    preparedSpells?: CharacterSpellPreparationUpdateManyWithoutCharacterNestedInput
+    race?: RaceUpdateOneRequiredWithoutUserCharacterNestedInput
+    deity?: DeityUpdateOneWithoutCharactersNestedInput
+    user?: UserUpdateOneRequiredWithoutCharactersNestedInput
+  }
+
+  export type UserCharacterUncheckedUpdateWithoutDisallowedSourcesInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    userId?: IntFieldUpdateOperationsInput | number
+    name?: StringFieldUpdateOperationsInput | string
+    raceId?: IntFieldUpdateOperationsInput | number
+    alignmentId?: IntFieldUpdateOperationsInput | number
+    deityId?: NullableIntFieldUpdateOperationsInput | number | null
+    xp?: IntFieldUpdateOperationsInput | number
+    age?: NullableIntFieldUpdateOperationsInput | number | null
+    height?: NullableIntFieldUpdateOperationsInput | number | null
+    weight?: NullableIntFieldUpdateOperationsInput | number | null
+    eyes?: NullableStringFieldUpdateOperationsInput | string | null
+    hair?: NullableStringFieldUpdateOperationsInput | string | null
+    gender?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    allowVariantClasses?: BoolFieldUpdateOperationsInput | boolean
+    isGestalt?: BoolFieldUpdateOperationsInput | boolean
+    ignoreLevelAdjustment?: BoolFieldUpdateOperationsInput | boolean
+    abilityScores?: UserCharacterAbilityScoreUncheckedUpdateManyWithoutCharacterNestedInput
+    characterItems?: CharacterItemUncheckedUpdateManyWithoutCharacterNestedInput
+    advancements?: CharacterAdvancementUncheckedUpdateManyWithoutCharacterNestedInput
+    preparedSpells?: CharacterSpellPreparationUncheckedUpdateManyWithoutCharacterNestedInput
+  }
+
+  export type SourceBookUpsertWithoutCharacterDisallowedSourcesInput = {
+    update: XOR<SourceBookUpdateWithoutCharacterDisallowedSourcesInput, SourceBookUncheckedUpdateWithoutCharacterDisallowedSourcesInput>
+    create: XOR<SourceBookCreateWithoutCharacterDisallowedSourcesInput, SourceBookUncheckedCreateWithoutCharacterDisallowedSourcesInput>
+    where?: SourceBookWhereInput
+  }
+
+  export type SourceBookUpdateToOneWithWhereWithoutCharacterDisallowedSourcesInput = {
+    where?: SourceBookWhereInput
+    data: XOR<SourceBookUpdateWithoutCharacterDisallowedSourcesInput, SourceBookUncheckedUpdateWithoutCharacterDisallowedSourcesInput>
+  }
+
+  export type SourceBookUpdateWithoutCharacterDisallowedSourcesInput = {
+    name?: StringFieldUpdateOperationsInput | string
+    abbreviation?: StringFieldUpdateOperationsInput | string
+    releaseDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
+    classes?: ClassSourceMapUpdateManyWithoutSourceBookNestedInput
+    races?: RaceSourceMapUpdateManyWithoutSourceBookNestedInput
+    spells?: SpellSourceMapUpdateManyWithoutSourceBookNestedInput
+    classVariants?: ClassVariantSourceMapUpdateManyWithoutSourceBookNestedInput
+    domains?: DomainSourceMapUpdateManyWithoutSourceBookNestedInput
+    deities?: DeitySourceMapUpdateManyWithoutSourceBookNestedInput
+  }
+
+  export type SourceBookUncheckedUpdateWithoutCharacterDisallowedSourcesInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    name?: StringFieldUpdateOperationsInput | string
+    abbreviation?: StringFieldUpdateOperationsInput | string
+    releaseDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
+    classes?: ClassSourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
+    races?: RaceSourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
+    spells?: SpellSourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
+    classVariants?: ClassVariantSourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
+    domains?: DomainSourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
+    deities?: DeitySourceMapUncheckedUpdateManyWithoutSourceBookNestedInput
   }
 
   export type FeatureProgressionCreateManyClassInput = {
@@ -107756,6 +109658,10 @@ export namespace Prisma {
     hair?: string | null
     gender?: string | null
     notes?: string | null
+    editionId?: number | null
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
   }
 
   export type FeatureProgressionCreateManyRaceInput = {
@@ -107799,10 +109705,15 @@ export namespace Prisma {
     hair?: NullableStringFieldUpdateOperationsInput | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    allowVariantClasses?: BoolFieldUpdateOperationsInput | boolean
+    isGestalt?: BoolFieldUpdateOperationsInput | boolean
+    ignoreLevelAdjustment?: BoolFieldUpdateOperationsInput | boolean
     abilityScores?: UserCharacterAbilityScoreUpdateManyWithoutCharacterNestedInput
     characterItems?: CharacterItemUpdateManyWithoutCharacterNestedInput
     advancements?: CharacterAdvancementUpdateManyWithoutCharacterNestedInput
     preparedSpells?: CharacterSpellPreparationUpdateManyWithoutCharacterNestedInput
+    disallowedSources?: CharacterDisallowedSourceUpdateManyWithoutCharacterNestedInput
     deity?: DeityUpdateOneWithoutCharactersNestedInput
     user?: UserUpdateOneRequiredWithoutCharactersNestedInput
   }
@@ -107821,10 +109732,15 @@ export namespace Prisma {
     hair?: NullableStringFieldUpdateOperationsInput | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    allowVariantClasses?: BoolFieldUpdateOperationsInput | boolean
+    isGestalt?: BoolFieldUpdateOperationsInput | boolean
+    ignoreLevelAdjustment?: BoolFieldUpdateOperationsInput | boolean
     abilityScores?: UserCharacterAbilityScoreUncheckedUpdateManyWithoutCharacterNestedInput
     characterItems?: CharacterItemUncheckedUpdateManyWithoutCharacterNestedInput
     advancements?: CharacterAdvancementUncheckedUpdateManyWithoutCharacterNestedInput
     preparedSpells?: CharacterSpellPreparationUncheckedUpdateManyWithoutCharacterNestedInput
+    disallowedSources?: CharacterDisallowedSourceUncheckedUpdateManyWithoutCharacterNestedInput
   }
 
   export type UserCharacterUncheckedUpdateManyWithoutRaceInput = {
@@ -107841,6 +109757,10 @@ export namespace Prisma {
     hair?: NullableStringFieldUpdateOperationsInput | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    allowVariantClasses?: BoolFieldUpdateOperationsInput | boolean
+    isGestalt?: BoolFieldUpdateOperationsInput | boolean
+    ignoreLevelAdjustment?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type FeatureProgressionUpdateWithoutRaceInput = {
@@ -108171,6 +110091,11 @@ export namespace Prisma {
     pageNumber?: number | null
   }
 
+  export type CharacterDisallowedSourceCreateManySourceBookInput = {
+    id?: number
+    characterId: number
+  }
+
   export type ClassSourceMapUpdateWithoutSourceBookInput = {
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
     class?: ClassUpdateOneRequiredWithoutSourceBookInfoNestedInput
@@ -108259,6 +110184,20 @@ export namespace Prisma {
   export type DeitySourceMapUncheckedUpdateManyWithoutSourceBookInput = {
     deityId?: IntFieldUpdateOperationsInput | number
     pageNumber?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type CharacterDisallowedSourceUpdateWithoutSourceBookInput = {
+    character?: UserCharacterUpdateOneRequiredWithoutDisallowedSourcesNestedInput
+  }
+
+  export type CharacterDisallowedSourceUncheckedUpdateWithoutSourceBookInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    characterId?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type CharacterDisallowedSourceUncheckedUpdateManyWithoutSourceBookInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    characterId?: IntFieldUpdateOperationsInput | number
   }
 
   export type ReferenceTableColumnCreateManyTableInput = {
@@ -108435,6 +110374,11 @@ export namespace Prisma {
     domainId?: number | null
   }
 
+  export type CharacterDisallowedSourceCreateManyCharacterInput = {
+    id?: number
+    sourceBookId: number
+  }
+
   export type UserCharacterAbilityScoreUpdateWithoutCharacterInput = {
     abilityId?: IntFieldUpdateOperationsInput | number
     value?: IntFieldUpdateOperationsInput | number
@@ -108550,6 +110494,20 @@ export namespace Prisma {
     slotType?: IntFieldUpdateOperationsInput | number
     isDomainSpell?: BoolFieldUpdateOperationsInput | boolean
     domainId?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type CharacterDisallowedSourceUpdateWithoutCharacterInput = {
+    sourceBook?: SourceBookUpdateOneRequiredWithoutCharacterDisallowedSourcesNestedInput
+  }
+
+  export type CharacterDisallowedSourceUncheckedUpdateWithoutCharacterInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    sourceBookId?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type CharacterDisallowedSourceUncheckedUpdateManyWithoutCharacterInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    sourceBookId?: IntFieldUpdateOperationsInput | number
   }
 
   export type AdvancementSkillCreateManyAdvancementInput = {
@@ -108677,6 +110635,10 @@ export namespace Prisma {
     hair?: string | null
     gender?: string | null
     notes?: string | null
+    editionId?: number | null
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
   }
 
   export type UserDiceConfigOverrideCreateManyUserInput = {
@@ -108696,10 +110658,15 @@ export namespace Prisma {
     hair?: NullableStringFieldUpdateOperationsInput | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    allowVariantClasses?: BoolFieldUpdateOperationsInput | boolean
+    isGestalt?: BoolFieldUpdateOperationsInput | boolean
+    ignoreLevelAdjustment?: BoolFieldUpdateOperationsInput | boolean
     abilityScores?: UserCharacterAbilityScoreUpdateManyWithoutCharacterNestedInput
     characterItems?: CharacterItemUpdateManyWithoutCharacterNestedInput
     advancements?: CharacterAdvancementUpdateManyWithoutCharacterNestedInput
     preparedSpells?: CharacterSpellPreparationUpdateManyWithoutCharacterNestedInput
+    disallowedSources?: CharacterDisallowedSourceUpdateManyWithoutCharacterNestedInput
     race?: RaceUpdateOneRequiredWithoutUserCharacterNestedInput
     deity?: DeityUpdateOneWithoutCharactersNestedInput
   }
@@ -108718,10 +110685,15 @@ export namespace Prisma {
     hair?: NullableStringFieldUpdateOperationsInput | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    allowVariantClasses?: BoolFieldUpdateOperationsInput | boolean
+    isGestalt?: BoolFieldUpdateOperationsInput | boolean
+    ignoreLevelAdjustment?: BoolFieldUpdateOperationsInput | boolean
     abilityScores?: UserCharacterAbilityScoreUncheckedUpdateManyWithoutCharacterNestedInput
     characterItems?: CharacterItemUncheckedUpdateManyWithoutCharacterNestedInput
     advancements?: CharacterAdvancementUncheckedUpdateManyWithoutCharacterNestedInput
     preparedSpells?: CharacterSpellPreparationUncheckedUpdateManyWithoutCharacterNestedInput
+    disallowedSources?: CharacterDisallowedSourceUncheckedUpdateManyWithoutCharacterNestedInput
   }
 
   export type UserCharacterUncheckedUpdateManyWithoutUserInput = {
@@ -108738,6 +110710,10 @@ export namespace Prisma {
     hair?: NullableStringFieldUpdateOperationsInput | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    allowVariantClasses?: BoolFieldUpdateOperationsInput | boolean
+    isGestalt?: BoolFieldUpdateOperationsInput | boolean
+    ignoreLevelAdjustment?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type UserDiceConfigOverrideUpdateWithoutUserInput = {
@@ -108978,6 +110954,10 @@ export namespace Prisma {
     hair?: string | null
     gender?: string | null
     notes?: string | null
+    editionId?: number | null
+    allowVariantClasses?: boolean
+    isGestalt?: boolean
+    ignoreLevelAdjustment?: boolean
   }
 
   export type DeitySourceMapCreateManyDeityInput = {
@@ -109025,10 +111005,15 @@ export namespace Prisma {
     hair?: NullableStringFieldUpdateOperationsInput | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    allowVariantClasses?: BoolFieldUpdateOperationsInput | boolean
+    isGestalt?: BoolFieldUpdateOperationsInput | boolean
+    ignoreLevelAdjustment?: BoolFieldUpdateOperationsInput | boolean
     abilityScores?: UserCharacterAbilityScoreUpdateManyWithoutCharacterNestedInput
     characterItems?: CharacterItemUpdateManyWithoutCharacterNestedInput
     advancements?: CharacterAdvancementUpdateManyWithoutCharacterNestedInput
     preparedSpells?: CharacterSpellPreparationUpdateManyWithoutCharacterNestedInput
+    disallowedSources?: CharacterDisallowedSourceUpdateManyWithoutCharacterNestedInput
     race?: RaceUpdateOneRequiredWithoutUserCharacterNestedInput
     user?: UserUpdateOneRequiredWithoutCharactersNestedInput
   }
@@ -109047,10 +111032,15 @@ export namespace Prisma {
     hair?: NullableStringFieldUpdateOperationsInput | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    allowVariantClasses?: BoolFieldUpdateOperationsInput | boolean
+    isGestalt?: BoolFieldUpdateOperationsInput | boolean
+    ignoreLevelAdjustment?: BoolFieldUpdateOperationsInput | boolean
     abilityScores?: UserCharacterAbilityScoreUncheckedUpdateManyWithoutCharacterNestedInput
     characterItems?: CharacterItemUncheckedUpdateManyWithoutCharacterNestedInput
     advancements?: CharacterAdvancementUncheckedUpdateManyWithoutCharacterNestedInput
     preparedSpells?: CharacterSpellPreparationUncheckedUpdateManyWithoutCharacterNestedInput
+    disallowedSources?: CharacterDisallowedSourceUncheckedUpdateManyWithoutCharacterNestedInput
   }
 
   export type UserCharacterUncheckedUpdateManyWithoutDeityInput = {
@@ -109067,6 +111057,10 @@ export namespace Prisma {
     hair?: NullableStringFieldUpdateOperationsInput | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
+    editionId?: NullableIntFieldUpdateOperationsInput | number | null
+    allowVariantClasses?: BoolFieldUpdateOperationsInput | boolean
+    isGestalt?: BoolFieldUpdateOperationsInput | boolean
+    ignoreLevelAdjustment?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type DeitySourceMapUpdateWithoutDeityInput = {

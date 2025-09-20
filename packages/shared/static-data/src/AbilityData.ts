@@ -1,5 +1,4 @@
 import { AbilityMap, NameToIdMap, SavingThrowMap } from './types';
-import { AbbreviationSelectOptionList } from './Util';
 
 // Ability ID enum for type safety
 export const AbilityId = {
@@ -23,7 +22,6 @@ export const ABILITY_MAP: AbilityMap = {
 }
 
 export const ABILITY_LIST = Object.values(ABILITY_MAP);
-export const ABILITY_SELECT_LIST = AbbreviationSelectOptionList(ABILITY_LIST);
 
 export const ABILITY_NAME_MAP: NameToIdMap = Object.fromEntries(
     Object.entries(ABILITY_MAP).map(([key, value]) => [value.name, parseInt(key)])
@@ -90,4 +88,3 @@ export const SAVING_THROW_MAP: SavingThrowMap = {
 }
 
 export const SAVING_THROW_LIST = Object.values(SAVING_THROW_MAP)
-export const SAVING_THROW_SELECT_LIST = AbbreviationSelectOptionList(SAVING_THROW_LIST);

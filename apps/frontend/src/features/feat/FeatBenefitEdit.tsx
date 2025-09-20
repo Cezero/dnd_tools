@@ -10,7 +10,7 @@ import {
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { FeatOptions } from '@/features/feat/FeatUtil';
 import { FeatBenefitMapSchema } from '@shared/schema';
-import { FEAT_BENEFIT_TYPE_BY_ID, FEAT_BENEFIT_TYPE_SELECT_LIST, FeatBenefitType } from '@shared/static-data';
+import { FEAT_BENEFIT_TYPE_BY_ID, FEAT_BENEFIT_TYPE_LIST, FeatBenefitType } from '@shared/static-data';
 
 type FeatBenefitFormData = z.infer<typeof FeatBenefitMapSchema>;
 
@@ -118,7 +118,7 @@ export function FeatBenefitEdit({ isOpen, onClose, onSave, initialBenefitData, f
                                         labelExtraClassName='w-32'
                                         itemTextExtraClassName='w-20'
                                         onValueChange={(value) => setFormData(prev => ({ ...prev, typeId: value as number | null }))}
-                                        options={FEAT_BENEFIT_TYPE_SELECT_LIST}
+                                        options={FEAT_BENEFIT_TYPE_LIST}
                                     />
                                 </div>
 

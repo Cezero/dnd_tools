@@ -14,6 +14,8 @@ import {
     UpdateSpellPreparationSchema,
     CreateCharacterAbilityScoreSchema,
     UpdateCharacterAbilityScoreSchema,
+    // NEW: Character disallowed source schemas
+    CreateCharacterDisallowedSourceSchema,
 } from '@shared/schema';
 
 import {
@@ -37,6 +39,10 @@ import {
     UpdateCharacterAbilityScore,
     DeleteCharacterAbilityScore,
     GetCharacterAbilityScores,
+    // NEW: Character disallowed sources controllers
+    AddDisallowedSource,
+    RemoveDisallowedSource,
+    GetDisallowedSources,
 } from './characterController';
 import { requireAuth } from '../../middleware/authMiddleware.js';
 
@@ -70,5 +76,10 @@ get('/:characterId/abilities', requireAuth, { params: CharacterIdParamSchema2 },
 post('/abilities', requireAuth, { body: CreateCharacterAbilityScoreSchema }, CreateCharacterAbilityScore);
 put('/abilities/:id', requireAuth, { params: AbilityIdParamSchema, body: UpdateCharacterAbilityScoreSchema }, UpdateCharacterAbilityScore);
 deleteRoute('/abilities/:id', requireAuth, { params: AbilityIdParamSchema }, DeleteCharacterAbilityScore);
+
+// NEW: Character Disallowed Sources Routes
+get('/:characterId/disallowed-sources', requireAuth, { params: CharacterIdParamSchema2 }, GetDisallowedSources);
+post('/disallowed-sources', requireAuth, { body: CreateCharacterDisallowedSourceSchema }, AddDisallowedSource);
+deleteRoute('/:characterId/disallowed-sources/:sourceBookId', requireAuth, { params: CharacterIdParamSchema2 }, RemoveDisallowedSource);
 
 export { CharacterRouter };

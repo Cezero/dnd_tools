@@ -2,7 +2,7 @@ import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter, createEqualsFilter } from '@/components/generic-list/filterFunctions';
 import { CharacterWithRaceResponse } from '@shared/schema';
-import { ALIGNMENT_MAP, ALIGNMENT_SELECT_LIST, FilterType } from '@shared/static-data';
+import { ALIGNMENT_MAP, ALIGNMENT_LIST, FilterType } from '@shared/static-data';
 
 export const CHARACTER_COLUMNS: ColumnDef<CharacterWithRaceResponse, unknown>[] = [
     {
@@ -50,7 +50,7 @@ export const CHARACTER_COLUMNS: ColumnDef<CharacterWithRaceResponse, unknown>[] 
         },
         meta: {
             filterType: FilterType.SINGLE_SELECT,
-            options: ALIGNMENT_SELECT_LIST,
+            options: ALIGNMENT_LIST,
         },
     },
     {

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { ValidatedCustomSelect, CustomSelect, useFormContext, SpellSearchInput } from '@/components/forms';
 import type { FeatureEntity } from '@shared/schema';
 import {
-    ENTITY_APPLIES_TO_SELECT_LIST,
+    ENTITY_APPLIES_TO_LIST,
     ENTITY_APPLIES_TO_TYPES,
     ENTITY_TYPE_COMPATIBILITY,
     FormulaId,
@@ -11,7 +11,7 @@ import {
     EntityAppliesToType,
     EntityType
 } from '@shared/static-data';
-import type { SelectOption } from '@shared/static-data';
+import type { CoreComponent } from '@shared/static-data';
 
 import type { AppliesToSelectorProps } from './types';
 import { getAppliesToSelectOptions } from './utils';
@@ -23,15 +23,15 @@ export function AppliesToSelector({
     formulaId,
     valuesRepresent
 }: AppliesToSelectorProps) {
-    const [appliesToIdOptions, setAppliesToIdOptions] = useState<SelectOption[]>([]);
+    const [appliesToIdOptions, setAppliesToIdOptions] = useState<CoreComponent[]>([]);
     const { formData, setFormData } = useFormContext();
     // Helper function to get the appropriate appliesTo options based on entityType
     const getAppliesToOptions = (entityType: EntityType | null) => {
-        if (entityType === null || entityType === undefined) return ENTITY_APPLIES_TO_SELECT_LIST;
+        if (entityType === null || entityType === undefined) return ENTITY_APPLIES_TO_LIST;
 
         const compatibleTypes = ENTITY_TYPE_COMPATIBILITY[entityType] || [];
-        return ENTITY_APPLIES_TO_SELECT_LIST.filter(option =>
-            (compatibleTypes as EntityAppliesToType[]).includes(option.value as EntityAppliesToType)
+        return ENTITY_APPLIES_TO_LIST.filter(option =>
+            (compatibleTypes as EntityAppliesToType[]).includes(option.id as EntityAppliesToType)
         );
     };
 
@@ -103,11 +103,11 @@ export function AppliesToSelector({
 
                                                 // If this is a domain selection, populate the domain object
                                                 if (appliesTo === EntityAppliesToType.Domain && value) {
-                                                    const selectedDomain = appliesToIdOptions.find(option => option.value === value);
+                                                    const selectedDomain = appliesToIdOptions.find(option => option.id === value);
                                                     if (selectedDomain) {
                                                         updatedEntity.domain = {
                                                             id: value,
-                                                            name: selectedDomain.label
+                                                            name: selectedDomain.name
                                                         };
                                                     }
                                                 }

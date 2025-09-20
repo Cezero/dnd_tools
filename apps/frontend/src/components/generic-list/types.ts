@@ -1,7 +1,7 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import type { RouteConfig } from '@/types';
-import type { SelectOption, FilterType } from '@shared/static-data';
+import type { FilterType, CoreComponent } from '@shared/static-data';
 
 // Filter value types
 export interface FilterMultiValue {
@@ -17,7 +17,7 @@ export interface FilterValue {
 
 export interface FilterConfig {
     filterType?: FilterType;
-    options?: SelectOption[] | ((columnFilters: FilterValue[]) => SelectOption[]);
+    options?: CoreComponent[] | ((columnFilters: FilterValue[]) => CoreComponent[]);
     placeholder?: string;
     required?: boolean;
     truncate?: number;
@@ -90,7 +90,7 @@ export interface GenericListProps<T> {
 export interface GenericListColumnMeta {
     required?: boolean;
     filterType?: FilterType;
-    options?: SelectOption[];
+    options?: CoreComponent[];
     placeholder?: string;
     truncate?: number; // Number of characters to truncate to
     isMarkdown?: boolean; // Whether to wrap content in ProcessMarkdown

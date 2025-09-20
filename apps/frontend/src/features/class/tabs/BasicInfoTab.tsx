@@ -9,14 +9,14 @@ import {
 import { generateClassProgression } from '@/lib/ClassProgression';
 import { ClassProgressionTable } from '@/lib/ClassProgressionTable';
 import {
-    RPG_DICE_SELECT_LIST,
-    EDITION_SELECT_LIST_FULL,
-    BAB_PROGRESSION_SELECT_LIST,
-    SAVE_PROGRESSION_SELECT_LIST,
-    EDITION_IDS,
+    RPG_DICE_LIST,
+    EDITION_LIST,
+    EditionId,
     SourceType,
+    ProgressionType,
 } from '@shared/static-data';
 
+import { BAB_PROGRESSION_LIST, SAVE_PROGRESSION_LIST } from '../ClassUtils';
 import type { ClassTabProps } from './types';
 
 export function BasicInfoTab({
@@ -71,7 +71,8 @@ export function BasicInfoTab({
                             itemTextExtraClassName="w-32"
                             value={formData.hitDie}
                             onValueChange={(value) => setFormData({ ...formData, hitDie: value as number })}
-                            options={RPG_DICE_SELECT_LIST.map(die => ({ value: die.value, label: die.label }))}
+                            options={RPG_DICE_LIST.map(die => ({ id: die.id, name: die.name }))}
+                            useAbbreviation={false}
                             placeholder="Select hit die"
                         />
                         <ValidatedInput
@@ -92,8 +93,9 @@ export function BasicInfoTab({
                             itemExtraClassName="w-32"
                             itemTextExtraClassName="w-32"
                             value={formData.babProgression}
-                            onValueChange={(value) => setFormData({ ...formData, babProgression: value })}
-                            options={BAB_PROGRESSION_SELECT_LIST}
+                            onValueChange={(value) => setFormData({ ...formData, babProgression: value as ProgressionType })}
+                            options={BAB_PROGRESSION_LIST}
+                            useAbbreviation={false}
                             placeholder="Select BAB progression"
                         />
                         <CustomSelect
@@ -104,8 +106,9 @@ export function BasicInfoTab({
                             itemExtraClassName="w-32"
                             itemTextExtraClassName="w-32"
                             value={formData.fortProgression}
-                            onValueChange={(value) => setFormData({ ...formData, fortProgression: value })}
-                            options={SAVE_PROGRESSION_SELECT_LIST}
+                            onValueChange={(value) => setFormData({ ...formData, fortProgression: value as ProgressionType })}
+                            options={SAVE_PROGRESSION_LIST}
+                            useAbbreviation={false}
                             placeholder="Select Fortitude progression"
                         />
                         <CustomSelect
@@ -116,8 +119,9 @@ export function BasicInfoTab({
                             itemExtraClassName="w-32"
                             itemTextExtraClassName="w-32"
                             value={formData.refProgression}
-                            onValueChange={(value) => setFormData({ ...formData, refProgression: value })}
-                            options={SAVE_PROGRESSION_SELECT_LIST}
+                            onValueChange={(value) => setFormData({ ...formData, refProgression: value as ProgressionType })}
+                            options={SAVE_PROGRESSION_LIST}
+                            useAbbreviation={false}
                             placeholder="Select Reflex progression"
                         />
                         <CustomSelect
@@ -128,8 +132,9 @@ export function BasicInfoTab({
                             itemExtraClassName="w-32"
                             itemTextExtraClassName="w-32"
                             value={formData.willProgression}
-                            onValueChange={(value) => setFormData({ ...formData, willProgression: value })}
-                            options={SAVE_PROGRESSION_SELECT_LIST}
+                            onValueChange={(value) => setFormData({ ...formData, willProgression: value as ProgressionType })}
+                            options={SAVE_PROGRESSION_LIST}
+                            useAbbreviation={false}
                             placeholder="Select Will progression"
                         />
                     </div>
@@ -147,7 +152,8 @@ export function BasicInfoTab({
                             itemTextExtraClassName="w-32"
                             value={formData.editionId}
                             onValueChange={(value) => setFormData({ ...formData, editionId: value as number })}
-                            options={EDITION_SELECT_LIST_FULL}
+                            options={EDITION_LIST}
+                            useAbbreviation={false}
                             placeholder="Select edition"
                         />
                         <CustomCheckbox
@@ -156,7 +162,7 @@ export function BasicInfoTab({
                             onCheckedChange={(checked) => setFormData({ ...formData, isPrestige: checked })}
                         />
                         {/* Variant Toggle - only show for new classes and 3.5E edition */}
-                        {formData.editionId === EDITION_IDS.DND_3_5E && (
+                        {formData.editionId === EditionId.DND_3_5E && (
                             <CustomCheckbox
                                 label="This is a variant class"
                                 checked={isVariant || false}

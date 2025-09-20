@@ -1,15 +1,10 @@
 import React, { useState, useEffect } from 'react';
 
 import { CustomSelect } from '@/components/forms/FormComponents';
+import { GestaltProgressionDisplay } from '@/features/character/GestaltProgressionDisplay';
 import { ClassApi } from '@/features/class/ClassApi';
 import { ClassDisplay } from '@/features/class/ClassDisplay';
 import type { DnDClass, CharacterWithAllDetailsResponse, GetAllClassesResponse } from '@shared/schema';
-import {
-    CLASS_MAP,
-    EDITION_IDS,
-    GetBaseClassesByEdition,
-    isVariantId
-} from '@shared/static-data';
 
 interface ClassTabProps {
     character: CharacterWithAllDetailsResponse;
@@ -25,23 +20,22 @@ export function ClassTab({
     onClassDetailsChange
 }: ClassTabProps): React.JSX.Element {
     const [isLoadingClass, setIsLoadingClass] = useState(false);
-    const [allowVariants, setAllowVariants] = useState(false);
     const [allClasses, setAllClasses] = useState<GetAllClassesResponse['results']>([]);
     const [isLoadingClasses, setIsLoadingClasses] = useState(false);
+    const [secondaryClassDetails, setSecondaryClassDetails] = useState<DnDClass | null>(null);
 
-    // Get the current class from the first advancement
+    // Get the current classes from the first advancement
     const currentClassId = character.advancements[0]?.classId || null;
+    const currentSecondaryClassId = character.advancements[0]?.secondaryClassId || null;
 
-    // Load all classes when variants are enabled
+    // Load classes based on variant setting
     useEffect(() => {
-        const loadAllClasses = async () => {
-            if (!allowVariants) return;
-
+        const loadClasses = async () => {
             setIsLoadingClasses(true);
             try {
                 const response = await ClassApi.getClasses({
-                    editionId: 5, // Default to 3.5e
-                    baseClassesOnly: false // Include variants
+                    editionId: character.editionId || 5, // Use character's edition or default to 3.5e
+                    baseClassesOnly: !character.allowVariantClasses // Include variants only if allowed
                 });
                 setAllClasses(response.results);
             } catch (error) {
@@ -52,140 +46,193 @@ export function ClassTab({
             }
         };
 
-        loadAllClasses();
-    }, [allowVariants]);
+        loadClasses();
+    }, [character.allowVariantClasses, character.editionId]);
 
-    const handleClassChange = async (classId: number | null) => {
+    // Load secondary class details if gestalt character has secondary class
+    useEffect(() => {
+        const loadSecondaryClass = async () => {
+            if (!character.isGestalt || !currentSecondaryClassId) {
+                setSecondaryClassDetails(null);
+                return;
+            }
+
+            try {
+                const classDetails = await ClassApi.getClassById(undefined, { id: currentSecondaryClassId });
+                setSecondaryClassDetails(classDetails);
+            } catch (error) {
+                console.error('Failed to load secondary class details:', error);
+                setSecondaryClassDetails(null);
+            }
+        };
+
+        loadSecondaryClass();
+    }, [character.isGestalt, currentSecondaryClassId]);
+
+    const handleClassChange = async (classId: number | null, isSecondary = false) => {
         if (classId === null) {
             // Clear class from advancement
+            const updateData = {
+                ...character.advancements[0],
+                featureChoices: [],
+                ...(isSecondary ? { secondaryClassId: 0 } : { classId: 0 })
+            };
+
             onUpdate({
-                advancements: [
-                    {
-                        ...character.advancements[0],
-                        classId: 0,
-                        featureChoices: []
-                    }
-                ]
+                advancements: [updateData]
             });
-            onClassDetailsChange(null);
+
+            if (isSecondary) {
+                setSecondaryClassDetails(null);
+            } else {
+                onClassDetailsChange(null);
+            }
             return;
         }
 
-        const selectedClass = CLASS_MAP[classId];
-        if (!selectedClass) return;
+        // Validate that the class ID is valid by checking if we can fetch it
+        // We'll let the API call handle the validation
 
         // Fetch class details from backend
         setIsLoadingClass(true);
         try {
             const classDetails = await ClassApi.getClassById(undefined, { id: classId });
-            onClassDetailsChange(classDetails);
+
+            if (isSecondary) {
+                setSecondaryClassDetails(classDetails);
+            } else {
+                onClassDetailsChange(classDetails);
+            }
 
             // Update the first advancement entry
+            const updateData = {
+                ...character.advancements[0],
+                featureChoices: character.advancements[0].featureChoices,
+                ...(isSecondary ? { secondaryClassId: classId } : { classId: classId })
+            };
+
             onUpdate({
-                advancements: [
-                    {
-                        ...character.advancements[0],
-                        classId: classId,
-                        // Keep existing features, they'll be populated when class features are loaded
-                        featureChoices: character.advancements[0].featureChoices
-                    }
-                ]
+                advancements: [updateData]
             });
         } catch (error) {
             console.error('Failed to fetch class details:', error);
 
             // Still update the class even if details fetch fails
+            const updateData = {
+                ...character.advancements[0],
+                featureChoices: character.advancements[0].featureChoices,
+                ...(isSecondary ? { secondaryClassId: classId } : { classId: classId })
+            };
+
             onUpdate({
-                advancements: [
-                    {
-                        ...character.advancements[0],
-                        classId: classId,
-                        featureChoices: character.advancements[0].featureChoices
-                    }
-                ]
+                advancements: [updateData]
             });
         } finally {
             setIsLoadingClass(false);
         }
     };
 
-    // Get class options based on whether variants are enabled
-    const getClassOptions = () => {
-        if (allowVariants && allClasses.length > 0) {
-            return allClasses.map(cls => ({
-                value: cls.id,
-                label: cls.name,
-                isVariant: isVariantId(cls.id)
-            }));
-        } else {
-            // Use user's preferred edition, default to edition 5 (3.5e) if not set
-            const preferredEdition = EDITION_IDS.DND_3_5E; // Default to 3.5e
-            return GetBaseClassesByEdition(preferredEdition).map(cls => ({
-                value: cls.value,
-                label: cls.label,
-                isVariant: false
-            }));
-        }
-    };
-
-    const classOptions = getClassOptions();
-
     return (
         <div className="p-4">
             {/* Class Selection */}
             <div className="bg-white dark:bg-gray-800 p-4">
-                {/* Variant Toggle */}
-                <div className="mb-4">
-                    <label className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            checked={allowVariants}
-                            onChange={(e) => setAllowVariants(e.target.checked)}
-                            className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                        />
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Allow variant classes
-                        </span>
-                    </label>
-                    {allowVariants && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            Variant classes are modifications to base classes (e.g., Cloistered Cleric)
+                {/* Gestalt Info */}
+                {character.isGestalt && (
+                    <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                        <p className="text-sm text-blue-700 dark:text-blue-300">
+                            <strong>Gestalt Mode:</strong> You can select two classes for this character. The classes will be combined.
                         </p>
+                    </div>
+                )}
+
+                <div className={character.isGestalt ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "flex items-center gap-4"}>
+                    {/* Primary Class */}
+                    <div>
+                        <CustomSelect
+                            value={currentClassId}
+                            onValueChange={(classId) => handleClassChange(classId, false)}
+                            label={character.isGestalt ? "Primary Class:" : "Class:"}
+                            labelExtraClassName="text-lg font-semibold"
+                            options={allClasses}
+                            placeholder={isLoadingClasses ? "Loading classes..." : "Select a class..."}
+                            componentExtraClassName="flex items-center gap-2"
+                            disabled={isLoadingClass || isLoadingClasses}
+                        />
+                    </div>
+
+                    {/* Secondary Class (Gestalt) */}
+                    {character.isGestalt && (
+                        <div>
+                            <CustomSelect
+                                value={currentSecondaryClassId}
+                                onValueChange={(classId) => handleClassChange(classId, true)}
+                                label="Secondary Class:"
+                                labelExtraClassName="text-lg font-semibold"
+                                options={allClasses}
+                                placeholder={isLoadingClasses ? "Loading classes..." : "Select a class..."}
+                                componentExtraClassName="flex items-center gap-2"
+                                disabled={isLoadingClass || isLoadingClasses}
+                            />
+                        </div>
+                    )}
+
+                    {/* Loading indicators */}
+                    {isLoadingClass && (
+                        <div className="col-span-full">
+                            <p className="text-sm text-blue-600 dark:text-blue-400 italic">
+                                Loading class details...
+                            </p>
+                        </div>
+                    )}
+                    {isLoadingClasses && (
+                        <div className="col-span-full">
+                            <p className="text-sm text-blue-600 dark:text-blue-400 italic">
+                                Loading classes...
+                            </p>
+                        </div>
                     )}
                 </div>
-
-                <CustomSelect
-                    value={currentClassId}
-                    onValueChange={handleClassChange}
-                    label="Class:"
-                    labelExtraClassName="text-xl font-semibold"
-                    options={classOptions.map(option => ({
-                        value: option.value,
-                        label: option.isVariant ? `${option.label} (Variant)` : option.label
-                    }))}
-                    placeholder={isLoadingClasses ? "Loading classes..." : "Select a class..."}
-                    componentExtraClassName="flex items-center gap-2"
-                    disabled={isLoadingClass || isLoadingClasses}
-                />
-                {isLoadingClass && (
-                    <p className="text-sm text-blue-600 dark:text-blue-400 italic">
-                        Loading class details...
-                    </p>
-                )}
-                {isLoadingClasses && (
-                    <p className="text-sm text-blue-600 dark:text-blue-400 italic">
-                        Loading classes...
-                    </p>
-                )}
             </div>
 
             {/* Class Details Display */}
-            {selectedClassDetails && (
-                <ClassDisplay
-                    cls={selectedClassDetails}
-                    showHeader={false}
-                    showActions={false}
-                />
+            {selectedClassDetails && !character.isGestalt && (
+                <div className="mt-6">
+                    <ClassDisplay
+                        cls={selectedClassDetails}
+                        showHeader={false}
+                        showActions={false}
+                    />
+                </div>
+            )}
+
+            {/* Gestalt Combined Progression */}
+            {character.isGestalt && selectedClassDetails && secondaryClassDetails && (
+                <div className="mt-6">
+                    <GestaltProgressionDisplay
+                        primaryClass={selectedClassDetails}
+                        secondaryClass={secondaryClassDetails}
+                        showHeader={true}
+                    />
+                </div>
+            )}
+
+            {/* Show individual class details for gestalt if only one class is selected */}
+            {character.isGestalt && selectedClassDetails && !secondaryClassDetails && (
+                <div className="mt-6">
+                    <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-md mb-4">
+                        <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                            <strong>Note:</strong> Select both primary and secondary classes to see the combined gestalt progression.
+                        </p>
+                    </div>
+                    <div className="mt-4">
+                        <h3 className="text-lg font-semibold mb-4">Primary Class Details</h3>
+                        <ClassDisplay
+                            cls={selectedClassDetails}
+                            showHeader={false}
+                            showActions={false}
+                        />
+                    </div>
+                </div>
             )}
         </div>
     );

@@ -1,17 +1,44 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { Deity } from '@shared/schema';
-import { EDITION_MAP, CLASS_MAP, GetSourceDisplay, ALIGNMENT_MAP, PANTHEON_MAP } from '@shared/static-data';
+import { Deity, ClassSummary } from '@shared/schema';
+import { EDITION_MAP, GetSourceDisplay, ALIGNMENT_MAP, PANTHEON_MAP } from '@shared/static-data';
+import { getClassById } from '../class/ClassUtils';
 
 interface DeityDisplayProps {
     deity: Deity;
     showHeader?: boolean;
-    showActions?: boolean;
 }
 
-export function DeityDisplay({ deity, showHeader = true, showActions = false }: DeityDisplayProps) {
+export function DeityDisplay({ deity, showHeader = true }: DeityDisplayProps) {
+    const [classData, setClassData] = useState<Record<number, ClassSummary>>({});
+
+    // Load class data for deity classes
+    useEffect(() => {
+        const loadClassData = async () => {
+            if (deity.classIds && deity.classIds.length > 0) {
+                const classPromises = deity.classIds.map(async (classId) => {
+                    const data = await getClassById(classId);
+                    return { classId, data };
+                });
+
+                const results = await Promise.all(classPromises);
+                const classMap: Record<number, ClassSummary> = {};
+
+                results.forEach(({ classId, data }) => {
+                    if (data) {
+                        classMap[classId] = data;
+                    }
+                });
+
+                setClassData(classMap);
+            }
+        };
+
+        loadClassData();
+    }, [deity.classIds]);
+
     return (
         <>
             <div className="space-y-1">
@@ -70,8 +97,8 @@ export function DeityDisplay({ deity, showHeader = true, showActions = false }: 
                     {deity.classIds && deity.classIds.length > 0 ? (
                         <div>
                             {deity.classIds.map((classId) => {
-                                const classData = CLASS_MAP[classId];
-                                return (classData?.name || `Class ${classId}`);
+                                const classInfo = classData[classId];
+                                return (classInfo?.name || `Class ${classId}`);
                             }).join(', ')}
                         </div>
                     ) : (

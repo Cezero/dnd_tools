@@ -1,19 +1,23 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter, createEqualsFilter, createArrayIdFilter } from '@/components/generic-list/filterFunctions';
-import { getSourceBookOptionsForClasses } from '@/utils';
 import { ClassSummary } from '@shared/schema';
 import {
-    RPG_DICE_SELECT_LIST,
-    ABILITY_SELECT_LIST,
-    EDITION_SELECT_LIST_FULL,
-    SOURCE_BOOK_WITH_CLASSES_SELECT_LIST,
+    RPG_DICE_LIST,
+    ABILITY_LIST,
+    EDITION_LIST,
     RPG_DICE,
     EDITION_MAP,
     ABILITY_MAP,
     GetSourceDisplay,
     FilterType,
-    isVariantId
+    isVariantId,
+    GetSourceBookTypeList,
+    SourceType,
+    EditionId,
+    ClassType,
+    BOOLEAN_FILTER_LIST,
+    CLASS_TYPE_LIST
 } from '@shared/static-data';
 
 export const CLASS_COLUMNS: ColumnDef<ClassSummary, unknown>[] = [
@@ -38,17 +42,24 @@ export const CLASS_COLUMNS: ColumnDef<ClassSummary, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 100,
-        filterFn: createEqualsFilter<ClassSummary>(),
+        filterFn: (row, columnId, filterValue) => {
+            const id = row.getValue(columnId) as number;
+            const isVariant = isVariantId(id);
+
+            if (filterValue === ClassType.VARIANT) {
+                return isVariant;
+            } else if (filterValue === ClassType.BASE) {
+                return !isVariant;
+            }
+            return true;
+        },
         cell: info => {
             const id = info.getValue() as number;
             return isVariantId(id) ? 'Variant' : 'Base';
         },
         meta: {
             filterType: FilterType.SINGLE_SELECT,
-            options: [
-                { value: 'variant', label: 'Variant' },
-                { value: 'base', label: 'Base' }
-            ]
+            options: CLASS_TYPE_LIST
         },
     },
     {
@@ -72,7 +83,7 @@ export const CLASS_COLUMNS: ColumnDef<ClassSummary, unknown>[] = [
         },
         meta: {
             filterType: FilterType.MULTI_SELECT,
-            options: EDITION_SELECT_LIST_FULL,
+            options: EDITION_LIST,
         },
     },
     {
@@ -82,17 +93,22 @@ export const CLASS_COLUMNS: ColumnDef<ClassSummary, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 120,
-        filterFn: createEqualsFilter<ClassSummary>(),
+        filterFn: (row, columnId, filterValue) => {
+            const isPrestige = row.getValue(columnId) as boolean;
+            if (filterValue === 1) { // TRUE
+                return isPrestige;
+            } else if (filterValue === 0) { // FALSE
+                return !isPrestige;
+            }
+            return true;
+        },
         cell: info => {
             const isPrestige = info.getValue() as boolean;
             return isPrestige ? 'Yes' : 'No';
         },
         meta: {
             filterType: FilterType.SINGLE_SELECT,
-            options: [
-                { value: true, label: 'Yes' },
-                { value: false, label: 'No' }
-            ]
+            options: BOOLEAN_FILTER_LIST
         },
     },
     {
@@ -102,17 +118,22 @@ export const CLASS_COLUMNS: ColumnDef<ClassSummary, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 100,
-        filterFn: createEqualsFilter<ClassSummary>(),
+        filterFn: (row, columnId, filterValue) => {
+            const canCastSpells = row.getValue(columnId) as boolean;
+            if (filterValue === 1) { // TRUE
+                return canCastSpells;
+            } else if (filterValue === 0) { // FALSE
+                return !canCastSpells;
+            }
+            return true;
+        },
         cell: info => {
             const canCastSpells = info.getValue() as boolean;
             return canCastSpells ? 'Yes' : 'No';
         },
         meta: {
             filterType: FilterType.SINGLE_SELECT,
-            options: [
-                { value: true, label: 'Yes' },
-                { value: false, label: 'No' }
-            ]
+            options: BOOLEAN_FILTER_LIST
         },
     },
     {
@@ -129,7 +150,7 @@ export const CLASS_COLUMNS: ColumnDef<ClassSummary, unknown>[] = [
         },
         meta: {
             filterType: FilterType.SINGLE_SELECT,
-            options: RPG_DICE_SELECT_LIST,
+            options: RPG_DICE_LIST,
         },
     },
     {
@@ -139,17 +160,22 @@ export const CLASS_COLUMNS: ColumnDef<ClassSummary, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 100,
-        filterFn: createEqualsFilter<ClassSummary>(),
+        filterFn: (row, columnId, filterValue) => {
+            const isVisible = row.getValue(columnId) as boolean;
+            if (filterValue === 1) { // TRUE
+                return isVisible;
+            } else if (filterValue === 0) { // FALSE
+                return !isVisible;
+            }
+            return true;
+        },
         cell: info => {
             const isVisible = info.getValue() as boolean;
             return isVisible ? 'Yes' : 'No';
         },
         meta: {
             filterType: FilterType.SINGLE_SELECT,
-            options: [
-                { value: true, label: 'Yes' },
-                { value: false, label: 'No' }
-            ]
+            options: BOOLEAN_FILTER_LIST
         },
     },
     {
@@ -173,7 +199,7 @@ export const CLASS_COLUMNS: ColumnDef<ClassSummary, unknown>[] = [
         },
         meta: {
             filterType: FilterType.SINGLE_SELECT,
-            options: ABILITY_SELECT_LIST,
+            options: ABILITY_LIST,
         },
     },
     {
@@ -202,8 +228,11 @@ export const CLASS_COLUMNS: ColumnDef<ClassSummary, unknown>[] = [
         },
         meta: {
             filterType: FilterType.MULTI_SELECT,
-            options: (currentFilters: Array<{ id: string; value: unknown }>) =>
-                getSourceBookOptionsForClasses(currentFilters, SOURCE_BOOK_WITH_CLASSES_SELECT_LIST),
+            options: (currentFilters: Array<{ id: string; value: unknown }>) => {
+                const editionFilter = currentFilters.find(f => f.id === 'editionId');
+                const editionId = editionFilter?.value as EditionId;
+                return GetSourceBookTypeList(SourceType.Classes, editionId);
+            },
         },
     },
 

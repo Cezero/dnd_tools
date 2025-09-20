@@ -1,12 +1,12 @@
 import { TrashIcon } from '@heroicons/react/24/outline';
 import React, { useState, useEffect } from 'react';
 
+import { CustomSelect } from '@/components/forms/FormComponents';
+import { SpellSearchInput } from '@/components/forms/SpellSearchInput';
+import { SpellApi } from '@/features/spell/SpellApi';
 import { ClassVariantSpellOverrideCreate, Spell } from '@shared/schema';
 import { SPELL_ID_LIST } from '@shared/static-data';
 
-import { SpellSearchInput } from '@/components/forms/SpellSearchInput';
-import { CustomSelect } from '@/components/forms/FormComponents';
-import { SpellApi } from '@/features/spell/SpellApi';
 import type { ClassTabProps } from './tabs/types';
 
 interface SpellOverrideTabProps extends ClassTabProps {

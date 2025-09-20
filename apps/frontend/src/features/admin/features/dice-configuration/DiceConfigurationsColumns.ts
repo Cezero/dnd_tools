@@ -3,7 +3,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { createContainsFilter, createEqualsFilter } from '@/components/generic-list/filterFunctions';
 import { formatColorWithSwatch } from '@/lib/ColorFormattersUtils';
 import { DiceBoxAdminConfig } from '@shared/schema';
-import { getDiceThemeById, FilterType, THREE_D_DICE_THEME_SELECT_LIST } from '@shared/static-data';
+import { getDiceThemeById, FilterType, THREE_D_DICE_THEME_LIST, BooleanFilter, BOOLEAN_FILTER_LIST } from '@shared/static-data';
 
 export const DICE_CONFIGURATION_COLUMNS: ColumnDef<DiceBoxAdminConfig, unknown>[] = [
     {
@@ -27,17 +27,22 @@ export const DICE_CONFIGURATION_COLUMNS: ColumnDef<DiceBoxAdminConfig, unknown>[
         enableColumnFilter: true,
         enableResizing: true,
         size: 80,
-        filterFn: createEqualsFilter<DiceBoxAdminConfig>(),
+        filterFn: (row, columnId, filterValue) => {
+            const isDefault = row.getValue(columnId) as boolean;
+            if (filterValue === BooleanFilter.TRUE) {
+                return isDefault;
+            } else if (filterValue === BooleanFilter.FALSE) {
+                return !isDefault;
+            }
+            return true;
+        },
         cell: info => {
             const isDefault = info.getValue() as boolean;
             return isDefault ? 'Yes' : 'No';
         },
         meta: {
             filterType: FilterType.SINGLE_SELECT,
-            options: [
-                { value: true, label: 'Yes' },
-                { value: false, label: 'No' }
-            ],
+            options: BOOLEAN_FILTER_LIST,
         },
     },
     {
@@ -55,7 +60,7 @@ export const DICE_CONFIGURATION_COLUMNS: ColumnDef<DiceBoxAdminConfig, unknown>[
         },
         meta: {
             filterType: FilterType.SINGLE_SELECT,
-            options: THREE_D_DICE_THEME_SELECT_LIST,
+            options: THREE_D_DICE_THEME_LIST,
         },
     },
     {

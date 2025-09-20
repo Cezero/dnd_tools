@@ -1,13 +1,15 @@
 import { ContextMenu } from '@base-ui-components/react/context-menu';
 import { CheckIcon } from '@heroicons/react/24/outline';
 import React from 'react';
+import { CoreComponent } from '@shared/static-data';
 
 interface ContextMenuMultiSelectProps {
-    options: Array<{ value: number | string; label: string }>;
+    options: CoreComponent[];
     selected: (number | string)[];
     onValueChange: (values: (number | string)[]) => void;
     logicType?: 'or' | 'and';
     onLogicChange?: (logic: 'or' | 'and') => void;
+    useAbbreviation?: boolean;
 }
 
 export const ContextMenuMultiSelect: React.FC<ContextMenuMultiSelectProps> = ({
@@ -15,7 +17,8 @@ export const ContextMenuMultiSelect: React.FC<ContextMenuMultiSelectProps> = ({
     selected,
     onValueChange,
     logicType = 'or',
-    onLogicChange
+    onLogicChange,
+    useAbbreviation = false
 }) => {
     const handleCheckedChange = (value: number | string, checked: boolean) => {
         if (checked) {
@@ -69,25 +72,28 @@ export const ContextMenuMultiSelect: React.FC<ContextMenuMultiSelectProps> = ({
             </ContextMenu.Item>
 
             {/* Options */}
-            {options.map((option) => (
-                <ContextMenu.Item
-                    key={String(option.value)}
-                    onMouseDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const isCurrentlySelected = selected.includes(option.value);
-                        handleCheckedChange(option.value, !isCurrentlySelected);
-                    }}
-                    className={`px-2 py-1 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex items-center ${selected.includes(option.value) ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-200'}`}
-                >
-                    <div className="flex items-center w-full">
-                        <div className="w-4 h-4 flex items-center justify-center">
-                            {selected.includes(option.value) && <CheckIcon className="w-4 h-4" />}
+            {options.map((option) => {
+                const displayText = useAbbreviation && option.abbreviation ? option.abbreviation : option.name;
+                return (
+                    <ContextMenu.Item
+                        key={String(option.id)}
+                        onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const isCurrentlySelected = selected.includes(option.id);
+                            handleCheckedChange(option.id, !isCurrentlySelected);
+                        }}
+                        className={`px-2 py-1 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex items-center ${selected.includes(option.id) ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-200'}`}
+                    >
+                        <div className="flex items-center w-full">
+                            <div className="w-4 h-4 flex items-center justify-center">
+                                {selected.includes(option.id) && <CheckIcon className="w-4 h-4" />}
+                            </div>
+                            <span className="ml-1">{displayText}</span>
                         </div>
-                        <span className="ml-1">{option.label}</span>
-                    </div>
-                </ContextMenu.Item>
-            ))}
+                    </ContextMenu.Item>
+                );
+            })}
         </div>
     );
 }; 

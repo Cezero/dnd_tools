@@ -158,4 +158,5 @@ wheels/
 /util/data_extracts/
 
 backup/
+prisma-client/
 

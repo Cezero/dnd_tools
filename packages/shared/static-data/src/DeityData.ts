@@ -1,5 +1,5 @@
-import { PantheonMap, SettingMap } from "./types";
-import { NameSelectOptionList } from "./Util";
+import { PantheonMap } from "./types";
+import { Setting } from "./CommonData";
 
 export const Pantheon = {
     Greyhawk: 1,
@@ -48,34 +48,6 @@ export const PANTHEON_MAP: PantheonMap = {
 }
 
 export const PANTHEON_LIST = Object.values(PANTHEON_MAP);
-export const PANTHEON_SELECT_LIST = NameSelectOptionList(PANTHEON_LIST);
-
-export const Setting = {
-    Greyhawk: 1,
-    ForgottenRealms: 2,
-    Eberron: 3,
-    Planescape: 4,
-    Ravenloft: 5,
-    Spelljammer: 6,
-    DarkSun: 7,
-    Dragonlance: 8,
-} as const;
-
-export type Setting = typeof Setting[keyof typeof Setting];
-
-export const SETTING_MAP: SettingMap = {
-    [Setting.Greyhawk]: { id: Setting.Greyhawk, name: 'Greyhawk' },
-    [Setting.ForgottenRealms]: { id: Setting.ForgottenRealms, name: 'Forgotten Realms' },
-    [Setting.Eberron]: { id: Setting.Eberron, name: 'Eberron' },
-    [Setting.Planescape]: { id: Setting.Planescape, name: 'Planescape' },
-    [Setting.Ravenloft]: { id: Setting.Ravenloft, name: 'Ravenloft' },
-    [Setting.Spelljammer]: { id: Setting.Spelljammer, name: 'Spelljammer' },
-    [Setting.DarkSun]: { id: Setting.DarkSun, name: 'Dark Sun' },
-    [Setting.Dragonlance]: { id: Setting.Dragonlance, name: 'Dragonlance' },
-}
-
-export const SETTING_LIST = Object.values(SETTING_MAP);
-export const SETTING_SELECT_LIST = NameSelectOptionList(SETTING_LIST);
 
 export const SettingPantheons = {
     [Setting.Greyhawk]: [

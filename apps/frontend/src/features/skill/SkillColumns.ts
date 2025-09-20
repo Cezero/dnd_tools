@@ -2,7 +2,7 @@ import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter, createEqualsFilter } from '@/components/generic-list/filterFunctions';
 import { Skill } from '@shared/schema';
-import { ABILITY_SELECT_LIST, ABILITY_MAP, FilterType } from '@shared/static-data';
+import { ABILITY_LIST, ABILITY_MAP, FilterType, BooleanFilter, BOOLEAN_FILTER_LIST } from '@shared/static-data';
 
 export const SKILL_COLUMNS: ColumnDef<Skill, unknown>[] = [
     {
@@ -33,7 +33,7 @@ export const SKILL_COLUMNS: ColumnDef<Skill, unknown>[] = [
         },
         meta: {
             filterType: FilterType.SINGLE_SELECT,
-            options: ABILITY_SELECT_LIST,
+            options: ABILITY_LIST,
         },
     },
     {
@@ -43,17 +43,22 @@ export const SKILL_COLUMNS: ColumnDef<Skill, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 100,
-        filterFn: createEqualsFilter<Skill>(),
+        filterFn: (row, columnId, filterValue) => {
+            const trainedOnly = row.getValue(columnId) as boolean;
+            if (filterValue === BooleanFilter.TRUE) {
+                return trainedOnly;
+            } else if (filterValue === BooleanFilter.FALSE) {
+                return !trainedOnly;
+            }
+            return true;
+        },
         cell: info => {
             const trainedOnly = info.getValue() as boolean;
             return trainedOnly ? 'Yes' : 'No';
         },
         meta: {
             filterType: FilterType.SINGLE_SELECT,
-            options: [
-                { value: true, label: 'Yes' },
-                { value: false, label: 'No' }
-            ]
+            options: BOOLEAN_FILTER_LIST,
         },
     },
     {
@@ -63,17 +68,22 @@ export const SKILL_COLUMNS: ColumnDef<Skill, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 120,
-        filterFn: createEqualsFilter<Skill>(),
+        filterFn: (row, columnId, filterValue) => {
+            const affectedByArmor = row.getValue(columnId) as boolean;
+            if (filterValue === BooleanFilter.TRUE) {
+                return affectedByArmor;
+            } else if (filterValue === BooleanFilter.FALSE) {
+                return !affectedByArmor;
+            }
+            return true;
+        },
         cell: info => {
             const affectedByArmor = info.getValue() as boolean;
             return affectedByArmor ? 'Yes' : 'No';
         },
         meta: {
             filterType: FilterType.SINGLE_SELECT,
-            options: [
-                { value: true, label: 'Yes' },
-                { value: false, label: 'No' }
-            ]
+            options: BOOLEAN_FILTER_LIST,
         },
     },
     {

@@ -4,14 +4,13 @@ import { h } from 'hastscript';
 import { extractDiceType } from '@/lib/DiceUtils';
 import { getPreRenderedTable } from '@/lib/TableResolution';
 import { MarkdownComponentProps, MarkdownProcessingOptions } from '@/plugins/types';
-import { SPELL_NAME_MAP, CLASS_NAME_MAP } from '@shared/static-data';
+import { SPELL_NAME_MAP } from '@shared/static-data';
 
 import { embedReactComponent } from './embedReactComponent';
 
 
 const entityTypes = {
     spell: SPELL_NAME_MAP,
-    class: CLASS_NAME_MAP,
 };
 
 // Individual directive processing functions
@@ -69,7 +68,6 @@ export function createTable(rawValue: string, props: MarkdownComponentProps, opt
 // Directive processor map
 export const directiveProcessors: Record<string, (rawValue: string, props: MarkdownComponentProps, options: MarkdownProcessingOptions) => ElementContent> = {
     spell: (rawValue, _props, _options) => createEntityLink('spell', rawValue),
-    class: (rawValue, _props, _options) => createEntityLink('class', rawValue),
     dice: (rawValue, _props, _options) => createDiceButton(rawValue),
     var: (rawValue, props, _options) => createVariable(rawValue, props),
     table: (rawValue, props, options) => createTable(rawValue, props, options),

@@ -1,12 +1,12 @@
-import { SelectOption } from "./types";
+import { CoreComponent } from "./types";
 
 // Page limits for pagination
-export const PAGE_LIMITS: SelectOption[] = [
-    { value: 10, label: '10' },
-    { value: 20, label: '20' },
-    { value: 40, label: '40' },
-    { value: 80, label: '80' },
-    { value: 160, label: '160' }
+export const PAGE_LIMITS: CoreComponent[] = [
+    { id: 10, name: '10' },
+    { id: 20, name: '20' },
+    { id: 40, name: '40' },
+    { id: 80, name: '80' },
+    { id: 160, name: '160' }
 ];
 
 // Filter types for generic list components

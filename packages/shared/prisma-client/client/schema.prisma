@@ -603,12 +603,13 @@ model SourceBook {
   description  String?   @db.Text
   isVisible    Boolean   @default(true)
 
-  classes       ClassSourceMap[]
-  races         RaceSourceMap[]
-  spells        SpellSourceMap[]
-  classVariants ClassVariantSourceMap[]
-  domains       DomainSourceMap[] // NEW: Domain source references
-  deities       DeitySourceMap[] // NEW: Deity source references
+  classes                    ClassSourceMap[]
+  races                      RaceSourceMap[]
+  spells                     SpellSourceMap[]
+  classVariants              ClassVariantSourceMap[]
+  domains                    DomainSourceMap[] // NEW: Domain source references
+  deities                    DeitySourceMap[] // NEW: Deity source references
+  characterDisallowedSources CharacterDisallowedSource[] // NEW: Character disallowed sources relationship
 }
 
 // =================
@@ -689,10 +690,17 @@ model UserCharacter {
   gender      String?
   notes       String? @db.Text
 
-  abilityScores  UserCharacterAbilityScore[]
-  characterItems CharacterItem[]
-  advancements   CharacterAdvancement[]
-  preparedSpells CharacterSpellPreparation[]
+  // NEW: Character configuration metadata
+  editionId             Int? // Character's edition preference
+  allowVariantClasses   Boolean @default(false) // Allow class variants
+  isGestalt             Boolean @default(false) // Gestalt multiclassing
+  ignoreLevelAdjustment Boolean @default(false) // Ignore LA for XP calculation
+
+  abilityScores     UserCharacterAbilityScore[]
+  characterItems    CharacterItem[]
+  advancements      CharacterAdvancement[]
+  preparedSpells    CharacterSpellPreparation[]
+  disallowedSources CharacterDisallowedSource[] // NEW: Disallowed sources relationship
 
   race  Race   @relation(fields: [raceId], references: [id])
   deity Deity? @relation(fields: [deityId], references: [id])
@@ -1001,4 +1009,19 @@ model DeitySourceMap {
   sourceBook SourceBook @relation(fields: [sourceBookId], references: [id])
 
   @@id([deityId, sourceBookId])
+}
+
+// =================
+// Character Disallowed Sources
+// =================
+
+model CharacterDisallowedSource {
+  id           Int @id @default(autoincrement())
+  characterId  Int
+  sourceBookId Int
+
+  character  UserCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  sourceBook SourceBook    @relation(fields: [sourceBookId], references: [id])
+
+  @@unique([characterId, sourceBookId])
 }

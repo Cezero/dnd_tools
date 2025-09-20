@@ -6,10 +6,11 @@ import { CustomNestedContextSelect, type NestedSelectOption } from '@/components
 import { renderCellValue } from '@/components/generic-list/columnUtils';
 import { ClassSkillService } from '@/features/class/ClassSkillService';
 import { SkillApi } from '@/features/skill/SkillApi';
+import { NumericIdMapping } from '@/lib/numeric-id-mapping';
 import type { GetSkillResponse, FeatureProgression } from '@shared/schema';
 import {
     SKILL_MAP,
-    SKILL_SELECT_LIST,
+    SKILL_LIST,
     ABILITY_MAP,
     SpecialFeatureId,
     EntityAppliesToType,
@@ -115,8 +116,8 @@ export function SkillsTab({
         const options: NestedSelectOption[] = [];
 
         // Get all skills that aren't fully added yet
-        const availableSkills = SKILL_SELECT_LIST.filter(skill => {
-            const skillId = skill.value;
+        const availableSkills = SKILL_LIST.filter(skill => {
+            const skillId = skill.id;
             const subtypes = getAppliesToSubIdSelectOptions(EntityAppliesToType.Skill, skillId);
 
             if (subtypes.length === 0) {
@@ -130,14 +131,14 @@ export function SkillsTab({
         });
 
         availableSkills.forEach(skill => {
-            const skillId = skill.value;
+            const skillId = skill.id;
             const subtypes = getAppliesToSubIdSelectOptions(EntityAppliesToType.Skill, skillId);
 
             if (subtypes.length === 0) {
                 // Regular skill - add directly
                 options.push({
-                    value: `skill:${skillId}`,
-                    label: skill.label
+                    id: NumericIdMapping.getSkillId(skillId),
+                    name: skill.name
                 });
             } else {
                 // Skill with subtypes - add as a nested group
@@ -147,12 +148,12 @@ export function SkillsTab({
 
                 if (availableSubtypes.length > 0) {
                     options.push({
-                        value: `group:${skillId}`,
-                        label: skill.label,
+                        id: NumericIdMapping.getGroupId(skillId),
+                        name: skill.name,
                         disabled: true, // Group header is not selectable
                         children: availableSubtypes.map(subtype => ({
-                            value: `skill:${skillId}:subtype:${subtype.value}`,
-                            label: subtype.label
+                            id: NumericIdMapping.getSubtypeId(skillId, subtype.value),
+                            name: subtype.label
                         }))
                     });
                 }
@@ -162,22 +163,19 @@ export function SkillsTab({
         return options;
     };
 
-    // Handle skill selection with custom string values
-    const handleSkillSelect = (value: string | null) => {
+    // Handle skill selection with numeric values
+    const handleSkillSelect = (value: number | null) => {
         if (!value || !setFeatureProgressions) return;
 
-        // Parse the custom value format
-        const parts = value.split(':');
-        if (parts[0] === 'skill') {
-            const skillId = parseInt(parts[1]);
-            const subtypeId = parts[3] ? parseInt(parts[3]) : null;
-
+        // Parse the numeric ID
+        const parsed = NumericIdMapping.parseId(value);
+        if (parsed && !parsed.isGroup) {
             ClassSkillService.addSkill(
                 featureProgressions,
                 setFeatureProgressions,
-                skillId,
+                parsed.skillId,
                 classId,
-                subtypeId
+                parsed.subtypeId
             );
         }
     };
@@ -191,6 +189,7 @@ export function SkillsTab({
                         value={null}
                         onValueChange={handleSkillSelect}
                         options={getNestedSkillOptions()}
+                        useAbbreviation={false}
                         placeholder="Select a skill to add"
                         componentExtraClassName="flex items-center gap-2"
                         itemExtraClassName="w-64"

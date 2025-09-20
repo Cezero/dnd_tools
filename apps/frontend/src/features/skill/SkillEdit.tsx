@@ -13,7 +13,7 @@ import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents'
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { SkillApi } from '@/features/skill/SkillApi';
 import { CreateSkillSchema, UpdateSkillSchema } from '@shared/schema';
-import { ABILITY_SELECT_LIST, SKILL_RETRY_TYPE_MAP } from '@shared/static-data';
+import { ABILITY_LIST, SKILL_RETRY_TYPE_MAP } from '@shared/static-data';
 
 
 // Type definitions for the form state
@@ -188,7 +188,7 @@ export function SkillEdit() {
                                     itemExtraClassName="w-18"
                                     itemTextExtraClassName="w-10"
                                     componentExtraClassName="w-30 flex items-center gap-2"
-                                    options={ABILITY_SELECT_LIST}
+                                    options={ABILITY_LIST}
                                     value={formData.abilityId}
                                     onValueChange={(value) => setFormData(prev => ({ ...prev, abilityId: value as number }))}
                                 />
@@ -255,7 +255,7 @@ export function SkillEdit() {
                         labelExtraClassName="w-20"
                         itemTextExtraClassName="w-15"
                         componentExtraClassName="flex items-center gap-2"
-                        options={Object.values(SKILL_RETRY_TYPE_MAP).map((type, index) => ({ value: index, label: type }))}
+                        options={Object.values(SKILL_RETRY_TYPE_MAP).map((type, index) => ({ id: index, name: type }))}
                         value={formData.retryTypeId}
                         onValueChange={(value) => setFormData(prev => ({ ...prev, retryTypeId: value as number }))}
                     />

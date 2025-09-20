@@ -1,9 +1,8 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter, createArrayIdFilter } from '@/components/generic-list/filterFunctions';
-import { getSourceBookOptionsForDomains } from '@/utils';
 import { DomainSummary } from '@shared/schema';
-import { EDITION_SELECT_LIST_FULL, SOURCE_BOOK_WITH_DOMAINS_SELECT_LIST, EDITION_MAP, GetSourceDisplay, FilterType } from '@shared/static-data';
+import { EDITION_LIST_FULL, EDITION_MAP, GetSourceDisplay, FilterType, GetSourceBookTypeList, SourceType, EditionId } from '@shared/static-data';
 
 export const DOMAIN_COLUMNS: ColumnDef<DomainSummary, unknown>[] = [
     {
@@ -34,7 +33,7 @@ export const DOMAIN_COLUMNS: ColumnDef<DomainSummary, unknown>[] = [
         },
         meta: {
             filterType: FilterType.MULTI_SELECT,
-            options: EDITION_SELECT_LIST_FULL,
+            options: EDITION_LIST_FULL,
         },
     },
     {
@@ -54,8 +53,11 @@ export const DOMAIN_COLUMNS: ColumnDef<DomainSummary, unknown>[] = [
         },
         meta: {
             filterType: FilterType.MULTI_SELECT,
-            options: (currentFilters: Array<{ id: string; value: unknown }>) =>
-                getSourceBookOptionsForDomains(currentFilters, SOURCE_BOOK_WITH_DOMAINS_SELECT_LIST),
+            options: (currentFilters: Array<{ id: string; value: unknown }>) => {
+                const editionFilter = currentFilters.find(f => f.id === 'editionId');
+                const editionId = editionFilter?.value as EditionId;
+                return GetSourceBookTypeList(SourceType.Domains, editionId);
+            },
         },
     },
 ];

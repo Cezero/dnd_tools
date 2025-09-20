@@ -2,16 +2,16 @@ import React from 'react';
 
 import { ValidatedCustomSelect, ValidatedInput } from '@/components/forms';
 import {
-    FEATURE_ENTITY_CONDITION_SELECT_LIST,
-    ATTACK_TYPE_SELECT_LIST,
-    SIZE_SELECT_LIST,
-    SPELL_SCHOOL_SELECT_LIST,
-    CREATURE_TYPE_SELECT_LIST,
-    CONDITION_SOURCE_TYPE_SELECT_LIST,
+    FEATURE_ENTITY_CONDITION_LIST,
+    ATTACK_TYPE_LIST,
+    SIZE_LIST,
+    SPELL_SCHOOL_LIST,
+    CREATURE_TYPE_LIST,
+    CONDITION_SOURCE_TYPE_LIST,
     FeatureEntityConditionType,
-    ENVIRONMENT_TYPE_SELECT_LIST,
-    MATERIAL_TYPE_SELECT_LIST,
-    TARGET_TYPE_SELECT_LIST
+    ENVIRONMENT_TYPE_LIST,
+    MATERIAL_TYPE_LIST,
+    TARGET_TYPE_LIST
 } from '@shared/static-data';
 
 import type { ConditionEditorProps } from './types';
@@ -44,7 +44,7 @@ export function ConditionEditor({
                             <ValidatedCustomSelect
                                 field={`entities.${index}.conditions.${conditionIndex}.conditionType`}
                                 label=""
-                                options={FEATURE_ENTITY_CONDITION_SELECT_LIST}
+                                options={FEATURE_ENTITY_CONDITION_LIST}
                                 placeholder="Condition type"
                                 componentExtraClassName="flex-1"
                                 nested
@@ -53,7 +53,7 @@ export function ConditionEditor({
                                 <ValidatedCustomSelect
                                     field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
                                     label=""
-                                    options={SIZE_SELECT_LIST}
+                                    options={SIZE_LIST}
                                     placeholder="Select size"
                                     componentExtraClassName="flex-1"
                                     nested
@@ -62,7 +62,7 @@ export function ConditionEditor({
                                 <ValidatedCustomSelect
                                     field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
                                     label=""
-                                    options={ATTACK_TYPE_SELECT_LIST}
+                                    options={ATTACK_TYPE_LIST}
                                     placeholder="Select attack type"
                                     componentExtraClassName="flex-1"
                                     nested
@@ -71,7 +71,7 @@ export function ConditionEditor({
                                 <ValidatedCustomSelect
                                     field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
                                     label=""
-                                    options={SPELL_SCHOOL_SELECT_LIST}
+                                    options={SPELL_SCHOOL_LIST}
                                     placeholder="Select spell school"
                                     componentExtraClassName="flex-1"
                                     nested
@@ -80,7 +80,7 @@ export function ConditionEditor({
                                 <ValidatedCustomSelect
                                     field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
                                     label=""
-                                    options={CREATURE_TYPE_SELECT_LIST}
+                                    options={CREATURE_TYPE_LIST}
                                     placeholder="Select creature type"
                                     componentExtraClassName="flex-1"
                                     nested
@@ -89,7 +89,7 @@ export function ConditionEditor({
                                 <ValidatedCustomSelect
                                     field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
                                     label=""
-                                    options={CONDITION_SOURCE_TYPE_SELECT_LIST}
+                                    options={CONDITION_SOURCE_TYPE_LIST}
                                     placeholder="Select source"
                                     componentExtraClassName="flex-1"
                                     nested
@@ -98,7 +98,7 @@ export function ConditionEditor({
                                 <ValidatedCustomSelect
                                     field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
                                     label=""
-                                    options={MATERIAL_TYPE_SELECT_LIST}
+                                    options={MATERIAL_TYPE_LIST}
                                     placeholder="Select material"
                                     componentExtraClassName="flex-1"
                                     nested
@@ -107,7 +107,7 @@ export function ConditionEditor({
                                 <ValidatedCustomSelect
                                     field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
                                     label=""
-                                    options={ENVIRONMENT_TYPE_SELECT_LIST}
+                                    options={ENVIRONMENT_TYPE_LIST}
                                     placeholder="Select environment"
                                     componentExtraClassName="flex-1"
                                     nested
@@ -116,7 +116,7 @@ export function ConditionEditor({
                                 <ValidatedCustomSelect
                                     field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
                                     label=""
-                                    options={TARGET_TYPE_SELECT_LIST}
+                                    options={TARGET_TYPE_LIST}
                                     placeholder="Select target"
                                     componentExtraClassName="flex-1"
                                     nested

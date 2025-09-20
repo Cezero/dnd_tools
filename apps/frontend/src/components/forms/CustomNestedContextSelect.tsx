@@ -1,18 +1,21 @@
 import { ContextMenu } from '@base-ui-components/react/context-menu';
 import { ChevronUpDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import React, { useState, useRef, useMemo } from 'react';
+import { CoreComponent } from '@shared/static-data';
 
-export interface NestedSelectOption {
-    value: string;
-    label: string;
-    children?: NestedSelectOption[];
+export interface NestedSelectOption<C extends CoreComponent> {
+    id: number;
+    name: string;
+    abbreviation?: string;
+    children?: NestedSelectOption<C>[];
     disabled?: boolean;
 }
 
-export interface CustomNestedContextSelectProps {
-    value: string | null;
-    onValueChange: (value: string | null) => void;
-    options: NestedSelectOption[];
+export interface CustomNestedContextSelectProps<C extends CoreComponent> {
+    value: number | null;
+    onValueChange: (value: number | null) => void;
+    options: NestedSelectOption<C>[];
+    useAbbreviation?: boolean;
     placeholder?: string;
     label?: string;
     required?: boolean;
@@ -27,10 +30,11 @@ export interface CustomNestedContextSelectProps {
     labelExtraClassName?: string;
 }
 
-export function CustomNestedContextSelect({
+export function CustomNestedContextSelect<C extends CoreComponent>({
     value,
     onValueChange,
     options,
+    useAbbreviation = false,
     placeholder = "Select an option",
     label,
     required = false,
@@ -43,7 +47,7 @@ export function CustomNestedContextSelect({
     icon = <ChevronUpDownIcon className="h-5 w-5" aria-hidden="true" />,
     displayValue,
     labelExtraClassName = ""
-}: CustomNestedContextSelectProps): React.JSX.Element {
+}: CustomNestedContextSelectProps<C>): React.JSX.Element {
     const [isOpen, setIsOpen] = useState(false);
     const triggerRef = useRef<HTMLDivElement>(null);
 
@@ -63,13 +67,13 @@ export function CustomNestedContextSelect({
         }
     };
 
-    const defaultDisplayValue = (value: string | null) => {
+    const defaultDisplayValue = (value: number | null) => {
         if (value === null || value === undefined) return placeholder;
 
         // Find the option in the nested structure
-        const findOption = (opts: NestedSelectOption[], targetValue: string): NestedSelectOption | null => {
+        const findOption = (opts: NestedSelectOption<C>[], targetValue: number): NestedSelectOption<C> | null => {
             for (const opt of opts) {
-                if (opt.value === targetValue) return opt;
+                if (opt.id === targetValue) return opt;
                 if (opt.children) {
                     const found = findOption(opt.children, targetValue);
                     if (found) return found;
@@ -79,7 +83,7 @@ export function CustomNestedContextSelect({
         };
 
         const option = findOption(options, value);
-        return option?.label || placeholder;
+        return option ? (useAbbreviation && option.abbreviation ? option.abbreviation : option.name) : placeholder;
     };
 
     const renderDisplayValue = displayValue || defaultDisplayValue;
@@ -88,23 +92,24 @@ export function CustomNestedContextSelect({
         triggerExtraClassName = "pl-2 pr-1 py-1";
     }
 
-    const handleOptionClick = React.useCallback((optionValue: string) => {
+    const handleOptionClick = React.useCallback((optionValue: number) => {
         onValueChange(optionValue);
         setIsOpen(false);
     }, [onValueChange]);
 
-    const renderNestedOptions = React.useCallback((opts: NestedSelectOption[], level = 0): React.ReactNode => {
+    const renderNestedOptions = React.useCallback((opts: NestedSelectOption<C>[], level = 0): React.ReactNode => {
         return opts.map((option) => {
+            const displayText = useAbbreviation && option.abbreviation ? option.abbreviation : option.name;
             if (option.children && option.children.length > 0) {
                 // Render as a submenu
                 return (
-                    <ContextMenu.SubmenuRoot key={option.value}>
+                    <ContextMenu.SubmenuRoot key={option.id}>
                         <ContextMenu.SubmenuTrigger className={`px-2 py-1 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex items-center focus:outline-none ${itemExtraClassName}`}>
                             <div className="flex items-center w-full">
                                 <div className="w-4 h-4 flex items-center justify-center">
                                     {/* Reserved space for icon */}
                                 </div>
-                                <span className={`ml-1 ${itemTextExtraClassName}`}>{option.label}</span>
+                                <span className={`ml-1 ${itemTextExtraClassName}`}>{displayText}</span>
                                 <ChevronRightIcon className="w-4 h-4 ml-auto" />
                             </div>
                         </ContextMenu.SubmenuTrigger>
@@ -124,11 +129,11 @@ export function CustomNestedContextSelect({
                 // Render as a regular item
                 return (
                     <ContextMenu.Item
-                        key={option.value}
+                        key={option.id}
                         onMouseDown={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            handleOptionClick(option.value);
+                            handleOptionClick(option.id);
                         }}
                         disabled={option.disabled}
                         className={`px-2 py-1 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex items-center focus:outline-none ${itemExtraClassName}`}
@@ -137,13 +142,13 @@ export function CustomNestedContextSelect({
                             <div className="w-4 h-4 flex items-center justify-center">
                                 {/* Reserved space for checkmark */}
                             </div>
-                            <span className={`ml-1 ${itemTextExtraClassName}`}>{option.label}</span>
+                            <span className={`ml-1 ${itemTextExtraClassName}`}>{displayText}</span>
                         </div>
                     </ContextMenu.Item>
                 );
             }
         });
-    }, [handleOptionClick, itemExtraClassName, itemTextExtraClassName, popupExtraClassName]);
+    }, [handleOptionClick, itemExtraClassName, itemTextExtraClassName, popupExtraClassName, useAbbreviation]);
 
     const renderedOptions = useMemo(() => {
         return renderNestedOptions(options);

@@ -6,8 +6,8 @@ import { DnDClass, ClassVariant } from '@shared/schema';
 import { isVariantId } from '@shared/static-data';
 
 import { ClassApi } from './ClassApi';
-import { VariantClassApi } from './VariantClassApi';
 import { ClassDisplay } from './ClassDisplay';
+import { VariantClassApi } from './VariantClassApi';
 
 export default function ClassDetail() {
     const { id } = useParams();

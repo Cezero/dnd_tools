@@ -22,6 +22,9 @@ import {
     CreateCharacterAbilityScoreRequest,
     UpdateCharacterAbilityScoreRequest,
     CharacterAbilityScoreResponse,
+    // NEW: Character disallowed source types
+    CreateCharacterDisallowedSourceRequest,
+    CharacterDisallowedSource,
 } from '@shared/schema';
 
 import { characterService } from './characterService';
@@ -155,4 +158,31 @@ export async function DeleteCharacterAbilityScore(req: ValidatedParamsT<AbilityI
 export async function GetCharacterAbilityScores(req: ValidatedParamsT<CharacterIdParam2Request, CharacterAbilityScoreResponse[]>, res: Response, _next: NextFunction) {
     const abilities = await characterService.getCharacterAbilityScores(req.params.characterId);
     res.json(abilities);
+}
+
+// NEW: Character disallowed sources methods
+export async function AddDisallowedSource(req: ValidatedBodyT<CreateCharacterDisallowedSourceRequest>, res: Response, _next: NextFunction) {
+    try {
+        const disallowedSource = await characterService.addDisallowedSource(req.body);
+        res.status(201).json(disallowedSource);
+    } catch (error) {
+        if (error instanceof Error) {
+            res.status(400).json({ error: error.message });
+        } else {
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+}
+
+export async function RemoveDisallowedSource(req: ValidatedParamsT<CharacterIdParam2Request>, res: Response, _next: NextFunction) {
+    const { characterId } = req.params;
+    const { sourceBookId } = req.body;
+
+    await characterService.removeDisallowedSource(characterId, sourceBookId);
+    res.json({ message: 'Disallowed source removed successfully' });
+}
+
+export async function GetDisallowedSources(req: ValidatedParamsT<CharacterIdParam2Request, CharacterDisallowedSource[]>, res: Response, _next: NextFunction) {
+    const disallowedSources = await characterService.getDisallowedSources(req.params.characterId);
+    res.json(disallowedSources);
 }

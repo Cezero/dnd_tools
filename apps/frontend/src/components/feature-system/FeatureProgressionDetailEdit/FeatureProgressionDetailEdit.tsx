@@ -4,7 +4,7 @@ import React, { useState, useCallback } from 'react';
 
 import { ValidatedInput, ValidatedForm, ValidatedCustomSelect } from '@/components/forms';
 import type { FeatureProgression, Feature, FeaturePrerequisite, FeatureEntity } from '@shared/schema';
-import { FeaturePrerequisiteType, EntityType, FEATURE_SOURCE_SELECT_LIST, ABILITY_MAP, SKILL_MAP } from '@shared/static-data';
+import { FeaturePrerequisiteType, EntityType, FEATURE_SOURCE_LIST, ABILITY_MAP, SKILL_MAP } from '@shared/static-data';
 
 // Import our refactored components and hooks
 import { EntityDetailForm } from './EntityDetailForm';
@@ -175,14 +175,16 @@ export function FeatureProgressionDetailEdit({
             let text = '';
 
             switch (prereq.type) {
-                case FeaturePrerequisiteType.SkillRanks:
+                case FeaturePrerequisiteType.SkillRanks: {
                     const skillName = prereq.appliesToId ? SKILL_MAP[prereq.appliesToId]?.name || 'Unknown Skill' : 'Skill';
                     text = `${skillName} ${prereq.minValue} ranks`;
                     break;
-                case FeaturePrerequisiteType.AbilityScore:
+                }
+                case FeaturePrerequisiteType.AbilityScore: {
                     const abilityName = prereq.appliesToId ? ABILITY_MAP[prereq.appliesToId]?.abbreviation || 'Unknown' : 'Ability';
                     text = `${abilityName} ${prereq.minValue}+`;
                     break;
+                }
                 case FeaturePrerequisiteType.CharacterLevel:
                     text = `Character Level ${prereq.minValue}+`;
                     break;
@@ -274,7 +276,7 @@ export function FeatureProgressionDetailEdit({
                                                             field="sourceType"
                                                             label="Source Type"
                                                             required
-                                                            options={FEATURE_SOURCE_SELECT_LIST}
+                                                            options={FEATURE_SOURCE_LIST}
                                                             placeholder="Select source type"
                                                             componentExtraClassName="flex items-center gap-2"
                                                         />

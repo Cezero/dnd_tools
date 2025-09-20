@@ -3,7 +3,7 @@ import React from 'react';
 
 
 import { CustomSelect } from '@/components/forms/FormComponents';
-import { LANGUAGE_SELECT_LIST } from '@shared/static-data';
+import { LANGUAGE_LIST, LANGUAGE_MAP } from '@shared/static-data';
 
 import type { RaceTabProps } from './types';
 import { LanguageService } from '../../../lib/LanguageService';
@@ -52,7 +52,7 @@ export function LanguagesTab({
                             {automaticLanguages.length === 0 && <span className="text-gray-500 dark:text-gray-400">No automatic languages added.</span>}
                             {automaticLanguages.map((lang, index) => (
                                 <span key={lang.languageId} className="group relative text-sm pt-1 pb-1 pl-0 pr-0 cursor-pointer">
-                                    {LANGUAGE_SELECT_LIST.find(l => l.value === lang.languageId)?.label || 'Unknown Language'}
+                                    {LANGUAGE_MAP[lang.languageId]?.name || 'Unknown Language'}
                                     {index < automaticLanguages.length - 1 && ','}
                                     <button
                                         type="button"
@@ -75,8 +75,8 @@ export function LanguagesTab({
                                         onAddLanguage(value as number, true);
                                     }
                                 }}
-                                options={LANGUAGE_SELECT_LIST
-                                    .filter(lang => !getLanguages().some(rl => rl.languageId === lang.value))}
+                                options={LANGUAGE_LIST
+                                    .filter(lang => !getLanguages().some(rl => rl.languageId === lang.id))}
                                 placeholder="Add"
                             />
                         </div>
@@ -89,7 +89,7 @@ export function LanguagesTab({
                             {bonusLanguages.length === 0 && <span className="text-gray-500 dark:text-gray-400">No bonus languages added.</span>}
                             {bonusLanguages.map((lang, index) => (
                                 <span key={lang.languageId} className="group relative text-sm pt-1 pb-1 pl-0 pr-0 cursor-pointer">
-                                    {LANGUAGE_SELECT_LIST.find(l => l.value === lang.languageId)?.label || 'Unknown Language'}
+                                    {LANGUAGE_MAP[lang.languageId]?.name || 'Unknown Language'}
                                     {index < bonusLanguages.length - 1 && ','}
                                     <button
                                         type="button"
@@ -112,8 +112,8 @@ export function LanguagesTab({
                                         onAddLanguage(value as number, false);
                                     }
                                 }}
-                                options={LANGUAGE_SELECT_LIST
-                                    .filter(lang => !getLanguages().some(rl => rl.languageId === lang.value))}
+                                options={LANGUAGE_LIST
+                                    .filter(lang => !getLanguages().some(rl => rl.languageId === lang.id))}
                                 placeholder="Add"
                             />
                         </div>

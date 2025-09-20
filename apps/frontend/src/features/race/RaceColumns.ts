@@ -1,19 +1,22 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter, createEqualsFilter, createArrayIdFilter } from '@/components/generic-list/filterFunctions';
-import { getSourceBookOptionsForRaces } from '@/utils';
 import { RaceSummary } from '@shared/schema';
 import {
-    EDITION_SELECT_LIST,
-    CLASS_SELECT_LIST,
-    SIZE_SELECT_LIST,
-    SOURCE_BOOK_WITH_RACES_SELECT_LIST,
+    EDITION_LIST,
+    SIZE_LIST,
     EDITION_MAP,
-    CLASS_MAP,
     SIZE_MAP,
     GetSourceDisplay,
-    FilterType
+    FilterType,
+    GetSourceBookTypeList,
+    SourceType,
+    EditionId,
+    BOOLEAN_FILTER_LIST,
+    BooleanFilter
 } from '@shared/static-data';
+
+import { getBaseClassesForEdition } from '../class/ClassUtils';
 
 export const RACE_COLUMNS: ColumnDef<RaceSummary, unknown>[] = [
     {
@@ -44,7 +47,7 @@ export const RACE_COLUMNS: ColumnDef<RaceSummary, unknown>[] = [
         },
         meta: {
             filterType: FilterType.MULTI_SELECT,
-            options: EDITION_SELECT_LIST,
+            options: EDITION_LIST,
         },
     },
     {
@@ -64,8 +67,11 @@ export const RACE_COLUMNS: ColumnDef<RaceSummary, unknown>[] = [
         },
         meta: {
             filterType: FilterType.MULTI_SELECT,
-            options: (currentFilters: Array<{ id: string; value: unknown }>) =>
-                getSourceBookOptionsForRaces(currentFilters, SOURCE_BOOK_WITH_RACES_SELECT_LIST),
+            options: (currentFilters: Array<{ id: string; value: unknown }>) => {
+                const editionFilter = currentFilters.find(f => f.id === 'editionId');
+                const editionId = editionFilter?.value as EditionId;
+                return GetSourceBookTypeList(SourceType.Races, editionId);
+            },
         },
     },
     {
@@ -75,17 +81,22 @@ export const RACE_COLUMNS: ColumnDef<RaceSummary, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 100,
-        filterFn: createEqualsFilter<RaceSummary>(),
+        filterFn: (row, columnId, filterValue) => {
+            const isVisible = row.getValue(columnId) as boolean;
+            if (filterValue === BooleanFilter.TRUE) {
+                return isVisible;
+            } else if (filterValue === BooleanFilter.FALSE) {
+                return !isVisible;
+            }
+            return true;
+        },
         cell: info => {
             const isVisible = info.getValue() as boolean;
             return isVisible ? 'Yes' : 'No';
         },
         meta: {
             filterType: FilterType.SINGLE_SELECT,
-            options: [
-                { value: true, label: 'Yes' },
-                { value: false, label: 'No' }
-            ]
+            options: BOOLEAN_FILTER_LIST
         },
     },
     {
@@ -112,7 +123,7 @@ export const RACE_COLUMNS: ColumnDef<RaceSummary, unknown>[] = [
         },
         meta: {
             filterType: FilterType.SINGLE_SELECT,
-            options: SIZE_SELECT_LIST,
+            options: SIZE_LIST,
         },
     },
     {
@@ -135,11 +146,22 @@ export const RACE_COLUMNS: ColumnDef<RaceSummary, unknown>[] = [
             if (favoredClassId === -1) {
                 return 'Any';
             }
-            return CLASS_MAP[favoredClassId]?.name || '';
+            return `Class ${favoredClassId}`;
         },
         meta: {
             filterType: FilterType.SINGLE_SELECT,
-            options: CLASS_SELECT_LIST,
+            options: async (currentFilters: Array<{ id: string; value: unknown }>) => {
+                // Get the edition from the edition filter
+                const editionFilter = currentFilters.find(f => f.id === 'editionId');
+                const editionId = editionFilter?.value as EditionId || 5; // Default to 3.5e if no filter
+
+                // Get base classes for the current edition
+                const classes = await getBaseClassesForEdition(editionId);
+                return [
+                    { id: -1, name: 'Any' },
+                    ...classes
+                ];
+            },
         },
     }
 ]; 

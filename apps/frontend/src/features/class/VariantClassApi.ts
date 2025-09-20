@@ -1,7 +1,6 @@
 import { typedApi } from '@/services/Api';
 import {
     VariantIdParamSchema,
-    ClassIdParamSchema,
     CreateClassVariantSchema,
     UpdateClassVariantSchema,
     CreateResponseSchema,

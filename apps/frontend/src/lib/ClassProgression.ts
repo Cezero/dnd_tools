@@ -1,9 +1,8 @@
+import { getBABProgression, getGoodSave, getPoorSave } from '@/features/class/ClassUtils';
 import {
-    getBABProgression,
-    getGoodSave,
-    getPoorSave,
     ProgressionType
 } from '@shared/static-data';
+
 
 export interface ProgressionRow {
     level: number;

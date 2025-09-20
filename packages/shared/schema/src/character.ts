@@ -40,6 +40,12 @@ export const BaseCharacterSchema = z.object({
     hair: z.string().max(50, 'Hair color must be less than 50 characters').nullable(),
     gender: z.string().max(20, 'Gender must be less than 20 characters').nullable(),
     notes: z.string().max(1000, 'Notes must be less than 1000 characters').nullable(),
+
+    // NEW: Character configuration fields
+    editionId: z.number().int().positive('Edition ID must be a positive integer').nullable(),
+    allowVariantClasses: z.boolean().default(false),
+    isGestalt: z.boolean().default(false),
+    ignoreLevelAdjustment: z.boolean().default(false),
 });
 
 export const CharacterSchema = BaseCharacterSchema.extend({
@@ -138,11 +144,19 @@ export const CharacterSpellPreparationWithMetamagicSchema = CharacterSpellPrepar
     metamagics: z.array(SpellPreparationMetamagicSchema),
 });
 
+// Character disallowed source schemas
+export const CharacterDisallowedSourceSchema = z.object({
+    id: z.number().int().positive('Disallowed source ID must be a positive integer'),
+    characterId: z.number().int().positive('Character ID must be a positive integer'),
+    sourceBookId: z.number().int().positive('Source book ID must be a positive integer'),
+});
+
 // Character with all related data
 export const CharacterWithAllDetailsSchema = CharacterWithRaceSchema.extend({
     abilityScores: z.array(CharacterAbilityScoreSchema),
     advancements: z.array(CharacterAdvancementWithDetailsSchema),
     preparedSpells: z.array(CharacterSpellPreparationWithMetamagicSchema),
+    disallowedSources: z.array(CharacterDisallowedSourceSchema),
 });
 
 export const GetAllCharactersResponseSchema = QueryResponseSchema.extend({
@@ -215,6 +229,10 @@ export const UpdateCharacterItemPropertySchema = CharacterItemPropertySchema.par
 
 export const UpdateCharacterAbilityScoreSchema = CreateCharacterAbilityScoreSchema.partial();
 
+// Request/response schemas for character disallowed sources
+export const CreateCharacterDisallowedSourceSchema = CharacterDisallowedSourceSchema.omit({ id: true });
+export const UpdateCharacterDisallowedSourceSchema = CreateCharacterDisallowedSourceSchema.partial();
+
 // Character context for formatter calculations
 export const CharacterContextSchema = z.object({
     abilityScores: z.record(z.enum(AbilityId), z.number().int()), // abilityId -> score
@@ -265,6 +283,11 @@ export type UpdateCharacterFeatureChoiceRequest = z.infer<typeof UpdateCharacter
 export type CreateCharacterAbilityScoreRequest = z.infer<typeof CreateCharacterAbilityScoreSchema>;
 export type UpdateCharacterAbilityScoreRequest = z.infer<typeof UpdateCharacterAbilityScoreSchema>;
 export type CharacterAbilityScoreResponse = z.infer<typeof CharacterAbilityScoreSchema>;
+
+// Character disallowed source types
+export type CharacterDisallowedSource = z.infer<typeof CharacterDisallowedSourceSchema>;
+export type CreateCharacterDisallowedSourceRequest = z.infer<typeof CreateCharacterDisallowedSourceSchema>;
+export type UpdateCharacterDisallowedSourceRequest = z.infer<typeof UpdateCharacterDisallowedSourceSchema>;
 
 // Character context type
 export type CharacterContext = z.infer<typeof CharacterContextSchema>;

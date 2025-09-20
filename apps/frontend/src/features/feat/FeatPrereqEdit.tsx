@@ -9,7 +9,7 @@ import {
 } from '@/components/forms';
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { FeatPrerequisiteMap, FeatPrerequisiteMapSchema } from '@shared/schema';
-import { ABILITY_SELECT_LIST, FEAT_PREREQUISITE_TYPE_SELECT_LIST, FeatPrerequisiteType, SelectOption, FULL_SKILL_SELECT_LIST } from '@shared/static-data';
+import { ABILITY_LIST, FEAT_PREREQUISITE_TYPE_LIST, FeatPrerequisiteType, CoreComponent, SKILL_LIST } from '@shared/static-data';
 
 import { FeatApi } from './FeatApi';
 import { PrereqOptions } from './FeatUtil';
@@ -29,8 +29,9 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
     const [message, setMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [featOptions, setFeatOptions] = useState<SelectOption[]>([]);
-    const [classFeatureOptions, setClassFeatureOptions] = useState<SelectOption[]>([]);
+    const [featOptions, setFeatOptions] = useState<CoreComponent[]>([]);
+    const [classFeatureOptions, setClassFeatureOptions] = useState<CoreComponent[]>([]);
+    const [classLevelOptions, setClassLevelOptions] = useState<CoreComponent[]>([]);
 
     // Initialize form data with default values
     const initialFormData: FeatPrerequisiteFormData = {
@@ -61,14 +62,20 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
     useEffect(() => {
         const fetchFeats = async () => {
             const response = await FeatApi.getFeats(undefined, undefined);
-            setFeatOptions(response.results.map(feat => ({ value: feat.id, label: feat.name })));
+            setFeatOptions(response.results);
         }
         const fetchClassFeatures = async () => {
             const response = await FeatureSystemApi.getFeatures(undefined, undefined);
-            setClassFeatureOptions(response.results.map(feature => ({ value: feature.id, label: feature.name || feature.slug })));
+            setClassFeatureOptions(response.results);
         }
+        const fetchClassLevelOptions = async () => {
+            const options = await PrereqOptions(FeatPrerequisiteType.CLASSLEVEL);
+            setClassLevelOptions(options);
+        };
+
         fetchFeats();
         fetchClassFeatures();
+        fetchClassLevelOptions();
         if (initialPrereqData) {
             setFormData({
                 ...initialPrereqData,
@@ -137,7 +144,7 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
                                         labelExtraClassName='w-32'
                                         itemTextExtraClassName='w-34'
                                         onValueChange={(value) => setFormData(prev => ({ ...prev, typeId: value as number | null }))}
-                                        options={FEAT_PREREQUISITE_TYPE_SELECT_LIST}
+                                        options={FEAT_PREREQUISITE_TYPE_LIST}
                                     />
                                 </div>
                                 {formData.typeId === FeatPrerequisiteType.FEAT && (
@@ -161,7 +168,7 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
                                             labelExtraClassName='w-32'
                                             itemTextExtraClassName='w-34'
                                             onValueChange={(value) => setFormData(prev => ({ ...prev, referenceId: value as number | null }))}
-                                            options={ABILITY_SELECT_LIST}
+                                            options={ABILITY_LIST}
                                         />
                                         <ValidatedInput
                                             field="amount"
@@ -185,7 +192,7 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
                                             labelExtraClassName='w-32'
                                             itemTextExtraClassName='w-34'
                                             onValueChange={(value) => setFormData(prev => ({ ...prev, referenceId: value as number | null }))}
-                                            options={FULL_SKILL_SELECT_LIST}
+                                            options={SKILL_LIST}
                                         />
                                         <ValidatedInput
                                             field="amount"
@@ -237,7 +244,7 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
                                             labelExtraClassName='w-32'
                                             itemTextExtraClassName='w-34'
                                             onValueChange={(value) => setFormData(prev => ({ ...prev, referenceId: value as number | null }))}
-                                            options={PrereqOptions(FeatPrerequisiteType.CLASSLEVEL)}
+                                            options={classLevelOptions}
                                         />
                                         <ValidatedInput
                                             field="amount"

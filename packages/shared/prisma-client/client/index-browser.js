@@ -527,7 +527,11 @@ exports.Prisma.UserCharacterScalarFieldEnum = {
   eyes: 'eyes',
   hair: 'hair',
   gender: 'gender',
-  notes: 'notes'
+  notes: 'notes',
+  editionId: 'editionId',
+  allowVariantClasses: 'allowVariantClasses',
+  isGestalt: 'isGestalt',
+  ignoreLevelAdjustment: 'ignoreLevelAdjustment'
 };
 
 exports.Prisma.UserCharacterAbilityScoreScalarFieldEnum = {
@@ -697,6 +701,12 @@ exports.Prisma.DeitySourceMapScalarFieldEnum = {
   deityId: 'deityId',
   sourceBookId: 'sourceBookId',
   pageNumber: 'pageNumber'
+};
+
+exports.Prisma.CharacterDisallowedSourceScalarFieldEnum = {
+  id: 'id',
+  characterId: 'characterId',
+  sourceBookId: 'sourceBookId'
 };
 
 exports.Prisma.SortOrder = {
@@ -975,7 +985,8 @@ exports.Prisma.ModelName = {
   DeityFavoredWeaponMap: 'DeityFavoredWeaponMap',
   DeityRaceMap: 'DeityRaceMap',
   DomainSourceMap: 'DomainSourceMap',
-  DeitySourceMap: 'DeitySourceMap'
+  DeitySourceMap: 'DeitySourceMap',
+  CharacterDisallowedSource: 'CharacterDisallowedSource'
 };
 
 /**

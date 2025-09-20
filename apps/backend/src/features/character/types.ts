@@ -17,7 +17,11 @@ import type {
     UpdateCharacterAbilityScoreRequest,
     CharacterAbilityScoreResponse,
     CharacterWithAllDetailsResponse,
+    // NEW: Character disallowed source types
+    CreateCharacterDisallowedSourceRequest,
+    CharacterDisallowedSource,
 } from '@shared/schema';
+import type { GestaltStats } from '@shared/utils';
 
 // Service interface
 export interface CharacterService {
@@ -46,5 +50,22 @@ export interface CharacterService {
     updateCharacterAbilityScore: (id: number, data: UpdateCharacterAbilityScoreRequest) => Promise<UpdateResponse>;
     deleteCharacterAbilityScore: (id: number) => Promise<UpdateResponse>;
     getCharacterAbilityScores: (characterId: number) => Promise<CharacterAbilityScoreResponse[]>;
+
+    // NEW: Character disallowed sources methods
+    addDisallowedSource: (data: CreateCharacterDisallowedSourceRequest) => Promise<CharacterDisallowedSource>;
+    removeDisallowedSource: (characterId: number, sourceBookId: number) => Promise<void>;
+    getDisallowedSources: (characterId: number) => Promise<CharacterDisallowedSource[]>;
+
+    // NEW: Gestalt character calculation methods
+    calculateCharacterStats: (character: CharacterWithAllDetailsResponse) => Promise<{
+        isGestalt: boolean;
+        totalLevel: number;
+        stats: GestaltStats | null;
+        errors: string[];
+    }>;
+    calculateAdvancementStats: (character: CharacterWithAllDetailsResponse, advancementLevel: number) => Promise<{
+        stats: GestaltStats | null;
+        errors: string[];
+    }>;
 
 } 

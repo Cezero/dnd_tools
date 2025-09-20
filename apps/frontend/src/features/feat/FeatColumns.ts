@@ -1,8 +1,8 @@
 import { ColumnDef } from '@tanstack/react-table';
 
-import { createContainsFilter, createEqualsFilter, createArrayIdFilter } from '@/components/generic-list/filterFunctions';
+import { createContainsFilter, createArrayIdFilter } from '@/components/generic-list/filterFunctions';
 import { FeatInQueryResponse } from '@shared/schema';
-import { FEAT_TYPE_SELECT_LIST, FilterType } from '@shared/static-data';
+import { FEAT_TYPE_LIST, FilterType, BooleanFilter, BOOLEAN_FILTER_LIST } from '@shared/static-data';
 
 export const FEAT_COLUMNS: ColumnDef<FeatInQueryResponse, unknown>[] = [
     {
@@ -29,11 +29,11 @@ export const FEAT_COLUMNS: ColumnDef<FeatInQueryResponse, unknown>[] = [
         filterFn: createArrayIdFilter<FeatInQueryResponse>('typeId'),
         cell: info => {
             const typeId = info.getValue() as number;
-            return FEAT_TYPE_SELECT_LIST.find(type => type.value === typeId)?.label || typeId;
+            return FEAT_TYPE_LIST.find(type => type.id === typeId)?.name || typeId;
         },
         meta: {
             filterType: FilterType.MULTI_SELECT,
-            options: FEAT_TYPE_SELECT_LIST,
+            options: FEAT_TYPE_LIST,
         },
     },
     {
@@ -93,17 +93,22 @@ export const FEAT_COLUMNS: ColumnDef<FeatInQueryResponse, unknown>[] = [
         enableColumnFilter: true,
         enableResizing: true,
         size: 100,
-        filterFn: createEqualsFilter<FeatInQueryResponse>(),
+        filterFn: (row, columnId, filterValue) => {
+            const repeatable = row.getValue(columnId) as boolean;
+            if (filterValue === BooleanFilter.TRUE) {
+                return repeatable;
+            } else if (filterValue === BooleanFilter.FALSE) {
+                return !repeatable;
+            }
+            return true;
+        },
         cell: info => {
             const repeatable = info.getValue() as boolean;
             return repeatable ? 'Yes' : 'No';
         },
         meta: {
             filterType: FilterType.SINGLE_SELECT,
-            options: [
-                { value: true, label: 'Yes' },
-                { value: false, label: 'No' }
-            ]
+            options: BOOLEAN_FILTER_LIST,
         },
     }
 ]; 

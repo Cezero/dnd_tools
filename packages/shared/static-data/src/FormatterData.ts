@@ -1,5 +1,4 @@
 import { BaseMap, CoreComponent } from "./types";
-import { NameSelectOptionList } from "./Util";
 
 // Display type enum for formatter context
 export const DisplayType = {
@@ -17,7 +16,6 @@ export const DISPLAY_TYPES: BaseMap<CoreComponent> = {
 };
 
 export const DISPLAY_TYPE_LIST = Object.values(DISPLAY_TYPES);
-export const DISPLAY_TYPE_SELECT_LIST = NameSelectOptionList(DISPLAY_TYPE_LIST);
 
 // Breakdown component type enum for calculation breakdowns
 export const BreakdownComponentType = {
@@ -37,7 +35,6 @@ export const BREAKDOWN_COMPONENT_TYPES: BaseMap<CoreComponent> = {
 };
 
 export const BREAKDOWN_COMPONENT_TYPE_LIST = Object.values(BREAKDOWN_COMPONENT_TYPES);
-export const BREAKDOWN_COMPONENT_TYPE_SELECT_LIST = NameSelectOptionList(BREAKDOWN_COMPONENT_TYPE_LIST);
 
 // Transition point type enum for progression transitions
 export const TransitionPointType = {
@@ -55,4 +52,3 @@ export const TRANSITION_POINT_TYPES: BaseMap<CoreComponent> = {
 };
 
 export const TRANSITION_POINT_TYPE_LIST = Object.values(TRANSITION_POINT_TYPES);
-export const TRANSITION_POINT_TYPE_SELECT_LIST = NameSelectOptionList(TRANSITION_POINT_TYPE_LIST);

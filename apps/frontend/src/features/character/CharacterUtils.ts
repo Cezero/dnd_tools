@@ -1,16 +1,9 @@
-import { z } from 'zod';
+import type { FeatureProgression } from '@shared/schema';
 import {
     ABILITY_LIST,
-    ABILITY_MAP,
     SpecialFeatureId,
     EntityAppliesToType
 } from '@shared/static-data';
-
-// Import the actual types from the schema
-import type { FeatureProgressionSchema } from '@shared/schema';
-
-// Use the actual schema types
-type FeatureProgressionWithRelations = z.infer<typeof FeatureProgressionSchema>;
 
 export interface AbilityAdjustment {
     abilityId: number;
@@ -18,12 +11,7 @@ export interface AbilityAdjustment {
 }
 
 export class CharacterUtils {
-    /**
-     * Extract ability adjustments from feature progressions
-     * @param features Array of feature progressions
-     * @returns Array of ability adjustments with their values
-     */
-    static getAbilityAdjustments(features: FeatureProgressionWithRelations[]): AbilityAdjustment[] {
+    static getAbilityAdjustments(features: FeatureProgression[]): AbilityAdjustment[] {
         const abilityFeatures = features.filter(fp =>
             fp.featureId === SpecialFeatureId.AbilityAdjustment &&
             fp.entities?.some(e => e.appliesTo === EntityAppliesToType.Ability)
@@ -51,13 +39,7 @@ export class CharacterUtils {
         return adjustments;
     }
 
-    /**
-     * Get ability adjustment for a specific ability
-     * @param features Array of feature progressions
-     * @param abilityId The ability ID to get adjustment for
-     * @returns The adjustment value for the specified ability
-     */
-    static getAbilityAdjustment(features: FeatureProgressionWithRelations[], abilityId: number): number {
+    static getAbilityAdjustment(features: FeatureProgression[], abilityId: number): number {
         const abilityFeatures = features.filter(fp =>
             fp.featureId === SpecialFeatureId.AbilityAdjustment &&
             fp.entities?.some(e => e.appliesTo === EntityAppliesToType.Ability && e.appliesToId === abilityId)
@@ -70,12 +52,7 @@ export class CharacterUtils {
         return abilityEntity?.value ?? 0;
     }
 
-    /**
-     * Get formatted ability adjustments string for display
-     * @param features Array of feature progressions
-     * @returns Formatted string of ability adjustments (e.g., "STR +2, DEX +2, CON -2")
-     */
-    static getFormattedAbilityAdjustments(features: FeatureProgressionWithRelations[]): string {
+    static getFormattedAbilityAdjustments(features: FeatureProgression[]): string {
         const adjustments = this.getAbilityAdjustments(features);
 
         if (adjustments.length === 0) {
@@ -91,12 +68,7 @@ export class CharacterUtils {
             .join(', ');
     }
 
-    /**
-     * Get all ability adjustments as a map for easy lookup
-     * @param features Array of feature progressions
-     * @returns Map of ability ID to adjustment value
-     */
-    static getAbilityAdjustmentsMap(features: FeatureProgressionWithRelations[]): Map<number, number> {
+    static getAbilityAdjustmentsMap(features: FeatureProgression[]): Map<number, number> {
         const adjustments = this.getAbilityAdjustments(features);
         const map = new Map<number, number>();
 
@@ -107,14 +79,7 @@ export class CharacterUtils {
         return map;
     }
 
-    /**
-     * Calculate total ability score including racial adjustments
-     * @param baseScore The base ability score
-     * @param features Array of feature progressions
-     * @param abilityId The ability ID to calculate for
-     * @returns The total ability score including racial adjustments
-     */
-    static getTotalAbilityScore(baseScore: number, features: FeatureProgressionWithRelations[], abilityId: number): number {
+    static getTotalAbilityScore(baseScore: number, features: FeatureProgression[], abilityId: number): number {
         const adjustment = this.getAbilityAdjustment(features, abilityId);
         return baseScore + adjustment;
     }

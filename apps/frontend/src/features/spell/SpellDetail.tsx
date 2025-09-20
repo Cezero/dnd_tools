@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { DetailPage } from '@/components/common/DetailPage';
@@ -54,7 +54,7 @@ export function SpellDetail(): React.JSX.Element {
                 <h1 className="text-2xl font-bold">{spell!.name}</h1>
                 {spell!.sourceBookInfo && spell!.sourceBookInfo.length > 0 && (
                     <div className="text-right">
-                        <p><strong>Source:</strong> {GetSourceDisplay(spell!.sourceBookInfo.map(s => ({ bookId: s.sourceBookId, pageNumber: s.pageNumber })), true)}</p>
+                        <p><strong>Source:</strong> {GetSourceDisplay(spell!.sourceBookInfo, true)}</p>
                     </div>
                 )}
             </div>

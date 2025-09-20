@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import type { SourceMap } from '@shared/schema';
 import {
     SOURCE_BOOK_MAP,
-    GetSourceBookList,
-    SourceType
+    SourceType,
+    GetSourceBookTypeList
 } from '@shared/static-data';
 
 import { CustomSelect } from './index';
@@ -22,7 +22,7 @@ export function SourceEditor({ sources, onSourcesChange, sourceType, className =
     const [pageNumber, setPageNumber] = useState<string>('');
 
     // Filter out already selected books
-    const availableBooks = GetSourceBookList(sourceType).filter(book =>
+    const availableBooks = GetSourceBookTypeList(sourceType).filter(book =>
         !sources.some(source => source.sourceBookId === book.value)
     );
 

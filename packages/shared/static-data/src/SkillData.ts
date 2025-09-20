@@ -1,5 +1,4 @@
 import type { CraftSkillMap, KnowledgeSkillMap, SkillMap } from './types';
-import { NameSelectOptionList } from './Util';
 
 export const Skill = {
     Appraise: 1,
@@ -88,8 +87,6 @@ export const SKILL_MAP: SkillMap = {
 };
 
 export const SKILL_LIST = Object.values(SKILL_MAP);
-export const FULL_SKILL_SELECT_LIST = NameSelectOptionList(SKILL_LIST);
-export const SKILL_SELECT_LIST = NameSelectOptionList(SKILL_LIST.filter(skill => !skill.isAnalog));
 
 export const SKILL_RETRY_TYPE_MAP: Record<number, string> = {
     0: 'No',
@@ -172,7 +169,6 @@ export const CRAFT_SKILL_MAP: CraftSkillMap = {
 };
 
 export const CRAFT_SKILL_LIST = Object.values(CRAFT_SKILL_MAP);
-export const CRAFT_SKILL_SELECT_LIST = NameSelectOptionList(CRAFT_SKILL_LIST);
 
 export const KnowledgeSkill = {
     Arcana: 1,
@@ -203,4 +199,3 @@ export const KNOWLEDGE_SKILL_MAP: KnowledgeSkillMap = {
 } as const;
 
 export const KNOWLEDGE_SKILL_LIST = Object.values(KNOWLEDGE_SKILL_MAP);
-export const KNOWLEDGE_SKILL_SELECT_LIST = NameSelectOptionList(KNOWLEDGE_SKILL_LIST);

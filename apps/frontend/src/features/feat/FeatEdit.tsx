@@ -10,7 +10,7 @@ import {
 import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { CreateFeatRequest, UpdateFeatRequest, UpdateFeatSchema, FeatBenefitMap, FeatPrerequisiteMap, BaseFeatSchema } from '@shared/schema';
-import { FEAT_BENEFIT_TYPE_BY_ID, FEAT_TYPE_SELECT_LIST, FeatBenefitType } from '@shared/static-data';
+import { FEAT_BENEFIT_TYPE_BY_ID, FEAT_TYPE_LIST, FeatBenefitType } from '@shared/static-data';
 
 import { FeatApi } from './FeatApi';
 import { FeatBenefitEdit } from './FeatBenefitEdit';
@@ -310,7 +310,7 @@ export function FeatEdit() {
                             itemTextExtraClassName='w-24'
                             value={formData.typeId}
                             onValueChange={(value) => setFormData(prev => ({ ...prev, typeId: value as number }))}
-                            options={FEAT_TYPE_SELECT_LIST}
+                            options={FEAT_TYPE_LIST}
                         />
                     </div>
 
@@ -360,7 +360,7 @@ export function FeatEdit() {
                                                 onClick={() => HandleEditBenefitClick(benefit)}
                                                 className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-600"
                                             >
-                                                {FEAT_BENEFIT_TYPE_BY_ID[benefit.typeId]}: {FeatOptions(benefit.typeId).find(option => option.value === benefit.referenceId)?.label || ''} {benefit.typeId !== FeatBenefitType.PROFICIENCY && benefit.amount && benefit.amount > 0 ? `+${benefit.amount}` : benefit.typeId !== FeatBenefitType.PROFICIENCY && benefit.amount ? `${benefit.amount}` : ''}
+                                                {FEAT_BENEFIT_TYPE_BY_ID[benefit.typeId]}: {FeatOptions(benefit.typeId).find(option => option.id === benefit.referenceId)?.name || ''} {benefit.typeId !== FeatBenefitType.PROFICIENCY && benefit.amount && benefit.amount > 0 ? `+${benefit.amount}` : benefit.typeId !== FeatBenefitType.PROFICIENCY && benefit.amount ? `${benefit.amount}` : ''}
                                             </button>
                                             <button
                                                 type="button"

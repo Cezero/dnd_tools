@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 import { ValidatedInput, ValidatedCustomSelect, ValidatedCustomCheckbox } from '@/components/forms';
 import type { FeatureEntity, FeatureProgression, Feature } from '@shared/schema';
-import { ABILITY_SELECT_LIST, FormulaId, EntityType, ConditionalScalingValueType, CONDITIONAL_SCALING_VALUE_TYPE_SELECT_LIST } from '@shared/static-data';
-import type { SelectOption } from '@shared/static-data';
+import { ABILITY_LIST, FormulaId, EntityType, ConditionalScalingValueType, CONDITIONAL_SCALING_VALUE_TYPE_LIST, CoreComponent } from '@shared/static-data';
 
 import { ArrayPairEditor } from '../ArrayPairEditor';
 import { FormulaPreview } from './FormulaPreview';
@@ -28,7 +27,7 @@ export function FormulaManager({
     preSelectedFeature,
     progression
 }: FormulaManagerProps) {
-    const [appliesToSelectOptions, setAppliesToSelectOptions] = useState<SelectOption[]>([]);
+    const [appliesToSelectOptions, setAppliesToSelectOptions] = useState<CoreComponent[]>([]);
     // Use the correct field path for entities
     const entityKey = 'entities';
 
@@ -139,7 +138,7 @@ export function FormulaManager({
                                     <ValidatedCustomSelect
                                         field={`${entityKey}.${index}.formulaParams.abilityId`}
                                         label="Ability"
-                                        options={ABILITY_SELECT_LIST}
+                                        options={ABILITY_LIST}
                                         nested
                                     />
                                 </div>
@@ -206,7 +205,7 @@ export function FormulaManager({
                                             <ValidatedCustomSelect
                                                 field={`${entityKey}.${index}.formulaParams.valuesRepresent`}
                                                 label="Values Represent"
-                                                options={CONDITIONAL_SCALING_VALUE_TYPE_SELECT_LIST}
+                                                options={CONDITIONAL_SCALING_VALUE_TYPE_LIST}
                                                 placeholder={valuesRepresent === ConditionalScalingValueType.AppliesToId ? "Applies To ID" : "Value"}
                                                 componentExtraClassName="flex items-center gap-2"
                                                 nested

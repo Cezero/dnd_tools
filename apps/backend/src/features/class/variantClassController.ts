@@ -2,7 +2,6 @@ import { Response, NextFunction } from 'express';
 
 import { PrismaClient } from '@shared/prisma-client';
 import {
-    ClassIdParamRequest,
     VariantIdParamRequest,
     CreateClassVariantRequest,
     UpdateClassVariantRequest,

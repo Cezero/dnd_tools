@@ -1,5 +1,4 @@
 import type { DiceThemeMap } from './types';
-import { NameSelectOptionList } from './Util';
 
 export const ThreeDDiceTheme = {
     DEFAULT: 1,
@@ -74,7 +73,6 @@ export const THREE_D_DICE_THEMES: DiceThemeMap = {
 };
 
 export const THREE_D_DICE_THEME_LIST = Object.values(THREE_D_DICE_THEMES);
-export const THREE_D_DICE_THEME_SELECT_LIST = NameSelectOptionList(THREE_D_DICE_THEME_LIST);
 
 // Theme names array for API responses and dropdowns
 export const THREE_D_DICE_THEME_NAMES: string[] = Object.values(THREE_D_DICE_THEMES).map(theme => theme.systemName);

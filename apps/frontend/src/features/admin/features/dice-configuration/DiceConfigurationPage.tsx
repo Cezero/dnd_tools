@@ -9,7 +9,7 @@ import { DiceConfigurationFacade } from '@/features/admin/features/dice-configur
 import { DICE_CONFIGURATION_COLUMNS } from '@/features/admin/features/dice-configuration/DiceConfigurationsColumns';
 import { generateDiceColorScheme } from '@/utils/color-scheme';
 import type { DiceBoxAdminConfig } from '@shared/schema';
-import { doesThemeIgnoreColor, getDiceThemeById, THREE_D_DICE_THEME_SELECT_LIST } from '@shared/static-data';
+import { doesThemeIgnoreColor, getDiceThemeById, THREE_D_DICE_THEME_LIST } from '@shared/static-data';
 
 export function DiceConfigurationPage(): React.JSX.Element {
     const [config, setConfig] = useState<DiceBoxAdminConfig & { id?: number }>(DiceConfigurationFacade.getDefaultConfig());
@@ -476,7 +476,7 @@ export function DiceConfigurationPage(): React.JSX.Element {
                                             <h3 className="text-lg font-semibold mb-4">Visual Settings</h3>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <CustomSelect
-                                                    options={THREE_D_DICE_THEME_SELECT_LIST}
+                                                    options={THREE_D_DICE_THEME_LIST}
                                                     value={typeof config.theme === 'number' ? config.theme : 1}
                                                     onValueChange={(theme) => handleConfigChange({ theme })}
                                                     label="Theme"

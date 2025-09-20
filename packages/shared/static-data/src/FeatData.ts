@@ -1,5 +1,5 @@
 import type { CoreComponent, BaseMap, IdToNameMap } from './types';
-import { NameSelectOptionList, ObjectIdToNameMap } from './Util';
+import { ObjectIdToNameMap } from './Util';
 
 export const enum FeatType {
     GENERAL = 1,
@@ -15,7 +15,6 @@ export const FEAT_TYPES: BaseMap<CoreComponent> = {
 
 export const FEAT_TYPE_BY_ID: IdToNameMap = ObjectIdToNameMap(FEAT_TYPES);
 export const FEAT_TYPE_LIST = Object.values(FEAT_TYPES);
-export const FEAT_TYPE_SELECT_LIST = NameSelectOptionList(FEAT_TYPE_LIST);
 
 export const enum FeatBenefitType {
     SKILL = 1,
@@ -31,7 +30,6 @@ export const FEAT_BENEFIT_TYPES: BaseMap<CoreComponent> = {
 
 export const FEAT_BENEFIT_TYPE_BY_ID: IdToNameMap = ObjectIdToNameMap(FEAT_BENEFIT_TYPES);
 export const FEAT_BENEFIT_TYPE_LIST = Object.values(FEAT_BENEFIT_TYPES);
-export const FEAT_BENEFIT_TYPE_SELECT_LIST = NameSelectOptionList(FEAT_BENEFIT_TYPE_LIST);
 
 export const enum FeatPrerequisiteType {
     ABILITY = 1,
@@ -59,4 +57,3 @@ export const FEAT_PREREQUISITE_TYPES: BaseMap<CoreComponent> = {
 
 export const FEAT_PREREQ_BY_ID: IdToNameMap = ObjectIdToNameMap(FEAT_PREREQUISITE_TYPES);
 export const FEAT_PREREQUISITE_TYPE_LIST = Object.values(FEAT_PREREQUISITE_TYPES);
-export const FEAT_PREREQUISITE_TYPE_SELECT_LIST = NameSelectOptionList(FEAT_PREREQUISITE_TYPE_LIST);

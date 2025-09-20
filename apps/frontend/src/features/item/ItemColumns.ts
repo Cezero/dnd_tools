@@ -2,7 +2,7 @@ import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter, createEqualsFilter } from '@/components/generic-list/filterFunctions';
 import { ItemWithDetails } from '@shared/schema';
-import { ITEM_TYPE_SELECT_LIST, ITEM_TYPES, FilterType } from '@shared/static-data';
+import { ITEM_TYPE_LIST, ITEM_TYPES, FilterType } from '@shared/static-data';
 
 import { formatCostAsCurrency } from './utils';
 
@@ -35,7 +35,7 @@ export const ITEM_COLUMNS: ColumnDef<ItemWithDetails, unknown>[] = [
         },
         meta: {
             filterType: FilterType.SINGLE_SELECT,
-            options: ITEM_TYPE_SELECT_LIST,
+            options: ITEM_TYPE_LIST,
         },
     },
     {

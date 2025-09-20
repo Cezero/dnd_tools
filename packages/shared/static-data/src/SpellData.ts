@@ -1,18 +1,26 @@
-import type { SpellComponentMap, SpellDescriptorMap, SpellRangeMap, SpellSchoolMap, SpellSubschoolMap, Spell, SpellSubschoolSelectMap, NameToIdMap } from './types';
-import { NameSelectOptionList } from './Util';
+import type { SpellComponentMap, SpellDescriptorMap, SpellRangeMap, SpellSchoolMap, SpellSubschoolMap, Spell, NameToIdMap, CoreComponent } from './types';
+
+export const SpellComponent = {
+    Verbal: 0,
+    Somatic: 1,
+    Material: 2,
+    Focus: 3,
+    DivineFocus: 4,
+    XP: 5
+} as const;
+
+export type SpellComponent = (typeof SpellComponent)[keyof typeof SpellComponent];
 
 export const SPELL_COMPONENT_MAP: SpellComponentMap = {
-    0: { id: 0, abbreviation: 'V', name: 'Verbal' },
-    1: { id: 1, abbreviation: 'S', name: 'Somatic' },
-    2: { id: 2, abbreviation: 'M', name: 'Material' },
-    3: { id: 3, abbreviation: 'F', name: 'Focus' },
-    4: { id: 4, abbreviation: 'DF', name: 'Divine Focus' },
-    5: { id: 5, abbreviation: 'X', name: 'XP' }
+    [SpellComponent.Verbal]: { id: SpellComponent.Verbal, abbreviation: 'V', name: 'Verbal' },
+    [SpellComponent.Somatic]: { id: SpellComponent.Somatic, abbreviation: 'S', name: 'Somatic' },
+    [SpellComponent.Material]: { id: SpellComponent.Material, abbreviation: 'M', name: 'Material' },
+    [SpellComponent.Focus]: { id: SpellComponent.Focus, abbreviation: 'F', name: 'Focus' },
+    [SpellComponent.DivineFocus]: { id: SpellComponent.DivineFocus, abbreviation: 'DF', name: 'Divine Focus' },
+    [SpellComponent.XP]: { id: SpellComponent.XP, abbreviation: 'X', name: 'XP' }
 }
 
 export const SPELL_COMPONENT_LIST = Object.values(SPELL_COMPONENT_MAP);
-
-export const SPELL_COMPONENT_SELECT_LIST = NameSelectOptionList(SPELL_COMPONENT_LIST);
 
 export const SpellComponentAbbrList = (components: number[]): string => {
     return components.map(component => SPELL_COMPONENT_MAP[component].abbreviation).join(', ');
@@ -45,7 +53,6 @@ export const SPELL_DESCRIPTOR_MAP: SpellDescriptorMap = {
 
 export const SPELL_DESCRIPTOR_LIST = Object.values(SPELL_DESCRIPTOR_MAP);
 
-export const SPELL_DESCRIPTOR_SELECT_LIST = NameSelectOptionList(SPELL_DESCRIPTOR_LIST);
 
 export const SpellDescriptorNameList = (descriptors: number[]): string => {
     return descriptors.map(descriptor => SPELL_DESCRIPTOR_MAP[descriptor].name).join(', ');
@@ -94,39 +101,74 @@ export const SPELL_SCHOOL_MAP: SpellSchoolMap = {
 }
 
 export const SPELL_SCHOOL_LIST = Object.values(SPELL_SCHOOL_MAP);
-export const SPELL_SCHOOL_SELECT_LIST = NameSelectOptionList(SPELL_SCHOOL_LIST);
 
 export const SpellSchoolNameList = (schools: number[]): string => {
     return schools.map(school => SPELL_SCHOOL_MAP[school].name).join(', ');
 }
 
+export const SpellSubschool = {
+    Calling: 1,
+    Creation: 2,
+    Healing: 3,
+    Summoning: 4,
+    Teleportation: 5,
+    Scrying: 6,
+    Charm: 7,
+    Compulsion: 8,
+    Figment: 9,
+    Glamer: 10,
+    Pattern: 11,
+    Phantasm: 12,
+    Shadow: 13,
+    Least: 14,
+    Lesser: 15,
+    Greater: 16,
+    Dark: 17
+} as const;
+
+export type SpellSubschool = (typeof SpellSubschool)[keyof typeof SpellSubschool];
+
 export const SPELL_SUBSCHOOL_MAP: SpellSubschoolMap = {
-    1: { id: 1, name: 'Calling', schoolId: SpellSchool.Conjuration },
-    2: { id: 2, name: 'Creation', schoolId: SpellSchool.Conjuration },
-    3: { id: 3, name: 'Healing', schoolId: SpellSchool.Conjuration },
-    4: { id: 4, name: 'Summoning', schoolId: SpellSchool.Conjuration },
-    5: { id: 5, name: 'Teleportation', schoolId: SpellSchool.Conjuration },
-    6: { id: 6, name: 'Scrying', schoolId: SpellSchool.Divination },
-    7: { id: 7, name: 'Charm', schoolId: SpellSchool.Enchantment },
-    8: { id: 8, name: 'Compulsion', schoolId: SpellSchool.Enchantment },
-    9: { id: 9, name: 'Figment', schoolId: SpellSchool.Illusion },
-    10: { id: 10, name: 'Glamer', schoolId: SpellSchool.Illusion },
-    11: { id: 11, name: 'Pattern', schoolId: SpellSchool.Illusion },
-    12: { id: 12, name: 'Phantasm', schoolId: SpellSchool.Illusion },
-    13: { id: 13, name: 'Shadow', schoolId: SpellSchool.Illusion },
-    14: { id: 14, name: 'Least', schoolId: SpellSchool.Invocation },
-    15: { id: 15, name: 'Lesser', schoolId: SpellSchool.Invocation },
-    16: { id: 16, name: 'Greater', schoolId: SpellSchool.Invocation },
-    17: { id: 17, name: 'Dark', schoolId: SpellSchool.Invocation }
+    [SpellSubschool.Calling]: { id: SpellSubschool.Calling, name: 'Calling' },
+    [SpellSubschool.Creation]: { id: SpellSubschool.Creation, name: 'Creation' },
+    [SpellSubschool.Healing]: { id: SpellSubschool.Healing, name: 'Healing' },
+    [SpellSubschool.Summoning]: { id: SpellSubschool.Summoning, name: 'Summoning' },
+    [SpellSubschool.Teleportation]: { id: SpellSubschool.Teleportation, name: 'Teleportation' },
+    [SpellSubschool.Scrying]: { id: SpellSubschool.Scrying, name: 'Scrying' },
+    [SpellSubschool.Charm]: { id: SpellSubschool.Charm, name: 'Charm' },
+    [SpellSubschool.Compulsion]: { id: SpellSubschool.Compulsion, name: 'Compulsion' },
+    [SpellSubschool.Figment]: { id: SpellSubschool.Figment, name: 'Figment' },
+    [SpellSubschool.Glamer]: { id: SpellSubschool.Glamer, name: 'Glamer' },
+    [SpellSubschool.Pattern]: { id: SpellSubschool.Pattern, name: 'Pattern' },
+    [SpellSubschool.Phantasm]: { id: SpellSubschool.Phantasm, name: 'Phantasm' },
+    [SpellSubschool.Shadow]: { id: SpellSubschool.Shadow, name: 'Shadow' },
+    [SpellSubschool.Least]: { id: SpellSubschool.Least, name: 'Least' },
+    [SpellSubschool.Lesser]: { id: SpellSubschool.Lesser, name: 'Lesser' },
+    [SpellSubschool.Greater]: { id: SpellSubschool.Greater, name: 'Greater' },
+    [SpellSubschool.Dark]: { id: SpellSubschool.Dark, name: 'Dark' }
 }
 
 export const SPELL_SUBSCHOOL_LIST = Object.values(SPELL_SUBSCHOOL_MAP);
-export const SPELL_SUBSCHOOL_SELECT_LIST = NameSelectOptionList(SPELL_SUBSCHOOL_LIST);
 
-export const SPELL_SUBSCHOOL_LIST_BY_SCHOOL_ID: SpellSubschoolSelectMap[] = Object.values(SPELL_SUBSCHOOL_MAP).reduce((acc, school) => {
-    acc[school.id] = NameSelectOptionList(Object.values(SPELL_SUBSCHOOL_MAP).filter(subschool => subschool.schoolId === school.id));
-    return acc;
-}, {} as SpellSubschoolSelectMap[]);
+export const SPELL_SUBSCHOOL_BY_SCHOOL_ID_MAP: { [K in SpellSchool]: SpellSubschool[] } = {
+    [SpellSchool.Abjuration]: [],
+    [SpellSchool.Conjuration]: [SpellSubschool.Calling, SpellSubschool.Creation, SpellSubschool.Healing, SpellSubschool.Summoning, SpellSubschool.Teleportation],
+    [SpellSchool.Divination]: [SpellSubschool.Scrying],
+    [SpellSchool.Enchantment]: [SpellSubschool.Charm, SpellSubschool.Compulsion],
+    [SpellSchool.Evocation]: [],
+    [SpellSchool.Illusion]: [SpellSubschool.Figment, SpellSubschool.Glamer, SpellSubschool.Pattern, SpellSubschool.Phantasm, SpellSubschool.Shadow],
+    [SpellSchool.Necromancy]: [],
+    [SpellSchool.Transmutation]: [],
+    [SpellSchool.Universal]: [],
+    [SpellSchool.Invocation]: [SpellSubschool.Least, SpellSubschool.Lesser, SpellSubschool.Greater, SpellSubschool.Dark]
+} as const;
+
+export function GetSpellSubschoolListBySchoolId(schoolId: SpellSchool): CoreComponent[] {
+    if (SPELL_SUBSCHOOL_BY_SCHOOL_ID_MAP[schoolId].length > 0) {
+        return SPELL_SUBSCHOOL_BY_SCHOOL_ID_MAP[schoolId].map(subschool => SPELL_SUBSCHOOL_MAP[subschool]);
+    }
+    return [];
+}
 
 export const SpellSubschoolNameList = (subschools: number[]): string => {
     return subschools.map(subschool => SPELL_SUBSCHOOL_MAP[subschool].name).join(', ');

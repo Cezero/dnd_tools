@@ -13,11 +13,11 @@ import { CustomSelect, CustomSelectMulti } from '@/components/forms/FormComponen
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { CreateItemSchema, UpdateItemSchema, type Weapon, type Armor } from '@shared/schema';
 import {
-    WEAPON_CATEGORY_SELECT_LIST,
-    WEAPON_TYPE_SELECT_LIST,
-    DAMAGE_TYPE_SELECT_LIST,
-    ARMOR_CATEGORY_SELECT_LIST,
-    ITEM_TYPE_SELECT_LIST
+    WEAPON_CATEGORY_LIST,
+    WEAPON_TYPE_LIST,
+    DAMAGE_TYPE_LIST,
+    ARMOR_CATEGORY_LIST,
+    ITEM_TYPE_LIST
 } from '@shared/static-data';
 
 import { ItemApi } from './ItemApi';
@@ -398,7 +398,7 @@ export function ItemEdit() {
                             componentExtraClassName='flex items-center gap-2'
                             labelExtraClassName='w-24'
                             itemTextExtraClassName='w-36'
-                            options={ITEM_TYPE_SELECT_LIST}
+                            options={ITEM_TYPE_LIST}
                             value={formData.typeId}
                             onValueChange={handleTypeChange}
                         />
@@ -462,7 +462,7 @@ export function ItemEdit() {
                                     labelExtraClassName='w-36'
                                     itemTextExtraClassName='w-16'
                                     required
-                                    options={WEAPON_CATEGORY_SELECT_LIST}
+                                    options={WEAPON_CATEGORY_LIST}
                                     value={formData.weapon.category}
                                     onValueChange={(value) => setFormData(prev => ({
                                         ...prev,
@@ -475,7 +475,7 @@ export function ItemEdit() {
                                     labelExtraClassName='w-36'
                                     itemTextExtraClassName='w-38'
                                     required
-                                    options={WEAPON_TYPE_SELECT_LIST}
+                                    options={WEAPON_TYPE_LIST}
                                     value={formData.weapon.type}
                                     onValueChange={(value) => setFormData(prev => ({
                                         ...prev,
@@ -562,7 +562,7 @@ export function ItemEdit() {
                                     onSelectedValuesChange={handleDamageTypeChange}
                                     logicType={damageTypeLogic}
                                     onLogicChange={handleDamageTypeLogicChange}
-                                    options={DAMAGE_TYPE_SELECT_LIST}
+                                    options={DAMAGE_TYPE_LIST}
                                     componentExtraClassName='flex items-center gap-2'
                                     labelExtraClassName='w-36'
                                     itemTextExtraClassName='w-24'
@@ -596,7 +596,7 @@ export function ItemEdit() {
                                     labelExtraClassName='w-40'
                                     itemTextExtraClassName='w-16'
                                     required
-                                    options={ARMOR_CATEGORY_SELECT_LIST}
+                                    options={ARMOR_CATEGORY_LIST}
                                     value={formData.armor.category}
                                     onValueChange={(value) => setFormData(prev => ({
                                         ...prev,

@@ -1,5 +1,4 @@
 import { AppliesToType, BaseMap, CoreComponent } from "./types";
-import { NameSelectOptionList } from "./Util";
 
 export const SpecialFeatureId = {
     ClassSkill: 1,
@@ -32,7 +31,6 @@ export const FEATURE_SOURCE_TYPES: BaseMap<CoreComponent> = {
 }
 
 export const FEATURE_SOURCE_LIST = Object.values(FEATURE_SOURCE_TYPES);
-export const FEATURE_SOURCE_SELECT_LIST = NameSelectOptionList(FEATURE_SOURCE_LIST);
 
 export const EntityType = {
     Bonus: 0,        // Numeric bonuses/penalties (STR+4, AC+2, etc.)
@@ -57,7 +55,6 @@ export const ENTITY_TYPES: BaseMap<CoreComponent> = {
 }
 
 export const ENTITY_LIST = Object.values(ENTITY_TYPES);
-export const ENTITY_TYPE_SELECT_LIST = NameSelectOptionList(ENTITY_LIST);
 
 export const EntityAppliesToType = {
     // Bonus-compatible types
@@ -143,7 +140,6 @@ export const ENTITY_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
 }
 
 export const ENTITY_APPLIES_TO_LIST = Object.values(ENTITY_APPLIES_TO_TYPES);
-export const ENTITY_APPLIES_TO_SELECT_LIST = NameSelectOptionList(ENTITY_APPLIES_TO_LIST);
 
 // Type compatibility matrix - defines which ModifierAppliesToType values are valid for each ModifierType
 export const ENTITY_TYPE_COMPATIBILITY = {
@@ -270,7 +266,6 @@ export const FEATURE_BONUS_TYPES: BaseMap<CoreComponent> = {
 }
 
 export const FEATURE_BONUS_LIST = Object.values(FEATURE_BONUS_TYPES);
-export const FEATURE_BONUS_SELECT_LIST = NameSelectOptionList(FEATURE_BONUS_LIST);
 
 export const FeatureFeatChoiceFilter = {
     Any: 0,
@@ -287,7 +282,6 @@ export const FEATURE_FEAT_CHOICE_FILTER_TYPES: BaseMap<CoreComponent> = {
 }
 
 export const FEATURE_FEAT_CHOICE_FILTER_LIST = Object.values(FEATURE_FEAT_CHOICE_FILTER_TYPES);
-export const FEATURE_FEAT_CHOICE_FILTER_SELECT_LIST = NameSelectOptionList(FEATURE_FEAT_CHOICE_FILTER_LIST);
 
 export const FeaturePrerequisiteType = {
     SkillRanks: 0,
@@ -310,7 +304,6 @@ export const FEATURE_PRE_REQ_TYPES: BaseMap<CoreComponent> = {
 }
 
 export const FEATURE_PRE_REQ_LIST = Object.values(FEATURE_PRE_REQ_TYPES);
-export const FEATURE_PRE_REQ_SELECT_LIST = NameSelectOptionList(FEATURE_PRE_REQ_LIST);
 
 export const FeatureEntityConditionType = {
     material: 0,
@@ -337,7 +330,6 @@ export const FEATURE_ENTITY_CONDITION_TYPES: BaseMap<CoreComponent> = {
 }
 
 export const FEATURE_ENTITY_CONDITION_LIST = Object.values(FEATURE_ENTITY_CONDITION_TYPES);
-export const FEATURE_ENTITY_CONDITION_SELECT_LIST = NameSelectOptionList(FEATURE_ENTITY_CONDITION_LIST);
 
 // Material values for FeatureEntityConditionType.material
 export const MaterialType = {
@@ -353,7 +345,6 @@ export const MATERIAL_TYPES: BaseMap<CoreComponent> = {
 }
 
 export const MATERIAL_TYPE_LIST = Object.values(MATERIAL_TYPES);
-export const MATERIAL_TYPE_SELECT_LIST = NameSelectOptionList(MATERIAL_TYPE_LIST);
 
 // Environment values for FeatureEntityConditionType.environment
 export const EnvironmentType = {
@@ -381,7 +372,6 @@ export const ENVIRONMENT_TYPES: BaseMap<CoreComponent> = {
 }
 
 export const ENVIRONMENT_TYPE_LIST = Object.values(ENVIRONMENT_TYPES);
-export const ENVIRONMENT_TYPE_SELECT_LIST = NameSelectOptionList(ENVIRONMENT_TYPE_LIST);
 
 // Source values for FeatureEntityConditionType.source
 export const ConditionSourceType = {
@@ -401,7 +391,6 @@ export const CONDITION_SOURCE_TYPES: BaseMap<CoreComponent> = {
 };
 
 export const CONDITION_SOURCE_TYPE_LIST = Object.values(CONDITION_SOURCE_TYPES);
-export const CONDITION_SOURCE_TYPE_SELECT_LIST = NameSelectOptionList(CONDITION_SOURCE_TYPE_LIST);
 
 // Target values for FeatureEntityConditionType.target
 export const TargetType = {
@@ -421,7 +410,6 @@ export const TARGET_TYPES: BaseMap<CoreComponent> = {
 };
 
 export const TARGET_TYPE_LIST = Object.values(TARGET_TYPES);
-export const TARGET_TYPE_SELECT_LIST = NameSelectOptionList(TARGET_TYPE_LIST);
 
 // Attack Type Enum for FeatureEntityConditionType.attack_type
 export const ATTACK_TYPE_ENUM = {
@@ -467,7 +455,6 @@ export const ATTACK_TYPES: BaseMap<CoreComponent> = {
 };
 
 export const ATTACK_TYPE_LIST = Object.values(ATTACK_TYPES);
-export const ATTACK_TYPE_SELECT_LIST = NameSelectOptionList(ATTACK_TYPE_LIST);
 
 // Creature Types for FeatureEntityConditionType.creature_type
 export const CreatureType = {
@@ -545,7 +532,6 @@ export const CREATURE_TYPES: BaseMap<CoreComponent> = {
 };
 
 export const CREATURE_TYPE_LIST = Object.values(CREATURE_TYPES);
-export const CREATURE_TYPE_SELECT_LIST = NameSelectOptionList(CREATURE_TYPE_LIST);
 
 // Cumulative Value Type for enhanced formula parameters
 export const ConditionalScalingValueType = {
@@ -562,7 +548,6 @@ export const CONDITIONAL_SCALING_VALUE_TYPES: BaseMap<CoreComponent> = {
 };
 
 export const CONDITIONAL_SCALING_VALUE_TYPE_LIST = Object.values(CONDITIONAL_SCALING_VALUE_TYPES);
-export const CONDITIONAL_SCALING_VALUE_TYPE_SELECT_LIST = NameSelectOptionList(CONDITIONAL_SCALING_VALUE_TYPE_LIST);
 
 // Uses Frequency Types for feature modifiers
 export const USES_FREQUENCY_ENUM = {
@@ -580,4 +565,3 @@ export const USES_FREQUENCIES: BaseMap<CoreComponent> = {
 };
 
 export const USES_FREQUENCY_LIST = Object.values(USES_FREQUENCIES);
-export const USES_FREQUENCY_SELECT_LIST = NameSelectOptionList(USES_FREQUENCY_LIST);

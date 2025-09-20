@@ -1,5 +1,5 @@
 import {
-    UserIcon, ShieldCheckIcon, AcademicCapIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon
+    UserIcon, ShieldCheckIcon, AcademicCapIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, CogIcon
 } from '@heroicons/react/24/outline';
 import React, { useState, useEffect } from 'react';
 
@@ -8,7 +8,7 @@ import { RaceApi } from '@/features/race/RaceApi';
 import type { Race, RaceSummary, DnDClass, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse } from '@shared/schema';
 
 import {
-    AbilitiesRaceTab, ClassTab, SkillsTab, FeatsTab, DescriptionTab, EquipmentTab
+    AbilitiesRaceTab, ClassTab, SkillsTab, FeatsTab, DescriptionTab, EquipmentTab, ConfigurationTab
 } from './tabs'; // Using barrel export
 
 interface TabConfig {
@@ -76,7 +76,13 @@ export function CharacterEdit(): React.JSX.Element {
                 featureChoices: []
             }
         ],
-        preparedSpells: []
+        preparedSpells: [],
+        // NEW: Character configuration fields
+        editionId: null,
+        allowVariantClasses: false,
+        isGestalt: false,
+        ignoreLevelAdjustment: false,
+        disallowedSources: []
     });
 
     // Fetch races on component mount
@@ -141,7 +147,8 @@ export function CharacterEdit(): React.JSX.Element {
         { id: 'skills', label: 'Skills', icon: ShieldCheckIcon, component: SkillsTab },
         { id: 'feats', label: 'Feats', icon: SparklesIcon, component: FeatsTab },
         { id: 'description', label: 'Description', icon: DocumentTextIcon, component: DescriptionTab },
-        { id: 'equipment', label: 'Equipment', icon: BriefcaseIcon, component: EquipmentTab }
+        { id: 'equipment', label: 'Equipment', icon: BriefcaseIcon, component: EquipmentTab },
+        { id: 'configuration', label: 'Configuration', icon: CogIcon, component: ConfigurationTab }
     ];
 
     const CurrentTabComponent = tabs.find(tab => tab.id === activeTab)?.component;

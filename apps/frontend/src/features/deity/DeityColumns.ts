@@ -1,9 +1,8 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createArrayIdFilter, createContainsFilter, createEqualsFilter } from '@/components/generic-list/filterFunctions';
-import { getSourceBookOptionsForDeities } from '@/utils';
 import { DeityInQueryResponse } from '@shared/schema';
-import { EDITION_SELECT_LIST, ALIGNMENT_SELECT_LIST, FilterType, EDITION_MAP, GetSourceDisplay, SOURCE_BOOK_WITH_DEITIES_SELECT_LIST, PANTHEON_MAP, PANTHEON_SELECT_LIST } from '@shared/static-data';
+import { EDITION_LIST, ALIGNMENT_LIST, FilterType, EDITION_MAP, GetSourceDisplay, PANTHEON_MAP, PANTHEON_LIST, GetSourceBookTypeList, SourceType, EditionId } from '@shared/static-data';
 
 export const DEITY_COLUMNS: ColumnDef<DeityInQueryResponse, unknown>[] = [
     {
@@ -41,7 +40,7 @@ export const DEITY_COLUMNS: ColumnDef<DeityInQueryResponse, unknown>[] = [
         },
         meta: {
             filterType: FilterType.SINGLE_SELECT,
-            options: PANTHEON_SELECT_LIST,
+            options: PANTHEON_LIST,
         },
     },
     {
@@ -54,11 +53,11 @@ export const DEITY_COLUMNS: ColumnDef<DeityInQueryResponse, unknown>[] = [
         filterFn: createEqualsFilter<DeityInQueryResponse>(),
         cell: info => {
             const alignmentId = info.getValue() as number;
-            return ALIGNMENT_SELECT_LIST.find(alignment => alignment.value === alignmentId)?.label || alignmentId;
+            return ALIGNMENT_LIST.find(alignment => alignment.id === alignmentId)?.name || alignmentId;
         },
         meta: {
             filterType: FilterType.SINGLE_SELECT,
-            options: ALIGNMENT_SELECT_LIST,
+            options: ALIGNMENT_LIST,
         },
     },
     {
@@ -75,7 +74,7 @@ export const DEITY_COLUMNS: ColumnDef<DeityInQueryResponse, unknown>[] = [
         },
         meta: {
             filterType: FilterType.SINGLE_SELECT,
-            options: EDITION_SELECT_LIST,
+            options: EDITION_LIST,
         },
     },
     {
@@ -95,8 +94,11 @@ export const DEITY_COLUMNS: ColumnDef<DeityInQueryResponse, unknown>[] = [
         },
         meta: {
             filterType: FilterType.MULTI_SELECT,
-            options: (currentFilters: Array<{ id: string; value: unknown }>) =>
-                getSourceBookOptionsForDeities(currentFilters, SOURCE_BOOK_WITH_DEITIES_SELECT_LIST),
+            options: (currentFilters: Array<{ id: string; value: unknown }>) => {
+                const editionFilter = currentFilters.find(f => f.id === 'editionId');
+                const editionId = editionFilter?.value as EditionId;
+                return GetSourceBookTypeList(SourceType.Deities, editionId);
+            },
         },
     },
 ];

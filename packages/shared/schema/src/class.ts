@@ -49,6 +49,7 @@ export const GetAllClassesQuerySchema = z.object({
     baseClassesOnly: z.boolean().optional(),
     isVisible: z.boolean().optional(),
     isPrestige: z.boolean().optional(),
+    canCastSpells: z.boolean().optional(),
     editionId: z.number().int().positive().optional(),
     editionIds: z.array(z.number().int().positive()).optional(),
 });

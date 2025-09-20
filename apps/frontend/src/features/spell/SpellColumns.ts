@@ -1,22 +1,23 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { createArrayIdFilter, createEqualsFilter, createContainsFilter } from '@/components/generic-list/filterFunctions';
-import { getSourceBookOptionsForSpells } from '@/utils';
 import { Spell } from '@shared/schema/spell';
 import {
-    SPELL_SCHOOL_SELECT_LIST,
-    SPELL_DESCRIPTOR_SELECT_LIST,
-    SPELL_COMPONENT_SELECT_LIST,
-    CLASS_WITH_SPELLS_SELECT_LIST,
-    SOURCE_BOOK_WITH_SPELLS_SELECT_LIST,
+    SPELL_SCHOOL_LIST,
+    SPELL_DESCRIPTOR_LIST,
+    SPELL_COMPONENT_LIST,
     SpellSchoolNameList,
     SpellDescriptorNameList,
     SpellComponentAbbrList,
     GetSourceDisplay,
-    FilterType
+    FilterType,
+    GetSourceBookTypeList,
+    SourceType,
+    EditionId
 } from '@shared/static-data';
 
 import { GetClassDisplay } from './spellUtil';
+import { getClassesForSpellSelection } from '../class/ClassUtils';
 
 export const SPELL_COLUMNS: ColumnDef<Spell, unknown>[] = [
     {
@@ -69,7 +70,7 @@ export const SPELL_COLUMNS: ColumnDef<Spell, unknown>[] = [
         },
         meta: {
             filterType: FilterType.MULTI_SELECT,
-            options: SPELL_SCHOOL_SELECT_LIST,
+            options: SPELL_SCHOOL_LIST,
         },
     },
     {
@@ -85,7 +86,7 @@ export const SPELL_COLUMNS: ColumnDef<Spell, unknown>[] = [
         },
         meta: {
             filterType: FilterType.MULTI_SELECT,
-            options: SPELL_DESCRIPTOR_SELECT_LIST,
+            options: SPELL_DESCRIPTOR_LIST,
         },
     },
     {
@@ -102,7 +103,7 @@ export const SPELL_COLUMNS: ColumnDef<Spell, unknown>[] = [
         },
         meta: {
             filterType: FilterType.MULTI_SELECT,
-            options: SPELL_COMPONENT_SELECT_LIST,
+            options: SPELL_COMPONENT_LIST,
         },
     },
     {
@@ -119,8 +120,11 @@ export const SPELL_COLUMNS: ColumnDef<Spell, unknown>[] = [
         },
         meta: {
             filterType: FilterType.MULTI_SELECT,
-            options: (currentFilters: Array<{ id: string; value: unknown }>) =>
-                getSourceBookOptionsForSpells(currentFilters, SOURCE_BOOK_WITH_SPELLS_SELECT_LIST),
+            options: (currentFilters: Array<{ id: string; value: unknown }>) => {
+                const editionFilter = currentFilters.find(f => f.id === 'editionId');
+                const editionId = editionFilter?.value as EditionId;
+                return GetSourceBookTypeList(SourceType.Spells, editionId);
+            },
         },
     },
     {
@@ -136,7 +140,15 @@ export const SPELL_COLUMNS: ColumnDef<Spell, unknown>[] = [
         },
         meta: {
             filterType: FilterType.MULTI_SELECT,
-            options: CLASS_WITH_SPELLS_SELECT_LIST,
+            options: async (currentFilters: Array<{ id: string; value: unknown }>) => {
+                // Get the edition from the edition filter
+                const editionFilter = currentFilters.find(f => f.id === 'editionId');
+                const editionId = editionFilter?.value as EditionId || 5; // Default to 3.5e if no filter
+
+                // Get classes that can cast spells for the current edition
+                const classes = await getClassesForSpellSelection(editionId);
+                return classes;
+            },
         },
     },
     {

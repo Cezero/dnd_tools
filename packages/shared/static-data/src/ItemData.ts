@@ -1,5 +1,4 @@
 import type { CoreComponent, BaseMap, ProficiencyMap } from './types';
-import { NameSelectOptionList } from './Util';
 
 export const WEAPON_CATEGORY_ENUM = {
     Simple: 1,
@@ -14,7 +13,6 @@ export const WEAPON_CATEGORIES: BaseMap<CoreComponent> = {
 };
 
 export const WEAPON_CATEGORY_LIST = Object.values(WEAPON_CATEGORIES);
-export const WEAPON_CATEGORY_SELECT_LIST = NameSelectOptionList(WEAPON_CATEGORY_LIST);
 
 export const WEAPON_TYPE_ENUM = {
     UnarmedAttack: 1,
@@ -33,7 +31,6 @@ export const WEAPON_TYPES: BaseMap<CoreComponent> = {
 };
 
 export const WEAPON_TYPE_LIST = Object.values(WEAPON_TYPES);
-export const WEAPON_TYPE_SELECT_LIST = NameSelectOptionList(WEAPON_TYPE_LIST);
 
 export const DamageSourceType = {
     Physical: 1,
@@ -46,7 +43,6 @@ export const DAMAGE_SOURCES: BaseMap<CoreComponent> = {
 };
 
 export const DAMAGE_SOURCE_LIST = Object.values(DAMAGE_SOURCES);
-export const DAMAGE_SOURCE_SELECT_LIST = NameSelectOptionList(DAMAGE_SOURCE_LIST);
 
 export const DAMAGE_TYPE_ENUM = {
     All: 0,
@@ -99,7 +95,6 @@ export const DAMAGE_TYPES: BaseMap<CoreComponent> = {
 };
 
 export const DAMAGE_TYPE_LIST = Object.values(DAMAGE_TYPES);
-export const DAMAGE_TYPE_SELECT_LIST = NameSelectOptionList(DAMAGE_TYPE_LIST);
 
 export const DAMAGE_TYPE_COMPATIBILITY = {
     [DamageSourceType.Physical]: [
@@ -116,15 +111,8 @@ export const DAMAGE_TYPE_COMPATIBILITY = {
     ],
 };
 
-export const PHYSICAL_DAMAGE_SELECT_LIST = NameSelectOptionList(
-    DAMAGE_TYPE_COMPATIBILITY[DamageSourceType.Physical].map(id => DAMAGE_TYPES[id])
-);
-
-export const ENERGY_DAMAGE_SELECT_LIST = NameSelectOptionList(
-    DAMAGE_TYPE_COMPATIBILITY[DamageSourceType.Energy].map(id => DAMAGE_TYPES[id])
-);
-
-
+export const ENERGY_DAMAGE_TYPE_LIST = Object.values(DAMAGE_TYPE_COMPATIBILITY[DamageSourceType.Energy].map(type => DAMAGE_TYPES[type]));
+export const PHYSICAL_DAMAGE_TYPE_LIST = Object.values(DAMAGE_TYPE_COMPATIBILITY[DamageSourceType.Physical].map(type => DAMAGE_TYPES[type]));
 
 export const ARMOR_CATEGORY_ENUM = {
     Light: 1,
@@ -143,7 +131,6 @@ export const ARMOR_CATEGORIES: BaseMap<CoreComponent> = {
 };
 
 export const ARMOR_CATEGORY_LIST = Object.values(ARMOR_CATEGORIES);
-export const ARMOR_CATEGORY_SELECT_LIST = NameSelectOptionList(ARMOR_CATEGORY_LIST);
 
 export const ITEM_TYPE_ENUM = {
     Armor: 1,
@@ -230,7 +217,6 @@ export const PROFICIENCY_TYPES: ProficiencyMap = {
 };
 
 export const PROFICIENCY_TYPE_LIST = Object.values(PROFICIENCY_TYPES);
-export const PROFICIENCY_TYPE_SELECT_LIST = NameSelectOptionList(PROFICIENCY_TYPE_LIST);
 
 export const ITEM_TYPES: BaseMap<CoreComponent> = {
     [ITEM_TYPE_ENUM.Armor]: { id: ITEM_TYPE_ENUM.Armor, name: 'Armor' },
@@ -247,4 +233,3 @@ export const ITEM_TYPES: BaseMap<CoreComponent> = {
 };
 
 export const ITEM_TYPE_LIST = Object.values(ITEM_TYPES);
-export const ITEM_TYPE_SELECT_LIST = NameSelectOptionList(ITEM_TYPE_LIST);

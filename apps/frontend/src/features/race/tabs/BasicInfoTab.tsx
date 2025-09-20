@@ -1,16 +1,27 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { ValidatedInput, SourceEditor } from '@/components/forms';
 import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
-import { EDITION_SELECT_LIST_FULL, SIZE_SELECT_LIST, GetBaseClassesByEdition, SourceType } from '@shared/static-data';
+import { EDITION_LIST_FULL, SIZE_LIST, SourceType, CoreComponent } from '@shared/static-data';
 
 import type { RaceTabProps } from './types';
+import { getBaseClassesForEdition } from '../../class/ClassUtils';
+
 
 export function BasicInfoTab({
     formData,
     setFormData,
     isLoading: _isLoading = false
 }: RaceTabProps): React.JSX.Element {
+    const [availableClasses, setAvailableClasses] = useState<CoreComponent[]>([]);
+
+    useEffect(() => {
+        const loadClasses = async () => {
+            const classes = await getBaseClassesForEdition(formData.editionId);
+            setAvailableClasses(classes);
+        };
+        loadClasses();
+    }, [formData.editionId]);
     return (
         <div className="p-6 space-y-6">
             <div>
@@ -32,7 +43,7 @@ export function BasicInfoTab({
                         <CustomSelect
                             label="Size"
                             value={formData.sizeId}
-                            options={SIZE_SELECT_LIST}
+                            options={SIZE_LIST}
                             required
                             componentExtraClassName="flex items-center gap-2"
                             labelExtraClassName="w-30"
@@ -61,8 +72,8 @@ export function BasicInfoTab({
                             value={formData.favoredClassId}
                             onValueChange={(value) => setFormData({ ...formData, favoredClassId: value as number })}
                             options={[
-                                { value: -1, label: 'Any' },
-                                ...GetBaseClassesByEdition(formData.editionId)
+                                { id: -1, name: 'Any' },
+                                ...availableClasses
                             ]}
                             placeholder="Select favored class"
                         />
@@ -78,7 +89,7 @@ export function BasicInfoTab({
                                 itemTextExtraClassName="w-16"
                                 value={formData.editionId}
                                 onValueChange={(value) => setFormData({ ...formData, editionId: value as number })}
-                                options={EDITION_SELECT_LIST_FULL}
+                                options={EDITION_LIST_FULL}
                                 placeholder="Select edition"
                             />
                             <CustomCheckbox

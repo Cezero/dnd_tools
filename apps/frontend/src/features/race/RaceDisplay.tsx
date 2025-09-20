@@ -1,12 +1,13 @@
 import pluralize from 'pluralize';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { CharacterUtils } from '@/features/character/CharacterUtils';
 import { displayStrategyFactory } from '@/lib/formatters';
 import { LanguageService } from '@/lib/LanguageService';
-import { Race } from '@shared/schema';
-import { DisplayType, SIZE_MAP, LANGUAGE_MAP, EDITION_MAP, CLASS_MAP, SpecialFeatureId, GetSourceDisplay } from '@shared/static-data';
+import { Race, ClassSummary } from '@shared/schema';
+import { DisplayType, SIZE_MAP, LANGUAGE_MAP, EDITION_MAP, SpecialFeatureId, GetSourceDisplay } from '@shared/static-data';
+import { getClassById } from '../class/ClassUtils';
 
 interface RaceDisplayProps {
     race: Race;
@@ -27,6 +28,22 @@ export function RaceDisplay({
     isAdmin = false,
     fromListParams: _fromListParams = ''
 }: RaceDisplayProps): React.JSX.Element {
+    const [favoredClassData, setFavoredClassData] = useState<ClassSummary | null>(null);
+
+    // Load favored class data when race changes
+    useEffect(() => {
+        const loadFavoredClass = async () => {
+            if (race.favoredClassId && race.favoredClassId !== -1) {
+                const classData = await getClassById(race.favoredClassId);
+                setFavoredClassData(classData);
+            } else {
+                setFavoredClassData(null);
+            }
+        };
+
+        loadFavoredClass();
+    }, [race.favoredClassId]);
+
     // Inner cell styling (the inner border, padding, background, text colors)
     const innerCellContentClasses = "p-3 bg-content border-content rounded-lg border w-full";
 
@@ -55,7 +72,7 @@ export function RaceDisplay({
                             <p><strong>Size:</strong> {SIZE_MAP[race.sizeId]?.name}</p>
                             <p><strong>Speed:</strong> {race.speed}</p>
                             <p><strong>Level Adjustment:</strong> {race.levelAdjustment && race.levelAdjustment > 0 ? `+${race.levelAdjustment}` : (race.levelAdjustment || 0)}</p>
-                            <p><strong>Favored Class:</strong> {race.favoredClassId === -1 ? 'Any' : CLASS_MAP[race.favoredClassId]?.name}</p>
+                            <p><strong>Favored Class:</strong> {race.favoredClassId === -1 ? 'Any' : (favoredClassData?.name || 'Loading...')}</p>
                         </div>
                         <div>
                             <p><strong>Languages:</strong> {

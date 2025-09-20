@@ -10,26 +10,6 @@ import {
     GetAllClassesQuerySchema,
 } from '@shared/schema';
 
-/**
- * ClassService with path parameter support
- *
- * Usage examples:
- *
- * // Get class by ID (path parameter)
- * const class = await ClassService.getClassById(undefined, { id: 123 });
- * 
- * // Create class
- * const newClass = await ClassService.createClass({ name: "Wizard", hitDie: 6 });
- * 
- * // Update class (path parameter + body)
- * const updatedClass = await ClassService.updateClass(
- *   { name: "Updated Wizard" }, 
- *   { id: 123 }
- * );
- * 
- * // Delete class (path parameter)
- * await ClassService.deleteClass(undefined, { id: 123 });
- */
 export const ClassApi = {
     getClasses: typedApi<typeof GetAllClassesQuerySchema, typeof GetAllClassesResponseSchema>({
         path: '/classes/query',

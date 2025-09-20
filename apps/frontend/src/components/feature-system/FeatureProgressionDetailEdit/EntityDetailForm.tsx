@@ -1,25 +1,25 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 
 import { useFormContext, ValidatedCustomSelect, ValidatedInput, CustomCheckbox } from '@/components/forms';
+import { DomainApi } from '@/features/domain/DomainApi';
 import { FeatApi } from '@/features/feat/FeatApi';
 import { ItemApi } from '@/features/item/ItemApi';
-import { DomainApi } from '@/features/domain/DomainApi';
 import type { FeatureEntity, FeatureEntityCondition, FeatureProgression } from '@shared/schema';
 import {
-    ENTITY_TYPE_SELECT_LIST,
-    FEATURE_BONUS_SELECT_LIST,
+    ENTITY_LIST,
+    FEATURE_BONUS_LIST,
     EntityType,
     EntityAppliesToType,
     FeatureEntityConditionType,
     ENTITY_TYPE_COMPATIBILITY,
-    FORMULA_SELECT_LIST,
+    FORMULA_LIST,
 } from '@shared/static-data';
 
 import { AppliesToSelector } from './AppliesToSelector';
 import { ConditionEditor } from './ConditionEditor';
 import { FormulaManager } from './FormulaManager';
-import { getAppliesToSubIdSelectOptions } from './utils';
 import type { BaseFormProps } from './types';
+import { getAppliesToSubIdSelectOptions } from './utils';
 
 export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeature, progression: _progression }: BaseFormProps) {
     const { formData, setFormData } = useFormContext();
@@ -188,7 +188,7 @@ export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeatur
                         field={`entities.${index}.type`}
                         label="Type"
                         required
-                        options={ENTITY_TYPE_SELECT_LIST}
+                        options={ENTITY_LIST}
                         placeholder="Select type"
                         componentExtraClassName="flex items-center gap-2"
                         nested
@@ -208,7 +208,7 @@ export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeatur
                     <ValidatedCustomSelect
                         field={`entities.${index}.formulaParams.formulaId`}
                         label="Formula"
-                        options={FORMULA_SELECT_LIST}
+                        options={FORMULA_LIST}
                         placeholder="Select"
                         componentExtraClassName="flex items-center gap-2"
                         nested
@@ -229,7 +229,7 @@ export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeatur
                 <ValidatedCustomSelect
                     field={`entities.${index}.bonusType`}
                     label="Bonus Type"
-                    options={FEATURE_BONUS_SELECT_LIST}
+                    options={FEATURE_BONUS_LIST}
                     placeholder="Select bonus type"
                     componentExtraClassName="flex items-center gap-2"
                     nested

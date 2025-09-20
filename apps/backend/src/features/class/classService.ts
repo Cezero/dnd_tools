@@ -32,6 +32,9 @@ export const classService: ClassService = {
         if (query?.isPrestige !== undefined) {
             whereClause.isPrestige = query.isPrestige;
         }
+        if (query?.canCastSpells !== undefined) {
+            whereClause.canCastSpells = query.canCastSpells;
+        }
         if (query?.editionId !== undefined) {
             whereClause.editionId = query.editionId;
         }

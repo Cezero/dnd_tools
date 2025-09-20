@@ -9,7 +9,7 @@ import { CustomSelect } from '@/components/forms/FormComponents';
 import { UserProfileApi } from '@/components/profile/UserProfileApi';
 import { ColorPicker } from '@/components/widgets';
 import type { UserProfileResponse, UpdateUserProfileRequest, GetAllDiceConfigsResponse, UpdateUserDiceConfigRequest } from '@shared/schema';
-import { THREE_D_DICE_THEME_SELECT_LIST, doesThemeIgnoreColor } from '@shared/static-data';
+import { EDITION_LIST, THREE_D_DICE_THEME_LIST, doesThemeIgnoreColor } from '@shared/static-data';
 
 interface TabConfig {
     id: string;
@@ -296,10 +296,7 @@ function DndPreferencesTab({ profile, onUpdate }: { profile: UserProfileResponse
                     <CustomSelect
                         value={formData.preferredEditionId}
                         onValueChange={(value) => setFormData(prev => ({ ...prev, preferredEditionId: value as number }))}
-                        options={[
-                            { value: 1, label: '3.5 Edition' },
-                            { value: 2, label: 'Pathfinder 1e' },
-                        ]}
+                        options={EDITION_LIST}
                     />
                 </div>
 
@@ -352,7 +349,7 @@ function DiceConfigTab({ profile: _profile, onUpdate: _onUpdate }: { profile: Us
                 DiceBoxService.getUserDiceConfig()
             ]);
             setAvailableConfigs(configsResponse);
-            setUserConfig(userConfigResponse);
+            setUserConfig(userConfigResponse as UpdateUserDiceConfigRequest);
         } catch (err) {
             console.error('Failed to load dice configurations:', err);
         } finally {
@@ -443,10 +440,7 @@ function DiceConfigTab({ profile: _profile, onUpdate: _onUpdate }: { profile: Us
                     <CustomSelect
                         value={userConfig.diceConfigBase}
                         onValueChange={(value) => setUserConfig(prev => prev ? { ...prev, diceConfigBase: value as number } : null)}
-                        options={availableConfigs.results.map(config => ({
-                            value: config.id,
-                            label: config.name
-                        }))}
+                        options={availableConfigs.results}
                     />
                 </div>
 
@@ -458,7 +452,7 @@ function DiceConfigTab({ profile: _profile, onUpdate: _onUpdate }: { profile: Us
                     <CustomSelect
                         value={getCurrentValue('theme', 'default')}
                         onValueChange={(value) => handleOverrideChange('theme', value)}
-                        options={THREE_D_DICE_THEME_SELECT_LIST}
+                        options={THREE_D_DICE_THEME_LIST}
                     />
                 </div>
 

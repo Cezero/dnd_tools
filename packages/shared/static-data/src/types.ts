@@ -1,7 +1,3 @@
-export interface SelectOption {
-    value: number;
-    label: string;
-}
 
 export type NameToIdMap = {
     [key: string]: number;
@@ -15,13 +11,10 @@ export type BaseMap<C extends CoreComponent> = {
     [key: number]: C;
 };
 
-export type SelectOptionMap<C extends SelectOption> = {
-    [key: number]: C;
-};
-
 export interface CoreComponent {
     id: number;
     name: string;
+    abbreviation?: string;
 }
 
 // Extended type for appliesTo types with optional display names
@@ -29,15 +22,11 @@ export interface AppliesToType extends CoreComponent {
     displayName?: string | null;
 }
 
-export interface CoreComponentAbbreviation extends CoreComponent {
-    abbreviation: string;
-}
-
 export interface RpgDie extends CoreComponent {
     sides: number;
 }
 
-export interface Currency extends CoreComponentAbbreviation {
+export interface Currency extends CoreComponent {
     gpValue: number;
 }
 
@@ -56,7 +45,7 @@ export interface FormulaParameter {
     defaultValue?: number;
 }
 
-export interface Size extends CoreComponentAbbreviation {
+export interface Size extends CoreComponent {
     sizeModifier: number;
     grappleModifier: number;
     hideModifier: number;
@@ -106,34 +95,15 @@ export interface Spell extends CoreComponent {
     editionId: number;
 }
 
-export interface SpellSubschool extends CoreComponent {
-    schoolId: number;
-}
-
-export interface ClassNameMap {
-    [key: string]: string;
-}
-
 export interface SkillDetail extends CoreComponent {
     abilityId: number;
     trainedOnly: boolean;
     isAnalog: boolean;
 }
 
-export interface SourceBook extends CoreComponentAbbreviation {
+export interface SourceBookData extends CoreComponent {
     editionId: number;
-    hasSpells: boolean;
-    hasClasses: boolean;
-    hasRaces: boolean;
-    hasDomains: boolean;
-    hasDeities: boolean;
-}
-
-export interface Class extends CoreComponentAbbreviation {
-    editionId: number;
-    isPrestige: boolean;
-    isVisible: boolean;
-    canCastSpells: boolean;
+    isVisible?: boolean;
 }
 
 export interface DiceTheme extends CoreComponent {
@@ -142,32 +112,32 @@ export interface DiceTheme extends CoreComponent {
     ignoresThemeColor: boolean;
 }
 
-export type SpellTable = { [characterLevel: number]: { [spellLevel: number]: number } };
-
-export type AbilityMap = BaseMap<CoreComponentAbbreviation>;
-export type SavingThrowMap = BaseMap<CoreComponentAbbreviation>;
+export type AbilityMap = BaseMap<CoreComponent>;
+export type SavingThrowMap = BaseMap<CoreComponent>;
 export type RpgDieMap = BaseMap<RpgDie>;
 export type CurrencyMap = BaseMap<Currency>;
-export type AlignmentMap = BaseMap<CoreComponentAbbreviation>;
+export type AlignmentMap = BaseMap<CoreComponent>;
 export type SizeMap = BaseMap<Size>;
 export type LanguageMap = BaseMap<Language>;
-export type EditionMap = BaseMap<CoreComponentAbbreviation>;
+export type EditionMap = BaseMap<CoreComponent>;
 export type ProficiencyMap = BaseMap<Proficiency>;
 export type FeatMap = BaseMap<Feat>;
 export type ItemMap = BaseMap<Item>;
 export type SpellMap = BaseMap<Spell>;
-export type SpellComponentMap = BaseMap<CoreComponentAbbreviation>;
+export type SpellComponentMap = BaseMap<CoreComponent>;
 export type SpellDescriptorMap = BaseMap<CoreComponent>;
-export type SpellRangeMap = BaseMap<CoreComponentAbbreviation>;
-export type SpellSchoolMap = BaseMap<CoreComponentAbbreviation>;
-export type SpellSubschoolMap = BaseMap<SpellSubschool>;
-export type SpellSubschoolSelectMap = SelectOptionMap<SelectOption>;
+export type SpellRangeMap = BaseMap<CoreComponent>;
+export type SpellSchoolMap = BaseMap<CoreComponent>;
+export type SpellSubschoolMap = BaseMap<CoreComponent>;
 export type SkillMap = BaseMap<SkillDetail>;
 export type CraftSkillMap = BaseMap<CoreComponent>;
 export type KnowledgeSkillMap = BaseMap<CoreComponent>;
-export type SourceBookMap = BaseMap<SourceBook>;
-export type ClassMap = BaseMap<Class>;
+export type SourceBookMap = BaseMap<SourceBookData>;
 export type DiceThemeMap = { [key: string]: DiceTheme };
 export type CastingTypeMap = BaseMap<CoreComponent>;
 export type PantheonMap = BaseMap<CoreComponent>;
 export type SettingMap = BaseMap<CoreComponent>;
+export type AbilityGenerationMethodMap = BaseMap<CoreComponent>;
+export type PointBuyOptionsMap = BaseMap<CoreComponent>;
+export type BooleanFilterMap = BaseMap<CoreComponent>;
+export type ClassTypeMap = BaseMap<CoreComponent>;

@@ -14,7 +14,7 @@ import {
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { CreateDomainRequest, UpdateDomainRequest, UpdateDomainSchema, CreateDomainSchema, FeatureProgression, Feature, CreateFeatureProgressionRequest, UpdateFeatureRequest } from '@shared/schema';
-import { EDITION_SELECT_LIST_FULL, SourceType, FeatureSourceType } from '@shared/static-data';
+import { EDITION_LIST_FULL, SourceType, FeatureSourceType } from '@shared/static-data';
 
 import { DomainApi } from './DomainApi';
 
@@ -421,7 +421,7 @@ export function DomainEdit() {
                         <div>
                             <CustomSelect
                                 label="Edition"
-                                options={EDITION_SELECT_LIST_FULL}
+                                options={EDITION_LIST_FULL}
                                 value={formData.editionId}
                                 onValueChange={(value) => setFormData({ ...formData, editionId: value })}
                                 componentExtraClassName="flex items-center gap-2"

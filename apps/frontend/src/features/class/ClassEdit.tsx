@@ -47,6 +47,7 @@ import { ClassApi } from './ClassApi';
 import { ClassFeatureAssoc } from './ClassFeatureAssoc';
 import { ClassProficiencyService } from './ClassProficiencyService';
 import { ClassSkillService } from './ClassSkillService';
+import { SpellOverrideTab } from './SpellOverrideTab';
 import {
     BasicInfoTab,
     SkillsTab,
@@ -58,7 +59,6 @@ import {
     type ClassFormData
 } from './tabs';
 import { VariantClassApi } from './VariantClassApi';
-import { SpellOverrideTab } from './SpellOverrideTab';
 
 export default function ClassEdit() {
     const { id } = useParams<{ id: string }>();

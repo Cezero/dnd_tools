@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { DetailPage } from '@/components/common/DetailPage';
@@ -57,17 +57,6 @@ export function FeatureDetail() {
                 return fromListParams ? `/races?${fromListParams}` : '/races';
             default:
                 return fromListParams ? `/features?${fromListParams}` : '/features';
-        }
-    };
-
-    const getBackText = () => {
-        switch (fromPage) {
-            case 'classes':
-                return 'Back to Classes';
-            case 'races':
-                return 'Back to Races';
-            default:
-                return 'Back to Features';
         }
     };
 

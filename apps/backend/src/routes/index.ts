@@ -6,8 +6,8 @@ import { CharacterCalculationRouter } from '../features/characterCalculation/cha
 import { classRoutes } from '../features/class';
 import { VariantClassRouter } from '../features/class/variantClassRoutes';
 import { DeityRouter } from '../features/deity';
-import { DomainRouter } from '../features/domain';
 import { diceBoxRoutes } from '../features/diceBox';
+import { DomainRouter } from '../features/domain';
 import { featRoutes } from '../features/feat';
 import { featureRoutes } from '../features/featureSystem';
 import { itemRoutes } from '../features/item';

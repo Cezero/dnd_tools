@@ -1,5 +1,4 @@
 import type { BaseMap, Formula } from './types';
-import { NameSelectOptionList } from './Util';
 import { GetAbilityModifier, ABILITY_MAP } from './AbilityData';
 
 export const enum FormulaId {
@@ -315,7 +314,6 @@ export const FORMULA_MAP: BaseMap<Formula> = {
 // ============================================================================
 
 export const FORMULA_LIST = Object.values(FORMULA_MAP);
-export const FORMULA_SELECT_LIST = NameSelectOptionList(FORMULA_LIST);
 
 // ============================================================================
 // FORMULA UTILITIES

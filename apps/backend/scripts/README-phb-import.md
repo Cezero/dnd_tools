@@ -20,7 +20,7 @@ The script processes two CSV files:
 
 The script uses the following constants from `@shared/static-data`:
 - **Source Book ID**: 45 (3.5e Player's Handbook) - validated against `SOURCE_BOOK_MAP`
-- **Edition ID**: `EDITION_IDS.DND_3_5E` (5) - 3.5e
+- **Edition ID**: `EditionId.DND_3_5E` (5) - 3.5e
 - **Pantheon ID**: `Pantheon.Greyhawk` (1) - Greyhawk
 - **Alignment Mapping**: Uses `ALIGNMENT_LIST` to find alignments by name
 - **Class Validation**: Uses `CLASS_MAP` to find classes by name and edition
@@ -182,6 +182,6 @@ scripts/
 ## Dependencies
 
 - `@shared/prisma-client` - Database client
-- `@shared/static-data` - Static data constants (`EDITION_IDS`, `Pantheon`, `SOURCE_BOOK_MAP`, `CLASS_MAP`, `ALIGNMENT_LIST`)
+- `@shared/static-data` - Static data constants (`EditionId`, `Pantheon`, `SOURCE_BOOK_MAP`, `CLASS_MAP`, `ALIGNMENT_LIST`)
 - `fs` - File system operations
 - `path` - Path utilities

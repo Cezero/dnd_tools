@@ -2,6 +2,7 @@ import { TrashIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 
 import { ValidatedCustomSelect, ValidatedInput } from '@/components/forms';
+import { CoreComponent } from '@shared/static-data';
 
 interface ArrayPairEditorProps {
     thresholds: number[];
@@ -15,7 +16,7 @@ interface ArrayPairEditorProps {
     className?: string;
     // New props for enhanced conditional scaling
     valuesRepresent?: 'value' | 'appliesToId';
-    appliesToSelectOptions?: Array<{ value: string | number; label: string }>;
+    appliesToSelectOptions?: CoreComponent[];
     // Form context props for ValidatedCustomSelect
     entityKey?: string;
     index?: number;

@@ -1,6 +1,7 @@
 import React, { forwardRef } from 'react';
 
 import { type ValidationState } from '@/hooks/useZodValidation';
+import { CoreComponent } from '@shared/static-data';
 
 import { CustomSelect, CustomCheckbox } from './FormComponents';
 import { FormContext, useFormContext } from './ValidatedFormHooks';
@@ -232,9 +233,9 @@ export const ValidatedCustomCheckbox = forwardRef<HTMLButtonElement, ValidatedCu
 ValidatedCustomCheckbox.displayName = 'ValidatedCustomCheckbox';
 
 // Validated Custom Select Component
-export interface ValidatedCustomSelectProps<T = string | number> {
+export interface ValidatedCustomSelectProps<T extends CoreComponent> {
     field: string;
-    options: Array<{ value: T; label: string }>;
+    options: T[];
     label?: string;
     required?: boolean;
     placeholder?: string;
@@ -245,89 +246,86 @@ export interface ValidatedCustomSelectProps<T = string | number> {
     itemExtraClassName?: string;
     itemTextExtraClassName?: string;
     icon?: React.ReactNode;
-    displayValue?: (value: T | null) => string;
+    displayValue?: (value: number | null) => string;
     labelExtraClassName?: string;
     nested?: boolean;
 }
 
-export const ValidatedCustomSelect = forwardRef<HTMLDivElement, ValidatedCustomSelectProps>(
-    ({
-        field,
-        options,
-        label,
-        required = false,
-        placeholder = 'Select an option',
-        disabled = false,
-        componentExtraClassName = '',
-        triggerExtraClassName = '',
-        popupExtraClassName = '',
-        itemExtraClassName = '',
-        itemTextExtraClassName = '',
-        icon,
-        displayValue,
-        labelExtraClassName = '',
-        nested = false,
-        ..._props
-    }, _ref) => {
-        const { formData, setFormData } = useFormContext();
+export const ValidatedCustomSelect = <T extends CoreComponent = CoreComponent>({
+    field,
+    options,
+    label,
+    required = false,
+    placeholder = 'Select an option',
+    disabled = false,
+    componentExtraClassName = '',
+    triggerExtraClassName = '',
+    popupExtraClassName = '',
+    itemExtraClassName = '',
+    itemTextExtraClassName = '',
+    icon,
+    displayValue,
+    labelExtraClassName = '',
+    nested = false,
+    ..._props
+}: ValidatedCustomSelectProps<T>) => {
+    const { formData, setFormData } = useFormContext();
 
-        // Helper function to get nested value
-        const getNestedValue = (obj: Record<string, unknown>, path: string): unknown => {
-            if (!nested) return obj[path] ?? null;
-            return path.split('.').reduce((current, key) => {
-                return current && typeof current === 'object' ? (current as Record<string, unknown>)[key] : undefined;
-            }, obj) ?? null;
-        };
+    // Helper function to get nested value
+    const getNestedValue = (obj: Record<string, unknown>, path: string): unknown => {
+        if (!nested) return obj[path] ?? null;
+        return path.split('.').reduce((current, key) => {
+            return current && typeof current === 'object' ? (current as Record<string, unknown>)[key] : undefined;
+        }, obj) ?? null;
+    };
 
-        // Helper function to set nested value
-        const setNestedValue = (obj: Record<string, unknown>, path: string, value: unknown): Record<string, unknown> => {
-            if (!nested) return { ...obj, [path]: value };
+    // Helper function to set nested value
+    const setNestedValue = (obj: Record<string, unknown>, path: string, value: unknown): Record<string, unknown> => {
+        if (!nested) return { ...obj, [path]: value };
 
-            const keys = path.split('.');
-            const newObj = { ...obj };
-            let current = newObj;
+        const keys = path.split('.');
+        const newObj = { ...obj };
+        let current = newObj;
 
-            for (let i = 0; i < keys.length - 1; i++) {
-                const key = keys[i];
-                if (!(key in current) || typeof current[key] !== 'object' || current[key] === null) {
-                    current[key] = {};
-                }
-                current = current[key] as Record<string, unknown>;
+        for (let i = 0; i < keys.length - 1; i++) {
+            const key = keys[i];
+            if (!(key in current) || typeof current[key] !== 'object' || current[key] === null) {
+                current[key] = {};
             }
+            current = current[key] as Record<string, unknown>;
+        }
 
-            current[keys[keys.length - 1]] = value;
-            return newObj;
-        };
+        current[keys[keys.length - 1]] = value;
+        return newObj;
+    };
 
-        const value = getNestedValue(formData, field);
+    const value = getNestedValue(formData, field);
 
-        const handleValueChange = (newValue: string | number) => {
-            setFormData(prev => setNestedValue(prev, field, newValue));
-        };
+    const handleValueChange = (newValue: string | number) => {
+        setFormData(prev => setNestedValue(prev, field, newValue));
+    };
 
-        return (
-            <CustomSelect
-                value={value as string | number}
-                onValueChange={handleValueChange}
-                options={options}
-                placeholder={placeholder}
-                disabled={disabled}
-                componentExtraClassName={componentExtraClassName}
-                triggerExtraClassName={triggerExtraClassName}
-                popupExtraClassName={popupExtraClassName}
-                itemExtraClassName={itemExtraClassName}
-                itemTextExtraClassName={itemTextExtraClassName}
-                label={label}
-                required={required}
-                labelExtraClassName={labelExtraClassName}
-                icon={icon}
-                displayValue={displayValue}
-            />
-        );
-    }
-);
+    return (
+        <CustomSelect
+            value={value as number}
+            onValueChange={handleValueChange}
+            options={options}
+            placeholder={placeholder}
+            disabled={disabled}
+            componentExtraClassName={componentExtraClassName}
+            triggerExtraClassName={triggerExtraClassName}
+            popupExtraClassName={popupExtraClassName}
+            itemExtraClassName={itemExtraClassName}
+            itemTextExtraClassName={itemTextExtraClassName}
+            label={label}
+            required={required}
+            labelExtraClassName={labelExtraClassName}
+            icon={icon}
+            displayValue={displayValue}
+        />
+    );
+};
 
-ValidatedCustomSelect.displayName = 'ValidatedCustomSelect';
 
 // Form Container Component
 export interface ValidatedFormProps {

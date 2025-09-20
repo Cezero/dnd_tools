@@ -15,7 +15,9 @@ import {
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { SpellApi } from '@/features/spell/SpellApi';
 import { SpellLevelMapping, GetSpellResponse, UpdateSpellSchema, UpdateSpellRequest, SpellIdParamSchema } from '@shared/schema';
-import { SPELL_DESCRIPTOR_LIST, SPELL_COMPONENT_LIST, SPELL_RANGE_LIST, SPELL_RANGE_MAP, SPELL_SUBSCHOOL_LIST_BY_SCHOOL_ID, CLASS_LIST, CLASS_MAP, SPELL_SCHOOL_SELECT_LIST, SelectOption, SourceType } from '@shared/static-data';
+import { SPELL_DESCRIPTOR_LIST, SPELL_COMPONENT_LIST, SPELL_RANGE_LIST, SPELL_RANGE_MAP, SPELL_SUBSCHOOL_BY_SCHOOL_ID_MAP, SPELL_SCHOOL_LIST, SourceType, CoreComponent } from '@shared/static-data';
+
+import { getClassesForSpellSelection } from '../class/ClassUtils';
 
 export function SpellEdit() {
     const { id } = useParams();
@@ -25,9 +27,10 @@ export function SpellEdit() {
     const [message, setMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [selectedClassToAdd, setSelectedClassToAdd] = useState<string>('');
+    const [selectedClassToAdd, setSelectedClassToAdd] = useState<number>(0);
     const [selectedLevelToAdd, setSelectedLevelToAdd] = useState<number>(1);
     const [classLevelMappings, setClassLevelMappings] = useState<SpellLevelMapping[]>([]);
+    const [availableClasses, setAvailableClasses] = useState<CoreComponent[]>([]);
     const fromListParams = location.state?.fromListParams || '';
 
     const [formData, setFormData] = useState<UpdateSpellRequest | null>(null);
@@ -67,6 +70,26 @@ export function SpellEdit() {
         fetchSpell();
     }, [id]);
 
+    // Load available classes for spell selection
+    useEffect(() => {
+        const loadAvailableClasses = async () => {
+            try {
+                // Default to edition 5 (3.5e) for now - this could be made configurable
+                const classes = await getClassesForSpellSelection(5, classLevelMappings.map(m => m.classId));
+                setAvailableClasses(classes.map(cls => ({
+                    id: cls.id,
+                    name: cls.name,
+                    abbreviation: cls.abbreviation
+                })));
+            } catch (error) {
+                console.error('Failed to load available classes:', error);
+                setAvailableClasses([]);
+            }
+        };
+
+        loadAvailableClasses();
+    }, [classLevelMappings]);
+
     const _HandleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | string) => {
         let name: string, value: string | number;
 
@@ -96,7 +119,7 @@ export function SpellEdit() {
 
     const HandleAddClassLevel = () => {
         if (selectedClassToAdd && selectedLevelToAdd >= 0 && selectedLevelToAdd <= 20) {
-            const classId = parseInt(selectedClassToAdd);
+            const classId = selectedClassToAdd;
             const newMapping: SpellLevelMapping = { classId, level: selectedLevelToAdd };
 
             // Check if this class is already mapped
@@ -112,7 +135,7 @@ export function SpellEdit() {
                 setClassLevelMappings([...classLevelMappings, newMapping]);
             }
 
-            setSelectedClassToAdd('');
+            setSelectedClassToAdd(0);
             setSelectedLevelToAdd(1);
         }
     };
@@ -233,12 +256,7 @@ export function SpellEdit() {
         return <div>No spell data available</div>;
     }
 
-    // Get available classes for selection (filter out already selected ones)
-    const availableClasses = CLASS_LIST.filter(dndClass =>
-        dndClass.canCastSpells &&
-        dndClass.isVisible &&
-        !classLevelMappings.some(mapping => mapping.classId === dndClass.id)
-    );
+    // Available classes are now loaded via useEffect and stored in state
 
     return (
         <div className="max-w-6xl mx-auto p-6">
@@ -293,7 +311,7 @@ export function SpellEdit() {
                             itemExtraClassName="w-24"
                             itemTextExtraClassName="w-16"
                             onValueChange={(value) => setFormData(prev => ({ ...prev, rangeTypeId: value }))}
-                            options={SPELL_RANGE_LIST.map(range => ({ value: range.id, label: range.name }))}
+                            options={SPELL_RANGE_LIST}
                             placeholder="Select range type"
                         />
                         <ValidatedInput
@@ -332,7 +350,7 @@ export function SpellEdit() {
                             componentExtraClassName="flex items-center gap-2"
                             labelExtraClassName="w-1/4"
                             onValueChange={(value) => setFormData(prev => ({ ...prev, baseLevel: value }))}
-                            options={[...Array(10).keys()].map(level => ({ value: level, label: level.toString() }))}
+                            options={[...Array(10).keys()].map(level => ({ id: level, name: level.toString() }))}
                         />
 
                         <ValidatedInput
@@ -401,7 +419,7 @@ export function SpellEdit() {
                                 <div className="mb-2">
                                     <div className="flex flex-wrap items-center gap-4">
                                         {classLevelMappings.map((mapping) => {
-                                            const dndClass = CLASS_MAP[mapping.classId];
+                                            const dndClass = availableClasses.find(cls => cls.id === mapping.classId);
                                             return (
                                                 <div key={mapping.classId} className="border rounded p-1 flex items-center justify-between gap-2 dark:border-gray-600">
                                                     <span className="text-sm whitespace-nowrap">
@@ -430,8 +448,8 @@ export function SpellEdit() {
                                     placeholder="Select a class"
                                     value={selectedClassToAdd}
                                     componentExtraClassName="flex items-center gap-2"
-                                    onValueChange={(value) => setSelectedClassToAdd(value)}
-                                    options={availableClasses.map(dndClass => ({ value: dndClass.id.toString(), label: dndClass.name }))}
+                                    onValueChange={(value) => setSelectedClassToAdd(value as number)}
+                                    options={availableClasses}
                                 />
                             </div>
                             <div>
@@ -440,7 +458,7 @@ export function SpellEdit() {
                                     value={selectedLevelToAdd}
                                     componentExtraClassName="flex items-center gap-2"
                                     onValueChange={(value) => setSelectedLevelToAdd(value)}
-                                    options={[...Array(10).keys()].map(level => ({ value: level, label: level.toString() }))}
+                                    options={[...Array(10).keys()].map(level => ({ id: level, name: level.toString() }))}
                                 />
                             </div>
                             <div>
@@ -465,22 +483,22 @@ export function SpellEdit() {
                 <div className="mt-4">
                     <h2 className="text-xl font-semibold mb-4">Schools & Subschools</h2>
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-y-2 gap-x-2">
-                        {SPELL_SCHOOL_SELECT_LIST.map(school => (
-                            <div key={school.value} className="p-2 border rounded dark:border-gray-600">
+                        {SPELL_SCHOOL_LIST.map(school => (
+                            <div key={school.id} className="p-2 border rounded dark:border-gray-600">
                                 <CustomCheckbox
-                                    label={school.label}
-                                    checked={(formData?.schoolIds || []).some(s => s.schoolId === school.value)}
-                                    onCheckedChange={(checked) => handleSchoolChange(school.value, checked)}
+                                    label={school.name}
+                                    checked={(formData?.schoolIds || []).some(s => s.schoolId === school.id)}
+                                    onCheckedChange={(checked) => handleSchoolChange(school.id, checked)}
                                     labelClassName="font-bold text-base"
                                 />
-                                {(SPELL_SUBSCHOOL_LIST_BY_SCHOOL_ID[school.value] as SelectOption[])?.length > 0 && (
+                                {(SPELL_SUBSCHOOL_BY_SCHOOL_ID_MAP[school.id]).length > 0 && (
                                     <div className="ml-6 mt-1 grid grid-cols-1 gap-y-1">
-                                        {(SPELL_SUBSCHOOL_LIST_BY_SCHOOL_ID[school.value] as SelectOption[]).map(subschool => (
+                                        {(SPELL_SUBSCHOOL_BY_SCHOOL_ID_MAP[school.id]).map(subschool => (
                                             <CustomCheckbox
-                                                key={subschool.value}
-                                                label={subschool.label}
-                                                checked={(formData?.subSchoolIds || []).some(s => s.subSchoolId === subschool.value)}
-                                                onCheckedChange={(checked) => handleSubschoolChange(subschool.value, checked)}
+                                                key={subschool.id}
+                                                label={subschool.name}
+                                                checked={(formData?.subSchoolIds || []).some(s => s.subSchoolId === subschool.id)}
+                                                onCheckedChange={(checked) => handleSubschoolChange(subschool.id, checked)}
                                                 labelClassName="text-sm"
                                             />
                                         ))}
