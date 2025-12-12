@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 
-import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedQueryT } from '@/util/validated-types';
+import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT } from '@/util/validated-types';
 import {
     GetAllFeaturesResponse,
     CreateFeatureRequest,
@@ -15,23 +15,22 @@ import {
     GetFeatureProgressionsResponse,
     GetFeatureListResponse,
 } from '@shared/schema';
-import { FeatureSourceType } from '@shared/static-data';
 
 import { featureSystemService } from './featureSystemService.js';
 
 /**
  * Fetches all features from the database.
  */
-export async function GetAllFeatures(req: ValidatedQueryT<FeatureQueryRequest, GetAllFeaturesResponse>, res: Response, _next: NextFunction) {
-    const features = await featureSystemService.getAllFeatures(req.query.sourceType as FeatureSourceType);
+export async function GetAllFeatures(req: ValidatedBodyT<FeatureQueryRequest, GetAllFeaturesResponse>, res: Response, _next: NextFunction) {
+    const features = await featureSystemService.getAllFeatures(req.body.sourceTypes);
     res.json(features);
 }
 
 /**
  * Fetches a list of features with only id and name for dropdown selection.
  */
-export async function GetFeatureList(req: ValidatedQueryT<FeatureQueryRequest, GetFeatureListResponse>, res: Response, _next: NextFunction) {
-    const features = await featureSystemService.getFeatureList(req.query.sourceType as FeatureSourceType);
+export async function GetFeatureList(req: ValidatedBodyT<FeatureQueryRequest, GetFeatureListResponse>, res: Response, _next: NextFunction) {
+    const features = await featureSystemService.getFeatureList(req.body.sourceTypes);
     res.json(features);
 }
 

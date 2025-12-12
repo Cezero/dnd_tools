@@ -3,7 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { DnDClass, ClassVariant } from '@shared/schema';
-import { isVariantId } from '@shared/static-data';
+import { isVariantId } from '@shared/utils';
 
 import { ClassApi } from './ClassApi';
 import { ClassDisplay } from './ClassDisplay';

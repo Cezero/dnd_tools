@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
@@ -19,6 +19,10 @@ export function ReferenceTablesList(): React.JSX.Element {
         navigate('/admin/referencetables/new/edit', { state: { fromListParams: location.search } });
     };
 
+    const dataFetcher = useCallback(async () => {
+        return await ReferenceTableApi.getReferenceTables({});
+    }, []);
+
     if (isAuthLoading) {
         return <div className="p-4">Loading...</div>;
     }
@@ -37,7 +41,7 @@ export function ReferenceTablesList(): React.JSX.Element {
             <GenericList<ReferenceTableSummary>
                 storageKey="reference-tables-list"
                 columns={REFERENCE_TABLE_COLUMNS}
-                serviceFunction={() => ReferenceTableApi.getReferenceTables({})}
+                dataFetcher={dataFetcher}
                 itemDesc="reference table"
                 routes={routes}
                 deleteServiceFunction={createSlugDeleteServiceFunction(ReferenceTableApi.deleteReferenceTable)}

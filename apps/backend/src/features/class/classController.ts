@@ -4,6 +4,7 @@ import {
     ValidatedParamsT,
     ValidatedBodyT,
     ValidatedParamsBodyT,
+    ValidatedNoInput,
 } from '@/util/validated-types';
 import {
     ClassIdParamRequest,
@@ -12,7 +13,8 @@ import {
     GetAllClassesResponse,
     GetAllClassesQuery,
     DnDClass,
-    UpdateResponse
+    UpdateResponse,
+    ClassCacheResponse
 } from '@shared/schema';
 
 import { classService } from './classService';
@@ -60,6 +62,14 @@ export async function UpdateClass(req: ValidatedParamsBodyT<ClassIdParamRequest,
 export async function DeleteClass(req: ValidatedParamsT<ClassIdParamRequest>, res: Response, _next: NextFunction) {
     await classService.deleteClass(req.params);
     res.json({ message: 'Class deleted successfully' });
+}
+
+/**
+ * Fetches all classes for cache (lightweight data).
+ */
+export async function GetClassCache(req: ValidatedNoInput<ClassCacheResponse>, res: Response, _next: NextFunction) {
+    const classes = await classService.getClassCache();
+    res.json(classes);
 }
 
 

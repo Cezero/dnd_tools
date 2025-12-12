@@ -9,7 +9,7 @@ import {
 } from '@shared/schema';
 import type {
     UserDiceConfig,
-    AuthUser,
+    UserProfile,
     UpdateUserProfileRequest,
 } from '@shared/schema';
 
@@ -39,7 +39,7 @@ export function UseAuth(): AuthContextType {
 }
 
 export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element {
-    const [user, setUser] = useState<AuthUser | null>(null);
+    const [user, setUser] = useState<UserProfile | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [userDiceConfig, setUserDiceConfig] = useState<UserDiceConfig | null>(null);
     const [isLoadingDiceConfig, setIsLoadingDiceConfig] = useState<boolean>(true);

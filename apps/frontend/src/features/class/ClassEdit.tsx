@@ -33,12 +33,11 @@ import {
     EntityType,
     SpecialFeatureId,
     EntityAppliesToType,
-    isVariantId,
-    extractBaseClassId,
-    calculateVariantId as _calculateVariantId,
     FeatureSourceType,
 } from '@shared/static-data';
 import {
+    isVariantId,
+    extractBaseClassId,
     applyFeatureProgressionOverrides,
     generateFeatureProgressionOverrides
 } from '@shared/utils';

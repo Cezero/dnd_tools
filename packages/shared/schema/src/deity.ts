@@ -28,6 +28,7 @@ export const BaseDeitySchema = z.object({
     alignmentId: z.enum(AlignmentId),
     description: z.string().max(10000, 'Description must be less than 10000 characters').nullable(),
     editionId: z.number().int().positive('Edition ID must be a positive integer'),
+    isVisible: z.boolean().default(true),
     pantheonId: z.number().int().positive('Pantheon ID must be a positive integer').nullable(),
     sourceBookInfo: z.array(SourceMapSchema).nullable(),
     classIds: z.array(z.number().int().positive()).nullable(),
@@ -46,6 +47,16 @@ export const DeitySummarySchema = DeitySchema.omit({
     raceIds: true,
     domains: true,
     favoredWeapons: true,
+});
+
+export const DeityCacheSchema = DeitySummarySchema.omit({
+    sourceBookInfo: true,
+    alignmentId: true,
+    title: true,
+});
+
+export const DeityCacheResponseSchema = QueryResponseSchema.extend({
+    results: z.array(DeityCacheSchema),
 });
 
 export const DeityInQueryResponseSchema = DeitySummarySchema;
@@ -78,3 +89,6 @@ export type GetAllDeitiesResponse = z.infer<typeof GetAllDeitiesResponseSchema>;
 export type DeityQueryResponse = z.infer<typeof DeityQueryResponseSchema>;
 export type Deity = z.infer<typeof DeitySchema>;
 export type DeitySummary = z.infer<typeof DeitySummarySchema>;
+
+export type DeityCacheResponse = z.infer<typeof DeityCacheResponseSchema>;
+export type DeityCacheEntry = z.infer<typeof DeityCacheSchema>;

@@ -16,7 +16,7 @@ model Class {
     id               Int     @id @default(autoincrement())
     name             String
     abbreviation     String
-    editionId        Int?
+    editionId        Int
     isPrestige       Boolean @default(false)
     isVisible        Boolean @default(true)
     canCastSpells    Boolean @default(false)
@@ -219,9 +219,10 @@ model FeatureEntity {
     displayInDetail Boolean @default(true)
     filterType      Int?
 
-    featureProgression FeatureProgression       @relation(fields: [progressionId], references: [id])
-    conditions         FeatureEntityCondition[]
-    formulaParams      FeatureFormulaParams?    @relation(fields: [formulaParamsId], references: [id])
+    featureProgression     FeatureProgression       @relation(fields: [progressionId], references: [id])
+    conditions             FeatureEntityCondition[]
+    formulaParams          FeatureFormulaParams?    @relation(fields: [formulaParamsId], references: [id])
+    characterFeatureChoice CharacterFeatureChoice[]
 }
 
 model FeatureFormulaParams {
@@ -278,6 +279,7 @@ model Spell {
     savingThrow     String?
     spellResistance String?
     editionId       Int
+    isVisible       Boolean @default(true)
     baseLevel       Int
     effect          String?
     target          String?
@@ -292,6 +294,7 @@ model Spell {
     charSpellPrep    CharacterSpellPreparation[]
     variantOverrides ClassVariantSpellOverride[]
     domainSpells     DomainSpell[] // NEW: Domain spell associations
+    monsterSpells    MonsterSpell[]
 }
 
 model SpellDescriptorMap {
@@ -344,23 +347,38 @@ model SpellComponentMap {
 // =================
 
 model Skill {
-    id                Int      @id @default(autoincrement())
+    id                Int                  @id @default(autoincrement())
     name              String
-    abilityId         Int      @default(1)
-    checkDescription  String?  @db.Text
-    actionDescription String?  @db.Text
+    abilityId         Int                  @default(1)
+    checkDescription  String?              @db.Text
+    actionDescription String?              @db.Text
     retryTypeId       Int?
-    retryDescription  String?  @db.Text
-    specialNotes      String?  @db.Text
-    synergyNotes      String?  @db.Text
-    untrainedNotes    String?  @db.Text
-    affectedByArmor   Boolean  @default(false)
-    description       String?  @db.Text
-    restrictionNotes  String?  @db.Text
+    retryDescription  String?              @db.Text
+    specialNotes      String?              @db.Text
+    synergyNotes      String?              @db.Text
+    untrainedNotes    String?              @db.Text
+    affectedByArmor   Boolean              @default(false)
+    description       String?              @db.Text
+    restrictionNotes  String?              @db.Text
     trainedOnly       Boolean?
-    isAnalog          Boolean  @default(false)
+    isAnalog          Boolean              @default(false)
+    isVisible         Boolean              @default(true)
+    editionId         Int
+    sourceBookInfo    SkillSourceBookMap[]
 
     advSkills AdvancementSkill[]
+    monsters  MonsterSkillMap[]
+}
+
+model SkillSourceBookMap {
+    skillId      Int
+    sourceBookId Int
+    pageNumber   Int?
+
+    skill      Skill      @relation(fields: [skillId], references: [id])
+    sourceBook SourceBook @relation(fields: [sourceBookId], references: [id])
+
+    @@id([skillId, sourceBookId])
 }
 
 // =================
@@ -368,22 +386,38 @@ model Skill {
 // =================
 
 model Feat {
-    id            Int      @id @default(autoincrement())
-    name          String
-    typeId        Int
-    description   String?  @db.Text
-    benefit       String?  @db.Text
-    normalEffect  String?  @db.Text
-    specialEffect String?  @db.Text
-    prerequisites String?  @db.Text
-    repeatable    Boolean?
-    fighterBonus  Boolean?
+    id             Int                 @id @default(autoincrement())
+    name           String
+    typeId         Int
+    description    String?             @db.Text
+    benefit        String?             @db.Text
+    normalEffect   String?             @db.Text
+    specialEffect  String?             @db.Text
+    prerequisites  String?             @db.Text
+    repeatable     Boolean?
+    fighterBonus   Boolean?
+    useSubId       Boolean             @default(false)
+    isVisible      Boolean             @default(true)
+    editionId      Int
+    sourceBookInfo FeatSourceBookMap[]
 
     benefits FeatBenefitMap[]
     prereqs  FeatPrerequisiteMap[]
     advFeat  AdvancementFeat[]
 
     spellPrepMetamagic SpellPreparationMetamagic[]
+    monsters           MonsterFeatMap[]
+}
+
+model FeatSourceBookMap {
+    featId       Int
+    sourceBookId Int
+    pageNumber   Int?
+
+    feat       Feat       @relation(fields: [featId], references: [id])
+    sourceBook SourceBook @relation(fields: [sourceBookId], references: [id])
+
+    @@id([featId, sourceBookId])
 }
 
 model FeatBenefitMap {
@@ -417,7 +451,7 @@ model FeatPrerequisiteMap {
 model Race {
     id              Int     @id @default(autoincrement())
     name            String
-    editionId       Int?
+    editionId       Int
     isVisible       Boolean @default(true)
     description     String? @db.Text
     sizeId          Int     @default(5)
@@ -425,7 +459,7 @@ model Race {
     favoredClassId  Int     @default(0)
     levelAdjustment Int     @default(0)
 
-    sources            RaceSourceMap[]
+    sourceBookInfo     RaceSourceMap[]
     userCharacter      UserCharacter[]
     featureProgression FeatureProgression[]
     deityRaces         DeityRaceMap[]
@@ -460,9 +494,11 @@ model Item {
 
     itemType ItemType @relation(fields: [typeId], references: [id])
 
-    characterItems      CharacterItem[]
-    itemTemplate        ItemTemplate[]
-    deityFavoredWeapons DeityFavoredWeaponMap[]
+    characterItems        CharacterItem[]
+    itemTemplate          ItemTemplate[]
+    deityFavoredWeapons   DeityFavoredWeaponMap[]
+    monsterArmorBreakdown MonsterArmorBreakdown[]
+    monsterEquipment      MonsterEquipment[]
 }
 
 model ItemType {
@@ -599,7 +635,7 @@ model SourceBook {
     name         String
     abbreviation String
     releaseDate  DateTime?
-    editionId    Int?
+    editionId    Int
     description  String?   @db.Text
     isVisible    Boolean   @default(true)
 
@@ -610,6 +646,9 @@ model SourceBook {
     domains                    DomainSourceMap[] // NEW: Domain source references
     deities                    DeitySourceMap[] // NEW: Deity source references
     characterDisallowedSources CharacterDisallowedSource[] // NEW: Character disallowed sources relationship
+    skillSourceBookInfo        SkillSourceBookMap[]
+    featSourceBookInfo         FeatSourceBookMap[]
+    monsters                   MonsterSourceMap[]
 }
 
 // =================
@@ -691,7 +730,7 @@ model UserCharacter {
     notes       String? @db.Text
 
     // NEW: Character configuration metadata
-    editionId             Int? // Character's edition preference
+    editionId             Int
     allowVariantClasses   Boolean @default(false) // Allow class variants
     isGestalt             Boolean @default(false) // Gestalt multiclassing
     ignoreLevelAdjustment Boolean @default(false) // Ignore LA for XP calculation
@@ -774,18 +813,20 @@ model AdvancementSpell {
 }
 
 model CharacterFeatureChoice {
-    id            Int     @id @default(autoincrement())
-    characterId   Int
-    progressionId Int
-    advancementId Int
-    key           String? // these will likely be replaced with specific identifiers
-    value         String? // these will likely be replaced with specific identifiers
-    choiceIndex   Int?
+    id              Int  @id @default(autoincrement())
+    characterId     Int
+    progressionId   Int
+    advancementId   Int
+    featureEntityId Int
+    appliesToId     Int
+    appliesToSubId  Int?
+    choiceIndex     Int?
 
     featureProgression FeatureProgression   @relation(fields: [progressionId], references: [id])
+    featureEntity      FeatureEntity        @relation(fields: [featureEntityId], references: [id])
     advancement        CharacterAdvancement @relation(fields: [advancementId], references: [id])
 
-    @@unique([advancementId, progressionId, key])
+    @@unique([advancementId, progressionId, featureEntityId])
 }
 
 model CharacterSpellPreparation {
@@ -899,15 +940,17 @@ model UserDiceConfigOverride {
 // =================
 
 model Domain {
-    id        Int    @id @default(autoincrement())
+    id        Int     @id @default(autoincrement())
     name      String
     editionId Int
+    isVisible Boolean @default(true)
 
     domainSpells               DomainSpell[]
     deityDomains               DeityDomain[]
     featureProgressions        FeatureProgression[]
     sourceBookInfo             DomainSourceMap[]
     characterSpellPreparations CharacterSpellPreparation[]
+    monsters                   MonsterDomainMap[]
 }
 
 model DomainSpell {
@@ -927,6 +970,7 @@ model Deity {
     name        String
     title       String?
     alignmentId Int
+    isVisible   Boolean @default(true)
     description String? @db.Text
     editionId   Int
     pantheonId  Int?
@@ -1018,4 +1062,277 @@ model CharacterDisallowedSource {
     sourceBook SourceBook    @relation(fields: [sourceBookId], references: [id])
 
     @@unique([characterId, sourceBookId])
+}
+
+// =================
+// Monster related
+// =================
+
+model Monster {
+    id            Int     @id @default(autoincrement())
+    name          String
+    baseMonsterId Int? // Self-referential for variants
+    editionId     Int
+    isVisible     Boolean @default(true)
+
+    // Descriptive text
+    flavorText        String? @db.Text // Italicized intro text
+    description       String? @db.Text // Full description
+    combatDescription String? @db.Text // Combat behavior text
+
+    // Size (nullable for base monsters)
+    sizeId Int?
+
+    // Base speed (land speed, can be 0 for creatures with no land movement)
+    baseSpeed Int?
+
+    // AC fields (all nullable)
+    armorClass   Int?
+    touchAC      Int?
+    flatFootedAC Int?
+
+    // Hit Dice (primary set)
+    hitDiceQty  Float? // Quantity of hit dice (can be fractional, e.g., 0.5 for 1/2 HD, 0.33 for 1/3 HD)
+    hitDiceType Int? // Dice type (references RpgDice enum: D4=0, D6=1, D8=2, D10=3, D12=4, etc.)
+    bonusHP     Int? // Bonus hit points
+    averageHP   Int? // Average hit points
+
+    // Initiative
+    initiative Int?
+
+    // Base Attack/Grapple
+    baseAttack Int?
+    grapple    Int?
+
+    // Attack and Full Attack (stored as text)
+    attack     String? @db.Text
+    fullAttack String? @db.Text
+
+    // Space/Reach (in feet)
+    space                    Float? // Space occupied in feet (can be fractional, e.g., 2.5 for 2-1/2 ft.)
+    reach                    Int? // Reach distance in feet
+    optionalReach            Int? // Optional reach for specific attacks (e.g., bite, tentacle)
+    optionalReachDescription String? @db.VarChar(100) // Description of optional reach (e.g., "with bite", "with tentacle")
+
+    // Saves (all nullable)
+    fortSave Int?
+    refSave  Int?
+    willSave Int?
+
+    // Abilities (all nullable)
+    strength     Int?
+    dexterity    Int?
+    constitution Int?
+    intelligence Int?
+    wisdom       Int?
+    charisma     Int?
+
+    // Text fields
+    organization     String? @db.Text
+    treasure         String? @db.Text
+    alignment        String? @db.VarChar(100)
+    advancement      String? @db.Text
+    challengeRating  String? @db.VarChar(100)
+    levelAdjustment  String? @db.VarChar(100)
+    specialAttacks   String? @db.VarChar(512) // Special Attacks from statblock (may differ from Combat section abilities)
+    specialQualities String? @db.VarChar(512) // Special Qualities from statblock (may differ from Combat section abilities)
+
+    // Relationships
+    baseMonster        Monster?                    @relation("MonsterVariants", fields: [baseMonsterId], references: [id])
+    variants           Monster[]                   @relation("MonsterVariants")
+    types              MonsterTypeMap[]
+    subtypes           MonsterSubtypeMap[]
+    skills             MonsterSkillMap[]
+    feats              MonsterFeatMap[]
+    specialAbilities   MonsterSpecialAbilityMap[]
+    armorBreakdown     MonsterArmorBreakdown[]
+    equipment          MonsterEquipment[]
+    spells             MonsterSpell[]
+    preparedSpellSlots MonsterPreparedSpellSlots[]
+    sourceBookInfo     MonsterSourceMap[]
+    extraHitDice       MonsterExtraHitDie[]
+    alternateSpeeds    MonsterAlternateSpeed[]
+    domains            MonsterDomainMap[]
+    extraDescriptions  MonsterExtraDescription[]
+}
+
+model MonsterTypeMap {
+    monsterId Int
+    typeId    Int
+
+    monster Monster @relation(fields: [monsterId], references: [id], onDelete: Cascade)
+
+    @@id([monsterId, typeId])
+}
+
+model MonsterSubtypeMap {
+    monsterId Int
+    subtypeId Int
+
+    monster Monster @relation(fields: [monsterId], references: [id], onDelete: Cascade)
+
+    @@id([monsterId, subtypeId])
+}
+
+model MonsterSkillMap {
+    id         Int     @id @default(autoincrement())
+    monsterId  Int
+    skillId    Int
+    skillSubId Int? // For Knowledge, Craft, Perform, Profession skills with subtypes
+    ranks      Int?
+    notes      String? @db.Text
+
+    monster Monster @relation(fields: [monsterId], references: [id], onDelete: Cascade)
+    skill   Skill   @relation(fields: [skillId], references: [id])
+
+    @@unique([monsterId, skillId, skillSubId])
+    @@index([monsterId])
+}
+
+model MonsterFeatMap {
+    id        Int     @id @default(autoincrement())
+    monsterId Int
+    featId    Int
+    notes     String? @db.VarChar(128) // For repeatable feats, stores the parenthetical value (e.g., "illusion" for "Spell Focus (illusion)")
+
+    monster Monster @relation(fields: [monsterId], references: [id], onDelete: Cascade)
+    feat    Feat    @relation(fields: [featId], references: [id])
+
+    @@unique([monsterId, featId, notes])
+    @@index([monsterId])
+}
+
+model MonsterSpecialAbility {
+    id                   Int     @id @default(autoincrement())
+    name                 String
+    description          String? @db.Text // Can contain markdown and be quite large (nullable for spell-like abilities that are just lists of spells)
+    abilityType          Int // MonsterSpecialAbilityTypeId enum (Sp=1, Su=2, Ex=3)
+    effectiveCasterLevel Int? // Effective caster level for spell-like abilities
+    saveAbility          Int? // Ability ID used for save DCs (references AbilityId enum: Str=1, Dex=2, Con=3, Int=4, Wis=5, Cha=6)
+
+    monsters MonsterSpecialAbilityMap[]
+    spells   MonsterSpell[]
+}
+
+model MonsterSpecialAbilityMap {
+    monsterId Int
+    abilityId Int
+
+    monster Monster               @relation(fields: [monsterId], references: [id], onDelete: Cascade)
+    ability MonsterSpecialAbility @relation(fields: [abilityId], references: [id])
+
+    @@id([monsterId, abilityId])
+}
+
+model MonsterArmorBreakdown {
+    id              Int     @id @default(autoincrement())
+    monsterId       Int
+    componentType   Int // MonsterArmorComponentTypeId enum
+    value           Int?
+    equipmentItemId Int?
+    description     String? @db.Text
+
+    monster       Monster @relation(fields: [monsterId], references: [id], onDelete: Cascade)
+    equipmentItem Item?   @relation(fields: [equipmentItemId], references: [id])
+
+    @@index([monsterId])
+}
+
+model MonsterEquipment {
+    monsterId Int
+    itemId    Int
+
+    monster Monster @relation(fields: [monsterId], references: [id], onDelete: Cascade)
+    item    Item    @relation(fields: [itemId], references: [id])
+
+    @@id([monsterId, itemId])
+}
+
+model MonsterSpell {
+    id               Int     @id @default(autoincrement())
+    monsterId        Int
+    spellId          Int
+    spellType        Int // MonsterSpellTypeId enum
+    quantity         Int? // For prepared spells (e.g., "detect magic (2)" = quantity 2)
+    usesPerDayId     Int? // MonsterSpellUsesPerDayId enum (nullable for prepared spells, which don't have uses per day)
+    saveDC           Int?
+    level            Int? // Spell level at which the spell is prepared (for prepared spells only)
+    specialAbilityId Int? // Links to MonsterSpecialAbility if this spell is part of a spell-like ability
+    notes            String? @db.VarChar(200) // Spell modifiers (e.g., "empowered", "extended", "enlarged")
+
+    monster        Monster                @relation(fields: [monsterId], references: [id], onDelete: Cascade)
+    spell          Spell                  @relation(fields: [spellId], references: [id])
+    specialAbility MonsterSpecialAbility? @relation(fields: [specialAbilityId], references: [id], onDelete: SetNull)
+
+    @@index([monsterId])
+    @@index([specialAbilityId])
+}
+
+model MonsterPreparedSpellSlots {
+    id         Int @id @default(autoincrement())
+    monsterId  Int
+    spellLevel Int // Spell level (0-9)
+    numSlots   Int // Number of spell slots at this level
+
+    monster Monster @relation(fields: [monsterId], references: [id], onDelete: Cascade)
+
+    @@unique([monsterId, spellLevel])
+    @@index([monsterId])
+}
+
+model MonsterSourceMap {
+    monsterId    Int
+    sourceBookId Int
+    pageNumber   Int?
+
+    monster    Monster    @relation(fields: [monsterId], references: [id], onDelete: Cascade)
+    sourceBook SourceBook @relation(fields: [sourceBookId], references: [id])
+
+    @@id([monsterId, sourceBookId])
+}
+
+model MonsterExtraHitDie {
+    id          Int   @id @default(autoincrement())
+    monsterId   Int
+    hitDiceQty  Float // Quantity of hit dice (can be fractional, e.g., 0.5 for 1/2 HD, 0.33 for 1/3 HD)
+    hitDiceType Int // Dice type (references RpgDice enum: D4=0, D6=1, D8=2, D10=3, D12=4, etc.)
+    bonusHP     Int? // Bonus hit points
+
+    monster Monster @relation(fields: [monsterId], references: [id], onDelete: Cascade)
+
+    @@index([monsterId])
+}
+
+model MonsterAlternateSpeed {
+    id              Int  @id @default(autoincrement())
+    monsterId       Int
+    movementTypeId  Int // Movement type (references MovementTypeId enum: Land=1, Fly=2, Swim=3, Climb=4, Burrow=5)
+    speed           Int // Speed in feet
+    maneuverability Int? // Maneuverability for fly speed (references ManeuverabilityId enum: Perfect=1, Good=2, Average=3, Poor=4, Clumsy=5)
+
+    monster Monster @relation(fields: [monsterId], references: [id], onDelete: Cascade)
+
+    @@index([monsterId])
+}
+
+model MonsterDomainMap {
+    monsterId Int
+    domainId  Int
+
+    monster Monster @relation(fields: [monsterId], references: [id], onDelete: Cascade)
+    domain  Domain  @relation(fields: [domainId], references: [id])
+
+    @@id([monsterId, domainId])
+    @@index([monsterId])
+}
+
+model MonsterExtraDescription {
+    id          Int     @id @default(autoincrement())
+    monsterId   Int
+    type        Int // MonsterExtraDescriptionTypeId enum (mount=1, society=2, character=3, creating=4, tactics=5, sidebar=6, training=7)
+    description String? @db.Text
+
+    monster Monster @relation(fields: [monsterId], references: [id], onDelete: Cascade)
+
+    @@index([monsterId])
 }

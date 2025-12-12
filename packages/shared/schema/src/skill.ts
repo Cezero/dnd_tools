@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { QueryResponseSchema } from './query.js';
+import { SourceMapSchema } from './sourcebook.js';
 
 export const SkillIdParamSchema = z.object({
     id: z.string().transform((val: string) => parseInt(val)),
@@ -21,6 +22,29 @@ export const SkillSchema = z.object({
     synergyNotes: z.string().max(10000, 'Synergy notes must be less than 10000 characters').nullish(),
     untrainedNotes: z.string().max(10000, 'Untrained notes must be less than 10000 characters').nullish(),
     restrictionNotes: z.string().max(10000, 'Restriction notes must be less than 10000 characters').nullish(),
+    isVisible: z.boolean().default(true),
+    editionId: z.number().int().positive('Edition ID must be a positive integer'),
+    sourceBookInfo: z.array(SourceMapSchema).optional(),
+});
+
+export const SkillCacheSchema = SkillSchema.omit({
+    abilityId: true,
+    trainedOnly: true,
+    affectedByArmor: true,
+    retryTypeId: true,
+    specialNotes: true,
+    synergyNotes: true,
+    untrainedNotes: true,
+    restrictionNotes: true,
+    description: true,
+    checkDescription: true,
+    actionDescription: true,
+    retryDescription: true,
+    sourceBookInfo: true,
+});
+
+export const SkillCacheResponseSchema = QueryResponseSchema.extend({
+    results: z.array(SkillCacheSchema),
 });
 
 export const CreateSkillSchema = SkillSchema.omit({ id: true });
@@ -38,4 +62,8 @@ export type Skill = z.infer<typeof SkillSchema>;
 export type GetAllSkillsResponse = z.infer<typeof GetAllSkillsResponseSchema>;
 export type GetSkillResponse = z.infer<typeof GetSkillResponseSchema>;
 export type CreateSkillRequest = z.infer<typeof CreateSkillSchema>;
-export type UpdateSkillRequest = z.infer<typeof UpdateSkillSchema>; 
+export type UpdateSkillRequest = z.infer<typeof UpdateSkillSchema>;
+
+export type SkillCacheEntry = z.infer<typeof SkillCacheSchema>;
+export type SkillCacheResponse = z.infer<typeof SkillCacheResponseSchema>;
+

@@ -1,36 +1,35 @@
 import React from 'react';
 
-import type { RaceSummary, Race, CharacterWithAllDetailsResponse } from '@shared/schema';
+import type { TabComponentProps } from '@/features/character/types';
+import { CharacterEditStateUpdateType } from '@/features/character/types';
 import { CURRENCY_LIST } from '@shared/static-data';
 
-interface EquipmentTabProps {
-    character: CharacterWithAllDetailsResponse;
-    onUpdate: (data: Partial<CharacterWithAllDetailsResponse>) => void;
-    races?: RaceSummary[];
-    selectedRaceDetails?: Race | null;
-}
-
 export function EquipmentTab({
-    character,
-    onUpdate,
-    races: _races = [],
-    selectedRaceDetails: _selectedRaceDetails
-}: EquipmentTabProps): React.JSX.Element {
+    state,
+    updateState,
+    isLoading
+}: TabComponentProps): React.JSX.Element {
     const handleMoneyChange = (currencyId: number, value: number) => {
-        const newMoney = { ...character.money, [currencyId]: value };
-        onUpdate({ money: newMoney });
+        const newMoney = { ...state.money, [currencyId]: value };
+        updateState({ type: CharacterEditStateUpdateType.SET_MONEY, payload: { money: newMoney } });
     };
 
     const handleEquipmentAdd = (item: string) => {
         if (item.trim()) {
-            const newEquipment = [...character.equipment, item.trim()];
-            onUpdate({ equipment: newEquipment });
+            const newItem = {
+                id: Date.now(),
+                quantity: 1,
+                location: null,
+                notes: item.trim()
+            };
+            const newItems = [...state.equipment, newItem];
+            updateState({ type: CharacterEditStateUpdateType.SET_EQUIPMENT, payload: { equipment: newItems } });
         }
     };
 
     const handleEquipmentRemove = (index: number) => {
-        const newEquipment = character.equipment.filter((_, i) => i !== index);
-        onUpdate({ equipment: newEquipment });
+        const newItems = state.equipment.filter((_, i) => i !== index);
+        updateState({ type: CharacterEditStateUpdateType.SET_EQUIPMENT, payload: { equipment: newItems } });
     };
 
     return (
@@ -38,6 +37,25 @@ export function EquipmentTab({
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                 Equipment
             </h2>
+
+            {/* Loading State */}
+            {isLoading && (
+                <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg shadow-sm p-4">
+                    <div className="flex items-center">
+                        <div className="flex-shrink-0">
+                            <svg className="animate-spin h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+                        <div className="ml-3">
+                            <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                                Loading character data...
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Money */}
@@ -53,7 +71,7 @@ export function EquipmentTab({
                                 </label>
                                 <input
                                     type="number"
-                                    value={character.money[currency.id] || 0}
+                                    value={state.money[currency.id] || 0}
                                     onChange={(e) => handleMoneyChange(currency.id, parseInt(e.target.value) || 0)}
                                     className="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-center bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     min="0"
@@ -94,9 +112,15 @@ export function EquipmentTab({
                         </div>
 
                         <div className="space-y-2 max-h-64 overflow-y-auto">
-                            {character.equipment.map((item, index) => (
-                                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
-                                    <span className="text-sm text-gray-700 dark:text-gray-300">{item}</span>
+                            {state.equipment.map((item, index) => (
+                                <div key={item.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                                    <div className="flex items-center space-x-4">
+                                        <span className="text-sm text-gray-700 dark:text-gray-300">{item.quantity}x</span>
+                                        <span className="text-sm text-gray-700 dark:text-gray-300">{item.notes}</span>
+                                        {item.location && (
+                                            <span className="text-xs text-gray-500 dark:text-gray-400">({item.location})</span>
+                                        )}
+                                    </div>
                                     <button
                                         onClick={() => handleEquipmentRemove(index)}
                                         className="text-red-500 hover:text-red-700 text-sm focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
@@ -105,7 +129,7 @@ export function EquipmentTab({
                                     </button>
                                 </div>
                             ))}
-                            {character.equipment.length === 0 && (
+                            {state.equipment.length === 0 && (
                                 <p className="text-sm text-gray-500 italic">
                                     No equipment added yet.
                                 </p>
@@ -114,6 +138,28 @@ export function EquipmentTab({
                     </div>
                 </div>
             </div>
+
+            {/* Equipment Summary */}
+            <div className="mt-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Equipment Summary
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Total Items</h4>
+                        <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                            {state.equipment.length} items
+                        </p>
+                    </div>
+                    <div>
+                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Total Value</h4>
+                        <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                            {/* TODO: Calculate total value from equipment */}
+                            Not calculated
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
     );
-} 
+}

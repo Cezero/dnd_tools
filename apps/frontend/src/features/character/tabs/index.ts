@@ -2,6 +2,7 @@ export { AbilitiesRaceTab } from './AbilitiesRaceTab';
 export { ClassTab } from './ClassTab';
 export { SkillsTab } from './SkillsTab';
 export { FeatsTab } from './FeatsTab';
+export { ChoicesTab } from './ChoicesTab';
 export { DescriptionTab } from './DescriptionTab';
 export { EquipmentTab } from './EquipmentTab';
 export { ConfigurationTab } from './ConfigurationTab'; 

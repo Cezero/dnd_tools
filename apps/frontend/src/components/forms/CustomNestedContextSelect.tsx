@@ -1,6 +1,7 @@
 import { ContextMenu } from '@base-ui-components/react/context-menu';
 import { ChevronUpDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import React, { useState, useRef, useMemo } from 'react';
+
 import { CoreComponent } from '@shared/static-data';
 
 export interface NestedSelectOption<C extends CoreComponent> {
@@ -26,7 +27,7 @@ export interface CustomNestedContextSelectProps<C extends CoreComponent> {
     itemExtraClassName?: string;
     itemTextExtraClassName?: string;
     icon?: React.ReactNode;
-    displayValue?: (value: string | null) => string;
+    displayValue?: (value: number | null) => string;
     labelExtraClassName?: string;
 }
 

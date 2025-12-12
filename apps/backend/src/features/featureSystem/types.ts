@@ -23,8 +23,8 @@ export interface FeatureProgressionContext {
 }
 
 export interface FeatureSystemService {
-    getAllFeatures(sourceType?: FeatureSourceType): Promise<GetAllFeaturesResponse>;
-    getFeatureList(sourceType?: FeatureSourceType): Promise<GetFeatureListResponse>;
+    getAllFeatures(sourceTypes?: number[]): Promise<GetAllFeaturesResponse>;
+    getFeatureList(sourceTypes?: number[]): Promise<GetFeatureListResponse>;
     getFeatureById(query: { id: number }): Promise<GetFeatureResponse | null>;
     createFeature(data: CreateFeatureRequest): Promise<CreateResponse>;
     updateFeature(query: { id: number }, data: UpdateFeatureRequest): Promise<UpdateResponse>;

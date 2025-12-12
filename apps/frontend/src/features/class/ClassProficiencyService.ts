@@ -1,39 +1,46 @@
-import { FeatApi } from '@/features/feat/FeatApi';
+import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { FeatureProgression, FeatureEntity } from '@shared/schema';
 import { FeatBenefitType, EntityAppliesToType, SpecialFeatureId } from '@shared/static-data';
 
 export const ClassProficiencyService = {
     /**
-     * Fetch all feats that provide weapon or armor proficiencies
+     * Imperative method to fetch all feats that provide weapon or armor proficiencies
      */
-    async getProficiencyFeats(): Promise<Array<{ id: number; name: string; proficiencyTypeId: number }>> {
+    async getProficiencyFeats() {
         try {
-            // Use the new proficiency query endpoint
-            const response = await FeatApi.featQuery({ queryType: 'proficiency' });
+            const response = await FeatQueryHooks.featQuery({
+                requestData: { queryType: 'proficiency' }
+            });
 
-            // Extract proficiency type from benefits
-            const proficiencyFeats: Array<{ id: number; name: string; proficiencyTypeId: number }> = [];
-
-            for (const feat of response.results) {
+            const proficiencyFeats = response.results?.map(feat => {
                 if (feat.benefits && feat.benefits.length > 0) {
                     const proficiencyBenefit = feat.benefits.find(benefit =>
                         benefit.typeId === FeatBenefitType.PROFICIENCY
                     );
 
                     if (proficiencyBenefit && proficiencyBenefit.referenceId) {
-                        proficiencyFeats.push({
+                        return {
                             id: feat.id,
                             name: feat.name,
                             proficiencyTypeId: proficiencyBenefit.referenceId
-                        });
+                        };
                     }
                 }
-            }
+                return null;
+            }).filter(Boolean) || [];
 
-            return proficiencyFeats;
+            return {
+                proficiencyFeats,
+                isLoading: false,
+                error: null
+            };
         } catch (error) {
             console.error('Failed to fetch proficiency feats:', error);
-            return [];
+            return {
+                proficiencyFeats: [],
+                isLoading: false,
+                error: error instanceof Error ? error : new Error('Failed to fetch proficiency feats')
+            };
         }
     },
 

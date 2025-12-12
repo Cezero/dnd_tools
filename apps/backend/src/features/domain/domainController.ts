@@ -1,12 +1,13 @@
 import { Response } from 'express';
 
-import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types';
+import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput, ValidatedQueryT } from '@/util/validated-types';
 import {
     DomainIdParamRequest,
     CreateDomainRequest,
     UpdateDomainRequest,
     GetAllDomainsResponse,
     Domain,
+    DomainCacheResponse,
 } from '@shared/schema';
 
 import { domainService } from './domainService.js';
@@ -55,5 +56,13 @@ export async function UpdateDomain(req: ValidatedParamsBodyT<DomainIdParamReques
 export async function DeleteDomain(req: ValidatedParamsT<DomainIdParamRequest, void>, res: Response) {
     await domainService.deleteDomain(req.params);
     res.status(204).send();
+}
+
+/**
+ * Fetches all domains for cache (lightweight data).
+ */
+export async function GetDomainCache(req: ValidatedNoInput<DomainCacheResponse>, res: Response) {
+    const domains = await domainService.getDomainCache();
+    res.json(domains);
 }
 

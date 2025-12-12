@@ -5,8 +5,9 @@ import {
     ValidatedParamsT,
     ValidatedBodyT,
     ValidatedParamsBodyT,
+    ValidatedQueryT,
 } from '@/util/validated-types';
-import { CreateSkillRequest, SkillIdParamRequest, UpdateSkillRequest, UpdateResponse, CreateResponse, GetSkillResponse, GetAllSkillsResponse } from '@shared/schema';
+import { CreateSkillRequest, SkillIdParamRequest, UpdateSkillRequest, UpdateResponse, CreateResponse, GetSkillResponse, GetAllSkillsResponse, SkillCacheResponse } from '@shared/schema';
 
 import { skillService } from './skillService.js';
 /**
@@ -53,4 +54,12 @@ export async function UpdateSkill(req: ValidatedParamsBodyT<SkillIdParamRequest,
 export async function DeleteSkill(req: ValidatedParamsT<SkillIdParamRequest, UpdateResponse>, res: Response, _next: NextFunction) {
     const result = await skillService.deleteSkill({ id: req.params.id });
     res.status(200).json(result);
+}
+
+/**
+ * Fetches all skills for cache (lightweight data).
+ */
+export async function GetSkillCache(req: ValidatedNoInput<SkillCacheResponse>, res: Response, _next: NextFunction) {
+    const skills = await skillService.getSkillCache();
+    res.json(skills);
 }

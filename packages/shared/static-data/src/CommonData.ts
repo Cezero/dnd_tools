@@ -1,4 +1,4 @@
-import { RpgDieMap, CurrencyMap, AlignmentMap, SizeMap, LanguageMap, EditionMap, CastingTypeMap, SettingMap, AbilityGenerationMethodMap, PointBuyOptionsMap, BooleanFilterMap } from './types';
+import { RpgDieMap, CurrencyMap, AlignmentMap, SizeMap, LanguageMap, EditionMap, CastingTypeMap, SettingMap, AbilityGenerationMethodMap, PointBuyOptionsMap, BooleanFilterMap, MonsterTypeMap, MonsterSubtypeMap, MonsterSpecialAbilityTypeMap, MonsterArmorComponentTypeMap, MonsterSpellTypeMap, MonsterSpellUsesPerDayMap, MovementTypeMap, ManeuverabilityMap, MonsterExtraDescriptionTypeMap } from './types';
 
 export const RpgDice = {
     D4: 0,
@@ -245,6 +245,7 @@ export const EditionId = {
     DND_3_5E: 5,
     DND_4E: 6,
     DND_5E: 7,
+    DND_3x: 8,
 } as const;
 
 export type EditionId = typeof EditionId[keyof typeof EditionId];
@@ -257,20 +258,16 @@ export const EDITION_MAP: EditionMap = {
     [EditionId.DND_3_5E]: { id: EditionId.DND_3_5E, name: 'Dungeons & Dragons 3.5 Edition', abbreviation: 'D&D 3.5E' },
     [EditionId.DND_4E]: { id: EditionId.DND_4E, name: 'Dungeons & Dragons 4th Edition', abbreviation: 'D&D 4E' },
     [EditionId.DND_5E]: { id: EditionId.DND_5E, name: 'Dungeons & Dragons 5th Edition', abbreviation: 'D&D 5E' },
+    [EditionId.DND_3x]: { id: EditionId.DND_3x, name: 'Dungeons & Dragons 3.0/3.5 Combined', abbreviation: 'D&D 3x' },
 }
 
-export const EDITION_LIST_FULL = Object.values(EDITION_MAP);
-
-// Combine 3E and 3.5E into one option and filter out 3.5E
-export const EDITION_LIST = EDITION_LIST_FULL.map(edition => ({
-    id: edition.id,
-    name: (edition.id === EditionId.DND_3E ? '3E/3.5E Combined' : edition.abbreviation),
-})).filter(e => e.id !== EditionId.DND_3_5E);
+export const EDITION_LIST = Object.values(EDITION_MAP);
 
 // NEW: Advanced options mapping by edition
 export const ADVANCED_OPTIONS_EDITION_MAP = {
     [EditionId.DND_3E]: ['allowVariantClasses', 'isGestalt', 'ignoreLevelAdjustment'],
     [EditionId.DND_3_5E]: ['allowVariantClasses', 'isGestalt', 'ignoreLevelAdjustment'],
+    [EditionId.DND_3x]: ['allowVariantClasses', 'isGestalt', 'ignoreLevelAdjustment'],
     // Future editions can have their own advanced options
     // [EditionId.DND_4E]: ['some4EOption'],
     // [EditionId.DND_5E]: ['some5EOption'],
@@ -380,6 +377,19 @@ export const ProgressionType = {
 
 export type ProgressionType = typeof ProgressionType[keyof typeof ProgressionType];
 
+
+// Select lists for progression types
+export const BAB_PROGRESSION_LIST = [
+    { id: ProgressionType.good, name: 'Good' },
+    { id: ProgressionType.average, name: 'Average' },
+    { id: ProgressionType.poor, name: 'Poor' },
+];
+
+export const SAVE_PROGRESSION_LIST = [
+    { id: ProgressionType.good, name: 'Good' },
+    { id: ProgressionType.poor, name: 'Poor' },
+];
+
 export const BooleanFilter = {
     TRUE: 1,
     FALSE: 0,
@@ -393,3 +403,274 @@ export const BOOLEAN_FILTER_MAP: BooleanFilterMap = {
 }
 
 export const BOOLEAN_FILTER_LIST = Object.values(BOOLEAN_FILTER_MAP);
+
+// Resolution Step Type enum for feature resolution
+export const ResolutionStepType = {
+    Feature: 0,
+    Choice: 1,
+    Grant: 2,
+    Cascade: 3,
+} as const;
+
+export type ResolutionStepType = typeof ResolutionStepType[keyof typeof ResolutionStepType];
+
+// Monster Type ID enum for D&D 3.5 creature types
+export const MonsterTypeId = {
+    Aberration: 1,
+    Animal: 2,
+    Construct: 3,
+    Dragon: 4,
+    Elemental: 5,
+    Fey: 6,
+    Giant: 7,
+    Humanoid: 8,
+    MagicalBeast: 9,
+    MonstrousHumanoid: 10,
+    Ooze: 11,
+    Outsider: 12,
+    Plant: 13,
+    Undead: 14,
+    Vermin: 15,
+} as const;
+
+export type MonsterTypeId = typeof MonsterTypeId[keyof typeof MonsterTypeId];
+
+export const MONSTER_TYPE_MAP: MonsterTypeMap = {
+    [MonsterTypeId.Aberration]: { id: MonsterTypeId.Aberration, name: 'Aberration' },
+    [MonsterTypeId.Animal]: { id: MonsterTypeId.Animal, name: 'Animal' },
+    [MonsterTypeId.Construct]: { id: MonsterTypeId.Construct, name: 'Construct' },
+    [MonsterTypeId.Dragon]: { id: MonsterTypeId.Dragon, name: 'Dragon' },
+    [MonsterTypeId.Elemental]: { id: MonsterTypeId.Elemental, name: 'Elemental' },
+    [MonsterTypeId.Fey]: { id: MonsterTypeId.Fey, name: 'Fey' },
+    [MonsterTypeId.Giant]: { id: MonsterTypeId.Giant, name: 'Giant' },
+    [MonsterTypeId.Humanoid]: { id: MonsterTypeId.Humanoid, name: 'Humanoid' },
+    [MonsterTypeId.MagicalBeast]: { id: MonsterTypeId.MagicalBeast, name: 'Magical Beast' },
+    [MonsterTypeId.MonstrousHumanoid]: { id: MonsterTypeId.MonstrousHumanoid, name: 'Monstrous Humanoid' },
+    [MonsterTypeId.Ooze]: { id: MonsterTypeId.Ooze, name: 'Ooze' },
+    [MonsterTypeId.Outsider]: { id: MonsterTypeId.Outsider, name: 'Outsider' },
+    [MonsterTypeId.Plant]: { id: MonsterTypeId.Plant, name: 'Plant' },
+    [MonsterTypeId.Undead]: { id: MonsterTypeId.Undead, name: 'Undead' },
+    [MonsterTypeId.Vermin]: { id: MonsterTypeId.Vermin, name: 'Vermin' },
+};
+
+export const MONSTER_TYPE_LIST = Object.values(MONSTER_TYPE_MAP);
+
+// Monster Subtype ID enum for creature subtypes (D&D 3.5 terminology)
+export const MonsterSubtypeId = {
+    Aquatic: 1,
+    Air: 2,
+    Earth: 3,
+    Fire: 4,
+    Water: 5,
+    Cold: 6,
+    Evil: 7,
+    Good: 8,
+    Lawful: 9,
+    Chaotic: 10,
+    Extraplanar: 11,
+    Angel: 12,
+    Archon: 13,
+    Incorporeal: 14,
+    Swarm: 15,
+    Shapechanger: 16,
+    Augmented: 17,
+    Baatezu: 18,
+    Eladrin: 19,
+    Goblinoid: 20,
+    Guardinal: 21,
+    Native: 22,
+    Reptilian: 23,
+    Tanarri: 24,
+    // Humanoid race subtypes
+    Dwarf: 25,
+    Elf: 26,
+    Gnoll: 27,
+    Gnome: 28,
+    Halfling: 29,
+    Human: 30,
+    Orc: 31,
+} as const;
+
+export type MonsterSubtypeId = typeof MonsterSubtypeId[keyof typeof MonsterSubtypeId];
+
+export const MONSTER_SUBTYPE_MAP: MonsterSubtypeMap = {
+    [MonsterSubtypeId.Aquatic]: { id: MonsterSubtypeId.Aquatic, name: 'Aquatic' },
+    [MonsterSubtypeId.Air]: { id: MonsterSubtypeId.Air, name: 'Air' },
+    [MonsterSubtypeId.Earth]: { id: MonsterSubtypeId.Earth, name: 'Earth' },
+    [MonsterSubtypeId.Fire]: { id: MonsterSubtypeId.Fire, name: 'Fire' },
+    [MonsterSubtypeId.Water]: { id: MonsterSubtypeId.Water, name: 'Water' },
+    [MonsterSubtypeId.Cold]: { id: MonsterSubtypeId.Cold, name: 'Cold' },
+    [MonsterSubtypeId.Evil]: { id: MonsterSubtypeId.Evil, name: 'Evil' },
+    [MonsterSubtypeId.Good]: { id: MonsterSubtypeId.Good, name: 'Good' },
+    [MonsterSubtypeId.Lawful]: { id: MonsterSubtypeId.Lawful, name: 'Lawful' },
+    [MonsterSubtypeId.Chaotic]: { id: MonsterSubtypeId.Chaotic, name: 'Chaotic' },
+    [MonsterSubtypeId.Extraplanar]: { id: MonsterSubtypeId.Extraplanar, name: 'Extraplanar' },
+    [MonsterSubtypeId.Angel]: { id: MonsterSubtypeId.Angel, name: 'Angel' },
+    [MonsterSubtypeId.Archon]: { id: MonsterSubtypeId.Archon, name: 'Archon' },
+    [MonsterSubtypeId.Incorporeal]: { id: MonsterSubtypeId.Incorporeal, name: 'Incorporeal' },
+    [MonsterSubtypeId.Swarm]: { id: MonsterSubtypeId.Swarm, name: 'Swarm' },
+    [MonsterSubtypeId.Shapechanger]: { id: MonsterSubtypeId.Shapechanger, name: 'Shapechanger' },
+    [MonsterSubtypeId.Augmented]: { id: MonsterSubtypeId.Augmented, name: 'Augmented' },
+    [MonsterSubtypeId.Baatezu]: { id: MonsterSubtypeId.Baatezu, name: 'Baatezu' },
+    [MonsterSubtypeId.Eladrin]: { id: MonsterSubtypeId.Eladrin, name: 'Eladrin' },
+    [MonsterSubtypeId.Goblinoid]: { id: MonsterSubtypeId.Goblinoid, name: 'Goblinoid' },
+    [MonsterSubtypeId.Guardinal]: { id: MonsterSubtypeId.Guardinal, name: 'Guardinal' },
+    [MonsterSubtypeId.Native]: { id: MonsterSubtypeId.Native, name: 'Native' },
+    [MonsterSubtypeId.Reptilian]: { id: MonsterSubtypeId.Reptilian, name: 'Reptilian' },
+    [MonsterSubtypeId.Tanarri]: { id: MonsterSubtypeId.Tanarri, name: 'Tanar\'ri' },
+    // Humanoid race subtypes
+    [MonsterSubtypeId.Dwarf]: { id: MonsterSubtypeId.Dwarf, name: 'Dwarf' },
+    [MonsterSubtypeId.Elf]: { id: MonsterSubtypeId.Elf, name: 'Elf' },
+    [MonsterSubtypeId.Gnoll]: { id: MonsterSubtypeId.Gnoll, name: 'Gnoll' },
+    [MonsterSubtypeId.Gnome]: { id: MonsterSubtypeId.Gnome, name: 'Gnome' },
+    [MonsterSubtypeId.Halfling]: { id: MonsterSubtypeId.Halfling, name: 'Halfling' },
+    [MonsterSubtypeId.Human]: { id: MonsterSubtypeId.Human, name: 'Human' },
+    [MonsterSubtypeId.Orc]: { id: MonsterSubtypeId.Orc, name: 'Orc' },
+};
+
+export const MONSTER_SUBTYPE_LIST = Object.values(MONSTER_SUBTYPE_MAP);
+
+// Monster Special Ability Type ID enum
+export const MonsterSpecialAbilityTypeId = {
+    SpellLike: 1,      // (Sp) - Spell-like ability
+    Supernatural: 2,   // (Su) - Supernatural ability
+    Extraordinary: 3, // (Ex) - Extraordinary ability
+} as const;
+
+export type MonsterSpecialAbilityTypeId = typeof MonsterSpecialAbilityTypeId[keyof typeof MonsterSpecialAbilityTypeId];
+
+export const MONSTER_SPECIAL_ABILITY_TYPE_MAP: MonsterSpecialAbilityTypeMap = {
+    [MonsterSpecialAbilityTypeId.SpellLike]: { id: MonsterSpecialAbilityTypeId.SpellLike, name: 'Spell-Like (Sp)' },
+    [MonsterSpecialAbilityTypeId.Supernatural]: { id: MonsterSpecialAbilityTypeId.Supernatural, name: 'Supernatural (Su)' },
+    [MonsterSpecialAbilityTypeId.Extraordinary]: { id: MonsterSpecialAbilityTypeId.Extraordinary, name: 'Extraordinary (Ex)' },
+};
+
+export const MONSTER_SPECIAL_ABILITY_TYPE_LIST = Object.values(MONSTER_SPECIAL_ABILITY_TYPE_MAP);
+
+// Monster Armor Component Type ID enum (only non-derivable components)
+export const MonsterArmorComponentTypeId = {
+    NaturalArmor: 1,
+    Equipment: 2,
+    Other: 3,
+} as const;
+
+export type MonsterArmorComponentTypeId = typeof MonsterArmorComponentTypeId[keyof typeof MonsterArmorComponentTypeId];
+
+export const MONSTER_ARMOR_COMPONENT_TYPE_MAP: MonsterArmorComponentTypeMap = {
+    [MonsterArmorComponentTypeId.NaturalArmor]: { id: MonsterArmorComponentTypeId.NaturalArmor, name: 'Natural Armor' },
+    [MonsterArmorComponentTypeId.Equipment]: { id: MonsterArmorComponentTypeId.Equipment, name: 'Equipment' },
+    [MonsterArmorComponentTypeId.Other]: { id: MonsterArmorComponentTypeId.Other, name: 'Other' },
+};
+
+export const MONSTER_ARMOR_COMPONENT_TYPE_LIST = Object.values(MONSTER_ARMOR_COMPONENT_TYPE_MAP);
+
+// Monster Spell Type ID enum
+export const MonsterSpellTypeId = {
+    SpellLike: 1,
+    Prepared: 2,
+} as const;
+
+export type MonsterSpellTypeId = typeof MonsterSpellTypeId[keyof typeof MonsterSpellTypeId];
+
+export const MONSTER_SPELL_TYPE_MAP: MonsterSpellTypeMap = {
+    [MonsterSpellTypeId.SpellLike]: { id: MonsterSpellTypeId.SpellLike, name: 'Spell-Like Ability' },
+    [MonsterSpellTypeId.Prepared]: { id: MonsterSpellTypeId.Prepared, name: 'Prepared Spell' },
+};
+
+export const MONSTER_SPELL_TYPE_LIST = Object.values(MONSTER_SPELL_TYPE_MAP);
+
+// Monster Spell Uses Per Day ID enum
+export const MonsterSpellUsesPerDayId = {
+    AtWill: 1,
+    OnePerDay: 2,
+    TwoPerDay: 3,
+    ThreePerDay: 4,
+    FourPerDay: 5,
+    FivePerDay: 6,
+    SixPerDay: 7,
+    SevenPerDay: 8,
+    OnePerRound: 9,
+} as const;
+
+export type MonsterSpellUsesPerDayId = typeof MonsterSpellUsesPerDayId[keyof typeof MonsterSpellUsesPerDayId];
+
+export const MONSTER_SPELL_USES_PER_DAY_MAP: MonsterSpellUsesPerDayMap = {
+    [MonsterSpellUsesPerDayId.AtWill]: { id: MonsterSpellUsesPerDayId.AtWill, name: 'At Will' },
+    [MonsterSpellUsesPerDayId.OnePerDay]: { id: MonsterSpellUsesPerDayId.OnePerDay, name: '1/Day' },
+    [MonsterSpellUsesPerDayId.TwoPerDay]: { id: MonsterSpellUsesPerDayId.TwoPerDay, name: '2/Day' },
+    [MonsterSpellUsesPerDayId.ThreePerDay]: { id: MonsterSpellUsesPerDayId.ThreePerDay, name: '3/Day' },
+    [MonsterSpellUsesPerDayId.FourPerDay]: { id: MonsterSpellUsesPerDayId.FourPerDay, name: '4/Day' },
+    [MonsterSpellUsesPerDayId.FivePerDay]: { id: MonsterSpellUsesPerDayId.FivePerDay, name: '5/Day' },
+    [MonsterSpellUsesPerDayId.SixPerDay]: { id: MonsterSpellUsesPerDayId.SixPerDay, name: '6/Day' },
+    [MonsterSpellUsesPerDayId.SevenPerDay]: { id: MonsterSpellUsesPerDayId.SevenPerDay, name: '7/Day' },
+    [MonsterSpellUsesPerDayId.OnePerRound]: { id: MonsterSpellUsesPerDayId.OnePerRound, name: '1/Round' },
+};
+
+export const MONSTER_SPELL_USES_PER_DAY_LIST = Object.values(MONSTER_SPELL_USES_PER_DAY_MAP);
+
+export const MovementTypeId = {
+    Land: 1,
+    Fly: 2,
+    Swim: 3,
+    Climb: 4,
+    Burrow: 5,
+} as const;
+
+export type MovementTypeId = typeof MovementTypeId[keyof typeof MovementTypeId];
+
+export const MOVEMENT_TYPE_MAP: MovementTypeMap = {
+    [MovementTypeId.Land]: { id: MovementTypeId.Land, name: 'Land' },
+    [MovementTypeId.Fly]: { id: MovementTypeId.Fly, name: 'Fly' },
+    [MovementTypeId.Swim]: { id: MovementTypeId.Swim, name: 'Swim' },
+    [MovementTypeId.Climb]: { id: MovementTypeId.Climb, name: 'Climb' },
+    [MovementTypeId.Burrow]: { id: MovementTypeId.Burrow, name: 'Burrow' },
+};
+
+export const MOVEMENT_TYPE_LIST = Object.values(MOVEMENT_TYPE_MAP);
+
+export const ManeuverabilityId = {
+    Perfect: 1,
+    Good: 2,
+    Average: 3,
+    Poor: 4,
+    Clumsy: 5,
+} as const;
+
+export type ManeuverabilityId = typeof ManeuverabilityId[keyof typeof ManeuverabilityId];
+
+export const MANEUVERABILITY_MAP: ManeuverabilityMap = {
+    [ManeuverabilityId.Perfect]: { id: ManeuverabilityId.Perfect, name: 'Perfect' },
+    [ManeuverabilityId.Good]: { id: ManeuverabilityId.Good, name: 'Good' },
+    [ManeuverabilityId.Average]: { id: ManeuverabilityId.Average, name: 'Average' },
+    [ManeuverabilityId.Poor]: { id: ManeuverabilityId.Poor, name: 'Poor' },
+    [ManeuverabilityId.Clumsy]: { id: ManeuverabilityId.Clumsy, name: 'Clumsy' },
+};
+
+export const MANEUVERABILITY_LIST = Object.values(MANEUVERABILITY_MAP);
+
+// Monster Extra Description Type ID enum
+export const MonsterExtraDescriptionTypeId = {
+    Mount: 1,
+    Society: 2,
+    Character: 3,  // For {CHARACTERS} blocks (brief character info)
+    Creating: 4,
+    Tactics: 5,
+    Sidebar: 6,
+    Training: 7,
+    AsCharacters: 8,  // For {ASCHARACTERS} blocks (detailed racial traits for player characters)
+} as const;
+
+export type MonsterExtraDescriptionTypeId = typeof MonsterExtraDescriptionTypeId[keyof typeof MonsterExtraDescriptionTypeId];
+
+export const MONSTER_EXTRA_DESCRIPTION_TYPE_MAP: MonsterExtraDescriptionTypeMap = {
+    [MonsterExtraDescriptionTypeId.Mount]: { id: MonsterExtraDescriptionTypeId.Mount, name: 'Mount' },
+    [MonsterExtraDescriptionTypeId.Society]: { id: MonsterExtraDescriptionTypeId.Society, name: 'Society' },
+    [MonsterExtraDescriptionTypeId.Character]: { id: MonsterExtraDescriptionTypeId.Character, name: 'Character' },
+    [MonsterExtraDescriptionTypeId.Creating]: { id: MonsterExtraDescriptionTypeId.Creating, name: 'Creating' },
+    [MonsterExtraDescriptionTypeId.Tactics]: { id: MonsterExtraDescriptionTypeId.Tactics, name: 'Tactics' },
+    [MonsterExtraDescriptionTypeId.Sidebar]: { id: MonsterExtraDescriptionTypeId.Sidebar, name: 'Sidebar' },
+    [MonsterExtraDescriptionTypeId.Training]: { id: MonsterExtraDescriptionTypeId.Training, name: 'Training' },
+    [MonsterExtraDescriptionTypeId.AsCharacters]: { id: MonsterExtraDescriptionTypeId.AsCharacters, name: 'AsCharacters' },
+};
+
+export const MONSTER_EXTRA_DESCRIPTION_TYPE_LIST = Object.values(MONSTER_EXTRA_DESCRIPTION_TYPE_MAP);

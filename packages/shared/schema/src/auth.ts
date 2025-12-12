@@ -13,9 +13,8 @@ export const RegisterUserSchema = z.object({
         .min(3, 'Username must be at least 3 characters long')
         .max(50, 'Username must be less than 50 characters')
         .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
-    email: z.string()
-        .email('Invalid email format')
-        .max(255, 'Email must be less than 255 characters'),
+    email: z.email({ message: 'Invalid email format' })
+        .max(255, { message: 'Email must be less than 255 characters' }),
     password: z.string()
         .min(8, 'Password must be at least 8 characters long')
         .max(100, 'Password must be less than 100 characters')
@@ -30,10 +29,7 @@ export const AuthUserSchema = z.object({
 });
 
 // User profile schema (profile-related data) - matches Prisma User structure
-export const UserProfileSchema = z.object({
-    id: z.number(),
-    username: z.string(),
-    isAdmin: z.boolean(),
+export const UserProfileSchema = AuthUserSchema.extend({
     email: z.string(),
     preferredEditionId: z.number().nullable(),
     diceConfigBase: z.number().nullable(),

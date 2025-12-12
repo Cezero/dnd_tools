@@ -1,6 +1,7 @@
 import { ContextMenu } from '@base-ui-components/react/context-menu';
 import { CheckIcon } from '@heroicons/react/24/outline';
 import React from 'react';
+
 import { CoreComponent } from '@shared/static-data';
 
 interface ContextMenuSingleSelectProps {

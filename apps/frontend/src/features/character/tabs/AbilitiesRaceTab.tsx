@@ -1,11 +1,15 @@
 import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
-import React, { useState, useEffect, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 import { useDiceBox } from '@/components/dice-box';
 import { CustomSelect } from '@/components/forms/FormComponents';
-import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
-import { LanguageService } from '@/lib/LanguageService';
-import type { RaceSummary, Race, CharacterWithAllDetailsResponse } from '@shared/schema';
+import type { TabComponentProps } from '@/features/character/types';
+import { CharacterEditStateUpdateType } from '@/features/character/types';
+import { RaceDisplay } from '@/features/race/RaceDisplay';
+import { useDebounce } from '@/hooks/useDebounce';
+import { useCacheFunctions } from '@/services/cache';
+import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import {
     ABILITY_LIST,
     ABILITY_MAP,
@@ -13,31 +17,25 @@ import {
     GetAbilityModifier,
     GetAbilityModifierString,
     GetPointBuyCost,
-    LANGUAGE_MAP,
-    SIZE_MAP,
-    SpecialFeatureId,
+    ValidateAbilityScore,
     PointBuyOptions,
     AbilityGenerationMethod,
     ABILITY_GENERATION_METHOD_LIST,
-    POINT_BUY_OPTIONS_LIST
+    POINT_BUY_OPTIONS_LIST,
+    SpecialFeatureId,
+    EntityAppliesToType,
+    CoreComponent
 } from '@shared/static-data';
 
-import { getClassById } from '../../class/ClassUtils';
-import { CharacterUtils } from '../CharacterUtils';
-
-interface AbilitiesRaceTabProps {
-    character: CharacterWithAllDetailsResponse;
-    onUpdate: (data: Partial<CharacterWithAllDetailsResponse>) => void;
-    races?: RaceSummary[];
-    selectedRaceDetails?: Race | null;
-}
-
 export function AbilitiesRaceTab({
-    character,
-    onUpdate,
-    races = [],
-    selectedRaceDetails
-}: AbilitiesRaceTabProps): React.JSX.Element {
+    state,
+    updateState,
+    resolvedData: _resolvedData,
+    isLoading,
+    triggerFeatureResolution
+}: TabComponentProps): React.JSX.Element {
+    const { getRaceSelectByEdition } = useCacheFunctions();
+    const queryClient = useQueryClient();
     const { rollDice, rollDiceGroups, isReady, isRolling, lastResult, onRollComplete } = useDiceBox();
     const [generationMethod, setGenerationMethod] = useState<AbilityGenerationMethod>(AbilityGenerationMethod.manual);
     const [rolledValues, setRolledValues] = useState<number[]>([]);
@@ -47,25 +45,10 @@ export function AbilitiesRaceTab({
     const [showChevrons, setShowChevrons] = useState(true);
     const [pointBuyConfig, setPointBuyConfig] = useState<PointBuyOptions>(PointBuyOptions.Challenging);
     const [customPointBuy, setCustomPointBuy] = useState<number>(22);
-    const [favoredClassData, setFavoredClassData] = useState<{ id: number; name: string } | null>(null);
 
-    // Load favored class data when race changes
-    useEffect(() => {
-        const loadFavoredClass = async () => {
-            if (selectedRaceDetails?.favoredClassId && selectedRaceDetails.favoredClassId !== -1) {
-                const classData = await getClassById(selectedRaceDetails.favoredClassId);
-                if (classData) {
-                    setFavoredClassData({ id: classData.id, name: classData.name });
-                } else {
-                    setFavoredClassData(null);
-                }
-            } else {
-                setFavoredClassData(null);
-            }
-        };
-
-        loadFavoredClass();
-    }, [selectedRaceDetails?.favoredClassId]);
+    // State for debounced input handling
+    const [inputValues, setInputValues] = useState<Record<number, string>>({});
+    const [focusedAbilityId, setFocusedAbilityId] = useState<number | null>(null);
 
     const getPointBuyLimit = useCallback((): number => {
         switch (pointBuyConfig) {
@@ -80,9 +63,9 @@ export function AbilitiesRaceTab({
 
     // Get ability score
     const getAbilityScore = useCallback((abilityId: number): number | null => {
-        const abilityScore = character.abilityScores.find(attr => attr.abilityId === abilityId);
+        const abilityScore = state.abilityScores.find(attr => attr.abilityId === abilityId);
         return abilityScore?.value ?? null;
-    }, [character.abilityScores]);
+    }, [state.abilityScores]);
 
     const getTotalPointsSpent = useCallback((): number => {
         return ABILITY_LIST.reduce((total, ability) => {
@@ -97,7 +80,7 @@ export function AbilitiesRaceTab({
 
     // Set ability score
     const setAbilityScore = useCallback((abilityId: number, value: number) => {
-        const updatedAbilityScores = [...character.abilityScores];
+        const updatedAbilityScores = [...state.abilityScores];
         const existingIndex = updatedAbilityScores.findIndex(attr => attr.abilityId === abilityId);
 
         if (existingIndex >= 0) {
@@ -107,37 +90,91 @@ export function AbilitiesRaceTab({
             };
         } else {
             updatedAbilityScores.push({
-                id: 0,
-                characterId: character.id,
+                id: Date.now(), // Temporary ID for new ability score
+                characterId: 0, // Will be set when character is saved
                 abilityId: abilityId,
                 value: value
             });
         }
 
-        onUpdate({ abilityScores: updatedAbilityScores });
-    }, [character.abilityScores, character.id, onUpdate]);
+        updateState({ type: CharacterEditStateUpdateType.SET_ABILITY_SCORES, payload: { abilityScores: updatedAbilityScores } });
+    }, [state.abilityScores, updateState]);
 
     const handleAbilityChange = useCallback((abilityId: number, value: number) => {
-        // Enforce 8-18 range for Point Buy
+        // General validation: 3-18 range
+        if (!ValidateAbilityScore(value)) {
+            return; // Don't update if invalid
+        }
+
+        // Point Buy specific validation
         if (generationMethod === AbilityGenerationMethod.pointBuy) {
-            value = Math.max(8, Math.min(18, value));
+            // Enforce 8-18 range for Point Buy
+            if (value < 8 || value > 18) {
+                return; // Don't update if outside point buy range
+            }
 
             // Check if this would increase the ability score
             const currentValue = getAbilityScore(abilityId);
             if (currentValue !== null && value > currentValue) {
-                // Calculate the additional cost
-                const additionalCost = GetPointBuyCost(value) - GetPointBuyCost(currentValue);
-                const remainingPoints = getRemainingPoints();
+                try {
+                    // Calculate the additional cost
+                    const additionalCost = GetPointBuyCost(value) - GetPointBuyCost(currentValue);
+                    const remainingPoints = getRemainingPoints();
 
-                // Prevent increase if not enough points
-                if (additionalCost > remainingPoints) {
-                    return; // Don't update if not enough points
+                    // Prevent increase if not enough points
+                    if (additionalCost > remainingPoints) {
+                        return; // Don't update if not enough points
+                    }
+                } catch (_error) {
+                    // If GetPointBuyCost throws an error, don't update
+                    return;
                 }
             }
         }
 
         setAbilityScore(abilityId, value);
     }, [generationMethod, getAbilityScore, getRemainingPoints, setAbilityScore]);
+
+    // Handle immediate input changes (no validation)
+    const handleInputChange = useCallback((abilityId: number, value: string) => {
+        setInputValues(prev => ({ ...prev, [abilityId]: value }));
+    }, []);
+
+    // Handle focus events
+    const handleInputFocus = useCallback((abilityId: number) => {
+        setFocusedAbilityId(abilityId);
+        const currentValue = getAbilityScore(abilityId);
+        setInputValues(prev => ({
+            ...prev,
+            [abilityId]: currentValue !== null ? currentValue.toString() : ''
+        }));
+    }, [getAbilityScore]);
+
+    // Handle blur events (immediate validation)
+    const handleInputBlur = useCallback((abilityId: number) => {
+        setFocusedAbilityId(null);
+        const inputValue = inputValues[abilityId];
+        if (inputValue !== undefined) {
+            const parsedValue = parseInt(inputValue) || 0;
+            handleAbilityChange(abilityId, parsedValue);
+            setInputValues(prev => {
+                const newValues = { ...prev };
+                delete newValues[abilityId];
+                return newValues;
+            });
+        }
+    }, [inputValues, handleAbilityChange]);
+
+    // Debounced validation for ability changes
+    const debouncedAbilityChange = useDebounce(inputValues, 1000);
+
+    // Effect to handle debounced changes
+    useEffect(() => {
+        if (focusedAbilityId && debouncedAbilityChange[focusedAbilityId] !== undefined) {
+            const parsedValue = parseInt(debouncedAbilityChange[focusedAbilityId]) || 0;
+            handleAbilityChange(focusedAbilityId, parsedValue);
+        }
+    }, [debouncedAbilityChange, focusedAbilityId]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Set up roll complete callback
     useEffect(() => {
@@ -149,7 +186,7 @@ export function AbilitiesRaceTab({
 
             if (generationMethod === AbilityGenerationMethod.inorder) {
                 // Handle 3d6 order - assign all results at once
-                const newAbilityScores = [...character.abilityScores];
+                const newAbilityScores = [...state.abilityScores];
                 let allAssigned = true;
 
                 results.forEach(result => {
@@ -164,8 +201,8 @@ export function AbilitiesRaceTab({
                             };
                         } else {
                             newAbilityScores.push({
-                                id: 0,
-                                characterId: character.id,
+                                id: Date.now(), // Temporary ID for new ability score
+                                characterId: 0, // Will be set when character is saved
                                 abilityId: ability.id,
                                 value: result.value
                             });
@@ -176,7 +213,7 @@ export function AbilitiesRaceTab({
                 });
 
                 if (allAssigned) {
-                    onUpdate({ abilityScores: newAbilityScores });
+                    updateState({ type: CharacterEditStateUpdateType.SET_ABILITY_SCORES, payload: { abilityScores: newAbilityScores } });
                     setIsRollingAbilitySet(false);
                 }
             } else if (generationMethod === AbilityGenerationMethod.arrange || generationMethod === AbilityGenerationMethod.drop) {
@@ -210,20 +247,22 @@ export function AbilitiesRaceTab({
         });
 
         return unsubscribe;
-    }, [onRollComplete, generationMethod, character.abilityScores, character.id, rolledValues, onUpdate, handleAbilityChange]);
-
-
+    }, [onRollComplete, generationMethod, state.abilityScores, rolledValues, updateState, handleAbilityChange]);
 
     const handleRollAbility = (abilityId: number) => {
         const abilityName = ABILITY_MAP[abilityId]?.name || `Ability ${abilityId}`;
         rollDice('3d6', abilityName);
     };
 
-    const handleRaceChange = (raceId: number | null) => {
-        onUpdate({
-            raceId: raceId || 0,
-            race: raceId ? { id: raceId, name: '' } : { id: 0, name: '' }
+    const handleRaceChange = async (raceId: number | null) => {
+
+        updateState({
+            type: CharacterEditStateUpdateType.SET_RACE,
+            payload: { raceId: raceId || null }
         });
+
+        // Don't trigger feature resolution here - wait for race data to load
+        // The useEffect below will handle triggering when race data is available
     };
 
     const handleGenerationMethodChange = (method: AbilityGenerationMethod) => {
@@ -238,12 +277,12 @@ export function AbilitiesRaceTab({
             const allUndefined = ABILITY_LIST.every(ability => getAbilityScore(ability.id) === null);
             if (allUndefined) {
                 const newAbilityScores = ABILITY_LIST.map(ability => ({
-                    id: 0,
-                    characterId: character.id,
+                    id: Date.now() + ability.id, // Temporary ID for new ability score
+                    characterId: 0, // Will be set when character is saved
                     abilityId: ability.id,
                     value: 8
                 }));
-                onUpdate({ abilityScores: newAbilityScores });
+                updateState({ type: CharacterEditStateUpdateType.SET_ABILITY_SCORES, payload: { abilityScores: newAbilityScores } });
             }
         }
     };
@@ -254,7 +293,7 @@ export function AbilitiesRaceTab({
         setAssignedAbilitiesForOrder(new Set());
 
         // Clear all assigned abilities when rolling new values
-        onUpdate({ abilityScores: [] });
+        updateState({ type: CharacterEditStateUpdateType.SET_ABILITY_SCORES, payload: { abilityScores: [] } });
 
         const diceFormula = generationMethod === AbilityGenerationMethod.drop ? '4d6dl1' : '3d6';
         const numRolls = 6;
@@ -317,18 +356,18 @@ export function AbilitiesRaceTab({
             setRolledValues(newRolledValues);
         } else if (source === 'ability' && targetAbilityId !== undefined) {
             // Moving from one ability to another ability
-            const sourceAbilityScore = character.abilityScores.find(attr => attr.value === value);
+            const sourceAbilityScore = state.abilityScores.find(attr => attr.value === value);
             if (sourceAbilityScore) {
                 const existingValue = getAbilityScore(targetAbilityId);
 
                 // Remove the source ability
-                const updatedAbilityScores = character.abilityScores.filter(attr => attr.abilityId !== sourceAbilityScore.abilityId);
+                const updatedAbilityScores = state.abilityScores.filter(attr => attr.abilityId !== sourceAbilityScore.abilityId);
 
                 // Add the target ability
                 if (targetAbilityId !== sourceAbilityScore.abilityId) {
                     updatedAbilityScores.push({
-                        id: 0,
-                        characterId: character.id,
+                        id: Date.now(), // Temporary ID for new ability score
+                        characterId: 0, // Will be set when character is saved
                         abilityId: targetAbilityId,
                         value: value
                     });
@@ -341,13 +380,13 @@ export function AbilitiesRaceTab({
                     newRolledValues = [...newRolledValues, existingValue];
                 }
 
-                onUpdate({ abilityScores: updatedAbilityScores });
+                updateState({ type: CharacterEditStateUpdateType.SET_ABILITY_SCORES, payload: { abilityScores: updatedAbilityScores } });
                 setRolledValues(newRolledValues);
             }
         } else if (source === 'ability' && targetAbilityId === undefined) {
             // Moving from ability back to pool
-            const updatedAbilityScores = character.abilityScores.filter(attr => attr.value !== value);
-            onUpdate({ abilityScores: updatedAbilityScores });
+            const updatedAbilityScores = state.abilityScores.filter(attr => attr.value !== value);
+            updateState({ type: CharacterEditStateUpdateType.SET_ABILITY_SCORES, payload: { abilityScores: updatedAbilityScores } });
             setRolledValues([...rolledValues, value]);
         }
     };
@@ -369,57 +408,97 @@ export function AbilitiesRaceTab({
         }
     };
 
-    // Helper functions using race data
-    const getSizeForRace = (raceId: number): string => {
-        const race = races.find(r => r.id === raceId);
-        if (!race) return 'Medium';
-        return SIZE_MAP[race.sizeId]?.name || 'Medium';
-    };
+    // Get races from cache system
+    const [races, setRaces] = useState<CoreComponent[]>([]);
+    const [isLoadingRaces, setIsLoadingRaces] = useState(false);
 
-    const getLanguageNames = (languageIds: number[]): string => {
-        return languageIds
-            .map(id => LANGUAGE_MAP[id]?.name)
-            .filter(Boolean)
-            .join(', ') || 'None';
-    };
+    // Get selected race details using imperative API
+    const [selectedRaceDetails, setSelectedRaceDetails] = useState<{ features?: unknown[] } | null>(null);
+    const [isLoadingRace, setIsLoadingRace] = useState(false);
+    const [_raceError, setRaceError] = useState<Error | null>(null);
 
-    const getAutomaticLanguages = (): number[] => {
-        if (!selectedRaceDetails?.features) return [];
-        return LanguageService.getAutomaticLanguages(selectedRaceDetails.features);
-    };
+    // Track which race we've already resolved to prevent infinite loops
+    const resolvedRaceIdRef = useRef<number | null>(null);
 
-    const getBonusLanguages = (): number[] => {
-        if (!selectedRaceDetails?.features) return [];
-        return LanguageService.getBonusLanguages(selectedRaceDetails.features);
-    };
+    // Fetch races when editionId changes
+    useEffect(() => {
+        const fetchRaces = async () => {
+            if (state.editionId) {
+                setIsLoadingRaces(true);
+                try {
+                    const racesData = await getRaceSelectByEdition(state.editionId);
+                    setRaces(racesData || []);
+                } catch (error) {
+                    console.error('Failed to fetch races:', error);
+                    setRaces([]);
+                } finally {
+                    setIsLoadingRaces(false);
+                }
+            } else {
+                setRaces([]);
+            }
+        };
+        fetchRaces();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [state.editionId]);
 
-    const getAbilityAdjustments = (): string => {
-        if (!selectedRaceDetails?.features) return 'None';
-        return CharacterUtils.getFormattedAbilityAdjustments(selectedRaceDetails.features);
-    };
+    // Fetch race data when raceId changes
+    useEffect(() => {
+        if (state.raceId) {
+            setIsLoadingRace(true);
+            setRaceError(null);
+            // Use queryClient.fetchQuery to leverage TanStack Query cache
+            queryClient.fetchQuery({
+                queryKey: RaceQueryHooks.getRaceByIdQueryKey(state.raceId),
+                queryFn: () => RaceQueryHooks.getRaceByIdQueryFn({ pathParams: { id: state.raceId } }),
+                staleTime: 5 * 60 * 1000, // 5 minutes
+                gcTime: 10 * 60 * 1000, // 10 minutes
+            })
+                .then(race => {
+                    setSelectedRaceDetails(race);
+                })
+                .catch(err => setRaceError(err))
+                .finally(() => setIsLoadingRace(false));
+        } else {
+            setSelectedRaceDetails(null);
+        }
+    }, [state.raceId, queryClient]);
 
-    const getFavoredClass = (): string => {
-        if (!selectedRaceDetails) return 'None';
-        if (selectedRaceDetails.favoredClassId === -1) return 'Any';
-        return favoredClassData?.name || 'Loading...';
-    };
+    // Trigger feature resolution when race data is loaded
+    useEffect(() => {
+        if (state.raceId && selectedRaceDetails && !isLoadingRace && resolvedRaceIdRef.current !== state.raceId) {
+            resolvedRaceIdRef.current = state.raceId;
+            triggerFeatureResolution();
+        }
+    }, [state.raceId, selectedRaceDetails, isLoadingRace, triggerFeatureResolution]);
 
-    const truncateDescription = (description: string | null): string => {
-        if (!description) return '';
-        return description.length > 1000 ? description.substring(0, 1000) + '...' : description;
-    };
-
-    const getRacialModifier = (abilityId: number): number => {
+    // Helper function to get racial modifier for ability scores
+    const getRacialModifier = useCallback((abilityId: number): number => {
         if (!selectedRaceDetails?.features) return 0;
-        return CharacterUtils.getAbilityAdjustment(selectedRaceDetails.features, abilityId);
-    };
 
-    const getAdjustedAbilityValue = (abilityId: number): number | null => {
+        // Look for ability adjustment features
+        const abilityFeatures = selectedRaceDetails.features.filter((fp: unknown) => {
+            const feature = fp as { featureId: number; entities?: { appliesTo: number; appliesToId: number; value: number }[] };
+            return feature.featureId === SpecialFeatureId.AbilityAdjustment &&
+                feature.entities?.some(e => e.appliesTo === EntityAppliesToType.Ability && e.appliesToId === abilityId);
+        });
+
+        const abilityEntity = abilityFeatures
+            .flatMap((fp: unknown) => {
+                const feature = fp as { entities?: { appliesTo: number; appliesToId: number; value: number }[] };
+                return feature.entities || [];
+            })
+            .find(e => e.appliesTo === EntityAppliesToType.Ability && e.appliesToId === abilityId);
+
+        return abilityEntity?.value ?? 0;
+    }, [selectedRaceDetails?.features]);
+
+    const getAdjustedAbilityValue = useCallback((abilityId: number): number | null => {
         const baseValue = getAbilityScore(abilityId);
         if (baseValue === null) return null;
         const racialModifier = getRacialModifier(abilityId);
         return baseValue + racialModifier;
-    };
+    }, [getAbilityScore, getRacialModifier]);
 
     const getModifierTextColor = (modifier: number): string => {
         if (modifier > 0) {
@@ -430,11 +509,52 @@ export function AbilitiesRaceTab({
         return 'text-gray-500 dark:text-gray-400';
     };
 
+    // Memoized ability calculations to avoid repeated computations
+    const abilityCalculations = useMemo(() => {
+        return ABILITY_LIST.map(ability => {
+            const baseValue = getAbilityScore(ability.id);
+            const adjustedValue = getAdjustedAbilityValue(ability.id);
+            const modifier = adjustedValue !== null ? GetAbilityModifier(adjustedValue) : 0;
+            const modifierString = adjustedValue !== null ? GetAbilityModifierString(adjustedValue) : '';
+            const modifierColor = adjustedValue !== null ? getModifierTextColor(modifier) : 'text-gray-500 dark:text-gray-400';
+            const pointCost = baseValue !== null ? GetPointBuyCost(baseValue) : 0;
+
+            return {
+                ability,
+                baseValue,
+                adjustedValue,
+                modifier,
+                modifierString,
+                modifierColor,
+                pointCost
+            };
+        });
+    }, [getAbilityScore, getAdjustedAbilityValue]);
+
     return (
         <div className="p-6">
             <h2 className="text-xl font-semibold mb-4">
                 Abilities & Race
             </h2>
+
+            {/* Loading State */}
+            {isLoading && (
+                <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg shadow-sm p-4">
+                    <div className="flex items-center">
+                        <div className="flex-shrink-0">
+                            <svg className="animate-spin h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+                        <div className="ml-3">
+                            <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                                Loading character data...
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Ability Scores */}
@@ -530,7 +650,7 @@ export function AbilitiesRaceTab({
                     <div className="flex gap-6">
                         {/* Ability Scores - Left Column */}
                         <div className="flex-1 space-y-2">
-                            {ABILITY_LIST.map((ability) => (
+                            {abilityCalculations.map(({ ability, baseValue, adjustedValue, modifierString, modifierColor, pointCost }) => (
                                 <div key={ability.id} className="space-y-2">
                                     <div className="flex items-center gap-2">
                                         <div className="font-semibold text-xl w-12">{ability.abbreviation}</div>
@@ -544,25 +664,27 @@ export function AbilitiesRaceTab({
                                             {showChevrons ? (
                                                 <input
                                                     type="number"
-                                                    value={getAbilityScore(ability.id) || ''}
-                                                    onChange={(e) => handleAbilityChange(ability.id, parseInt(e.target.value) || 0)}
+                                                    value={focusedAbilityId === ability.id ? (inputValues[ability.id] ?? '') : (baseValue || '')}
+                                                    onChange={(e) => handleInputChange(ability.id, e.target.value)}
+                                                    onFocus={() => handleInputFocus(ability.id)}
+                                                    onBlur={() => handleInputBlur(ability.id)}
                                                     className="w-12 py-1 border border-gray-300 dark:border-gray-600 rounded text-center bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                                    min="1"
-                                                    max="20"
-                                                    draggable={getAbilityScore(ability.id) !== undefined}
-                                                    onDragStart={(e) => getAbilityScore(ability.id) !== undefined && handleDragStart(e, getAbilityScore(ability.id)!, 'ability')}
+                                                    min="3"
+                                                    max="18"
+                                                    draggable={baseValue !== null}
+                                                    onDragStart={(e) => baseValue !== null && handleDragStart(e, baseValue, 'ability')}
                                                     onDragOver={handleDragOver}
                                                     onDrop={(e) => handleDrop(e, ability.id)}
                                                 />
                                             ) : (
                                                 <div
                                                     className="w-12 py-1 border border-gray-300 dark:border-gray-600 rounded text-center bg-gray-100 dark:bg-gray-600 cursor-move min-h-[28px] flex items-center justify-center"
-                                                    draggable={getAbilityScore(ability.id) !== undefined}
-                                                    onDragStart={(e) => getAbilityScore(ability.id) !== undefined && handleDragStart(e, getAbilityScore(ability.id)!, 'ability')}
+                                                    draggable={baseValue !== null}
+                                                    onDragStart={(e) => baseValue !== null && handleDragStart(e, baseValue, 'ability')}
                                                     onDragOver={handleDragOver}
                                                     onDrop={(e) => handleDrop(e, ability.id)}
                                                 >
-                                                    {getAbilityScore(ability.id) || ''}
+                                                    {baseValue || ''}
                                                 </div>
                                             )}
 
@@ -601,7 +723,10 @@ export function AbilitiesRaceTab({
                                         <div>
                                             <div className="text-sm text-gray-500 w-12 text-center">Race</div>
                                             <div className="w-12 py-1 border border-gray-300 dark:border-gray-600 rounded text-center bg-gray-100 dark:bg-gray-600">
-                                                {getRacialModifier(ability.id) > 0 ? `+${getRacialModifier(ability.id)}` : getRacialModifier(ability.id)}
+                                                {(() => {
+                                                    const modifier = getRacialModifier(ability.id);
+                                                    return modifier > 0 ? `+${modifier}` : modifier;
+                                                })()}
                                             </div>
                                         </div>
 
@@ -609,15 +734,15 @@ export function AbilitiesRaceTab({
                                         <div>
                                             <div className="text-sm text-gray-500 w-12 text-center">Score</div>
                                             <div className="w-12 py-1 border border-gray-300 dark:border-gray-600 rounded text-center bg-gray-100 dark:bg-gray-600 min-h-[28px] flex items-center justify-center">
-                                                {getAdjustedAbilityValue(ability.id) !== null ? getAdjustedAbilityValue(ability.id) : ''}
+                                                {adjustedValue !== null ? adjustedValue : ''}
                                             </div>
                                         </div>
 
                                         {/* Modifier */}
                                         <div>
                                             <div className="text-sm text-gray-500 w-12 text-center">Mod</div>
-                                            <div className={`w-12 py-1 border border-gray-300 dark:border-gray-600 rounded text-center bg-gray-100 dark:bg-gray-600 font-medium min-h-[28px] flex items-center justify-center ${getAdjustedAbilityValue(ability.id) !== null ? getModifierTextColor(GetAbilityModifier(getAdjustedAbilityValue(ability.id)!)) : 'text-gray-500 dark:text-gray-400'}`}>
-                                                {getAdjustedAbilityValue(ability.id) !== null ? GetAbilityModifierString(getAdjustedAbilityValue(ability.id)!) : ''}
+                                            <div className={`w-12 py-1 border border-gray-300 dark:border-gray-600 rounded text-center bg-gray-100 dark:bg-gray-600 font-medium min-h-[28px] flex items-center justify-center ${modifierColor}`}>
+                                                {modifierString}
                                             </div>
                                         </div>
 
@@ -626,7 +751,7 @@ export function AbilitiesRaceTab({
                                             <div>
                                                 <div className="text-sm text-gray-500 w-8 text-center">Cost</div>
                                                 <div className="w-8 py-1 text-center">
-                                                    {getAbilityScore(ability.id) !== null ? GetPointBuyCost(getAbilityScore(ability.id)!) : 0}
+                                                    {pointCost}
                                                 </div>
                                             </div>
                                         )}
@@ -767,81 +892,30 @@ export function AbilitiesRaceTab({
                     {/* Race Selection */}
                     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-6">
                         <CustomSelect
-                            value={character.raceId}
+                            value={state.raceId}
                             onValueChange={handleRaceChange}
-                            options={races}
+                            options={Array.isArray(races) ? races : []}
                             label="Race"
-                            placeholder="Select"
+                            placeholder={isLoadingRaces ? "Loading races..." : "Select"}
+                            disabled={isLoadingRaces}
                             labelExtraClassName='text-lg font-semibold'
                             componentExtraClassName="flex items-center mb-4 gap-2"
                             itemTextExtraClassName='w-16'
                         />
 
                         {/* Race Details Panel */}
-                        {character.raceId > 0 && selectedRaceDetails && (
-                            <>
-                                {/* Key Attributes */}
-                                <div className="grid grid-cols-2 gap-4 mb-4">
-                                    <div className="space-y-2 text-sm">
-                                        <p><strong>Size:</strong> {getSizeForRace(character.raceId)}</p>
-                                        <p><strong>Speed:</strong> {selectedRaceDetails.speed} ft.</p>
-                                        <p><strong>Favored Class:</strong> {getFavoredClass()}</p>
-                                    </div>
-                                    <div className="space-y-2 text-sm">
-                                        <p><strong>Languages:</strong> {getLanguageNames(getAutomaticLanguages())}</p>
-                                        <p><strong>Bonus Languages:</strong> {getLanguageNames(getBonusLanguages())}</p>
-                                        <p><strong>Ability Adjustments:</strong> {getAbilityAdjustments()}</p>
-                                    </div>
-                                </div>
-
-                                {/* Description */}
-                                {selectedRaceDetails.description && (
-                                    <div className="mt-4">
-                                        <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-2">Description</h4>
-                                        <div className="prose-custom max-w-none text-sm">
-                                            <ProcessMarkdown
-                                                id={`race-${selectedRaceDetails.name}-description`}
-                                                markdown={truncateDescription(selectedRaceDetails.description)}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Racial Features */}
-                                {selectedRaceDetails.features && selectedRaceDetails.features.filter(fp =>
-                                    fp.featureId !== SpecialFeatureId.AutomaticLanguage &&
-                                    fp.featureId !== SpecialFeatureId.BonusLanguage &&
-                                    fp.featureId !== SpecialFeatureId.AbilityAdjustment
-                                ).length > 0 && (
-                                        <div className="mt-4">
-                                            <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-2">
-                                                {selectedRaceDetails.name} Racial Features
-                                            </h4>
-                                            <div className="space-y-2">
-                                                {selectedRaceDetails.features
-                                                    .filter(fp =>
-                                                        fp.featureId !== SpecialFeatureId.AutomaticLanguage &&
-                                                        fp.featureId !== SpecialFeatureId.BonusLanguage &&
-                                                        fp.featureId !== SpecialFeatureId.AbilityAdjustment
-                                                    )
-                                                    .map(feature => (
-                                                        <div key={feature.id} className="text-sm">
-                                                            <div className="prose-custom max-w-none">
-                                                                <ProcessMarkdown
-                                                                    id={`feature-${feature.id}-description`}
-                                                                    markdown={feature.feature?.description || ''}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                            </div>
-                                        </div>
-                                    )}
-                            </>
+                        {state.raceId && selectedRaceDetails && (
+                            <div className="mt-4">
+                                <RaceDisplay
+                                    race={selectedRaceDetails as unknown as Parameters<typeof RaceDisplay>[0]['race']}
+                                    showHeader={false}
+                                    showActions={false}
+                                />
+                            </div>
                         )}
                     </div>
                 </div>
             </div>
         </div>
     );
-} 
+}

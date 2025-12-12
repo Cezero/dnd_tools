@@ -9,7 +9,8 @@ import { DiceConfigurationFacade } from '@/features/admin/features/dice-configur
 import { DICE_CONFIGURATION_COLUMNS } from '@/features/admin/features/dice-configuration/DiceConfigurationsColumns';
 import { generateDiceColorScheme } from '@/utils/color-scheme';
 import type { DiceBoxAdminConfig } from '@shared/schema';
-import { doesThemeIgnoreColor, getDiceThemeById, THREE_D_DICE_THEME_LIST } from '@shared/static-data';
+import { THREE_D_DICE_THEME_LIST } from '@shared/static-data';
+import { doesThemeIgnoreColor, getDiceThemeById } from '@shared/utils';
 
 export function DiceConfigurationPage(): React.JSX.Element {
     const [config, setConfig] = useState<DiceBoxAdminConfig & { id?: number }>(DiceConfigurationFacade.getDefaultConfig());
@@ -103,7 +104,7 @@ export function DiceConfigurationPage(): React.JSX.Element {
                 }
             }
         }, 300); // 300ms debounce delay
-    }, [isReady, updateConfigWithAdminConfig, config]);
+    }, [isReady, updateConfigWithAdminConfig]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Update DiceBox when config changes and DiceBox is ready (with debouncing)
     useEffect(() => {
@@ -146,13 +147,14 @@ export function DiceConfigurationPage(): React.JSX.Element {
                 clearTimeout(debounceTimeoutRef.current);
             }
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         config.theme, config.themeColor, config.scale,
         config.gravity, config.mass, config.friction, config.restitution,
         config.angularDamping, config.linearDamping, config.spinForce, config.throwForce,
         config.startingHeight, config.settleTimeout, config.lightIntensity,
         config.enableShadows, config.shadowTransparency,
-        isReady, debouncedUpdate, config
+        isReady, updateConfigWithAdminConfig
     ]);
 
     const loadDefaultConfig = async () => {

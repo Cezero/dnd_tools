@@ -14,9 +14,10 @@ import {
     EditionId,
     SourceType,
     ProgressionType,
+    BAB_PROGRESSION_LIST,
+    SAVE_PROGRESSION_LIST,
 } from '@shared/static-data';
 
-import { BAB_PROGRESSION_LIST, SAVE_PROGRESSION_LIST } from '../ClassUtils';
 import type { ClassTabProps } from './types';
 
 export function BasicInfoTab({
@@ -223,6 +224,7 @@ export function BasicInfoTab({
                     sources={formData.sourceBookInfo || []}
                     onSourcesChange={(sources) => setFormData({ ...formData, sourceBookInfo: sources })}
                     sourceType={SourceType.Classes}
+                    editionId={formData.editionId as EditionId}
                 />
             </div>
         </div>

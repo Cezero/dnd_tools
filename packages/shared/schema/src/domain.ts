@@ -27,6 +27,7 @@ export const BaseDomainSchema = z.object({
         .max(200, 'Domain name must be less than 200 characters')
         .trim(),
     editionId: z.number().int().positive('Edition ID must be a positive integer'),
+    isVisible: z.boolean().default(true),
     domainSpells: z.array(DomainSpellSchema).nullable(),
     deityDomains: z.array(LocalDeitySummarySchema).nullable(),
     sourceBookInfo: z.array(SourceMapSchema).nullable(),
@@ -41,6 +42,14 @@ export const DomainSummarySchema = DomainSchema.omit({
     domainSpells: true,
     deityDomains: true,
     features: true,
+});
+
+export const DomainCacheSchema = DomainSummarySchema.omit({
+    sourceBookInfo: true,
+});
+
+export const DomainCacheResponseSchema = QueryResponseSchema.extend({
+    results: z.array(DomainCacheSchema),
 });
 
 export const DomainInQueryResponseSchema = DomainSummarySchema;
@@ -79,3 +88,6 @@ export type GetAllDomainsResponse = z.infer<typeof GetAllDomainsResponseSchema>;
 export type Domain = z.infer<typeof DomainSchema>;
 export type DomainSpell = z.infer<typeof DomainSpellSchema>;
 export type DomainSummary = z.infer<typeof DomainSummarySchema>;
+
+export type DomainCacheResponse = z.infer<typeof DomainCacheResponseSchema>;
+export type DomainCacheEntry = z.infer<typeof DomainCacheSchema>;

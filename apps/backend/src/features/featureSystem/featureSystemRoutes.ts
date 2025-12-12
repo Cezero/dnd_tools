@@ -24,10 +24,9 @@ import { requireAdmin } from '../../middleware/authMiddleware.js';
 const { router: FeatureSystemRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
 
 // Core Feature Routes
-get('/', { query: FeatureQuerySchema }, GetAllFeatures);
-get('/list', { query: FeatureQuerySchema }, GetFeatureList);
 get('/:id', { params: FeatureIdParamSchema }, GetFeatureById);
-
+post('/query', { body: FeatureQuerySchema }, GetAllFeatures);
+post('/list', { body: FeatureQuerySchema }, GetFeatureList);
 post('/', requireAdmin, { body: CreateFeatureSchema }, CreateFeature);
 put('/:id', requireAdmin, { params: FeatureIdParamSchema, body: UpdateFeatureSchema }, UpdateFeatureById);
 deleteRoute('/:id', requireAdmin, { params: FeatureIdParamSchema }, DeleteFeatureById);

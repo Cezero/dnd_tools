@@ -91,6 +91,8 @@ export function GenericList<T>({
     storageKey,
     columns,
     serviceFunction,
+    queryHook,
+    dataFetcher,
     itemDesc = 'items',
     initialLimit = 20,
     routes,
@@ -104,8 +106,36 @@ export function GenericList<T>({
     const [data, setData] = useState<T[]>([]);
     const [_total, setTotal] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<Error | null>(null);
     const navigate = useNavigate();
     const { isAdmin } = useAuthAuto();
+
+    // Use imperative API if dataFetcher provided, otherwise fall back to queryHook
+    const queryResult = queryHook ? queryHook({}) : null;
+
+    // Imperative data fetching
+    const fetchData = useCallback(async () => {
+        if (dataFetcher) {
+            try {
+                setIsLoading(true);
+                setError(null);
+                const result = await dataFetcher();
+                setData(result.results);
+                setTotal(result.total);
+            } catch (err) {
+                setError(err as Error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+    }, [dataFetcher]);
+
+    // Fetch data on mount and when dependencies change
+    useEffect(() => {
+        if (dataFetcher) {
+            fetchData();
+        }
+    }, [fetchData]);
 
     // Internal state for selected IDs when in option selector mode
     const [internalSelectedIds, setInternalSelectedIds] = useState<(string | number)[]>(selectedIds);
@@ -113,11 +143,9 @@ export function GenericList<T>({
     // Store the current callback and state in refs to avoid dependency issues
     const onSelectedIdsChangeRef = useRef(onSelectedIdsChange);
     const internalSelectedIdsRef = useRef(internalSelectedIds);
-    const serviceFunctionRef = useRef(serviceFunction);
     const selectedIdsRef = useRef(selectedIds);
     onSelectedIdsChangeRef.current = onSelectedIdsChange;
     internalSelectedIdsRef.current = internalSelectedIds;
-    serviceFunctionRef.current = serviceFunction;
     selectedIdsRef.current = selectedIds;
 
     // Sync internal state with prop changes
@@ -469,9 +497,19 @@ export function GenericList<T>({
                                 try {
                                     await functions.delete!(item);
                                     // Refresh the data after successful deletion
-                                    const { results, total } = await serviceFunction();
-                                    setData(results);
-                                    setTotal(total);
+                                    if (queryResult?.refetch) {
+                                        const result = await queryResult.refetch();
+                                        if (result.data) {
+                                            setData(result.data.results);
+                                            setTotal(result.data.total);
+                                        }
+                                    } else if (dataFetcher) {
+                                        await fetchData();
+                                    } else if (serviceFunction) {
+                                        const { results, total } = await serviceFunction();
+                                        setData(results);
+                                        setTotal(total);
+                                    }
                                 } catch (error) {
                                     console.error(`Failed to delete ${itemDesc}:`, error);
                                     alert(`Failed to delete ${itemDesc}.`);
@@ -527,9 +565,19 @@ export function GenericList<T>({
                             try {
                                 await deleteServiceFunction(safeItemId);
                                 // Refresh the data after successful deletion
-                                const { results, total } = await serviceFunction();
-                                setData(results);
-                                setTotal(total);
+                                if (queryResult?.refetch) {
+                                    const result = await queryResult.refetch();
+                                    if (result.data) {
+                                        setData(result.data.results);
+                                        setTotal(result.data.total);
+                                    }
+                                } else if (dataFetcher) {
+                                    await fetchData();
+                                } else if (serviceFunction) {
+                                    const { results, total } = await serviceFunction();
+                                    setData(results);
+                                    setTotal(total);
+                                }
                             } catch (error) {
                                 console.error(`Failed to delete ${itemDesc}:`, error);
                                 alert(`Failed to delete ${itemDesc}.`);
@@ -577,14 +625,16 @@ export function GenericList<T>({
         getSortedRowModel: getSortedRowModel()
     });
 
+    // Handle queryResult data when using queryHook
     useEffect(() => {
-        setIsLoading(true);
-
-        serviceFunctionRef.current().then(({ results, total }) => {
-            setData(results);
-            setTotal(total);
-        }).catch(console.error).finally(() => setIsLoading(false));
-    }, []);
+        if (queryResult) {
+            if (queryResult.data) {
+                setData(queryResult.data.results);
+                setTotal(queryResult.data.total);
+            }
+            setIsLoading(queryResult.isLoading);
+        }
+    }, [queryResult?.data, queryResult?.isLoading]);
 
     const paginatedRows = table.getPaginationRowModel().rows;
     const filteredRows = table.getFilteredRowModel().rows;
@@ -592,6 +642,41 @@ export function GenericList<T>({
     const start = filteredRows.length === 0 ? 0 : pagination.pageIndex * pagination.pageSize + 1;
     const end = start + paginatedRows.length - 1;
     const filteredTotal = filteredRows.length;
+
+    // Handle errors from both imperative and hook-based approaches
+    const currentError = error || queryResult?.error;
+    if (currentError) {
+        return (
+            <div className="p-4">
+                <div className="text-red-600">
+                    <h3 className="text-lg font-semibold mb-2">Error Loading {itemDesc}</h3>
+                    <p className="mb-4">{currentError.message}</p>
+                    {(queryResult?.refetch || dataFetcher) && (
+                        <button
+                            onClick={async () => {
+                                try {
+                                    if (queryResult?.refetch) {
+                                        const result = await queryResult.refetch();
+                                        if (result.data) {
+                                            setData(result.data.results);
+                                            setTotal(result.data.total);
+                                        }
+                                    } else if (dataFetcher) {
+                                        await fetchData();
+                                    }
+                                } catch (error) {
+                                    console.error('Failed to retry:', error);
+                                }
+                            }}
+                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        >
+                            Retry
+                        </button>
+                    )}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <>

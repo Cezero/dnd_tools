@@ -1,17 +1,16 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
-import { FeatureDetail, FeatureEdit } from '@/components/feature-system';
-import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
-import { GenericList } from '@/components/generic-list/GenericList';
-import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
+import { GenericList } from '@/components/generic-list';
+import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
+import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import { ClassSummary, Feature } from '@shared/schema';
-import { FeatureSourceType, isVariantId } from '@shared/static-data';
+import { FeatureSourceType } from '@shared/static-data';
+import { isVariantId } from '@shared/utils';
 
 import { ClassApi } from './ClassApi';
 import { CLASS_COLUMNS } from './ClassColumns';
-import { routes } from './ClassConfig';
 import { FEATURE_COLUMNS } from './FeatureColumns';
 import { VariantClassApi } from './VariantClassApi';
 
@@ -19,6 +18,7 @@ export default function ClassList(): React.JSX.Element {
     const navigate = useNavigate();
     const location = useLocation();
     const { isLoading: isAuthLoading, isAdmin } = useAuthAuto();
+    // Use imperative API for feature deletion
 
     const HandleNewClassClick = (): void => {
         navigate('/classes/new/edit', { state: { fromListParams: location.search } });
@@ -33,8 +33,13 @@ export default function ClassList(): React.JSX.Element {
         });
     };
 
+    const classesDataFetcher = useCallback(async () => {
+        return await ClassQueryHooks.getClasses({});
+    }, []);
 
-
+    const featuresDataFetcher = useCallback(async () => {
+        return await FeatureQueryHooks.getFeatures({ requestData: { sourceTypes: [FeatureSourceType.Class, FeatureSourceType.ClassVariant] } });
+    }, []);
 
     if (isAuthLoading) {
         return <div className="p-4">Loading...</div>;
@@ -57,10 +62,13 @@ export default function ClassList(): React.JSX.Element {
                 <GenericList<ClassSummary>
                     storageKey="classes-list"
                     columns={CLASS_COLUMNS}
-                    serviceFunction={() => ClassApi.getClasses({})}
+                    dataFetcher={classesDataFetcher}
                     itemDesc="class"
-                    routes={routes}
-                    deleteServiceFunction={createIdDeleteServiceFunction(ClassApi.deleteClass)}
+                    routes={[
+                        { path: 'classes/:id', component: null, routeType: 'detail' },
+                        { path: 'classes/:id/edit', component: null, routeType: 'edit' },
+                        { path: 'classes/new/edit', component: null, routeType: 'edit' }
+                    ]}
                     functions={{
                         edit: (item) => {
                             navigate(`/classes/${item.id}/edit`, {
@@ -80,7 +88,7 @@ export default function ClassList(): React.JSX.Element {
                             if (isVariantId(item.id)) {
                                 try {
                                     await VariantClassApi.deleteVariant(undefined, { id: item.id });
-                                    // The GenericList will handle refreshing the data
+                                    // The QueryBasedList will handle refreshing the data
                                 } catch (error) {
                                     console.error('Failed to delete variant:', error);
                                     alert('Failed to delete variant.');
@@ -88,7 +96,7 @@ export default function ClassList(): React.JSX.Element {
                             } else {
                                 try {
                                     await ClassApi.deleteClass(undefined, { id: item.id });
-                                    // The GenericList will handle refreshing the data
+                                    // The QueryBasedList will handle refreshing the data
                                 } catch (error) {
                                     console.error('Failed to delete class:', error);
                                     alert('Failed to delete class.');
@@ -114,22 +122,12 @@ export default function ClassList(): React.JSX.Element {
                         <GenericList<Feature>
                             storageKey="features-list"
                             columns={FEATURE_COLUMNS}
-                            serviceFunction={async () => {
-                                // Get both Class and ClassVariant features
-                                const [classFeatures, variantFeatures] = await Promise.all([
-                                    FeatureSystemApi.getFeatures({ sourceType: FeatureSourceType.Class }), // Class
-                                    FeatureSystemApi.getFeatures({ sourceType: FeatureSourceType.ClassVariant })  // ClassVariant
-                                ]);
-                                const allFeatures = [...classFeatures.results, ...variantFeatures.results];
-                                return {
-                                    results: allFeatures,
-                                    total: allFeatures.length
-                                };
-                            }}
+                            dataFetcher={featuresDataFetcher}
                             itemDesc="feature"
                             routes={[
-                                { path: 'features/:id', component: FeatureDetail, exact: true, requireAuth: true, requireAdmin: true, routeType: 'detail' },
-                                { path: 'features/:id/edit', component: FeatureEdit, exact: true, requireAuth: true, requireAdmin: true, routeType: 'edit' },
+                                { path: 'features/:id', component: null, routeType: 'detail' },
+                                { path: 'features/:id/edit', component: null, routeType: 'edit' },
+                                { path: 'features/new/edit', component: null, routeType: 'edit' }
                             ]}
                             functions={{
                                 edit: (feature) => {
@@ -140,10 +138,17 @@ export default function ClassList(): React.JSX.Element {
                                         }
                                     });
                                 },
+                                detail: (feature) => {
+                                    navigate(`/features/${feature.id}`, {
+                                        state: {
+                                            fromListParams: location.search,
+                                            fromPage: 'classes'
+                                        }
+                                    });
+                                },
                                 delete: async (feature) => {
                                     try {
-                                        await FeatureSystemApi.deleteFeature(undefined, { id: feature.id });
-                                        // The GenericList will handle refreshing the data
+                                        await FeatureQueryHooks.deleteFeature(feature.id);
                                     } catch (error) {
                                         console.error('Failed to delete feature:', error);
                                         alert('Failed to delete feature.');

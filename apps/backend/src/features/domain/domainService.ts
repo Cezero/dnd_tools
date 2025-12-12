@@ -8,6 +8,7 @@ import {
     UpdateResponse,
     Domain,
     CreateFeatureProgressionRequest,
+    DomainCacheResponse,
 } from '@shared/schema';
 import { FeatureSourceType } from '@shared/static-data';
 
@@ -197,5 +198,22 @@ export const domainService: DomainService = {
             where: { id: query.id },
         });
         return { message: 'Domain deleted successfully' };
+    },
+
+    async getDomainCache(): Promise<DomainCacheResponse> {
+        const domains = await prisma.domain.findMany({
+            orderBy: { name: 'asc' },
+            select: {
+                id: true,
+                name: true,
+                editionId: true,
+                isVisible: true,
+            }
+        });
+
+        return {
+            total: domains.length,
+            results: domains,
+        };
     },
 };

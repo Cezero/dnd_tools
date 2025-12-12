@@ -2,7 +2,8 @@ import { ColumnDef } from '@tanstack/react-table';
 
 import { createArrayIdFilter, createContainsFilter, createEqualsFilter } from '@/components/generic-list/filterFunctions';
 import { DeityInQueryResponse } from '@shared/schema';
-import { EDITION_LIST, ALIGNMENT_LIST, FilterType, EDITION_MAP, GetSourceDisplay, PANTHEON_MAP, PANTHEON_LIST, GetSourceBookTypeList, SourceType, EditionId } from '@shared/static-data';
+import { EDITION_LIST, ALIGNMENT_LIST, FilterType, EDITION_MAP, PANTHEON_MAP, PANTHEON_LIST, SourceType, EditionId } from '@shared/static-data';
+import { GetSourceDisplay, GetSourceBookTypeList } from '@shared/utils';
 
 export const DEITY_COLUMNS: ColumnDef<DeityInQueryResponse, unknown>[] = [
     {

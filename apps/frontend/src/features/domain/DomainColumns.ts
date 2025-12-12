@@ -2,7 +2,8 @@ import { ColumnDef } from '@tanstack/react-table';
 
 import { createContainsFilter, createArrayIdFilter } from '@/components/generic-list/filterFunctions';
 import { DomainSummary } from '@shared/schema';
-import { EDITION_LIST_FULL, EDITION_MAP, GetSourceDisplay, FilterType, GetSourceBookTypeList, SourceType, EditionId } from '@shared/static-data';
+import { EDITION_LIST, EDITION_MAP, FilterType, SourceType, EditionId } from '@shared/static-data';
+import { GetSourceDisplay, GetSourceBookTypeList } from '@shared/utils';
 
 export const DOMAIN_COLUMNS: ColumnDef<DomainSummary, unknown>[] = [
     {
@@ -33,7 +34,7 @@ export const DOMAIN_COLUMNS: ColumnDef<DomainSummary, unknown>[] = [
         },
         meta: {
             filterType: FilterType.MULTI_SELECT,
-            options: EDITION_LIST_FULL,
+            options: EDITION_LIST,
         },
     },
     {

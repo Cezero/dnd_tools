@@ -7,6 +7,8 @@ import {
     CreateResponse,
     UpdateResponse,
     Deity,
+    DeityCacheResponse,
+    DeitySummary,
 } from '@shared/schema';
 
 import type { DeityService, ValidationResult } from './types';
@@ -32,7 +34,7 @@ export const deityService: DeityService = {
 
         return {
             total: deities.length,
-            results: deities,
+            results: deities as DeitySummary[],
         };
     },
 
@@ -287,6 +289,24 @@ export const deityService: DeityService = {
         return {
             isValid: errors.length === 0,
             errors
+        };
+    },
+
+    async getDeityCache(): Promise<DeityCacheResponse> {
+        const deities = await prisma.deity.findMany({
+            orderBy: { name: 'asc' },
+            select: {
+                id: true,
+                name: true,
+                editionId: true,
+                isVisible: true,
+                pantheonId: true,
+            }
+        });
+
+        return {
+            total: deities.length,
+            results: deities,
         };
     },
 };

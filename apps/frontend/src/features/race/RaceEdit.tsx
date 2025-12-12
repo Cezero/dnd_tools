@@ -15,6 +15,7 @@ import {
 } from '@/components/forms';
 import { UpdateRaceSchema, BaseRaceSchema, FeatureProgression, CreateRaceRequest, UpdateRaceRequest } from '@shared/schema';
 import { EntityAppliesToType, SpecialFeatureId, EntityType, FeatureSourceType } from '@shared/static-data';
+import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 
 import { RaceApi } from './RaceApi';
 import { RaceFeatureAssoc } from './RaceFeatureAssoc';
@@ -102,7 +103,7 @@ export function RaceEdit() {
 
             try {
                 setIsLoading(true);
-                const fetchedRace = await RaceApi.getRaceById(undefined, { id: parseInt(id) });
+                const fetchedRace = await RaceQueryHooks.getRaceById(parseInt(id));
                 setFormData(fetchedRace);
 
                 // Load feature progressions from the race data
@@ -477,11 +478,11 @@ export function RaceEdit() {
             };
 
             if (id === 'new') {
-                const newRace = await RaceApi.createRace(raceData as CreateRaceRequest);
+                const newRace = await RaceQueryHooks.createRace(raceData as CreateRaceRequest);
                 setMessage('Race created successfully!');
                 setTimeout(() => navigate(`/races/${newRace.id}`, { state: { fromListParams: fromListParams, refresh: true } }), 1500);
             } else {
-                await RaceApi.updateRace(raceData as UpdateRaceRequest, { id: parseInt(id) });
+                await RaceQueryHooks.updateRace(parseInt(id), raceData as UpdateRaceRequest);
                 setMessage('Race updated successfully!');
                 setTimeout(() => navigate(`/races/${id}`, { state: { fromListParams: fromListParams, refresh: true } }), 1500);
             }

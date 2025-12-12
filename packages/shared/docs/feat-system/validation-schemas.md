@@ -55,6 +55,7 @@ The base schema for feat validation, defining all required and optional fields w
 - **`prerequisites`**: Optional string, maximum 2000 characters for prerequisite descriptions
 - **`repeatable`**: Optional boolean for repeatable feat flag
 - **`fighterBonus`**: Optional boolean for fighter bonus feat flag
+- **`useSubId`**: Optional boolean, defaults to false, indicates player choice mechanics
 - **`benefits`**: Optional array of feat benefit mappings
 - **`prereqs`**: Optional array of feat prerequisite mappings
 
@@ -289,6 +290,61 @@ The feat system follows the shared [Error Handling Patterns](../application-over
 **Field-Specific Messages**: Specific messages for each validation field
 **Context Information**: Include context about what was being validated
 **Debug Information**: Additional debug information in development mode
+
+## 🎯 **Player Choice Validation**
+
+### **UseSubId Property Validation**
+The `useSubId` property enables special validation for player choice feats.
+
+**Validation Rules**:
+- **`useSubId: false`**: Standard feat validation, all benefits must have valid `referenceId`
+- **`useSubId: true`**: Player choice feat validation, benefits may have `null` `referenceId`
+
+**Implementation Pattern**:
+```typescript
+// Predefined feat validation
+if (!feat.useSubId) {
+  // All benefits must have valid referenceId
+  for (const benefit of feat.benefits) {
+    if (!benefit.referenceId) {
+      throw new Error('Predefined feats must have valid referenceId for all benefits');
+    }
+  }
+}
+
+// Player choice feat validation
+if (feat.useSubId) {
+  // Benefits may have null referenceId (player choice)
+  for (const benefit of feat.benefits) {
+    if (benefit.referenceId === null) {
+      // This is valid for player choice feats
+      continue;
+    }
+  }
+}
+```
+
+### **Character Feat Selection Validation**
+When a character selects a feat with `useSubId: true`:
+
+**Required Validations**:
+- **Choice Required**: Character must specify which entity (skill, weapon, etc.)
+- **Valid Entity**: The chosen entity must be valid for the benefit type
+- **Unique Selection**: Character cannot select the same entity multiple times
+
+**Example Validation**:
+```typescript
+// Skill Focus feat selection validation
+if (feat.useSubId && benefit.typeId === FeatBenefitType.SKILL) {
+  if (!characterFeatChoice.skillId) {
+    throw new Error('Player must choose a skill for Skill Focus');
+  }
+  
+  if (!isValidSkill(characterFeatChoice.skillId)) {
+    throw new Error('Invalid skill selection for Skill Focus');
+  }
+}
+```
 
 ## 🔗 **Related Documentation**
 

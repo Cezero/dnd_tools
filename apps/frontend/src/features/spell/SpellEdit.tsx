@@ -1,8 +1,7 @@
 
 import { TrashIcon } from '@heroicons/react/24/outline';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { z } from 'zod';
 
 import {
     ValidatedForm,
@@ -13,13 +12,14 @@ import {
     SourceEditor
 } from '@/components/forms';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
-import { SpellApi } from '@/features/spell/SpellApi';
-import { SpellLevelMapping, GetSpellResponse, UpdateSpellSchema, UpdateSpellRequest, SpellIdParamSchema } from '@shared/schema';
-import { SPELL_DESCRIPTOR_LIST, SPELL_COMPONENT_LIST, SPELL_RANGE_LIST, SPELL_RANGE_MAP, SPELL_SUBSCHOOL_BY_SCHOOL_ID_MAP, SPELL_SCHOOL_LIST, SourceType, CoreComponent } from '@shared/static-data';
+import { useCacheFunctions } from '@/services/cache';
+import { SpellQueryHooks } from '@/services/query/SpellQueryHooks';
+import { SpellLevelMapping, GetSpellResponse, UpdateSpellSchema, UpdateSpellRequest } from '@shared/schema';
+import { SPELL_DESCRIPTOR_LIST, SPELL_COMPONENT_LIST, SPELL_RANGE_LIST, SPELL_RANGE_MAP, SPELL_SUBSCHOOL_BY_SCHOOL_ID_MAP, SPELL_SCHOOL_LIST, SourceType, EditionId, CoreComponent } from '@shared/static-data';
 
-import { getClassesForSpellSelection } from '../class/ClassUtils';
 
 export function SpellEdit() {
+    const { getSpellcasterClassSelectByEdition } = useCacheFunctions();
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
@@ -35,6 +35,12 @@ export function SpellEdit() {
 
     const [formData, setFormData] = useState<UpdateSpellRequest | null>(null);
 
+    // Use imperative API for data fetching and mutations
+    const [spellData, setSpellData] = useState<unknown | null>(null);
+    const [isLoadingSpell, setIsLoadingSpell] = useState(false);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [spellError, setSpellError] = useState<Error | null>(null);
+
     // Use the validated form hook
     const form = useValidatedForm(
         UpdateSpellSchema,
@@ -47,12 +53,18 @@ export function SpellEdit() {
         }
     );
 
+    // Load spell data with imperative API
     useEffect(() => {
         const fetchSpell = async () => {
+            if (id === 'new') {
+                return;
+            }
+
             try {
-                setIsLoading(true);
-                const validatedId = SpellIdParamSchema.parse({ id: id });
-                const fetchedSpell = await SpellApi.getSpellById(undefined, validatedId);
+                setIsLoadingSpell(true);
+                setSpellError(null);
+                const fetchedSpell = await SpellQueryHooks.getSpellById(parseInt(id!));
+                setSpellData(fetchedSpell);
                 setSpell(fetchedSpell);
                 setFormData(fetchedSpell);
 
@@ -61,21 +73,23 @@ export function SpellEdit() {
                     setClassLevelMappings(fetchedSpell.levelMapping);
                 }
             } catch (err) {
-                setError(err instanceof Error ? err.message : 'Failed to fetch spell');
+                const error = err instanceof Error ? err : new Error('Failed to fetch spell');
+                setSpellError(error);
+                setError(error.message);
             } finally {
-                setIsLoading(false);
+                setIsLoadingSpell(false);
             }
         };
 
         fetchSpell();
     }, [id]);
 
-    // Load available classes for spell selection
+    // Load available classes for spell selection (only once)
     useEffect(() => {
         const loadAvailableClasses = async () => {
             try {
                 // Default to edition 5 (3.5e) for now - this could be made configurable
-                const classes = await getClassesForSpellSelection(5, classLevelMappings.map(m => m.classId));
+                const classes = getSpellcasterClassSelectByEdition(EditionId.DND_3_5E);
                 setAvailableClasses(classes.map(cls => ({
                     id: cls.id,
                     name: cls.name,
@@ -88,7 +102,13 @@ export function SpellEdit() {
         };
 
         loadAvailableClasses();
-    }, [classLevelMappings]);
+    }, []); // Remove classLevelMappings dependency to avoid unnecessary reloading
+
+    // Filter available classes to exclude those already in classLevelMappings
+    const filteredAvailableClasses = useMemo(() => {
+        const usedClassIds = classLevelMappings.map(mapping => mapping.classId);
+        return availableClasses.filter(cls => !usedClassIds.includes(cls.id));
+    }, [availableClasses, classLevelMappings]);
 
     const _HandleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | string) => {
         let name: string, value: string | number;
@@ -135,6 +155,7 @@ export function SpellEdit() {
                 setClassLevelMappings([...classLevelMappings, newMapping]);
             }
 
+            // Reset selections
             setSelectedClassToAdd(0);
             setSelectedLevelToAdd(1);
         }
@@ -216,6 +237,7 @@ export function SpellEdit() {
 
         try {
             setIsLoading(true);
+            setIsUpdating(true);
 
             // Prepare the data with class level mappings
             const submitData = {
@@ -223,7 +245,7 @@ export function SpellEdit() {
                 levelMapping: classLevelMappings
             };
 
-            await SpellApi.updateSpell(submitData as z.infer<typeof UpdateSpellSchema>, { id: parseInt(id) });
+            await SpellQueryHooks.updateSpell(parseInt(id), submitData as UpdateSpellRequest);
             setMessage('Spell updated successfully!');
             navigate(`/spells/${id}`, { state: { fromListParams: fromListParams, refresh: true } });
 
@@ -231,10 +253,11 @@ export function SpellEdit() {
             setError(err instanceof Error ? err.message : 'Failed to save spell');
         } finally {
             setIsLoading(false);
+            setIsUpdating(false);
         }
     };
 
-    if (isLoading && !spell) {
+    if (isLoadingSpell && !spell) {
         return <div className="flex justify-center items-center h-64">Loading...</div>;
     }
 
@@ -449,7 +472,7 @@ export function SpellEdit() {
                                     value={selectedClassToAdd}
                                     componentExtraClassName="flex items-center gap-2"
                                     onValueChange={(value) => setSelectedClassToAdd(value as number)}
-                                    options={availableClasses}
+                                    options={filteredAvailableClasses}
                                 />
                             </div>
                             <div>
@@ -465,14 +488,14 @@ export function SpellEdit() {
                                 <button
                                     type="button"
                                     onClick={HandleAddClassLevel}
-                                    disabled={!selectedClassToAdd || selectedLevelToAdd < 0 || selectedLevelToAdd > 9}
+                                    disabled={!selectedClassToAdd || selectedLevelToAdd < 0 || selectedLevelToAdd > 9 || filteredAvailableClasses.length === 0}
                                     className="px-2 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Add
                                 </button>
                             </div>
                         </div>
-                        {availableClasses.length === 0 && (
+                        {filteredAvailableClasses.length === 0 && availableClasses.length > 0 && (
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                                 All available classes have been assigned levels for this spell.
                             </p>

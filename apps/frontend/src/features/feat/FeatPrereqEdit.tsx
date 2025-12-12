@@ -1,17 +1,17 @@
 import { Dialog } from '@base-ui-components/react/dialog';
 import React, { useState, useEffect } from 'react';
 
-import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import {
     ValidatedForm,
     ValidatedInput,
     useValidatedForm
 } from '@/components/forms';
 import { CustomSelect } from '@/components/forms/FormComponents';
+import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
+import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import { FeatPrerequisiteMap, FeatPrerequisiteMapSchema } from '@shared/schema';
-import { ABILITY_LIST, FEAT_PREREQUISITE_TYPE_LIST, FeatPrerequisiteType, CoreComponent, SKILL_LIST } from '@shared/static-data';
+import { ABILITY_LIST, FEAT_PREREQUISITE_TYPE_LIST, FeatPrerequisiteType, CoreComponent, SKILL_LIST, FeatureSourceType } from '@shared/static-data';
 
-import { FeatApi } from './FeatApi';
 import { PrereqOptions } from './FeatUtil';
 
 
@@ -29,9 +29,12 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
     const [message, setMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [featOptions, setFeatOptions] = useState<CoreComponent[]>([]);
     const [classFeatureOptions, setClassFeatureOptions] = useState<CoreComponent[]>([]);
     const [classLevelOptions, setClassLevelOptions] = useState<CoreComponent[]>([]);
+
+    // Use the query hook to get feats
+    const { data: featsResponse } = FeatQueryHooks.useGetFeats({});
+    const featOptions = featsResponse?.results || [];
 
     // Initialize form data with default values
     const initialFormData: FeatPrerequisiteFormData = {
@@ -59,22 +62,23 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
         }
     );
 
+    // Use query hook for features - get class features specifically
+    const { data: featuresData, isLoading: _isLoadingFeatures, error: _featuresError } = FeatureQueryHooks.useGetFeatures({
+        sourceTypes: [FeatureSourceType.Class] // Get class features
+    });
+
     useEffect(() => {
-        const fetchFeats = async () => {
-            const response = await FeatApi.getFeats(undefined, undefined);
-            setFeatOptions(response.results);
+        if (featuresData?.results) {
+            setClassFeatureOptions(featuresData.results);
         }
-        const fetchClassFeatures = async () => {
-            const response = await FeatureSystemApi.getFeatures(undefined, undefined);
-            setClassFeatureOptions(response.results);
-        }
+    }, [featuresData]);
+
+    useEffect(() => {
         const fetchClassLevelOptions = async () => {
             const options = await PrereqOptions(FeatPrerequisiteType.CLASSLEVEL);
             setClassLevelOptions(options);
         };
 
-        fetchFeats();
-        fetchClassFeatures();
         fetchClassLevelOptions();
         if (initialPrereqData) {
             setFormData({
@@ -154,7 +158,7 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
                                         value={formData.referenceId}
                                         componentExtraClassName='flex items-center gap-2'
                                         labelExtraClassName='w-32'
-                                        itemTextExtraClassName='w-34'
+                                        itemTextExtraClassName='w-58'
                                         onValueChange={(value) => setFormData(prev => ({ ...prev, referenceId: value as number | null }))}
                                         options={featOptions}
                                     />
@@ -265,7 +269,7 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
                                         value={formData.referenceId}
                                         componentExtraClassName='flex items-center gap-2'
                                         labelExtraClassName='w-32'
-                                        itemTextExtraClassName='w-34'
+                                        itemTextExtraClassName='w-70'
                                         onValueChange={(value) => setFormData(prev => ({ ...prev, referenceId: value as number | null }))}
                                         options={classFeatureOptions}
                                     />

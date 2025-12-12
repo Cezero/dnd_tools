@@ -1,12 +1,12 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
-import { GenericList } from '@/components/generic-list/GenericList';
+import { GenericList } from '@/components/generic-list';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
+import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import { ItemWithDetails } from '@shared/schema';
 
-import { ItemApi } from './ItemApi';
 import { ITEM_COLUMNS } from './ItemColumns';
 import { routes } from './ItemConfig';
 
@@ -18,6 +18,10 @@ export function ItemList(): React.JSX.Element {
     const HandleNewItemClick = (): void => {
         navigate('/items/new/edit', { state: { fromListParams: location.search } });
     };
+
+    const dataFetcher = useCallback(async () => {
+        return await ItemQueryHooks.getItems();
+    }, []);
 
     if (isAuthLoading) {
         return <div className="p-4">Loading...</div>;
@@ -39,10 +43,10 @@ export function ItemList(): React.JSX.Element {
             <GenericList<ItemWithDetails>
                 storageKey="items-list"
                 columns={ITEM_COLUMNS}
-                serviceFunction={() => ItemApi.getItems({})}
+                dataFetcher={dataFetcher}
                 itemDesc="item"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction(ItemApi.deleteItem)}
+                deleteServiceFunction={createIdDeleteServiceFunction((_, { id }) => ItemQueryHooks.deleteItem(id))}
             />
         </div>
     );

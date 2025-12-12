@@ -5,6 +5,7 @@ import {
     ValidatedParamsT,
     ValidatedBodyT,
     ValidatedParamsBodyT,
+    ValidatedQueryT,
 } from '@/util/validated-types';
 import {
     Race,
@@ -14,6 +15,7 @@ import {
     GetAllRacesResponse,
     UpdateResponse,
     CreateResponse,
+    RaceCacheResponse,
 } from '@shared/schema';
 
 import { raceService } from './raceService';
@@ -61,6 +63,14 @@ export async function CreateRace(req: ValidatedBodyT<CreateRaceRequest, CreateRe
 export async function DeleteRace(req: ValidatedParamsT<RaceIdParamRequest, UpdateResponse>, res: Response, _next: NextFunction) {
     const result = await raceService.deleteRace(req.params);
     res.json(result);
+}
+
+/**
+ * Fetches all races for cache (lightweight data).
+ */
+export async function GetRaceCache(req: ValidatedNoInput<RaceCacheResponse>, res: Response, _next: NextFunction) {
+    const races = await raceService.getRaceCache();
+    res.json(races);
 }
 
 

@@ -1,11 +1,11 @@
-import { SpellLevelMapping, ClassSummary } from '@shared/schema';
-import { getClassById } from '../class/ClassUtils';
+import { SpellLevelMapping } from '@shared/schema';
+import { CoreComponent } from '@shared/static-data';
 
-export const GetClassDisplay = (classes: SpellLevelMapping[], spellLevel: number, classMap?: Record<number, ClassSummary>): string => {
+export const GetClassDisplay = async (classes: SpellLevelMapping[], spellLevel: number, cacheService: { getClassNameById: (id: number) => Promise<CoreComponent | undefined> }): Promise<string> => {
     if (!classes || classes.length === 0) return '';
 
-    const formattedClasses = classes.map(cls => {
-        const classItem = classMap?.[cls.classId];
+    const formattedClasses = await Promise.all(classes.map(async cls => {
+        const classItem = await cacheService.getClassNameById(cls.classId);
         if (classItem) {
             if (cls.level !== spellLevel) {
                 return `${classItem.abbreviation} ${cls.level}`;
@@ -14,18 +14,18 @@ export const GetClassDisplay = (classes: SpellLevelMapping[], spellLevel: number
             }
         }
         return 'Unknown Class';
-    });
+    }));
 
     return formattedClasses.join(', ');
 }
 
-export const GetClassLevelAbbr = (classLevels: SpellLevelMapping[], classMap?: Record<number, ClassSummary>): string => {
+export const GetClassLevelAbbr = async (classLevels: SpellLevelMapping[], cacheService: { getClassNameById: (id: number) => Promise<CoreComponent | undefined> }): Promise<string> => {
     if (!classLevels || classLevels.length === 0) return '';
     // Use a Map to store { spell_level: { sorcererPresent: boolean, wizardPresent: boolean, otherClasses: Set<string> } }
     const organizedClassLevels = new Map<number, { sorcererPresent: boolean; wizardPresent: boolean; otherClasses: Set<string> }>();
 
-    classLevels.forEach((cl: SpellLevelMapping) => {
-        const classItem = classMap?.[cl.classId];
+    await Promise.all(classLevels.map(async (cl: SpellLevelMapping) => {
+        const classItem = await cacheService.getClassNameById(cl.classId);
         if (classItem) {
             const levelData = organizedClassLevels.get(cl.level) || {
                 sorcererPresent: false,
@@ -43,7 +43,7 @@ export const GetClassLevelAbbr = (classLevels: SpellLevelMapping[], classMap?: R
             }
             organizedClassLevels.set(cl.level, levelData);
         }
-    });
+    }));
 
     const formattedEntries: string[] = [];
 

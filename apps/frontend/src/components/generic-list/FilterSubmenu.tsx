@@ -2,7 +2,7 @@ import { ContextMenu } from '@base-ui-components/react/context-menu';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import React, { useRef, useEffect, useState } from 'react';
 
-import { FilterType } from '@shared/static-data';
+import { CoreComponent, FilterType } from '@shared/static-data';
 
 import { ContextMenuMultiSelect } from './ContextMenuMultiSelect';
 import { ContextMenuSingleSelect } from './ContextMenuSingleSelect';
@@ -26,6 +26,8 @@ export const FilterSubmenu: React.FC<FilterSubmenuProps> = ({
     const [_textValue, _setTextValue] = useState(currentFilter?.value || '');
     const _inputRef = useRef<HTMLInputElement>(null);
     const selectedValuesRef = useRef<(string | number)[]>([]);
+    const [resolvedOptions, setResolvedOptions] = useState<CoreComponent[]>([]);
+    const [isLoadingOptions, setIsLoadingOptions] = useState(false);
 
     // Update ref when currentFilter changes
     useEffect(() => {
@@ -33,6 +35,40 @@ export const FilterSubmenu: React.FC<FilterSubmenuProps> = ({
             selectedValuesRef.current = currentFilter.value.values;
         }
     }, [currentFilter?.value]);
+
+    // Resolve async options
+    useEffect(() => {
+        const resolveOptions = async () => {
+            const { options } = filterConfig;
+            if (!options) {
+                setResolvedOptions([]);
+                return;
+            }
+
+            if (typeof options === 'function') {
+                try {
+                    setIsLoadingOptions(true);
+                    const result = options(columnFilters);
+                    if (result instanceof Promise) {
+                        const resolved = await result;
+                        setResolvedOptions(resolved);
+                    } else {
+                        setResolvedOptions(result);
+                    }
+                } catch (error) {
+                    console.warn('Failed to resolve filter options:', error);
+                    setResolvedOptions([]);
+                } finally {
+                    setIsLoadingOptions(false);
+                }
+            } else if (Array.isArray(options)) {
+                setResolvedOptions(options);
+            } else {
+                setResolvedOptions([]);
+            }
+        };
+        resolveOptions();
+    }, [filterConfig, columnFilters]);
 
     if (!filterConfig || !filterConfig.filterType) {
         return (
@@ -42,20 +78,19 @@ export const FilterSubmenu: React.FC<FilterSubmenuProps> = ({
         );
     }
 
-    const { filterType, options } = filterConfig;
+    const { filterType } = filterConfig;
 
-    // Handle dynamic options function
-    const getOptions = () => {
-        if (typeof options === 'function') {
-            return options(columnFilters);
-        }
-        return options;
-    };
+    if (isLoadingOptions) {
+        return (
+            <div className="px-2 py-1 text-sm text-gray-500 dark:text-gray-400">
+                Loading options...
+            </div>
+        );
+    }
 
     switch (filterType) {
         case FilterType.SINGLE_SELECT: {
-            const singleSelectOptions = getOptions();
-            if (!singleSelectOptions) {
+            if (!resolvedOptions || resolvedOptions.length === 0) {
                 return (
                     <div className="px-2 py-1 text-sm text-gray-500 dark:text-gray-400">
                         No options available
@@ -64,7 +99,7 @@ export const FilterSubmenu: React.FC<FilterSubmenuProps> = ({
             }
             return (
                 <ContextMenuSingleSelect
-                    options={singleSelectOptions}
+                    options={resolvedOptions}
                     selected={typeof currentFilter?.value === 'string' || typeof currentFilter?.value === 'number' ? currentFilter.value : null}
                     onValueChange={(value) => {
                         if (value === null) {
@@ -78,8 +113,7 @@ export const FilterSubmenu: React.FC<FilterSubmenuProps> = ({
         }
 
         case FilterType.MULTI_SELECT: {
-            const multiSelectOptions = getOptions();
-            if (!multiSelectOptions) {
+            if (!resolvedOptions || resolvedOptions.length === 0) {
                 return (
                     <div className="px-2 py-1 text-sm text-gray-500 dark:text-gray-400">
                         No options available
@@ -95,7 +129,7 @@ export const FilterSubmenu: React.FC<FilterSubmenuProps> = ({
 
             return (
                 <ContextMenuMultiSelect
-                    options={multiSelectOptions}
+                    options={resolvedOptions}
                     selected={selectedValues}
                     onValueChange={(values) => {
                         if (values.length === 0) {

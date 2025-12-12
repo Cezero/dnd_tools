@@ -5,8 +5,9 @@ import type { SourceMap } from '@shared/schema';
 import {
     SOURCE_BOOK_MAP,
     SourceType,
-    GetSourceBookTypeList
+    EditionId
 } from '@shared/static-data';
+import { GetSourceBookTypeList } from '@shared/utils';
 
 import { CustomSelect } from './index';
 
@@ -14,15 +15,16 @@ export interface SourceEditorProps {
     sources: SourceMap[];
     onSourcesChange: (sources: SourceMap[]) => void;
     sourceType: SourceType;
+    editionId?: EditionId;
     className?: string;
 }
 
-export function SourceEditor({ sources, onSourcesChange, sourceType, className = '' }: SourceEditorProps) {
+export function SourceEditor({ sources, onSourcesChange, sourceType, editionId, className = '' }: SourceEditorProps) {
     const [selectedBookId, setSelectedBookId] = useState<number>(0);
     const [pageNumber, setPageNumber] = useState<string>('');
 
     // Filter out already selected books
-    const availableBooks = GetSourceBookTypeList(sourceType).filter(book =>
+    const availableBooks = GetSourceBookTypeList(sourceType, editionId).filter(book =>
         !sources.some(source => source.sourceBookId === book.value)
     );
 

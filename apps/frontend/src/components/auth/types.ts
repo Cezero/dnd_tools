@@ -1,10 +1,10 @@
 import React from 'react';
 
-import type { AuthUser, UserDiceConfig, UpdateUserProfileRequest } from '@shared/schema';
+import type { UserProfile, UserDiceConfig, UpdateUserProfileRequest } from '@shared/schema';
 
 // Auth context interface
 export interface AuthContextType {
-    user: AuthUser | null;
+    user: UserProfile | null;
     Login: (username: string, password: string) => Promise<boolean>;
     Logout: () => void;
     isLoading: boolean;
@@ -41,13 +41,13 @@ export interface RegisterPageProps {
 
 // WithAuth HOC props
 export interface WithAuthProps {
-    user: AuthUser | null;
+    user: UserProfile | null;
     isLoading: boolean;
 }
 
 // UseAuthAuto hook return type
 export interface UseAuthAutoReturn {
-    user: AuthUser | null;
+    user: UserProfile | null;
     isLoading: boolean;
     isAuthenticated: boolean;
     isAdmin: boolean;

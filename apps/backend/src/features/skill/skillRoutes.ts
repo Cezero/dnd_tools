@@ -12,12 +12,14 @@ import {
     CreateSkill,
     UpdateSkill,
     DeleteSkill,
+    GetSkillCache,
 } from './skillController.js';
 
 const { router: SkillRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
 
 
 get('/', {}, GetAllSkills);
+get('/cache', {}, GetSkillCache);
 get('/:id', { params: SkillIdParamSchema }, GetSkillById);
 post('/', requireAdmin, { body: CreateSkillSchema }, CreateSkill);
 put('/:id', requireAdmin, { params: SkillIdParamSchema, body: UpdateSkillSchema }, UpdateSkill);

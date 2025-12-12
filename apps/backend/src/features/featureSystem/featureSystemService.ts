@@ -14,7 +14,7 @@ import {
     CreateFeatureEntityRequest,
     CreateFeatureEntityConditionRequest,
 } from '@shared/schema';
-import { EntityAppliesToType, FeatureSourceType, SpecialFeatureId } from '@shared/static-data';
+import { EntityAppliesToType, SpecialFeatureId } from '@shared/static-data';
 
 import type { FeatureSystemService, FeatureProgressionContext } from './types';
 import { transformFormulaParamsForDatabaseCreate, transformFormulaParamsFromDatabase } from '../../utils/formulaParamTransformers';
@@ -89,20 +89,22 @@ function createSpecialFeatureFilter(): Prisma.FeatureWhereInput['id'] {
 
 export const featureSystemService: FeatureSystemService = {
     // Core Feature CRUD operations
-    async getAllFeatures(sourceType?: FeatureSourceType): Promise<GetAllFeaturesResponse> {
+    async getAllFeatures(sourceTypes?: number[]): Promise<GetAllFeaturesResponse> {
         let whereClause: Prisma.FeatureWhereInput;
 
-        if (sourceType !== undefined) {
-            // If sourceType is specified, show both features with that sourceType AND orphaned features
+        if (sourceTypes && sourceTypes.length > 0) {
+            // If sourceTypes are specified, show features with any of those sourceTypes AND orphaned features
             whereClause = {
                 // Always filter out special features
                 id: createSpecialFeatureFilter(),
                 OR: [
-                    // Features with progressions of this sourceType
+                    // Features with progressions of any of the specified sourceTypes
                     {
                         progressions: {
                             some: {
-                                sourceType: sourceType
+                                sourceType: {
+                                    in: sourceTypes
+                                }
                             }
                         }
                     },
@@ -115,7 +117,7 @@ export const featureSystemService: FeatureSystemService = {
                 ]
             };
         } else {
-            // If no sourceType specified, also filter out features associated with classes/races (for standalone features)
+            // If no sourceTypes specified, also filter out features associated with classes/races (for standalone features)
             whereClause = {
                 // Always filter out special features
                 id: createSpecialFeatureFilter(),
@@ -146,20 +148,22 @@ export const featureSystemService: FeatureSystemService = {
         };
     },
 
-    async getFeatureList(sourceType?: number): Promise<GetFeatureListResponse> {
+    async getFeatureList(sourceTypes?: number[]): Promise<GetFeatureListResponse> {
         let whereClause: Prisma.FeatureWhereInput;
 
-        if (sourceType !== undefined) {
-            // If sourceType is specified, show both features with that sourceType AND orphaned features
+        if (sourceTypes && sourceTypes.length > 0) {
+            // If sourceTypes are specified, show features with any of those sourceTypes AND orphaned features
             whereClause = {
                 // Always filter out special features
                 id: createSpecialFeatureFilter(),
                 OR: [
-                    // Features with progressions of this sourceType
+                    // Features with progressions of any of the specified sourceTypes
                     {
                         progressions: {
                             some: {
-                                sourceType: sourceType
+                                sourceType: {
+                                    in: sourceTypes
+                                }
                             }
                         }
                     },
@@ -172,7 +176,7 @@ export const featureSystemService: FeatureSystemService = {
                 ]
             };
         } else {
-            // If no sourceType specified, also filter out features associated with classes/races (for standalone features)
+            // If no sourceTypes specified, also filter out features associated with classes/races (for standalone features)
             whereClause = {
                 // Always filter out special features
                 id: createSpecialFeatureFilter(),

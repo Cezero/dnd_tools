@@ -38,13 +38,17 @@ export const GetAbilityModifierString = (abilityScore: number): string => {
 
 export const GetPointBuyCost = (abilityScore: number): number => {
     if (abilityScore < 8 || abilityScore > 18) {
-        throw new Error("Ability score must be between 8 and 18.");
+        throw new Error("Ability score must be between 8 and 18 for point buy.");
     }
 
     if (abilityScore <= 8) return 0;
     if (abilityScore <= 14) return abilityScore - 8;
     if (abilityScore <= 16) return 6 + 2 * (abilityScore - 14);
     return 10 + 3 * (abilityScore - 16);
+}
+
+export const ValidateAbilityScore = (abilityScore: number): boolean => {
+    return abilityScore >= 3 && abilityScore <= 18;
 }
 
 

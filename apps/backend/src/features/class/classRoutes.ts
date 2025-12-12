@@ -12,6 +12,7 @@ import {
     CreateClass,
     UpdateClass,
     DeleteClass,
+    GetClassCache,
 } from './classController.js';
 import { requireAdmin } from '../../middleware/authMiddleware.js';
 
@@ -20,6 +21,7 @@ const { router: ClassRouter, get, post, put, delete: deleteRoute } = buildValida
 
 // Class Read Routes
 post('/query', { body: GetAllClassesQuerySchema }, GetAllClasses);
+get('/cache', {}, GetClassCache);
 get('/:id', { params: ClassIdParamSchema }, GetClassById);
 
 // Class Write Routes

@@ -574,12 +574,6 @@ export const SOURCE_BOOK_SETTING_MAP = {
 
 export const SOURCE_BOOK_LIST = Object.values(SOURCE_BOOK_MAP);
 
-function filterBooksByEdition(editionId: EditionId, sourceBookList: SourceBookData[]): SourceBookData[] {
-    if (editionId === EditionId.DND_3E) {
-        return sourceBookList.filter(book => book.editionId === EditionId.DND_3E || book.editionId === EditionId.DND_3_5E).filter(book => book.isVisible !== false);
-    }
-    return sourceBookList.filter(book => book.editionId === editionId);
-}
 
 const SOURCE_BOOKS_WITH_CHARACTER_OPTIONS = [...new Set([
     SourceType.Classes,
@@ -589,40 +583,9 @@ const SOURCE_BOOKS_WITH_CHARACTER_OPTIONS = [...new Set([
     SourceType.Deities
 ].flatMap(sourceType => SOURCE_BOOK_FILTER_MAP[sourceType]))];
 
-export function GetSourceBookTypeList(sourceType: SourceType, editionId?: EditionId): SourceBookData[] {
-    if (editionId) {
-        return filterBooksByEdition(editionId, SOURCE_BOOK_FILTER_MAP[sourceType].map(sb => SOURCE_BOOK_MAP[sb]));
-    } else {
-        return SOURCE_BOOK_FILTER_MAP[sourceType].map(sb => SOURCE_BOOK_MAP[sb]);
-    }
-}
-
-export function GetCharacterOptionsSourceBookList(editionId: EditionId): SourceBookData[] {
-    return filterBooksByEdition(editionId, SOURCE_BOOKS_WITH_CHARACTER_OPTIONS.map(sb => SOURCE_BOOK_MAP[sb]));
-}
-
-export function GetSourceBookSettingList(setting: Setting, editionId?: EditionId): SourceBookData[] {
-    if (editionId) {
-        return filterBooksByEdition(editionId, SOURCE_BOOK_SETTING_MAP[setting].map(sb => SOURCE_BOOK_MAP[sb]));
-    } else {
-        return SOURCE_BOOK_SETTING_MAP[setting].map(sb => SOURCE_BOOK_MAP[sb]);
-    }
-}
 
 interface SourceReference {
     sourceBookId: number;
     pageNumber?: number;
 }
 
-export function GetSourceDisplay(sources: SourceReference[], useAbbrev: boolean = false): string {
-    if (!sources || sources.length === 0) return '';
-
-    return sources.map(source => {
-        const book = SOURCE_BOOK_MAP[source.sourceBookId];
-        if (book) {
-            const displayTitle = useAbbrev ? book.abbreviation : book.name;
-            return source.pageNumber ? `${displayTitle} (pg ${source.pageNumber})` : displayTitle;
-        }
-        return 'Unknown Source';
-    }).join(', ');
-}

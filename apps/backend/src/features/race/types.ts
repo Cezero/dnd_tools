@@ -6,6 +6,7 @@ import {
     Race,
     UpdateResponse,
     CreateResponse,
+    RaceCacheResponse,
 } from '@shared/schema';
 
 // Service interface
@@ -15,4 +16,5 @@ export interface RaceService {
     createRace: (data: CreateRaceRequest) => Promise<CreateResponse>;
     updateRace: (id: RaceIdParamRequest, data: UpdateRaceRequest) => Promise<UpdateResponse>;
     deleteRace: (id: RaceIdParamRequest) => Promise<UpdateResponse>;
+    getRaceCache: () => Promise<RaceCacheResponse>;
 }

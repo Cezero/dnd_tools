@@ -6,6 +6,7 @@ import {
     DeityIdParamRequest,
     CreateResponse,
     UpdateResponse,
+    DeityCacheResponse,
 } from '@shared/schema';
 
 export interface DeityService {
@@ -18,6 +19,7 @@ export interface DeityService {
 
     // Deity-specific operations
     validateDeitySelection(advancementId: number, deityId: number): Promise<ValidationResult>;
+    getDeityCache(): Promise<DeityCacheResponse>;
 }
 
 export interface ValidationResult {

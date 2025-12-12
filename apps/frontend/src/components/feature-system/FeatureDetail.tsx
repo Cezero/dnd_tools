@@ -60,9 +60,39 @@ export function FeatureDetail() {
         }
     };
 
+    if (isLoading) {
+        return (
+            <DetailPage
+                isLoading={true}
+                item={null}
+                itemName="Feature"
+                isAdmin={isAdmin}
+                onBack={handleBack}
+                onEdit={handleEdit}
+            >
+                <div>Loading...</div>
+            </DetailPage>
+        );
+    }
+
+    if (!feature) {
+        return (
+            <DetailPage
+                isLoading={false}
+                item={null}
+                itemName="Feature"
+                isAdmin={isAdmin}
+                onBack={handleBack}
+                onEdit={handleEdit}
+            >
+                <div>Error loading feature or feature not found.</div>
+            </DetailPage>
+        );
+    }
+
     return (
         <DetailPage
-            isLoading={isLoading}
+            isLoading={false}
             item={feature}
             itemName="Feature"
             isAdmin={isAdmin}
@@ -71,17 +101,17 @@ export function FeatureDetail() {
         >
             <div className="flex justify-between items-start mb-4">
                 <div>
-                    <h1 className="text-2xl font-bold mb-2">{feature!.name}</h1>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm">Slug: {feature!.slug}</p>
+                    <h1 className="text-2xl font-bold mb-2">{feature.name}</h1>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">Slug: {feature.slug}</p>
                 </div>
             </div>
 
-            {feature!.description && (
+            {feature.description && (
                 <div className="mb-6">
                     <h2 className="text-lg font-semibold mb-2">Description</h2>
                     <ProcessMarkdown
-                        markdown={feature!.description}
-                        id={`feature-${feature!.slug}-description`}
+                        markdown={feature.description}
+                        id={`feature-${feature.slug}-description`}
                     />
                 </div>
             )}

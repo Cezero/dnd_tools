@@ -29,6 +29,7 @@ The core feat definition containing basic information about feats, their charact
 - **`prerequisites`**: Prerequisite description
 - **`repeatable`**: Boolean flag for repeatable feats
 - **`fighterBonus`**: Boolean flag for fighter bonus feats
+- **`useSubId`**: Boolean flag indicating if the feat allows player choice (e.g., Skill Focus)
 
 **Relationships**:
 - **`type`**: Links to the feat type
@@ -151,6 +152,46 @@ The feat system integrates with the feature system for feat-related features:
 **Selective Loading**: Only required fields are loaded for performance
 **Pagination**: Large result sets are properly paginated
 **Caching**: Frequently accessed data is cached appropriately
+
+## 🎯 **Player Choice Mechanics**
+
+### **UseSubId Property**
+The `useSubId` property enables player choice mechanics for feats that allow flexible benefit selection.
+
+**Implementation Pattern**:
+- **`useSubId: false`**: Predefined feats with fixed benefits (e.g., Alertness)
+- **`useSubId: true`**: Player choice feats requiring selection (e.g., Skill Focus)
+
+**Examples**:
+
+**Predefined Feat (Alertness)**:
+```sql
+-- Fixed benefits, no player choice required
+INSERT INTO Feat (name, useSubId, ...) VALUES ('Alertness', false, ...);
+INSERT INTO FeatBenefitMap (featId, typeId, referenceId, amount) VALUES 
+  (1, 1, 15, 2),  -- +2 Listen
+  (1, 1, 16, 2);  -- +2 Spot
+```
+
+**Player Choice Feat (Skill Focus)**:
+```sql
+-- Player must choose skill, referenceId is null
+INSERT INTO Feat (name, useSubId, ...) VALUES ('Skill Focus', true, ...);
+INSERT INTO FeatBenefitMap (featId, typeId, referenceId, amount) VALUES 
+  (2, 1, NULL, 3);  -- +3 to chosen skill
+```
+
+### **Character Implementation**
+When a character selects a feat with `useSubId: true`:
+1. **Player Choice Required**: Character must specify which skill/weapon/etc.
+2. **Choice Storage**: Selection stored in character's feat choices
+3. **Benefit Application**: Benefits applied to the chosen entity
+4. **Validation**: System validates that the choice is valid for the benefit type
+
+### **Database Patterns**
+- **Predefined Feats**: `referenceId` contains specific entity ID
+- **Player Choice Feats**: `referenceId` is `NULL`, choice stored separately
+- **Character Feats**: Character's choices stored in character feat selections
 
 ## 🔗 **Related Documentation**
 

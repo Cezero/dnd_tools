@@ -6,7 +6,7 @@ import { ABILITY_LIST, FormulaId, EntityType, ConditionalScalingValueType, CONDI
 
 import { ArrayPairEditor } from '../ArrayPairEditor';
 import { FormulaPreview } from './FormulaPreview';
-import { getAppliesToSelectOptions } from './utils';
+import { getAppliesToSelectOptionsSync } from './utils';
 
 interface FormulaManagerProps {
     entity: FeatureEntity;
@@ -38,7 +38,7 @@ export function FormulaManager({
                 const appliesTo = entity.appliesTo;
                 const entityType = entity.type;
                 if (appliesTo !== null && appliesTo !== undefined) {
-                    const options = await getAppliesToSelectOptions(appliesTo, entityType);
+                    const options = getAppliesToSelectOptionsSync(appliesTo, entityType);
                     setAppliesToSelectOptions(options);
                 } else {
                     setAppliesToSelectOptions([]);
@@ -67,7 +67,7 @@ export function FormulaManager({
                 });
             }
         }
-    }, [entity.formulaParams?.formulaId, index, entity.formulaParams?.thresholds, entity.formulaParams?.values, setFormData]);
+    }, [entity.formulaParams?.formulaId, index, setFormData]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Early return if no formula is selected
     if (!entity.formulaParams?.formulaId) {

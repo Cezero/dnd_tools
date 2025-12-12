@@ -209,6 +209,8 @@ export const USES_GROUPED_LABEL: EntityAppliesToType[] = [
     EntityAppliesToType.WeaponFamiliarity,
     EntityAppliesToType.Uses,
     EntityAppliesToType.Resistance,
+    EntityAppliesToType.BonusLanguage,
+    EntityAppliesToType.AutomaticLanguage,
 ] as const;
 
 export const FeatureBonusType = {

@@ -1,6 +1,6 @@
 import pluralize from 'pluralize';
 
-// FeatureEntity import removed - now using CalculatedEntity
+import { formatSignedValue } from '@/lib/formatterUtils';
 import {
     EntityAppliesToType,
     EntityType,
@@ -487,15 +487,3 @@ export class ResistanceFormatter implements BaseFormatter {
         return `${value}`;
     }
 }
-
-// Utility function for formatting signed values
-function formatSignedValue(value: number): string {
-    if (value > 0) {
-        return `+${value}`;
-    } else if (value < 0) {
-        return `${value}`;
-    } else {
-        return '0';
-    }
-}
-

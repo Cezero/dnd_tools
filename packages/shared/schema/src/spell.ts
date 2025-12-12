@@ -46,6 +46,7 @@ export const SpellSchema = z.object({
     componentIds: z.array(SpellComponentMapSchema).nullable(),
     levelMapping: z.array(SpellLevelMappingSchema).nullable(),
     sourceBookInfo: z.array(SourceMapSchema).nullable(),
+    isVisible: z.boolean().default(true),
 });
 
 export const GetAllSpellsResponseSchema = QueryResponseSchema.extend({
@@ -78,6 +79,32 @@ export const GetSpellResponseSchema = SpellSchema.omit({
     id: true
 });
 
+export const SpellCacheSchema = SpellSchema.omit({
+    schoolIds: true,
+    subSchoolIds: true,
+    descriptorIds: true,
+    componentIds: true,
+    sourceBookInfo: true,
+    levelMapping: true,
+    summary: true,
+    description: true,
+    castingTime: true,
+    range: true,
+    rangeTypeId: true,
+    rangeValue: true,
+    area: true,
+    duration: true,
+    savingThrow: true,
+    spellResistance: true,
+    effect: true,
+    target: true,
+    baseLevel: true,
+});
+
+export const SpellCacheResponseSchema = QueryResponseSchema.extend({
+    results: z.array(SpellCacheSchema),
+});
+
 export type SpellIdParamRequest = z.infer<typeof SpellIdParamSchema>;
 export type SpellClassParamRequest = z.infer<typeof SpellClassParamSchema>;
 export type UpdateSpellRequest = z.infer<typeof UpdateSpellSchema>;
@@ -91,3 +118,6 @@ export type SpellComponentMap = z.infer<typeof SpellComponentMapSchema>;
 export type SpellLevelMapping = z.infer<typeof SpellLevelMappingSchema>;
 export type ClassSpellListEntry = z.infer<typeof ClassSpellListEntrySchema>;
 export type ClassSpellListResponse = z.infer<typeof ClassSpellListResponseSchema>;
+
+export type SpellCacheResponse = z.infer<typeof SpellCacheResponseSchema>;
+export type SpellCacheEntry = z.infer<typeof SpellCacheSchema>;

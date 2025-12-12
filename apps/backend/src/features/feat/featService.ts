@@ -8,7 +8,8 @@ import {
     UpdateResponse,
     FeatQueryResponse,
     FeatQueryRequest,
-    GetFeatListResponse
+    GetFeatListResponse,
+    FeatCacheResponse
 } from '@shared/schema';
 import { FeatBenefitType } from '@shared/static-data';
 
@@ -21,6 +22,14 @@ export const featService: FeatService = {
         const [feats] = await Promise.all([
             prisma.feat.findMany({
                 orderBy: { name: 'asc' },
+                include: {
+                    sourceBookInfo: {
+                        select: {
+                            sourceBookId: true,
+                            pageNumber: true
+                        }
+                    }
+                }
             }),
             prisma.feat.count(),
         ]);
@@ -49,6 +58,12 @@ export const featService: FeatService = {
                 include: {
                     benefits: true,
                     prereqs: true,
+                    sourceBookInfo: {
+                        select: {
+                            sourceBookId: true,
+                            pageNumber: true
+                        }
+                    }
                 },
                 orderBy: { name: 'asc' },
             }),
@@ -93,6 +108,12 @@ export const featService: FeatService = {
             include: {
                 benefits: true,
                 prereqs: true,
+                sourceBookInfo: {
+                    select: {
+                        sourceBookId: true,
+                        pageNumber: true
+                    }
+                }
             },
         });
 
@@ -110,6 +131,12 @@ export const featService: FeatService = {
                     prereqs: data.prereqs ? {
                         create: data.prereqs
                     } : undefined,
+                    sourceBookInfo: {
+                        create: data.sourceBookInfo?.map(source => ({
+                            sourceBookId: source.sourceBookId,
+                            pageNumber: source.pageNumber
+                        })) || []
+                    }
                 },
             });
 
@@ -121,19 +148,72 @@ export const featService: FeatService = {
 
     async updateFeat(query: FeatIdParamRequest, data: UpdateFeatRequest): Promise<UpdateResponse> {
         await prisma.$transaction(async (tx) => {
+            // Handle prerequisites separately to avoid unique constraint issues
+            if (data.prereqs) {
+                // Delete existing prerequisites
+                await tx.featPrerequisiteMap.deleteMany({
+                    where: { featId: query.id }
+                });
+
+                // Create new prerequisites with proper indexing
+                if (data.prereqs.length > 0) {
+                    await tx.featPrerequisiteMap.createMany({
+                        data: data.prereqs.map((prereq, index) => ({
+                            featId: query.id,
+                            typeId: prereq.typeId,
+                            referenceId: prereq.referenceId,
+                            amount: prereq.amount,
+                            index: index
+                        }))
+                    });
+                }
+            }
+
+            // Handle benefits separately
+            if (data.benefits) {
+                // Delete existing benefits
+                await tx.featBenefitMap.deleteMany({
+                    where: { featId: query.id }
+                });
+
+                // Create new benefits with proper indexing
+                if (data.benefits.length > 0) {
+                    await tx.featBenefitMap.createMany({
+                        data: data.benefits.map((benefit, index) => ({
+                            featId: query.id,
+                            typeId: benefit.typeId,
+                            referenceId: benefit.referenceId,
+                            amount: benefit.amount,
+                            index: index
+                        }))
+                    });
+                }
+            }
+
+            // Handle source book info separately
+            if (data.sourceBookInfo) {
+                // Delete existing source book info
+                await tx.featSourceBookMap.deleteMany({
+                    where: { featId: query.id }
+                });
+
+                // Create new source book info
+                if (data.sourceBookInfo.length > 0) {
+                    await tx.featSourceBookMap.createMany({
+                        data: data.sourceBookInfo.map(source => ({
+                            featId: query.id,
+                            sourceBookId: source.sourceBookId,
+                            pageNumber: source.pageNumber
+                        }))
+                    });
+                }
+            }
+
+            // Update the main feat record (excluding the relationship fields)
+            const { benefits, prereqs, sourceBookInfo, ...featData } = data;
             const updatedFeat = await tx.feat.update({
                 where: { id: query.id },
-                data: {
-                    ...data,
-                    benefits: data.benefits ? {
-                        deleteMany: {},
-                        create: data.benefits
-                    } : undefined,
-                    prereqs: data.prereqs ? {
-                        deleteMany: {},
-                        create: data.prereqs
-                    } : undefined,
-                },
+                data: featData
             });
 
             return updatedFeat;
@@ -147,5 +227,35 @@ export const featService: FeatService = {
             where: { id: query.id },
         });
         return { message: 'Feat deleted successfully' };
+    },
+
+    async getFeatCache(query: FeatQueryRequest): Promise<FeatCacheResponse> {
+        let whereClause: Prisma.FeatWhereInput = {};
+        if (query.queryType === 'proficiency') {
+            whereClause = {
+                benefits: {
+                    some: {
+                        typeId: FeatBenefitType.PROFICIENCY
+                    }
+                }
+            }
+        }
+        const feats = await prisma.feat.findMany({
+            where: whereClause,
+            orderBy: { name: 'asc' },
+            select: {
+                id: true,
+                name: true,
+                editionId: true,
+                isVisible: true,
+                typeId: true,
+                fighterBonus: true,
+            }
+        });
+
+        return {
+            total: feats.length,
+            results: feats,
+        };
     },
 }; 

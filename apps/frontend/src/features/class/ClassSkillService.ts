@@ -136,20 +136,11 @@ export class ClassSkillService {
         setFeatureProgressions(finalProgressions);
     }
 
-    /**
-     * Calculate the total skill bonus for a specific skill across all advancements
-     * Takes into account class skill status per advancement and handles half-ranks properly
-     * @param character The character with all advancement data
-     * @param skillId The skill ID to calculate for
-     * @param abilityScore The character's ability score for this skill
-     * @param classDetailsMap Map of class ID to class details for looking up class skills
-     * @returns The total skill bonus (always an integer)
-     */
     static calculateSkillTotal(
         character: CharacterWithAllDetailsResponse,
         skillId: number,
         abilityScore: number,
-        classDetailsMap: Map<number, DnDClass> = new Map()
+        effectiveClassDetails?: DnDClass
     ): number {
         const abilityModifier = Math.floor((abilityScore - 10) / 2);
         let totalRanks = 0;
@@ -166,7 +157,7 @@ export class ClassSkillService {
 
                 // Check if this skill is a class skill for this specific advancement's class
                 const isClassSkill = this.isSkillClassSkillForAdvancement(
-                    classDetailsMap,
+                    effectiveClassDetails,
                     advancement,
                     skillId,
                     skillEntry.skillSubId,
@@ -187,30 +178,18 @@ export class ClassSkillService {
         return Math.floor(totalRanks) + abilityModifier;
     }
 
-    /**
-     * Check if a skill is a class skill for a specific advancement
-     * @param classes Array of class details
-     * @param advancement The specific advancement to check
-     * @param skillId The skill ID
-     * @param skillSubId Optional skill subtype ID
-     * @param customSubtype Optional custom subtype
-     * @returns True if the skill is a class skill for this advancement
-     */
     private static isSkillClassSkillForAdvancement(
-        classDetailsMap: Map<number, DnDClass>,
+        effectiveClassDetails: DnDClass | undefined,
         advancement: CharacterAdvancementWithDetailsResponse,
         skillId: number,
         skillSubId?: number | null,
         _customSubtype?: string | null
     ): boolean {
-        if (!advancement.classId) return false;
-
-        const classDetails = classDetailsMap.get(advancement.classId);
-        if (!classDetails?.features) return false;
+        if (!effectiveClassDetails?.features) return false;
 
         // Check if the specific subtype is a class skill
         const isSpecificSubtypeClassSkill = this.isSkillSubtypeClassSkillForClass(
-            classDetails.features,
+            effectiveClassDetails.features,
             skillId,
             skillSubId
         );
@@ -221,19 +200,13 @@ export class ClassSkillService {
 
         // Check if the parent skill is a class skill with appliesToSubId: -1 (all subtypes)
         const isParentSkillClassSkill = this.isSkillClassSkillForClass(
-            classDetails.features,
+            effectiveClassDetails.features,
             skillId
         );
 
         return isParentSkillClassSkill;
     }
 
-    /**
-     * Check if a skill is a class skill for a specific class (helper method)
-     * @param features The class features
-     * @param skillId The skill ID
-     * @returns True if the skill is a class skill
-     */
     private static isSkillClassSkillForClass(
         features: FeatureProgressionWithRelations[],
         skillId: number
@@ -248,13 +221,6 @@ export class ClassSkillService {
         );
     }
 
-    /**
-     * Check if a specific skill subtype is a class skill for a specific class (helper method)
-     * @param features The class features
-     * @param skillId The skill ID
-     * @param skillSubId The skill subtype ID
-     * @returns True if the specific subtype is a class skill
-     */
     private static isSkillSubtypeClassSkillForClass(
         features: FeatureProgressionWithRelations[],
         skillId: number,

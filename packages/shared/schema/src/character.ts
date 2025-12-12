@@ -107,8 +107,9 @@ export const CharacterFeatureChoiceSchema = z.object({
     characterId: z.number().int().positive('Character ID must be a positive integer'),
     progressionId: z.number().int().positive('Progression ID must be a positive integer'),
     advancementId: z.number().int().positive('Advancement ID must be a positive integer'),
-    key: z.string().nullable(),
-    value: z.string().nullable(),
+    featureEntityId: z.number().int().positive('Feature entity ID must be a positive integer'),
+    appliesToId: z.number().int().positive('Applies to ID must be a positive integer'),
+    appliesToSubId: z.number().int().nullable(),
     choiceIndex: z.number().int().nullable(),
 });
 

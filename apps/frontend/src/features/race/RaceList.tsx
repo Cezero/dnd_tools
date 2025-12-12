@@ -1,15 +1,17 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { FeatureDetail, FeatureEdit } from '@/components/feature-system';
-import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
-import { GenericList } from '@/components/generic-list/GenericList';
+import { GenericList } from '@/components/generic-list';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
+import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
+import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import { RaceSummary, Feature } from '@shared/schema';
+import { FeatureSourceType } from '@shared/static-data';
 
 import { RaceApi } from './RaceApi';
-import { RACE_COLUMNS } from './RaceColumns';
+import { useRaceColumns } from './RaceColumns';
 import { routes } from './RaceConfig';
 import { FEATURE_COLUMNS } from '../class/FeatureColumns';
 
@@ -17,6 +19,7 @@ export function RaceList(): React.JSX.Element {
     const navigate = useNavigate();
     const location = useLocation();
     const { isLoading: isAuthLoading, isAdmin } = useAuthAuto();
+    const raceColumns = useRaceColumns();
 
     const HandleNewRaceClick = (): void => {
         navigate('/races/new/edit', { state: { fromListParams: location.search } });
@@ -30,6 +33,14 @@ export function RaceList(): React.JSX.Element {
             }
         });
     };
+
+    const racesDataFetcher = useCallback(async () => {
+        return await RaceQueryHooks.getRaces();
+    }, []);
+
+    const featuresDataFetcher = useCallback(async () => {
+        return await FeatureQueryHooks.getFeatures({ requestData: { sourceTypes: [FeatureSourceType.Race] } });
+    }, []);
 
     if (isAuthLoading) {
         return <div className="p-4">Loading...</div>;
@@ -50,8 +61,8 @@ export function RaceList(): React.JSX.Element {
             )}
             <GenericList<RaceSummary>
                 storageKey="races-list"
-                columns={RACE_COLUMNS}
-                serviceFunction={() => RaceApi.getRaces({})}
+                columns={raceColumns}
+                dataFetcher={racesDataFetcher}
                 itemDesc="race"
                 routes={routes}
                 deleteServiceFunction={createIdDeleteServiceFunction(RaceApi.deleteRace)}
@@ -72,7 +83,7 @@ export function RaceList(): React.JSX.Element {
                         <GenericList<Feature>
                             storageKey="features-list"
                             columns={FEATURE_COLUMNS}
-                            serviceFunction={() => FeatureSystemApi.getFeatures({ sourceType: 0 })}
+                            dataFetcher={featuresDataFetcher}
                             itemDesc="feature"
                             routes={[
                                 { path: 'features/:id', component: FeatureDetail, exact: true, requireAuth: true, requireAdmin: true, routeType: 'detail' },
@@ -87,15 +98,7 @@ export function RaceList(): React.JSX.Element {
                                         }
                                     });
                                 },
-                                delete: async (feature) => {
-                                    try {
-                                        await FeatureSystemApi.deleteFeature(undefined, { id: feature.id });
-                                        // The GenericList will handle refreshing the data
-                                    } catch (error) {
-                                        console.error('Failed to delete feature:', error);
-                                        alert('Failed to delete feature.');
-                                    }
-                                }
+                                delete: createIdDeleteServiceFunction((_, { id }) => FeatureQueryHooks.deleteFeature(id))
                             }}
                         />
                     </div>

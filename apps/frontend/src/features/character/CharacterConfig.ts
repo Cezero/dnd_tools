@@ -1,5 +1,4 @@
-import { CharacterEdit } from '@/features/character/CharacterEdit';
-import { CharacterList } from '@/features/character/CharacterList';
+import { CharacterEdit, CharacterList } from '@/features/character';
 import { RouteConfig, NavigationItem } from '@/types';
 
 export const routes: RouteConfig[] = [

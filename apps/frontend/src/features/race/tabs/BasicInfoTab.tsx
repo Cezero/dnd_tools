@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
 import { ValidatedInput, SourceEditor } from '@/components/forms';
 import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
-import { EDITION_LIST_FULL, SIZE_LIST, SourceType, CoreComponent } from '@shared/static-data';
+import { useCacheFunctions } from '@/services/cache';
+import { EDITION_LIST, SIZE_LIST, SourceType } from '@shared/static-data';
 
 import type { RaceTabProps } from './types';
-import { getBaseClassesForEdition } from '../../class/ClassUtils';
 
 
 export function BasicInfoTab({
@@ -13,15 +13,7 @@ export function BasicInfoTab({
     setFormData,
     isLoading: _isLoading = false
 }: RaceTabProps): React.JSX.Element {
-    const [availableClasses, setAvailableClasses] = useState<CoreComponent[]>([]);
-
-    useEffect(() => {
-        const loadClasses = async () => {
-            const classes = await getBaseClassesForEdition(formData.editionId);
-            setAvailableClasses(classes);
-        };
-        loadClasses();
-    }, [formData.editionId]);
+    const { getBaseClassSelectByEdition } = useCacheFunctions();
     return (
         <div className="p-6 space-y-6">
             <div>
@@ -73,7 +65,7 @@ export function BasicInfoTab({
                             onValueChange={(value) => setFormData({ ...formData, favoredClassId: value as number })}
                             options={[
                                 { id: -1, name: 'Any' },
-                                ...availableClasses
+                                ...getBaseClassSelectByEdition(formData.editionId)
                             ]}
                             placeholder="Select favored class"
                         />
@@ -89,7 +81,7 @@ export function BasicInfoTab({
                                 itemTextExtraClassName="w-16"
                                 value={formData.editionId}
                                 onValueChange={(value) => setFormData({ ...formData, editionId: value as number })}
-                                options={EDITION_LIST_FULL}
+                                options={EDITION_LIST}
                                 placeholder="Select edition"
                             />
                             <CustomCheckbox
@@ -117,9 +109,10 @@ export function BasicInfoTab({
             {/* Source References */}
             <div>
                 <SourceEditor
-                    sources={formData.sources || []}
-                    onSourcesChange={(sources) => setFormData({ ...formData, sources })}
+                    sources={formData.sourceBookInfo || []}
+                    onSourcesChange={(sources) => setFormData({ ...formData, sourceBookInfo: sources })}
                     sourceType={SourceType.Races}
+                    editionId={formData.editionId as EditionId}
                 />
             </div>
         </div>

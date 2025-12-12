@@ -1,135 +1,105 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { CustomSelect } from '@/components/forms/FormComponents';
-import { GestaltProgressionDisplay } from '@/features/character/GestaltProgressionDisplay';
-import { ClassApi } from '@/features/class/ClassApi';
+import { GestaltProgressionDisplay } from '@/features/character';
+import type { TabComponentProps } from '@/features/character/types';
+import { CharacterEditStateUpdateType } from '@/features/character/types';
 import { ClassDisplay } from '@/features/class/ClassDisplay';
-import type { DnDClass, CharacterWithAllDetailsResponse, GetAllClassesResponse } from '@shared/schema';
-
-interface ClassTabProps {
-    character: CharacterWithAllDetailsResponse;
-    onUpdate: (data: Partial<CharacterWithAllDetailsResponse>) => void;
-    selectedClassDetails?: DnDClass | null;
-    onClassDetailsChange: (classDetails: DnDClass | null) => void;
-}
+import { useCacheFunctions } from '@/services/cache';
+import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
+import { EditionId, CoreComponent } from '@shared/static-data';
 
 export function ClassTab({
-    character,
-    onUpdate,
-    selectedClassDetails,
-    onClassDetailsChange
-}: ClassTabProps): React.JSX.Element {
-    const [isLoadingClass, setIsLoadingClass] = useState(false);
-    const [allClasses, setAllClasses] = useState<GetAllClassesResponse['results']>([]);
+    state,
+    updateState,
+    resolvedData: _resolvedData,
+    isLoading: _isLoading,
+    triggerFeatureResolution
+}: TabComponentProps): React.JSX.Element {
+    const { getClassSelectByEdition } = useCacheFunctions();
+
+    // Get the current class IDs directly from state
+    const currentClassId = state.classId;
+    const currentSecondaryClassId = state.secondaryClassId;
+
+    // Get classes from cache based on variant setting
+    const [allClasses, setAllClasses] = useState<CoreComponent[]>([]);
     const [isLoadingClasses, setIsLoadingClasses] = useState(false);
-    const [secondaryClassDetails, setSecondaryClassDetails] = useState<DnDClass | null>(null);
 
-    // Get the current classes from the first advancement
-    const currentClassId = character.advancements[0]?.classId || null;
-    const currentSecondaryClassId = character.advancements[0]?.secondaryClassId || null;
+    // Use TanStack Query for primary class details
+    const { data: primaryClassData, isLoading: isLoadingPrimary } = ClassQueryHooks.useGetClassById(
+        { pathParams: { id: currentClassId } },
+        { enabled: !!currentClassId }
+    );
 
-    // Load classes based on variant setting
+    // Use TanStack Query for secondary class details
+    const { data: secondaryClassData, isLoading: isLoadingSecondary } = ClassQueryHooks.useGetClassById(
+        { pathParams: { id: currentSecondaryClassId } },
+        { enabled: !!state.isGestalt && !!currentSecondaryClassId }
+    );
+
+    // Combined loading state
+    const isLoadingClass = isLoadingPrimary || isLoadingSecondary;
+
+    // Fetch classes when edition or variant settings change
     useEffect(() => {
-        const loadClasses = async () => {
+        const fetchClasses = async () => {
+            const editionId = state.editionId || EditionId.DND_3x;
             setIsLoadingClasses(true);
             try {
-                const response = await ClassApi.getClasses({
-                    editionId: character.editionId || 5, // Use character's edition or default to 3.5e
-                    baseClassesOnly: !character.allowVariantClasses // Include variants only if allowed
-                });
-                setAllClasses(response.results);
+                const classesData = await getClassSelectByEdition(editionId, false, state.allowVariantClasses);
+                setAllClasses(classesData || []);
             } catch (error) {
-                console.error('Failed to load classes:', error);
+                console.error('Failed to fetch classes:', error);
                 setAllClasses([]);
             } finally {
                 setIsLoadingClasses(false);
             }
         };
+        fetchClasses();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [state.editionId, state.allowVariantClasses]);
 
-        loadClasses();
-    }, [character.allowVariantClasses, character.editionId]);
+    // Track which classes we've already resolved to prevent infinite loops
+    const resolvedPrimaryClassIdRef = useRef<number | null>(null);
+    const resolvedSecondaryClassIdRef = useRef<number | null>(null);
 
-    // Load secondary class details if gestalt character has secondary class
+    // Trigger feature resolution when primary class data is loaded
     useEffect(() => {
-        const loadSecondaryClass = async () => {
-            if (!character.isGestalt || !currentSecondaryClassId) {
-                setSecondaryClassDetails(null);
-                return;
-            }
+        if (state.classId && primaryClassData && !isLoadingPrimary && resolvedPrimaryClassIdRef.current !== state.classId) {
+            resolvedPrimaryClassIdRef.current = state.classId;
+            triggerFeatureResolution();
+        }
+    }, [state.classId, primaryClassData, isLoadingPrimary, triggerFeatureResolution]);
 
-            try {
-                const classDetails = await ClassApi.getClassById(undefined, { id: currentSecondaryClassId });
-                setSecondaryClassDetails(classDetails);
-            } catch (error) {
-                console.error('Failed to load secondary class details:', error);
-                setSecondaryClassDetails(null);
-            }
-        };
-
-        loadSecondaryClass();
-    }, [character.isGestalt, currentSecondaryClassId]);
+    // Trigger feature resolution when secondary class data is loaded
+    useEffect(() => {
+        if (state.secondaryClassId && secondaryClassData && !isLoadingSecondary && resolvedSecondaryClassIdRef.current !== state.secondaryClassId) {
+            resolvedSecondaryClassIdRef.current = state.secondaryClassId;
+            triggerFeatureResolution();
+        }
+    }, [state.secondaryClassId, secondaryClassData, isLoadingSecondary, triggerFeatureResolution]);
 
     const handleClassChange = async (classId: number | null, isSecondary = false) => {
         if (classId === null) {
-            // Clear class from advancement
-            const updateData = {
-                ...character.advancements[0],
-                featureChoices: [],
-                ...(isSecondary ? { secondaryClassId: 0 } : { classId: 0 })
-            };
-
-            onUpdate({
-                advancements: [updateData]
-            });
-
+            // Clear class
             if (isSecondary) {
-                setSecondaryClassDetails(null);
+                updateState({ type: CharacterEditStateUpdateType.SET_SECONDARY_CLASS, payload: { secondaryClassId: null } });
             } else {
-                onClassDetailsChange(null);
+                updateState({ type: CharacterEditStateUpdateType.SET_CLASS, payload: { classId: null } });
             }
             return;
         }
 
-        // Validate that the class ID is valid by checking if we can fetch it
-        // We'll let the API call handle the validation
-
-        // Fetch class details from backend
-        setIsLoadingClass(true);
-        try {
-            const classDetails = await ClassApi.getClassById(undefined, { id: classId });
-
-            if (isSecondary) {
-                setSecondaryClassDetails(classDetails);
-            } else {
-                onClassDetailsChange(classDetails);
-            }
-
-            // Update the first advancement entry
-            const updateData = {
-                ...character.advancements[0],
-                featureChoices: character.advancements[0].featureChoices,
-                ...(isSecondary ? { secondaryClassId: classId } : { classId: classId })
-            };
-
-            onUpdate({
-                advancements: [updateData]
-            });
-        } catch (error) {
-            console.error('Failed to fetch class details:', error);
-
-            // Still update the class even if details fetch fails
-            const updateData = {
-                ...character.advancements[0],
-                featureChoices: character.advancements[0].featureChoices,
-                ...(isSecondary ? { secondaryClassId: classId } : { classId: classId })
-            };
-
-            onUpdate({
-                advancements: [updateData]
-            });
-        } finally {
-            setIsLoadingClass(false);
+        // Update class ID - the query hook will handle fetching the details
+        if (isSecondary) {
+            updateState({ type: CharacterEditStateUpdateType.SET_SECONDARY_CLASS, payload: { secondaryClassId: classId } });
+        } else {
+            updateState({ type: CharacterEditStateUpdateType.SET_CLASS, payload: { classId } });
         }
+
+        // Don't trigger feature resolution here - wait for class data to load
+        // The useEffect below will handle triggering when class data is available
     };
 
     return (
@@ -137,7 +107,7 @@ export function ClassTab({
             {/* Class Selection */}
             <div className="bg-white dark:bg-gray-800 p-4">
                 {/* Gestalt Info */}
-                {character.isGestalt && (
+                {state.isGestalt && (
                     <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md">
                         <p className="text-sm text-blue-700 dark:text-blue-300">
                             <strong>Gestalt Mode:</strong> You can select two classes for this character. The classes will be combined.
@@ -145,15 +115,15 @@ export function ClassTab({
                     </div>
                 )}
 
-                <div className={character.isGestalt ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "flex items-center gap-4"}>
+                <div className={state.isGestalt ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "flex items-center gap-4"}>
                     {/* Primary Class */}
                     <div>
                         <CustomSelect
                             value={currentClassId}
                             onValueChange={(classId) => handleClassChange(classId, false)}
-                            label={character.isGestalt ? "Primary Class:" : "Class:"}
+                            label={state.isGestalt ? "Primary Class:" : "Class:"}
                             labelExtraClassName="text-lg font-semibold"
-                            options={allClasses}
+                            options={Array.isArray(allClasses) ? allClasses : []}
                             placeholder={isLoadingClasses ? "Loading classes..." : "Select a class..."}
                             componentExtraClassName="flex items-center gap-2"
                             disabled={isLoadingClass || isLoadingClasses}
@@ -161,14 +131,14 @@ export function ClassTab({
                     </div>
 
                     {/* Secondary Class (Gestalt) */}
-                    {character.isGestalt && (
+                    {state.isGestalt && (
                         <div>
                             <CustomSelect
                                 value={currentSecondaryClassId}
                                 onValueChange={(classId) => handleClassChange(classId, true)}
                                 label="Secondary Class:"
                                 labelExtraClassName="text-lg font-semibold"
-                                options={allClasses}
+                                options={Array.isArray(allClasses) ? allClasses : []}
                                 placeholder={isLoadingClasses ? "Loading classes..." : "Select a class..."}
                                 componentExtraClassName="flex items-center gap-2"
                                 disabled={isLoadingClass || isLoadingClasses}
@@ -177,17 +147,10 @@ export function ClassTab({
                     )}
 
                     {/* Loading indicators */}
-                    {isLoadingClass && (
+                    {(isLoadingClass || isLoadingClasses) && (
                         <div className="col-span-full">
                             <p className="text-sm text-blue-600 dark:text-blue-400 italic">
-                                Loading class details...
-                            </p>
-                        </div>
-                    )}
-                    {isLoadingClasses && (
-                        <div className="col-span-full">
-                            <p className="text-sm text-blue-600 dark:text-blue-400 italic">
-                                Loading classes...
+                                {isLoadingClasses ? "Loading classes..." : "Loading class details..."}
                             </p>
                         </div>
                     )}
@@ -195,10 +158,10 @@ export function ClassTab({
             </div>
 
             {/* Class Details Display */}
-            {selectedClassDetails && !character.isGestalt && (
+            {primaryClassData && !state.isGestalt && (
                 <div className="mt-6">
                     <ClassDisplay
-                        cls={selectedClassDetails}
+                        cls={primaryClassData}
                         showHeader={false}
                         showActions={false}
                     />
@@ -206,18 +169,18 @@ export function ClassTab({
             )}
 
             {/* Gestalt Combined Progression */}
-            {character.isGestalt && selectedClassDetails && secondaryClassDetails && (
+            {state.isGestalt && primaryClassData && secondaryClassData && (
                 <div className="mt-6">
                     <GestaltProgressionDisplay
-                        primaryClass={selectedClassDetails}
-                        secondaryClass={secondaryClassDetails}
+                        primaryClass={primaryClassData}
+                        secondaryClass={secondaryClassData}
                         showHeader={true}
                     />
                 </div>
             )}
 
             {/* Show individual class details for gestalt if only one class is selected */}
-            {character.isGestalt && selectedClassDetails && !secondaryClassDetails && (
+            {state.isGestalt && primaryClassData && !secondaryClassData && (
                 <div className="mt-6">
                     <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-md mb-4">
                         <p className="text-sm text-yellow-700 dark:text-yellow-300">
@@ -227,7 +190,7 @@ export function ClassTab({
                     <div className="mt-4">
                         <h3 className="text-lg font-semibold mb-4">Primary Class Details</h3>
                         <ClassDisplay
-                            cls={selectedClassDetails}
+                            cls={primaryClassData}
                             showHeader={false}
                             showActions={false}
                         />
@@ -236,4 +199,4 @@ export function ClassTab({
             )}
         </div>
     );
-} 
+}

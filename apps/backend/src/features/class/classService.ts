@@ -9,8 +9,9 @@ import {
     CreateResponse,
     CreateSpellcastingProgressionRequest,
     CreateSpellcastingSlotRequest,
+    ClassCacheResponse,
 } from '@shared/schema';
-import { isVariantId } from '@shared/static-data';
+import { buildEditionWhereClause, isVariantId } from '@shared/utils';
 
 import type { ClassService } from './types';
 import { VariantClassService } from './variantClassService.js';
@@ -36,7 +37,8 @@ export const classService: ClassService = {
             whereClause.canCastSpells = query.canCastSpells;
         }
         if (query?.editionId !== undefined) {
-            whereClause.editionId = query.editionId;
+            const editionClause = buildEditionWhereClause(query.editionId);
+            Object.assign(whereClause, editionClause);
         }
         if (query?.editionIds !== undefined && query.editionIds.length > 0) {
             whereClause.editionId = { in: query.editionIds };
@@ -374,5 +376,62 @@ export const classService: ClassService = {
         return { message: 'Class deleted successfully' };
     },
 
+    async getClassCache(): Promise<ClassCacheResponse> {
+        const classesPromise = prisma.class.findMany({
+            orderBy: { name: 'asc' },
+            select: {
+                id: true,
+                name: true,
+                abbreviation: true,
+                editionId: true,
+                isPrestige: true,
+                isVisible: true,
+                canCastSpells: true,
+            }
+        });
+
+        const variantsPromise = prisma.classVariant.findMany({
+            orderBy: { name: 'asc' },
+            include: {
+                baseClass: {
+                    select: {
+                        editionId: true,
+                        isPrestige: true,
+                        isVisible: true,
+                        canCastSpells: true,
+                    }
+                }
+            }
+        });
+
+        const [classes, variants] = await Promise.all([classesPromise, variantsPromise]);
+
+        // Combine classes and variants into a single list
+        const allItems = [
+            // Base classes (unchanged)
+            ...classes,
+            // Variants with inherited properties from base class
+            ...variants.map(variant => {
+                return {
+                    id: variant.id, // Use the custom variant ID
+                    name: variant.name, // Use variant name
+                    abbreviation: variant.abbreviation, // Use variant abbreviation
+                    // Inherit from base class
+                    editionId: variant.baseClass.editionId,
+                    isPrestige: variant.baseClass.isPrestige,
+                    isVisible: variant.baseClass.isVisible,
+                    canCastSpells: variant.baseClass.canCastSpells,
+                };
+            })
+        ];
+
+        // Sort combined list by name
+        allItems.sort((a, b) => a.name.localeCompare(b.name));
+
+        return {
+            total: allItems.length,
+            results: allItems,
+        };
+    },
 
 };

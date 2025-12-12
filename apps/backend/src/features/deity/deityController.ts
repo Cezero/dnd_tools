@@ -1,12 +1,13 @@
 import { Response } from 'express';
 
-import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput } from '@/util/validated-types';
+import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInput, ValidatedQueryT } from '@/util/validated-types';
 import {
     DeityIdParamRequest,
     CreateDeityRequest,
     UpdateDeityRequest,
     GetAllDeitiesResponse,
     Deity,
+    DeityCacheResponse,
 } from '@shared/schema';
 
 import { deityService } from './deityService.js';
@@ -64,4 +65,12 @@ export async function ValidateDeitySelection(req: ValidatedBodyT<unknown, unknow
     const body = req.body as { advancementId: number; deityId: number };
     const result = await deityService.validateDeitySelection(body.advancementId, body.deityId);
     res.json(result);
+}
+
+/**
+ * Fetches all deities for cache (lightweight data).
+ */
+export async function GetDeityCache(req: ValidatedNoInput<DeityCacheResponse>, res: Response) {
+    const deities = await deityService.getDeityCache();
+    res.json(deities);
 }

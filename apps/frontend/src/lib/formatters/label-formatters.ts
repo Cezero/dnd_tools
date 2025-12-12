@@ -217,3 +217,19 @@ export function groupedResistanceLabeler(formattedItems: string): string {
 export function domainLabeler(value: string, _modifier: CalculatedEntity): string {
     return `Domain: ${value}`;
 }
+
+// Labeler for grouped bonus languages - handles pluralization
+export function groupedBonusLanguageLabeler(formattedItems: string): string {
+    // Check if there are multiple languages (contains comma)
+    const isPlural = formattedItems.includes(',');
+    const pluralSuffix = isPlural ? 's' : '';
+    return `Bonus Language${pluralSuffix}: ${formattedItems}`;
+}
+
+// Labeler for grouped automatic languages - handles pluralization
+export function groupedAutomaticLanguageLabeler(formattedItems: string): string {
+    // Check if there are multiple languages (contains comma)
+    const isPlural = formattedItems.includes(',');
+    const pluralSuffix = isPlural ? 's' : '';
+    return `Automatic Language${pluralSuffix}: ${formattedItems}`;
+}

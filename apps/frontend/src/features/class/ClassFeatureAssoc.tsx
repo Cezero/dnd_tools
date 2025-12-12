@@ -1,5 +1,5 @@
-import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { ListSelectionDialog } from '@/components/generic-list';
+import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import type { Feature } from '@shared/schema';
 import { FeatureSourceType } from '@shared/static-data';
 
@@ -39,18 +39,8 @@ export function ClassFeatureAssoc({ isOpen, onClose, onSave, initialSelectedFeat
             initialSelectedIds={initialSelectedFeatureIds}
             parentId={classId}
             parentType="class"
-            serviceFunction={async () => {
-                // Get both Class and ClassVariant features
-                const [classFeatures, variantFeatures] = await Promise.all([
-                    FeatureSystemApi.getFeatures({ sourceType: FeatureSourceType.Class }),
-                    FeatureSystemApi.getFeatures({ sourceType: FeatureSourceType.ClassVariant })
-                ]);
-                const allFeatures = [...classFeatures.results, ...variantFeatures.results];
-                return {
-                    results: allFeatures,
-                    total: allFeatures.length
-                };
-            }}
+            queryHook={FeatureQueryHooks.useGetFeatures}
+            queryHookParams={{ requestData: { sourceTypes: [FeatureSourceType.Class, FeatureSourceType.ClassVariant] } }}
             storageKey="classFeatureSelectionList"
             itemDesc="feature"
             createNewRoute="/features/new/edit"

@@ -9,29 +9,6 @@ import {
     GetAllCharactersResponseSchema,
 } from '@shared/schema';
 
-/**
- * CharacterService with path parameter support
- * 
- * Usage examples:
- * 
- * // Get characters for current user
- * const characters = await CharacterService.getCharacters();
- * 
- * // Get character by ID (path parameter)
- * const character = await CharacterService.getCharacterById(undefined, { id: 123 });
- * 
- * // Create character
- * const newCharacter = await CharacterService.createCharacter({ name: "Aragorn", raceId: 1, alignmentId: 1 });
- * 
- * // Update character (path parameter + body)
- * const updatedCharacter = await CharacterService.updateCharacter(
- *   { name: "Updated Aragorn" }, 
- *   { id: 123 }
- * );
- * 
- * // Delete character (path parameter)
- * await CharacterService.deleteCharacter(undefined, { id: 123 });
- */
 export const CharacterApi = {
     getCharacters: typedApi({
         path: '/characters',

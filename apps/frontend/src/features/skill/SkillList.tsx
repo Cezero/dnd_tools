@@ -2,10 +2,10 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
-import { GenericList } from '@/components/generic-list/GenericList';
+import { GenericList } from '@/components/generic-list';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
-import { SkillApi } from '@/features/skill/SkillApi';
 import { SKILL_COLUMNS } from '@/features/skill/SkillColumns';
+import { SkillQueryHooks } from '@/services/query/SkillQueryHooks';
 import { Skill } from '@shared/schema';
 
 import { routes } from './SkillConfig';
@@ -14,6 +14,22 @@ export function SkillList(): React.JSX.Element {
     const navigate = useNavigate();
     const location = useLocation();
     const { isLoading: isAuthLoading, isAdmin } = useAuthAuto();
+
+    // Use the delete mutation hook
+    const { mutate: deleteSkillMutation } = SkillQueryHooks.useDeleteSkill();
+
+    // Create a wrapper function for the delete operation
+    const deleteSkill = async (params: undefined, idParams: { id: number }) => {
+        return new Promise((resolve, reject) => {
+            deleteSkillMutation(
+                { pathParams: { id: idParams.id } },
+                {
+                    onSuccess: () => resolve(undefined),
+                    onError: (error) => reject(error)
+                }
+            );
+        });
+    };
 
     const HandleNewSkillClick = (): void => {
         navigate('/skills/new/edit', { state: { fromListParams: location.search } });
@@ -39,10 +55,10 @@ export function SkillList(): React.JSX.Element {
             <GenericList<Skill>
                 storageKey="skills-list"
                 columns={SKILL_COLUMNS}
-                serviceFunction={() => SkillApi.getSkills({})}
+                queryHook={SkillQueryHooks.useGetSkills}
                 itemDesc="skill"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction(SkillApi.deleteSkill)}
+                deleteServiceFunction={createIdDeleteServiceFunction(deleteSkill)}
             />
         </div>
     );

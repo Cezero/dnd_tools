@@ -12,12 +12,14 @@ import {
     CreateRace,
     UpdateRace,
     DeleteRace,
+    GetRaceCache,
 } from './raceController.js';
 
 const { router: RaceRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
 
 // Race Read Routes
 get('/', {}, GetAllRaces);
+get('/cache', {}, GetRaceCache);
 get('/:id', { params: RaceIdParamSchema }, GetRaceById);
 
 // Race Write Routes

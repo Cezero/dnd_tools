@@ -1,7 +1,8 @@
-import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
-import { DomainApi } from '@/features/domain/DomainApi';
-import { FeatApi } from '@/features/feat/FeatApi';
-import { ItemApi } from '@/features/item/ItemApi';
+import { useMemo } from 'react';
+
+import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
+import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
+import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import {
     ABILITY_LIST,
     SKILL_LIST,
@@ -10,13 +11,8 @@ import {
     DAMAGE_TYPE_LIST,
     USES_FREQUENCY_LIST,
     LANGUAGE_LIST,
-    SIZE_LIST,
-    CREATURE_TYPE_LIST,
     EntityAppliesToType,
     EntityType,
-    ITEM_TYPE_ENUM,
-    WEAPON_CATEGORY_ENUM,
-    SPELL_ID_LIST,
     CRAFT_SKILL_LIST,
     KNOWLEDGE_SKILL_LIST,
     Skill,
@@ -51,32 +47,60 @@ export function getAppliesToSubIdSelectOptions(appliesTo: EntityAppliesToType, a
 }
 
 /**
- * Get the appropriate select options for AppliesToId based on the appliesTo type
- * Used when valuesRepresent is set to AppliesToId in conditional scaling formulas
- * This mirrors the logic from AppliesToSelector.tsx
+ * Hook to get applies to select options using query hooks
  */
-export async function getAppliesToSelectOptions(appliesTo: EntityAppliesToType, entityType?: EntityType | null): Promise<CoreComponent[]> {
+export function useAppliesToSelectOptions(appliesTo: EntityAppliesToType, entityType?: EntityType | null) {
+    // Use the appropriate query hook based on the appliesTo type
+    const featQuery = FeatQueryHooks.useGetFeatList({
+        requestData: { queryType: 'all' }
+    });
 
+    const domainQuery = DomainQueryHooks.useGetDomains({});
+
+    const featureQuery = FeatureQueryHooks.useGetFeatures({
+        requestData: { sourceTypes: [EntityAppliesToType.Feature] }
+    });
+
+    return useMemo(() => {
+        switch (appliesTo) {
+            case EntityAppliesToType.Feat:
+                if (featQuery.data && featQuery.data.length > 0) {
+                    return featQuery.data;
+                }
+                return [{ id: -1, name: 'Select a feat...' }];
+
+            case EntityAppliesToType.Domain:
+                if (domainQuery.data?.results && domainQuery.data.results.length > 0) {
+                    return domainQuery.data.results;
+                }
+                return [{ id: -1, name: 'Select a domain...' }];
+
+            case EntityAppliesToType.Feature:
+                if (featureQuery.data?.results && featureQuery.data.results.length > 0) {
+                    return featureQuery.data.results;
+                }
+                return [{ id: -1, name: 'Select a feature...' }];
+
+            default:
+                // For other types, use the static options
+                return getAppliesToSelectOptionsSync(appliesTo, entityType);
+        }
+    }, [appliesTo, entityType, featQuery.data, domainQuery.data, featureQuery.data]);
+}
+
+/**
+ * Synchronous version for static options
+ */
+export function getAppliesToSelectOptionsSync(appliesTo: EntityAppliesToType, _entityType?: EntityType | null): CoreComponent[] {
     switch (appliesTo) {
         case EntityAppliesToType.Ability:
-            return [
-                { id: -1, name: 'Any Ability' },
-                ...ABILITY_LIST
-            ];
+            return ABILITY_LIST;
         case EntityAppliesToType.Skill:
-            return [
-                { id: -1, name: 'Any Skill' },
-                ...SKILL_LIST
-            ];
+            return SKILL_LIST;
         case EntityAppliesToType.SavingThrow:
-            return [
-                { id: -1, name: 'Any Saving Throw' },
-                ...SAVING_THROW_LIST
-            ];
-        case EntityAppliesToType.HitDice:
-            return RPG_DICE_LIST;
+            return SAVING_THROW_LIST;
         case EntityAppliesToType.Damage:
-            return entityType === EntityType.Quantity ? RPG_DICE_LIST : DAMAGE_TYPE_LIST;
+            return RPG_DICE_LIST;
         case EntityAppliesToType.DamageReduction:
             return DAMAGE_TYPE_LIST;
         case EntityAppliesToType.Resistance:
@@ -93,83 +117,8 @@ export async function getAppliesToSelectOptions(appliesTo: EntityAppliesToType, 
                 { id: -1, name: 'Any Language' },
                 ...LANGUAGE_LIST
             ];
-        case EntityAppliesToType.Feat:
-            try {
-                const feats = await FeatApi.getFeatList({ queryType: 'all' });
-                if (feats && feats.length > 0) {
-                    return feats;
-                }
-            } catch (error) {
-                console.error('Failed to load feats for AppliesToId options:', error);
-            }
-            return [
-                { id: -1, name: 'Select a feat...' }
-            ];
-        case EntityAppliesToType.Domain:
-            try {
-                const domains = await DomainApi.getDomains({});
-                if (domains && domains.results && domains.results.length > 0) {
-                    return domains.results;
-                }
-            } catch (error) {
-                console.error('Failed to load domains for AppliesToId options:', error);
-            }
-            return [
-                { id: -1, name: 'Select a domain...' }
-            ];
-        case EntityAppliesToType.Spell:
-            return SPELL_ID_LIST;
-        case EntityAppliesToType.Feature:
-            try {
-                const response = await FeatureSystemApi.getFeatures(undefined, undefined);
-                if (response && response.results && response.results.length > 0) {
-                    return response.results;
-                }
-            } catch (error) {
-                console.error('Failed to load features for AppliesToId options:', error);
-            }
-            return [
-                { id: -1, name: 'Select a feature...' }
-            ];
-        case EntityAppliesToType.CreatureType:
-            return [
-                { id: -1, name: 'Any Creature Type' },
-                ...CREATURE_TYPE_LIST
-            ];
-        case EntityAppliesToType.SizeCategory:
-            return [
-                { id: -1, name: 'Any Size' },
-                ...SIZE_LIST
-            ];
-        case EntityAppliesToType.DamageType:
-            return DAMAGE_TYPE_LIST;
-        case EntityAppliesToType.WeaponFamiliarity:
-            try {
-                // Fetch exotic weapons for weapon familiarity
-                const response = await ItemApi.itemQuery({
-                    queryType: 'byCategory',
-                    typeId: ITEM_TYPE_ENUM.Weapon,
-                    category: WEAPON_CATEGORY_ENUM.Exotic
-                });
-                if (response && response.results && response.results.length > 0) {
-                    return response.results;
-                }
-            } catch (error) {
-                console.error('Failed to load exotic weapons for Weapon Familiarity:', error);
-            }
-            return [
-                { id: -1, name: 'Select an exotic weapon...' }
-            ];
-        case EntityAppliesToType.MovementSpeed:
-        case EntityAppliesToType.Attack:
-        case EntityAppliesToType.Initiative:
-        case EntityAppliesToType.Other:
-            return [
-                { id: -1, name: 'Any/All' },
-                { id: 1, name: 'Specific Target 1' },
-                { id: 2, name: 'Specific Target 2' }
-            ];
         default:
             return [];
     }
 }
+

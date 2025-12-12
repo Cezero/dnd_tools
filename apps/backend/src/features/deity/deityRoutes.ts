@@ -12,6 +12,7 @@ import {
     UpdateDeity,
     DeleteDeity,
     ValidateDeitySelection,
+    GetDeityCache,
 } from './deityController.js';
 import { requireAdmin } from '../../middleware/authMiddleware.js';
 
@@ -19,6 +20,7 @@ const { router: DeityRouter, get, post, put, delete: deleteRoute } = buildValida
 
 // Deity Read Routes
 get('/', {}, GetAllDeities);
+get('/cache', {}, GetDeityCache);
 get('/:id', { params: DeityIdParamSchema }, GetDeityById);
 
 // Deity Write Routes

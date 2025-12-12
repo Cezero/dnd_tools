@@ -2,7 +2,7 @@ import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
-import { FeatureSystemApi, FeatureProgressionDetailEdit } from '@/components/feature-system';
+import { FeatureProgressionDetailEdit } from '@/components/feature-system';
 import { FeatureDisplay } from '@/components/feature-system/FeatureDisplay';
 import {
     ValidatedForm,
@@ -13,10 +13,10 @@ import {
 } from '@/components/forms';
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
-import { CreateDomainRequest, UpdateDomainRequest, UpdateDomainSchema, CreateDomainSchema, FeatureProgression, Feature, CreateFeatureProgressionRequest, UpdateFeatureRequest } from '@shared/schema';
-import { EDITION_LIST_FULL, SourceType, FeatureSourceType } from '@shared/static-data';
-
-import { DomainApi } from './DomainApi';
+import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
+import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
+import { CreateDomainRequest, UpdateDomainRequest, UpdateDomainSchema, CreateDomainSchema, FeatureProgression, Feature, CreateFeatureProgressionRequest } from '@shared/schema';
+import { EDITION_LIST, SourceType, FeatureSourceType } from '@shared/static-data';
 
 // Type definitions for the form state
 type DomainFormData = CreateDomainRequest | UpdateDomainRequest;
@@ -26,10 +26,42 @@ export function DomainEdit() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation();
-    const [domain, setDomain] = useState<DomainFormData | null>(null);
     const [message, setMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+
+    // Use imperative API for data fetching and mutations
+    const [domain, setDomain] = useState<unknown | null>(null);
+    const [isLoadingDomain, setIsLoadingDomain] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [domainError, setDomainError] = useState<Error | null>(null);
+
+    // Helper function to handle feature creation/updates with imperative API
+    const handleFeatureMutation = useCallback(async (feature: Feature): Promise<number> => {
+        try {
+            if (feature.id > 1000000000) { // Temporary ID - create new
+                const response = await FeatureQueryHooks.createFeature({
+                    requestData: {
+                        name: feature.name,
+                        slug: feature.slug,
+                        description: feature.description,
+                        prerequisites: feature.prerequisites || []
+                    }
+                });
+                return parseInt(response.id);
+            } else { // Existing feature - update
+                await FeatureQueryHooks.updateFeature(feature.id, {
+                    name: feature.name,
+                    slug: feature.slug,
+                    description: feature.description,
+                    prerequisites: feature.prerequisites || []
+                });
+                return feature.id;
+            }
+        } catch (error) {
+            throw error;
+        }
+    }, []);
 
     // Feature management state (separate from form data)
     const [features, setFeatures] = useState<Feature[]>([]);
@@ -186,13 +218,13 @@ export function DomainEdit() {
     useEffect(() => {
         const fetchDomain = async () => {
             if (id === 'new') {
-                setDomain(initialFormData);
                 return;
             }
 
             try {
-                setIsLoading(true);
-                const fetchedDomain = await DomainApi.getDomainById(undefined, { id: parseInt(id) });
+                setIsLoadingDomain(true);
+                setDomainError(null);
+                const fetchedDomain = await DomainQueryHooks.getDomainById(parseInt(id!));
 
                 // Transform the domain data for the form
                 const formDomainData: DomainFormData = {
@@ -206,8 +238,8 @@ export function DomainEdit() {
                     }) || []
                 };
 
-                setDomain(formDomainData);
                 setFormData(formDomainData);
+                setDomain(fetchedDomain);
 
                 // Set separate features state for feature management
                 const domainFeatures = fetchedDomain.features?.map(progression => {
@@ -224,9 +256,11 @@ export function DomainEdit() {
                 // Set feature progressions for display
                 setFeatureProgressions(fetchedDomain.features || []);
             } catch (err) {
-                setError(err instanceof Error ? err.message : 'Failed to fetch domain');
+                const error = err instanceof Error ? err : new Error('Failed to fetch domain');
+                setDomainError(error);
+                setError(error.message);
             } finally {
-                setIsLoading(false);
+                setIsLoadingDomain(false);
             }
         };
 
@@ -244,32 +278,11 @@ export function DomainEdit() {
         }
 
         try {
-            setIsLoading(true);
-
             // First, handle feature creation/updates
             const updatedFeatureProgressions = await Promise.all(
                 features.map(async (feature) => {
-                    let featureId = feature.id;
-
-                    // Check if this is a new feature (temporary ID)
-                    if (featureId > 1000000000) { // Temporary IDs are large numbers
-                        // Create new feature
-                        const createResponse = await FeatureSystemApi.createFeature({
-                            name: feature.name,
-                            slug: feature.slug,
-                            description: feature.description,
-                            prerequisites: feature.prerequisites || []
-                        });
-                        featureId = parseInt(createResponse.id);
-                    } else {
-                        // Update existing feature
-                        await FeatureSystemApi.updateFeature({
-                            name: feature.name,
-                            slug: feature.slug,
-                            description: feature.description,
-                            prerequisites: feature.prerequisites || []
-                        } as UpdateFeatureRequest, { id: featureId });
-                    }
+                    // Use the helper function to handle feature mutations
+                    const featureId = await handleFeatureMutation(feature);
 
                     // Find the corresponding feature progression
                     const progression = featureProgressions.find(p => p.featureId === feature.id);
@@ -296,25 +309,27 @@ export function DomainEdit() {
                 features: validProgressions
             };
 
-            // Create or update domain
-            let createdDomainId: string | null = null;
+            // Create or update domain using imperative API
             if (id === 'new') {
-                const response = await DomainApi.createDomain(domainData as CreateDomainRequest);
+                setIsCreating(true);
+                const response = await DomainQueryHooks.createDomain(domainData as CreateDomainRequest);
                 setMessage('Domain created successfully');
-                createdDomainId = response.id;
+                setTimeout(() => {
+                    navigate(`/domains/${response.id}${fromListParams ? `?${fromListParams}` : ''}`);
+                }, 1000);
             } else {
-                await DomainApi.updateDomain(domainData as UpdateDomainRequest, { id: parseInt(id) });
+                setIsUpdating(true);
+                await DomainQueryHooks.updateDomain(parseInt(id), domainData as UpdateDomainRequest);
                 setMessage('Domain updated successfully');
+                setTimeout(() => {
+                    navigate(`/domains/${id}${fromListParams ? `?${fromListParams}` : ''}`);
+                }, 1000);
             }
-
-            // Navigate back after a short delay
-            setTimeout(() => {
-                navigate(`/domains/${createdDomainId || id}${fromListParams ? `?${fromListParams}` : ''}`);
-            }, 1000);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to save domain');
         } finally {
-            setIsLoading(false);
+            setIsCreating(false);
+            setIsUpdating(false);
         }
     };
 
@@ -322,7 +337,7 @@ export function DomainEdit() {
         navigate(`/domains${fromListParams ? `?${fromListParams}` : ''}`);
     };
 
-    if (isLoading && id !== 'new') {
+    if (isLoadingDomain && id !== 'new') {
         return <div className="p-4">Loading...</div>;
     }
 
@@ -347,7 +362,7 @@ export function DomainEdit() {
             <ValidatedForm
                 onSubmit={handleSubmit}
                 validationState={form.validation.validationState}
-                isLoading={isLoading}
+                isLoading={isCreating || isUpdating}
                 formData={formData}
                 setFormData={setFormData}
                 validation={form.validation}
@@ -421,7 +436,7 @@ export function DomainEdit() {
                         <div>
                             <CustomSelect
                                 label="Edition"
-                                options={EDITION_LIST_FULL}
+                                options={EDITION_LIST}
                                 value={formData.editionId}
                                 onValueChange={(value) => setFormData({ ...formData, editionId: value })}
                                 componentExtraClassName="flex items-center gap-2"
@@ -501,10 +516,10 @@ export function DomainEdit() {
                 <div className="flex gap-2 mt-6">
                     <button
                         type="submit"
-                        disabled={isLoading}
+                        disabled={isCreating || isUpdating}
                         className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
                     >
-                        {isLoading ? 'Saving...' : (id === 'new' ? 'Create Domain' : 'Update Domain')}
+                        {isCreating || isUpdating ? 'Saving...' : (id === 'new' ? 'Create Domain' : 'Update Domain')}
                     </button>
                     <button
                         type="button"

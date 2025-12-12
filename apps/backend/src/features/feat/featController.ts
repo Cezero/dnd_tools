@@ -10,6 +10,7 @@ import {
     FeatQueryResponse,
     GetFeatListResponse,
     Feat,
+    FeatCacheResponse,
 } from '@shared/schema';
 
 import { featService } from './featService.js';
@@ -71,4 +72,12 @@ export async function UpdateFeat(req: ValidatedParamsBodyT<FeatIdParamRequest, U
 export async function DeleteFeat(req: ValidatedParamsT<FeatIdParamRequest>, res: Response) {
     const result = await featService.deleteFeat(req.params);
     res.status(200).json(result);
+}
+
+/**
+ * Fetches all feats for cache (lightweight data).
+ */
+export async function GetFeatCache(req: ValidatedQueryT<FeatQueryRequest, FeatCacheResponse>, res: Response) {
+    const feats = await featService.getFeatCache(req.query);
+    res.json(feats);
 } 

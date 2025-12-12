@@ -3,7 +3,7 @@ import DiceParser from '@3d-dice/dice-parser-interface';
 
 import { DiceBoxService } from '@/components/dice-box/DiceBoxService';
 import type { DiceBoxAdminConfig, UpdateUserDiceConfigRequest, UserDiceConfigOverride } from '@shared/schema';
-import { getSystemNameById } from '@shared/static-data';
+import { getSystemNameById } from '@shared/utils';
 
 import type { DiceResult, DiceBoxConfig, LocalDiceRollResult } from './types';
 

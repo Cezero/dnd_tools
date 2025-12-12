@@ -1,22 +1,12 @@
-import type { CharacterWithAllDetailsResponse } from '@shared/schema';
 import { SKILL_MAP, ABILITY_MAP, GetAbilityModifier, Skill } from '@shared/static-data';
 
-export interface AnalogSkillInfo {
-    skillId: number;
-    skillName: string;
-    abilityId: number;
-    abilityName: string;
-    classLevels: number; // Total levels in classes that grant this skill
-    abilityModifier: number;
-    total: number;
-    grantedByClasses: string[]; // Names of classes that grant this skill
-}
+import type { AnalogSkillState, AnalogSkillInfo } from './types';
 
 export const AnalogSkillService = {
     /**
      * Get all analog skills that the character has access to
      */
-    getCharacterAnalogSkills(character: CharacterWithAllDetailsResponse): AnalogSkillInfo[] {
+    getCharacterAnalogSkills(character: AnalogSkillState): AnalogSkillInfo[] {
         const analogSkills: AnalogSkillInfo[] = [];
 
         // Get all analog skills from the skill map
@@ -29,22 +19,25 @@ export const AnalogSkillService = {
             const skill = SKILL_MAP[skillId];
             if (!skill) continue;
 
-            // Check if any of the character's classes grant this skill
+            // Check if the character's class grants this skill
             const grantedByClasses: string[] = [];
             let totalClassLevels = 0;
 
-            for (const advancement of character.advancements) {
-                if (!advancement.classId) continue;
+            // Check primary class
+            if (character.classId) {
+                const className = this.getClassNameById(character.classId);
+                if (skillId === Skill.WildEmpathy && (className === 'Druid' || className === 'Ranger')) {
+                    grantedByClasses.push(className);
+                    totalClassLevels += character.level;
+                }
+            }
 
-                // Check if this class grants the analog skill
-                // This would typically be done by checking feature progressions
-                // For now, we'll hardcode the Wild Empathy check
-                if (skillId === Skill.WildEmpathy) { // Wild Empathy
-                    const className = this.getClassNameById(advancement.classId);
-                    if (className === 'Druid' || className === 'Ranger') {
-                        grantedByClasses.push(className);
-                        totalClassLevels += advancement.level;
-                    }
+            // Check secondary class for gestalt characters
+            if (character.isGestalt && character.secondaryClassId) {
+                const className = this.getClassNameById(character.secondaryClassId);
+                if (skillId === Skill.WildEmpathy && (className === 'Druid' || className === 'Ranger')) {
+                    grantedByClasses.push(className);
+                    // For gestalt, we don't add levels twice since they're merged
                 }
             }
 
@@ -81,7 +74,7 @@ export const AnalogSkillService = {
     /**
      * Get analog skill info for a specific skill
      */
-    getAnalogSkillInfo(character: CharacterWithAllDetailsResponse, skillId: number): AnalogSkillInfo | null {
+    getAnalogSkillInfo(character: AnalogSkillState, skillId: number): AnalogSkillInfo | null {
         const analogSkills = this.getCharacterAnalogSkills(character);
         return analogSkills.find(skill => skill.skillId === skillId) || null;
     },
@@ -89,29 +82,15 @@ export const AnalogSkillService = {
     /**
      * Get character's ability score for a given ability ID
      */
-    getCharacterAbilityScore(character: CharacterWithAllDetailsResponse, abilityId: number): number {
+    getCharacterAbilityScore(character: AnalogSkillState, abilityId: number): number {
         const abilityScore = character.abilityScores.find(abilityScore => abilityScore.abilityId === abilityId);
         return abilityScore?.value ?? 10; // Default to 10 if not set
     },
 
     /**
-     * Get class name by ID (this would need to be implemented based on your class data structure)
-     */
-    getClassNameById(classId: number): string {
-        // This is a simplified implementation
-        // In a real implementation, you'd look this up from your class data
-        const classMap: Record<number, string> = {
-            4: 'Druid',
-            8: 'Ranger',
-            // Add other class mappings as needed
-        };
-        return classMap[classId] || 'Unknown';
-    },
-
-    /**
      * Calculate analog skill total for a specific skill
      */
-    calculateAnalogSkillTotal(character: CharacterWithAllDetailsResponse, skillId: number): number | null {
+    calculateAnalogSkillTotal(character: AnalogSkillState, skillId: number): number | null {
         const analogSkillInfo = this.getAnalogSkillInfo(character, skillId);
         return analogSkillInfo ? analogSkillInfo.total : null;
     },

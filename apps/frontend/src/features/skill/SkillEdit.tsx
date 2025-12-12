@@ -11,7 +11,7 @@ import {
 } from '@/components/forms';
 import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
-import { SkillApi } from '@/features/skill/SkillApi';
+import { SkillQueryHooks } from '@/services/query/SkillQueryHooks';
 import { CreateSkillSchema, UpdateSkillSchema } from '@shared/schema';
 import { ABILITY_LIST, SKILL_RETRY_TYPE_MAP } from '@shared/static-data';
 
@@ -25,11 +25,16 @@ export function SkillEdit() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation();
-    const [skill, setSkill] = useState<SkillFormData | null>(null);
     const [message, setMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
     const fromListParams = location.state?.fromListParams || '';
+
+    // Use imperative API for data fetching and mutations
+    const [skill, setSkill] = useState<unknown | null>(null);
+    const [isLoadingSkill, setIsLoadingSkill] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [skillError, setSkillError] = useState<Error | null>(null);
 
     // Determine which schema to use based on whether we're creating or editing
     const schema = id === 'new' ? CreateSkillSchema : UpdateSkillSchema;
@@ -67,27 +72,30 @@ export function SkillEdit() {
         }
     );
 
+    // Load skill data with imperative API
     useEffect(() => {
         const fetchSkill = async () => {
             if (id === 'new') {
-                setSkill(initialFormData);
                 return;
             }
 
             try {
-                setIsLoading(true);
-                const fetchedSkill = await SkillApi.getSkillById(undefined, { id: parseInt(id) });
+                setIsLoadingSkill(true);
+                setSkillError(null);
+                const fetchedSkill = await SkillQueryHooks.getSkillById(parseInt(id!));
                 setSkill(fetchedSkill);
                 setFormData(fetchedSkill);
             } catch (err) {
-                setError(err instanceof Error ? err.message : 'Failed to fetch skill');
+                const error = err instanceof Error ? err : new Error('Failed to fetch skill');
+                setSkillError(error);
+                setError(error.message);
             } finally {
-                setIsLoading(false);
+                setIsLoadingSkill(false);
             }
         };
 
         fetchSkill();
-    }, [id, initialFormData]);
+    }, [id]);
 
     const HandleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -100,25 +108,31 @@ export function SkillEdit() {
         }
 
         try {
-            setIsLoading(true);
             if (id === 'new') {
-                const newSkill = await SkillApi.createSkill(formData as z.infer<typeof CreateSkillSchema>);
+                setIsCreating(true);
+                const newSkill = await SkillQueryHooks.createSkill(formData as z.infer<typeof CreateSkillSchema>);
                 setMessage('Skill created successfully!');
                 setTimeout(() => navigate(`/skills/${newSkill.id}`, { state: { fromListParams: fromListParams, refresh: true } }), 1500);
             } else {
-                await SkillApi.updateSkill(formData as z.infer<typeof UpdateSkillSchema>, { id: parseInt(id) });
+                setIsUpdating(true);
+                await SkillQueryHooks.updateSkill(parseInt(id), formData as z.infer<typeof UpdateSkillSchema>);
                 setMessage('Skill updated successfully!');
                 navigate(`/skills/${id}`, { state: { fromListParams: fromListParams, refresh: true } });
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to save skill');
         } finally {
-            setIsLoading(false);
+            setIsCreating(false);
+            setIsUpdating(false);
         }
     };
 
-    if (isLoading && !skill) {
+    if (isLoadingSkill && id !== 'new') {
         return <div className="flex justify-center items-center h-64">Loading...</div>;
+    }
+
+    if (skillError) {
+        return <div className="p-4 text-red-600">Error loading skill: {skillError.message}</div>;
     }
 
     if (error && !skill) {
@@ -162,7 +176,7 @@ export function SkillEdit() {
             <ValidatedForm
                 onSubmit={HandleSubmit}
                 validationState={form.validation.validationState}
-                isLoading={isLoading}
+                isLoading={isCreating || isUpdating}
                 formData={formData}
                 setFormData={setFormData}
                 validation={form.validation}
@@ -311,16 +325,16 @@ export function SkillEdit() {
                         type="button"
                         onClick={() => navigate(`/skills${fromListParams ? `?${fromListParams}` : ''}`)}
                         className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                        disabled={isLoading}
+                        disabled={isCreating || isUpdating}
                     >
                         Cancel
                     </button>
                     <button
                         type="submit"
                         className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isLoading || form.validation.validationState.hasErrors}
+                        disabled={isCreating || isUpdating || form.validation.validationState.hasErrors}
                     >
-                        {isLoading ? 'Saving...' : id === 'new' ? 'Create Skill' : 'Update Skill'}
+                        {isCreating || isUpdating ? 'Saving...' : id === 'new' ? 'Create Skill' : 'Update Skill'}
                     </button>
                 </div>
             </ValidatedForm>

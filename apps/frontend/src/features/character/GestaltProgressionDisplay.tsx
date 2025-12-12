@@ -2,14 +2,9 @@ import React from 'react';
 
 import { generateClassProgression } from '@/lib/ClassProgression';
 import { ClassProgressionTable } from '@/lib/ClassProgressionTable';
-import { DnDClass } from '@shared/schema';
-import { ProgressionType } from '@shared/static-data';
+import { ProgressionType, RPG_DICE } from '@shared/static-data';
 
-interface GestaltProgressionDisplayProps {
-    primaryClass: DnDClass;
-    secondaryClass: DnDClass;
-    showHeader?: boolean;
-}
+import type { GestaltProgressionDisplayProps } from './types';
 
 export function GestaltProgressionDisplay({
     primaryClass,
@@ -56,7 +51,7 @@ export function GestaltProgressionDisplay({
                 />
 
                 {/* Spellcasting Note for Gestalt */}
-                {(primaryClass.spellcastingProgression || secondaryClass.spellcastingProgression) && (
+                {(primaryClass.spellcastingProgression.length > 0 || secondaryClass.spellcastingProgression.length > 0) && (
                     <div className="mt-4 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-md">
                         <h5 className="font-semibold text-sm text-purple-700 dark:text-purple-300 mb-2">
                             Gestalt Spellcasting
@@ -64,7 +59,7 @@ export function GestaltProgressionDisplay({
                         <p className="text-xs text-purple-600 dark:text-purple-400">
                             <strong>Note:</strong> Gestalt characters with spellcasting classes get spells from both classes.
                             The progression table above shows {primaryClass.name} spells.
-                            {secondaryClass.spellcastingProgression && ` You also gain ${secondaryClass.name} spells.`}
+                            {secondaryClass.spellcastingProgression.length > 0 && ` You also gain ${secondaryClass.name} spells.`}
                         </p>
                     </div>
                 )}
@@ -75,19 +70,19 @@ export function GestaltProgressionDisplay({
                 <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
                     <h5 className="font-semibold text-sm mb-2">Primary Class: {primaryClass.name}</h5>
                     <p className="text-xs text-gray-600 dark:text-gray-400">
-                        Hit Die: d{primaryClass.hitDie}<br />
+                        Hit Die: {RPG_DICE[primaryClass.hitDie]?.name}<br />
                         BAB: {primaryClass.babProgression === ProgressionType.good ? 'Good' : primaryClass.babProgression === ProgressionType.average ? 'Medium' : 'Poor'}<br />
                         Saves: {primaryClass.fortProgression === ProgressionType.good ? 'Good' : 'Poor'} Fort, {primaryClass.refProgression === ProgressionType.good ? 'Good' : 'Poor'} Ref, {primaryClass.willProgression === ProgressionType.good ? 'Good' : 'Poor'} Will<br />
-                        {primaryClass.spellcastingProgression && <span className="text-purple-600 dark:text-purple-400">Spellcaster: Yes</span>}
+                        {primaryClass.spellcastingProgression.length > 0 && <span className="text-purple-600 dark:text-purple-400">Spellcaster: Yes</span>}
                     </p>
                 </div>
                 <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
                     <h5 className="font-semibold text-sm mb-2">Secondary Class: {secondaryClass.name}</h5>
                     <p className="text-xs text-gray-600 dark:text-gray-400">
-                        Hit Die: d{secondaryClass.hitDie}<br />
+                        Hit Die: {RPG_DICE[secondaryClass.hitDie]?.name}<br />
                         BAB: {secondaryClass.babProgression === ProgressionType.good ? 'Good' : secondaryClass.babProgression === ProgressionType.average ? 'Medium' : 'Poor'}<br />
                         Saves: {secondaryClass.fortProgression === ProgressionType.good ? 'Good' : 'Poor'} Fort, {secondaryClass.refProgression === ProgressionType.good ? 'Good' : 'Poor'} Ref, {secondaryClass.willProgression === ProgressionType.good ? 'Good' : 'Poor'} Will<br />
-                        {secondaryClass.spellcastingProgression && <span className="text-purple-600 dark:text-purple-400">Spellcaster: Yes</span>}
+                        {secondaryClass.spellcastingProgression.length > 0 && <span className="text-purple-600 dark:text-purple-400">Spellcaster: Yes</span>}
                     </p>
                 </div>
             </div>

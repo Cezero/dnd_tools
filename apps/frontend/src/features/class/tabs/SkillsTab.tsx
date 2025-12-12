@@ -5,8 +5,8 @@ import { getAppliesToSubIdSelectOptions } from '@/components/feature-system/Feat
 import { CustomNestedContextSelect, type NestedSelectOption } from '@/components/forms';
 import { renderCellValue } from '@/components/generic-list/columnUtils';
 import { ClassSkillService } from '@/features/class/ClassSkillService';
-import { SkillApi } from '@/features/skill/SkillApi';
 import { NumericIdMapping } from '@/lib/numeric-id-mapping';
+import { SkillQueryHooks } from '@/services/query/SkillQueryHooks';
 import type { GetSkillResponse, FeatureProgression } from '@shared/schema';
 import {
     SKILL_MAP,
@@ -14,6 +14,7 @@ import {
     ABILITY_MAP,
     SpecialFeatureId,
     EntityAppliesToType,
+    type SkillDetail,
 } from '@shared/static-data';
 
 import type { ClassTabProps } from './types';
@@ -32,56 +33,34 @@ export function SkillsTab({
     const [skillDetails, setSkillDetails] = useState<Record<number, GetSkillResponse>>({});
     const [loadingSkills, setLoadingSkills] = useState<Set<number>>(new Set());
 
-    // Load skill details for class skills
+    // Get class skills to determine which skills need to be loaded
+    const classSkills = ClassSkillService.getClassSkills(featureProgressions as FeatureProgression[]);
+
+    // Get all skills and filter for the ones we need
+    const { data: allSkills, isLoading: isLoadingAllSkills } = SkillQueryHooks.useGetSkills({});
+
+    // Update skill details when all skills are loaded
     useEffect(() => {
-        const classSkills = ClassSkillService.getClassSkills(featureProgressions as FeatureProgression[]);
+        if (allSkills?.results) {
+            const newSkillDetails: Record<number, GetSkillResponse> = {};
 
-        // Use functional updates to avoid dependency issues
-        setSkillDetails(prevSkillDetails => {
-            setLoadingSkills(prevLoadingSkills => {
-                const skillsToLoad = classSkills.filter(skillId =>
-                    !prevSkillDetails[skillId] && !prevLoadingSkills.has(skillId)
-                );
-
-                if (skillsToLoad.length > 0) {
-                    const newLoadingSkills = new Set([...prevLoadingSkills, ...skillsToLoad]);
-
-                    Promise.all(
-                        skillsToLoad.map(async (skillId) => {
-                            try {
-                                const skill = await SkillApi.getSkillById(undefined, { id: skillId });
-                                return { skillId, skill };
-                            } catch (error) {
-                                console.error(`Failed to load skill ${skillId}:`, error);
-                                return { skillId, skill: null };
-                            }
-                        })
-                    ).then((results) => {
-                        setSkillDetails(prev => {
-                            const newSkillDetails = { ...prev };
-                            results.forEach(({ skillId, skill }) => {
-                                if (skill) {
-                                    newSkillDetails[skillId] = skill;
-                                }
-                            });
-                            return newSkillDetails;
-                        });
-                        setLoadingSkills(prev => {
-                            const newSet = new Set(prev);
-                            skillsToLoad.forEach(id => newSet.delete(id));
-                            return newSet;
-                        });
-                    });
-
-                    return newLoadingSkills;
+            classSkills.forEach(skillId => {
+                const skill = allSkills.results.find(s => s.id === skillId);
+                if (skill) {
+                    newSkillDetails[skillId] = skill;
                 }
-
-                return prevLoadingSkills;
             });
 
-            return prevSkillDetails;
-        });
-    }, [featureProgressions]);
+            setSkillDetails(prev => ({ ...prev, ...newSkillDetails }));
+        }
+
+        // Set loading state
+        if (isLoadingAllSkills) {
+            setLoadingSkills(new Set(classSkills));
+        } else {
+            setLoadingSkills(new Set());
+        }
+    }, [allSkills, isLoadingAllSkills, classSkills]);
 
     // Helper function to get existing subtypes for a skill
     const getExistingSubtypes = (skillId: number): number[] => {
@@ -112,8 +91,8 @@ export function SkillsTab({
     };
 
     // Create nested select options with proper nested structure
-    const getNestedSkillOptions = (): NestedSelectOption[] => {
-        const options: NestedSelectOption[] = [];
+    const getNestedSkillOptions = (): NestedSelectOption<SkillDetail>[] => {
+        const options: NestedSelectOption<SkillDetail>[] = [];
 
         // Get all skills that aren't fully added yet
         const availableSkills = SKILL_LIST.filter(skill => {
@@ -143,7 +122,7 @@ export function SkillsTab({
             } else {
                 // Skill with subtypes - add as a nested group
                 const availableSubtypes = subtypes.filter(subtype =>
-                    !isSkillSubtypeAdded(skillId, subtype.value)
+                    !isSkillSubtypeAdded(skillId, subtype.id)
                 );
 
                 if (availableSubtypes.length > 0) {
@@ -152,8 +131,8 @@ export function SkillsTab({
                         name: skill.name,
                         disabled: true, // Group header is not selectable
                         children: availableSubtypes.map(subtype => ({
-                            id: NumericIdMapping.getSubtypeId(skillId, subtype.value),
-                            name: subtype.label
+                            id: NumericIdMapping.getSubtypeId(skillId, subtype.id),
+                            name: subtype.name
                         }))
                     });
                 }
@@ -230,12 +209,12 @@ export function SkillsTab({
                             const subtypesA = getAppliesToSubIdSelectOptions(EntityAppliesToType.Skill, a.skillId);
                             const subtypesB = getAppliesToSubIdSelectOptions(EntityAppliesToType.Skill, b.skillId);
 
-                            const subtypeA = subtypesA.find(s => s.value === a.subtypeId);
-                            const subtypeB = subtypesB.find(s => s.value === b.subtypeId);
+                            const subtypeA = subtypesA.find(s => s.id === a.subtypeId);
+                            const subtypeB = subtypesB.find(s => s.id === b.subtypeId);
 
                             if (!subtypeA || !subtypeB) return 0;
 
-                            return subtypeA.label.localeCompare(subtypeB.label);
+                            return subtypeA.name.localeCompare(subtypeB.name);
                         });
 
                     if (classSkillEntries.length > 0) {
@@ -258,9 +237,9 @@ export function SkillsTab({
                                         } else {
                                             // Get subtype name using the utility function
                                             const subtypeOptions = getAppliesToSubIdSelectOptions(EntityAppliesToType.Skill, entry.skillId);
-                                            const subtype = subtypeOptions.find(opt => opt.value === entry.subtypeId);
+                                            const subtype = subtypeOptions.find(opt => opt.id === entry.subtypeId);
                                             if (subtype) {
-                                                skillName += ` (${subtype.label})`;
+                                                skillName += ` (${subtype.name})`;
                                             }
                                         }
                                     }

@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
-import { GenericList } from '@/components/generic-list/GenericList';
+import { GenericList } from '@/components/generic-list';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
-import { DomainApi } from '@/features/domain/DomainApi';
 import { DOMAIN_COLUMNS } from '@/features/domain/DomainColumns';
+import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
 import { DomainSummary } from '@shared/schema';
 
 import { routes } from './DomainConfig';
@@ -18,6 +18,10 @@ export function DomainList(): React.JSX.Element {
     const HandleNewDomainClick = (): void => {
         navigate('/domains/new/edit', { state: { fromListParams: location.search } });
     };
+
+    const dataFetcher = useCallback(async () => {
+        return await DomainQueryHooks.getDomains();
+    }, []);
 
     if (isAuthLoading) {
         return <div className="p-4">Loading...</div>;
@@ -39,10 +43,10 @@ export function DomainList(): React.JSX.Element {
             <GenericList<DomainSummary>
                 storageKey="domains-list"
                 columns={DOMAIN_COLUMNS}
-                serviceFunction={() => DomainApi.getDomains({})}
+                dataFetcher={dataFetcher}
                 itemDesc="domain"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction(DomainApi.deleteDomain)}
+                deleteServiceFunction={createIdDeleteServiceFunction((_, { id }) => DomainQueryHooks.deleteDomain(id))}
             />
         </div>
     );

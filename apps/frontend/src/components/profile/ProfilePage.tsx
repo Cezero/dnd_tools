@@ -9,7 +9,8 @@ import { CustomSelect } from '@/components/forms/FormComponents';
 import { UserProfileApi } from '@/components/profile/UserProfileApi';
 import { ColorPicker } from '@/components/widgets';
 import type { UserProfileResponse, UpdateUserProfileRequest, GetAllDiceConfigsResponse, UpdateUserDiceConfigRequest } from '@shared/schema';
-import { EDITION_LIST, THREE_D_DICE_THEME_LIST, doesThemeIgnoreColor } from '@shared/static-data';
+import { EDITION_LIST, THREE_D_DICE_THEME_LIST } from '@shared/static-data';
+import { doesThemeIgnoreColor } from '@shared/utils';
 
 interface TabConfig {
     id: string;
@@ -68,7 +69,7 @@ export function ProfilePage(): React.JSX.Element {
         try {
             // Use the auth context method instead of calling the service directly
             const success = await UpdateUserProfile(data);
-            
+
             if (success) {
                 // Reload the profile to get the updated data
                 await loadProfile();

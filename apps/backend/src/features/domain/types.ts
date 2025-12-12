@@ -6,6 +6,7 @@ import {
     DomainIdParamRequest,
     CreateResponse,
     UpdateResponse,
+    DomainCacheResponse,
 } from '@shared/schema';
 
 export interface DomainService {
@@ -15,4 +16,5 @@ export interface DomainService {
     createDomain(data: CreateDomainRequest): Promise<CreateResponse>;
     updateDomain(data: UpdateDomainRequest, query: DomainIdParamRequest): Promise<UpdateResponse>;
     deleteDomain(query: DomainIdParamRequest): Promise<UpdateResponse>;
+    getDomainCache(): Promise<DomainCacheResponse>;
 }

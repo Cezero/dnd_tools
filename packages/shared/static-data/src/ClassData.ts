@@ -36,21 +36,6 @@ export const ENTITY_OVERRIDE_TYPES: BaseMap<CoreComponent> = {
 
 export const ENTITY_OVERRIDE_TYPE_LIST = Object.values(ENTITY_OVERRIDE_TYPES);
 
-export function calculateVariantId(baseClassId: number, variantId: number): number {
-    return baseClassId * 100000 + variantId;
-}
-
-export function isVariantId(id: number): boolean {
-    return id >= 100000;
-}
-
-export function extractBaseClassId(variantId: number): number {
-    return Math.floor(variantId / 100000);
-}
-
-export function extractVariantId(customId: number): number {
-    return customId % 100000;
-}
 
 export const ClassType = {
     BASE: 0,

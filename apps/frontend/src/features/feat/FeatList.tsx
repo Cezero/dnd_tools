@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
-import { GenericList } from '@/components/generic-list/GenericList';
+import { GenericList } from '@/components/generic-list';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
-import { FeatApi } from '@/features/feat/FeatApi';
 import { FEAT_COLUMNS } from '@/features/feat/FeatColumns';
+import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { FeatInQueryResponse } from '@shared/schema';
 
 import { routes } from './FeatConfig';
@@ -18,6 +18,10 @@ export function FeatList(): React.JSX.Element {
     const HandleNewFeatClick = (): void => {
         navigate('/feats/new/edit', { state: { fromListParams: location.search } });
     };
+
+    const dataFetcher = useCallback(async () => {
+        return await FeatQueryHooks.getFeats();
+    }, []);
 
     if (isAuthLoading) {
         return <div className="p-4">Loading...</div>;
@@ -39,10 +43,10 @@ export function FeatList(): React.JSX.Element {
             <GenericList<FeatInQueryResponse>
                 storageKey="feats-list"
                 columns={FEAT_COLUMNS}
-                serviceFunction={() => FeatApi.getFeats({})}
+                dataFetcher={dataFetcher}
                 itemDesc="feat"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction(FeatApi.deleteFeat)}
+                deleteServiceFunction={createIdDeleteServiceFunction((_, { id }) => FeatQueryHooks.deleteFeat(id))}
             />
         </div>
     );

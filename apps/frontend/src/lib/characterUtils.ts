@@ -6,6 +6,7 @@ import type {
     GetAllFeatsResponse
 } from '@shared/schema';
 import { FeatPrerequisiteType } from '@shared/static-data';
+import { getBABProgression } from '@shared/utils';
 
 export function meetsPrerequisites(
     feat: Feat,
@@ -84,11 +85,17 @@ export function getCharacterBAB(
     character: CharacterWithAllDetailsResponse,
     selectedClassDetails: DnDClass | null
 ): number {
-    if (!selectedClassDetails || !selectedClassDetails.babProgression) return 0;
+    if (!selectedClassDetails || selectedClassDetails.babProgression === undefined) return 0;
 
     try {
-        // TODO: Fix BAB progression calculation when proper types are available
-        return character.advancements.length;
+        const level = character.advancements.length;
+
+        // Use the existing BAB calculation utility
+        const babString = getBABProgression(level, selectedClassDetails.babProgression);
+
+        // Extract the first BAB value from the string (e.g., "+1" -> 1, "+0" -> 0)
+        const match = babString.match(/\+(\d+)/);
+        return match ? parseInt(match[1], 10) : 0;
     } catch (error) {
         console.warn('Error calculating BAB for class:', selectedClassDetails.name, 'with progression:', selectedClassDetails.babProgression, error);
         return 0;

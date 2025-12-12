@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { z } from 'zod';
 
 import { AxeSword, ArmorVest } from '@/assets/icons';
 import {
@@ -11,7 +10,8 @@ import {
 } from '@/components/forms';
 import { CustomSelect, CustomSelectMulti } from '@/components/forms/FormComponents';
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
-import { CreateItemSchema, UpdateItemSchema, type Weapon, type Armor } from '@shared/schema';
+import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
+import { type Weapon, type Armor, CreateItemRequest, UpdateItemRequest, CreateItemSchema, UpdateItemSchema } from '@shared/schema';
 import {
     WEAPON_CATEGORY_LIST,
     WEAPON_TYPE_LIST,
@@ -20,13 +20,10 @@ import {
     ITEM_TYPE_LIST
 } from '@shared/static-data';
 
-import { ItemApi } from './ItemApi';
 import { formatCostAsCurrency, parseCurrencyInput, parseWeightInput } from './utils';
 
 // Type definitions for the form state
-type CreateItemFormData = z.infer<typeof CreateItemSchema>;
-type UpdateItemFormData = z.infer<typeof UpdateItemSchema>;
-type ItemFormData = Omit<CreateItemFormData | UpdateItemFormData, 'weight' | 'cost'> & {
+type ItemFormData = Omit<CreateItemRequest | UpdateItemRequest, 'weight' | 'cost'> & {
     weight?: string | null; // String for form input
     cost?: string | null; // String for form input
 };
@@ -35,10 +32,15 @@ export function ItemEdit() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation();
-    const [item, setItem] = useState<ItemFormData | null>(null);
     const [message, setMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+
+    // Use imperative API for data fetching and mutations
+    const [item, setItem] = useState<unknown | null>(null);
+    const [isLoadingItem, setIsLoadingItem] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [itemError, setItemError] = useState<Error | null>(null);
     const fromListParams = location.state?.fromListParams || '';
 
     // Multi-select state for weapon damage type
@@ -121,26 +123,26 @@ export function ItemEdit() {
         }));
     };
 
+    // Load item data with imperative API
     useEffect(() => {
         const fetchItem = async () => {
             if (id === 'new') {
-                setItem(initialFormData);
+                setFormData(initialFormData);
                 return;
             }
 
             try {
-                setIsLoading(true);
-                const fetchedItem = await ItemApi.getItemById(undefined, { id: parseInt(id) });
+                setIsLoadingItem(true);
+                setItemError(null);
+                const fetchedItem = await ItemQueryHooks.getItemById(parseInt(id!));
+                setItem(fetchedItem);
 
-                // Convert cost from decimal string to display string
-                // Convert weight from number to string for display
                 const itemWithDisplayCost = {
                     ...fetchedItem,
                     cost: fetchedItem.cost ? formatCostAsCurrency(fetchedItem.cost.toString()) : null,
                     weight: fetchedItem.weight !== null ? fetchedItem.weight.toString() : null
                 };
 
-                setItem(itemWithDisplayCost);
                 setFormData(itemWithDisplayCost);
 
                 // Set toggle states based on existing data
@@ -154,9 +156,11 @@ export function ItemEdit() {
                     setDamageTypeLogic(logic);
                 }
             } catch (err) {
-                setError(err instanceof Error ? err.message : 'Failed to fetch item');
+                const error = err instanceof Error ? err : new Error('Failed to fetch item');
+                setItemError(error);
+                setError(error.message);
             } finally {
-                setIsLoading(false);
+                setIsLoadingItem(false);
             }
         };
 
@@ -205,10 +209,8 @@ export function ItemEdit() {
         }
 
         try {
-            setIsLoading(true);
-
-            // Convert cost from display string to decimal string for API
-            // Convert weight from string to number for API
+            // Prepare data for API submission
+            // The Zod schema will handle the string to Decimal conversion
             let submitData = {
                 ...formData,
                 cost: formData.cost ? parseCurrencyInput(formData.cost) : null,
@@ -224,18 +226,21 @@ export function ItemEdit() {
             }
 
             if (id === 'new') {
-                const newItem = await ItemApi.createItem(submitData as unknown as z.infer<typeof CreateItemSchema>);
+                setIsCreating(true);
+                const newItem = await ItemQueryHooks.createItem(submitData);
                 setMessage('Item created successfully!');
                 setTimeout(() => navigate(`/items/${newItem.id}`, { state: { fromListParams: fromListParams, refresh: true } }), 150);
             } else {
-                await ItemApi.updateItem(submitData as unknown as z.infer<typeof UpdateItemSchema>, { id: parseInt(id) });
+                setIsUpdating(true);
+                await ItemQueryHooks.updateItem(parseInt(id), submitData);
                 setMessage('Item updated successfully!');
                 navigate(`/items/${id}`, { state: { fromListParams: fromListParams, refresh: true } });
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to save item');
         } finally {
-            setIsLoading(false);
+            setIsCreating(false);
+            setIsUpdating(false);
         }
     };
 
@@ -328,7 +333,7 @@ export function ItemEdit() {
         }
     };
 
-    if (isLoading && !item) {
+    if (isLoadingItem && !item) {
         return <div className="flex justify-center items-center h-64">Loading...</div>;
     }
 
@@ -373,7 +378,7 @@ export function ItemEdit() {
             <ValidatedForm
                 onSubmit={HandleSubmit}
                 validationState={form.validation.validationState}
-                isLoading={isLoading}
+                isLoading={isLoadingItem}
                 formData={formData}
                 setFormData={setFormData}
                 validation={form.validation}
@@ -689,16 +694,16 @@ export function ItemEdit() {
                         type="button"
                         onClick={() => navigate(`/items${fromListParams ? `?${fromListParams}` : ''}`)}
                         className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                        disabled={isLoading}
+                        disabled={isLoadingItem}
                     >
                         Cancel
                     </button>
                     <button
                         type="submit"
                         className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isLoading || form.validation.validationState.hasErrors}
+                        disabled={isLoadingItem || form.validation.validationState.hasErrors}
                     >
-                        {isLoading ? 'Saving...' : id === 'new' ? 'Create Item' : 'Update Item'}
+                        {isLoadingItem ? 'Saving...' : id === 'new' ? 'Create Item' : 'Update Item'}
                     </button>
                 </div>
             </ValidatedForm>

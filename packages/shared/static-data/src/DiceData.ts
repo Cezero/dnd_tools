@@ -77,25 +77,3 @@ export const THREE_D_DICE_THEME_LIST = Object.values(THREE_D_DICE_THEMES);
 // Theme names array for API responses and dropdowns
 export const THREE_D_DICE_THEME_NAMES: string[] = Object.values(THREE_D_DICE_THEMES).map(theme => theme.systemName);
 
-// Helper functions for theme data
-export function getDiceThemeBySystemName(systemName: string) {
-    return Object.values(THREE_D_DICE_THEMES).find(theme => theme.systemName === systemName);
-}
-
-export function getDiceThemeById(id: number) {
-    return Object.values(THREE_D_DICE_THEMES).find(theme => theme.id === id);
-}
-
-export function getSystemNameById(id: number): string | undefined {
-    const theme = getDiceThemeById(id);
-    return theme?.systemName;
-}
-
-export function isDiceThemeValid(systemName: string): boolean {
-    return THREE_D_DICE_THEME_NAMES.includes(systemName);
-}
-
-export function doesThemeIgnoreColor(systemName: string): boolean {
-    const theme = getDiceThemeBySystemName(systemName);
-    return theme?.ignoresThemeColor ?? false;
-} 

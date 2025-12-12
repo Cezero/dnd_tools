@@ -25,7 +25,9 @@ export async function preloadTablesFromMarkdown(props: MarkdownComponentProps): 
         return existingPromise;
     }
 
-    const matches = [...props.markdown.matchAll(TABLE_REGEX)];
+    // Handle null/undefined markdown content
+    const markdownContent = props.markdown || '';
+    const matches = [...markdownContent.matchAll(TABLE_REGEX)];
     const slugs = Array.from(new Set(matches.map(m => m[1])));
 
     if (!slugs.length) {

@@ -26,8 +26,8 @@ import {
 export const FeatureSystemApi = {
     // Core feature CRUD (admin only)
     getFeatures: typedApi<typeof FeatureQuerySchema, typeof GetAllFeaturesResponseSchema>({
-        path: '/features',
-        method: 'GET',
+        path: '/features/query',
+        method: 'POST',
         requestSchema: FeatureQuerySchema,
         responseSchema: GetAllFeaturesResponseSchema,
     }),
@@ -88,7 +88,7 @@ export const FeatureSystemApi = {
     // Lightweight feature list for dropdown selections
     getFeatureList: typedApi<typeof FeatureQuerySchema, typeof GetFeatureListResponseSchema>({
         path: '/features/list',
-        method: 'GET',
+        method: 'POST',
         requestSchema: FeatureQuerySchema,
         responseSchema: GetFeatureListResponseSchema,
     }),

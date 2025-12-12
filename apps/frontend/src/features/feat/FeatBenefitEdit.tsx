@@ -10,7 +10,7 @@ import {
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { FeatOptions } from '@/features/feat/FeatUtil';
 import { FeatBenefitMapSchema } from '@shared/schema';
-import { FEAT_BENEFIT_TYPE_BY_ID, FEAT_BENEFIT_TYPE_LIST, FeatBenefitType } from '@shared/static-data';
+import { FEAT_BENEFIT_TYPE_BY_ID, FEAT_BENEFIT_TYPE_LIST, FeatBenefitType, FEAT_BENEFIT_TYPES } from '@shared/static-data';
 
 type FeatBenefitFormData = z.infer<typeof FeatBenefitMapSchema>;
 
@@ -116,13 +116,13 @@ export function FeatBenefitEdit({ isOpen, onClose, onSave, initialBenefitData, f
                                         value={formData.typeId}
                                         componentExtraClassName='flex items-center gap-2'
                                         labelExtraClassName='w-32'
-                                        itemTextExtraClassName='w-20'
+                                        itemTextExtraClassName='w-32'
                                         onValueChange={(value) => setFormData(prev => ({ ...prev, typeId: value as number | null }))}
                                         options={FEAT_BENEFIT_TYPE_LIST}
                                     />
                                 </div>
 
-                                {formData.typeId && (
+                                {formData.typeId && FEAT_BENEFIT_TYPES[formData.typeId].hasSubId && (
                                     <div className="flex flex-col">
                                         <CustomSelect
                                             label={`${FEAT_BENEFIT_TYPE_BY_ID[formData.typeId]} Reference`}

@@ -4,9 +4,9 @@ import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/
 import { CheckIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { ChevronDoubleUpIcon, ChevronDoubleDownIcon, FunnelIcon as FunnelIconSolid } from '@heroicons/react/24/solid';
 import { flexRender, type Header, type Column } from '@tanstack/react-table';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
-import { FilterType } from '@shared/static-data';
+import { FilterType, CoreComponent } from '@shared/static-data';
 
 import { FilterSubmenu } from './FilterSubmenu';
 import { formatFilterTooltip } from './filterTooltipUtils';
@@ -43,11 +43,38 @@ export const ColumnHeaderContextMenu: React.FC<ColumnHeaderContextMenuProps> = (
     const [isRestoreHiddenSubmenuOpen, setIsRestoreHiddenSubmenuOpen] = useState(false);
     const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
     const [isProgrammaticallyOpened, setIsProgrammaticallyOpened] = useState(false);
+    const [resolvedOptions, setResolvedOptions] = useState<CoreComponent[]>([]);
     const submenuTriggerRef = useRef<HTMLDivElement>(null);
     const restoreHiddenSubmenuTriggerRef = useRef<HTMLDivElement>(null);
 
     // Get hidden columns
     const hiddenColumns = allColumns.filter(col => !col.getIsVisible());
+
+    // Resolve async options for filter tooltip
+    useEffect(() => {
+        const resolveOptions = async () => {
+            const columnMeta = header.column.columnDef.meta as FilterConfig;
+            if (columnMeta?.options && typeof columnMeta.options === 'function') {
+                try {
+                    const result = columnMeta.options(columnFilters || []);
+                    if (result instanceof Promise) {
+                        const resolved = await result;
+                        setResolvedOptions(resolved);
+                    } else {
+                        setResolvedOptions(result);
+                    }
+                } catch (error) {
+                    console.warn('Failed to resolve filter options:', error);
+                    setResolvedOptions([]);
+                }
+            } else if (Array.isArray(columnMeta?.options)) {
+                setResolvedOptions(columnMeta.options);
+            } else {
+                setResolvedOptions([]);
+            }
+        };
+        resolveOptions();
+    }, [header.column.columnDef.meta, columnFilters]);
 
     const handleFilterIconClick = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -130,7 +157,7 @@ export const ColumnHeaderContextMenu: React.FC<ColumnHeaderContextMenuProps> = (
                                     <Tooltip.Popup className="px-2 py-1 text-xs text-white bg-gray-900 dark:bg-gray-700 rounded shadow-lg">
                                         {formatFilterTooltip(
                                             columnFilters.find(f => f.id === header.id),
-                                            header.column.columnDef.meta as FilterConfig,
+                                            { ...(header.column.columnDef.meta as FilterConfig), options: resolvedOptions },
                                             columnFilters
                                         )}
                                     </Tooltip.Popup>

@@ -1,157 +1,219 @@
 import {
-    UserIcon, ShieldCheckIcon, AcademicCapIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, CogIcon
+    UserIcon, ShieldCheckIcon, AcademicCapIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, CogIcon, ListBulletIcon
 } from '@heroicons/react/24/outline';
+import { useQueryClient } from '@tanstack/react-query';
 import React, { useState, useEffect } from 'react';
 
 import { useAuthAuto } from '@/components/auth';
-import { RaceApi } from '@/features/race/RaceApi';
-import type { Race, RaceSummary, DnDClass, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse } from '@shared/schema';
+import { useCharacterEditState } from '@/features/character';
+import { CharacterEditStateUpdateType } from '@/features/character/types';
+import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
+import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
+import type { Race, DnDClass } from '@shared/schema';
+import { EditionId } from '@shared/static-data';
 
-import {
-    AbilitiesRaceTab, ClassTab, SkillsTab, FeatsTab, DescriptionTab, EquipmentTab, ConfigurationTab
-} from './tabs'; // Using barrel export
-
-interface TabConfig {
-    id: string;
-    label: string;
-    icon: React.ComponentType<{ className?: string }>;
-    component: React.ComponentType<{
-        character: CharacterWithAllDetailsResponse;
-        onUpdate: (data: Partial<CharacterWithAllDetailsResponse>) => void;
-        races?: RaceSummary[];
-        selectedRaceDetails?: Race | null;
-        selectedClassDetails?: DnDClass | null;
-        onClassDetailsChange?: (classDetails: DnDClass | null) => void;
-        targetAdvancement?: CharacterAdvancementWithDetailsResponse;
-        onAdvancementUpdate?: (advancement: CharacterAdvancementWithDetailsResponse) => void;
-    }>;
-}
+import { AbilitiesRaceTab, ChoicesTab, ClassTab, ConfigurationTab, DescriptionTab, EquipmentTab, FeatsTab, SkillsTab } from './tabs';
+import type { TabConfig, TabComponentProps } from './types';
+import { useFeatureProgressionPool } from './useFeatureProgressionPool';
 
 export function CharacterEdit(): React.JSX.Element {
-    const { user } = useAuthAuto();
+    const { user, isLoading: isAuthLoading } = useAuthAuto();
+    const { state, updateState } = useCharacterEditState();
+    const { isResolving, resolutionError, resolvedData, addRace, addClass, addSecondaryClass, triggerResolution, handleChoiceSelection } = useFeatureProgressionPool();
+    const queryClient = useQueryClient();
     const [activeTab, setActiveTab] = useState<string>('abilities-race');
 
+    // Use imperative API for data fetching
+    const [racesData, setRacesData] = useState<unknown[]>([]);
+    const [isLoadingRaces, setIsLoadingRaces] = useState(false);
+
     // Race data state
-    const [races, setRaces] = useState<RaceSummary[]>([]);
-    const [selectedRaceDetails, setSelectedRaceDetails] = useState<Race | null>(null);
-    const [_isLoadingRaces, setIsLoadingRaces] = useState(true);
+    const [_selectedRaceDetails, setSelectedRaceDetails] = useState<(Race & { id: number }) | null>(null);
 
     // Class data state
-    const [selectedClassDetails, setSelectedClassDetails] = useState<DnDClass | null>(null);
+    const [_selectedClassDetails, setSelectedClassDetails] = useState<(DnDClass & { id: number }) | null>(null);
+    const [_selectedSecondaryClassDetails, setSelectedSecondaryClassDetails] = useState<(DnDClass & { id: number }) | null>(null);
 
-    const [character, setCharacter] = useState<CharacterWithAllDetailsResponse>({
-        id: 0,
-        userId: 0,
-        name: '',
-        raceId: 0,
-        alignmentId: 0,
-        age: null,
-        height: null,
-        weight: null,
-        eyes: null,
-        hair: null,
-        gender: null,
-        notes: null,
-        xp: 0,
-        race: {
-            id: 0,
-            name: ''
-        },
-        abilityScores: [],
-        advancements: [
-            {
-                id: 0,
-                characterId: 0,
-                level: 1,
-                version: 1,
-                classId: 0,
-                secondaryClassId: null,
-                hitPoints: 0,
-                abilityId: null,
-                notes: null,
-                createdAt: new Date(),
-                skills: [],
-                feats: [],
-                spellsKnown: [],
-                featureChoices: []
+    // Initialize from user preferences
+    useEffect(() => {
+        if (!isAuthLoading && user) {
+            const userPreferredEdition = (user as { preferredEditionId?: number | null })?.preferredEditionId;
+            if (userPreferredEdition) {
+                updateState({ type: CharacterEditStateUpdateType.SET_EDITION, payload: { editionId: userPreferredEdition } });
+            } else {
+                updateState({ type: CharacterEditStateUpdateType.SET_EDITION, payload: { editionId: EditionId.DND_3x } });
             }
-        ],
-        preparedSpells: [],
-        // NEW: Character configuration fields
-        editionId: null,
-        allowVariantClasses: false,
-        isGestalt: false,
-        ignoreLevelAdjustment: false,
-        disallowedSources: []
-    });
+        }
+    }, [user, isAuthLoading, updateState]);
 
-    // Fetch races on component mount
+    // Use imperative API for race, class, and secondary class details
+    const [raceDetailsData, setRaceDetailsData] = useState<unknown | null>(null);
+    const [classDetailsData, setClassDetailsData] = useState<unknown | null>(null);
+    const [secondaryClassDetailsData, setSecondaryClassDetailsData] = useState<unknown | null>(null);
+    const [isLoadingRace, setIsLoadingRace] = useState(false);
+    const [isLoadingClass, setIsLoadingClass] = useState(false);
+    const [isLoadingSecondaryClass, setIsLoadingSecondaryClass] = useState(false);
+
+    // TODO: Add domain queries back when we implement domain choice handling
+    // For now, we'll skip domain queries to avoid the 404 errors
+
+    // Fetch races data on component mount
     useEffect(() => {
         const fetchRaces = async () => {
             try {
                 setIsLoadingRaces(true);
-                const response = await RaceApi.getRaces({});
-                setRaces(response.results);
+                const races = await RaceQueryHooks.getRaces({});
+                setRacesData(races.results || []);
             } catch (error) {
                 console.error('Failed to fetch races:', error);
             } finally {
                 setIsLoadingRaces(false);
             }
         };
-
         fetchRaces();
     }, []);
 
-    // Fetch race details when race is selected
+    // Fetch race details when raceId changes
     useEffect(() => {
         const fetchRaceDetails = async () => {
-            if (!character.raceId) {
+            if (!state.raceId) {
+                setRaceDetailsData(null);
                 setSelectedRaceDetails(null);
                 return;
             }
 
             try {
-                const raceDetails = await RaceApi.getRaceById(undefined, { id: character.raceId });
-                setSelectedRaceDetails(raceDetails);
-
-                // Update race name in character
-                if (raceDetails) {
-                    setCharacter(prev => ({
-                        ...prev,
-                        race: {
-                            id: character.raceId,
-                            name: raceDetails.name
-                        }
-                    }));
-                }
+                setIsLoadingRace(true);
+                // Use queryClient.fetchQuery to leverage TanStack Query cache
+                const raceData = await queryClient.fetchQuery({
+                    queryKey: RaceQueryHooks.getRaceByIdQueryKey(state.raceId),
+                    queryFn: () => RaceQueryHooks.getRaceByIdQueryFn({ pathParams: { id: state.raceId } }),
+                    staleTime: 5 * 60 * 1000, // 5 minutes
+                    gcTime: 10 * 60 * 1000, // 10 minutes
+                });
+                setRaceDetailsData(raceData);
+                setSelectedRaceDetails({ ...raceData, id: state.raceId });
             } catch (error) {
                 console.error('Failed to fetch race details:', error);
+                setRaceDetailsData(null);
                 setSelectedRaceDetails(null);
+            } finally {
+                setIsLoadingRace(false);
             }
         };
-
         fetchRaceDetails();
-    }, [character.raceId]);
+    }, [state.raceId, queryClient]);
 
-    const handleUpdate = (data: Partial<CharacterWithAllDetailsResponse>) => {
-        setCharacter(prev => ({ ...prev, ...data }));
-    };
+    // Fetch class details when classId changes
+    useEffect(() => {
+        const fetchClassDetails = async () => {
+            if (!state.classId) {
+                setClassDetailsData(null);
+                setSelectedClassDetails(null);
+                return;
+            }
 
-    const handleClassDetailsChange = (classDetails: DnDClass | null) => {
+            try {
+                setIsLoadingClass(true);
+                // Use queryClient.fetchQuery to leverage TanStack Query cache
+                const classData = await queryClient.fetchQuery({
+                    queryKey: ClassQueryHooks.getClassByIdQueryKey(state.classId),
+                    queryFn: () => ClassQueryHooks.getClassByIdQueryFn({ pathParams: { id: state.classId } }),
+                    staleTime: 5 * 60 * 1000, // 5 minutes
+                    gcTime: 10 * 60 * 1000, // 10 minutes
+                });
+                setClassDetailsData(classData);
+                setSelectedClassDetails({ ...classData, id: state.classId });
+            } catch (error) {
+                console.error('Failed to fetch class details:', error);
+                setClassDetailsData(null);
+                setSelectedClassDetails(null);
+            } finally {
+                setIsLoadingClass(false);
+            }
+        };
+        fetchClassDetails();
+    }, [state.classId, queryClient]);
+
+    // Fetch secondary class details when secondaryClassId changes
+    useEffect(() => {
+        const fetchSecondaryClassDetails = async () => {
+            if (!state.secondaryClassId) {
+                setSecondaryClassDetailsData(null);
+                setSelectedSecondaryClassDetails(null);
+                return;
+            }
+
+            try {
+                setIsLoadingSecondaryClass(true);
+                // Use queryClient.fetchQuery to leverage TanStack Query cache
+                const classData = await queryClient.fetchQuery({
+                    queryKey: ClassQueryHooks.getClassByIdQueryKey(state.secondaryClassId),
+                    queryFn: () => ClassQueryHooks.getClassByIdQueryFn({ pathParams: { id: state.secondaryClassId } }),
+                    staleTime: 5 * 60 * 1000, // 5 minutes
+                    gcTime: 10 * 60 * 1000, // 10 minutes
+                });
+                setSecondaryClassDetailsData(classData);
+                setSelectedSecondaryClassDetails({ ...classData, id: state.secondaryClassId });
+            } catch (error) {
+                console.error('Failed to fetch secondary class details:', error);
+                setSecondaryClassDetailsData(null);
+                setSelectedSecondaryClassDetails(null);
+            } finally {
+                setIsLoadingSecondaryClass(false);
+            }
+        };
+        fetchSecondaryClassDetails();
+    }, [state.secondaryClassId, queryClient]);
+
+    // Manage race progressions in the pool
+    useEffect(() => {
+        if (raceDetailsData && state.raceId) {
+            console.log(`Adding race ${state.raceId} to pool`);
+            addRace(state.raceId, raceDetailsData.features || []);
+        }
+    }, [raceDetailsData, state.raceId, addRace]);
+
+    // Manage class progressions in the pool
+    useEffect(() => {
+        if (classDetailsData && state.classId) {
+            console.log(`Adding class ${state.classId} to pool`);
+            addClass(state.classId, classDetailsData.features || []);
+        }
+    }, [classDetailsData, state.classId, addClass]);
+
+    // Manage secondary class progressions in the pool
+    useEffect(() => {
+        if (secondaryClassDetailsData && state.secondaryClassId) {
+            console.log(`Adding secondary class ${state.secondaryClassId} to pool`);
+            addSecondaryClass(state.secondaryClassId, secondaryClassDetailsData.features || []);
+        }
+    }, [secondaryClassDetailsData, state.secondaryClassId, addSecondaryClass]);
+
+    // TODO: Add domain management back when we implement domain choice handling
+
+    const _handleClassDetailsChange = (classDetails: (DnDClass & { id: number }) | null) => {
         setSelectedClassDetails(classDetails);
     };
 
+    const _handleSecondaryClassDetailsChange = (classDetails: (DnDClass & { id: number }) | null) => {
+        setSelectedSecondaryClassDetails(classDetails);
+    };
+
+    // Tab configuration
     const tabs: TabConfig[] = [
         { id: 'abilities-race', label: 'Abilities & Race', icon: UserIcon, component: AbilitiesRaceTab },
         { id: 'class', label: 'Class', icon: AcademicCapIcon, component: ClassTab },
         { id: 'skills', label: 'Skills', icon: ShieldCheckIcon, component: SkillsTab },
         { id: 'feats', label: 'Feats', icon: SparklesIcon, component: FeatsTab },
+        { id: 'choices', label: 'Choices', icon: ListBulletIcon, component: ChoicesTab },
         { id: 'description', label: 'Description', icon: DocumentTextIcon, component: DescriptionTab },
         { id: 'equipment', label: 'Equipment', icon: BriefcaseIcon, component: EquipmentTab },
         { id: 'configuration', label: 'Configuration', icon: CogIcon, component: ConfigurationTab }
     ];
 
-    const CurrentTabComponent = tabs.find(tab => tab.id === activeTab)?.component;
+    const currentTab = tabs.find(tab => tab.id === activeTab);
+    const CurrentTabComponent = currentTab?.component;
 
     if (!user) {
         return (
@@ -165,8 +227,17 @@ export function CharacterEdit(): React.JSX.Element {
         );
     }
 
-    return (
+    // Create tab props for the new centralized system
+    const tabProps: TabComponentProps = {
+        state,
+        updateState,
+        resolvedData,
+        isLoading: isResolving,
+        triggerFeatureResolution: triggerResolution,
+        handleChoiceSelection
+    };
 
+    return (
         <div className="max-w-7xl mx-auto py-6">
             <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg">
                 {/* Tab Navigation */}
@@ -191,26 +262,29 @@ export function CharacterEdit(): React.JSX.Element {
                     </nav>
                 </div>
 
+                {/* Feature Resolution Status */}
+                {isResolving && (
+                    <div className="px-6 py-2 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800">
+                        <div className="text-sm text-blue-700 dark:text-blue-300">
+                            Resolving features...
+                        </div>
+                    </div>
+                )}
+                {resolutionError && (
+                    <div className="px-6 py-2 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
+                        <div className="text-sm text-red-700 dark:text-red-300">
+                            Resolution error: {resolutionError}
+                        </div>
+                    </div>
+                )}
+
                 {/* Tab Content */}
                 <div className="bg-white dark:bg-gray-800">
                     {CurrentTabComponent && (
-                        <CurrentTabComponent
-                            character={character}
-                            onUpdate={handleUpdate}
-                            races={races}
-                            selectedRaceDetails={selectedRaceDetails}
-                            selectedClassDetails={selectedClassDetails}
-                            onClassDetailsChange={handleClassDetailsChange}
-                            targetAdvancement={character.advancements[0]}
-                            onAdvancementUpdate={(updatedAdvancement) => {
-                                handleUpdate({
-                                    advancements: [updatedAdvancement]
-                                });
-                            }}
-                        />
+                        React.createElement(CurrentTabComponent as React.ComponentType<TabComponentProps>, tabProps)
                     )}
                 </div>
             </div>
         </div>
     );
-} 
+}

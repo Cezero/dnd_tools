@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 
+import { formatSignedValue } from '@/lib/formatterUtils';
 import { ABILITY_LIST, SpecialFeatureId, EntityAppliesToType } from '@shared/static-data';
+
 
 import type { RaceTabProps } from './types';
 
@@ -51,7 +53,7 @@ export function AbilitiesTab({
                                 id={`ability-${ability.id}`}
                                 value={focusedAbilityId === ability.id ? editingAbilityValue : (() => {
                                     const adjustment = getAbilityAdjustments().find(adj => adj.abilityId === ability.id)?.value || 0;
-                                    return adjustment > 0 ? `+${adjustment}` : adjustment;
+                                    return formatSignedValue(adjustment);
                                 })()}
                                 onChange={(e) => setEditingAbilityValue(e.target.value)}
                                 onFocus={() => {

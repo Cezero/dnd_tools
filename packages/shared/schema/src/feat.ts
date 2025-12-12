@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { QueryResponseSchema } from './query.js';
+import { SourceMapSchema } from './sourcebook.js';
 
 export const FeatQuerySchema = z.object({
     queryType: z.enum(['proficiency', 'all']),
@@ -36,8 +37,12 @@ export const BaseFeatSchema = z.object({
     prerequisites: z.string().max(2000, 'Prerequisites must be less than 2000 characters').nullable(),
     repeatable: z.boolean().nullable(),
     fighterBonus: z.boolean().nullable(),
+    useSubId: z.boolean().default(false),
     benefits: z.array(FeatBenefitMapSchema).optional(),
     prereqs: z.array(FeatPrerequisiteMapSchema).optional(),
+    isVisible: z.boolean().default(true),
+    editionId: z.number().int().positive('Edition ID must be a positive integer'),
+    sourceBookInfo: z.array(SourceMapSchema).optional(),
 });
 
 export const FeatSchema = BaseFeatSchema.extend({
@@ -49,6 +54,22 @@ export const FeatInQueryResponseSchema = FeatSchema.omit({ benefits: true, prere
 export const FeatSummarySchema = z.object({
     id: z.number().int().positive(),
     name: z.string().min(1).max(200),
+});
+
+export const FeatCacheSchema = FeatSchema.omit({
+    benefits: true,
+    prereqs: true,
+    description: true,
+    repeatable: true,
+    benefit: true,
+    normalEffect: true,
+    specialEffect: true,
+    prerequisites: true,
+    sourceBookInfo: true,
+});
+
+export const FeatCacheResponseSchema = QueryResponseSchema.extend({
+    results: z.array(FeatCacheSchema),
 });
 
 export const FeatQueryResponseSchema = QueryResponseSchema.extend({
@@ -80,3 +101,6 @@ export type FeatBenefitMap = z.infer<typeof FeatBenefitMapSchema>;
 export type FeatPrerequisiteMap = z.infer<typeof FeatPrerequisiteMapSchema>;
 
 export type FeatSummary = z.infer<typeof FeatSummarySchema>;
+
+export type FeatCacheResponse = z.infer<typeof FeatCacheResponseSchema>;
+export type FeatCacheEntry = z.infer<typeof FeatCacheSchema>;

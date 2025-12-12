@@ -14,7 +14,7 @@ import {
 import type { CoreComponent } from '@shared/static-data';
 
 import type { AppliesToSelectorProps } from './types';
-import { getAppliesToSelectOptions } from './utils';
+import { getAppliesToSelectOptionsSync } from './utils';
 
 export function AppliesToSelector({
     index,
@@ -39,7 +39,7 @@ export function AppliesToSelector({
     useEffect(() => {
         const loadAppliesToIdOptions = async () => {
             if (appliesTo !== null && appliesTo !== undefined) {
-                const options = await getAppliesToSelectOptions(appliesTo, entityType);
+                const options = getAppliesToSelectOptionsSync(appliesTo, entityType);
                 setAppliesToIdOptions(options);
             } else {
                 setAppliesToIdOptions([]);

@@ -9,6 +9,7 @@ import {
     FeatQueryRequest,
     FeatQueryResponse,
     GetFeatListResponse,
+    FeatCacheResponse,
 } from '@shared/schema';
 
 export interface FeatService {
@@ -19,4 +20,5 @@ export interface FeatService {
     createFeat: (data: CreateFeatRequest) => Promise<CreateResponse>;
     updateFeat: (id: FeatIdParamRequest, data: UpdateFeatRequest) => Promise<UpdateResponse>;
     deleteFeat: (id: FeatIdParamRequest) => Promise<UpdateResponse>;
+    getFeatCache: (query: FeatQueryRequest) => Promise<FeatCacheResponse>;
 }

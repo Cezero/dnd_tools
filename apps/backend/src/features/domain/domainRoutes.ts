@@ -11,6 +11,7 @@ import {
     CreateDomain,
     UpdateDomain,
     DeleteDomain,
+    GetDomainCache,
 } from './domainController.js';
 import { requireAdmin } from '../../middleware/authMiddleware.js';
 
@@ -18,6 +19,7 @@ const { router: DomainRouter, get, post, put, delete: deleteRoute } = buildValid
 
 // Domain Read Routes
 get('/', {}, GetAllDomains);
+get('/cache', {}, GetDomainCache);
 get('/:id', { params: DomainIdParamSchema }, GetDomainById);
 
 // Domain Write Routes

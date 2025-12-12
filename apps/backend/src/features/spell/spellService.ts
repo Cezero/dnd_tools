@@ -1,6 +1,6 @@
 import { PrismaClient } from '@shared/prisma-client';
-import type { SpellIdParamRequest, UpdateSpellRequest, GetSpellResponse, GetAllSpellsResponse, ClassSpellListResponse, ClassSpellListEntry } from '@shared/schema';
-import { isVariantId, extractBaseClassId } from '@shared/static-data';
+import type { SpellIdParamRequest, UpdateSpellRequest, GetSpellResponse, GetAllSpellsResponse, ClassSpellListResponse, ClassSpellListEntry, SpellCacheResponse } from '@shared/schema';
+import { isVariantId, extractBaseClassId } from '@shared/utils';
 
 import type { SpellService } from './types';
 
@@ -231,5 +231,22 @@ export const spellService: SpellService = {
         result = result.filter(spell => !removalSpellIds.includes(spell.spellId));
 
         return result;
+    },
+
+    async getSpellCache(): Promise<SpellCacheResponse> {
+        const spells = await prisma.spell.findMany({
+            orderBy: { name: 'asc' },
+            select: {
+                id: true,
+                name: true,
+                editionId: true,
+                isVisible: true,
+            }
+        });
+
+        return {
+            total: spells.length,
+            results: spells,
+        };
     }
 };

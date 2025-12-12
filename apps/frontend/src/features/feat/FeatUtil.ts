@@ -1,10 +1,8 @@
 import ordinal from 'ordinal';
 
+// Note: This utility function now requires the cache function to be passed as a parameter
 import { FeatPrerequisiteMap } from '@shared/schema';
-import { SAVING_THROW_LIST, PROFICIENCY_TYPE_LIST, SKILL_LIST, FeatBenefitType, FeatPrerequisiteType, ABILITY_LIST, FEAT_PREREQ_BY_ID, CoreComponent } from '@shared/static-data';
-
-import { FeatApi } from './FeatApi';
-import { getBaseClassesForEdition } from '../class/ClassUtils';
+import { SAVING_THROW_LIST, PROFICIENCY_TYPE_LIST, SKILL_LIST, FeatBenefitType, FeatPrerequisiteType, ABILITY_LIST, FEAT_PREREQ_BY_ID, CoreComponent, EditionId } from '@shared/static-data';
 
 export const FeatOptions = (benefitType: number): CoreComponent[] => {
     switch (benefitType) {
@@ -19,7 +17,7 @@ export const FeatOptions = (benefitType: number): CoreComponent[] => {
     }
 }
 
-export const PrereqOptions = async (prereqType: number): Promise<CoreComponent[]> => {
+export const PrereqOptions = async (prereqType: number, cacheService?: { getClassNameById: (id: number) => CoreComponent | undefined; getBaseClassSelectByEdition: (editionId: number) => CoreComponent[] }): Promise<CoreComponent[]> => {
     switch (prereqType) {
         case FeatPrerequisiteType.ABILITY:
             return ABILITY_LIST;
@@ -29,8 +27,7 @@ export const PrereqOptions = async (prereqType: number): Promise<CoreComponent[]
             // This will be populated dynamically
             return [];
         case FeatPrerequisiteType.CLASSLEVEL: {
-            // Get base classes for edition 4 (D&D 3.5) and add character level option
-            const baseClasses = await getBaseClassesForEdition(4);
+            const baseClasses = cacheService?.getBaseClassSelectByEdition(EditionId.DND_3x) || [];
             return [
                 { id: -1, name: 'Character Level' },
                 ...baseClasses
@@ -50,7 +47,7 @@ export const PrereqOptions = async (prereqType: number): Promise<CoreComponent[]
     }
 }
 
-export const getPrereqDisplayText = async (prereq: FeatPrerequisiteMap): Promise<string> => {
+export const getPrereqDisplayText = async (prereq: FeatPrerequisiteMap, getFeatNameById: (id: number) => Promise<{ name?: string } | undefined>, getFeatureNameById?: (id: number) => Promise<{ name?: string } | undefined>): Promise<string> => {
     const typeName = FEAT_PREREQ_BY_ID[prereq.typeId] || '';
     const getAmountText = (amount: number | null) => amount && amount > 0 ? ` +${amount}` : amount ? ` ${amount}` : '';
 
@@ -58,7 +55,7 @@ export const getPrereqDisplayText = async (prereq: FeatPrerequisiteMap): Promise
         case FeatPrerequisiteType.FEAT: {
             if (prereq.referenceId) {
                 try {
-                    const feat = await FeatApi.getFeatById(undefined, { id: prereq.referenceId });
+                    const feat = await getFeatNameById(prereq.referenceId);
                     const featName = feat?.name || `Feat ID ${prereq.referenceId}`;
                     return `${typeName}: ${featName}${getAmountText(prereq.amount)}`;
                 } catch (_error) {
@@ -91,6 +88,19 @@ export const getPrereqDisplayText = async (prereq: FeatPrerequisiteMap): Promise
             const abilityName = options.find(option => option.id === prereq.referenceId)?.name || '';
             const abilityAmountText = prereq.amount ? ` ${prereq.amount}` : '';
             return `${typeName}: ${abilityName}${abilityAmountText}`;
+        }
+
+        case FeatPrerequisiteType.CLASSFEATURE: {
+            if (prereq.referenceId && getFeatureNameById) {
+                try {
+                    const feature = await getFeatureNameById(prereq.referenceId);
+                    const featureName = feature?.name || `Feature ID ${prereq.referenceId}`;
+                    return `${typeName}: ${featureName}${getAmountText(prereq.amount)}`;
+                } catch (_error) {
+                    return `${typeName}: Feature ID ${prereq.referenceId}${getAmountText(prereq.amount)}`;
+                }
+            }
+            return typeName;
         }
 
         default: {

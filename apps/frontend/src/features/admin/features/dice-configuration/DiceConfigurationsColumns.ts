@@ -3,7 +3,8 @@ import { ColumnDef } from '@tanstack/react-table';
 import { createContainsFilter, createEqualsFilter } from '@/components/generic-list/filterFunctions';
 import { formatColorWithSwatch } from '@/lib/ColorFormattersUtils';
 import { DiceBoxAdminConfig } from '@shared/schema';
-import { getDiceThemeById, FilterType, THREE_D_DICE_THEME_LIST, BooleanFilter, BOOLEAN_FILTER_LIST } from '@shared/static-data';
+import { FilterType, THREE_D_DICE_THEME_LIST, BooleanFilter, BOOLEAN_FILTER_LIST } from '@shared/static-data';
+import { getDiceThemeById } from '@shared/utils';
 
 export const DICE_CONFIGURATION_COLUMNS: ColumnDef<DiceBoxAdminConfig, unknown>[] = [
     {

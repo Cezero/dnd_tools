@@ -13,7 +13,7 @@ export const formatFilterTooltip = (
 
     // Helper function to get options (handle both static arrays and dynamic functions)
     const getOptions = () => {
-        if (!columnMeta.options) return null;
+        if (!columnMeta.options) return [];
         if (typeof columnMeta.options === 'function') {
             return columnMeta.options(columnFilters || []);
         }
@@ -29,8 +29,8 @@ export const formatFilterTooltip = (
             // For single select, find the label for the selected value
             const singleSelectOptions = getOptions();
             if (singleSelectOptions) {
-                const option = singleSelectOptions.find(opt => opt.value === filter.value);
-                return option ? option.label : String(filter.value);
+                const option = singleSelectOptions.find(opt => opt.id === filter.value);
+                return option ? option.name : String(filter.value);
             }
             return String(filter.value);
         }
@@ -45,8 +45,8 @@ export const formatFilterTooltip = (
                 if (multiSelectOptions) {
                     // Map values to labels
                     const labels = filter.value.values.map((value: string | number) => {
-                        const option = multiSelectOptions.find(opt => opt.value === value);
-                        return option ? option.label : String(value);
+                        const option = multiSelectOptions.find(opt => opt.id === value);
+                        return option ? option.name : String(value);
                     });
                     return labels.join(delimiter);
                 } else {

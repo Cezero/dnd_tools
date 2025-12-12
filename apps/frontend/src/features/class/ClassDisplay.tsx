@@ -13,10 +13,10 @@ import {
     EDITION_MAP,
     ABILITY_MAP,
     SpecialFeatureId,
-    GetSourceDisplay,
     CASTING_TYPE_MAP,
     SPELL_ID_LIST,
 } from '@shared/static-data';
+import { GetSourceDisplay } from '@shared/utils';
 
 interface ClassDisplayProps {
     cls: DnDClass;
@@ -39,6 +39,10 @@ export function ClassDisplay({
     isAdmin = false,
     fromListParams: _fromListParams = ''
 }: ClassDisplayProps): React.JSX.Element {
+
+    if (!cls) {
+        return <div>Error: Class not found</div>;
+    }
 
     return (
         <div className={showHeader ? "pt-8" : ""}>

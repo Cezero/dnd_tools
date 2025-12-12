@@ -1,14 +1,12 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
-import { GenericList } from '@/components/generic-list/GenericList';
+import { GenericList } from '@/components/generic-list';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
-import { CharacterApi } from '@/features/character/CharacterApi';
-import { CHARACTER_COLUMNS } from '@/features/character/CharacterColumns';
+import { CharacterApi, CHARACTER_COLUMNS, routes } from '@/features/character';
+import { CharacterQueryHooks } from '@/services/query/CharacterQueryHooks';
 import { CharacterWithRaceResponse } from '@shared/schema';
-
-import { routes } from './CharacterConfig';
 
 export function CharacterList(): React.JSX.Element {
     const navigate = useNavigate();
@@ -18,6 +16,10 @@ export function CharacterList(): React.JSX.Element {
     const HandleNewCharacterClick = (): void => {
         navigate('/characters/new/create', { state: { fromListParams: location.search } });
     };
+
+    const dataFetcher = useCallback(async () => {
+        return await CharacterQueryHooks.getCharacters();
+    }, []);
 
     if (isAuthLoading) {
         return <div className="p-4">Loading...</div>;
@@ -37,7 +39,7 @@ export function CharacterList(): React.JSX.Element {
             <GenericList<CharacterWithRaceResponse>
                 storageKey="characters-list"
                 columns={CHARACTER_COLUMNS}
-                serviceFunction={() => CharacterApi.getCharacters({})}
+                dataFetcher={dataFetcher}
                 itemDesc="character"
                 routes={routes}
                 deleteServiceFunction={createIdDeleteServiceFunction(CharacterApi.deleteCharacter)}

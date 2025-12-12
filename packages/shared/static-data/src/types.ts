@@ -17,6 +17,11 @@ export interface CoreComponent {
     abbreviation?: string;
 }
 
+export interface FilterableComponent extends CoreComponent {
+    editionId: number;
+    isVisible: boolean;
+}
+
 // Extended type for appliesTo types with optional display names
 export interface AppliesToType extends CoreComponent {
     displayName?: string | null;
@@ -28,6 +33,10 @@ export interface RpgDie extends CoreComponent {
 
 export interface Currency extends CoreComponent {
     gpValue: number;
+}
+
+export interface FeatBenefitTypeInfo extends CoreComponent {
+    hasSubId: boolean;
 }
 
 export interface Formula extends CoreComponent {
@@ -141,3 +150,13 @@ export type AbilityGenerationMethodMap = BaseMap<CoreComponent>;
 export type PointBuyOptionsMap = BaseMap<CoreComponent>;
 export type BooleanFilterMap = BaseMap<CoreComponent>;
 export type ClassTypeMap = BaseMap<CoreComponent>;
+export type FeatBenefitTypeMap = BaseMap<FeatBenefitTypeInfo>;
+export type MonsterTypeMap = BaseMap<CoreComponent>;
+export type MonsterSubtypeMap = BaseMap<CoreComponent>;
+export type MonsterSpecialAbilityTypeMap = BaseMap<CoreComponent>;
+export type MonsterArmorComponentTypeMap = BaseMap<CoreComponent>;
+export type MonsterSpellTypeMap = BaseMap<CoreComponent>;
+export type MonsterSpellUsesPerDayMap = BaseMap<CoreComponent>;
+export type MovementTypeMap = BaseMap<CoreComponent>;
+export type ManeuverabilityMap = BaseMap<CoreComponent>;
+export type MonsterExtraDescriptionTypeMap = BaseMap<CoreComponent>;

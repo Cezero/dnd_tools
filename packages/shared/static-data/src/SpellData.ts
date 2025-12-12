@@ -163,12 +163,6 @@ export const SPELL_SUBSCHOOL_BY_SCHOOL_ID_MAP: { [K in SpellSchool]: SpellSubsch
     [SpellSchool.Invocation]: [SpellSubschool.Least, SpellSubschool.Lesser, SpellSubschool.Greater, SpellSubschool.Dark]
 } as const;
 
-export function GetSpellSubschoolListBySchoolId(schoolId: SpellSchool): CoreComponent[] {
-    if (SPELL_SUBSCHOOL_BY_SCHOOL_ID_MAP[schoolId].length > 0) {
-        return SPELL_SUBSCHOOL_BY_SCHOOL_ID_MAP[schoolId].map(subschool => SPELL_SUBSCHOOL_MAP[subschool]);
-    }
-    return [];
-}
 
 export const SpellSubschoolNameList = (subschools: number[]): string => {
     return subschools.map(subschool => SPELL_SUBSCHOOL_MAP[subschool].name).join(', ');

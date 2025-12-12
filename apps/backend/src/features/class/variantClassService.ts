@@ -9,7 +9,8 @@ import {
     ClassVariantFeatureProgressionOverride,
     FeatureProgression,
 } from '@shared/schema';
-import { calculateVariantId, ProgressionType } from '@shared/static-data';
+import { ProgressionType } from '@shared/static-data';
+import { calculateVariantId } from '@shared/utils';
 import { applyFeatureProgressionOverrides } from '@shared/utils';
 
 import { classService } from './classService.js';

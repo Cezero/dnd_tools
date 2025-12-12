@@ -1,5 +1,5 @@
-import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { ListSelectionDialog } from '@/components/generic-list';
+import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import type { Feature } from '@shared/schema';
 import { FeatureSourceType } from '@shared/static-data';
 
@@ -43,10 +43,8 @@ export function RaceFeatureAssoc({ isOpen, onClose, onSave, initialSelectedFeatu
             initialSelectedIds={initialSelectedFeatureIds}
             parentId={raceId}
             parentType="race"
-            serviceFunction={async () => {
-                const response = await FeatureSystemApi.getFeatures({ sourceType: FeatureSourceType.Race });
-                return response;
-            }}
+            queryHook={FeatureQueryHooks.useGetFeatures}
+            queryHookParams={{ requestData: { sourceTypes: [FeatureSourceType.Race] } }}
             storageKey="raceFeatureSelectionList"
             itemDesc="feature"
             createNewRoute="/features/new/edit"

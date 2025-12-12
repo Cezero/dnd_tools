@@ -1,4 +1,4 @@
-import type { CoreComponent, BaseMap, IdToNameMap } from './types';
+import type { CoreComponent, BaseMap, IdToNameMap, FeatBenefitTypeMap } from './types';
 import { ObjectIdToNameMap } from './Util';
 
 export const enum FeatType {
@@ -20,12 +20,30 @@ export const enum FeatBenefitType {
     SKILL = 1,
     SAVE = 2,
     PROFICIENCY = 3,
+    TURN_ATTEMPTS = 4,
+    SPELLS_LEARNED = 5,
+    RANGE_INCREMENT = 6,
+    DIFFICULTY_CLASS = 7,
+    CASTER_LEVEL = 8,
+    ATTACK_BONUS = 9,
+    DAMAGE_BONUS = 10,
+    THREAT_RANGE = 11,
+    INITIATIVE = 12,
 }
 
-export const FEAT_BENEFIT_TYPES: BaseMap<CoreComponent> = {
-    [FeatBenefitType.SKILL]: { id: FeatBenefitType.SKILL, name: 'Skill' },
-    [FeatBenefitType.SAVE]: { id: FeatBenefitType.SAVE, name: 'Save' },
-    [FeatBenefitType.PROFICIENCY]: { id: FeatBenefitType.PROFICIENCY, name: 'Proficiency' },
+export const FEAT_BENEFIT_TYPES: FeatBenefitTypeMap = {
+    [FeatBenefitType.SKILL]: { id: FeatBenefitType.SKILL, name: 'Skill', hasSubId: true },
+    [FeatBenefitType.SAVE]: { id: FeatBenefitType.SAVE, name: 'Save', hasSubId: true },
+    [FeatBenefitType.PROFICIENCY]: { id: FeatBenefitType.PROFICIENCY, name: 'Proficiency', hasSubId: true },
+    [FeatBenefitType.TURN_ATTEMPTS]: { id: FeatBenefitType.TURN_ATTEMPTS, name: 'Turn Attempts', hasSubId: false },
+    [FeatBenefitType.SPELLS_LEARNED]: { id: FeatBenefitType.SPELLS_LEARNED, name: 'Spells Learned', hasSubId: false },
+    [FeatBenefitType.RANGE_INCREMENT]: { id: FeatBenefitType.RANGE_INCREMENT, name: 'Range Increment', hasSubId: false },
+    [FeatBenefitType.DIFFICULTY_CLASS]: { id: FeatBenefitType.DIFFICULTY_CLASS, name: 'Difficulty Class', hasSubId: false },
+    [FeatBenefitType.CASTER_LEVEL]: { id: FeatBenefitType.CASTER_LEVEL, name: 'Caster Level', hasSubId: false },
+    [FeatBenefitType.ATTACK_BONUS]: { id: FeatBenefitType.ATTACK_BONUS, name: 'Attack Bonus', hasSubId: false },
+    [FeatBenefitType.DAMAGE_BONUS]: { id: FeatBenefitType.DAMAGE_BONUS, name: 'Damage Bonus', hasSubId: false },
+    [FeatBenefitType.THREAT_RANGE]: { id: FeatBenefitType.THREAT_RANGE, name: 'Threat Range', hasSubId: false },
+    [FeatBenefitType.INITIATIVE]: { id: FeatBenefitType.INITIATIVE, name: 'Initiative', hasSubId: false },
 }
 
 export const FEAT_BENEFIT_TYPE_BY_ID: IdToNameMap = ObjectIdToNameMap(FEAT_BENEFIT_TYPES);

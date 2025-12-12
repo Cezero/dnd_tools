@@ -9,16 +9,14 @@ import {
     RPG_DICE,
     EDITION_MAP,
     ABILITY_MAP,
-    GetSourceDisplay,
     FilterType,
-    isVariantId,
-    GetSourceBookTypeList,
     SourceType,
     EditionId,
     ClassType,
     BOOLEAN_FILTER_LIST,
     CLASS_TYPE_LIST
 } from '@shared/static-data';
+import { GetSourceDisplay, isVariantId, GetSourceBookTypeList } from '@shared/utils';
 
 export const CLASS_COLUMNS: ColumnDef<ClassSummary, unknown>[] = [
     {

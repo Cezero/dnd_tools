@@ -7,6 +7,7 @@ import {
     RaceIdParamRequest,
     CreateResponse,
     UpdateResponse,
+    RaceCacheResponse,
 } from '@shared/schema';
 
 import type { RaceService } from './types';
@@ -23,7 +24,7 @@ export const raceService: RaceService = {
             prisma.race.findMany({
                 orderBy: { name: 'asc' },
                 include: {
-                    sources: {
+                    sourceBookInfo: {
                         select: {
                             sourceBookId: true,
                             pageNumber: true
@@ -55,7 +56,7 @@ export const raceService: RaceService = {
         const race = await prisma.race.findUnique({
             where: { id: id.id },
             include: {
-                sources: true,
+                sourceBookInfo: true,
             },
         });
 
@@ -81,8 +82,8 @@ export const raceService: RaceService = {
         const result = await prisma.race.create({
             data: {
                 ...raceData,
-                sources: {
-                    create: data.sources?.map(source => ({
+                sourceBookInfo: {
+                    create: data.sourceBookInfo?.map(source => ({
                         sourceBookId: source.sourceBookId,
                         pageNumber: source.pageNumber
                     })) || []
@@ -115,8 +116,8 @@ export const raceService: RaceService = {
                 where: { id: id.id },
                 data: {
                     ...raceData,
-                    sources: {
-                        create: data.sources?.map(source => ({
+                    sourceBookInfo: {
+                        create: data.sourceBookInfo?.map(source => ({
                             sourceBookId: source.sourceBookId,
                             pageNumber: source.pageNumber
                         })) || []
@@ -141,5 +142,21 @@ export const raceService: RaceService = {
         return { message: 'Race deleted successfully' };
     },
 
+    async getRaceCache(): Promise<RaceCacheResponse> {
+        const races = await prisma.race.findMany({
+            orderBy: { name: 'asc' },
+            select: {
+                id: true,
+                name: true,
+                editionId: true,
+                isVisible: true,
+            }
+        });
+
+        return {
+            total: races.length,
+            results: races,
+        };
+    },
 
 };

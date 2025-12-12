@@ -1,46 +1,58 @@
 import React, { useState, useEffect, useMemo } from 'react';
 
+import { useAuthAuto } from '@/components/auth';
 import { CustomSelect } from '@/components/forms/FormComponents';
-import type { CharacterWithAllDetailsResponse } from '@shared/schema';
+import type { TabComponentProps } from '@/features/character/types';
+import { CharacterEditStateUpdateType } from '@/features/character/types';
 import {
     EDITION_LIST,
     hasAdvancedOptions,
     getAdvancedOptionsForEdition,
     isAdvancedOptionAvailable,
-    GetCharacterOptionsSourceBookList,
-    GetSourceBookSettingList,
     Setting,
-    GetSourceBookTypeList,
     SourceType,
     EditionId,
 } from '@shared/static-data';
-
-interface ConfigurationTabProps {
-    character: CharacterWithAllDetailsResponse;
-    onUpdate: (data: Partial<CharacterWithAllDetailsResponse>) => void;
-}
+import { GetCharacterOptionsSourceBookList, GetSourceBookSettingList, GetSourceBookTypeList } from '@shared/utils';
 
 export function ConfigurationTab({
-    character,
-    onUpdate
-}: ConfigurationTabProps): React.JSX.Element {
+    state,
+    updateState,
+}: TabComponentProps): React.JSX.Element {
+    const { user } = useAuthAuto();
     const [disallowedSources, setDisallowedSources] = useState<number[]>([]);
     const [excludeForgottenRealms, setExcludeForgottenRealms] = useState<boolean>(false);
     const [excludeEberron, setExcludeEberron] = useState<boolean>(false);
+    const [userPreferredEdition, setUserPreferredEdition] = useState<number | null>(null);
 
-    // Initialize disallowed sources from character data
+    // Load user's preferred edition and set it as default if character has no edition
     useEffect(() => {
-        if (character.disallowedSources) {
-            setDisallowedSources(character.disallowedSources.map(ds => ds.sourceBookId));
+        if (!user) return;
+
+        // The user object from auth actually contains the full profile data
+        // including preferredEditionId, even though it's typed as AuthUser
+        const fullUser = user as { preferredEditionId?: number | null };
+        if (fullUser.preferredEditionId) {
+            setUserPreferredEdition(fullUser.preferredEditionId);
+
+            // If no edition set, automatically set it to user's preferred edition
+            if (!state.editionId) {
+                updateState({ type: CharacterEditStateUpdateType.SET_EDITION, payload: { editionId: fullUser.preferredEditionId } });
+            }
         }
-    }, [character.disallowedSources]);
+    }, [user, state.editionId, updateState]);
+
+    // Initialize disallowed sources from state
+    useEffect(() => {
+        setDisallowedSources(state.disallowedSources.map(ds => ds.sourceBookId));
+    }, [state.disallowedSources]);
 
     // Initialize exclusion states based on current disallowed sources
     useEffect(() => {
-        if (!character.editionId) return;
+        if (!state.editionId) return;
 
-        const forgottenRealmsSources = GetSourceBookSettingList(Setting.ForgottenRealms, character.editionId as EditionId);
-        const eberronSources = GetSourceBookSettingList(Setting.Eberron, character.editionId as EditionId);
+        const forgottenRealmsSources = GetSourceBookSettingList(Setting.ForgottenRealms, state.editionId as EditionId);
+        const eberronSources = GetSourceBookSettingList(Setting.Eberron, state.editionId as EditionId);
 
         const frIds = forgottenRealmsSources.map(s => s.id);
         const eberronIds = eberronSources.map(s => s.id);
@@ -52,21 +64,21 @@ export function ConfigurationTab({
         // Check if all Eberron sources are disallowed
         const allEberronDisallowed = eberronIds.length > 0 && eberronIds.every(id => disallowedSources.includes(id));
         setExcludeEberron(allEberronDisallowed);
-    }, [character.editionId, disallowedSources]);
+    }, [state.editionId, disallowedSources]);
 
     // Check if current edition has advanced options
-    const showAdvancedOptions = character.editionId && hasAdvancedOptions(character.editionId);
+    const showAdvancedOptions = state.editionId && hasAdvancedOptions(state.editionId);
 
     // Get available sources for the selected edition
     const availableSources = useMemo(() => {
-        if (!character.editionId) return [];
+        if (!state.editionId) return [];
 
         // Get character options sourcebooks for the edition
-        const characterOptionsSources = GetCharacterOptionsSourceBookList(character.editionId as EditionId);
+        const characterOptionsSources = GetCharacterOptionsSourceBookList(state.editionId as EditionId);
 
         // Get setting-specific sourcebooks to exclude
-        const forgottenRealmsSources = GetSourceBookSettingList(Setting.ForgottenRealms, character.editionId as EditionId);
-        const eberronSources = GetSourceBookSettingList(Setting.Eberron, character.editionId as EditionId);
+        const forgottenRealmsSources = GetSourceBookSettingList(Setting.ForgottenRealms, state.editionId as EditionId);
+        const eberronSources = GetSourceBookSettingList(Setting.Eberron, state.editionId as EditionId);
 
         // Filter out excluded setting books
         let filteredSources = characterOptionsSources;
@@ -82,7 +94,7 @@ export function ConfigurationTab({
         }
 
         // Get Core book IDs for this edition
-        const coreBooks = GetSourceBookTypeList(SourceType.Core, character.editionId as EditionId);
+        const coreBooks = GetSourceBookTypeList(SourceType.Core, state.editionId as EditionId);
 
         // Convert to format with alwaysAvailable flag (Core books)
         return filteredSources.map(source => ({
@@ -90,7 +102,7 @@ export function ConfigurationTab({
             label: source.name,
             alwaysAvailable: coreBooks.some(book => book.id === source.id)
         }));
-    }, [character.editionId, excludeForgottenRealms, excludeEberron]);
+    }, [state.editionId, excludeForgottenRealms, excludeEberron]);
 
     const handleDisallowedSourceToggle = (sourceId: number) => {
         // Check if this source is always available
@@ -105,20 +117,20 @@ export function ConfigurationTab({
 
         setDisallowedSources(newDisallowed);
 
-        // Update character with new disallowed sources
+        // Update configuration state with new disallowed sources
         const updatedDisallowedSources = newDisallowed.map(sourceBookId => ({
             id: 0, // Will be set by backend
-            characterId: character.id,
+            characterId: 0, // Will be set by backend
             sourceBookId
         }));
 
-        onUpdate({ disallowedSources: updatedDisallowedSources });
+        updateState({ type: CharacterEditStateUpdateType.SET_DISALLOWED_SOURCES, payload: { disallowedSources: updatedDisallowedSources } });
     };
 
     const handleExclusionToggle = (setting: Setting, isExcluded: boolean) => {
-        if (!character.editionId) return;
+        if (!state.editionId) return;
 
-        const settingSources = GetSourceBookSettingList(setting, character.editionId as EditionId);
+        const settingSources = GetSourceBookSettingList(setting, state.editionId as EditionId);
         const settingIds = settingSources.map(s => s.id);
 
         let newDisallowed: number[];
@@ -132,35 +144,33 @@ export function ConfigurationTab({
 
         setDisallowedSources(newDisallowed);
 
-        // Update character with new disallowed sources
+        // Update configuration state with new disallowed sources
         const updatedDisallowedSources = newDisallowed.map(sourceBookId => ({
             id: 0, // Will be set by backend
-            characterId: character.id,
+            characterId: 0, // Will be set by backend
             sourceBookId
         }));
 
-        onUpdate({ disallowedSources: updatedDisallowedSources });
+        updateState({ type: CharacterEditStateUpdateType.SET_DISALLOWED_SOURCES, payload: { disallowedSources: updatedDisallowedSources } });
     };
 
     const handleEditionChange = (editionId: number | null) => {
-        const updateData: Partial<CharacterWithAllDetailsResponse> = { editionId };
+        updateState({ type: CharacterEditStateUpdateType.SET_EDITION, payload: { editionId } });
 
         if (editionId) {
             const newAdvancedOptions = getAdvancedOptionsForEdition(editionId);
 
             // Reset advanced options that are not available for the new edition
             if (!newAdvancedOptions.includes('allowVariantClasses')) {
-                updateData.allowVariantClasses = false;
+                updateState({ type: CharacterEditStateUpdateType.SET_ALLOW_VARIANT_CLASSES, payload: { allowVariantClasses: false } });
             }
             if (!newAdvancedOptions.includes('isGestalt')) {
-                updateData.isGestalt = false;
+                updateState({ type: CharacterEditStateUpdateType.SET_IS_GESTALT, payload: { isGestalt: false } });
             }
             if (!newAdvancedOptions.includes('ignoreLevelAdjustment')) {
-                updateData.ignoreLevelAdjustment = false;
+                updateState({ type: CharacterEditStateUpdateType.SET_IGNORE_LEVEL_ADJUSTMENT, payload: { ignoreLevelAdjustment: false } });
             }
         }
-
-        onUpdate(updateData);
     };
 
     return (
@@ -173,12 +183,17 @@ export function ConfigurationTab({
                 <CustomSelect
                     options={EDITION_LIST}
                     useAbbreviation={false}
-                    value={character.editionId}
+                    value={state.editionId || userPreferredEdition}
                     onValueChange={handleEditionChange}
                     placeholder="Select an edition"
                 />
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     Choose the D&D edition for this character. This affects available content and rules.
+                    {userPreferredEdition && !state.editionId && (
+                        <span className="block mt-1 text-blue-600 dark:text-blue-400">
+                            Defaulting to your preferred edition.
+                        </span>
+                    )}
                 </p>
             </div>
 
@@ -195,12 +210,12 @@ export function ConfigurationTab({
                     </div>
 
                     <div className="flex items-center gap-4">
-                        {isAdvancedOptionAvailable(character.editionId!, 'allowVariantClasses') && (
+                        {isAdvancedOptionAvailable(state.editionId!, 'allowVariantClasses') && (
                             <label className="flex items-center">
                                 <input
                                     type="checkbox"
-                                    checked={character.allowVariantClasses}
-                                    onChange={(e) => onUpdate({ allowVariantClasses: e.target.checked })}
+                                    checked={state.allowVariantClasses}
+                                    onChange={(e) => updateState({ type: CharacterEditStateUpdateType.SET_ALLOW_VARIANT_CLASSES, payload: { allowVariantClasses: e.target.checked } })}
                                     className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                 />
                                 <div>
@@ -211,12 +226,12 @@ export function ConfigurationTab({
                             </label>
                         )}
 
-                        {isAdvancedOptionAvailable(character.editionId!, 'isGestalt') && (
+                        {isAdvancedOptionAvailable(state.editionId!, 'isGestalt') && (
                             <label className="flex items-center">
                                 <input
                                     type="checkbox"
-                                    checked={character.isGestalt}
-                                    onChange={(e) => onUpdate({ isGestalt: e.target.checked })}
+                                    checked={state.isGestalt}
+                                    onChange={(e) => updateState({ type: CharacterEditStateUpdateType.SET_IS_GESTALT, payload: { isGestalt: e.target.checked } })}
                                     className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                 />
                                 <div>
@@ -227,12 +242,12 @@ export function ConfigurationTab({
                             </label>
                         )}
 
-                        {isAdvancedOptionAvailable(character.editionId!, 'ignoreLevelAdjustment') && (
+                        {isAdvancedOptionAvailable(state.editionId!, 'ignoreLevelAdjustment') && (
                             <label className="flex items-center">
                                 <input
                                     type="checkbox"
-                                    checked={character.ignoreLevelAdjustment}
-                                    onChange={(e) => onUpdate({ ignoreLevelAdjustment: e.target.checked })}
+                                    checked={state.ignoreLevelAdjustment}
+                                    onChange={(e) => updateState({ type: CharacterEditStateUpdateType.SET_IGNORE_LEVEL_ADJUSTMENT, payload: { ignoreLevelAdjustment: e.target.checked } })}
                                     className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                 />
                                 <div>

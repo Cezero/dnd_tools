@@ -17,7 +17,7 @@ export interface FilterValue {
 
 export interface FilterConfig {
     filterType?: FilterType;
-    options?: CoreComponent[] | ((columnFilters: FilterValue[]) => CoreComponent[]);
+    options?: CoreComponent[] | ((columnFilters: FilterValue[]) => CoreComponent[] | Promise<CoreComponent[]>);
     placeholder?: string;
     required?: boolean;
     truncate?: number;
@@ -70,14 +70,24 @@ export interface GenericListFunctions<T> {
     delete?: DeleteFunction<T>;
 }
 
+// TanStack Query hook type
+export type TanStackQueryHook<T> = (params?: Record<string, unknown>) => {
+    data?: { results: T[]; total: number };
+    isLoading: boolean;
+    error: Error | null;
+    refetch: () => Promise<{ data?: { results: T[]; total: number } }>;
+};
+
 export interface GenericListProps<T> {
     storageKey?: string;
     columns: ColumnDef<T, unknown>[];
-    serviceFunction: () => Promise<{ results: T[]; total: number }>;
+    serviceFunction?: () => Promise<{ results: T[]; total: number }>;
+    queryHook?: TanStackQueryHook<T>; // TanStack Query hook (for backward compatibility)
+    dataFetcher?: () => Promise<{ results: T[]; total: number }>; // NEW: Imperative data fetcher
     itemDesc?: string;
     initialLimit?: number;
     routes?: RouteConfig[];
-    functions?: GenericListFunctions<T>; // NEW: Callback functions for actions
+    functions?: GenericListFunctions<T>; // Callback functions for actions
     deleteServiceFunction?: DeleteServiceFunction;
     basePath?: string; // Optional base path prefix for navigation links (e.g., '/admin')
 

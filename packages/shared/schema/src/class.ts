@@ -14,7 +14,7 @@ export const BaseClassSchema = z.object({
         .min(1, 'Class abbreviation is required')
         .max(10, 'Class abbreviation must be less than 10 characters')
         .trim(),
-    editionId: z.number().int().positive('Edition ID must be a positive integer').nullable(),
+    editionId: z.number().int().positive('Edition ID must be a positive integer'),
     isPrestige: z.boolean().default(false),
     isVisible: z.boolean().default(true),
     canCastSpells: z.boolean().default(false),
@@ -41,8 +41,23 @@ export const ClassIdParamSchema = z.object({
 export const ClassSummarySchema = BaseClassSchema.omit({
     features: true,
     spellcastingProgression: true,
+    spellsKnownProgression: true,
 }).extend({
     id: z.number().int().positive('Class ID must be a positive integer'),
+});
+
+export const ClassCacheSchema = ClassSummarySchema.omit({
+    spellsKnown: true,
+    hitDie: true,
+    skillPoints: true,
+    castingAbilityId: true,
+    castingType: true,
+    babProgression: true,
+    fortProgression: true,
+    refProgression: true,
+    willProgression: true,
+    description: true,
+    sourceBookInfo: true,
 });
 
 export const GetAllClassesQuerySchema = z.object({
@@ -52,6 +67,10 @@ export const GetAllClassesQuerySchema = z.object({
     canCastSpells: z.boolean().optional(),
     editionId: z.number().int().positive().optional(),
     editionIds: z.array(z.number().int().positive()).optional(),
+});
+
+export const ClassCacheResponseSchema = QueryResponseSchema.extend({
+    results: z.array(ClassCacheSchema),
 });
 
 export const GetAllClassesResponseSchema = QueryResponseSchema.extend({
@@ -85,3 +104,6 @@ export type GetAllClassesResponse = z.infer<typeof GetAllClassesResponseSchema>;
 export type CreateClassRequest = z.infer<typeof CreateClassSchema>;
 export type UpdateClassRequest = z.infer<typeof UpdateClassSchema>;
 export type DnDClass = z.infer<typeof BaseClassSchema>;
+
+export type ClassCacheResponse = z.infer<typeof ClassCacheResponseSchema>;
+export type ClassCacheEntry = z.infer<typeof ClassCacheSchema>;

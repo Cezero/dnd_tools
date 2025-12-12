@@ -1,7 +1,7 @@
 import { Response } from 'express';
 
-import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedNoInput } from '@/util/validated-types'
-import { SpellIdParamRequest, SpellClassParamRequest, UpdateSpellRequest, GetSpellResponse, GetAllSpellsResponse, ClassSpellListResponse } from '@shared/schema';
+import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedNoInput, ValidatedBodyT, ValidatedQueryT } from '@/util/validated-types'
+import { SpellIdParamRequest, SpellClassParamRequest, UpdateSpellRequest, GetSpellResponse, GetAllSpellsResponse, ClassSpellListResponse, SpellCacheResponse } from '@shared/schema';
 
 import { spellService } from './spellService';
 
@@ -39,4 +39,9 @@ export async function GetSpellsForClass(req: ValidatedParamsT<SpellClassParamReq
     } catch (_error) {
         res.status(500).json({ error: 'Internal server error' });
     }
+}
+
+export async function GetSpellCache(req: ValidatedNoInput<SpellCacheResponse>, res: Response) {
+    const spells = await spellService.getSpellCache();
+    res.json(spells);
 }

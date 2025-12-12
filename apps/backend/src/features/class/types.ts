@@ -5,7 +5,8 @@ import {
     UpdateClassRequest,
     ClassIdParamRequest,
     DnDClass,
-    CreateResponse
+    CreateResponse,
+    ClassCacheResponse
 } from '@shared/schema';
 
 // Service interface
@@ -15,6 +16,7 @@ export interface ClassService {
     createClass: (data: CreateClassRequest) => Promise<CreateResponse>;
     updateClass: (query: ClassIdParamRequest, data: UpdateClassRequest) => Promise<{ message: string }>;
     deleteClass: (query: ClassIdParamRequest) => Promise<{ message: string }>;
+    getClassCache: () => Promise<ClassCacheResponse>;
 }
 
 

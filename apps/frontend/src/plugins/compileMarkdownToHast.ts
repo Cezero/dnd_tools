@@ -16,6 +16,9 @@ export async function compileMarkdownToHast(props: MarkdownComponentProps): Prom
         props.id = `hast-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     }
 
+    // Handle null/undefined markdown content
+    const markdownContent = props.markdown || '';
+
     // Preload tables BEFORE starting markdown compilation
     await preloadTablesFromMarkdown(props);
 
@@ -27,6 +30,6 @@ export async function compileMarkdownToHast(props: MarkdownComponentProps): Prom
         .use(rehypeFormat)
         .use(RehypeCustomMarkdown, props, { enableTables: true });
 
-    const file = processor.parse(props.markdown);
+    const file = processor.parse(markdownContent);
     return processor.run(file) as Promise<Root>;
 } 

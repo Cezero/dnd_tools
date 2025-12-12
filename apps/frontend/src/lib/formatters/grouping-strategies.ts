@@ -110,6 +110,15 @@ export class EntityGroupingStrategy extends BaseGroupingStrategy {
                         if (item.entity.appliesTo === EntityAppliesToType.Uses) {
                             return item.formattedValue;
                         }
+                        // For Bonus Language and Automatic Language, get the language name from appliesToId
+                        if (item.entity.appliesTo === EntityAppliesToType.BonusLanguage ||
+                            item.entity.appliesTo === EntityAppliesToType.AutomaticLanguage) {
+                            // The language name should be in the formatted value (from LanguageFormatter)
+                            // Remove the "Bonus Language: " or "Automatic Language: " prefix to get just the language name
+                            const prefix = item.entity.appliesTo === EntityAppliesToType.BonusLanguage ?
+                                'Bonus Language: ' : 'Automatic Language: ';
+                            return item.formattedValue.replace(prefix, '');
+                        }
                         // For other entities, get the raw data (spell names, etc.)
                         if (item.entity.spell) {
                             return item.entity.spell.name;

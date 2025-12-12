@@ -168,7 +168,7 @@ export const FeatureSlugParamSchema = z.object({
 });
 
 export const FeatureQuerySchema = z.object({
-    sourceType: z.string().transform((val: string) => parseInt(val)).optional(),
+    sourceTypes: z.array(z.number().int().min(0).max(5)).optional(),
 });
 
 // Request schemas for feature management
