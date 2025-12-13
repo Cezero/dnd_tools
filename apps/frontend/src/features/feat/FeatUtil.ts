@@ -2,7 +2,7 @@ import ordinal from 'ordinal';
 
 // Note: This utility function now requires the cache function to be passed as a parameter
 import { FeatPrerequisiteMap } from '@shared/schema';
-import { SAVING_THROW_LIST, PROFICIENCY_TYPE_LIST, SKILL_LIST, FeatBenefitType, FeatPrerequisiteType, ABILITY_LIST, FEAT_PREREQ_BY_ID, CoreComponent, EditionId } from '@shared/static-data';
+import { SAVING_THROW_LIST, PROFICIENCY_TYPE_LIST, SKILL_LIST, FeatBenefitType, FeatPrerequisiteType, ABILITY_LIST, FEAT_PREREQ_BY_ID, CoreComponent, EditionId, SIZE_LIST } from '@shared/static-data';
 
 export const FeatOptions = (benefitType: number): CoreComponent[] => {
     switch (benefitType) {
@@ -36,6 +36,8 @@ export const PrereqOptions = async (prereqType: number, cacheService?: { getClas
         case FeatPrerequisiteType.CLASSFEATURE:
             // This will be populated dynamically
             return [];
+        case FeatPrerequisiteType.SIZE:
+            return SIZE_LIST;
         case FeatPrerequisiteType.BAB:
         case FeatPrerequisiteType.SPELLCASTING:
         case FeatPrerequisiteType.SPECIAL:
@@ -101,6 +103,22 @@ export const getPrereqDisplayText = async (prereq: FeatPrerequisiteMap, getFeatN
                 }
             }
             return typeName;
+        }
+
+        case FeatPrerequisiteType.SIZE: {
+            const options = await PrereqOptions(prereq.typeId);
+            const sizeName = options.find(option => option.id === prereq.referenceId)?.name || '';
+            if (!sizeName) return typeName;
+            
+            // amount: 0 = exact, 1 = or larger, 2 = or smaller
+            if (prereq.amount === 0) {
+                return `${typeName}: ${sizeName}`;
+            } else if (prereq.amount === 1) {
+                return `${typeName}: ${sizeName} or larger`;
+            } else if (prereq.amount === 2) {
+                return `${typeName}: ${sizeName} or smaller`;
+            }
+            return `${typeName}: ${sizeName}`;
         }
 
         default: {

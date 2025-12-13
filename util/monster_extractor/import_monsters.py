@@ -794,13 +794,23 @@ class DatabaseConnection:
             )
         return subtype_id
     
-    def validate_skill(self, skill_name: str, monster_name: str) -> int:
-        """Validate and return skill ID, raising ImportError if not found."""
+    def validate_skill(self, skill_name: str, monster_name: str, source_text: str = None) -> int:
+        """
+        Validate and return skill ID, raising ImportError if not found.
+        
+        Args:
+            skill_name: The skill name to validate
+            monster_name: Monster name for error context
+            source_text: Optional source text (e.g., full match from regex) for better line number tracking
+        """
         skill_id = self.get_skill_id(skill_name)
         if skill_id is None:
             line_number = None
             if self.file_content:
-                line_number = find_line_number_for_text(self.file_content, skill_name)
+                # Use source_text if provided (better for finding line numbers), otherwise use skill_name
+                search_text = source_text if source_text else skill_name
+                if search_text:
+                    line_number = find_line_number_for_text(self.file_content, search_text)
             raise ImportError(
                 f"Unknown skill '{skill_name}'. This may be an OCR error or missing skill in database.",
                 monster_name=monster_name,
@@ -1348,6 +1358,67 @@ def extract_tagged_section(content: str, tag_name: str) -> List[str]:
     return [match.group(1).strip() for match in matches]
 
 
+def extract_direct_child_tags(content: str, tag_name: str, exclude_nested_in: List[str] = None) -> List[str]:
+    """
+    Extract sections between {TAG} and {/TAG} that are direct children (not nested inside other specified tags).
+    
+    Args:
+        content: The full file content as a string
+        tag_name: The tag name (without braces), e.g., 'SA', 'STATBLOCK'
+        exclude_nested_in: List of tag names to exclude from (e.g., ['VARIANT', 'CATEGORY', 'GROUP'])
+                          If None, returns all tags (same as extract_tagged_section)
+    
+    Returns:
+        List of extracted section contents (as strings) that are not nested in excluded tags
+    """
+    if exclude_nested_in is None:
+        return extract_tagged_section(content, tag_name)
+    
+    # Find all positions of nested section boundaries
+    nested_boundaries = []
+    for nested_tag in exclude_nested_in:
+        # Find all opening and closing tags
+        open_pattern = rf'\{{{nested_tag}\}}'
+        close_pattern = rf'\{{/{nested_tag}\}}'
+        
+        for match in re.finditer(open_pattern, content):
+            nested_boundaries.append(('open', match.start(), nested_tag))
+        for match in re.finditer(close_pattern, content):
+            nested_boundaries.append(('close', match.end(), nested_tag))
+    
+    # Sort by position
+    nested_boundaries.sort(key=lambda x: x[1])
+    
+    # Find all tags of the requested type
+    pattern = rf'\{{{tag_name}\}}(.*?)\{{/{tag_name}\}}'
+    all_matches = list(re.finditer(pattern, content, re.DOTALL))
+    
+    # Filter out tags that are inside nested sections
+    direct_child_tags = []
+    for match in all_matches:
+        tag_start = match.start()
+        
+        # Check if this tag is inside any nested section by checking depth at tag_start
+        is_nested = False
+        depth = 0
+        for boundary_type, pos, tag in nested_boundaries:
+            if pos < tag_start:
+                # Boundary is before our tag - update depth
+                if boundary_type == 'open':
+                    depth += 1
+                elif boundary_type == 'close':
+                    depth -= 1
+        
+        # If depth > 0 at tag_start, we're inside a nested section
+        if depth > 0:
+            is_nested = True
+        
+        if not is_nested:
+            direct_child_tags.append(match.group(1).strip())
+    
+    return direct_child_tags
+
+
 def parse_tagged_file(file_path: str) -> str:
     """Parse the tagged text file and return its content."""
     with open(file_path, 'r', encoding='utf-8') as f:
@@ -1462,7 +1533,9 @@ def process_extra_descriptions_from_section(section_content: str, monster_id: in
     }
     
     for tag_name, (type_name, desc_type) in extra_desc_configs.items():
-        extra_desc_sections = extract_tagged_section(section_content, tag_name)
+        # Use extract_direct_child_tags to exclude nested VARIANT, CATEGORY, and GROUP sections
+        # This prevents extracting extra descriptions that belong to child sections
+        extra_desc_sections = extract_direct_child_tags(section_content, tag_name, exclude_nested_in=['VARIANT', 'CATEGORY', 'GROUP'])
         
         for extra_desc_content in extra_desc_sections:
             lines = extra_desc_content.strip().split('\n', 1)
@@ -2453,14 +2526,78 @@ def parse_spell_like_abilities(text: str) -> List[Dict]:
         if current_candidate:
             spell_candidates.append(''.join(current_candidate).strip())
         
+        # Expand spell candidates that contain " or " (split on "or" when not inside parentheses)
+        # e.g., "transmute rock to mud or mud to rock" -> ["transmute rock to mud", "mud to rock"]
+        expanded_candidates = []
+        for candidate in spell_candidates:
+            # Check if candidate contains " or " (case-insensitive) and split if not inside parentheses
+            if re.search(r'\s+or\s+', candidate, re.IGNORECASE):
+                # Split on " or " but respect parentheses
+                parts = []
+                current_part = []
+                paren_depth = 0
+                i = 0
+                candidate_lower = candidate.lower()
+                while i < len(candidate):
+                    # Check for " or " pattern (case-insensitive)
+                    if i < len(candidate) - 3:
+                        # Check if we're at " or " (case-insensitive)
+                        if candidate_lower[i:i+4] == ' or ' and paren_depth == 0:
+                            # Found " or " outside parentheses - split here
+                            part_str = ''.join(current_part).strip()
+                            if part_str:
+                                parts.append(part_str)
+                            current_part = []
+                            i += 4  # Skip " or "
+                            continue
+                    
+                    char = candidate[i]
+                    if char == '(':
+                        paren_depth += 1
+                        current_part.append(char)
+                    elif char == ')':
+                        paren_depth -= 1
+                        current_part.append(char)
+                    else:
+                        current_part.append(char)
+                    i += 1
+                
+                # Add the last part
+                if current_part:
+                    part_str = ''.join(current_part).strip()
+                    if part_str:
+                        parts.append(part_str)
+                
+                # Add all parts to expanded candidates
+                expanded_candidates.extend(parts)
+            else:
+                expanded_candidates.append(candidate)
+        
+        spell_candidates = expanded_candidates
+        
         for spell_candidate in spell_candidates:
-            # Stop at the first period - spell lists end with a period, followed by descriptive text
+            # Stop at the first period that's NOT inside parentheses - spell lists end with a period, followed by descriptive text
             # (e.g., "mass enlarge. Caster level equals..." should become "mass enlarge")
-            if '.' in spell_candidate:
-                spell_candidate = spell_candidate.split('.')[0].strip()
+            # But don't split on periods inside parentheses (e.g., "darkness (radius 40 ft.)" should stay intact)
+            paren_depth = 0
+            period_idx = -1
+            for i, char in enumerate(spell_candidate):
+                if char == '(':
+                    paren_depth += 1
+                elif char == ')':
+                    paren_depth -= 1
+                elif char == '.' and paren_depth == 0:
+                    # Found a period outside parentheses - this is where we should split
+                    period_idx = i
+                    break
             
-            # Remove trailing period if present
-            spell_candidate = spell_candidate.rstrip('.')
+            if period_idx != -1:
+                spell_candidate = spell_candidate[:period_idx].strip()
+            else:
+                # No period found outside parentheses, but check if there's a trailing period
+                # that's not part of parentheses (shouldn't happen, but be safe)
+                if spell_candidate.endswith('.') and not spell_candidate.rstrip('.').endswith(')'):
+                    spell_candidate = spell_candidate.rstrip('.')
             
             # Remove leading "and " if present (e.g., "and invisibility (self only)" -> "invisibility (self only)")
             # Do this early so DC/notes extraction works correctly
@@ -2501,6 +2638,13 @@ def parse_spell_like_abilities(text: str) -> List[Dict]:
             elif not dc_match:
                 spell_name = re.sub(r'\s*\([^)]+\)', '', spell_name).strip()
             
+            # Final cleanup: remove any remaining trailing parentheses and their contents
+            # This handles cases where parentheses don't match expected patterns or are malformed
+            # First, try to remove properly closed parentheses at the end
+            spell_name = re.sub(r'\s*\([^)]+\)\s*$', '', spell_name).strip()
+            # Then, remove any trailing unclosed parentheses (malformed input)
+            spell_name = re.sub(r'\s*\([^)]*$', '', spell_name).strip()
+            
             # Skip if empty or too short after cleaning
             if spell_name and len(spell_name) >= 3:
                 spells.append({
@@ -2515,17 +2659,25 @@ def parse_spell_like_abilities(text: str) -> List[Dict]:
     return spells
 
 
-def extract_flavor_text(section_content: str) -> Optional[str]:
+def extract_flavor_text(section_content: str, exclude_nested: bool = False, exclude_list: List[str] = None) -> Optional[str]:
     """
     Extract flavor text from a section's FLAVORTEXT tag.
     
     Args:
-        section_content: The content of a MAINMONSTER or VARIANT section
+        section_content: The content of a MAINMONSTER, GROUP, CATEGORY, or VARIANT section
+        exclude_nested: If True, exclude FLAVORTEXT tags nested in specified sections.
+        exclude_list: List of tag names to exclude when exclude_nested is True.
+                     Defaults to ['VARIANT', 'CATEGORY', 'GROUP'] if not provided.
     
     Returns:
         Flavor text string or None
     """
-    flavor_sections = extract_tagged_section(section_content, 'FLAVORTEXT')
+    if exclude_list is None:
+        exclude_list = ['VARIANT', 'CATEGORY', 'GROUP']
+    if exclude_nested:
+        flavor_sections = extract_direct_child_tags(section_content, 'FLAVORTEXT', exclude_nested_in=exclude_list)
+    else:
+        flavor_sections = extract_tagged_section(section_content, 'FLAVORTEXT')
     if flavor_sections:
         flavor_text = flavor_sections[0].strip()
         if flavor_text:
@@ -2535,28 +2687,37 @@ def extract_flavor_text(section_content: str) -> Optional[str]:
 
 
 def extract_description(section_content: str, flavor_text: Optional[str], db: DatabaseConnection, 
-                       monster_name: str, update_existing: bool = False) -> Tuple[Optional[str], List[Dict]]:
+                       monster_name: str, update_existing: bool = False, exclude_nested: bool = False, 
+                       exclude_list: List[str] = None) -> Tuple[Optional[str], List[Dict]]:
     """
     Extract description from a section's DESCRIPTION tag.
     Also extracts "XXX Traits" abilities from the TRAITS tag if present.
     Processes tables and replaces them with [table:slug] tags.
     
     Args:
-        section_content: The content of a MAINMONSTER or VARIANT section
+        section_content: The content of a MAINMONSTER, GROUP, CATEGORY, or VARIANT section
         flavor_text: Previously extracted flavor text (to skip if duplicated)
         db: DatabaseConnection instance
         monster_name: Name of monster (for logging)
+        exclude_nested: If True, exclude DESCRIPTION tags nested in specified sections.
+        exclude_list: List of tag names to exclude when exclude_nested is True.
+                     Defaults to ['VARIANT', 'CATEGORY', 'GROUP'] if not provided.
     
     Returns:
         Tuple of (description_string, traits_abilities_list)
         - description_string: Description text
         - traits_abilities_list: List of Traits abilities found (same format as special_abilities)
     """
+    if exclude_list is None:
+        exclude_list = ['VARIANT', 'CATEGORY', 'GROUP']
     description_parts = []
     traits_abilities = []
     
     # Extract DESCRIPTION tag content
-    description_sections = extract_tagged_section(section_content, 'DESCRIPTION')
+    if exclude_nested:
+        description_sections = extract_direct_child_tags(section_content, 'DESCRIPTION', exclude_nested_in=exclude_list)
+    else:
+        description_sections = extract_tagged_section(section_content, 'DESCRIPTION')
     if description_sections:
         description_text = description_sections[0].strip()
         if description_text:
@@ -2570,7 +2731,10 @@ def extract_description(section_content: str, flavor_text: Optional[str], db: Da
             description_parts.append(description_text)
     
     # Extract TRAITS tag content if present
-    traits_sections = extract_tagged_section(section_content, 'TRAITS')
+    if exclude_nested:
+        traits_sections = extract_direct_child_tags(section_content, 'TRAITS', exclude_nested_in=exclude_list)
+    else:
+        traits_sections = extract_tagged_section(section_content, 'TRAITS')
     if traits_sections:
         traits_text = traits_sections[0].strip()
         if traits_text:
@@ -2608,18 +2772,26 @@ def extract_description(section_content: str, flavor_text: Optional[str], db: Da
     return description, traits_abilities
 
 
-def extract_combat_description(section_content: str, db: DatabaseConnection) -> Optional[str]:
+def extract_combat_description(section_content: str, db: DatabaseConnection, exclude_nested: bool = False, exclude_list: List[str] = None) -> Optional[str]:
     """
     Extract combat description from a section's COMBAT tag.
     
     Args:
-        section_content: The content of a MAINMONSTER or VARIANT section
+        section_content: The content of a MAINMONSTER, GROUP, CATEGORY, or VARIANT section
         db: DatabaseConnection instance
+        exclude_nested: If True, exclude COMBAT tags nested in specified sections.
+        exclude_list: List of tag names to exclude when exclude_nested is True.
+                     Defaults to ['VARIANT', 'CATEGORY', 'GROUP'] if not provided.
     
     Returns:
         Combat description string or None
     """
-    combat_sections = extract_tagged_section(section_content, 'COMBAT')
+    if exclude_list is None:
+        exclude_list = ['VARIANT', 'CATEGORY', 'GROUP']
+    if exclude_nested:
+        combat_sections = extract_direct_child_tags(section_content, 'COMBAT', exclude_nested_in=exclude_list)
+    else:
+        combat_sections = extract_tagged_section(section_content, 'COMBAT')
     if combat_sections:
         combat_text = combat_sections[0].strip()
         if combat_text:
@@ -2716,14 +2888,18 @@ def extract_caster_level_and_save_ability(text: str) -> Tuple[Optional[int], Opt
 
 
 def extract_combat_section(section_content: str, db: DatabaseConnection, 
-                           monster_name: str) -> Tuple[List[Dict], List[Dict], List[Dict]]:
+                           monster_name: str, exclude_nested: bool = False, 
+                           exclude_list: List[str] = None) -> Tuple[List[Dict], List[Dict], List[Dict]]:
     """
     Extract special abilities and prepared spells from section content.
     
     Args:
-        section_content: The content of a MAINMONSTER or VARIANT section
+        section_content: The content of a MAINMONSTER, GROUP, CATEGORY, or VARIANT section
         db: DatabaseConnection instance
         monster_name: Name of monster (for logging)
+        exclude_nested: If True, exclude SA tags that are nested in specified sections.
+        exclude_list: List of tag names to exclude when exclude_nested is True.
+                     Defaults to ['VARIANT', 'CATEGORY', 'GROUP'] if not provided.
     
     Returns:
         Tuple of (special_abilities, prepared_spells, prepared_spell_slots)
@@ -2732,8 +2908,17 @@ def extract_combat_section(section_content: str, db: DatabaseConnection,
     prepared_spells = []
     prepared_spell_slots = []
     
+    # Default exclude list for MAINMONSTER
+    if exclude_list is None:
+        exclude_list = ['VARIANT', 'CATEGORY', 'GROUP']
+    
     # Extract all {SA} tags (special abilities)
-    sa_sections = extract_tagged_section(section_content, 'SA')
+    # If exclude_nested is True, only get direct children (not nested in specified sections)
+    # This prevents extracting abilities from child sections
+    if exclude_nested:
+        sa_sections = extract_direct_child_tags(section_content, 'SA', exclude_nested_in=exclude_list)
+    else:
+        sa_sections = extract_tagged_section(section_content, 'SA')
     
     for sa_content in sa_sections:
         if not sa_content.strip():
@@ -2742,28 +2927,75 @@ def extract_combat_section(section_content: str, db: DatabaseConnection,
         # Parse the ability name and type from the first line
         lines = sa_content.strip().split('\n', 1)
         first_line = lines[0].strip()
-        # Get description without stripping newlines, but remove leading indentation
-        if len(lines) > 1:
-            ability_description = lines[1]
-            # Remove leading indentation (4 spaces) from each line while preserving newlines
-            description_lines = ability_description.split('\n')
-            dedented_lines = []
-            for line in description_lines:
-                # Remove up to 4 leading spaces
-                if line.startswith('    '):
-                    dedented_lines.append(line[4:])
-                elif line.strip():  # Non-empty line that doesn't start with 4 spaces
-                    dedented_lines.append(line)
-                else:  # Empty line
-                    dedented_lines.append('')
-            ability_description = '\n'.join(dedented_lines).rstrip()
-        else:
-            ability_description = ''
+        
+        # Check if first line contains a colon that separates name from description
+        # Pattern: "Ability Name: description" or "Ability Name (info): description"
+        # But don't split on type marker colons like "(Sp):" - those are part of the name
+        # Look for colon followed by space and content (not just a type marker)
+        ability_name = first_line
+        ability_description = ''
+        
+        # Check if there's a colon in the first line that separates name from description
+        # Type markers are like "(Sp):", "(Su):", "(Ex):" - these should not be split points
+        # Pattern: "Name (info): description" or "Name: description"
+        colon_split_match = None
+        
+        # Check if the line ends with a type marker colon (like "(Sp):" or "(Su):" or "(Ex):")
+        # Type markers are single letters in parentheses: (Sp), (Su), (Ex)
+        type_marker_at_end = re.search(r'\(([A-Za-z]+)\)\s*:\s*$', first_line)
+        
+        if not type_marker_at_end:
+            # No type marker colon at end - look for other colons that separate name from description
+            # Pattern: colon followed by space and content (spell lists, etc.)
+            # This handles cases like "Typical Sorcerer Spells Known (6/6/4; save DC 12 + spell level): 0--detect magic..."
+            # Or "Ability Name: description text"
+            colon_match = re.search(r':\s+(.+)$', first_line)
+            if colon_match:
+                # Found a colon with content after it - split here
+                colon_pos = colon_match.start()
+                ability_name = first_line[:colon_pos].strip()
+                ability_description = colon_match.group(1).strip()
+                colon_split_match = colon_match
+        
+        # If we didn't split on colon, check for newline-separated description
+        if not colon_split_match:
+            if len(lines) > 1:
+                ability_description = lines[1]
+                # Remove leading indentation (4 spaces) from each line while preserving newlines
+                description_lines = ability_description.split('\n')
+                dedented_lines = []
+                for line in description_lines:
+                    # Remove up to 4 leading spaces
+                    if line.startswith('    '):
+                        dedented_lines.append(line[4:])
+                    elif line.strip():  # Non-empty line that doesn't start with 4 spaces
+                        dedented_lines.append(line)
+                    else:  # Empty line
+                        dedented_lines.append('')
+                ability_description = '\n'.join(dedented_lines).rstrip()
+            else:
+                ability_description = ''
         
         # Extract ability name and type marker
         # Pattern: "Ability Name (Sp):" or "Ability Name (Su):" or "Ability Name (Ex):" or "Ability Name:"
-        ability_name = first_line
+        # Also handle: "Typical Sorcerer Spells Known (6/6/4; save DC 12 + spell level): 0--..."
         ability_type = None
+        
+        # Check if ability_name contains parenthetical slot information (like "(6/6/4; save DC 12 + spell level)")
+        # This should be moved to description, not kept in the name
+        # Pattern: parenthetical containing numbers with slashes (slot counts like "6/6/4") or "save DC"
+        # Match pattern like "(6/6/4; save DC 12 + spell level)" at the end of the name
+        # Pattern matches: digits with slashes (like "6/6/4" or "5/3") or "save DC"
+        slot_info_match = re.search(r'\s+\(([^)]*(?:\d+/\d+|save\s+DC)[^)]*)\)\s*$', ability_name)
+        if slot_info_match:
+            # Found slot information in parentheses - extract it to description
+            slot_info = slot_info_match.group(0).strip()  # Full match including parentheses and spaces
+            ability_name = ability_name[:slot_info_match.start()].strip()
+            # Prepend slot info to description (with colon since we split on colon earlier)
+            if colon_split_match:
+                ability_description = slot_info + ': ' + ability_description
+            else:
+                ability_description = slot_info
         
         # Check for type markers
         if '(Sp)' in ability_name or '(Sp):' in ability_name:
@@ -2781,6 +3013,8 @@ def extract_combat_section(section_content: str, db: DatabaseConnection,
         is_skills_ability = clean_name.lower() == 'skills'
         is_spells_ability = clean_name.lower() == 'spells'
         is_possessions = clean_name.lower() == 'possessions'
+        # Check for "Typical X Spells Known" or "Typical X Spells Prepared" abilities
+        is_spells_known_or_prepared = 'spells known' in clean_name.lower() or 'spells prepared' in clean_name.lower()
         
         # Determine ability type for special cases
         if is_spell_like_abilities:
@@ -2846,8 +3080,8 @@ def extract_combat_section(section_content: str, db: DatabaseConnection,
                     logger.debug(f"Found {len(created_tables)} table(s) in {clean_name} ability for {monster_name}")
         else:
             # For individual spell-like abilities (type == SpellLike but not "Spell-Like Abilities" block),
-            # extract caster level and save ability from the description
-            if ability_type == MONSTER_SPECIAL_ABILITY_TYPE['SpellLike']:
+            # or "Spells Known/Prepared" abilities, extract caster level and save ability from the description
+            if ability_type == MONSTER_SPECIAL_ABILITY_TYPE['SpellLike'] or is_spells_known_or_prepared:
                 desc_cl, desc_sa, cleaned_description = extract_caster_level_and_save_ability(ability_description)
                 if desc_cl:
                     effective_caster_level = desc_cl
@@ -2856,11 +3090,12 @@ def extract_combat_section(section_content: str, db: DatabaseConnection,
                 ability_description = cleaned_description
             
             # Process description for spell references first (before tables)
-            # For spell-like abilities (type == SpellLike), also process spell names in plain text
+            # For spell-like abilities (type == SpellLike) or "Spells Known/Prepared" abilities,
+            # also process spell names in plain text
             # Preserve newlines in the description
             if ability_description:
-                if ability_type == MONSTER_SPECIAL_ABILITY_TYPE['SpellLike']:
-                    # Spell-like abilities should have spell names converted to markdown
+                if ability_type == MONSTER_SPECIAL_ABILITY_TYPE['SpellLike'] or is_spells_known_or_prepared:
+                    # Spell-like abilities and "Spells Known/Prepared" should have spell names converted to markdown
                     ability_description = process_text_for_spell_references(ability_description, db, process_plain_text=True, preserve_newlines=True)
                 else:
                     # Non-spell-like abilities: process but don't convert plain text spell names
@@ -2884,7 +3119,11 @@ def extract_combat_section(section_content: str, db: DatabaseConnection,
             })
     
     # Extract prepared spells from {PREPEDSPELLS} tag
-    preped_spells_sections = extract_tagged_section(section_content, 'PREPEDSPELLS')
+    # If exclude_nested is True, only get direct children (not nested in specified sections)
+    if exclude_nested:
+        preped_spells_sections = extract_direct_child_tags(section_content, 'PREPEDSPELLS', exclude_nested_in=exclude_list)
+    else:
+        preped_spells_sections = extract_tagged_section(section_content, 'PREPEDSPELLS')
     for preped_content in preped_spells_sections:
         if not preped_content.strip():
                     continue
@@ -2944,10 +3183,24 @@ def extract_combat_section(section_content: str, db: DatabaseConnection,
                     if current_part.strip():
                         parts.append(current_part.strip())
                     
-                    for part in parts:
+                    # Process parts and combine descriptors with previous spell names
+                    # e.g., "dispel magic, greater" should be combined into "dispel magic, greater"
+                    for i, part in enumerate(parts):
                         part = part.strip()
                         if not part:
                             continue
+                        
+                        # Check if this part is a descriptor (greater, mass, lesser, etc.)
+                        is_descriptor = part.lower() in [d.lower() for d in SPELL_DESCRIPTORS]
+                        
+                        if is_descriptor and spell_items:
+                            # Combine with the previous spell name
+                            # Format: "previous_spell_name, descriptor"
+                            previous_spell = spell_items[-1]
+                            previous_spell['spell_name'] = f"{previous_spell['spell_name']}, {part}"
+                            continue
+                        
+                        # Not a descriptor or no previous spell - process as normal spell
                         qty_match = re.search(r'\((\d+)\)\s*$', part)
                         if qty_match:
                             spell_name = part[:qty_match.start()].strip()
@@ -3065,17 +3318,25 @@ def _validate_statblock_completeness(statblock: Dict, monster_name: str) -> None
             )
 
 
-def extract_statblock_from_section(section_content: str) -> Optional[Dict]:
+def extract_statblock_from_section(section_content: str, exclude_nested: bool = False, exclude_list: List[str] = None) -> Optional[Dict]:
     """
     Extract statblock from a section's STATBLOCK tag.
     
     Args:
-        section_content: The content of a MAINMONSTER or VARIANT section
+        section_content: The content of a MAINMONSTER, GROUP, CATEGORY, or VARIANT section
+        exclude_nested: If True, exclude STATBLOCK tags nested in specified sections.
+        exclude_list: List of tag names to exclude when exclude_nested is True.
+                     Defaults to ['VARIANT', 'CATEGORY', 'GROUP'] if not provided.
     
     Returns:
         Statblock dictionary or None if no statblock found
     """
-    statblock_sections = extract_tagged_section(section_content, 'STATBLOCK')
+    if exclude_list is None:
+        exclude_list = ['VARIANT', 'CATEGORY', 'GROUP']
+    if exclude_nested:
+        statblock_sections = extract_direct_child_tags(section_content, 'STATBLOCK', exclude_nested_in=exclude_list)
+    else:
+        statblock_sections = extract_tagged_section(section_content, 'STATBLOCK')
     if not statblock_sections:
         return None
     
@@ -3286,16 +3547,17 @@ def extract_monster_data(content: str, db: DatabaseConnection, skip_existing: bo
                 value=monster_name
             )
     
-    base_statblock = extract_statblock_from_section(main_content)
+    base_statblock = extract_statblock_from_section(main_content, exclude_nested=True)
     if base_statblock:
         base_statblock['variant_name'] = ''
         _validate_statblock_completeness(base_statblock, monster_name)
         logger.debug(f"Found statblock for base monster with {len([k for k in base_statblock.keys() if k not in ['variant_name', 'type_line']])} fields")
     
-    flavor_text = extract_flavor_text(main_content)
-    description, description_traits_abilities = extract_description(main_content, flavor_text, db, monster_name, update_existing=update_existing)
-    combat_description = extract_combat_description(main_content, db)
-    special_abilities, prepared_spells, prepared_spell_slots = extract_combat_section(main_content, db, monster_name)
+    flavor_text = extract_flavor_text(main_content, exclude_nested=True)
+    description, description_traits_abilities = extract_description(main_content, flavor_text, db, monster_name, update_existing=update_existing, exclude_nested=True)
+    combat_description = extract_combat_description(main_content, db, exclude_nested=True)
+    # Exclude nested SA tags to avoid extracting abilities from VARIANT/CATEGORY/GROUP sections
+    special_abilities, prepared_spells, prepared_spell_slots = extract_combat_section(main_content, db, monster_name, exclude_nested=True)
     
     if description_traits_abilities:
         logger.debug(f"Adding {len(description_traits_abilities)} Traits ability/abilities from description to special_abilities")
@@ -3337,75 +3599,354 @@ def extract_monster_data(content: str, db: DatabaseConnection, skip_existing: bo
         all_monster_names = {base_monster_name_normalized: base_monster_id}
         logger.debug(f"Initialized all_monster_names with base: '{base_monster_name_normalized}' -> {base_monster_id}")
         
-        # Check for CATEGORY sections (sub-types like "Fire Elemental", "Water Elemental")
-        category_sections = extract_tagged_section(content, 'CATEGORY')
+        # Check for GROUP sections first (new hierarchy level)
+        group_sections = extract_tagged_section(main_content, 'GROUP')
         
-        if category_sections:
-            # Process three-level hierarchy: MAINMONSTER -> CATEGORY -> VARIANT
-            categories_count = 0
-            variants_count = 0
+        groups_count = 0
+        categories_count = 0
+        variants_count = 0
+        
+        if group_sections:
+            # Process four-level hierarchy: MAINMONSTER -> GROUP -> CATEGORY -> VARIANT
+            # Or three-level: MAINMONSTER -> GROUP -> VARIANT
+            logger.debug(f"Found {len(group_sections)} GROUP section(s)")
             
-            for category_content in category_sections:
-                lines = category_content.strip().split('\n', 1)
-                category_name_raw = lines[0].strip() if lines else None
+            for group_content in group_sections:
+                group_lines = group_content.strip().split('\n', 1)
+                group_name_raw = group_lines[0].strip() if group_lines else None
                 
-                if not category_name_raw:
-                    logger.warning("Skipping category with no name")
+                if not group_name_raw:
+                    logger.warning("Skipping group with no name")
                     continue
                 
-                category_name = normalize_monster_name(category_name_raw)
-                logger.debug(f"Processing category: '{category_name}' (from '{category_name_raw}')")
+                group_name = normalize_monster_name(group_name_raw)
+                logger.debug(f"Processing group: '{group_name}' (from '{group_name_raw}')")
                 
-                # Extract category data (flavor text, description, combat, special abilities)
-                category_statblock = extract_statblock_from_section(category_content)
-                if category_statblock:
-                    category_statblock['variant_name'] = ''
-                    _validate_statblock_completeness(category_statblock, category_name)
+                # Extract group data (flavor text, description, combat, special abilities)
+                # Exclude nested CATEGORY and VARIANT tags to avoid extracting from child sections
+                # For GROUP, exclude only VARIANT and CATEGORY (not GROUP itself)
+                group_exclude_list = ['VARIANT', 'CATEGORY']
+                group_statblock = extract_statblock_from_section(group_content, exclude_nested=True, exclude_list=group_exclude_list)
+                if group_statblock:
+                    group_statblock['variant_name'] = ''
+                    _validate_statblock_completeness(group_statblock, group_name)
                 
-                category_flavor_text = extract_flavor_text(category_content)
-                category_description, category_description_traits_abilities = extract_description(category_content, category_flavor_text, db, category_name, update_existing=update_existing)
-                category_combat_description = extract_combat_description(category_content, db)
-                category_special_abilities, category_prepared_spells, category_prepared_spell_slots = extract_combat_section(category_content, db, category_name)
+                group_flavor_text = extract_flavor_text(group_content, exclude_nested=True, exclude_list=group_exclude_list)
+                group_description, group_description_traits_abilities = extract_description(group_content, group_flavor_text, db, group_name, update_existing=update_existing, exclude_nested=True, exclude_list=group_exclude_list)
+                group_combat_description = extract_combat_description(group_content, db, exclude_nested=True, exclude_list=group_exclude_list)
+                group_special_abilities, group_prepared_spells, group_prepared_spell_slots = extract_combat_section(group_content, db, group_name, exclude_nested=True, exclude_list=group_exclude_list)
                 
-                if category_description_traits_abilities:
-                    logger.debug(f"Category {category_name}: Adding {len(category_description_traits_abilities)} Traits ability/abilities from description to special_abilities")
-                    category_special_abilities.extend(category_description_traits_abilities)
+                if group_description_traits_abilities:
+                    logger.debug(f"Group {group_name}: Adding {len(group_description_traits_abilities)} Traits ability/abilities from description to special_abilities")
+                    group_special_abilities.extend(group_description_traits_abilities)
                 
-                # Insert category as a monster with BaseMonsterId pointing to the MAINMONSTER
-                category_data = {
-                    'name': category_name,
+                # Insert group as a monster with BaseMonsterId pointing to the MAINMONSTER
+                group_data = {
+                    'name': group_name,
                     'base_monster_id': base_monster_id,
-                    'statblock': category_statblock,
-                    'flavor_text': category_flavor_text,
-                    'description': category_description,
-                    'combat_description': category_combat_description,
-                    'special_abilities': category_special_abilities,
-                    'prepared_spells': category_prepared_spells,
-                    'prepared_spell_slots': category_prepared_spell_slots
+                    'statblock': group_statblock,
+                    'flavor_text': group_flavor_text,
+                    'description': group_description,
+                    'combat_description': group_combat_description,
+                    'special_abilities': group_special_abilities,
+                    'prepared_spells': group_prepared_spells,
+                    'prepared_spell_slots': group_prepared_spell_slots
                 }
-                logger.debug(f"Inserting category '{category_name}' with base_monster_id: {base_monster_id}")
-                category_monster_id = insert_variant_monster(category_data, db)
-                all_monster_names[category_name] = category_monster_id
-                categories_count += 1
-                logger.debug(f"Tracked category '{category_name}' with ID {category_monster_id} in all_monster_names")
+                logger.debug(f"Inserting group '{group_name}' with base_monster_id: {base_monster_id}")
+                group_monster_id = insert_variant_monster(group_data, db)
+                all_monster_names[group_name] = group_monster_id
+                groups_count += 1
+                logger.debug(f"Tracked group '{group_name}' with ID {group_monster_id} in all_monster_names")
                 
-                # Process extra descriptions from within this CATEGORY section
-                process_extra_descriptions_from_section(category_content, category_monster_id, db, category_name, update_existing=update_existing)
+                # Process extra descriptions from within this GROUP section
+                process_extra_descriptions_from_section(group_content, group_monster_id, db, group_name, update_existing=update_existing)
                 
-                # Extract VARIANT sections from within this CATEGORY
-                variant_sections = extract_tagged_section(category_content, 'VARIANT')
+                # Check for CATEGORY sections within this GROUP
+                category_sections = extract_tagged_section(group_content, 'CATEGORY')
+                
+                if category_sections:
+                    # Process CATEGORY sections within GROUP: GROUP -> CATEGORY -> VARIANT
+                    for category_content in category_sections:
+                        category_lines = category_content.strip().split('\n', 1)
+                        category_name_raw = category_lines[0].strip() if category_lines else None
+                        
+                        if not category_name_raw:
+                            logger.warning(f"Skipping category with no name in group '{group_name}'")
+                            continue
+                        
+                        category_name = normalize_monster_name(category_name_raw)
+                        logger.debug(f"Processing category: '{category_name}' (from '{category_name_raw}') in group '{group_name}'")
+                        
+                        # Extract category data
+                        # For CATEGORY, exclude only VARIANT (not CATEGORY or GROUP)
+                        category_exclude_list = ['VARIANT']
+                        category_statblock = extract_statblock_from_section(category_content, exclude_nested=True, exclude_list=category_exclude_list)
+                        if category_statblock:
+                            category_statblock['variant_name'] = ''
+                            _validate_statblock_completeness(category_statblock, category_name)
+                        
+                        category_flavor_text = extract_flavor_text(category_content, exclude_nested=True, exclude_list=category_exclude_list)
+                        category_description, category_description_traits_abilities = extract_description(category_content, category_flavor_text, db, category_name, update_existing=update_existing, exclude_nested=True, exclude_list=category_exclude_list)
+                        category_combat_description = extract_combat_description(category_content, db, exclude_nested=True, exclude_list=category_exclude_list)
+                        category_special_abilities, category_prepared_spells, category_prepared_spell_slots = extract_combat_section(category_content, db, category_name, exclude_nested=True, exclude_list=category_exclude_list)
+                        
+                        if category_description_traits_abilities:
+                            logger.debug(f"Category {category_name}: Adding {len(category_description_traits_abilities)} Traits ability/abilities from description to special_abilities")
+                            category_special_abilities.extend(category_description_traits_abilities)
+                        
+                        # Insert category with BaseMonsterId pointing to the GROUP
+                        category_data = {
+                            'name': category_name,
+                            'base_monster_id': group_monster_id,  # Point to group, not main monster
+                            'statblock': category_statblock,
+                            'flavor_text': category_flavor_text,
+                            'description': category_description,
+                            'combat_description': category_combat_description,
+                            'special_abilities': category_special_abilities,
+                            'prepared_spells': category_prepared_spells,
+                            'prepared_spell_slots': category_prepared_spell_slots
+                        }
+                        logger.debug(f"Inserting category '{category_name}' with base_monster_id: {group_monster_id} (group: {group_name})")
+                        category_monster_id = insert_variant_monster(category_data, db)
+                        all_monster_names[category_name] = category_monster_id
+                        categories_count += 1
+                        logger.debug(f"Tracked category '{category_name}' with ID {category_monster_id} in all_monster_names")
+                        
+                        # Process extra descriptions from within this CATEGORY section
+                        process_extra_descriptions_from_section(category_content, category_monster_id, db, category_name, update_existing=update_existing)
+                        
+                        # Extract VARIANT sections from within this CATEGORY
+                        variant_sections = extract_tagged_section(category_content, 'VARIANT')
+                        
+                        for variant_content in variant_sections:
+                            variant_lines = variant_content.strip().split('\n', 1)
+                            variant_name_raw = variant_lines[0].strip() if variant_lines else None
+                            
+                            if not variant_name_raw:
+                                logger.warning(f"Skipping variant with no name in category '{category_name}'")
+                                continue
+                            
+                            variant_name = clean_variant_name(variant_name_raw, category_name)
+                            variant_name = normalize_monster_name(variant_name)
+                            logger.debug(f"Processing variant: '{variant_name}' (from '{variant_name_raw}') in category '{category_name}' (group: {group_name})")
+                            
+                            variant_statblock = extract_statblock_from_section(variant_content)
+                            if variant_statblock:
+                                variant_statblock['variant_name'] = variant_name
+                                _validate_statblock_completeness(variant_statblock, variant_name)
+                            
+                            variant_flavor_text = extract_flavor_text(variant_content)
+                            variant_description, variant_description_traits_abilities = extract_description(variant_content, variant_flavor_text, db, variant_name, update_existing=update_existing)
+                            variant_combat_description = extract_combat_description(variant_content, db)
+                            variant_special_abilities, variant_prepared_spells, variant_prepared_spell_slots = extract_combat_section(variant_content, db, variant_name)
+                            
+                            if variant_description_traits_abilities:
+                                logger.debug(f"Variant {variant_name}: Adding {len(variant_description_traits_abilities)} Traits ability/abilities from description to special_abilities")
+                                variant_special_abilities.extend(variant_description_traits_abilities)
+                            
+                            variant_name_normalized = normalize_monster_name(variant_name)
+                            
+                            # Insert variant with BaseMonsterId pointing to the CATEGORY
+                            variant_data = {
+                                'name': variant_name_normalized,
+                                'base_monster_id': category_monster_id,  # Point to category
+                                'statblock': variant_statblock,
+                                'flavor_text': variant_flavor_text,
+                                'description': variant_description,
+                                'combat_description': variant_combat_description,
+                                'special_abilities': variant_special_abilities,
+                                'prepared_spells': variant_prepared_spells,
+                                'prepared_spell_slots': variant_prepared_spell_slots
+                            }
+                            logger.debug(f"Inserting variant '{variant_name_normalized}' (from '{variant_name}') with base_monster_id: {category_monster_id} (category: {category_name}, group: {group_name})")
+                            if variant_data.get('base_monster_id') is None:
+                                raise ValueError(f"base_monster_id is None for variant '{variant_name}'. Category monster ID was: {category_monster_id}")
+                            variant_monster_id = insert_variant_monster(variant_data, db)
+                            all_monster_names[variant_name_normalized] = variant_monster_id
+                            variants_count += 1
+                            logger.debug(f"Tracked variant '{variant_name_normalized}' with ID {variant_monster_id} in all_monster_names")
+                            
+                            # Process extra descriptions from within this VARIANT section
+                            process_extra_descriptions_from_section(variant_content, variant_monster_id, db, variant_name_normalized, update_existing=update_existing)
+                else:
+                    # No CATEGORY sections within GROUP - check for VARIANT sections directly within GROUP
+                    variant_sections = extract_tagged_section(group_content, 'VARIANT')
+                    
+                    for variant_content in variant_sections:
+                        variant_lines = variant_content.strip().split('\n', 1)
+                        variant_name_raw = variant_lines[0].strip() if variant_lines else None
+                        
+                        if not variant_name_raw:
+                            logger.warning(f"Skipping variant with no name in group '{group_name}'")
+                            continue
+                        
+                        variant_name = clean_variant_name(variant_name_raw, group_name)
+                        variant_name = normalize_monster_name(variant_name)
+                        logger.debug(f"Processing variant: '{variant_name}' (from '{variant_name_raw}') in group '{group_name}'")
+                        
+                        variant_statblock = extract_statblock_from_section(variant_content)
+                        if variant_statblock:
+                            variant_statblock['variant_name'] = variant_name
+                            _validate_statblock_completeness(variant_statblock, variant_name)
+                        
+                        variant_flavor_text = extract_flavor_text(variant_content)
+                        variant_description, variant_description_traits_abilities = extract_description(variant_content, variant_flavor_text, db, variant_name, update_existing=update_existing)
+                        variant_combat_description = extract_combat_description(variant_content, db)
+                        variant_special_abilities, variant_prepared_spells, variant_prepared_spell_slots = extract_combat_section(variant_content, db, variant_name)
+                        
+                        if variant_description_traits_abilities:
+                            logger.debug(f"Variant {variant_name}: Adding {len(variant_description_traits_abilities)} Traits ability/abilities from description to special_abilities")
+                            variant_special_abilities.extend(variant_description_traits_abilities)
+                        
+                        variant_name_normalized = normalize_monster_name(variant_name)
+                        
+                        # Insert variant with BaseMonsterId pointing to the GROUP
+                        variant_data = {
+                            'name': variant_name_normalized,
+                            'base_monster_id': group_monster_id,  # Point to group, not main monster
+                            'statblock': variant_statblock,
+                            'flavor_text': variant_flavor_text,
+                            'description': variant_description,
+                            'combat_description': variant_combat_description,
+                            'special_abilities': variant_special_abilities,
+                            'prepared_spells': variant_prepared_spells,
+                            'prepared_spell_slots': variant_prepared_spell_slots
+                        }
+                        logger.debug(f"Inserting variant '{variant_name_normalized}' (from '{variant_name}') with base_monster_id: {group_monster_id} (group: {group_name})")
+                        if variant_data.get('base_monster_id') is None:
+                            raise ValueError(f"base_monster_id is None for variant '{variant_name}'. Group monster ID was: {group_monster_id}")
+                        variant_monster_id = insert_variant_monster(variant_data, db)
+                        all_monster_names[variant_name_normalized] = variant_monster_id
+                        variants_count += 1
+                        logger.debug(f"Tracked variant '{variant_name_normalized}' with ID {variant_monster_id} in all_monster_names")
+                        
+                        # Process extra descriptions from within this VARIANT section
+                        process_extra_descriptions_from_section(variant_content, variant_monster_id, db, variant_name_normalized, update_existing=update_existing)
+        else:
+            # No GROUP sections - check for CATEGORY sections (existing behavior)
+            category_sections = extract_tagged_section(main_content, 'CATEGORY')
+            
+            if category_sections:
+                # Process three-level hierarchy: MAINMONSTER -> CATEGORY -> VARIANT
+                logger.debug(f"Found {len(category_sections)} CATEGORY section(s)")
+                
+                for category_content in category_sections:
+                    category_lines = category_content.strip().split('\n', 1)
+                    category_name_raw = category_lines[0].strip() if category_lines else None
+                    
+                    if not category_name_raw:
+                        logger.warning("Skipping category with no name")
+                        continue
+                    
+                    category_name = normalize_monster_name(category_name_raw)
+                    logger.debug(f"Processing category: '{category_name}' (from '{category_name_raw}')")
+                    
+                    # Extract category data (flavor text, description, combat, special abilities)
+                    # For CATEGORY, exclude only VARIANT (not CATEGORY or GROUP)
+                    category_exclude_list = ['VARIANT']
+                    category_statblock = extract_statblock_from_section(category_content, exclude_nested=True, exclude_list=category_exclude_list)
+                    if category_statblock:
+                        category_statblock['variant_name'] = ''
+                        _validate_statblock_completeness(category_statblock, category_name)
+                    
+                    category_flavor_text = extract_flavor_text(category_content, exclude_nested=True, exclude_list=category_exclude_list)
+                    category_description, category_description_traits_abilities = extract_description(category_content, category_flavor_text, db, category_name, update_existing=update_existing, exclude_nested=True, exclude_list=category_exclude_list)
+                    category_combat_description = extract_combat_description(category_content, db, exclude_nested=True, exclude_list=category_exclude_list)
+                    category_special_abilities, category_prepared_spells, category_prepared_spell_slots = extract_combat_section(category_content, db, category_name, exclude_nested=True, exclude_list=category_exclude_list)
+                    
+                    if category_description_traits_abilities:
+                        logger.debug(f"Category {category_name}: Adding {len(category_description_traits_abilities)} Traits ability/abilities from description to special_abilities")
+                        category_special_abilities.extend(category_description_traits_abilities)
+                    
+                    # Insert category as a monster with BaseMonsterId pointing to the MAINMONSTER
+                    category_data = {
+                        'name': category_name,
+                        'base_monster_id': base_monster_id,
+                        'statblock': category_statblock,
+                        'flavor_text': category_flavor_text,
+                        'description': category_description,
+                        'combat_description': category_combat_description,
+                        'special_abilities': category_special_abilities,
+                        'prepared_spells': category_prepared_spells,
+                        'prepared_spell_slots': category_prepared_spell_slots
+                    }
+                    logger.debug(f"Inserting category '{category_name}' with base_monster_id: {base_monster_id}")
+                    category_monster_id = insert_variant_monster(category_data, db)
+                    all_monster_names[category_name] = category_monster_id
+                    categories_count += 1
+                    logger.debug(f"Tracked category '{category_name}' with ID {category_monster_id} in all_monster_names")
+                    
+                    # Process extra descriptions from within this CATEGORY section
+                    process_extra_descriptions_from_section(category_content, category_monster_id, db, category_name, update_existing=update_existing)
+                    
+                    # Extract VARIANT sections from within this CATEGORY
+                    variant_sections = extract_tagged_section(category_content, 'VARIANT')
+                    
+                    for variant_content in variant_sections:
+                        variant_lines = variant_content.strip().split('\n', 1)
+                        variant_name_raw = variant_lines[0].strip() if variant_lines else None
+                        
+                        if not variant_name_raw:
+                            logger.warning(f"Skipping variant with no name in category '{category_name}'")
+                            continue
+                        
+                        variant_name = clean_variant_name(variant_name_raw, category_name)
+                        variant_name = normalize_monster_name(variant_name)
+                        logger.debug(f"Processing variant: '{variant_name}' (from '{variant_name_raw}') in category '{category_name}'")
+                        
+                        variant_statblock = extract_statblock_from_section(variant_content)
+                        if variant_statblock:
+                            variant_statblock['variant_name'] = variant_name
+                            _validate_statblock_completeness(variant_statblock, variant_name)
+                        
+                        variant_flavor_text = extract_flavor_text(variant_content)
+                        variant_description, variant_description_traits_abilities = extract_description(variant_content, variant_flavor_text, db, variant_name, update_existing=update_existing)
+                        variant_combat_description = extract_combat_description(variant_content, db)
+                        variant_special_abilities, variant_prepared_spells, variant_prepared_spell_slots = extract_combat_section(variant_content, db, variant_name)
+                        
+                        if variant_description_traits_abilities:
+                            logger.debug(f"Variant {variant_name}: Adding {len(variant_description_traits_abilities)} Traits ability/abilities from description to special_abilities")
+                            variant_special_abilities.extend(variant_description_traits_abilities)
+                        
+                        variant_name_normalized = normalize_monster_name(variant_name)
+                        
+                        # Insert variant with BaseMonsterId pointing to the CATEGORY
+                        variant_data = {
+                            'name': variant_name_normalized,
+                            'base_monster_id': category_monster_id,  # Point to category, not main monster
+                            'statblock': variant_statblock,
+                            'flavor_text': variant_flavor_text,
+                            'description': variant_description,
+                            'combat_description': variant_combat_description,
+                            'special_abilities': variant_special_abilities,
+                            'prepared_spells': variant_prepared_spells,
+                            'prepared_spell_slots': variant_prepared_spell_slots
+                        }
+                        logger.debug(f"Inserting variant '{variant_name_normalized}' (from '{variant_name}') with base_monster_id: {category_monster_id} (category: {category_name})")
+                        if variant_data.get('base_monster_id') is None:
+                            raise ValueError(f"base_monster_id is None for variant '{variant_name}'. Category monster ID was: {category_monster_id}")
+                        variant_monster_id = insert_variant_monster(variant_data, db)
+                        all_monster_names[variant_name_normalized] = variant_monster_id
+                        variants_count += 1
+                        logger.debug(f"Tracked variant '{variant_name_normalized}' with ID {variant_monster_id} in all_monster_names")
+                        
+                        # Process extra descriptions from within this VARIANT section
+                        process_extra_descriptions_from_section(variant_content, variant_monster_id, db, variant_name_normalized, update_existing=update_existing)
+            else:
+                # No CATEGORY sections - process VARIANT sections directly from MAINMONSTER (original behavior)
+                variant_sections = extract_tagged_section(main_content, 'VARIANT')
                 
                 for variant_content in variant_sections:
                     variant_lines = variant_content.strip().split('\n', 1)
                     variant_name_raw = variant_lines[0].strip() if variant_lines else None
                     
                     if not variant_name_raw:
-                        logger.warning(f"Skipping variant with no name in category '{category_name}'")
+                        logger.warning("Skipping variant with no name")
                         continue
                     
-                    variant_name = clean_variant_name(variant_name_raw, category_name)
+                    variant_name = clean_variant_name(variant_name_raw, monster_name)
                     variant_name = normalize_monster_name(variant_name)
-                    logger.debug(f"Processing variant: '{variant_name}' (from '{variant_name_raw}') in category '{category_name}'")
+                    logger.debug(f"Processing variant: '{variant_name}' (from '{variant_name_raw}')")
                     
                     variant_statblock = extract_statblock_from_section(variant_content)
                     if variant_statblock:
@@ -3423,10 +3964,9 @@ def extract_monster_data(content: str, db: DatabaseConnection, skip_existing: bo
                     
                     variant_name_normalized = normalize_monster_name(variant_name)
                     
-                    # Insert variant with BaseMonsterId pointing to the CATEGORY
                     variant_data = {
                         'name': variant_name_normalized,
-                        'base_monster_id': category_monster_id,  # Point to category, not main monster
+                        'base_monster_id': base_monster_id,
                         'statblock': variant_statblock,
                         'flavor_text': variant_flavor_text,
                         'description': variant_description,
@@ -3435,9 +3975,9 @@ def extract_monster_data(content: str, db: DatabaseConnection, skip_existing: bo
                         'prepared_spells': variant_prepared_spells,
                         'prepared_spell_slots': variant_prepared_spell_slots
                     }
-                    logger.debug(f"Inserting variant '{variant_name_normalized}' (from '{variant_name}') with base_monster_id: {category_monster_id} (category: {category_name})")
+                    logger.debug(f"Inserting variant '{variant_name_normalized}' (from '{variant_name}') with base_monster_id: {base_monster_id}")
                     if variant_data.get('base_monster_id') is None:
-                        raise ValueError(f"base_monster_id is None for variant '{variant_name}'. Category monster ID was: {category_monster_id}")
+                        raise ValueError(f"base_monster_id is None for variant '{variant_name}'. Base monster ID was: {base_monster_id}")
                     variant_monster_id = insert_variant_monster(variant_data, db)
                     all_monster_names[variant_name_normalized] = variant_monster_id
                     variants_count += 1
@@ -3445,80 +3985,19 @@ def extract_monster_data(content: str, db: DatabaseConnection, skip_existing: bo
                     
                     # Process extra descriptions from within this VARIANT section
                     process_extra_descriptions_from_section(variant_content, variant_monster_id, db, variant_name_normalized, update_existing=update_existing)
-        else:
-            # No CATEGORY sections - process VARIANT sections directly from MAINMONSTER (original behavior)
-            variant_sections = extract_tagged_section(content, 'VARIANT')
-            variants_count = 0
-            
-            for variant_content in variant_sections:
-                lines = variant_content.strip().split('\n', 1)
-                variant_name_raw = lines[0].strip() if lines else None
-                
-                if not variant_name_raw:
-                    logger.warning("Skipping variant with no name")
-                    continue
-                
-                variant_name = clean_variant_name(variant_name_raw, monster_name)
-                variant_name = normalize_monster_name(variant_name)
-                logger.debug(f"Processing variant: '{variant_name}' (from '{variant_name_raw}')")
-                
-                variant_statblock = extract_statblock_from_section(variant_content)
-                if variant_statblock:
-                    variant_statblock['variant_name'] = variant_name
-                    _validate_statblock_completeness(variant_statblock, variant_name)
-                
-                variant_flavor_text = extract_flavor_text(variant_content)
-                variant_description, variant_description_traits_abilities = extract_description(variant_content, variant_flavor_text, db, variant_name, update_existing=update_existing)
-                variant_combat_description = extract_combat_description(variant_content, db)
-                variant_special_abilities, variant_prepared_spells, variant_prepared_spell_slots = extract_combat_section(variant_content, db, variant_name)
-                
-                if variant_description_traits_abilities:
-                    logger.debug(f"Variant {variant_name}: Adding {len(variant_description_traits_abilities)} Traits ability/abilities from description to special_abilities")
-                    variant_special_abilities.extend(variant_description_traits_abilities)
-                
-                variant_name_normalized = normalize_monster_name(variant_name)
-                
-                variant_data = {
-                    'name': variant_name_normalized,
-                    'base_monster_id': base_monster_id,
-                    'statblock': variant_statblock,
-                    'flavor_text': variant_flavor_text,
-                    'description': variant_description,
-                    'combat_description': variant_combat_description,
-                    'special_abilities': variant_special_abilities,
-                    'prepared_spells': variant_prepared_spells,
-                    'prepared_spell_slots': variant_prepared_spell_slots
-                }
-                logger.debug(f"Inserting variant '{variant_name_normalized}' (from '{variant_name}') with base_monster_id: {base_monster_id}")
-                if variant_data.get('base_monster_id') is None:
-                    raise ValueError(f"base_monster_id is None for variant '{variant_name}'. Base monster ID was: {base_monster_id}")
-                variant_monster_id = insert_variant_monster(variant_data, db)
-                all_monster_names[variant_name_normalized] = variant_monster_id
-                variants_count += 1
-                logger.debug(f"Tracked variant '{variant_name_normalized}' with ID {variant_monster_id} in all_monster_names")
-                
-                # Process extra descriptions from within this VARIANT section
-                process_extra_descriptions_from_section(variant_content, variant_monster_id, db, variant_name_normalized, update_existing=update_existing)
         
         # Process extra descriptions from the MAINMONSTER section
         process_extra_descriptions_from_section(main_content, base_monster_id, db, monster_name, update_existing=update_existing)
         
         db.commit()
         
-        # Count categories and variants for return value
-        if category_sections:
-            total_variants = sum(len(extract_tagged_section(cat_content, 'VARIANT')) for cat_content in category_sections)
-            return {
-                'base_monster_id': base_monster_id,
-                'categories_count': len(category_sections),
-                'variants_count': total_variants
-            }
-        else:
-            # variants_count was defined in the else block above
-            return {
-                'base_monster_id': base_monster_id,
-                'variants_count': len(extract_tagged_section(content, 'VARIANT'))
-            }
+        # Return counts for all hierarchy levels
+        return {
+            'base_monster_id': base_monster_id,
+            'groups_count': groups_count,
+            'categories_count': categories_count,
+            'variants_count': variants_count
+        }
     except Exception:
         db.rollback()
         raise
@@ -3564,8 +4043,8 @@ def import_monster_file(txt_file: Path, db: DatabaseConnection, skip_existing: b
 
 def list_monsters_in_file(file_path: Path) -> None:
     """
-    List all monster, category, and variant names found in a tagged text file.
-    Shows the hierarchy and which category each variant belongs to.
+    List all monster, group, category, and variant names found in a tagged text file.
+    Shows the hierarchy and which parent each entry belongs to.
     
     Args:
         file_path: Path to the tagged text file
@@ -3576,6 +4055,7 @@ def list_monsters_in_file(file_path: Path) -> None:
         # Extract main monster
         main_sections = extract_tagged_section(content, 'MAINMONSTER')
         main_monster_name = None
+        main_content = None
         if main_sections:
             main_content = main_sections[0]
             lines = main_content.strip().split('\n', 1)
@@ -3583,35 +4063,73 @@ def list_monsters_in_file(file_path: Path) -> None:
             if main_monster_name:
                 print(f"Main Monster: {main_monster_name}")
         
-        # Check for CATEGORY sections
-        category_sections = extract_tagged_section(content, 'CATEGORY')
-        if category_sections:
-            # Three-level hierarchy: MAINMONSTER -> CATEGORY -> VARIANT
-            for category_content in category_sections:
-                category_lines = category_content.strip().split('\n', 1)
-                category_name = category_lines[0].strip() if category_lines else None
-                if category_name:
-                    print(f"  Category: {category_name}")
-                
-                # Extract variants within this category
-                variant_sections = extract_tagged_section(category_content, 'VARIANT')
-                for variant_content in variant_sections:
-                    variant_lines = variant_content.strip().split('\n', 1)
-                    variant_name = variant_lines[0].strip() if variant_lines else None
-                    if variant_name:
-                        print(f"    Variant: {variant_name} (category: {category_name})")
-        else:
-            # Two-level hierarchy: MAINMONSTER -> VARIANT
-            variant_sections = extract_tagged_section(content, 'VARIANT')
-            if variant_sections:
-                for variant_content in variant_sections:
-                    lines = variant_content.strip().split('\n', 1)
-                    variant_name = lines[0].strip() if lines else None
-                    if variant_name:
-                        if main_monster_name:
-                            print(f"  Variant: {variant_name} (main monster: {main_monster_name})")
-                        else:
-                            print(f"  Variant: {variant_name}")
+        # Check for GROUP sections first
+        if main_content:
+            group_sections = extract_tagged_section(main_content, 'GROUP')
+            if group_sections:
+                # Four-level hierarchy: MAINMONSTER -> GROUP -> CATEGORY -> VARIANT
+                # Or three-level: MAINMONSTER -> GROUP -> VARIANT
+                for group_content in group_sections:
+                    group_lines = group_content.strip().split('\n', 1)
+                    group_name = group_lines[0].strip() if group_lines else None
+                    if group_name:
+                        print(f"  Group: {group_name}")
+                    
+                    # Check for CATEGORY sections within this GROUP
+                    category_sections = extract_tagged_section(group_content, 'CATEGORY')
+                    if category_sections:
+                        # GROUP -> CATEGORY -> VARIANT
+                        for category_content in category_sections:
+                            category_lines = category_content.strip().split('\n', 1)
+                            category_name = category_lines[0].strip() if category_lines else None
+                            if category_name:
+                                print(f"    Category: {category_name} (group: {group_name})")
+                            
+                            # Extract variants within this category
+                            variant_sections = extract_tagged_section(category_content, 'VARIANT')
+                            for variant_content in variant_sections:
+                                variant_lines = variant_content.strip().split('\n', 1)
+                                variant_name = variant_lines[0].strip() if variant_lines else None
+                                if variant_name:
+                                    print(f"      Variant: {variant_name} (category: {category_name}, group: {group_name})")
+                    else:
+                        # GROUP -> VARIANT (no category)
+                        variant_sections = extract_tagged_section(group_content, 'VARIANT')
+                        for variant_content in variant_sections:
+                            variant_lines = variant_content.strip().split('\n', 1)
+                            variant_name = variant_lines[0].strip() if variant_lines else None
+                            if variant_name:
+                                print(f"    Variant: {variant_name} (group: {group_name})")
+            else:
+                # No GROUP sections - check for CATEGORY sections
+                category_sections = extract_tagged_section(main_content, 'CATEGORY')
+                if category_sections:
+                    # Three-level hierarchy: MAINMONSTER -> CATEGORY -> VARIANT
+                    for category_content in category_sections:
+                        category_lines = category_content.strip().split('\n', 1)
+                        category_name = category_lines[0].strip() if category_lines else None
+                        if category_name:
+                            print(f"  Category: {category_name}")
+                        
+                        # Extract variants within this category
+                        variant_sections = extract_tagged_section(category_content, 'VARIANT')
+                        for variant_content in variant_sections:
+                            variant_lines = variant_content.strip().split('\n', 1)
+                            variant_name = variant_lines[0].strip() if variant_lines else None
+                            if variant_name:
+                                print(f"    Variant: {variant_name} (category: {category_name})")
+                else:
+                    # Two-level hierarchy: MAINMONSTER -> VARIANT
+                    variant_sections = extract_tagged_section(main_content, 'VARIANT')
+                    if variant_sections:
+                        for variant_content in variant_sections:
+                            variant_lines = variant_content.strip().split('\n', 1)
+                            variant_name = variant_lines[0].strip() if variant_lines else None
+                            if variant_name:
+                                if main_monster_name:
+                                    print(f"  Variant: {variant_name} (main monster: {main_monster_name})")
+                                else:
+                                    print(f"  Variant: {variant_name}")
     
     except Exception as e:
         logger.error(f"Error listing monsters in {file_path}: {e}")
@@ -3735,27 +4253,115 @@ def list_sidebars_in_file(file_path: Path) -> None:
                         print(f"{type_name}: {title} (main monster: {main_monster_name})")
                         found_any = True
         
-        # Check for CATEGORY sections
-        category_sections = extract_tagged_section(content, 'CATEGORY')
-        if category_sections:
-            # Three-level hierarchy: MAINMONSTER -> CATEGORY -> VARIANT
-            for category_content in category_sections:
-                category_lines = category_content.strip().split('\n', 1)
-                category_name = category_lines[0].strip() if category_lines else None
-                
-                if category_name:
-                    # Process extra descriptions from each CATEGORY section
-                    for tag_name, type_name in extra_desc_types.items():
-                        sections = extract_tagged_section(category_content, tag_name)
-                        for section_content in sections:
-                            section_lines = section_content.strip().split('\n', 1)
-                            title = section_lines[0].strip() if section_lines else None
-                            if title:
-                                print(f"  {type_name}: {title} (category: {category_name})")
-                                found_any = True
+        # Check for GROUP sections first
+        if main_content:
+            group_sections = extract_tagged_section(main_content, 'GROUP')
+            if group_sections:
+                # Four-level hierarchy: MAINMONSTER -> GROUP -> CATEGORY -> VARIANT
+                # Or three-level: MAINMONSTER -> GROUP -> VARIANT
+                for group_content in group_sections:
+                    group_lines = group_content.strip().split('\n', 1)
+                    group_name = group_lines[0].strip() if group_lines else None
                     
-                    # Process extra descriptions from VARIANT sections within this CATEGORY
-                    variant_sections = extract_tagged_section(category_content, 'VARIANT')
+                    if group_name:
+                        # Process extra descriptions from each GROUP section
+                        for tag_name, type_name in extra_desc_types.items():
+                            sections = extract_tagged_section(group_content, tag_name)
+                            for section_content in sections:
+                                section_lines = section_content.strip().split('\n', 1)
+                                title = section_lines[0].strip() if section_lines else None
+                                if title:
+                                    print(f"  {type_name}: {title} (group: {group_name})")
+                                    found_any = True
+                        
+                        # Check for CATEGORY sections within this GROUP
+                        category_sections = extract_tagged_section(group_content, 'CATEGORY')
+                        if category_sections:
+                            # GROUP -> CATEGORY -> VARIANT
+                            for category_content in category_sections:
+                                category_lines = category_content.strip().split('\n', 1)
+                                category_name = category_lines[0].strip() if category_lines else None
+                                
+                                if category_name:
+                                    # Process extra descriptions from each CATEGORY section
+                                    for tag_name, type_name in extra_desc_types.items():
+                                        sections = extract_tagged_section(category_content, tag_name)
+                                        for section_content in sections:
+                                            section_lines = section_content.strip().split('\n', 1)
+                                            title = section_lines[0].strip() if section_lines else None
+                                            if title:
+                                                print(f"    {type_name}: {title} (category: {category_name}, group: {group_name})")
+                                                found_any = True
+                                    
+                                    # Process extra descriptions from VARIANT sections within this CATEGORY
+                                    variant_sections = extract_tagged_section(category_content, 'VARIANT')
+                                    for variant_content in variant_sections:
+                                        variant_lines = variant_content.strip().split('\n', 1)
+                                        variant_name = variant_lines[0].strip() if variant_lines else None
+                                        
+                                        if variant_name:
+                                            for tag_name, type_name in extra_desc_types.items():
+                                                sections = extract_tagged_section(variant_content, tag_name)
+                                                for section_content in sections:
+                                                    section_lines = section_content.strip().split('\n', 1)
+                                                    title = section_lines[0].strip() if section_lines else None
+                                                    if title:
+                                                        print(f"      {type_name}: {title} (variant: {variant_name}, category: {category_name}, group: {group_name})")
+                                                        found_any = True
+                        else:
+                            # GROUP -> VARIANT (no category)
+                            variant_sections = extract_tagged_section(group_content, 'VARIANT')
+                            for variant_content in variant_sections:
+                                variant_lines = variant_content.strip().split('\n', 1)
+                                variant_name = variant_lines[0].strip() if variant_lines else None
+                                
+                                if variant_name:
+                                    for tag_name, type_name in extra_desc_types.items():
+                                        sections = extract_tagged_section(variant_content, tag_name)
+                                        for section_content in sections:
+                                            section_lines = section_content.strip().split('\n', 1)
+                                            title = section_lines[0].strip() if section_lines else None
+                                            if title:
+                                                print(f"    {type_name}: {title} (variant: {variant_name}, group: {group_name})")
+                                                found_any = True
+            else:
+                # No GROUP sections - check for CATEGORY sections
+                category_sections = extract_tagged_section(main_content, 'CATEGORY')
+                if category_sections:
+                    # Three-level hierarchy: MAINMONSTER -> CATEGORY -> VARIANT
+                    for category_content in category_sections:
+                        category_lines = category_content.strip().split('\n', 1)
+                        category_name = category_lines[0].strip() if category_lines else None
+                        
+                        if category_name:
+                            # Process extra descriptions from each CATEGORY section
+                            for tag_name, type_name in extra_desc_types.items():
+                                sections = extract_tagged_section(category_content, tag_name)
+                                for section_content in sections:
+                                    section_lines = section_content.strip().split('\n', 1)
+                                    title = section_lines[0].strip() if section_lines else None
+                                    if title:
+                                        print(f"  {type_name}: {title} (category: {category_name})")
+                                        found_any = True
+                            
+                            # Process extra descriptions from VARIANT sections within this CATEGORY
+                            variant_sections = extract_tagged_section(category_content, 'VARIANT')
+                            for variant_content in variant_sections:
+                                variant_lines = variant_content.strip().split('\n', 1)
+                                variant_name = variant_lines[0].strip() if variant_lines else None
+                                
+                                if variant_name:
+                                    for tag_name, type_name in extra_desc_types.items():
+                                        sections = extract_tagged_section(variant_content, tag_name)
+                                        for section_content in sections:
+                                            section_lines = section_content.strip().split('\n', 1)
+                                            title = section_lines[0].strip() if section_lines else None
+                                            if title:
+                                                print(f"    {type_name}: {title} (variant: {variant_name}, category: {category_name})")
+                                                found_any = True
+                else:
+                    # Two-level hierarchy: MAINMONSTER -> VARIANT
+                    variant_sections = extract_tagged_section(main_content, 'VARIANT')
                     for variant_content in variant_sections:
                         variant_lines = variant_content.strip().split('\n', 1)
                         variant_name = variant_lines[0].strip() if variant_lines else None
@@ -3767,27 +4373,11 @@ def list_sidebars_in_file(file_path: Path) -> None:
                                     section_lines = section_content.strip().split('\n', 1)
                                     title = section_lines[0].strip() if section_lines else None
                                     if title:
-                                        print(f"    {type_name}: {title} (variant: {variant_name}, category: {category_name})")
+                                        if main_monster_name:
+                                            print(f"  {type_name}: {title} (variant: {variant_name}, main monster: {main_monster_name})")
+                                        else:
+                                            print(f"  {type_name}: {title} (variant: {variant_name})")
                                         found_any = True
-        else:
-            # Two-level hierarchy: MAINMONSTER -> VARIANT
-            variant_sections = extract_tagged_section(content, 'VARIANT')
-            for variant_content in variant_sections:
-                lines = variant_content.strip().split('\n', 1)
-                variant_name = lines[0].strip() if lines else None
-                
-                if variant_name:
-                    for tag_name, type_name in extra_desc_types.items():
-                        sections = extract_tagged_section(variant_content, tag_name)
-                        for section_content in sections:
-                            section_lines = section_content.strip().split('\n', 1)
-                            title = section_lines[0].strip() if section_lines else None
-                            if title:
-                                if main_monster_name:
-                                    print(f"  {type_name}: {title} (variant: {variant_name}, main monster: {main_monster_name})")
-                                else:
-                                    print(f"  {type_name}: {title} (variant: {variant_name})")
-                                found_any = True
         
         if not found_any:
             print(f"No extra descriptions found in {file_path.name}")
@@ -4077,7 +4667,13 @@ def process_statblock_related_data(statblock: Dict, monster_id: int, monster_nam
                         skill_name = skill_match.group(1).strip()
                         subtype_name = skill_match.group(2).strip()
                     
-                    skill_id = db.validate_skill(skill_name, monster_name)
+                    # Skip empty skill names
+                    if not skill_name or not skill_name.strip():
+                        logger.warning(f"Skipping empty skill name in '{match.group(0)}' for {monster_name}")
+                        continue
+                    
+                    # Pass the full match text for better line number tracking
+                    skill_id = db.validate_skill(skill_name, monster_name, source_text=match.group(0))
                     skill_subtype_id = None
                     notes_parts = []
                     
@@ -4109,7 +4705,13 @@ def process_statblock_related_data(statblock: Dict, monster_id: int, monster_nam
                     skill_name = skill_match.group(1).strip()
                     subtype_name = skill_match.group(2).strip()
                 
-                skill_id = db.validate_skill(skill_name, monster_name)
+                # Skip empty skill names
+                if not skill_name or not skill_name.strip():
+                    logger.warning(f"Skipping empty skill name in '{match.group(0)}' for {monster_name}")
+                    continue
+                
+                # Pass the full match text for better line number tracking
+                skill_id = db.validate_skill(skill_name, monster_name, source_text=match.group(0))
                 skill_subtype_id = None
                 notes_parts = []
                 
@@ -4220,8 +4822,13 @@ def _insert_monster_abilities_and_spells(monster_id: int, monster_name: str, spe
                                          prepared_spells: List[Dict], prepared_spell_slots: List[Dict], 
                                          db: DatabaseConnection) -> None:
     """Insert special abilities, prepared spells, and prepared spell slots for a monster."""
+    # Track inserted abilities to detect duplicates
+    inserted_ability_ids = {}
+    # Map ability_id -> ability dict for error reporting
+    ability_id_to_info = {}
+    
     # Insert special abilities
-    for ability in special_abilities:
+    for idx, ability in enumerate(special_abilities):
         ability_id = db.get_or_create_special_ability(
             ability['name'],
             ability.get('description'),
@@ -4229,8 +4836,93 @@ def _insert_monster_abilities_and_spells(monster_id: int, monster_name: str, spe
             ability.get('effective_caster_level'),
             ability.get('save_ability')
         )
+        
+        # Check for duplicate within this import session
+        if ability_id in inserted_ability_ids:
+            first_occurrence_idx = inserted_ability_ids[ability_id]
+            first_ability = ability_id_to_info[ability_id]
+            
+            # Find line number for better error reporting
+            line_number = None
+            if db.file_content:
+                # Try to find the ability name in the file
+                search_text = ability['name']
+                if ability.get('description'):
+                    # Use first part of description for better context
+                    desc_preview = ability['description'][:100] if len(ability.get('description', '')) > 100 else ability.get('description', '')
+                    search_text = f"{ability['name']} {desc_preview}"
+                line_number = find_line_number_for_text(db.file_content, search_text)
+            
+            # Build detailed error message
+            ability_type_name = MONSTER_SPECIAL_ABILITY_TYPE_ID_TO_NAME.get(ability['type'], f"Type {ability['type']}")
+            error_msg = (
+                f"Duplicate special ability '{ability['name']}' (ID: {ability_id}, Type: {ability_type_name}) "
+                f"found for {monster_name}. "
+                f"First occurrence at index {first_occurrence_idx}, duplicate at index {idx}. "
+                f"This indicates the same ability appears multiple times in the special abilities list. "
+                f"Please check the input file and remove the duplicate."
+            )
+            
+            if line_number:
+                error_msg += f" Found near line {line_number} in input file."
+            
+            # Add details about both occurrences
+            error_msg += f"\nFirst occurrence: name='{first_ability['name']}', type={ability_type_name}"
+            if first_ability.get('description'):
+                desc_preview = first_ability['description'][:100] + "..." if len(first_ability['description']) > 100 else first_ability['description']
+                error_msg += f", description='{desc_preview}'"
+            
+            error_msg += f"\nDuplicate occurrence: name='{ability['name']}', type={ability_type_name}"
+            if ability.get('description'):
+                desc_preview = ability['description'][:100] + "..." if len(ability['description']) > 100 else ability['description']
+                error_msg += f", description='{desc_preview}'"
+            
+            raise ImportError(
+                error_msg,
+                monster_name=monster_name,
+                field="Special Ability",
+                value=ability['name'],
+                line_number=line_number
+            )
+        
+        # Check if ability already exists in database for this monster
+        existing_check = db.execute(
+            "SELECT abilityId FROM MonsterSpecialAbilityMap WHERE monsterId = %s AND abilityId = %s LIMIT 1",
+            (monster_id, ability_id)
+        )
+        if existing_check:
+            # Find line number for better error reporting
+            line_number = None
+            if db.file_content:
+                search_text = ability['name']
+                if ability.get('description'):
+                    desc_preview = ability['description'][:100] if len(ability.get('description', '')) > 100 else ability.get('description', '')
+                    search_text = f"{ability['name']} {desc_preview}"
+                line_number = find_line_number_for_text(db.file_content, search_text)
+            
+            ability_type_name = MONSTER_SPECIAL_ABILITY_TYPE_ID_TO_NAME.get(ability['type'], f"Type {ability['type']}")
+            error_msg = (
+                f"Special ability '{ability['name']}' (ID: {ability_id}, Type: {ability_type_name}) "
+                f"already exists in database for {monster_name}. "
+                f"This may indicate a duplicate in the input file or the monster was partially imported previously. "
+                f"Please check the input file and remove the duplicate, or use --update to re-import the monster."
+            )
+            
+            if line_number:
+                error_msg += f" Found near line {line_number} in input file."
+            
+            raise ImportError(
+                error_msg,
+                monster_name=monster_name,
+                field="Special Ability",
+                value=ability['name'],
+                line_number=line_number
+            )
+        
         query = "INSERT INTO MonsterSpecialAbilityMap (monsterId, abilityId) VALUES (%s, %s)"
         db.execute_insert(query, (monster_id, ability_id), table_name='MonsterSpecialAbilityMap')
+        inserted_ability_ids[ability_id] = idx
+        ability_id_to_info[ability_id] = ability
         
         # For spell-like abilities, create MonsterSpell entries
         # Only extract spells if the ability name is literally "Spell-Like Abilities"

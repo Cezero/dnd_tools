@@ -116,6 +116,41 @@ function checkClassFeaturePrerequisite(character, requirement) {
 }
 ```
 
+### Size Requirements
+**Format:** "Size X" or "Size X or larger/smaller"
+- **Character size** - Determined by race's base size
+- **Size categories** - Fine, Diminutive, Tiny, Small, Medium, Large, Huge, Gargantuan, Colossal
+- **Size comparisons** - Can require exact size, minimum size, or maximum size
+- **Size modifiers** - Size affects various game mechanics (AC, grapple, etc.)
+
+**Examples:**
+- **Powerful Build** - "Size Large or larger"
+- **Small Frame** - "Size Small or smaller"
+- **Giant Size** - "Size Large" (exact)
+
+**Validation Logic:**
+```pseudocode
+function checkSizePrerequisite(character, requirement) {
+    characterSize = character.race.sizeId
+    
+    if (requirement.comparison == "exact") {
+        return characterSize == requirement.sizeId
+    } else if (requirement.comparison == "or_larger") {
+        return characterSize >= requirement.sizeId
+    } else if (requirement.comparison == "or_smaller") {
+        return characterSize <= requirement.sizeId
+    }
+    
+    return false
+}
+```
+
+**Size ID Order:**
+- Fine (1) < Diminutive (2) < Tiny (3) < Small (4) < Medium (5) < Large (6) < Huge (7) < Gargantuan (8) < Colossal (9)
+- Higher IDs represent larger sizes
+- For "or larger" comparisons, higher size IDs satisfy the requirement
+- For "or smaller" comparisons, lower size IDs satisfy the requirement
+
 ## Special Prerequisite Cases
 
 ### Multiple Requirements

@@ -1,1 +1,2 @@
-export { ColorPicker } from './ColorPicker'; 
+export { ColorPicker } from './ColorPicker';
+export { CollapsibleSection } from './CollapsibleSection'; 

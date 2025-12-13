@@ -28,10 +28,14 @@ function SingleResultRenderer({ result, critHighlight = false }: SingleResultRen
         <span className="text-sm text-gray-600 dark:text-gray-300">
             {title}:{' '}
             <span className="font-mono">
-                {rolls.map((roll: DieRoll, index) => {
-                    const rollElement = renderDieRoll(roll.value, roll.die, false, critHighlight);
-                    return <React.Fragment key={index}>{rollElement}</React.Fragment>;
-                })}
+                {rolls && rolls.length > 0 ? (
+                    rolls.map((roll: DieRoll, index) => {
+                        const rollElement = renderDieRoll(roll.value, roll.die, false, critHighlight);
+                        return <React.Fragment key={index}>{rollElement}</React.Fragment>;
+                    })
+                ) : (
+                    <span className="text-gray-500 dark:text-gray-400">{originalNotation || 'N/A'}</span>
+                )}
                 <span className="ml-2 font-bold text-base text-gray-900 dark:text-white">
                     = {value}
                 </span>
@@ -56,10 +60,14 @@ function MultipleResultsRenderer({ results, critHighlight = false }: MultipleRes
                     <span key={resultIndex} className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1">
                         {title}:{' '}
                         <span className="font-mono">
-                            {rolls.map((roll: DieRoll, index) => {
-                                const rollElement = renderDieRoll(roll.value, roll.die, false, critHighlight);
-                                return <React.Fragment key={index}>{rollElement}</React.Fragment>;
-                            })}
+                            {rolls && rolls.length > 0 ? (
+                                rolls.map((roll: DieRoll, index) => {
+                                    const rollElement = renderDieRoll(roll.value, roll.die, false, critHighlight);
+                                    return <React.Fragment key={index}>{rollElement}</React.Fragment>;
+                                })
+                            ) : (
+                                <span className="text-gray-500 dark:text-gray-400">{originalNotation || 'N/A'}</span>
+                            )}
                             <span className="ml-2 font-bold text-base text-gray-900 dark:text-white">
                                 = {value}
                             </span>
@@ -98,6 +106,11 @@ function renderDieRoll(value: number, sides: number, isDropped: boolean = false,
 
 function generateTitle(notation: string, group?: string): string {
     if (group) {
+        // If group already contains a colon (e.g., "age-roll: Human, Rogue"), 
+        // it's a descriptive group and we should use it as-is without adding the notation
+        if (group.includes(':')) {
+            return group;
+        }
         return `${group}: ${notation}`;
     }
     return notation;

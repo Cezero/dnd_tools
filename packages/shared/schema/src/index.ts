@@ -16,3 +16,4 @@ export * from './spellcasting.js';
 export * from './variantClass.js';
 export * from './domain.js';
 export * from './deity.js';
+export * from './monster.js';

@@ -11,6 +11,7 @@ import { DomainRouter } from '../features/domain';
 import { featRoutes } from '../features/feat';
 import { featureRoutes } from '../features/featureSystem';
 import { itemRoutes } from '../features/item';
+import { monsterRoutes } from '../features/monster';
 import { raceRoutes } from '../features/race';
 import { referenceTableRoutes } from '../features/referencetables';
 import { skillRoutes } from '../features/skill';
@@ -35,6 +36,7 @@ router.use('/skills', skillRoutes);
 router.use('/spells', spellRoutes);
 router.use('/user/profile', userProfileRoutes);
 router.use('/items', itemRoutes);
+router.use('/monsters', monsterRoutes);
 router.use('/', CharacterCalculationRouter);
 
 export { router as routes }; 

@@ -6,7 +6,7 @@ import { DetailPage } from '@/components/common/DetailPage';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { useCacheFunctions } from '@/services/cache';
 import { SpellQueryHooks } from '@/services/query/SpellQueryHooks';
-import { SpellSchoolNameList, SpellDescriptorNameList, SpellComponentAbbrList, EDITION_MAP } from '@shared/static-data';
+import { SpellSchoolNameList, SpellSubschoolNameList, SpellDescriptorNameList, SpellComponentAbbrList, EDITION_MAP } from '@shared/static-data';
 import { GetSourceDisplay } from '@shared/utils';
 
 import { GetClassLevelAbbr } from './spellUtil';
@@ -77,7 +77,7 @@ export function SpellDetail(): React.JSX.Element {
                     <p>
                         {spell.schoolIds && SpellSchoolNameList(spell.schoolIds.map(s => s.schoolId))}
                         {spell.subSchoolIds && (() => {
-                            const subSchoolNames = SpellSchoolNameList(spell.subSchoolIds.map(s => s.subSchoolId));
+                            const subSchoolNames = SpellSubschoolNameList(spell.subSchoolIds.map(s => s.subSchoolId));
                             return subSchoolNames.length > 0 ? ` (${subSchoolNames})` : '';
                         })()}
                         {spell.descriptorIds && (() => {

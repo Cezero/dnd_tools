@@ -10,7 +10,7 @@ import { CustomSelect } from '@/components/forms/FormComponents';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import { FeatPrerequisiteMap, FeatPrerequisiteMapSchema } from '@shared/schema';
-import { ABILITY_LIST, FEAT_PREREQUISITE_TYPE_LIST, FeatPrerequisiteType, CoreComponent, SKILL_LIST, FeatureSourceType } from '@shared/static-data';
+import { ABILITY_LIST, FEAT_PREREQUISITE_TYPE_LIST, FeatPrerequisiteType, CoreComponent, SKILL_LIST, FeatureSourceType, SIZE_LIST } from '@shared/static-data';
 
 import { PrereqOptions } from './FeatUtil';
 
@@ -273,6 +273,33 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
                                         onValueChange={(value) => setFormData(prev => ({ ...prev, referenceId: value as number | null }))}
                                         options={classFeatureOptions}
                                     />
+                                ) || formData.typeId === FeatPrerequisiteType.SIZE && (
+                                    <>
+                                        <CustomSelect
+                                            label="Size"
+                                            required
+                                            value={formData.referenceId}
+                                            componentExtraClassName='flex items-center gap-2'
+                                            labelExtraClassName='w-32'
+                                            itemTextExtraClassName='w-34'
+                                            onValueChange={(value) => setFormData(prev => ({ ...prev, referenceId: value as number | null }))}
+                                            options={SIZE_LIST}
+                                        />
+                                        <CustomSelect
+                                            label="Comparison"
+                                            required
+                                            value={formData.amount}
+                                            componentExtraClassName='flex items-center gap-2'
+                                            labelExtraClassName='w-32'
+                                            itemTextExtraClassName='w-34'
+                                            onValueChange={(value) => setFormData(prev => ({ ...prev, amount: value as number | null }))}
+                                            options={[
+                                                { id: 0, name: 'Exactly this size' },
+                                                { id: 1, name: 'This size or larger' },
+                                                { id: 2, name: 'This size or smaller' }
+                                            ]}
+                                        />
+                                    </>
                                 )}
 
                             </div>

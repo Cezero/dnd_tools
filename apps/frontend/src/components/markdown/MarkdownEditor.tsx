@@ -6,6 +6,9 @@ import { RenderMarkdown } from '@/plugins/RenderMarkdown';
 import '@/styles/mdeditor.css';
 import type { MarkdownEditorProps } from './types';
 
+// Stable empty object to avoid recreating on every render
+const EMPTY_USER_VARS = {};
+
 export function MarkdownEditor({
     value,
     onChange,
@@ -13,9 +16,13 @@ export function MarkdownEditor({
     className = "",
     id,
     name,
-    userVars = {}
+    userVars
 }: MarkdownEditorProps): React.JSX.Element {
     const [debouncedValue, setDebouncedValue] = useState(value);
+    
+    // Use stable empty object if userVars not provided, and memoize userVars string for comparison
+    const stableUserVars = userVars || EMPTY_USER_VARS;
+    const userVarsKey = useMemo(() => JSON.stringify(stableUserVars), [stableUserVars]);
 
     // Debounce the value to prevent preview updates while typing
     useEffect(() => {
@@ -37,11 +44,18 @@ export function MarkdownEditor({
                 <RenderMarkdown
                     markdown={debouncedValue}
                     id={id || 'markdown-editor'}
-                    userVars={userVars}
+                    userVars={stableUserVars}
                 />
             </div>
         );
-    }, [debouncedValue, id, userVars]);
+    }, [debouncedValue, id, userVarsKey]);
+
+    // Memoize the preview component to prevent MDEditor from re-rendering unnecessarily
+    const previewComponent = useMemo(() => (
+        <div className="wmde-markdown-parsed">
+            {markdownPreview}
+        </div>
+    ), [markdownPreview]);
 
     return (
         <div className={`w-full ${className}`}>
@@ -56,11 +70,7 @@ export function MarkdownEditor({
                 height="auto"
                 preview="live"
                 components={{
-                    preview: () => (
-                        <div className="wmde-markdown-parsed">
-                            {markdownPreview}
-                        </div>
-                    ),
+                    preview: () => previewComponent,
                 }}
             />
         </div>

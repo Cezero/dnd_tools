@@ -23,7 +23,10 @@ export const SPELL_COMPONENT_MAP: SpellComponentMap = {
 export const SPELL_COMPONENT_LIST = Object.values(SPELL_COMPONENT_MAP);
 
 export const SpellComponentAbbrList = (components: number[]): string => {
-    return components.map(component => SPELL_COMPONENT_MAP[component].abbreviation).join(', ');
+    return components
+        .map(component => SPELL_COMPONENT_MAP[component]?.abbreviation)
+        .filter((abbr): abbr is string => abbr !== undefined)
+        .join(', ');
 }
 
 export const SPELL_DESCRIPTOR_MAP: SpellDescriptorMap = {
@@ -55,7 +58,10 @@ export const SPELL_DESCRIPTOR_LIST = Object.values(SPELL_DESCRIPTOR_MAP);
 
 
 export const SpellDescriptorNameList = (descriptors: number[]): string => {
-    return descriptors.map(descriptor => SPELL_DESCRIPTOR_MAP[descriptor].name).join(', ');
+    return descriptors
+        .map(descriptor => SPELL_DESCRIPTOR_MAP[descriptor]?.name)
+        .filter((name): name is string => name !== undefined)
+        .join(', ');
 }
 
 export const SPELL_RANGE_MAP: SpellRangeMap = {
@@ -103,7 +109,10 @@ export const SPELL_SCHOOL_MAP: SpellSchoolMap = {
 export const SPELL_SCHOOL_LIST = Object.values(SPELL_SCHOOL_MAP);
 
 export const SpellSchoolNameList = (schools: number[]): string => {
-    return schools.map(school => SPELL_SCHOOL_MAP[school].name).join(', ');
+    return schools
+        .map(school => SPELL_SCHOOL_MAP[school]?.name)
+        .filter((name): name is string => name !== undefined)
+        .join(', ');
 }
 
 export const SpellSubschool = {
@@ -165,7 +174,10 @@ export const SPELL_SUBSCHOOL_BY_SCHOOL_ID_MAP: { [K in SpellSchool]: SpellSubsch
 
 
 export const SpellSubschoolNameList = (subschools: number[]): string => {
-    return subschools.map(subschool => SPELL_SUBSCHOOL_MAP[subschool].name).join(', ');
+    return subschools
+        .map(subschool => SPELL_SUBSCHOOL_MAP[subschool]?.name)
+        .filter((name): name is string => name !== undefined)
+        .join(', ');
 }
 
 export const SPELL_ID_MAP: { [key: number]: Spell } = {

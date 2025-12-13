@@ -58,6 +58,7 @@ Defines the different types of prerequisites that feats can require.
 - **`CLASSLEVEL` (7)**: Class level requirements
 - **`PROFICIENCY` (8)**: Proficiency requirements
 - **`CLASSFEATURE` (9)**: Class feature requirements
+- **`SIZE` (10)**: Size requirements
 
 **Usage**: Used in feat prerequisite definitions to specify the type of requirement.
 

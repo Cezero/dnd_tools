@@ -1,5 +1,5 @@
 import { NavigationMenu } from '@base-ui-components/react/navigation-menu';
-import { ChevronRightIcon, ChevronLeftIcon, UserGroupIcon, SparklesIcon, BookOpenIcon, ChevronDownIcon, AcademicCapIcon, UserIcon, WrenchScrewdriverIcon, StarIcon, CubeIcon, ChartBarIcon, TableCellsIcon as TableCellsIcon2, Cog6ToothIcon, CubeTransparentIcon, BeakerIcon, ShieldCheckIcon, HeartIcon } from '@heroicons/react/24/outline';
+import { ChevronRightIcon, ChevronLeftIcon, UserGroupIcon, SparklesIcon, BookOpenIcon, ChevronDownIcon, AcademicCapIcon, UserIcon, WrenchScrewdriverIcon, StarIcon, CubeIcon, ChartBarIcon, TableCellsIcon as TableCellsIcon2, Cog6ToothIcon, CubeTransparentIcon, BeakerIcon, ShieldCheckIcon, HeartIcon, SwatchIcon } from '@heroicons/react/24/outline';
 import React, { useRef, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -203,6 +203,35 @@ export function MainSidebar({ isExpanded, setIsExpanded, isHidden, setIsHidden }
                                         >
                                             <HeartIcon className={`${location.pathname.startsWith('/deities') ? 'text-blue-600 dark:text-blue-400' : ''} w-4 h-4 mr-2`} />
                                             <span className={`${location.pathname.startsWith('/deities') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Deities</span>
+                                        </CustomLink>
+                                    </NavigationMenu.Content>
+                                </NavigationMenu.Item>
+
+                                {/* DM Tools Section */}
+                                <NavigationMenu.Item>
+                                    <NavigationMenu.Trigger
+                                        className={`flex items-center w-full px-4 py-2 rounded 
+                                                    text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 
+                                                    ${isExpanded ? 'justify-start' : 'justify-center'}
+                                                    ${location.pathname.startsWith('/monsters') ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
+                                    >
+                                        <SwatchIcon className={`${location.pathname.startsWith('/monsters') ? 'text-blue-600 dark:text-blue-400' : ''} w-7 h-7`} />
+                                        {isExpanded && (
+                                            <>
+                                                <span className={`ml-3 ${location.pathname.startsWith('/monsters') ? 'text-blue-600 dark:text-blue-400' : ''}`}>DM Tools</span>
+                                                <ChevronDownIcon className="ml-auto w-4 h-4" />
+                                            </>
+                                        )}
+                                    </NavigationMenu.Trigger>
+                                    <NavigationMenu.Content>
+                                        <CustomLink
+                                            className={`flex items-center px-4 py-2 text-sm
+                                                        text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600
+                                                        ${location.pathname.startsWith('/monsters') ? 'font-semibold text-blue-600 dark:text-blue-400' : ''}`}
+                                            href="/monsters"
+                                        >
+                                            <CubeTransparentIcon className={`${location.pathname.startsWith('/monsters') ? 'text-blue-600 dark:text-blue-400' : ''} w-4 h-4 mr-2`} />
+                                            <span className={`${location.pathname.startsWith('/monsters') ? 'text-blue-600 dark:text-blue-400' : ''}`}>Monsters</span>
                                         </CustomLink>
                                     </NavigationMenu.Content>
                                 </NavigationMenu.Item>

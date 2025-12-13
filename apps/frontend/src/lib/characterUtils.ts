@@ -12,7 +12,7 @@ export function meetsPrerequisites(
     feat: Feat,
     character: CharacterWithAllDetailsResponse,
     selectedClassDetails: DnDClass | null,
-    _selectedRaceDetails: Race | null,
+    selectedRaceDetails: Race | null,
     _allFeats: GetAllFeatsResponse
 ): boolean {
     if (!feat.prereqs || feat.prereqs.length === 0) {
@@ -72,6 +72,24 @@ export function meetsPrerequisites(
 
             case FeatPrerequisiteType.PROFICIENCY: {
                 // This is a post-selection check, so we don't filter based on this
+                return true;
+            }
+
+            case FeatPrerequisiteType.SIZE: {
+                if (!prereq.referenceId || !selectedRaceDetails?.sizeId) return true;
+                const characterSizeId = selectedRaceDetails.sizeId;
+                const requiredSizeId = prereq.referenceId;
+                
+                // amount: 0 = exact, 1 = or larger, 2 = or smaller
+                if (prereq.amount === 0) {
+                    return characterSizeId === requiredSizeId;
+                } else if (prereq.amount === 1) {
+                    // or larger: character size must be >= required size (higher IDs = larger)
+                    return characterSizeId >= requiredSizeId;
+                } else if (prereq.amount === 2) {
+                    // or smaller: character size must be <= required size (lower IDs = smaller)
+                    return characterSizeId <= requiredSizeId;
+                }
                 return true;
             }
 

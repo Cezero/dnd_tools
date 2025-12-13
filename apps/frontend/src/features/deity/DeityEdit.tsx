@@ -1,5 +1,6 @@
 import { TrashIcon } from '@heroicons/react/24/outline';
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
 import {
@@ -23,6 +24,7 @@ type DeityFormData = CreateDeityRequest | UpdateDeityRequest;
 
 export function DeityEdit() {
     const { getClassNameById, getBaseClassSelectByEdition, getRaceNameById, getRaceSelectByEdition, getDomainNameById, getDomainSelectByEdition } = useCacheFunctions();
+    const queryClient = useQueryClient();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation();
@@ -35,6 +37,8 @@ export function DeityEdit() {
     const [error, setError] = useState<string | null>(null);
     const [weapons, setWeapons] = useState<CoreComponent[]>([]);
     const [availableClasses, setAvailableClasses] = useState<CoreComponent[]>([]);
+    const [worshipperNames, setWorshipperNames] = useState<Record<number, { name: string; type: 'class' | 'race' }>>({});
+    const [domainNames, setDomainNames] = useState<Record<number, string>>({});
 
     // Use imperative API for data fetching and mutations
     const [deityData, setDeityData] = useState<unknown | null>(null);
@@ -68,29 +72,32 @@ export function DeityEdit() {
     const [formData, setFormData] = useState<DeityFormData>(initialFormData);
 
     // Fetch race and domain options when edition changes
-    const fetchOptions = useCallback(async (editionId: number) => {
-        setIsLoadingOptions(true);
-        try {
-            const [races, domains] = await Promise.all([
-                getRaceSelectByEdition(editionId),
-                getDomainSelectByEdition(editionId)
-            ]);
-            setRaceOptions(races || []);
-            setDomainOptions(domains || []);
-        } catch (error) {
-            console.error('Failed to fetch options:', error);
-            setRaceOptions([]);
-            setDomainOptions([]);
-        } finally {
-            setIsLoadingOptions(false);
-        }
-    }, [getRaceSelectByEdition, getDomainSelectByEdition]);
-
     useEffect(() => {
-        if (formData.editionId) {
-            fetchOptions(formData.editionId);
+        if (!formData.editionId) {
+            return;
         }
-    }, [formData.editionId, fetchOptions]);
+
+        const fetchOptions = async () => {
+            setIsLoadingOptions(true);
+            try {
+                const [races, domains] = await Promise.all([
+                    getRaceSelectByEdition(formData.editionId),
+                    getDomainSelectByEdition(formData.editionId)
+                ]);
+                setRaceOptions(races || []);
+                setDomainOptions(domains || []);
+            } catch (error) {
+                console.error('Failed to fetch options:', error);
+                setRaceOptions([]);
+                setDomainOptions([]);
+            } finally {
+                setIsLoadingOptions(false);
+            }
+        };
+
+        fetchOptions();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formData.editionId]);
 
     // Use the validated form hook
     const form = useValidatedForm(
@@ -108,18 +115,27 @@ export function DeityEdit() {
     useEffect(() => {
         const fetchWeapons = async () => {
             try {
-                const weapons = await ItemQueryHooks.itemQuery({
-                    requestData: {
-                        queryType: 'byType',
-                        typeId: ITEM_TYPE_ENUM.Weapon
-                    }
+                // For GET requests with requestSchema, pass the query object directly (not wrapped in requestData)
+                const weapons = await ItemQueryHooks.itemQueryQueryFn({
+                    queryType: 'byType',
+                    typeId: ITEM_TYPE_ENUM.Weapon.toString()
                 });
                 setWeaponsData(weapons);
-                if (weapons?.results) {
-                    setWeapons(weapons.results);
+                if (weapons?.results && Array.isArray(weapons.results)) {
+                    // Transform items to CoreComponent format
+                    const weaponComponents: CoreComponent[] = weapons.results.map(item => ({
+                        id: item.id,
+                        name: item.name,
+                        abbreviation: item.name // Use name as abbreviation if needed
+                    }));
+                    setWeapons(weaponComponents);
+                } else {
+                    console.warn('No weapons found in response:', weapons);
+                    setWeapons([]);
                 }
             } catch (error) {
                 console.error('Failed to fetch weapons:', error);
+                setWeapons([]);
             }
         };
         fetchWeapons();
@@ -127,9 +143,109 @@ export function DeityEdit() {
 
     // Load available classes when edition changes
     useEffect(() => {
-        const classes = getBaseClassSelectByEdition(formData.editionId);
-        setAvailableClasses(classes);
-    }, [formData.editionId, getBaseClassSelectByEdition]);
+        const loadClasses = async () => {
+            try {
+                const classes = await getBaseClassSelectByEdition(formData.editionId);
+                setAvailableClasses(classes);
+            } catch (error) {
+                console.error('Failed to load classes:', error);
+                setAvailableClasses([]);
+            }
+        };
+        loadClasses();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formData.editionId]);
+
+    // Track previous worshipper IDs to avoid unnecessary reloads
+    const prevWorshipperIdsRef = useRef<string>('');
+    
+    // Load worshipper names (classes and races) asynchronously
+    useEffect(() => {
+        const currentClassIds = JSON.stringify((formData.classIds || []).sort());
+        const currentRaceIds = JSON.stringify((formData.raceIds || []).sort());
+        const currentIds = `${currentClassIds}|${currentRaceIds}`;
+        
+        // Only reload if the IDs actually changed
+        if (prevWorshipperIdsRef.current === currentIds) {
+            return;
+        }
+        
+        prevWorshipperIdsRef.current = currentIds;
+        
+        const loadWorshipperNames = async () => {
+            const names: Record<number, { name: string; type: 'class' | 'race' }> = {};
+            
+            // Load class names
+            if (formData.classIds && formData.classIds.length > 0) {
+                await Promise.all(
+                    formData.classIds.map(async (classId) => {
+                        try {
+                            const classInfo = await getClassNameById(classId);
+                            names[classId] = { name: classInfo?.name || 'Unknown Class', type: 'class' };
+                        } catch {
+                            names[classId] = { name: 'Unknown Class', type: 'class' };
+                        }
+                    })
+                );
+            }
+
+            // Load race names
+            if (formData.raceIds && formData.raceIds.length > 0) {
+                await Promise.all(
+                    formData.raceIds.map(async (raceId) => {
+                        try {
+                            const raceInfo = await getRaceNameById(raceId);
+                            names[raceId] = { name: raceInfo?.name || 'Unknown Race', type: 'race' };
+                        } catch {
+                            names[raceId] = { name: 'Unknown Race', type: 'race' };
+                        }
+                    })
+                );
+            }
+
+            setWorshipperNames(names);
+        };
+
+        loadWorshipperNames();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formData.classIds, formData.raceIds]);
+
+    // Track previous domain IDs to avoid unnecessary reloads
+    const prevDomainIdsRef = useRef<string>('');
+    
+    // Load domain names asynchronously
+    useEffect(() => {
+        const currentDomainIds = JSON.stringify((formData.domainIds || []).sort());
+        
+        // Only reload if the IDs actually changed
+        if (prevDomainIdsRef.current === currentDomainIds) {
+            return;
+        }
+        
+        prevDomainIdsRef.current = currentDomainIds;
+        
+        const loadDomainNames = async () => {
+            const names: Record<number, string> = {};
+            
+            if (formData.domainIds && formData.domainIds.length > 0) {
+                await Promise.all(
+                    formData.domainIds.map(async (domainId) => {
+                        try {
+                            const domainInfo = await getDomainNameById(domainId);
+                            names[domainId] = domainInfo?.name || 'Unknown Domain';
+                        } catch {
+                            names[domainId] = 'Unknown Domain';
+                        }
+                    })
+                );
+            }
+
+            setDomainNames(names);
+        };
+
+        loadDomainNames();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formData.domainIds]);
 
     // Load deity data with imperative API
     useEffect(() => {
@@ -178,11 +294,23 @@ export function DeityEdit() {
             if (id === 'new') {
                 setIsCreating(true);
                 const response = await DeityQueryHooks.createDeity(formData as CreateDeityRequest);
+                // Invalidate queries to refresh the list and new item
+                await queryClient.invalidateQueries({ queryKey: ['deities'] });
+                // Invalidate the deities cache used by cache functions
+                await queryClient.invalidateQueries({ queryKey: ['deities-cache'] });
                 setMessage('Deity created successfully');
                 navigate(`/deities/${response.id}${fromListParams ? `?${fromListParams}` : ''}`);
             } else {
                 setIsUpdating(true);
                 await DeityQueryHooks.updateDeity(parseInt(id), formData as UpdateDeityRequest);
+                // Invalidate queries to refresh the list and updated item
+                await queryClient.invalidateQueries({ queryKey: ['deities'] });
+                // Specifically invalidate the individual deity query
+                await queryClient.invalidateQueries({ 
+                    queryKey: DeityQueryHooks.getDeityByIdQueryKey(parseInt(id))
+                });
+                // Invalidate the deities cache used by cache functions
+                await queryClient.invalidateQueries({ queryKey: ['deities-cache'] });
                 setMessage('Deity updated successfully');
                 navigate(`/deities/${id}${fromListParams ? `?${fromListParams}` : ''}`);
             }
@@ -293,8 +421,16 @@ export function DeityEdit() {
                                 {/* Display combined list of classes and races */}
                                 {(() => {
                                     const allWorshippers = [
-                                        ...(formData.classIds || []).map(id => ({ id, name: getClassNameById(id)?.name || 'Unknown Class', type: 'class' as const })),
-                                        ...(formData.raceIds || []).map(id => ({ id, name: getRaceNameById(id)?.name || 'Unknown Race', type: 'race' as const }))
+                                        ...(formData.classIds || []).map(id => ({ 
+                                            id, 
+                                            name: worshipperNames[id]?.name || 'Loading...', 
+                                            type: 'class' as const 
+                                        })),
+                                        ...(formData.raceIds || []).map(id => ({ 
+                                            id, 
+                                            name: worshipperNames[id]?.name || 'Loading...', 
+                                            type: 'race' as const 
+                                        }))
                                     ].sort((a, b) => a.name.localeCompare(b.name));
 
                                     if (allWorshippers.length === 0) {
@@ -372,10 +508,9 @@ export function DeityEdit() {
                             <div className="flex flex-wrap gap-2 mb-2 p-2">
                                 {(formData.domainIds || []).length === 0 && <span className="text-gray-500 dark:text-gray-400">No domains added.</span>}
                                 {(formData.domainIds || []).map((domainId, index) => {
-                                    const domainData = getDomainNameById(domainId);
                                     return (
                                         <span key={domainId} className="group relative text-sm pt-1 pb-1 pl-0 pr-0 cursor-pointer">
-                                            {domainData?.name || 'Unknown Domain'}
+                                            {domainNames[domainId] || 'Loading...'}
                                             {index < (formData.domainIds || []).length - 1 && ','}
                                             <button
                                                 type="button"
@@ -483,7 +618,7 @@ export function DeityEdit() {
                 <div>
                     <MarkdownEditor
                         value={formData.description || ''}
-                        onChange={(value) => setFormData({ ...formData, description: value })}
+                        onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
                     />
                 </div>
                 <div className="flex gap-2 mt-6">

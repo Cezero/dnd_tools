@@ -1,23 +1,324 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
+import { useDiceBox } from '@/components/dice-box';
+import type { LocalDiceRollResult } from '@/components/dice-box/types';
 import { CustomSelect } from '@/components/forms/FormComponents';
 import type { TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
+import { useCacheFunctions } from '@/services/cache';
 import {
     ALIGNMENT_LIST
 } from '@shared/static-data';
+
+/**
+ * Age table data based on D&D 3.5e rules
+ * Table 6-4: Random Starting Ages
+ */
+interface AgeTableEntry {
+    adulthood: number;
+    category1: { dice: number; sides: number }; // Barbarian, Rogue, Sorcerer
+    category2: { dice: number; sides: number }; // Bard, Fighter, Paladin, Ranger
+    category3: { dice: number; sides: number }; // Cleric, Druid, Monk, Wizard
+}
+
+const AGE_TABLE: Record<string, AgeTableEntry> = {
+    'human': { adulthood: 15, category1: { dice: 1, sides: 4 }, category2: { dice: 1, sides: 6 }, category3: { dice: 2, sides: 6 } },
+    'dwarf': { adulthood: 40, category1: { dice: 3, sides: 6 }, category2: { dice: 5, sides: 6 }, category3: { dice: 7, sides: 6 } },
+    'elf': { adulthood: 110, category1: { dice: 4, sides: 6 }, category2: { dice: 6, sides: 6 }, category3: { dice: 10, sides: 6 } },
+    'gnome': { adulthood: 40, category1: { dice: 4, sides: 6 }, category2: { dice: 6, sides: 6 }, category3: { dice: 9, sides: 6 } },
+    'half-elf': { adulthood: 20, category1: { dice: 1, sides: 6 }, category2: { dice: 2, sides: 6 }, category3: { dice: 3, sides: 6 } },
+    'half-orc': { adulthood: 14, category1: { dice: 1, sides: 4 }, category2: { dice: 1, sides: 6 }, category3: { dice: 2, sides: 6 } },
+    'halfling': { adulthood: 20, category1: { dice: 2, sides: 4 }, category2: { dice: 3, sides: 6 }, category3: { dice: 4, sides: 6 } }
+};
+
+/**
+ * Height and Weight table data based on D&D 3.5e rules
+ * Table 6-6: Random Height and Weight
+ */
+interface HeightWeightEntry {
+    baseHeightInches: number; // Base height in total inches
+    heightModifier: { dice: number; sides: number };
+    baseWeight: number; // Base weight in pounds
+    weightModifier: { dice: number; sides: number } | null; // null means "× 1 lb"
+}
+
+const HEIGHT_WEIGHT_TABLE: Record<string, { male: HeightWeightEntry; female: HeightWeightEntry }> = {
+    'human': {
+        male: { baseHeightInches: 58, heightModifier: { dice: 2, sides: 10 }, baseWeight: 120, weightModifier: { dice: 2, sides: 4 } },
+        female: { baseHeightInches: 53, heightModifier: { dice: 2, sides: 10 }, baseWeight: 85, weightModifier: { dice: 2, sides: 4 } }
+    },
+    'dwarf': {
+        male: { baseHeightInches: 45, heightModifier: { dice: 2, sides: 4 }, baseWeight: 130, weightModifier: { dice: 2, sides: 6 } },
+        female: { baseHeightInches: 43, heightModifier: { dice: 2, sides: 4 }, baseWeight: 100, weightModifier: { dice: 2, sides: 6 } }
+    },
+    'elf': {
+        male: { baseHeightInches: 53, heightModifier: { dice: 2, sides: 6 }, baseWeight: 85, weightModifier: { dice: 1, sides: 6 } },
+        female: { baseHeightInches: 53, heightModifier: { dice: 2, sides: 6 }, baseWeight: 80, weightModifier: { dice: 1, sides: 6 } }
+    },
+    'gnome': {
+        male: { baseHeightInches: 36, heightModifier: { dice: 2, sides: 4 }, baseWeight: 40, weightModifier: null },
+        female: { baseHeightInches: 34, heightModifier: { dice: 2, sides: 4 }, baseWeight: 35, weightModifier: null }
+    },
+    'half-elf': {
+        male: { baseHeightInches: 55, heightModifier: { dice: 2, sides: 8 }, baseWeight: 100, weightModifier: { dice: 2, sides: 4 } },
+        female: { baseHeightInches: 53, heightModifier: { dice: 2, sides: 8 }, baseWeight: 80, weightModifier: { dice: 2, sides: 4 } }
+    },
+    'half-orc': {
+        male: { baseHeightInches: 58, heightModifier: { dice: 2, sides: 12 }, baseWeight: 150, weightModifier: { dice: 2, sides: 6 } },
+        female: { baseHeightInches: 53, heightModifier: { dice: 2, sides: 12 }, baseWeight: 110, weightModifier: { dice: 2, sides: 6 } }
+    },
+    'halfling': {
+        male: { baseHeightInches: 32, heightModifier: { dice: 2, sides: 4 }, baseWeight: 30, weightModifier: null },
+        female: { baseHeightInches: 30, heightModifier: { dice: 2, sides: 4 }, baseWeight: 25, weightModifier: null }
+    }
+};
+
+/**
+ * Normalize gender for lookup
+ */
+function normalizeGender(gender: string | null | undefined): 'male' | 'female' {
+    if (!gender) return 'male';
+    const normalized = gender.toLowerCase().trim();
+    if (normalized === 'f' || normalized.startsWith('fem')) {
+        return 'female';
+    }
+    if (normalized === 'm' || normalized.startsWith('mal')) {
+        return 'male';
+    }
+    // Default to male for unclear values
+    return 'male';
+}
+
+/**
+ * Normalize a name for lookup (lowercase, trim, handle common variations)
+ */
+function normalizeName(name: string): string {
+    return name.toLowerCase().trim().replace(/\s+/g, '-');
+}
+
+/**
+ * Class categories for age calculation - using normalized names for direct lookup
+ */
+const CLASS_CATEGORY_1 = new Set(['barbarian', 'rogue', 'sorcerer']);
+const CLASS_CATEGORY_3 = new Set(['cleric', 'druid', 'monk', 'wizard']);
+// Category 2 is the default (Bard, Fighter, Paladin, Ranger)
+
+/**
+ * Get full dice notation including base adulthood age based on race and class names
+ */
+function getAgeDiceNotation(raceName: string, className: string): string {
+    // Normalize names for direct lookup
+    const normalizedRace = normalizeName(raceName);
+    const normalizedClass = normalizeName(className);
+
+    // Direct lookup in age table, default to human if not found
+    const raceEntry = AGE_TABLE[normalizedRace] ?? AGE_TABLE['human'];
+
+    // Determine which category the class belongs to using direct lookup
+    let diceConfig: { dice: number; sides: number };
+    if (CLASS_CATEGORY_1.has(normalizedClass)) {
+        diceConfig = raceEntry.category1;
+    } else if (CLASS_CATEGORY_3.has(normalizedClass)) {
+        diceConfig = raceEntry.category3;
+    } else {
+        // Default to category 2 (Bard, Fighter, Paladin, Ranger)
+        diceConfig = raceEntry.category2;
+    }
+
+    // Create full dice notation including base age (e.g., "15 + 1d6", "40 + 3d6")
+    const notation = `${raceEntry.adulthood} + ${diceConfig.dice}d${diceConfig.sides}`;
+
+    return notation;
+}
+
+/**
+ * Get height and weight dice configurations based on race and gender
+ */
+function getHeightWeightConfig(raceName: string, gender: string | null | undefined): {
+    baseHeightInches: number;
+    heightModifierNotation: string;
+    baseWeight: number;
+    weightModifierNotation: string | null;
+} {
+    const normalizedRace = normalizeName(raceName);
+    const normalizedGender = normalizeGender(gender);
+
+    // Direct lookup in table, default to human if not found
+    const raceData = HEIGHT_WEIGHT_TABLE[normalizedRace] ?? HEIGHT_WEIGHT_TABLE['human'];
+    const entry = raceData[normalizedGender];
+
+    const heightModifierNotation = `${entry.heightModifier.dice}d${entry.heightModifier.sides}`;
+    const weightModifierNotation = entry.weightModifier
+        ? `${entry.weightModifier.dice}d${entry.weightModifier.sides}`
+        : null;
+
+    return {
+        baseHeightInches: entry.baseHeightInches,
+        heightModifierNotation,
+        baseWeight: entry.baseWeight,
+        weightModifierNotation
+    };
+}
 
 export function DescriptionTab({
     state,
     updateState,
     isLoading
 }: TabComponentProps): React.JSX.Element {
+    const { getRaceNameById, getClassNameById } = useCacheFunctions();
+    const { rollDice, rollDiceGroups, isReady, onRollComplete } = useDiceBox();
+    const [isRollingAge, setIsRollingAge] = useState(false);
+    const isAgeRollPendingRef = useRef(false);
+    const [isRollingHeightWeight, setIsRollingHeightWeight] = useState(false);
+    const heightWeightConfigRef = useRef<{
+        baseHeightInches: number;
+        baseWeight: number;
+        weightModifierNotation: string | null;
+    } | null>(null);
 
     const getSizeForRace = (): string => {
         // TODO: Get race details from resolved data or state
         // For now, return a placeholder
         return 'Medium';
     };
+
+    // Set up roll complete callback to handle age and height/weight calculations
+    useEffect(() => {
+        const unsubscribe = onRollComplete((result: LocalDiceRollResult | LocalDiceRollResult[]) => {
+            const results = Array.isArray(result) ? result : [result];
+
+            // Handle age roll result
+            if (isAgeRollPendingRef.current) {
+                const ageResult = results.find(r => r.group?.startsWith('age-roll'));
+
+                if (ageResult) {
+                    // The result.value already includes the base age since we passed the full formula
+                    updateState({ type: CharacterEditStateUpdateType.SET_AGE, payload: { age: ageResult.value } });
+                    isAgeRollPendingRef.current = false;
+                    setIsRollingAge(false);
+                }
+            }
+
+            // Handle height/weight roll results
+            if (heightWeightConfigRef.current) {
+                const heightResult = results.find(r => r.group?.startsWith('height-roll'));
+                const weightResult = results.find(r => r.group?.startsWith('weight-roll'));
+
+                if (heightResult) {
+                    const heightModifierRoll = heightResult.value;
+                    const finalHeight = heightWeightConfigRef.current.baseHeightInches + heightModifierRoll;
+
+                    if (weightResult) {
+                        // Weight modifier was rolled
+                        const weightModifierRoll = weightResult.value;
+                        const finalWeight = heightWeightConfigRef.current.baseWeight + (heightModifierRoll * weightModifierRoll);
+                        updateState({
+                            type: CharacterEditStateUpdateType.SET_HEIGHT,
+                            payload: { height: finalHeight }
+                        });
+                        updateState({
+                            type: CharacterEditStateUpdateType.SET_WEIGHT,
+                            payload: { weight: `${finalWeight} lb.` }
+                        });
+                        heightWeightConfigRef.current = null;
+                        setIsRollingHeightWeight(false);
+                    } else if (heightWeightConfigRef.current.weightModifierNotation === null) {
+                        // Weight modifier is "× 1 lb" - just add height modifier to weight
+                        const finalWeight = heightWeightConfigRef.current.baseWeight + heightModifierRoll;
+                        updateState({
+                            type: CharacterEditStateUpdateType.SET_HEIGHT,
+                            payload: { height: finalHeight }
+                        });
+                        updateState({
+                            type: CharacterEditStateUpdateType.SET_WEIGHT,
+                            payload: { weight: `${finalWeight} lb.` }
+                        });
+                        heightWeightConfigRef.current = null;
+                        setIsRollingHeightWeight(false);
+                    }
+                    // If weight modifier exists but not rolled yet, wait for it
+                }
+            }
+        });
+
+        return unsubscribe;
+    }, [onRollComplete, updateState]);
+
+    const handleRollRandomAge = async (): Promise<void> => {
+        if (!state.raceId || !state.classId || !isReady) {
+            return;
+        }
+
+        setIsRollingAge(true);
+        isAgeRollPendingRef.current = true;
+        try {
+            const raceData = await getRaceNameById(state.raceId);
+            const classData = await getClassNameById(state.classId);
+
+            if (raceData?.name && classData?.name) {
+                const notation = getAgeDiceNotation(raceData.name, classData.name);
+                const groupName = `age-roll: ${raceData.name}, ${classData.name}`;
+
+                // Roll dice using dice-box with full formula (e.g., "15 + 1d6")
+                // Group name includes race and class for display
+                rollDice(notation, groupName);
+            } else {
+                setIsRollingAge(false);
+                isAgeRollPendingRef.current = false;
+            }
+        } catch (error) {
+            console.error('Error rolling random age:', error);
+            setIsRollingAge(false);
+            isAgeRollPendingRef.current = false;
+        }
+    };
+
+    const canRollAge = state.raceId !== null && state.classId !== null && isReady;
+
+    const handleRollRandomHeightWeight = async (): Promise<void> => {
+        if (!state.raceId || !isReady) {
+            return;
+        }
+
+        setIsRollingHeightWeight(true);
+        try {
+            const raceData = await getRaceNameById(state.raceId);
+
+            if (raceData?.name) {
+                const config = getHeightWeightConfig(raceData.name, state.gender);
+                heightWeightConfigRef.current = {
+                    baseHeightInches: config.baseHeightInches,
+                    baseWeight: config.baseWeight,
+                    weightModifierNotation: config.weightModifierNotation
+                };
+
+                const notations: string[] = [];
+                const groups: string[] = [];
+
+                // Always roll height modifier (just the dice, we'll add base in calculation)
+                notations.push(config.heightModifierNotation);
+                groups.push(`height-roll: ${raceData.name}`);
+
+                // Roll weight modifier if it's not "× 1 lb" (just the dice, we'll calculate in callback)
+                if (config.weightModifierNotation) {
+                    notations.push(config.weightModifierNotation);
+                    groups.push(`weight-roll: ${raceData.name}`);
+                }
+
+                // Roll both dice using dice-box
+                rollDiceGroups(notations, groups);
+            } else {
+                setIsRollingHeightWeight(false);
+                heightWeightConfigRef.current = null;
+            }
+        } catch (error) {
+            console.error('Error rolling random height/weight:', error);
+            setIsRollingHeightWeight(false);
+            heightWeightConfigRef.current = null;
+        }
+    };
+
+    const canRollHeightWeight = state.raceId !== null && isReady;
 
     return (
         <div className="p-6">
@@ -97,41 +398,71 @@ export function DescriptionTab({
                         Physical Description
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Age
-                            </label>
-                            <input
-                                type="number"
-                                value={state.age || ''}
-                                onChange={(e) => updateState({ type: CharacterEditStateUpdateType.SET_AGE, payload: { age: e.target.value ? parseInt(e.target.value) : null } })}
-                                placeholder="Enter age..."
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Height (inches)
-                            </label>
-                            <input
-                                type="number"
-                                value={state.height || ''}
-                                onChange={(e) => updateState({ type: CharacterEditStateUpdateType.SET_HEIGHT, payload: { height: e.target.value ? parseInt(e.target.value) : null } })}
-                                placeholder="Enter height..."
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Weight
-                            </label>
-                            <input
-                                type="text"
-                                value={state.weight || ''}
-                                onChange={(e) => updateState({ type: CharacterEditStateUpdateType.SET_WEIGHT, payload: { weight: e.target.value } })}
-                                placeholder="Enter weight..."
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
+                        {/* Age, Height, Weight on same line */}
+                        <div className="md:col-span-2">
+                            <div className="flex items-end gap-2">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Age
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="number"
+                                            value={state.age || ''}
+                                            onChange={(e) => updateState({ type: CharacterEditStateUpdateType.SET_AGE, payload: { age: e.target.value ? parseInt(e.target.value) : null } })}
+                                            placeholder="Enter age..."
+                                            className="w-[100px] h-[37px] px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleRollRandomAge}
+                                            disabled={!canRollAge || isRollingAge}
+                                            className="px-3 py-2 h-[37px] text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 whitespace-nowrap"
+                                            title={!canRollAge ? (isReady ? 'Select race and class to roll random age' : 'Dice box not ready') : 'Roll random age based on race and class'}
+                                        >
+                                            {isRollingAge ? 'Rolling...' : 'Roll Age'}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Height (inches)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={state.height || ''}
+                                        onChange={(e) => updateState({ type: CharacterEditStateUpdateType.SET_HEIGHT, payload: { height: e.target.value ? parseInt(e.target.value) : null } })}
+                                        placeholder="Enter height..."
+                                        className="w-[100px] h-[37px] px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        &nbsp;
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={handleRollRandomHeightWeight}
+                                        disabled={!canRollHeightWeight || isRollingHeightWeight}
+                                        className="px-3 py-2 h-[37px] text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 whitespace-nowrap"
+                                        title={!canRollHeightWeight ? (isReady ? 'Select race to roll random height and weight' : 'Dice box not ready') : 'Roll random height and weight based on race and gender'}
+                                    >
+                                        {isRollingHeightWeight ? 'Rolling...' : 'Roll Height/Weight'}
+                                    </button>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Weight
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={state.weight || ''}
+                                        onChange={(e) => updateState({ type: CharacterEditStateUpdateType.SET_WEIGHT, payload: { weight: e.target.value } })}
+                                        placeholder="Enter weight..."
+                                        className="w-[100px] h-[37px] px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                </div>
+                            </div>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

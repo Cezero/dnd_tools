@@ -59,6 +59,7 @@ export const enum FeatPrerequisiteType {
     CLASSLEVEL = 7,
     PROFICIENCY = 8,
     CLASSFEATURE = 9,
+    SIZE = 10,
 }
 
 export const FEAT_PREREQUISITE_TYPES: BaseMap<CoreComponent> = {
@@ -71,6 +72,7 @@ export const FEAT_PREREQUISITE_TYPES: BaseMap<CoreComponent> = {
     [FeatPrerequisiteType.SPECIAL]: { id: FeatPrerequisiteType.SPECIAL, name: 'Special' },
     [FeatPrerequisiteType.PROFICIENCY]: { id: FeatPrerequisiteType.PROFICIENCY, name: 'Proficiency' },
     [FeatPrerequisiteType.CLASSFEATURE]: { id: FeatPrerequisiteType.CLASSFEATURE, name: 'Class Feature' },
+    [FeatPrerequisiteType.SIZE]: { id: FeatPrerequisiteType.SIZE, name: 'Size' },
 };
 
 export const FEAT_PREREQ_BY_ID: IdToNameMap = ObjectIdToNameMap(FEAT_PREREQUISITE_TYPES);
