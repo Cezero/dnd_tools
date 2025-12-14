@@ -1,7 +1,6 @@
 import {
     CharacterIdParamSchema,
     CreateCharacterSchema,
-    UpdateCharacterSchema,
     UpdateResponseSchema,
     CreateResponseSchema,
     CharacterSchema,
@@ -39,15 +38,6 @@ const createCharacterConfig = createQueryHooks({
     queryKey: 'characters',
 });
 
-const updateCharacterConfig = createQueryHooks({
-    path: '/characters/:id',
-    method: 'PUT',
-    requestSchema: UpdateCharacterSchema,
-    paramsSchema: CharacterIdParamSchema,
-    responseSchema: UpdateResponseSchema,
-    queryKey: 'characters',
-});
-
 const deleteCharacterConfig = createQueryHooks({
     path: '/characters/:id',
     method: 'DELETE',
@@ -57,21 +47,15 @@ const deleteCharacterConfig = createQueryHooks({
 });
 
 export const CharacterQueryHooks = {
-    // Keep existing hooks for backward compatibility during transition
     useGetCharacters: charactersConfig.useQuery,
     useGetCharacterById: characterByIdConfig.useQuery,
     useCreateCharacter: createCharacterConfig.useMutation,
-    useUpdateCharacter: updateCharacterConfig.useMutation,
     useDeleteCharacter: deleteCharacterConfig.useMutation,
 
     // Add imperative methods
     getCharacters: (params?: unknown) => charactersConfig.fetch(params),
     getCharacterById: (characterId: number) => characterByIdConfig.fetch({ pathParams: { id: characterId } }),
     createCharacter: (data: unknown) => createCharacterConfig.mutate({ requestData: data }),
-    updateCharacter: (characterId: number, data: unknown) => updateCharacterConfig.mutate({
-        requestData: data,
-        pathParams: { id: characterId }
-    }),
     deleteCharacter: (characterId: number) => deleteCharacterConfig.mutate({
         pathParams: { id: characterId }
     }),

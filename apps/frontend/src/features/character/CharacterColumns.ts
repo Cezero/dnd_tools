@@ -20,7 +20,8 @@ export const CHARACTER_COLUMNS: ColumnDef<CharacterWithRaceResponse, unknown>[] 
         },
     },
     {
-        accessorKey: 'race.name',
+        id: 'race',
+        accessorFn: (row) => row.race?.name || '',
         header: 'Race',
         enableSorting: true,
         enableColumnFilter: true,
@@ -54,37 +55,37 @@ export const CHARACTER_COLUMNS: ColumnDef<CharacterWithRaceResponse, unknown>[] 
         },
     },
     {
-        accessorKey: 'age',
-        header: 'Age',
+        accessorKey: 'classLevelString',
+        header: 'Class/Level',
         enableSorting: true,
         enableColumnFilter: true,
         enableResizing: true,
-        size: 80,
+        size: 150,
         filterFn: createContainsFilter<CharacterWithRaceResponse>(),
         cell: info => {
-            const age = info.getValue() as number | null;
-            return age ? age.toString() : '-';
+            const classLevel = info.getValue() as string;
+            return classLevel || '-';
         },
         meta: {
             filterType: FilterType.TEXT_INPUT,
-            placeholder: 'Filter by age...'
+            placeholder: 'Filter by class/level...'
         },
     },
     {
-        accessorKey: 'gender',
-        header: 'Gender',
+        accessorKey: 'characterLevel',
+        header: 'Character Level',
         enableSorting: true,
         enableColumnFilter: true,
         enableResizing: true,
-        size: 100,
-        filterFn: createContainsFilter<CharacterWithRaceResponse>(),
+        size: 120,
+        filterFn: createEqualsFilter<CharacterWithRaceResponse>(),
         cell: info => {
-            const gender = info.getValue() as string | null;
-            return gender || '-';
+            const level = info.getValue() as number;
+            return level > 0 ? level.toString() : '-';
         },
         meta: {
             filterType: FilterType.TEXT_INPUT,
-            placeholder: 'Filter by gender...'
+            placeholder: 'Filter by level...'
         },
     },
     {

@@ -427,7 +427,13 @@ export function GenericList<T>({
 
     // Helper function to find route by type
     const findRouteByType = (routeType: 'detail' | 'edit' | 'delete') => {
-        return routes?.find(route => route.routeType === routeType);
+        const matchingRoutes = routes?.filter(route => route.routeType === routeType) || [];
+        // For edit routes, prefer routes with :id parameter over static paths
+        if (routeType === 'edit') {
+            const routeWithId = matchingRoutes.find(route => route.path.includes('/:id'));
+            if (routeWithId) return routeWithId;
+        }
+        return matchingRoutes[0];
     };
 
     // Navigation cell renderer for detail links
@@ -540,9 +546,16 @@ export function GenericList<T>({
         if (!safeItemId) return null;
 
         if (editRoute && (!editRoute.requireAdmin || isAdmin)) {
-            // Extract the route path from the edit route (e.g., 'spells/:id/edit' -> 'spells')
-            const routePath = editRoute.path.split('/:')[0];
-            const editPath = `${basePath}/${routePath}/${safeItemId}/edit`;
+            // Construct the edit path by replacing :id with the actual ID
+            let editPath: string;
+            if (editRoute.path.includes('/:id')) {
+                // For routes with :id parameter, replace it with the actual ID
+                editPath = editRoute.path.replace(':id', String(safeItemId));
+            } else {
+                // For routes without :id, construct path manually
+                const routePath = editRoute.path.split('/:')[0];
+                editPath = `${basePath}/${routePath}/${safeItemId}/edit`;
+            }
 
             actions.push(
                 <a

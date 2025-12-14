@@ -2,7 +2,6 @@ import type {
     GetAllCharactersResponse,
     Character,
     CreateCharacterRequest,
-    UpdateCharacterRequest,
     CharacterIdParamRequest,
     CreateResponse,
     UpdateResponse,
@@ -17,6 +16,7 @@ import type {
     UpdateCharacterAbilityScoreRequest,
     CharacterAbilityScoreResponse,
     CharacterWithAllDetailsResponse,
+    SaveCharacterRequest,
     // NEW: Character disallowed source types
     CreateCharacterDisallowedSourceRequest,
     CharacterDisallowedSource,
@@ -29,7 +29,7 @@ export interface CharacterService {
     getCharacterById: (query: CharacterIdParamRequest) => Promise<Character | null>;
     getCharacterWithAllDetails: (query: CharacterIdParamRequest) => Promise<CharacterWithAllDetailsResponse | null>;
     createCharacter: (data: CreateCharacterRequest) => Promise<CreateResponse>;
-    updateCharacter: (query: CharacterIdParamRequest, data: UpdateCharacterRequest) => Promise<UpdateResponse>;
+    saveCharacter: (characterId: number | null, data: SaveCharacterRequest) => Promise<CreateResponse | UpdateResponse>;
     deleteCharacter: (query: CharacterIdParamRequest) => Promise<UpdateResponse>;
 
     // Character advancement methods

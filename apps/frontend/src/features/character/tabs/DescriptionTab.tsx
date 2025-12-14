@@ -176,12 +176,6 @@ export function DescriptionTab({
         weightModifierNotation: string | null;
     } | null>(null);
 
-    const getSizeForRace = (): string => {
-        // TODO: Get race details from resolved data or state
-        // For now, return a placeholder
-        return 'Medium';
-    };
-
     // Set up roll complete callback to handle age and height/weight calculations
     useEffect(() => {
         const unsubscribe = onRollComplete((result: LocalDiceRollResult | LocalDiceRollResult[]) => {
@@ -347,47 +341,30 @@ export function DescriptionTab({
 
             <div className="space-y-6">
                 <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                        Character Name
-                    </h3>
-                    <input
-                        type="text"
-                        value={state.name}
-                        onChange={(e) => updateState({ type: CharacterEditStateUpdateType.SET_NAME, payload: { name: e.target.value } })}
-                        placeholder="Enter character name..."
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Alignment */}
-                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                            Alignment
-                        </h3>
-                        <CustomSelect
-                            value={state.alignmentId || 0}
-                            onValueChange={(value) => updateState({ type: CharacterEditStateUpdateType.SET_ALIGNMENT, payload: { alignmentId: value } })}
-                            options={ALIGNMENT_LIST}
-                            placeholder="Select alignment..."
-                            componentExtraClassName="mb-4"
-                        />
-                    </div>
-
-                    {/* Character Info */}
-                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                            Character Information
-                        </h3>
-                        <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                            <p><strong>Race:</strong> {/* TODO: Get race name from resolved data */} Not selected</p>
-                            <p><strong>Size:</strong> {getSizeForRace()}</p>
-                            <p><strong>Age:</strong> {state.age || 'Not set'}</p>
-                            <p><strong>Height:</strong> {state.height ? `${state.height} inches` : 'Not set'}</p>
-                            <p><strong>Weight:</strong> {state.weight || 'Not set'}</p>
-                            <p><strong>Eyes:</strong> {state.eyes || 'Not set'}</p>
-                            <p><strong>Hair:</strong> {state.hair || 'Not set'}</p>
-                            <p><strong>Gender:</strong> {state.gender || 'Not set'}</p>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                                Character Name
+                            </h3>
+                            <input
+                                type="text"
+                                value={state.name}
+                                onChange={(e) => updateState({ type: CharacterEditStateUpdateType.SET_NAME, payload: { name: e.target.value } })}
+                                placeholder="Enter character name..."
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                                Alignment
+                            </h3>
+                            <CustomSelect
+                                value={state.alignmentId || 0}
+                                onValueChange={(value) => updateState({ type: CharacterEditStateUpdateType.SET_ALIGNMENT, payload: { alignmentId: value } })}
+                                options={ALIGNMENT_LIST}
+                                placeholder="Select alignment..."
+                                componentExtraClassName="mb-4"
+                            />
                         </div>
                     </div>
                 </div>
@@ -464,41 +441,46 @@ export function DescriptionTab({
                                 </div>
                             </div>
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Eyes
-                            </label>
-                            <input
-                                type="text"
-                                value={state.eyes || ''}
-                                onChange={(e) => updateState({ type: CharacterEditStateUpdateType.SET_EYES, payload: { eyes: e.target.value } })}
-                                placeholder="Enter eye color..."
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Hair
-                            </label>
-                            <input
-                                type="text"
-                                value={state.hair || ''}
-                                onChange={(e) => updateState({ type: CharacterEditStateUpdateType.SET_HAIR, payload: { hair: e.target.value } })}
-                                placeholder="Enter hair color..."
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Gender
-                            </label>
-                            <input
-                                type="text"
-                                value={state.gender || ''}
-                                onChange={(e) => updateState({ type: CharacterEditStateUpdateType.SET_GENDER, payload: { gender: e.target.value } })}
-                                placeholder="Enter gender..."
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
+                        {/* Eyes, Hair, Gender on same line */}
+                        <div className="md:col-span-2">
+                            <div className="flex items-end gap-2">
+                                <div className="flex-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Eyes
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={state.eyes || ''}
+                                        onChange={(e) => updateState({ type: CharacterEditStateUpdateType.SET_EYES, payload: { eyes: e.target.value } })}
+                                        placeholder="Enter eye color..."
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                </div>
+                                <div className="flex-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Hair
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={state.hair || ''}
+                                        onChange={(e) => updateState({ type: CharacterEditStateUpdateType.SET_HAIR, payload: { hair: e.target.value } })}
+                                        placeholder="Enter hair color..."
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                </div>
+                                <div className="flex-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Gender
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={state.gender || ''}
+                                        onChange={(e) => updateState({ type: CharacterEditStateUpdateType.SET_GENDER, payload: { gender: e.target.value } })}
+                                        placeholder="Enter gender..."
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

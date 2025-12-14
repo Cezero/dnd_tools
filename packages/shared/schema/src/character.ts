@@ -31,7 +31,7 @@ export const BaseCharacterSchema = z.object({
         .max(100, 'Character name must be less than 100 characters')
         .trim(),
     raceId: z.number().int().positive('Race ID must be a positive integer'),
-    alignmentId: z.number().int().positive('Alignment ID must be a positive integer'),
+    alignmentId: z.union([z.number().int().positive('Alignment ID must be a positive integer'), z.null()]),
     deityId: z.number().int().positive('Deity ID must be a positive integer').nullable(),
     age: z.number().int().min(0, 'Age must be a non-negative integer').max(1000, 'Age must be less than 1000').nullable(),
     height: z.number().int().min(1, 'Height must be a positive integer').max(1000, 'Height must be less than 1000').nullable(),
@@ -59,6 +59,9 @@ export const CharacterWithRaceSchema = CharacterSchema.extend({
         id: z.number().int().positive('Race ID must be a positive integer'),
         name: z.string().min(1, 'Race name is required'),
     }),
+    // Class/level information calculated from advancements
+    characterLevel: z.number().int().min(0, 'Character level must be non-negative').default(0),
+    classLevelString: z.string().default(''),
 });
 
 // Character ability score schema
@@ -80,21 +83,27 @@ export const CharacterAdvancementSchema = z.object({
     hitPoints: z.number().int().min(1, 'Hit points must be a positive integer'),
     abilityId: z.number().int().positive('Ability ID must be a positive integer').nullable(),
     notes: z.string().max(1000, 'Notes must be less than 1000 characters').nullable(),
-    createdAt: z.date(),
+    createdAt: z.coerce.date(), // Accepts both Date objects and ISO date strings
 });
 
 export const AdvancementSkillSchema = z.object({
     advancementId: z.number().int().positive('Advancement ID must be a positive integer'),
     skillId: z.number().int().positive('Skill ID must be a positive integer'),
-    skillSubId: z.number().int().positive('Skill subtype ID must be a positive integer').nullable(),
+    skillSubId: z.union([z.number().int().positive('Skill subtype ID must be a positive integer'), z.null()]),
     pointsSpent: z.number().int().min(0, 'Points spent must be a non-negative integer'),
-    customSubtype: z.string().max(100, 'Custom subtype must be less than 100 characters').nullable(),
+    customSubtype: z.union([z.string().max(100, 'Custom subtype must be less than 100 characters'), z.null()]),
 });
+
+// Schema for creating advancement skills (without advancementId, as it's set by the parent)
+export const CreateAdvancementSkillSchema = AdvancementSkillSchema.omit({ advancementId: true });
 
 export const AdvancementFeatSchema = z.object({
     advancementId: z.number().int().positive('Advancement ID must be a positive integer'),
     featId: z.number().int().positive('Feat ID must be a positive integer'),
 });
+
+// Schema for creating advancement feats (without advancementId, as it's set by the parent)
+export const CreateAdvancementFeatSchema = AdvancementFeatSchema.omit({ advancementId: true });
 
 export const AdvancementSpellSchema = z.object({
     advancementId: z.number().int().positive('Advancement ID must be a positive integer'),
@@ -173,10 +182,12 @@ export const CreateAdvancementSchema = z.object({
     characterId: z.number().int().positive('Character ID must be a positive integer'),
     level: z.number().int().min(1, 'Level must be a positive integer').max(100, 'Level must be less than 100'),
     classId: z.number().int().positive('Class ID must be a positive integer'),
-    secondaryClassId: z.number().int().positive('Secondary class ID must be a positive integer').nullable(),
+    secondaryClassId: z.union([z.number().int().positive('Secondary class ID must be a positive integer'), z.null()]),
     hitPoints: z.number().int().min(1, 'Hit points must be a positive integer'),
-    abilityId: z.number().int().positive('Ability ID must be a positive integer').nullable(),
-    notes: z.string().max(1000, 'Notes must be less than 1000 characters').nullable(),
+    abilityId: z.union([z.number().int().positive('Ability ID must be a positive integer'), z.null()]),
+    notes: z.union([z.string().max(1000, 'Notes must be less than 1000 characters'), z.null()]),
+    skills: z.array(CreateAdvancementSkillSchema).optional(),
+    feats: z.array(CreateAdvancementFeatSchema).optional(),
 });
 
 export const UpdateAdvancementSchema = CreateAdvancementSchema.partial();
@@ -198,6 +209,12 @@ export const CreateCharacterAbilityScoreSchema = z.object({
     characterId: z.number().int().positive('Character ID must be a positive integer'),
     abilityId: z.number().int().positive('Ability ID must be a positive integer'),
     value: z.number().int().min(1, 'Ability score value must be a positive integer').max(50, 'Ability score value must be less than 50'),
+});
+
+// Bulk upsert ability scores schema (replaces all ability scores for a character)
+// Note: characterId comes from URL params, not body
+export const UpsertCharacterAbilityScoresSchema = z.object({
+    abilityScores: z.array(CreateCharacterAbilityScoreSchema.omit({ characterId: true })).max(6, 'Maximum 6 ability scores allowed'),
 });
 
 // Character item schemas
@@ -230,6 +247,15 @@ export const UpdateCharacterItemPropertySchema = CharacterItemPropertySchema.par
 
 export const UpdateCharacterAbilityScoreSchema = CreateCharacterAbilityScoreSchema.partial();
 
+// Unified save schema that includes nested ability scores and advancement data
+// Note: Defined after CreateCharacterAbilityScoreSchema and CreateAdvancementSchema to avoid forward reference errors
+export const SaveCharacterSchema = BaseCharacterSchema.extend({
+    // Optional ability scores (nested)
+    abilityScores: z.array(CreateCharacterAbilityScoreSchema.omit({ characterId: true })).optional(),
+    // Optional advancement data (nested)
+    advancement: CreateAdvancementSchema.omit({ characterId: true }).optional(),
+}).partial(); // Make all fields optional for updates
+
 // Request/response schemas for character disallowed sources
 export const CreateCharacterDisallowedSourceSchema = CharacterDisallowedSourceSchema.omit({ id: true });
 export const UpdateCharacterDisallowedSourceSchema = CreateCharacterDisallowedSourceSchema.partial();
@@ -250,6 +276,7 @@ export type AbilityIdParamRequest = z.infer<typeof AbilityIdParamSchema>;
 
 export type CreateCharacterRequest = z.infer<typeof CreateCharacterSchema>;
 export type UpdateCharacterRequest = z.infer<typeof UpdateCharacterSchema>;
+export type SaveCharacterRequest = z.infer<typeof SaveCharacterSchema>;
 export type Character = z.infer<typeof CharacterSchema>;
 export type CharacterWithRaceResponse = z.infer<typeof CharacterWithRaceSchema>;
 export type CharacterWithAllDetailsResponse = z.infer<typeof CharacterWithAllDetailsSchema>;
@@ -284,6 +311,7 @@ export type UpdateCharacterFeatureChoiceRequest = z.infer<typeof UpdateCharacter
 export type CreateCharacterAbilityScoreRequest = z.infer<typeof CreateCharacterAbilityScoreSchema>;
 export type UpdateCharacterAbilityScoreRequest = z.infer<typeof UpdateCharacterAbilityScoreSchema>;
 export type CharacterAbilityScoreResponse = z.infer<typeof CharacterAbilityScoreSchema>;
+export type UpsertCharacterAbilityScoresRequest = z.infer<typeof UpsertCharacterAbilityScoresSchema>;
 
 // Character disallowed source types
 export type CharacterDisallowedSource = z.infer<typeof CharacterDisallowedSourceSchema>;

@@ -4,6 +4,8 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 
 import { useDiceBox } from '@/components/dice-box';
 import { CustomSelect } from '@/components/forms/FormComponents';
+import { useLogPanel } from '@/components/log-panel';
+import { useToast } from '@/components/toast/useToast';
 import type { TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
 import { RaceDisplay } from '@/features/race/RaceDisplay';
@@ -37,6 +39,8 @@ export function AbilitiesRaceTab({
     const { getRaceSelectByEdition } = useCacheFunctions();
     const queryClient = useQueryClient();
     const { rollDice, rollDiceGroups, isReady, isRolling, lastResult, onRollComplete } = useDiceBox();
+    const toastManager = useToast();
+    const logPanel = useLogPanel();
     const [generationMethod, setGenerationMethod] = useState<AbilityGenerationMethod>(AbilityGenerationMethod.manual);
     const [rolledValues, setRolledValues] = useState<number[]>([]);
     const [isRollingAbilitySet, setIsRollingAbilitySet] = useState(false);
@@ -68,15 +72,61 @@ export function AbilitiesRaceTab({
     }, [state.abilityScores]);
 
     const getTotalPointsSpent = useCallback((): number => {
-        return ABILITY_LIST.reduce((total, ability) => {
-            const score = getAbilityScore(ability.id);
-            return total + (score !== null ? GetPointBuyCost(score) : 0);
-        }, 0);
-    }, [getAbilityScore]);
+        try {
+            return ABILITY_LIST.reduce((total, ability) => {
+                try {
+                    const score = getAbilityScore(ability.id);
+                    // Only calculate point buy cost for scores in valid range (8-18)
+                    if (score !== null && score >= 8 && score <= 18) {
+                        try {
+                            return total + GetPointBuyCost(score);
+                        } catch (error) {
+                            console.error(`Error calculating point buy cost for ${ability.name} (${score}):`, error);
+                            // If GetPointBuyCost throws, skip this score
+                            return total;
+                        }
+                    }
+                    return total;
+                } catch (error) {
+                    console.error(`Error processing ability ${ability.name} in point calculation:`, error);
+                    // Continue with current total
+                    return total;
+                }
+            }, 0);
+        } catch (error) {
+            console.error('Error calculating total points spent:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            toastManager?.add({
+                title: 'Error Calculating Points',
+                description: `Failed to calculate total points spent: ${errorMessage}`,
+                type: 'error',
+            });
+            logPanel.addLogEntry({
+                message: `Error calculating total points spent: ${errorMessage}`,
+                type: 'error',
+                source: 'abilities-race-tab',
+            });
+            // Return 0 as safe fallback
+            return 0;
+        }
+    }, [getAbilityScore, toastManager, logPanel]);
 
     const getRemainingPoints = useCallback((): number => {
         return getPointBuyLimit() - getTotalPointsSpent();
     }, [getPointBuyLimit, getTotalPointsSpent]);
+
+    // Safe wrapper for GetPointBuyCost that handles errors gracefully
+    const getSafePointBuyCost = useCallback((score: number): number => {
+        if (score < 8 || score > 18) {
+            return 0; // Invalid range for point buy
+        }
+        try {
+            return GetPointBuyCost(score);
+        } catch (error) {
+            console.error(`Error calculating point buy cost for score ${score}:`, error);
+            return 0; // Return 0 as safe fallback
+        }
+    }, []);
 
     // Set ability score
     const setAbilityScore = useCallback((abilityId: number, value: number) => {
@@ -125,15 +175,27 @@ export function AbilitiesRaceTab({
                     if (additionalCost > remainingPoints) {
                         return; // Don't update if not enough points
                     }
-                } catch (_error) {
-                    // If GetPointBuyCost throws an error, don't update
+                } catch (error) {
+                    // If GetPointBuyCost throws an error, log it and don't update
+                    console.error('Error calculating point buy cost:', error);
+                    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                    toastManager?.add({
+                        title: 'Point Buy Calculation Error',
+                        description: `Failed to calculate point buy cost: ${errorMessage}`,
+                        type: 'error',
+                    });
+                    logPanel.addLogEntry({
+                        message: `Point buy calculation error: ${errorMessage}`,
+                        type: 'error',
+                        source: 'abilities-race-tab',
+                    });
                     return;
                 }
             }
         }
 
         setAbilityScore(abilityId, value);
-    }, [generationMethod, getAbilityScore, getRemainingPoints, setAbilityScore]);
+    }, [generationMethod, getAbilityScore, getRemainingPoints, setAbilityScore, toastManager, logPanel]);
 
     // Handle immediate input changes (no validation)
     const handleInputChange = useCallback((abilityId: number, value: string) => {
@@ -511,25 +573,76 @@ export function AbilitiesRaceTab({
 
     // Memoized ability calculations to avoid repeated computations
     const abilityCalculations = useMemo(() => {
-        return ABILITY_LIST.map(ability => {
-            const baseValue = getAbilityScore(ability.id);
-            const adjustedValue = getAdjustedAbilityValue(ability.id);
-            const modifier = adjustedValue !== null ? GetAbilityModifier(adjustedValue) : 0;
-            const modifierString = adjustedValue !== null ? GetAbilityModifierString(adjustedValue) : '';
-            const modifierColor = adjustedValue !== null ? getModifierTextColor(modifier) : 'text-gray-500 dark:text-gray-400';
-            const pointCost = baseValue !== null ? GetPointBuyCost(baseValue) : 0;
+        try {
+            return ABILITY_LIST.map(ability => {
+                try {
+                    const baseValue = getAbilityScore(ability.id);
+                    const adjustedValue = getAdjustedAbilityValue(ability.id);
+                    const modifier = adjustedValue !== null ? GetAbilityModifier(adjustedValue) : 0;
+                    const modifierString = adjustedValue !== null ? GetAbilityModifierString(adjustedValue) : '';
+                    const modifierColor = adjustedValue !== null ? getModifierTextColor(modifier) : 'text-gray-500 dark:text-gray-400';
+                    // Only calculate point buy cost when using point buy method and score is within valid range
+                    let pointCost = 0;
+                    if (generationMethod === AbilityGenerationMethod.pointBuy && baseValue !== null && baseValue >= 8 && baseValue <= 18) {
+                        try {
+                            pointCost = GetPointBuyCost(baseValue);
+                        } catch (error) {
+                            console.error(`Error calculating point buy cost for ${ability.name} (${baseValue}):`, error);
+                            // Continue with pointCost = 0
+                        }
+                    }
 
-            return {
-                ability,
-                baseValue,
-                adjustedValue,
-                modifier,
-                modifierString,
-                modifierColor,
-                pointCost
-            };
-        });
-    }, [getAbilityScore, getAdjustedAbilityValue]);
+                    return {
+                        ability,
+                        baseValue,
+                        adjustedValue,
+                        modifier,
+                        modifierString,
+                        modifierColor,
+                        pointCost
+                    };
+                } catch (error) {
+                    console.error(`Error processing ability ${ability.name}:`, error);
+                    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                    toastManager?.add({
+                        title: 'Error Processing Ability',
+                        description: `Failed to process ${ability.name}: ${errorMessage}`,
+                        type: 'error',
+                    });
+                    logPanel.addLogEntry({
+                        message: `Error processing ability ${ability.name}: ${errorMessage}`,
+                        type: 'error',
+                        source: 'abilities-race-tab',
+                    });
+                    // Return a safe default value
+                    return {
+                        ability,
+                        baseValue: null,
+                        adjustedValue: null,
+                        modifier: 0,
+                        modifierString: '',
+                        modifierColor: 'text-gray-500 dark:text-gray-400',
+                        pointCost: 0
+                    };
+                }
+            });
+        } catch (error) {
+            console.error('Error in ability calculations:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            toastManager?.add({
+                title: 'Error Calculating Abilities',
+                description: `Failed to calculate ability values: ${errorMessage}`,
+                type: 'error',
+            });
+            logPanel.addLogEntry({
+                message: `Error calculating abilities: ${errorMessage}`,
+                type: 'error',
+                source: 'abilities-race-tab',
+            });
+            // Return empty array as fallback
+            return [];
+        }
+    }, [getAbilityScore, getAdjustedAbilityValue, generationMethod, toastManager, logPanel]);
 
     return (
         <div className="p-6">
@@ -824,7 +937,7 @@ export function AbilitiesRaceTab({
                                                 {Array.from({ length: 5 }, (_, i) => i + 9).map(score => (
                                                     <tr key={score}>
                                                         <td className="text-sm text-center text-gray-600 dark:text-gray-400">{score}</td>
-                                                        <td className="text-sm text-center font-medium">{GetPointBuyCost(score)}</td>
+                                                        <td className="text-sm text-center font-medium">{getSafePointBuyCost(score)}</td>
                                                     </tr>
                                                 ))}
                                             </tbody>
@@ -843,7 +956,7 @@ export function AbilitiesRaceTab({
                                                 {Array.from({ length: 5 }, (_, i) => i + 14).map(score => (
                                                     <tr key={score}>
                                                         <td className="text-sm text-center text-gray-600 dark:text-gray-400">{score}</td>
-                                                        <td className="text-sm text-center font-medium">{GetPointBuyCost(score)}</td>
+                                                        <td className="text-sm text-center font-medium">{getSafePointBuyCost(score)}</td>
                                                     </tr>
                                                 ))}
                                             </tbody>

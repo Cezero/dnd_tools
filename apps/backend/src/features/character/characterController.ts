@@ -8,7 +8,6 @@ import {
     SpellPreparationParamRequest,
     AbilityIdParamRequest,
     CreateCharacterRequest,
-    UpdateCharacterRequest,
     Character,
     GetAllCharactersResponse,
     CharacterWithAllDetailsResponse,
@@ -22,6 +21,8 @@ import {
     CreateCharacterAbilityScoreRequest,
     UpdateCharacterAbilityScoreRequest,
     CharacterAbilityScoreResponse,
+    UpsertCharacterAbilityScoresRequest,
+    SaveCharacterRequest,
     // NEW: Character disallowed source types
     CreateCharacterDisallowedSourceRequest,
     CharacterDisallowedSource,
@@ -72,13 +73,31 @@ export async function CreateCharacter(req: ValidatedBodyT<CreateCharacterRequest
 
     // Add the user ID to the character data
     const characterData = { ...req.body, userId };
-    await characterService.createCharacter(characterData);
-    res.status(201).json({ message: 'Character created successfully' });
+    const result = await characterService.createCharacter(characterData);
+    res.status(201).json(result);
 }
 
-export async function UpdateCharacter(req: ValidatedParamsBodyT<CharacterIdParamRequest, UpdateCharacterRequest>, res: Response, _next: NextFunction) {
-    await characterService.updateCharacter(req.params, req.body);
-    res.json({ message: 'Character updated successfully' });
+export async function SaveCharacter(req: ValidatedParamsBodyT<CharacterIdParamRequest | ValidatedNoInput, SaveCharacterRequest>, res: Response, _next: NextFunction) {
+    const userId = req.user?.id;
+    if (!userId) {
+        res.status(401).json({ error: 'User not authenticated' });
+        return;
+    }
+
+    // Ensure userId is set in the request body
+    const saveData: SaveCharacterRequest = {
+        ...req.body,
+        userId,
+    };
+
+    const characterId = (req.params as CharacterIdParamRequest)?.id ? parseInt((req.params as CharacterIdParamRequest).id, 10) : null;
+    const result = await characterService.saveCharacter(characterId, saveData);
+    
+    if (characterId) {
+        res.json(result);
+    } else {
+        res.status(201).json(result);
+    }
 }
 
 export async function DeleteCharacter(req: ValidatedParamsT<CharacterIdParamRequest>, res: Response, _next: NextFunction) {
@@ -158,6 +177,14 @@ export async function DeleteCharacterAbilityScore(req: ValidatedParamsT<AbilityI
 export async function GetCharacterAbilityScores(req: ValidatedParamsT<CharacterIdParam2Request, CharacterAbilityScoreResponse[]>, res: Response, _next: NextFunction) {
     const abilities = await characterService.getCharacterAbilityScores(req.params.characterId);
     res.json(abilities);
+}
+
+export async function UpsertCharacterAbilityScores(req: ValidatedParamsBodyT<CharacterIdParam2Request, Omit<UpsertCharacterAbilityScoresRequest, 'characterId'>>, res: Response, _next: NextFunction) {
+    await characterService.upsertCharacterAbilityScores({
+        characterId: req.params.characterId,
+        abilityScores: req.body.abilityScores,
+    });
+    res.json({ message: 'Character ability scores updated successfully' });
 }
 
 // NEW: Character disallowed sources methods

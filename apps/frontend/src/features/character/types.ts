@@ -400,6 +400,7 @@ export interface CharacterEditState {
     characterId: number | null;
     name: string;
     level: number;
+    currentAdvancementId: number | null;
 
     // Race & Abilities (AbilityTab inputs)
     raceId: number | null;
@@ -498,7 +499,8 @@ export enum CharacterEditStateUpdateType {
     SET_MONEY = 28,
     SET_RESOLVED_DATA = 29,
     SET_RESOLUTION_LOADING = 30,
-    SET_RESOLUTION_ERROR = 31
+    SET_RESOLUTION_ERROR = 31,
+    SET_CURRENT_ADVANCEMENT_ID = 32
 }
 
 export type CharacterEditStateUpdate =
@@ -542,7 +544,8 @@ export type CharacterEditStateUpdate =
         }
     }
     | { type: CharacterEditStateUpdateType.SET_RESOLUTION_LOADING; payload: { isLoading: boolean } }
-    | { type: CharacterEditStateUpdateType.SET_RESOLUTION_ERROR; payload: { error: string | null } };
+    | { type: CharacterEditStateUpdateType.SET_RESOLUTION_ERROR; payload: { error: string | null } }
+    | { type: CharacterEditStateUpdateType.SET_CURRENT_ADVANCEMENT_ID; payload: { currentAdvancementId: number | null } };
 
 /**
  * Props interface for tab components using the centralized state system.

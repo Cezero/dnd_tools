@@ -14,6 +14,7 @@ export function useCharacterEditState(initialState?: Partial<CharacterEditState>
         characterId: null,
         name: '',
         level: 1,
+        currentAdvancementId: null,
 
         // Race & Abilities
         raceId: null,
@@ -143,6 +144,8 @@ export function useCharacterEditState(initialState?: Partial<CharacterEditState>
                     return { ...prev, isLoadingResolution: update.payload.isLoading };
                 case CharacterEditStateUpdateType.SET_RESOLUTION_ERROR:
                     return { ...prev, resolutionError: update.payload.error, isLoadingResolution: false };
+                case CharacterEditStateUpdateType.SET_CURRENT_ADVANCEMENT_ID:
+                    return { ...prev, currentAdvancementId: update.payload.currentAdvancementId };
                 default:
                     return prev;
             }

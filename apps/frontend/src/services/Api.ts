@@ -80,20 +80,59 @@ export const Api = async <TResponse = unknown, TRequest = unknown, TParams = unk
         }
 
         if (!response.ok) {
-            const error = await response.json();
-            return Promise.reject(error.message || 'Something went wrong');
+            const errorData = await response.json();
+            // Handle different error response formats
+            let errorMessage = 'Something went wrong';
+            if (errorData.error) {
+                if (Array.isArray(errorData.error)) {
+                    // Zod validation errors - format them nicely
+                    errorMessage = errorData.error.map((issue: { path: string[]; message: string }) => {
+                        const field = issue.path.join('.');
+                        return `${field}: ${issue.message}`;
+                    }).join(', ');
+                } else if (typeof errorData.error === 'string') {
+                    errorMessage = errorData.error;
+                } else if (errorData.error.message) {
+                    errorMessage = errorData.error.message;
+                }
+            } else if (errorData.message) {
+                errorMessage = errorData.message;
+            }
+            return Promise.reject(errorMessage);
         }
 
         const data = await response.json();
         console.log('data', data);
         // Validate output if schema is provided
         if (options.responseSchema) {
-            return options.responseSchema.parse(data) as TResponse;
+            try {
+                return options.responseSchema.parse(data) as TResponse;
+            } catch (validationError) {
+                console.error('Response validation error:', validationError);
+                // If it's a ZodError, extract the error message
+                if (validationError instanceof Error && 'issues' in validationError) {
+                    const zodError = validationError as { issues: Array<{ path: string[]; message: string }> };
+                    const errorMessage = zodError.issues.map((issue: { path: string[]; message: string }) => {
+                        const field = issue.path.join('.');
+                        return `${field}: ${issue.message}`;
+                    }).join(', ');
+                    return Promise.reject(`Response validation failed: ${errorMessage}`);
+                }
+                return Promise.reject(`Response validation failed: ${validationError instanceof Error ? validationError.message : 'Unknown error'}`);
+            }
         }
 
         return data;
     } catch (error) {
         console.error('API call error:', error);
+        // If error is already a string (from our error handling above), pass it through
+        if (typeof error === 'string') {
+            return Promise.reject(error);
+        }
+        // If it's an Error object, use its message
+        if (error instanceof Error) {
+            return Promise.reject(error.message);
+        }
         return Promise.reject('Network error or unexpected issue');
     }
 };

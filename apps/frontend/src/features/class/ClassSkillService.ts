@@ -178,7 +178,7 @@ export class ClassSkillService {
         return Math.floor(totalRanks) + abilityModifier;
     }
 
-    private static isSkillClassSkillForAdvancement(
+    static isSkillClassSkillForAdvancement(
         effectiveClassDetails: DnDClass | undefined,
         advancement: CharacterAdvancementWithDetailsResponse,
         skillId: number,

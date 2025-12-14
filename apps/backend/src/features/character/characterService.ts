@@ -5,7 +5,6 @@ import {
     CreateCharacterRequest,
     CreateResponse,
     GetAllCharactersResponse,
-    UpdateCharacterRequest,
     UpdateResponse,
     // New types for advancement and spell preparation
     CreateAdvancementRequest,
@@ -18,6 +17,7 @@ import {
     UpdateCharacterAbilityScoreRequest,
     CharacterAbilityScoreResponse,
     CharacterWithAllDetailsResponse,
+    SaveCharacterRequest,
     // NEW: Character disallowed source types
     CreateCharacterDisallowedSourceRequest,
     CharacterDisallowedSource,
@@ -48,6 +48,23 @@ export const characterService: CharacterService = {
                             name: true,
                         },
                     },
+                    advancements: {
+                        include: {
+                            class: {
+                                select: {
+                                    id: true,
+                                    abbreviation: true,
+                                },
+                            },
+                            secondaryClass: {
+                                select: {
+                                    id: true,
+                                    abbreviation: true,
+                                },
+                            },
+                        },
+                        orderBy: { level: 'asc' },
+                    },
                 },
                 orderBy: { name: 'asc' },
             }),
@@ -56,9 +73,50 @@ export const characterService: CharacterService = {
             }),
         ]);
 
+        // Calculate class/level string and character level for each character
+        const charactersWithClassInfo = characters.map(character => {
+            const advancements = character.advancements || [];
+
+            // Calculate character level (max level from advancements)
+            const characterLevel = advancements.length > 0
+                ? Math.max(...advancements.map(a => a.level))
+                : 0;
+
+            // Build class/level string
+            let classLevelString = '';
+            if (advancements.length > 0) {
+                // Sort advancements by level
+                const sortedAdvancements = [...advancements].sort((a, b) => a.level - b.level);
+
+                const parts: string[] = [];
+
+                sortedAdvancements.forEach(adv => {
+                    const primaryAbbr = adv.class?.abbreviation || '?';
+                    const secondaryAbbr = adv.secondaryClass?.abbreviation || null;
+
+                    if (secondaryAbbr) {
+                        // Gestalt: "Ftr/Clr 1" (both classes at same level)
+                        parts.push(`${primaryAbbr}/${secondaryAbbr} ${adv.level}`);
+                    } else {
+                        // Single class: "Ftr 1"
+                        parts.push(`${primaryAbbr} ${adv.level}`);
+                    }
+                });
+
+                // Join with "/" for multiclass: "Ftr 1/Clr 1"
+                classLevelString = parts.join('/');
+            }
+
+            return {
+                ...character,
+                characterLevel,
+                classLevelString,
+            };
+        });
+
         return {
             total,
-            results: characters,
+            results: charactersWithClassInfo,
         };
     },
 
@@ -131,13 +189,145 @@ export const characterService: CharacterService = {
         return { id: result.id.toString(), message: 'Character created successfully' };
     },
 
-    async updateCharacter(query: CharacterIdParamRequest, data: UpdateCharacterRequest): Promise<UpdateResponse> {
-        await prisma.userCharacter.update({
-            where: { id: query.id },
-            data,
-        });
+    async saveCharacter(characterId: number | null, data: SaveCharacterRequest): Promise<CreateResponse | UpdateResponse> {
+        // Extract nested data
+        const { abilityScores, advancement, ...characterData } = data;
 
-        return { message: 'Character updated successfully' };
+        return await prisma.$transaction(async (tx) => {
+            let finalCharacterId = characterId;
+
+            // Create or update character
+            if (!finalCharacterId) {
+                // Create new character
+                const character = await tx.userCharacter.create({
+                    data: characterData as CreateCharacterRequest,
+                });
+                finalCharacterId = character.id;
+            } else {
+                // Update existing character
+                await tx.userCharacter.update({
+                    where: { id: finalCharacterId },
+                    data: characterData,
+                });
+            }
+
+            // Handle ability scores if provided
+            if (abilityScores !== undefined) {
+                // Get existing ability scores
+                const existingScores = await tx.userCharacterAbilityScore.findMany({
+                    where: { characterId: finalCharacterId },
+                });
+
+                const existingMap = new Map(existingScores.map(score => [score.abilityId, score]));
+                const requestedAbilityIds = new Set(abilityScores.map(score => score.abilityId));
+
+                // Create or update ability scores
+                for (const abilityScore of abilityScores) {
+                    const existing = existingMap.get(abilityScore.abilityId);
+                    if (existing) {
+                        if (existing.value !== abilityScore.value) {
+                            await tx.userCharacterAbilityScore.update({
+                                where: { id: existing.id },
+                                data: { value: abilityScore.value },
+                            });
+                        }
+                    } else {
+                        await tx.userCharacterAbilityScore.create({
+                            data: {
+                                characterId: finalCharacterId,
+                                abilityId: abilityScore.abilityId,
+                                value: abilityScore.value,
+                            },
+                        });
+                    }
+                }
+
+                // Delete scores that are no longer in the request
+                const toDelete = existingScores.filter(score => !requestedAbilityIds.has(score.abilityId));
+                if (toDelete.length > 0) {
+                    await tx.userCharacterAbilityScore.deleteMany({
+                        where: {
+                            id: { in: toDelete.map(score => score.id) },
+                        },
+                    });
+                }
+            }
+
+            // Handle advancement if provided
+            if (advancement) {
+                // Check if advancement exists for this character and level
+                const existingAdvancement = await tx.characterAdvancement.findFirst({
+                    where: {
+                        characterId: finalCharacterId,
+                        level: advancement.level,
+                    },
+                });
+
+                const { skills, feats, ...advancementData } = advancement;
+
+                if (existingAdvancement) {
+                    // Update existing advancement
+                    await tx.characterAdvancement.update({
+                        where: { id: existingAdvancement.id },
+                        data: {
+                            ...advancementData,
+                            characterId: finalCharacterId,
+                        },
+                    });
+
+                    // Handle skills: delete existing and create new if provided
+                    if (skills !== undefined) {
+                        await tx.advancementSkill.deleteMany({
+                            where: { advancementId: existingAdvancement.id },
+                        });
+                        if (skills.length > 0) {
+                            await tx.advancementSkill.createMany({
+                                data: skills.map(skill => ({
+                                    ...skill,
+                                    advancementId: existingAdvancement.id,
+                                })),
+                            });
+                        }
+                    }
+
+                    // Handle feats: delete existing and create new if provided
+                    if (feats !== undefined) {
+                        await tx.advancementFeat.deleteMany({
+                            where: { advancementId: existingAdvancement.id },
+                        });
+                        if (feats.length > 0) {
+                            await tx.advancementFeat.createMany({
+                                data: feats.map(feat => ({
+                                    ...feat,
+                                    advancementId: existingAdvancement.id,
+                                })),
+                            });
+                        }
+                    }
+                } else {
+                    // Create new advancement
+                    await tx.characterAdvancement.create({
+                        data: {
+                            ...advancementData,
+                            characterId: finalCharacterId,
+                            version: 1,
+                            skills: skills ? {
+                                create: skills
+                            } : undefined,
+                            feats: feats ? {
+                                create: feats
+                            } : undefined,
+                        },
+                    });
+                }
+            }
+
+            if (characterId) {
+                return { message: 'Character saved successfully' };
+            } else {
+                return { id: finalCharacterId.toString(), message: 'Character created successfully' };
+            }
+        });
     },
 
     async deleteCharacter(query: CharacterIdParamRequest): Promise<UpdateResponse> {
@@ -150,10 +340,18 @@ export const characterService: CharacterService = {
 
     // Character advancement methods
     async createAdvancement(data: CreateAdvancementRequest): Promise<CreateResponse> {
+        const { skills, feats, ...advancementData } = data;
+
         const result = await prisma.characterAdvancement.create({
             data: {
-                ...data,
+                ...advancementData,
                 version: 1, // Default version for new advancements
+                skills: skills ? {
+                    create: skills
+                } : undefined,
+                feats: feats ? {
+                    create: feats
+                } : undefined,
             },
         });
 
@@ -161,9 +359,45 @@ export const characterService: CharacterService = {
     },
 
     async updateAdvancement(id: number, data: UpdateAdvancementRequest): Promise<UpdateResponse> {
-        await prisma.characterAdvancement.update({
-            where: { id },
-            data,
+        const { skills, feats, ...advancementData } = data;
+
+        // Handle nested updates: delete existing and create new
+        await prisma.$transaction(async (tx) => {
+            // Update the advancement itself
+            await tx.characterAdvancement.update({
+                where: { id },
+                data: advancementData,
+            });
+
+            // Handle skills: delete existing and create new if provided
+            if (skills !== undefined) {
+                await tx.advancementSkill.deleteMany({
+                    where: { advancementId: id },
+                });
+                if (skills.length > 0) {
+                    await tx.advancementSkill.createMany({
+                        data: skills.map(skill => ({
+                            ...skill,
+                            advancementId: id,
+                        })),
+                    });
+                }
+            }
+
+            // Handle feats: delete existing and create new if provided
+            if (feats !== undefined) {
+                await tx.advancementFeat.deleteMany({
+                    where: { advancementId: id },
+                });
+                if (feats.length > 0) {
+                    await tx.advancementFeat.createMany({
+                        data: feats.map(feat => ({
+                            ...feat,
+                            advancementId: id,
+                        })),
+                    });
+                }
+            }
         });
 
         return { message: 'Character advancement updated successfully' };
@@ -283,6 +517,56 @@ export const characterService: CharacterService = {
         });
 
         return { message: 'Character ability score deleted successfully' };
+    },
+
+    async upsertCharacterAbilityScores(data: { characterId: number; abilityScores: Array<{ abilityId: number; value: number }> }): Promise<UpdateResponse> {
+        // Use a transaction to ensure all operations succeed or fail together
+        await prisma.$transaction(async (tx) => {
+            // Get existing ability scores for this character
+            const existingScores = await tx.userCharacterAbilityScore.findMany({
+                where: { characterId: data.characterId },
+            });
+
+            // Create a map of existing scores by abilityId
+            const existingMap = new Map(existingScores.map(score => [score.abilityId, score]));
+
+            // Process each ability score in the request
+            for (const abilityScore of data.abilityScores) {
+                const existing = existingMap.get(abilityScore.abilityId);
+                if (existing) {
+                    // Update existing score if value changed
+                    if (existing.value !== abilityScore.value) {
+                        await tx.userCharacterAbilityScore.update({
+                            where: { id: existing.id },
+                            data: { value: abilityScore.value },
+                        });
+                    }
+                } else {
+                    // Create new score
+                    await tx.userCharacterAbilityScore.create({
+                        data: {
+                            characterId: data.characterId,
+                            abilityId: abilityScore.abilityId,
+                            value: abilityScore.value,
+                        },
+                    });
+                }
+            }
+
+            // Delete scores that are no longer in the request
+            const requestedAbilityIds = new Set(data.abilityScores.map(score => score.abilityId));
+            const toDelete = existingScores.filter(score => !requestedAbilityIds.has(score.abilityId));
+
+            if (toDelete.length > 0) {
+                await tx.userCharacterAbilityScore.deleteMany({
+                    where: {
+                        id: { in: toDelete.map(score => score.id) },
+                    },
+                });
+            }
+        });
+
+        return { message: 'Character ability scores updated successfully' };
     },
 
     async getCharacterAbilityScores(characterId: number): Promise<CharacterAbilityScoreResponse[]> {

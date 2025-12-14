@@ -2,7 +2,7 @@ import { buildValidatedRouter } from '@/lib/buildValidatedRouter.js';
 import {
     CharacterIdParamSchema,
     CreateCharacterSchema,
-    UpdateCharacterSchema,
+    SaveCharacterSchema,
     // New schemas for advancement and spell preparation
     AdvancementIdParamSchema,
     CharacterIdParamSchema2,
@@ -14,6 +14,7 @@ import {
     UpdateSpellPreparationSchema,
     CreateCharacterAbilityScoreSchema,
     UpdateCharacterAbilityScoreSchema,
+    UpsertCharacterAbilityScoresSchema,
     // NEW: Character disallowed source schemas
     CreateCharacterDisallowedSourceSchema,
 } from '@shared/schema';
@@ -23,8 +24,8 @@ import {
     GetCharacterById,
     GetCharacterWithAllDetails,
     CreateCharacter,
-    UpdateCharacter,
     DeleteCharacter,
+    SaveCharacter,
     // New controller methods
     CreateAdvancement,
     UpdateAdvancement,
@@ -39,6 +40,7 @@ import {
     UpdateCharacterAbilityScore,
     DeleteCharacterAbilityScore,
     GetCharacterAbilityScores,
+    UpsertCharacterAbilityScores,
     // NEW: Character disallowed sources controllers
     AddDisallowedSource,
     RemoveDisallowedSource,
@@ -55,7 +57,9 @@ get('/:id/details', requireAuth, { params: CharacterIdParamSchema }, GetCharacte
 
 // Character Write Routes
 post('/', requireAuth, { body: CreateCharacterSchema }, CreateCharacter);
-put('/:id', requireAuth, { params: CharacterIdParamSchema, body: UpdateCharacterSchema }, UpdateCharacter);
+// Unified save endpoint - handles character + ability scores + advancement in one transaction
+post('/save', requireAuth, { body: SaveCharacterSchema }, SaveCharacter);
+put('/save/:id', requireAuth, { params: CharacterIdParamSchema, body: SaveCharacterSchema }, SaveCharacter);
 deleteRoute('/:id', requireAuth, { params: CharacterIdParamSchema }, DeleteCharacter);
 
 // Character Advancement Routes
@@ -76,6 +80,7 @@ get('/:characterId/abilities', requireAuth, { params: CharacterIdParamSchema2 },
 post('/abilities', requireAuth, { body: CreateCharacterAbilityScoreSchema }, CreateCharacterAbilityScore);
 put('/abilities/:id', requireAuth, { params: AbilityIdParamSchema, body: UpdateCharacterAbilityScoreSchema }, UpdateCharacterAbilityScore);
 deleteRoute('/abilities/:id', requireAuth, { params: AbilityIdParamSchema }, DeleteCharacterAbilityScore);
+put('/:characterId/abilities', requireAuth, { params: CharacterIdParamSchema2, body: UpsertCharacterAbilityScoresSchema }, UpsertCharacterAbilityScores);
 
 // NEW: Character Disallowed Sources Routes
 get('/:characterId/disallowed-sources', requireAuth, { params: CharacterIdParamSchema2 }, GetDisallowedSources);

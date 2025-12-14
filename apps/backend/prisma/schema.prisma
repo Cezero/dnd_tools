@@ -718,7 +718,7 @@ model UserCharacter {
     userId      Int
     name        String
     raceId      Int
-    alignmentId Int
+    alignmentId Int? // Optional alignment
     deityId     Int? // Optional deity worship
     xp          Int     @default(0)
     age         Int?
