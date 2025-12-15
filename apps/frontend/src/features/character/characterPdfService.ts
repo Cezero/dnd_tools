@@ -2,8 +2,9 @@ import jsPDF from 'jspdf';
 
 import { registerArchivoNarrowFonts } from '@/assets/fonts/registerArchivoNarrow';
 import { RaceApi } from '@/features/race/RaceApi';
+import { SkillApi } from '@/features/skill/SkillApi';
 import type { CharacterWithAllDetailsResponse, DnDClass, Race } from '@shared/schema';
-import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, SIZE_MAP, SKILL_LIST } from '@shared/static-data';
+import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, SIZE_MAP, SKILL_LIST, Skill } from '@shared/static-data';
 
 import type { CalculatedCharacterStats } from './characterStatsCalculator';
 import { calculateCharacterStats } from './characterStatsCalculator';
@@ -23,6 +24,19 @@ export async function generateCharacterPdf(
         } catch (error) {
             console.warn('Failed to fetch full race data:', error);
         }
+    }
+
+    // Fetch all skills to get affectedByArmor property
+    let skillsMap: Map<number, { affectedByArmor: boolean }> = new Map();
+    try {
+        const skillsResponse = await SkillApi.getSkills(undefined);
+        if (skillsResponse?.results) {
+            skillsMap = new Map(
+                skillsResponse.results.map(skill => [skill.id, { affectedByArmor: skill.affectedByArmor }])
+            );
+        }
+    } catch (error) {
+        console.warn('Failed to fetch skills data:', error);
     }
 
     // Calculate all stats
@@ -57,10 +71,10 @@ export async function generateCharacterPdf(
     };
 
     // Helper function to get alignment abbreviation
-    const getAlignmentAbbr = (alignmentId: number | null | undefined): string => {
+    const getAlignmentName = (alignmentId: number | null | undefined): string => {
         if (!alignmentId) return '';
         const alignment = ALIGNMENT_MAP[alignmentId as keyof typeof ALIGNMENT_MAP];
-        return alignment?.abbreviation ?? '';
+        return alignment?.name ?? '';
     };
 
     // Helper function to draw a field in the character sheet format:
@@ -69,7 +83,7 @@ export async function generateCharacterPdf(
         // Value text (8pt sans-serif)
         doc.setFontSize(8);
         doc.setFont('ArchivoNarrow', 'normal');
-        doc.text(value || '', x, y);
+        doc.text(value || '', x + 1, y);
 
         // Line (2px below value)
         const lineY = y + 2;
@@ -80,191 +94,11 @@ export async function generateCharacterPdf(
         const labelY = lineY + 5;
         doc.setFontSize(4);
         doc.setFont('ArchivoNarrow', 'normal');
-        doc.text(label.toUpperCase(), x, labelY);
+        doc.text(label.toUpperCase(), x + 1, labelY);
 
         // Return the bottom Y position
         return labelY + 3;
     };
-
-    // Format class abbreviations with forward slash (e.g., "War/Wiz")
-    const formatClassAbbreviations = (): string => {
-        const abbreviations: string[] = [];
-        for (const classLevel of stats.classLevels) {
-            const classDetails = classDetailsMap.get(classLevel.classId);
-            if (classDetails?.abbreviation) {
-                abbreviations.push(classDetails.abbreviation);
-            }
-        }
-        return abbreviations.join('/');
-    };
-
-    // Format levels matching class order (e.g., "1/1" for War 1/Wiz 1)
-    const formatLevels = (): string => {
-        const levels: string[] = [];
-        for (const classLevel of stats.classLevels) {
-            levels.push(classLevel.level.toString());
-        }
-        return levels.join('/');
-    };
-
-    // ============================================================================
-    // TOP SECTION - Character Identification (Three Lines)
-    // ============================================================================
-    let yPos = margin;
-    const fieldHeight = 12; // Height of each field (value + line + label) - reduced for tighter spacing
-    const fieldSpacing = 5; // Spacing between fields horizontally
-
-    // Calculate field widths for even distribution
-    const line1FieldWidth = (contentWidth - (fieldSpacing * 2)) / 3; // 3 fields on line 1
-    const line2FieldWidth = (contentWidth - (fieldSpacing * 5)) / 6; // 6 fields on line 2
-    const line3FieldWidth = (contentWidth - (fieldSpacing * 6)) / 7; // 7 fields on line 3
-
-    // LINE 1: Character Name, Player Name, Region
-    let xPos = margin;
-    const line1Y = yPos;
-    drawField(xPos, line1Y, line1FieldWidth, character.name || '', 'CHARACTER NAME');
-    xPos += line1FieldWidth + fieldSpacing;
-
-    // Player Name (not in character data, leave blank)
-    drawField(xPos, line1Y, line1FieldWidth, '', 'PLAYER NAME');
-    xPos += line1FieldWidth + fieldSpacing;
-
-    // Region (not in character data, leave blank)
-    drawField(xPos, line1Y, line1FieldWidth, '', 'REGION');
-
-    // LINE 2: Class, Race, Size, Gender, Alignment, Deity
-    const line2Y = line1Y + fieldHeight + 2; // Space between lines - tighter spacing
-    xPos = margin;
-
-    // Class (abbreviated with forward slash)
-    const classAbbr = formatClassAbbreviations();
-    drawField(xPos, line2Y, line2FieldWidth, classAbbr, 'CLASS');
-    xPos += line2FieldWidth + fieldSpacing;
-
-    // Race
-    drawField(xPos, line2Y, line2FieldWidth, character.race?.name || '', 'RACE');
-    xPos += line2FieldWidth + fieldSpacing;
-
-    // Size (from full race object, if available)
-    const sizeAbbr = fullRace?.sizeId ? SIZE_MAP[fullRace.sizeId as keyof typeof SIZE_MAP]?.abbreviation || '' : '';
-    drawField(xPos, line2Y, line2FieldWidth, sizeAbbr, 'SIZE');
-    xPos += line2FieldWidth + fieldSpacing;
-
-    // Gender
-    drawField(xPos, line2Y, line2FieldWidth, character.gender || '', 'GENDER');
-    xPos += line2FieldWidth + fieldSpacing;
-
-    // Alignment (two character abbreviation)
-    const alignmentAbbr = getAlignmentAbbr(character.alignmentId);
-    drawField(xPos, line2Y, line2FieldWidth, alignmentAbbr, 'ALIGNMENT');
-    xPos += line2FieldWidth + fieldSpacing;
-
-    // Deity
-    drawField(xPos, line2Y, line2FieldWidth, character.deity?.name || '', 'DEITY');
-
-    // LINE 3: Level, Type, Age, Height, Weight, Eyes, Hair
-    const line3Y = line2Y + fieldHeight + 2; // Space between lines - tighter spacing
-    xPos = margin;
-
-    // Level (matching class order)
-    const levels = formatLevels();
-    drawField(xPos, line3Y, line3FieldWidth, levels, 'LEVEL');
-    xPos += line3FieldWidth + fieldSpacing;
-
-    // Type (Humanoid (race) - not implemented yet, leave blank)
-    drawField(xPos, line3Y, line3FieldWidth, '', 'TYPE');
-    xPos += line3FieldWidth + fieldSpacing;
-
-    // Age
-    drawField(xPos, line3Y, line3FieldWidth, character.age?.toString() || '', 'AGE');
-    xPos += line3FieldWidth + fieldSpacing;
-
-    // Height
-    const heightStr = formatHeight(character.height);
-    drawField(xPos, line3Y, line3FieldWidth, heightStr, 'HEIGHT');
-    xPos += line3FieldWidth + fieldSpacing;
-
-    // Weight
-    const weightStr = character.weight ? `${character.weight} lb.` : '';
-    drawField(xPos, line3Y, line3FieldWidth, weightStr, 'WEIGHT');
-    xPos += line3FieldWidth + fieldSpacing;
-
-    // Eyes
-    drawField(xPos, line3Y, line3FieldWidth, character.eyes || '', 'EYES');
-    xPos += line3FieldWidth + fieldSpacing;
-
-    // Hair
-    drawField(xPos, line3Y, line3FieldWidth, character.hair || '', 'HAIR');
-
-    // Update yPos for main content area
-    yPos = line3Y + fieldHeight + 1;
-
-    // ============================================================================
-    // MAIN CONTENT AREA - Three Column Layout
-    // ============================================================================
-
-    // ============================================================================
-    // LEFT COLUMN - Ability Scores and Combat Stats
-    // ============================================================================
-    const leftColX = margin;
-    let abilityGridY = yPos;
-
-    // Ability Scores Section - Table format with 5 columns
-    const abilityOrder = [AbilityId.Strength, AbilityId.Dexterity, AbilityId.Constitution, AbilityId.Intelligence, AbilityId.Wisdom, AbilityId.Charisma];
-    const abilityBoxWidth = 26;
-    const valueBoxWidth = 25;
-    const rowHeight = 18; // Height of each ability row
-    const headerHeight = 24; // Height for column headers (increased for word-wrapped labels)
-    const abilityBoxSpacingX = 2; // 2px space between boxes vertically
-    const rowSpacing = 3; // 3px space between rows
-
-    // Helper function to draw word-wrapped labels
-    const drawLabel = (x: number, y: number, width: number, words: string[], centerY?: number): void => {
-        doc.setFontSize(4);
-        doc.setFont('ArchivoNarrow', 'normal');
-        const centerX = x + width / 2;
-
-        if (words.length === 1) {
-            // Single word - center vertically if centerY provided, otherwise use y + 2.5
-            const labelY = centerY !== undefined ? centerY + 2 : y + 2;
-            doc.text(words[0], centerX, labelY, { align: 'center' });
-        } else if (words.length === 2) {
-            // Two words - first at y, second at y + 4
-            doc.text(words[0], centerX, y, { align: 'center' });
-            doc.text(words[1], centerX, y + 4, { align: 'center' });
-        } else {
-            // Three or more words - each on a new line (y, y + 4, y + 8, etc.)
-            words.forEach((word, index) => {
-                doc.text(word, centerX, y + index * 4, { align: 'center' });
-            });
-        }
-    };
-
-    // Column headers with word wrapping
-    const headerY = abilityGridY;
-    let headerX = leftColX;
-
-    // Column 1: ABILITY NAME (single line, centered vertically with other headers)
-    drawLabel(headerX, headerY, abilityBoxWidth, ['ABILITY NAME'], headerY);
-    headerX += abilityBoxWidth + abilityBoxSpacingX;
-
-    // Column 2: ABILITY SCORE (word-wrapped, centered)
-    drawLabel(headerX, headerY, valueBoxWidth, ['ABILITY', 'SCORE']);
-    headerX += valueBoxWidth + abilityBoxSpacingX;
-
-    // Column 3: ABILITY MODIFIER (word-wrapped, centered)
-    drawLabel(headerX, headerY, valueBoxWidth, ['ABILITY', 'MODIFIER']);
-    headerX += valueBoxWidth + abilityBoxSpacingX;
-
-    // Column 4: TEMP SCORE (word-wrapped, centered)
-    drawLabel(headerX, headerY, valueBoxWidth, ['TEMP', 'SCORE']);
-    headerX += valueBoxWidth + abilityBoxSpacingX;
-
-    // Column 5: TEMP MODIFIER (word-wrapped, centered)
-    drawLabel(headerX, headerY, valueBoxWidth, ['TEMP', 'MODIFIER']);
-
-    // Move down to start the grid below the headers (keep original spacing)
-    abilityGridY += headerHeight;
 
     // Helper to draw black box with white text (ability name)
     const drawAbilityNameBox = (x: number, y: number, width: number, height: number, abbr: string, fullName: string): void => {
@@ -272,13 +106,13 @@ export async function generateCharacterPdf(
         doc.setDrawColor(0, 0, 0);
         doc.setLineWidth(1);
         doc.setFillColor(0, 0, 0);
-        doc.rect(x, y - height, width, height, 'FD');
+        doc.rect(x, y, width, height, 'FD');
 
         // White text - abbreviation (shifted down 3px total)
         doc.setFontSize(7);
         doc.setFont('ArchivoNarrow', 'bold');
         doc.setTextColor(255, 255, 255);
-        let abbrY = y - height + 9; // Shifted down 3px from original 6
+        let abbrY = y + 9; // Shifted down 3px from original 6
         if (!fullName) {
             abbrY += 2;
         }
@@ -287,7 +121,7 @@ export async function generateCharacterPdf(
         // White text - full name in 4pt (shifted down 3px total)
         doc.setFontSize(4);
         doc.setFont('ArchivoNarrow', 'normal');
-        const nameY = y - height + 15; // Shifted down 3px from original 12
+        const nameY = y + 15; // Shifted down 3px from original 12
         doc.text(fullName.toUpperCase(), x + width / 2, nameY, { align: 'center' });
 
         // Reset text color
@@ -300,15 +134,35 @@ export async function generateCharacterPdf(
         doc.setDrawColor(0, 0, 0);
         doc.setLineWidth(1);
         doc.setFillColor(255, 255, 255);
-        doc.rect(x, y - height, width, height, 'FD');
+        doc.rect(x, y, width, height, 'FD');
 
         // Black text
         doc.setFontSize(8);
         doc.setFont('ArchivoNarrow', 'normal');
         doc.setTextColor(0, 0, 0);
-        doc.text(value, x + width / 2, y - height / 2 + 3, { align: 'center' });
+        doc.text(value, x + width / 2, y + (height / 2) + 3, { align: 'center' });
     };
 
+    // Helper to draw white box with border (ability score/modifier)
+    const drawLabelBox = (x: number, y: number, width: number, height: number, value: string, wrap: boolean = false): void => {
+        // Draw white box with border
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(1);
+        doc.setFillColor(255, 255, 255);
+        doc.rect(x, y, width, height, 'FD');
+
+        // Black text
+        doc.setFontSize(4);
+        doc.setFont('ArchivoNarrow', 'normal');
+        doc.setTextColor(0, 0, 0);
+        let words = value.split(' ');
+        if (words.length > 1 && wrap) {
+            doc.text(words[0], x + width / 2, y + 5, { align: 'center' });
+            doc.text(words[1], x + width / 2, y + 9, { align: 'center' });
+        } else {
+            doc.text(value, x + width / 2, y + height / 2 + 2, { align: 'center' });
+        }
+    };
     // Helper to draw empty box with dotted border (temp score/modifier)
     const drawTempBox = (x: number, y: number, width: number, height: number): void => {
         // Draw dotted border box
@@ -317,7 +171,7 @@ export async function generateCharacterPdf(
         // jsPDF doesn't have native dotted lines, so we'll use a dashed pattern
         doc.setLineDashPattern([1, 1], 0);
         doc.setFillColor(255, 255, 255);
-        doc.rect(x, y - height, width, height, 'FD');
+        doc.rect(x, y, width, height, 'FD');
         doc.setLineDashPattern([], 0); // Reset to solid
     };
 
@@ -347,6 +201,28 @@ export async function generateCharacterPdf(
         doc.setFont('ArchivoNarrow', 'normal');
         doc.setTextColor(0, 0, 0);
         doc.text(value, x + width / 2, y + boxHeaderHeight + 3 + ((height - boxHeaderHeight) / 2), { align: 'center' });
+    };
+
+    // Helper function to draw word-wrapped labels
+    const drawLabel = (x: number, y: number, width: number, words: string[], centerY?: number): void => {
+        doc.setFontSize(4);
+        doc.setFont('ArchivoNarrow', 'normal');
+        const centerX = x + width / 2;
+
+        if (words.length === 1) {
+            // Single word - center vertically if centerY provided, otherwise use y + 2.5
+            const labelY = centerY !== undefined ? centerY + 2 : y + 2;
+            doc.text(words[0], centerX, labelY, { align: 'center' });
+        } else if (words.length === 2) {
+            // Two words - first at y, second at y + 4
+            doc.text(words[0], centerX, y, { align: 'center' });
+            doc.text(words[1], centerX, y + 4, { align: 'center' });
+        } else {
+            // Three or more words - each on a new line (y, y + 4, y + 8, etc.)
+            words.forEach((word, index) => {
+                doc.text(word, centerX, y + index * 4, { align: 'center' });
+            });
+        }
     };
 
     type WeaponInfo = {
@@ -430,6 +306,238 @@ export async function generateCharacterPdf(
             doc.text('O', ammoRowX + i * 4, ammoRowY);
         }
     };
+
+    // Format class abbreviations with forward slash (e.g., "War/Wiz")
+    const formatClassAbbreviations = (): string => {
+        const abbreviations: string[] = [];
+        for (const classLevel of stats.classLevels) {
+            const classDetails = classDetailsMap.get(classLevel.classId);
+            if (classDetails?.abbreviation) {
+                abbreviations.push(classDetails.abbreviation);
+            }
+        }
+        return abbreviations.join('/');
+    };
+
+    // Format levels matching class order (e.g., "1/1" for War 1/Wiz 1)
+    const formatLevels = (): string => {
+        const levels: string[] = [];
+        for (const classLevel of stats.classLevels) {
+            levels.push(classLevel.level.toString());
+        }
+        return levels.join('/');
+    };
+
+    // draw white box with border around entire page
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(1);
+    doc.setFillColor(255, 255, 255);
+    doc.rect(32, 26, 548, 728, 'FD');
+
+    // ============================================================================
+    // TOP SECTION - Character Identification (Three Lines)
+    // ============================================================================
+    let yPos = margin;
+    const fieldHeight = 14; // Height of each field (value + line + label) - reduced for tighter spacing
+    const fieldSpacing = 6; // Spacing between fields horizontally
+
+    const fieldWidths = {
+        line1: { // 387 + 12 = 399
+            characterName: 180,
+            playerName: 107,
+            region: 100,
+        },
+        line2: { // 369 + 30 = 399
+            class: 87,
+            race: 87,
+            size: 35,
+            gender: 35,
+            alignment: 45,
+            deity: 80,
+        },
+        line3: { // 363 + 36 = 399
+            level: 87,
+            type: 87,
+            age: 20,
+            height: 25,
+            weight: 26,
+            eyes: 59,
+            hair: 59,
+        },
+    }
+    // LINE 1: Character Name, Player Name, Region
+    let xPos = margin;
+    const line1Y = yPos;
+    drawField(xPos, line1Y, fieldWidths.line1.characterName, character.name || '', 'CHARACTER NAME');
+    xPos += fieldWidths.line1.characterName + fieldSpacing;
+
+    // Player Name (not in character data, leave blank)
+    drawField(xPos, line1Y, fieldWidths.line1.playerName, '', 'PLAYER NAME');
+    xPos += fieldWidths.line1.playerName + fieldSpacing;
+
+    // Region (not in character data, leave blank)
+    drawField(xPos, line1Y, fieldWidths.line1.region, '', 'REGION');
+
+    // LINE 2: Class, Race, Size, Gender, Alignment, Deity
+    const line2Y = line1Y + fieldHeight + 2; // Space between lines - tighter spacing
+    xPos = margin;
+
+    // Class (abbreviated with forward slash)
+    const classAbbr = formatClassAbbreviations();
+    drawField(xPos, line2Y, fieldWidths.line2.class, classAbbr, 'CLASS');
+    xPos += fieldWidths.line2.class + fieldSpacing;
+
+    // Race
+    drawField(xPos, line2Y, fieldWidths.line2.race, character.race?.name || '', 'RACE');
+    xPos += fieldWidths.line2.race + fieldSpacing;
+
+    // Size (from full race object, if available)
+    const sizeName = fullRace?.sizeId ? SIZE_MAP[fullRace.sizeId as keyof typeof SIZE_MAP]?.name || '' : '';
+    drawField(xPos, line2Y, fieldWidths.line2.size, sizeName, 'SIZE');
+    xPos += fieldWidths.line2.size + fieldSpacing;
+
+    // Gender
+    drawField(xPos, line2Y, fieldWidths.line2.gender, character.gender || '', 'GENDER');
+    xPos += fieldWidths.line2.gender + fieldSpacing;
+
+    // Alignment (two character abbreviation)
+    const alignmentName = getAlignmentName(character.alignmentId);
+    drawField(xPos, line2Y, fieldWidths.line2.alignment, alignmentName, 'ALIGNMENT');
+    xPos += fieldWidths.line2.alignment + fieldSpacing;
+
+    // Deity
+    drawField(xPos, line2Y, fieldWidths.line2.deity, character.deity?.name || '', 'DEITY');
+
+    // LINE 3: Level, Type, Age, Height, Weight, Eyes, Hair
+    const line3Y = line2Y + fieldHeight + 2; // Space between lines - tighter spacing
+    xPos = margin;
+
+    // Level (matching class order)
+    const levels = formatLevels();
+    drawField(xPos, line3Y, fieldWidths.line3.level, levels, 'LEVEL');
+    xPos += fieldWidths.line3.level + fieldSpacing;
+
+    // Type (Humanoid (race) - not implemented yet, leave blank)
+    drawField(xPos, line3Y, fieldWidths.line3.type, '', 'TYPE');
+    xPos += fieldWidths.line3.type + fieldSpacing;
+
+    // Age
+    drawField(xPos, line3Y, fieldWidths.line3.age, character.age?.toString() || '', 'AGE');
+    xPos += fieldWidths.line3.age + fieldSpacing;
+
+    // Height
+    const heightStr = formatHeight(character.height);
+    drawField(xPos, line3Y, fieldWidths.line3.height, heightStr, 'HEIGHT');
+    xPos += fieldWidths.line3.height + fieldSpacing;
+
+    // Weight
+    const weightStr = character.weight ? `${character.weight} lb.` : '';
+    drawField(xPos, line3Y, fieldWidths.line3.weight, weightStr, 'WEIGHT');
+    xPos += fieldWidths.line3.weight + fieldSpacing;
+
+    // Eyes
+    drawField(xPos, line3Y, fieldWidths.line3.eyes, character.eyes || '', 'EYES');
+    xPos += fieldWidths.line3.eyes + fieldSpacing;
+
+    // Hair
+    drawField(xPos, line3Y, fieldWidths.line3.hair, character.hair || '', 'HAIR');
+
+    // Update yPos for main content area
+    yPos = line3Y + fieldHeight + 1;
+
+    // Add logo image in upper right corner
+    const logoX = margin + 405;
+    const logoY = margin;
+    const logoMaxWidth = pageWidth - margin - logoX; // Available width to right margin
+
+    // Load and add logo image
+    try {
+        // Load image from assets folder
+        // Use a path that Vite will resolve at build time
+        const logoPath = '/src/assets/logos/3-3.5E Logo - bw.jpg';
+        const response = await fetch(logoPath);
+        if (!response.ok) {
+            // Try alternative path (public folder or direct asset import)
+            throw new Error('Image not found at primary path');
+        }
+        const blob = await response.blob();
+        const reader = new FileReader();
+        const imageData = await new Promise<string>((resolve, reject) => {
+            reader.onloadend = () => {
+                if (typeof reader.result === 'string') {
+                    resolve(reader.result);
+                } else {
+                    reject(new Error('Failed to convert image to base64'));
+                }
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+
+        // Create image element to get dimensions
+        const img = new Image();
+        await new Promise<void>((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = () => reject(new Error('Failed to load image'));
+            img.src = imageData;
+        });
+
+        // Calculate scale to fit within available width
+        const scale = logoMaxWidth / img.width;
+        const logoHeight = img.height * scale;
+
+        // Add image to PDF
+        doc.addImage(imageData, 'JPEG', logoX, logoY, logoMaxWidth, logoHeight);
+    } catch (error) {
+        // If image loading fails, continue without logo
+        console.warn('Failed to load logo image:', error);
+    }
+
+    // ============================================================================
+    // MAIN CONTENT AREA - Three Column Layout
+    // ============================================================================
+
+    // ============================================================================
+    // LEFT COLUMN - Ability Scores and Combat Stats
+    // ============================================================================
+    const leftColX = margin;
+    let abilityGridY = yPos;
+
+    // Ability Scores Section - Table format with 5 columns
+    const abilityOrder = [AbilityId.Strength, AbilityId.Dexterity, AbilityId.Constitution, AbilityId.Intelligence, AbilityId.Wisdom, AbilityId.Charisma];
+    const abilityBoxWidth = 26;
+    const valueBoxWidth = 25;
+    const rowHeight = 18; // Height of each ability row
+    const rowCenter = (rowHeight / 2) + 3;
+    const headerHeight = 6; // Height for column headers (increased for word-wrapped labels)
+    const abilityBoxSpacingX = 2; // 2px space between boxes vertically
+    const rowSpacing = 3; // 3px space between rows
+
+    // Column headers with word wrapping
+    const headerY = abilityGridY;
+    let headerX = leftColX;
+
+    // Column 1: ABILITY NAME (single line, centered vertically with other headers)
+    drawLabel(headerX, headerY, abilityBoxWidth, ['ABILITY NAME'], headerY);
+    headerX += abilityBoxWidth + abilityBoxSpacingX;
+
+    // Column 2: ABILITY SCORE (word-wrapped, centered)
+    drawLabel(headerX, headerY, valueBoxWidth, ['ABILITY', 'SCORE']);
+    headerX += valueBoxWidth + abilityBoxSpacingX;
+
+    // Column 3: ABILITY MODIFIER (word-wrapped, centered)
+    drawLabel(headerX, headerY, valueBoxWidth, ['ABILITY', 'MODIFIER']);
+    headerX += valueBoxWidth + abilityBoxSpacingX;
+
+    // Column 4: TEMP SCORE (word-wrapped, centered)
+    drawLabel(headerX, headerY, valueBoxWidth, ['TEMP', 'SCORE']);
+    headerX += valueBoxWidth + abilityBoxSpacingX;
+
+    // Column 5: TEMP MODIFIER (word-wrapped, centered)
+    drawLabel(headerX, headerY, valueBoxWidth, ['TEMP', 'MODIFIER']);
+
+    // Move down to start the grid below the headers (keep original spacing)
+    abilityGridY += headerHeight;
 
     // Draw each ability row
     for (const abilityId of abilityOrder) {
@@ -554,15 +662,15 @@ export async function generateCharacterPdf(
     // '=' text (not in a box)
     doc.setFontSize(8);
     doc.setFont('ArchivoNarrow', 'normal');
-    doc.text('=', acX, acRowY - rowHeight / 2 + 3);
+    doc.text('=', acX, acRowY + rowCenter);
     acX += 8; // Small space for '='
 
     // '10' text (not in a box)
-    doc.text('10', acX, acRowY - rowHeight / 2 + 3);
+    doc.text('10', acX, acRowY + rowCenter);
     acX += 11; // Small space for '10'
 
     // '+' text
-    doc.text('+', acX, acRowY - rowHeight / 2 + 3);
+    doc.text('+', acX, acRowY + rowCenter);
     acX += acBoxSpacing + acBoxTextSpacing;
 
     // Armor bonus white box
@@ -570,7 +678,7 @@ export async function generateCharacterPdf(
     acX += acBoxWidth + acBoxSpacing - acBoxTextSpacing;
 
     // '+' text
-    doc.text('+', acX, acRowY - rowHeight / 2 + 3);
+    doc.text('+', acX, acRowY + rowCenter);
     acX += acBoxSpacing + acBoxTextSpacing;
 
     // Shield bonus white box
@@ -580,7 +688,7 @@ export async function generateCharacterPdf(
     acX += acBoxWidth + acBoxSpacing - acBoxTextSpacing;
 
     // '+' text
-    doc.text('+', acX, acRowY - rowHeight / 2 + 3);
+    doc.text('+', acX, acRowY + rowCenter);
     acX += acBoxSpacing + acBoxTextSpacing;
 
     // Dex modifier white box
@@ -588,7 +696,7 @@ export async function generateCharacterPdf(
     acX += acBoxWidth + acBoxSpacing - acBoxTextSpacing;
 
     // '+' text
-    doc.text('+', acX, acRowY - rowHeight / 2 + 3);
+    doc.text('+', acX, acRowY + rowCenter);
     acX += acBoxSpacing + acBoxTextSpacing;
 
     // Size modifier white box
@@ -596,7 +704,7 @@ export async function generateCharacterPdf(
     acX += acBoxWidth + acBoxSpacing - acBoxTextSpacing;
 
     // '+' text
-    doc.text('+', acX, acRowY - rowHeight / 2 + 3);
+    doc.text('+', acX, acRowY + rowCenter);
     acX += acBoxSpacing + acBoxTextSpacing;
 
     // Natural armor white box
@@ -604,7 +712,7 @@ export async function generateCharacterPdf(
     acX += acBoxWidth + acBoxSpacing - acBoxTextSpacing;
 
     // '+' text
-    doc.text('+', acX, acRowY - rowHeight / 2 + 3);
+    doc.text('+', acX, acRowY + rowCenter);
     acX += acBoxSpacing + acBoxTextSpacing;
 
     // Deflection bonus white box
@@ -612,7 +720,7 @@ export async function generateCharacterPdf(
     acX += acBoxWidth + acBoxSpacing - acBoxTextSpacing;
 
     // '+' text
-    doc.text('+', acX, acRowY - rowHeight / 2 + 3);
+    doc.text('+', acX, acRowY + rowCenter);
     acX += acBoxSpacing + acBoxTextSpacing;
 
     // Misc bonus white box
@@ -630,7 +738,7 @@ export async function generateCharacterPdf(
     drawScoreBox(acX, acRowY, damageReductionWidth, rowHeight, ''); // Empty for now
 
     // Column labels beneath the boxes (4pt font, ALL CAPS, word-wrapped)
-    const acLabelY = acRowY + 5; // 5px below the boxes
+    const acLabelY = acRowY + rowHeight + 5; // 5px below the boxes
     let labelX = hpStartX + 1;
 
     // AC label (no label, it's in the box)
@@ -688,7 +796,7 @@ export async function generateCharacterPdf(
 
     // Touch AC and Flat-Footed AC Row
     // Calculate Y position - below AC row with space for 3-line label (10px for label + spacing)
-    const touchAcRowY = acRowY + rowHeight + 13; // Space for labels below AC row
+    const touchAcRowY = acRowY + rowHeight + 15; // Space for labels below AC row
 
     let touchAcX = hpStartX;
 
@@ -728,7 +836,7 @@ export async function generateCharacterPdf(
     // '=' text (not in a box)
     doc.setFontSize(8);
     doc.setFont('ArchivoNarrow', 'normal');
-    doc.text('=', initX, initiativeRowY - rowHeight / 2 + 3);
+    doc.text('=', initX, initiativeRowY + rowCenter);
     initX += 6; // Small space for '='
 
     // Dex modifier white box
@@ -737,7 +845,7 @@ export async function generateCharacterPdf(
     initX += initWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
-    doc.text('+', initX, initiativeRowY - rowHeight / 2 + 3);
+    doc.text('+', initX, initiativeRowY + rowCenter);
     initX += acBoxSpacing + acBoxTextSpacing;
 
     // Misc bonus white box
@@ -745,7 +853,7 @@ export async function generateCharacterPdf(
     drawScoreBox(initX, initiativeRowY, initWhiteBoxWidth, rowHeight, formatModifier(initiativeMisc));
 
     // Labels beneath the boxes (4pt font, ALL CAPS, word-wrapped)
-    const initiativeLabelY = initiativeRowY + 5; // 5px below the boxes
+    const initiativeLabelY = initiativeRowY + rowHeight + 5; // 5px below the boxes
     let initLabelX = hpStartX;
 
     // INITIATIVE label (no label, it's in the box)
@@ -788,7 +896,7 @@ export async function generateCharacterPdf(
     // Saving Throws Section - starts at leftmost X, below ability section
     // Calculate Y position: after CHA row (last ability row) with space for headers
     // CHA row ends at: yPos + headerHeight + ((rowHeight + rowSpacing) * 5) + 9
-    const savingThrowsHeaderY = yPos + headerHeight + ((rowHeight + rowSpacing) * 5) + 9;
+    const savingThrowsHeaderY = yPos + headerHeight + ((rowHeight + rowSpacing) * 6) + 4;
     const savingThrowsStartY = savingThrowsHeaderY + headerHeight;
     const savingThrowsBoxWidth = initiativeBoxWidth - 8; // Same width as INITIATIVE and BASE ATTACK black boxes
     const savingThrowsWhiteBoxWidth = initWhiteBoxWidth; // narrow white box
@@ -837,7 +945,7 @@ export async function generateCharacterPdf(
         // '=' text
         doc.setFontSize(8);
         doc.setFont('ArchivoNarrow', 'normal');
-        doc.text('=', saveX, saveRowY - rowHeight / 2 + 3);
+        doc.text('=', saveX, saveRowY + rowCenter);
         saveX += 6; // Small space for '='
 
         // BASE SAVE white box
@@ -845,7 +953,7 @@ export async function generateCharacterPdf(
         saveX += savingThrowsWhiteBoxWidth + acBoxSpacing - 1;
 
         // '+' text
-        doc.text('+', saveX, saveRowY - rowHeight / 2 + 3);
+        doc.text('+', saveX, saveRowY + rowCenter);
         saveX += acBoxSpacing + acBoxTextSpacing;
 
         // ABILITY MODIFIER white box
@@ -853,7 +961,7 @@ export async function generateCharacterPdf(
         saveX += savingThrowsWhiteBoxWidth + acBoxSpacing - 1;
 
         // '+' text
-        doc.text('+', saveX, saveRowY - rowHeight / 2 + 3);
+        doc.text('+', saveX, saveRowY + rowCenter);
         saveX += acBoxSpacing + acBoxTextSpacing;
 
         // MISC BONUS white box
@@ -861,7 +969,7 @@ export async function generateCharacterPdf(
         saveX += savingThrowsWhiteBoxWidth + acBoxSpacing - 1;
 
         // '+' text
-        doc.text('+', saveX, saveRowY - rowHeight / 2 + 3);
+        doc.text('+', saveX, saveRowY + rowCenter);
         saveX += acBoxSpacing + acBoxTextSpacing;
 
         // TEMP MODIFIER dotted box
@@ -870,7 +978,7 @@ export async function generateCharacterPdf(
 
     // Grapple Row - beneath saving throws
     // Calculate Y position: after last saving throw row (WILL)
-    const grappleRowY = savingThrowsStartY + (rowHeight + rowSpacing) * 2 + rowHeight + (rowSpacing * 3); // wider gap after saving throws
+    const grappleRowY = savingThrowsStartY + ((rowHeight + rowSpacing) * 3) + 6; // 6px wider gap after saving throws
     let grappleX = leftColX;
 
     // Calculate grapple values
@@ -896,7 +1004,7 @@ export async function generateCharacterPdf(
     // '=' text
     doc.setFontSize(8);
     doc.setFont('ArchivoNarrow', 'normal');
-    doc.text('=', grappleX, grappleRowY - rowHeight / 2 + 3);
+    doc.text('=', grappleX, grappleRowY + rowCenter);
     grappleX += 6; // Small space for '='
 
     // BASE ATTACK white box
@@ -904,7 +1012,7 @@ export async function generateCharacterPdf(
     grappleX += savingThrowsWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
-    doc.text('+', grappleX, grappleRowY - rowHeight / 2 + 3);
+    doc.text('+', grappleX, grappleRowY + rowCenter);
     grappleX += acBoxSpacing + acBoxTextSpacing;
 
     // STR MODIFIER white box
@@ -912,7 +1020,7 @@ export async function generateCharacterPdf(
     grappleX += savingThrowsWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
-    doc.text('+', grappleX, grappleRowY - rowHeight / 2 + 3);
+    doc.text('+', grappleX, grappleRowY + rowCenter);
     grappleX += acBoxSpacing + acBoxTextSpacing;
 
     // SIZE MODIFIER white box
@@ -920,14 +1028,14 @@ export async function generateCharacterPdf(
     grappleX += savingThrowsWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
-    doc.text('+', grappleX, grappleRowY - rowHeight / 2 + 3);
+    doc.text('+', grappleX, grappleRowY + rowCenter);
     grappleX += acBoxSpacing + acBoxTextSpacing;
 
     // MISC BONUS white box
     drawScoreBox(grappleX, grappleRowY, savingThrowsWhiteBoxWidth, rowHeight, formatModifier(grappleMisc));
 
     // Labels beneath the boxes (4pt font, ALL CAPS, word-wrapped)
-    const grappleLabelY = grappleRowY + 5; // 5px below the boxes
+    const grappleLabelY = grappleRowY + rowHeight + 5; // 5px below the boxes
     let grappleLabelX = leftColX;
 
     // GRAPPLE label (no label, it's in the box)
@@ -986,7 +1094,7 @@ export async function generateCharacterPdf(
 
     // Spell Resistance / Arcane Spell Failure / Action Points Row
     // Starting at leftColX, 4px below conditionalModifiersBottomY
-    const spellResistanceRowY = conditionalModifiersBottomY + 15;
+    const spellResistanceRowY = conditionalModifiersHeaderY + conditionalModifiersHeight + 4;
     let spellResistanceX = leftColX;
 
     // SPELL RESISTANCE black box
@@ -1019,7 +1127,7 @@ export async function generateCharacterPdf(
     drawScoreBox(spellResistanceX, spellResistanceRowY, valueBoxWidth, rowHeight, actionPointsValue > 0 ? actionPointsValue.toString() : '');
 
     // Melee and Ranged Attack Rows - below spell resistance row
-    const attackHeaderY = spellResistanceRowY + 9;
+    const attackHeaderY = spellResistanceRowY + rowHeight + 7;
     const attackStartY = attackHeaderY + headerHeight;
     const attackBoxWidth = spellResistanceBoxWidth; // Same width as saving throw black boxes
     const attackWhiteBoxWidth = valueBoxWidth; // Same width as other white boxes
@@ -1077,7 +1185,7 @@ export async function generateCharacterPdf(
     // '=' text
     doc.setFontSize(8);
     doc.setFont('ArchivoNarrow', 'normal');
-    doc.text('=', meleeX, meleeRowY - rowHeight / 2 + 3);
+    doc.text('=', meleeX, meleeRowY + rowCenter);
     meleeX += 6; // Small space for '='
 
     // BASE ATTACK white box
@@ -1085,7 +1193,7 @@ export async function generateCharacterPdf(
     meleeX += attackWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
-    doc.text('+', meleeX, meleeRowY - rowHeight / 2 + 3);
+    doc.text('+', meleeX, meleeRowY + rowCenter);
     meleeX += acBoxSpacing + acBoxTextSpacing;
 
     // ABILITY MODIFIER white box (STR)
@@ -1093,7 +1201,7 @@ export async function generateCharacterPdf(
     meleeX += attackWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
-    doc.text('+', meleeX, meleeRowY - rowHeight / 2 + 3);
+    doc.text('+', meleeX, meleeRowY + rowCenter);
     meleeX += acBoxSpacing + acBoxTextSpacing;
 
     // SIZE MODIFIER white box
@@ -1101,7 +1209,7 @@ export async function generateCharacterPdf(
     meleeX += attackWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
-    doc.text('+', meleeX, meleeRowY - rowHeight / 2 + 3);
+    doc.text('+', meleeX, meleeRowY + rowCenter);
     meleeX += acBoxSpacing + acBoxTextSpacing;
 
     // MISC BONUS white box
@@ -1109,7 +1217,7 @@ export async function generateCharacterPdf(
     meleeX += attackWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
-    doc.text('+', meleeX, meleeRowY - rowHeight / 2 + 3);
+    doc.text('+', meleeX, meleeRowY + rowCenter);
     meleeX += acBoxSpacing + acBoxTextSpacing;
 
     // TEMP MODIFIER dotted box
@@ -1128,7 +1236,7 @@ export async function generateCharacterPdf(
     rangedX += attackTotalBoxWidth + acBoxTextSpacing;
 
     // '=' text
-    doc.text('=', rangedX, rangedRowY - rowHeight / 2 + 3);
+    doc.text('=', rangedX, rangedRowY + rowCenter);
     rangedX += 6; // Small space for '='
 
     // BASE ATTACK white box
@@ -1136,7 +1244,7 @@ export async function generateCharacterPdf(
     rangedX += attackWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
-    doc.text('+', rangedX, rangedRowY - rowHeight / 2 + 3);
+    doc.text('+', rangedX, rangedRowY + rowCenter);
     rangedX += acBoxSpacing + acBoxTextSpacing;
 
     // ABILITY MODIFIER white box (DEX)
@@ -1144,7 +1252,7 @@ export async function generateCharacterPdf(
     rangedX += attackWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
-    doc.text('+', rangedX, rangedRowY - rowHeight / 2 + 3);
+    doc.text('+', rangedX, rangedRowY + rowCenter);
     rangedX += acBoxSpacing + acBoxTextSpacing;
 
     // SIZE MODIFIER white box
@@ -1152,7 +1260,7 @@ export async function generateCharacterPdf(
     rangedX += attackWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
-    doc.text('+', rangedX, rangedRowY - rowHeight / 2 + 3);
+    doc.text('+', rangedX, rangedRowY + rowCenter);
     rangedX += acBoxSpacing + acBoxTextSpacing;
 
     // MISC BONUS white box
@@ -1160,18 +1268,222 @@ export async function generateCharacterPdf(
     rangedX += attackWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
-    doc.text('+', rangedX, rangedRowY - rowHeight / 2 + 3);
+    doc.text('+', rangedX, rangedRowY + rowCenter);
     rangedX += acBoxSpacing + acBoxTextSpacing;
 
     // TEMP MODIFIER dotted box
     drawTempBox(rangedX, rangedRowY, attackWhiteBoxWidth, rowHeight);
 
     const weaponBoxStartX = leftColX;
-    const weaponBoxStartY = rangedRowY + 10;
+    const weaponBoxStartY = rangedRowY + rowHeight + 7;
 
     for (let i = 0; i < 7; i++) {
         drawWeaponBox(weaponBoxStartX, weaponBoxStartY + i * 50, 'ATTACK ' + (i + 1), null);
     }
+
+    // Skills Section - to the right of flat-footed AC box, running down right half of page
+    // Calculate skills section position (right of flat-footed AC box)
+    const skillsStartX = shieldBonusRightEdge + 10; // 10px gap after shield bonus box
+    const skillsHeaderStartY = touchAcRowY; // Align with TOUCH/FLAT-FOOTED row
+    const skillsHeaderWidth = 250;
+    const skillsHeaderHeight = 25; // Black header bar height
+
+    // Draw black header bar
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(1);
+    doc.setFillColor(0, 0, 0);
+    doc.rect(skillsStartX, skillsHeaderStartY, skillsHeaderWidth, skillsHeaderHeight, 'FD');
+
+    // White text in header
+    doc.setFontSize(7);
+    doc.setFont('ArchivoNarrow', 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.text('SKILLS', skillsStartX + 60, skillsHeaderStartY + 9);
+    doc.setTextColor(0, 0, 0);
+
+    doc.setFontSize(4);
+    doc.setFont('ArchivoNarrow', 'normal');
+    doc.setTextColor(255, 255, 255);
+    doc.text('CLASS SKILL', skillsStartX + 5, skillsHeaderStartY + 23, { angle: 90 });
+
+    // Column headers in white boxes
+    const skillsColumnHeaderY = skillsHeaderStartY + 14;
+    const skillsColumnHeaderHeight = 11;
+    const classSkillWidth = 7;
+    const skillNameWidth = 80;
+    const keyAbilityWidth = 25;
+    const skillModifierWidth = 25;
+    const abilityModifierWidth = 25;
+    const ranksWidth = 25;
+    const miscBonusWidth = 25;
+
+    const skillsColumnSpacing = 2; // get rid of this later
+
+    let skillsHeaderX = skillsStartX + classSkillWidth;
+
+    // SKILL NAME header
+    drawLabelBox(skillsHeaderX, skillsColumnHeaderY, skillNameWidth, skillsColumnHeaderHeight, 'SKILL NAME');
+    skillsHeaderX += skillNameWidth;
+
+    // KEY ABILITY header
+    drawLabelBox(skillsHeaderX, skillsColumnHeaderY, keyAbilityWidth, skillsColumnHeaderHeight, 'KEY ABILITY', true);
+    skillsHeaderX += keyAbilityWidth;
+
+    // SKILL MODIFIER header
+    drawLabelBox(skillsHeaderX, skillsColumnHeaderY, skillModifierWidth, skillsColumnHeaderHeight, 'SKILL MODIFIER', true);
+    skillsHeaderX += skillModifierWidth;
+
+    // '=' text
+    doc.setFontSize(8);
+    doc.setFont('ArchivoNarrow', 'normal');
+    doc.text('=', skillsHeaderX, skillsColumnHeaderY + skillsColumnHeaderHeight / 2 + 3);
+    skillsHeaderX += 6;
+
+    // ABILITY MODIFIER header
+    drawLabelBox(skillsHeaderX, skillsColumnHeaderY, abilityModifierWidth, skillsColumnHeaderHeight, 'ABILITY MODIFIER', true);
+    skillsHeaderX += abilityModifierWidth + skillsColumnSpacing;
+
+    // '+' text
+    doc.setFontSize(8);
+    doc.setFont('ArchivoNarrow', 'normal');
+    doc.text('+', skillsHeaderX, skillsColumnHeaderY + skillsColumnHeaderHeight / 2 + 3);
+    skillsHeaderX += 6;
+
+    // RANKS header
+    drawLabelBox(skillsHeaderX, skillsColumnHeaderY, ranksWidth, skillsColumnHeaderHeight, 'RANKS');
+    skillsHeaderX += ranksWidth + skillsColumnSpacing;
+
+    // '+' text
+    doc.setFontSize(8);
+    doc.setFont('ArchivoNarrow', 'normal');
+    doc.text('+', skillsHeaderX, skillsColumnHeaderY + skillsColumnHeaderHeight / 2 + 3);
+    skillsHeaderX += 6;
+
+    // MISC BONUS header
+    drawLabelBox(skillsHeaderX, skillsColumnHeaderY, miscBonusWidth, skillsColumnHeaderHeight, 'MISC BONUS', true);
+
+    // Skills list - plain text, one per row
+    const skillsStartY = skillsColumnHeaderY + skillsColumnHeaderHeight + 8;
+    const skillRowHeight = 10;
+
+    // Need to get ability ID from skill - check if it's in the skill data or need to look it up
+    // TODO make skills font a little bigger
+    // TODO remove ammunition
+    stats.skills.forEach((skill, index) => {
+        const skillY = skillsStartY + index * skillRowHeight;
+        let skillX = skillsStartX;
+
+        // CLASS SKILL indicator (plain text - 'x' if class skill, nothing otherwise)
+        doc.setFontSize(4);
+        doc.setFont('ArchivoNarrow', 'normal');
+        if (skill.isClassSkill) {
+            doc.text('x', skillX + classSkillWidth / 2, skillY, { align: 'center' });
+        }
+        skillX += classSkillWidth + 2;
+
+        // SKILL NAME (plain text) - add superscript '1' if can be used untrained
+        const skillData = SKILL_LIST.find(s => s.id === skill.skillId);
+        const canBeUsedUntrained = skillData && !skillData.trainedOnly;
+
+        doc.setFontSize(6);
+        doc.setFont('ArchivoNarrow', 'normal');
+        const skillNameTextWidth = doc.getTextWidth(skill.skillName);
+        doc.text(skill.skillName, skillX, skillY);
+
+        // Add superscript '1' if skill can be used untrained
+        if (canBeUsedUntrained) {
+            doc.setFontSize(4);
+            doc.text('1', skillX + skillNameTextWidth + 1, skillY - 2);
+            doc.setFontSize(6); // Reset font size for rest of the line
+        }
+        skillX += skillNameWidth - 2;
+
+        // KEY ABILITY (plain text - abbreviation) - add superscript asterisk(s) if armor check penalty applies
+        const abilityId = skillData?.abilityId ?? 0;
+        const abilityData = ABILITY_MAP[abilityId as keyof typeof ABILITY_MAP];
+        const keyAbilityAbbr = abilityData?.abbreviation ?? '';
+
+        // Check if skill is affected by armor check penalty from database
+        const skillFromDb = skillsMap.get(skill.skillId);
+        const hasArmorCheckPenalty = skillFromDb?.affectedByArmor ?? false;
+        const isSwim = skillData && skill.skillId === Skill.Swim; // Swim has double penalty
+
+        doc.setFontSize(6);
+        doc.setFont('ArchivoNarrow', 'normal');
+        const abbrWidth = doc.getTextWidth(keyAbilityAbbr);
+        const abbrX = skillX + (keyAbilityWidth / 2) - (abbrWidth / 2);
+        doc.text(keyAbilityAbbr, abbrX, skillY);
+
+        // Add superscript asterisk(s) if armor check penalty applies
+        if (hasArmorCheckPenalty) {
+            doc.setFontSize(4);
+            const asterisks = isSwim ? '**' : '*';
+            doc.text(asterisks, abbrX + abbrWidth + 1, skillY - 2);
+            doc.setFontSize(6); // Reset font size for rest of the line
+        }
+        skillX += keyAbilityWidth;
+
+        // SKILL MODIFIER (bold)
+        doc.setFontSize(6); // Ensure font size is correct
+        doc.setFont('ArchivoNarrow', 'bold');
+        doc.text(formatModifier(skill.total), skillX + (skillModifierWidth / 2), skillY, { align: 'center' });
+        skillX += skillModifierWidth;
+
+        // '=' text
+        doc.setFont('ArchivoNarrow', 'normal');
+        doc.text('=', skillX, skillY);
+        skillX += 6;
+
+        // ABILITY MODIFIER (plain text)
+        doc.text(formatModifier(skill.abilityMod), skillX + (abilityModifierWidth / 2), skillY, { align: 'center' });
+        skillX += abilityModifierWidth;
+
+        // '+' text
+        doc.text('+', skillX, skillY);
+        skillX += 6;
+
+        // RANKS (plain text)
+        doc.text(skill.ranks.toString(), skillX + (ranksWidth / 2), skillY, { align: 'center' });
+        skillX += ranksWidth;
+
+        // '+' text
+        doc.text('+', skillX, skillY);
+        skillX += 6;
+
+        // MISC BONUS (plain text)
+        doc.text(formatModifier(skill.misc), skillX + (miscBonusWidth / 2), skillY, { align: 'center' });
+    });
+
+    // ============================================================================
+    // LEGEND - Lower right corner
+    // ============================================================================
+    doc.setFontSize(4);
+    doc.setFont('ArchivoNarrow', 'normal');
+    doc.setTextColor(0, 0, 0);
+
+    const legendStartX = 448; // Right side
+    const legendStartY = 738; // Near bottom
+    const legendLineHeight = 6;
+
+    let legendY = legendStartY;
+
+    // Line 1: Superscript 1 explanation
+    doc.text('1', legendStartX, legendY);
+    doc.text('This skill can be used even if the character has zero skill ranks.', legendStartX + 4, legendY);
+    legendY += legendLineHeight;
+
+    // Line 2: Class skill indicator
+    doc.text('x', legendStartX, legendY);
+    doc.text('This skill is a class skill for at least one of your classes.', legendStartX + 4, legendY);
+    legendY += legendLineHeight;
+
+    // Line 3: Armor check penalty
+    doc.text('*', legendStartX, legendY);
+    doc.text('Armor check penalty, if any, applies.', legendStartX + 4, legendY);
+
+    // Line 4: Double armor check penalty
+    doc.text('**', legendStartX + 62, legendY);
+    doc.text('Double the armor check penalty.', legendStartX + 66, legendY);
 
     // Save PDF
     const filename = `${character.name.replace(/[^a-z0-9]/gi, '_')}_CharacterSheet.pdf`;
