@@ -409,13 +409,33 @@ export function CharacterEdit(): React.JSX.Element {
                     })),
                 } : undefined,
                 // Include equipment (only items with itemId, which are purchased items)
-                equipment: state.equipment
-                    .filter(item => item.itemId !== null)
-                    .map(item => ({
-                        name: item.notes || 'Unknown Item',
-                        quantity: item.quantity,
-                        baseItemId: item.itemId!,
-                    })),
+                // Aggregate items by baseItemId and sum quantities
+                equipment: (() => {
+                    const itemMap = new Map<number, {
+                        name: string;
+                        quantity: number;
+                        baseItemId: number;
+                    }>();
+                    
+                    for (const item of state.equipment) {
+                        if (item.itemId !== null) {
+                            const existing = itemMap.get(item.itemId);
+                            if (existing) {
+                                // Aggregate: sum quantities
+                                existing.quantity += item.quantity || 1;
+                            } else {
+                                // First occurrence: create entry
+                                itemMap.set(item.itemId, {
+                                    name: item.notes || 'Unknown Item',
+                                    quantity: item.quantity || 1,
+                                    baseItemId: item.itemId,
+                                });
+                            }
+                        }
+                    }
+                    
+                    return Array.from(itemMap.values());
+                })(),
             };
 
             // Use unified save endpoint - backend handles all orchestration

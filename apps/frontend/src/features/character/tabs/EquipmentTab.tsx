@@ -341,8 +341,12 @@ export function EquipmentTab({
         },
     ], []);
 
-    // Extended type to track which equipment item this represents
-    type OwnedItemWithEquipmentId = ItemWithDetails & { _equipmentItemId: number };
+    // Extended type to track which equipment item this represents and aggregated quantity
+    type OwnedItemWithEquipmentId = ItemWithDetails & {
+        _equipmentItemId: number;
+        _quantity: number; // Aggregated quantity for items with same itemId
+        _equipmentItemIds: number[]; // All equipment item IDs that make up this aggregated item
+    };
 
     // Column definitions for owned items (reduced sizes to prevent horizontal scroll)
     const ownedItemColumns = useMemo<ColumnDef<OwnedItemWithEquipmentId, unknown>[]>(() => [
@@ -374,6 +378,7 @@ export function EquipmentTab({
             meta: {
                 filterType: FilterType.SINGLE_SELECT,
                 options: ITEM_TYPE_LIST,
+                hidden: true, // Hidden from display but used for grouping header formatting
             },
         },
         {
@@ -396,6 +401,17 @@ export function EquipmentTab({
             cell: info => {
                 const weight = info.getValue() as number | null;
                 return weight !== null ? `${weight} lbs` : '-';
+            },
+        },
+        {
+            accessorKey: '_quantity',
+            header: 'Quantity',
+            enableSorting: true,
+            enableResizing: true,
+            size: 80,
+            cell: info => {
+                const quantity = info.getValue() as number;
+                return quantity.toString();
             },
         },
     ], []);
@@ -427,6 +443,7 @@ export function EquipmentTab({
     }, []);
 
     // Data fetcher for owned items - convert EquipmentItem[] to ItemWithDetails[] with equipment item ID
+    // Aggregates items with the same itemId and sums their quantities
     // Use useCallback to ensure it updates when equipment changes
     const ownedItemsDataFetcher = useCallback(async () => {
         // Only show items that were purchased (have itemId)
@@ -441,20 +458,44 @@ export function EquipmentTab({
 
         // Fetch all items to get details for owned items
         const allItemsResult = await ItemQueryHooks.getItems();
-        const ownedItems: OwnedItemWithEquipmentId[] = [];
+
+        // Aggregate items by itemId
+        const itemMap = new Map<number, {
+            item: ItemWithDetails;
+            quantity: number;
+            equipmentItemIds: number[];
+            firstEquipmentItemId: number;
+        }>();
 
         for (const equipmentItem of purchasedItems) {
             if (equipmentItem.itemId) {
                 const item = allItemsResult.results.find(i => i.id === equipmentItem.itemId);
                 if (item) {
-                    // Add equipment item ID as metadata
-                    ownedItems.push({
-                        ...item,
-                        _equipmentItemId: equipmentItem.id,
-                    });
+                    const existing = itemMap.get(equipmentItem.itemId);
+                    if (existing) {
+                        // Aggregate: sum quantities and collect equipment item IDs
+                        existing.quantity += equipmentItem.quantity || 1;
+                        existing.equipmentItemIds.push(equipmentItem.id);
+                    } else {
+                        // First occurrence: create entry
+                        itemMap.set(equipmentItem.itemId, {
+                            item,
+                            quantity: equipmentItem.quantity || 1,
+                            equipmentItemIds: [equipmentItem.id],
+                            firstEquipmentItemId: equipmentItem.id,
+                        });
+                    }
                 }
             }
         }
+
+        // Convert map to array
+        const ownedItems: OwnedItemWithEquipmentId[] = Array.from(itemMap.values()).map(entry => ({
+            ...entry.item,
+            _equipmentItemId: entry.firstEquipmentItemId, // Use first ID for return functionality
+            _quantity: entry.quantity,
+            _equipmentItemIds: entry.equipmentItemIds,
+        }));
 
         return {
             results: ownedItems,
@@ -487,23 +528,26 @@ export function EquipmentTab({
         updateState({ type: CharacterEditStateUpdateType.SET_MONEY, payload: { money: newMoney } });
     }, [state.equipment, availableGold, updateState]);
 
-    const handleReturn = useCallback((item: ItemWithDetails & { _equipmentItemId?: number }) => {
-        // Use the equipment item ID if available (for owned items)
-        const equipmentItemId = (item as OwnedItemWithEquipmentId)._equipmentItemId;
-        const equipmentItem = equipmentItemId
-            ? state.equipment.find(eq => eq.id === equipmentItemId)
-            : state.equipment.find(eq => eq.itemId === item.id);
+    const handleReturn = useCallback((item: ItemWithDetails & { _equipmentItemId?: number; _equipmentItemIds?: number[] }) => {
+        // For aggregated items, remove one instance (the first equipment item ID)
+        const ownedItem = item as OwnedItemWithEquipmentId;
+        const equipmentItemId = ownedItem._equipmentItemId;
 
+        if (!equipmentItemId) {
+            return;
+        }
+
+        const equipmentItem = state.equipment.find(eq => eq.id === equipmentItemId);
         if (!equipmentItem || !equipmentItem.costInGp) {
             return;
         }
 
-        // Refund the cost
+        // Refund the cost for one item
         const refundGp = equipmentItem.costInGp;
         const newMoney = addGpToMoney(state.money, refundGp);
 
-        // Remove item from equipment
-        const newItems = state.equipment.filter(eq => eq.id !== equipmentItem.id);
+        // Remove one instance from equipment
+        const newItems = state.equipment.filter(eq => eq.id !== equipmentItemId);
 
         // Update both equipment and money
         updateState({ type: CharacterEditStateUpdateType.SET_EQUIPMENT, payload: { equipment: newItems } });
@@ -542,64 +586,59 @@ export function EquipmentTab({
                 </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                {/* Money */}
-                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-4">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                            Money
-                        </h3>
+            {/* Money */}
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-4 mb-6">
+                <div className="flex items-center gap-6">
+                    {CURRENCY_LIST.map((currency) => (
+                        <div key={currency.id} className="flex items-center gap-2">
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                                {currency.name} ({currency.abbreviation}):
+                            </label>
+                            <input
+                                type="number"
+                                value={
+                                    currency.id === 1 ? state.money.copper :
+                                        currency.id === 2 ? state.money.silver :
+                                            currency.id === 3 ? state.money.gold :
+                                                currency.id === 4 ? state.money.platinum : 0
+                                }
+                                onChange={(e) => handleMoneyChange(currency.id, parseInt(e.target.value) || 0)}
+                                className="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-center bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                min="0"
+                            />
+                        </div>
+                    ))}
+                    <div className="ml-auto">
                         <button
                             onClick={handleGenerateRandomGold}
                             disabled={!canGenerateGold}
-                            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                         >
-                            Generate Random Starting Gold
+                            Generate Starting Gold
                         </button>
                     </div>
-                    <div className="space-y-3">
-                        {CURRENCY_LIST.map((currency) => (
-                            <div key={currency.id} className="flex items-center justify-between">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    {currency.name} ({currency.abbreviation})
-                                </label>
-                                <input
-                                    type="number"
-                                    value={
-                                        currency.id === 1 ? state.money.copper :
-                                            currency.id === 2 ? state.money.silver :
-                                                currency.id === 3 ? state.money.gold :
-                                                    currency.id === 4 ? state.money.platinum : 0
-                                    }
-                                    onChange={(e) => handleMoneyChange(currency.id, parseInt(e.target.value) || 0)}
-                                    className="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-center bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    min="0"
-                                />
-                            </div>
-                        ))}
-                    </div>
                 </div>
+            </div>
 
-                {/* Owned Equipment */}
-                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-4">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                        Your Equipment
-                    </h3>
-                    <div className="h-[400px]">
-                        <EquipmentList<OwnedItemWithEquipmentId>
-                            key={`owned-${state.equipment.length}`}
-                            dataFetcher={ownedItemsDataFetcher}
-                            groupingFields={ownedGroupingFields}
-                            columns={ownedItemColumns}
-                            actionButtonLabel="Return"
-                            onAction={handleReturn}
-                            searchPlaceholder="Search owned items..."
-                            storageKey="equipment-owned"
-                            itemDesc="owned items"
-                            maxHeight="auto"
-                            allowAll={true} // Owned items don't need proficiency checks
-                        />
-                    </div>
+            {/* Owned Equipment */}
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-4 mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Your Equipment
+                </h3>
+                <div className="h-[400px]">
+                    <EquipmentList<OwnedItemWithEquipmentId>
+                        key={`owned-${state.equipment.length}`}
+                        dataFetcher={ownedItemsDataFetcher}
+                        groupingFields={ownedGroupingFields}
+                        columns={ownedItemColumns}
+                        actionButtonLabel="Return"
+                        onAction={handleReturn}
+                        searchPlaceholder="Search owned items..."
+                        storageKey="equipment-owned"
+                        itemDesc="owned items"
+                        maxHeight="auto"
+                        allowAll={true} // Owned items don't need proficiency checks
+                    />
                 </div>
             </div>
 

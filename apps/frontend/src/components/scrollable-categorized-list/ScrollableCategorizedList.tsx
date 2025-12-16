@@ -130,7 +130,7 @@ function renderCategoryGroup<T>(
                         <button
                             onClick={() => onAction(item)}
                             disabled={isDisabled}
-                            className={`px-2 py-1 border rounded disabled:opacity-50 ${isDisabled
+                            className={`px-2 py-0.5 text-sm rounded disabled:opacity-50 ${isDisabled
                                 ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
                                 : 'bg-blue-600 text-white hover:bg-blue-700'
                                 }`}
@@ -253,7 +253,7 @@ function renderCategoryGroup<T>(
                                         <button
                                             onClick={() => onAction(item)}
                                             disabled={isDisabled}
-                                            className={`px-2 py-1 border rounded disabled:opacity-50 ${isDisabled
+                                            className={`px-2 py-0.5 text-sm rounded disabled:opacity-50 ${isDisabled
                                                 ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
                                                 : 'bg-blue-600 text-white hover:bg-blue-700'
                                                 }`}
