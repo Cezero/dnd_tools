@@ -1,17 +1,16 @@
+import { ColumnDef } from '@tanstack/react-table';
 import React, { useCallback, useMemo } from 'react';
 
-import { ScrollableCategorizedList } from '@/components/scrollable-categorized-list';
 import { createContainsFilter } from '@/components/generic-list/filterFunctions';
-import { ColumnDef } from '@tanstack/react-table';
-import type { TabComponentProps } from '@/features/character/types';
-import { CharacterEditStateUpdateType } from '@/features/character/types';
-import { useStartingGold } from '@/features/character/utils/startingGold';
-import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
-import { CURRENCY_LIST, ITEM_TYPES, ITEM_TYPE_LIST, WEAPON_CATEGORIES, WEAPON_TYPES, ARMOR_CATEGORIES, FilterType, PROFICIENCY_TYPE_ENUM, PROFICIENCY_TYPES, FeatBenefitType, EntityType, EntityAppliesToType, ITEM_TYPE_ENUM } from '@shared/static-data';
-import type { ItemWithDetails } from '@shared/schema';
-import type { FeatureProgression, FeatureEntity } from '@shared/schema';
 
+import { TabComponentProps, CharacterEditStateUpdateType } from '@/features/character/types';
+import { useStartingGold } from '@/features/character/utils/startingGold';
 import { formatCostAsCurrency } from '@/features/item/utils';
+import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
+import type { ItemWithDetails, FeatureProgression, FeatureEntity } from '@shared/schema';
+import { CURRENCY_LIST, ITEM_TYPES, ITEM_TYPE_LIST, WEAPON_CATEGORIES, WEAPON_TYPES, ARMOR_CATEGORIES, DAMAGE_TYPES, FilterType, PROFICIENCY_TYPES, FeatBenefitType, EntityType, EntityAppliesToType, ITEM_TYPE_ENUM } from '@shared/static-data';
+
+import { EquipmentList } from '../components/EquipmentList';
 import type { EquipmentItem } from '../types';
 
 /**
@@ -79,7 +78,7 @@ function extractProficiencies(progressions: FeatureProgression[]): {
                             const proficiencyBenefit = entity.feat.benefits.find(
                                 benefit => benefit.typeId === FeatBenefitType.PROFICIENCY
                             );
-                            
+
                             if (proficiencyBenefit?.referenceId) {
                                 const proficiencyType = PROFICIENCY_TYPES[proficiencyBenefit.referenceId];
                                 if (proficiencyType) {
@@ -171,25 +170,27 @@ export function EquipmentTab({
         {
             accessorKey: 'typeId',
             header: 'Type',
-            enableSorting: true,
-            enableColumnFilter: true,
-            enableResizing: true,
-            size: 120,
+            enableSorting: false,
+            enableColumnFilter: false,
+            enableResizing: false,
+            size: 0,
+            enableHiding: false,
             cell: info => {
                 const typeId = info.getValue() as number;
                 return ITEM_TYPES[typeId]?.name || typeId;
             },
             meta: {
-                filterType: FilterType.SINGLE_SELECT,
-                options: ITEM_TYPE_LIST,
+                hidden: true, // Hidden from display but used for grouping header formatting
             },
         },
         {
             accessorKey: 'weapon.category',
             header: 'Weapon Category',
-            enableSorting: true,
-            enableResizing: true,
-            size: 120,
+            enableSorting: false,
+            enableColumnFilter: false,
+            enableResizing: false,
+            size: 0,
+            enableHiding: false,
             cell: info => {
                 const item = info.row.original;
                 if (item.weapon) {
@@ -197,13 +198,18 @@ export function EquipmentTab({
                 }
                 return '';
             },
+            meta: {
+                hidden: true, // Hidden from display but used for grouping header formatting
+            },
         },
         {
             accessorKey: 'weapon.type',
             header: 'Weapon Type',
-            enableSorting: true,
-            enableResizing: true,
-            size: 120,
+            enableSorting: false,
+            enableColumnFilter: false,
+            enableResizing: false,
+            size: 0,
+            enableHiding: false,
             cell: info => {
                 const item = info.row.original;
                 if (item.weapon) {
@@ -211,19 +217,99 @@ export function EquipmentTab({
                 }
                 return '';
             },
+            meta: {
+                hidden: true, // Hidden from display but used for grouping header formatting
+            },
         },
         {
             accessorKey: 'armor.category',
             header: 'Armor Category',
-            enableSorting: true,
-            enableResizing: true,
-            size: 120,
+            enableSorting: false,
+            enableColumnFilter: false,
+            enableResizing: false,
+            size: 0,
+            enableHiding: false,
             cell: info => {
                 const item = info.row.original;
                 if (item.armor) {
                     return ARMOR_CATEGORIES[item.armor.category]?.name || '';
                 }
                 return '';
+            },
+            meta: {
+                hidden: true, // Hidden from display but used for grouping header formatting
+            },
+        },
+        {
+            accessorKey: 'details',
+            header: 'Details',
+            enableSorting: false,
+            enableResizing: true,
+            size: 350,
+            cell: info => {
+                const item = info.row.original;
+                const parts: string[] = [];
+
+                if (item.weapon) {
+                    // Weapon details - format: "Dmg: 1d6, Crit: x2, piercing"
+                    if (item.weapon.damageMedium) {
+                        parts.push(`Dmg: ${item.weapon.damageMedium}`);
+                    }
+                    if (item.weapon.critical) {
+                        parts.push(`Crit: ${item.weapon.critical}`);
+                    }
+                    if (item.weapon.damageType) {
+                        // Parse damage type string (can be "2", "2|3", "1&2", etc.)
+                        const parseDamageType = (damageTypeStr: string): string => {
+                            if (!damageTypeStr) return '';
+
+                            // Check if it contains operators
+                            if (damageTypeStr.includes('&')) {
+                                // AND logic
+                                const values = damageTypeStr.split('&').map(v => parseInt(v.trim())).filter(v => !isNaN(v));
+                                const names = values.map(v => DAMAGE_TYPES[v]?.name || '').filter(n => n);
+                                return names.join(' and ');
+                            } else if (damageTypeStr.includes('|')) {
+                                // OR logic
+                                const values = damageTypeStr.split('|').map(v => parseInt(v.trim())).filter(v => !isNaN(v));
+                                const names = values.map(v => DAMAGE_TYPES[v]?.name || '').filter(n => n);
+                                return names.join(' or ');
+                            } else {
+                                // Single value
+                                const value = parseInt(damageTypeStr);
+                                if (!isNaN(value)) {
+                                    return DAMAGE_TYPES[value]?.name || '';
+                                }
+                                return damageTypeStr; // Fallback to original string
+                            }
+                        };
+
+                        const damageTypeName = parseDamageType(item.weapon.damageType);
+                        if (damageTypeName) {
+                            parts.push(damageTypeName.toLowerCase());
+                        }
+                    }
+                    // Always show range if present (for thrown weapons like daggers and throwing axes)
+                    if (item.weapon.range) {
+                        parts.push(`Rng: ${item.weapon.range}`);
+                    }
+                } else if (item.armor) {
+                    // Armor details
+                    if (item.armor.bonus !== null) {
+                        parts.push(`+${item.armor.bonus}`);
+                    }
+                    if (item.armor.dexterityCap !== null) {
+                        parts.push(`Dex +${item.armor.dexterityCap}`);
+                    }
+                    if (item.armor.checkPenalty !== null) {
+                        parts.push(`ACP: ${item.armor.checkPenalty}`);
+                    }
+                    if (item.armor.speedCapThirty !== null) {
+                        parts.push(`${item.armor.speedCapThirty} ft`);
+                    }
+                }
+
+                return parts.length > 0 ? parts.join(', ') : '-';
             },
         },
         {
@@ -232,7 +318,7 @@ export function EquipmentTab({
             enableSorting: true,
             enableColumnFilter: true,
             enableResizing: true,
-            size: 100,
+            size: 70,
             cell: info => {
                 const cost = info.getValue();
                 return formatCostAsCurrency(cost as string | number | null);
@@ -247,7 +333,7 @@ export function EquipmentTab({
             header: 'Weight',
             enableSorting: true,
             enableResizing: true,
-            size: 100,
+            size: 70,
             cell: info => {
                 const weight = info.getValue() as number | null;
                 return weight !== null ? `${weight} lbs` : '-';
@@ -255,16 +341,19 @@ export function EquipmentTab({
         },
     ], []);
 
+    // Extended type to track which equipment item this represents
+    type OwnedItemWithEquipmentId = ItemWithDetails & { _equipmentItemId: number };
+
     // Column definitions for owned items (reduced sizes to prevent horizontal scroll)
-    const ownedItemColumns = useMemo<ColumnDef<ItemWithDetails, unknown>[]>(() => [
+    const ownedItemColumns = useMemo<ColumnDef<OwnedItemWithEquipmentId, unknown>[]>(() => [
         {
             accessorKey: 'name',
             header: 'Item Name',
             enableSorting: true,
             enableColumnFilter: true,
             enableResizing: true,
-            size: 150,
-            filterFn: createContainsFilter<ItemWithDetails>(),
+            size: 160,
+            filterFn: createContainsFilter<OwnedItemWithEquipmentId>(),
             meta: {
                 required: true,
                 filterType: FilterType.TEXT_INPUT,
@@ -277,7 +366,7 @@ export function EquipmentTab({
             enableSorting: true,
             enableColumnFilter: true,
             enableResizing: true,
-            size: 80,
+            size: 100,
             cell: info => {
                 const typeId = info.getValue() as number;
                 return ITEM_TYPES[typeId]?.name || typeId;
@@ -289,13 +378,24 @@ export function EquipmentTab({
         },
         {
             accessorKey: 'cost',
-            header: 'Purchase Cost',
+            header: 'Cost',
             enableSorting: true,
             enableResizing: true,
-            size: 90,
+            size: 80,
             cell: info => {
                 const cost = info.getValue();
                 return formatCostAsCurrency(cost as string | number | null);
+            },
+        },
+        {
+            accessorKey: 'weight',
+            header: 'Weight',
+            enableSorting: true,
+            enableResizing: true,
+            size: 80,
+            cell: info => {
+                const weight = info.getValue() as number | null;
+                return weight !== null ? `${weight} lbs` : '-';
             },
         },
     ], []);
@@ -326,15 +426,12 @@ export function EquipmentTab({
         };
     }, []);
 
-    // Extended type to track which equipment item this represents
-    type OwnedItemWithEquipmentId = ItemWithDetails & { _equipmentItemId: number };
-
     // Data fetcher for owned items - convert EquipmentItem[] to ItemWithDetails[] with equipment item ID
     // Use useCallback to ensure it updates when equipment changes
     const ownedItemsDataFetcher = useCallback(async () => {
         // Only show items that were purchased (have itemId)
         const purchasedItems = state.equipment.filter(eq => eq.itemId !== null);
-        
+
         if (purchasedItems.length === 0) {
             return {
                 results: [] as OwnedItemWithEquipmentId[],
@@ -345,7 +442,7 @@ export function EquipmentTab({
         // Fetch all items to get details for owned items
         const allItemsResult = await ItemQueryHooks.getItems();
         const ownedItems: OwnedItemWithEquipmentId[] = [];
-        
+
         for (const equipmentItem of purchasedItems) {
             if (equipmentItem.itemId) {
                 const item = allItemsResult.results.find(i => i.id === equipmentItem.itemId);
@@ -384,7 +481,7 @@ export function EquipmentTab({
             notes: item.name,
         };
         const newItems = [...state.equipment, newItem];
-        
+
         // Update both equipment and money
         updateState({ type: CharacterEditStateUpdateType.SET_EQUIPMENT, payload: { equipment: newItems } });
         updateState({ type: CharacterEditStateUpdateType.SET_MONEY, payload: { money: newMoney } });
@@ -393,10 +490,10 @@ export function EquipmentTab({
     const handleReturn = useCallback((item: ItemWithDetails & { _equipmentItemId?: number }) => {
         // Use the equipment item ID if available (for owned items)
         const equipmentItemId = (item as OwnedItemWithEquipmentId)._equipmentItemId;
-        const equipmentItem = equipmentItemId 
+        const equipmentItem = equipmentItemId
             ? state.equipment.find(eq => eq.id === equipmentItemId)
             : state.equipment.find(eq => eq.itemId === item.id);
-            
+
         if (!equipmentItem || !equipmentItem.costInGp) {
             return;
         }
@@ -407,7 +504,7 @@ export function EquipmentTab({
 
         // Remove item from equipment
         const newItems = state.equipment.filter(eq => eq.id !== equipmentItem.id);
-        
+
         // Update both equipment and money
         updateState({ type: CharacterEditStateUpdateType.SET_EQUIPMENT, payload: { equipment: newItems } });
         updateState({ type: CharacterEditStateUpdateType.SET_MONEY, payload: { money: newMoney } });
@@ -447,7 +544,7 @@ export function EquipmentTab({
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 {/* Money */}
-                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-6">
+                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-4">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                             Money
@@ -470,9 +567,9 @@ export function EquipmentTab({
                                     type="number"
                                     value={
                                         currency.id === 1 ? state.money.copper :
-                                        currency.id === 2 ? state.money.silver :
-                                        currency.id === 3 ? state.money.gold :
-                                        currency.id === 4 ? state.money.platinum : 0
+                                            currency.id === 2 ? state.money.silver :
+                                                currency.id === 3 ? state.money.gold :
+                                                    currency.id === 4 ? state.money.platinum : 0
                                     }
                                     onChange={(e) => handleMoneyChange(currency.id, parseInt(e.target.value) || 0)}
                                     className="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-center bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -484,42 +581,41 @@ export function EquipmentTab({
                 </div>
 
                 {/* Owned Equipment */}
-                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-6">
+                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-4">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                         Your Equipment
                     </h3>
                     <div className="h-[400px]">
-                        <ScrollableCategorizedList<OwnedItemWithEquipmentId>
+                        <EquipmentList<OwnedItemWithEquipmentId>
                             key={`owned-${state.equipment.length}`}
                             dataFetcher={ownedItemsDataFetcher}
                             groupingFields={ownedGroupingFields}
                             columns={ownedItemColumns}
                             actionButtonLabel="Return"
                             onAction={handleReturn}
-                            allowMultiple={true}
                             searchPlaceholder="Search owned items..."
                             storageKey="equipment-owned"
                             itemDesc="owned items"
                             maxHeight="auto"
+                            allowAll={true} // Owned items don't need proficiency checks
                         />
                     </div>
                 </div>
             </div>
 
             {/* Available Items to Purchase */}
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-6">
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                     Available Items
                 </h3>
                 <div className="h-[500px]">
-                    <ScrollableCategorizedList<ItemWithDetails>
+                    <EquipmentList
                         dataFetcher={purchaseDataFetcher}
                         groupingFields={purchaseGroupingFields}
                         columns={purchaseItemColumns}
                         actionButtonLabel="Buy"
                         onAction={handlePurchase}
                         isActionDisabled={isPurchaseDisabled}
-                        allowMultiple={true}
                         proficientWeaponCategories={proficiencies.weaponCategories}
                         proficientArmorCategories={proficiencies.armorCategories}
                         proficientItemIds={proficiencies.itemIds}

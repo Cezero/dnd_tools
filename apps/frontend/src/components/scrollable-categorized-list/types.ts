@@ -2,6 +2,69 @@ import { ColumnDef } from '@tanstack/react-table';
 
 import type { TanStackQueryHook } from '@/components/generic-list/types';
 
+/**
+ * Configuration for grouping behavior
+ */
+export interface GroupingConfig<T> {
+    /**
+     * Determine which fields should be used for grouping a specific item.
+     * This allows filtering out certain fields based on item properties.
+     * @param item The item being grouped
+     * @param groupingFields The full list of grouping fields
+     * @returns The effective fields to use for this item
+     */
+    getEffectiveFields?: (item: T, groupingFields: string[]) => string[];
+    
+    /**
+     * Determine which field path should be used for formatting a category label.
+     * This is useful when the actual grouping field differs from the expected field
+     * (e.g., armor items grouped by armor.category but the groupingFields array
+     * might have weapon.category at that position).
+     * @param currentField The field path from groupingFields at the current index
+     * @param categoryValue The value being formatted
+     * @param sampleItem A sample item from the group (may be null)
+     * @param groupingFields The full list of grouping fields
+     * @param currentFieldIndex The current index in groupingFields
+     * @returns The field path to use for formatting
+     */
+    getEffectiveFieldForFormatting?: (
+        currentField: string,
+        categoryValue: unknown,
+        sampleItem: T | null,
+        groupingFields: string[],
+        currentFieldIndex: number
+    ) => string;
+    
+    /**
+     * Sort the keys at a specific grouping level.
+     * This allows custom sorting of category groups (e.g., Simple, Martial, Exotic for weapons).
+     * @param keys Array of [key, value] pairs from the Map at this level
+     * @param fieldPath The field path being grouped at this level
+     * @param groupingFields The full list of grouping fields
+     * @param currentFieldIndex The current index in groupingFields
+     * @returns Sorted array of [key, value] pairs
+     */
+    sortGroupKeys?: (
+        keys: Array<[unknown, unknown]>,
+        fieldPath: string,
+        groupingFields: string[],
+        currentFieldIndex: number
+    ) => Array<[unknown, unknown]>;
+}
+
+/**
+ * Configuration for item filtering/checking
+ */
+export interface ItemFilterConfig<T> {
+    /**
+     * Check if an item should be considered "enabled" or "available".
+     * This is used to disable items that don't meet certain criteria.
+     * @param item The item to check
+     * @returns true if the item is enabled/available, false otherwise
+     */
+    isItemEnabled?: (item: T) => boolean;
+}
+
 export interface ScrollableCategorizedListProps<T> {
     // Data fetching (similar to GenericList)
     queryHook?: TanStackQueryHook<T>;
@@ -10,6 +73,7 @@ export interface ScrollableCategorizedListProps<T> {
 
     // Grouping configuration
     groupingFields: string[]; // Field paths for hierarchical grouping (e.g., ['itemTypeId', 'weapon.category', 'weapon.type'])
+    groupingConfig?: GroupingConfig<T>; // Optional configuration for custom grouping behavior
 
     // Column definitions (same as GenericList)
     columns: ColumnDef<T, unknown>[];
@@ -20,11 +84,8 @@ export interface ScrollableCategorizedListProps<T> {
     isActionDisabled?: (item: T) => boolean;
     allowMultiple?: boolean; // If false, items can only be obtained once
 
-    // Proficiency filtering
-    proficientWeaponCategories?: number[]; // Array of weapon category IDs (e.g., [1, 2] for Simple and Martial)
-    proficientArmorCategories?: number[]; // Array of armor category IDs
-    proficientItemIds?: number[]; // Array of specific item IDs that character is proficient with
-    allowAll?: boolean; // If true, bypass proficiency checks (for treasure/other use cases)
+    // Item filtering
+    itemFilter?: ItemFilterConfig<T>; // Optional configuration for item filtering/enabling
 
     // Search
     searchPlaceholder?: string;
@@ -63,7 +124,8 @@ export function getFieldValue<T>(item: T, fieldPath: string): unknown {
  */
 export function groupItemsByFields<T>(
     items: T[],
-    groupingFields: string[]
+    groupingFields: string[],
+    groupingConfig?: GroupingConfig<T>
 ): Map<unknown, unknown> {
     if (groupingFields.length === 0) {
         // No grouping, return all items in a single group
@@ -77,22 +139,11 @@ export function groupItemsByFields<T>(
     for (const item of items) {
         let currentMap = result;
         
-        // Special handling: if item has armor.category, skip weapon.category and weapon.type
-        // This ensures items like shields (which have both armor and weapon properties) 
-        // are grouped only by typeId and armor.category
-        const hasArmorCategory = getFieldValue(item, 'armor.category') !== null && 
-                                  getFieldValue(item, 'armor.category') !== undefined;
-        
         // Determine which fields to actually use for this item
-        const effectiveFields: string[] = [];
-        for (let i = 0; i < groupingFields.length; i++) {
-            const fieldPath = groupingFields[i];
-            // Skip weapon.category and weapon.type if armor.category exists
-            if (hasArmorCategory && (fieldPath === 'weapon.category' || fieldPath === 'weapon.type')) {
-                continue;
-            }
-            effectiveFields.push(fieldPath);
-        }
+        // Use custom logic if provided, otherwise use all fields
+        const effectiveFields = groupingConfig?.getEffectiveFields
+            ? groupingConfig.getEffectiveFields(item, groupingFields)
+            : groupingFields;
 
         if (effectiveFields.length === 0) {
             // No effective fields, group under '_null'

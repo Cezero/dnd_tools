@@ -13,7 +13,7 @@ import {
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 
-import { getFieldValue, groupItemsByFields, type ScrollableCategorizedListProps } from './types';
+import { getFieldValue, groupItemsByFields, type ScrollableCategorizedListProps, type GroupingConfig } from './types';
 
 /**
  * Format a category label using column definition
@@ -88,6 +88,7 @@ function renderCategoryGroup<T>(
     groupingFields: string[],
     currentFieldIndex: number,
     columns: ColumnDef<T, unknown>[],
+    allColumnsForFormatting: ColumnDef<T, unknown>[],
     actionButtonLabel: string,
     onAction: (item: T) => void,
     isActionDisabled: ((item: T) => boolean) | undefined,
@@ -95,7 +96,8 @@ function renderCategoryGroup<T>(
     toggleCategory: (path: string) => void,
     categoryPath: string,
     table: ReturnType<typeof useReactTable<T>>,
-    processedItems: Set<T>
+    processedItems: Set<T>,
+    groupingConfig?: GroupingConfig<T>
 ): React.ReactNode[] {
     const result: React.ReactNode[] = [];
 
@@ -124,7 +126,7 @@ function renderCategoryGroup<T>(
                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
                     ))}
-                    <td className="px-1">
+                    <td className="px-1 text-center">
                         <button
                             onClick={() => onAction(item)}
                             disabled={isDisabled}
@@ -142,11 +144,45 @@ function renderCategoryGroup<T>(
     }
 
     const currentField = groupingFields[currentFieldIndex];
-    const entries = Array.from(groupMap.entries());
+    let entries = Array.from(groupMap.entries());
+
+    // Sort entries if sorting function is provided
+    if (groupingConfig?.sortGroupKeys) {
+        entries = groupingConfig.sortGroupKeys(entries, currentField, groupingFields, currentFieldIndex);
+    }
+
+    // Helper to get a sample item from a group (Map or Array)
+    const getSampleItem = (groupValue: unknown): T | null => {
+        if (Array.isArray(groupValue) && groupValue.length > 0) {
+            return groupValue[0] as T;
+        }
+        if (groupValue instanceof Map) {
+            // Get first item from nested structure
+            for (const nestedValue of groupValue.values()) {
+                const item = getSampleItem(nestedValue);
+                if (item) return item;
+            }
+        }
+        return null;
+    };
 
     for (const [key, value] of entries) {
         const categoryValue = key === '_null' ? null : key;
-        const categoryLabel = formatCategoryLabel(categoryValue, currentField, columns);
+
+        // Determine which field was actually used for this grouping
+        // Use custom logic if provided, otherwise use current field
+        const sampleItem = getSampleItem(value);
+        const effectiveField = groupingConfig?.getEffectiveFieldForFormatting
+            ? groupingConfig.getEffectiveFieldForFormatting(
+                currentField,
+                categoryValue,
+                sampleItem,
+                groupingFields,
+                currentFieldIndex
+            )
+            : currentField;
+
+        const categoryLabel = formatCategoryLabel(categoryValue, effectiveField, allColumnsForFormatting);
         const fullPath = categoryPath ? `${categoryPath}/${String(categoryValue)}` : String(categoryValue);
         const isCollapsed = collapsedCategories.has(fullPath);
 
@@ -176,6 +212,7 @@ function renderCategoryGroup<T>(
                             groupingFields,
                             currentFieldIndex + 1,
                             columns,
+                            allColumnsForFormatting,
                             actionButtonLabel,
                             onAction,
                             isActionDisabled,
@@ -183,7 +220,8 @@ function renderCategoryGroup<T>(
                             toggleCategory,
                             fullPath,
                             table,
-                            processedItems
+                            processedItems,
+                            groupingConfig
                         )}
                     </>
                 )}
@@ -211,7 +249,7 @@ function renderCategoryGroup<T>(
                                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                         </td>
                                     ))}
-                                    <td className="px-2">
+                                    <td className="px-2 text-center">
                                         <button
                                             onClick={() => onAction(item)}
                                             disabled={isDisabled}
@@ -240,15 +278,13 @@ export function ScrollableCategorizedList<T extends { id?: number | string }>({
     dataFetcher,
     serviceFunction,
     groupingFields,
+    groupingConfig,
     columns,
     actionButtonLabel,
     onAction,
     isActionDisabled,
     allowMultiple: _allowMultiple = true,
-    proficientWeaponCategories,
-    proficientArmorCategories,
-    proficientItemIds,
-    allowAll = false,
+    itemFilter,
     searchPlaceholder = 'Search by name...',
     storageKey,
     itemDesc = 'items',
@@ -260,6 +296,7 @@ export function ScrollableCategorizedList<T extends { id?: number | string }>({
     const [error, setError] = useState<Error | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const containerRef = useRef<HTMLDivElement>(null);
+    const searchRef = useRef<HTMLDivElement>(null);
     const [calculatedHeight, setCalculatedHeight] = useState<number | undefined>(undefined);
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -319,51 +356,19 @@ export function ScrollableCategorizedList<T extends { id?: number | string }>({
         }
     }, [queryResult]);
 
-    // Check if an item is proficient
-    const isItemProficient = useCallback((item: T): boolean => {
-        // If allowAll is true, bypass proficiency checks
-        if (allowAll) {
-            return true;
+    // Check if an item is enabled (using itemFilter if provided)
+    const isItemEnabled = useCallback((item: T): boolean => {
+        if (itemFilter?.isItemEnabled) {
+            return itemFilter.isItemEnabled(item);
         }
-
-        // If no proficiency data provided, allow all items
-        if (!proficientWeaponCategories && !proficientArmorCategories && !proficientItemIds) {
-            return true;
-        }
-
-        // Check if item is in proficientItemIds (specific item proficiency)
-        if (proficientItemIds && item.id !== undefined) {
-            const itemId = typeof item.id === 'number' ? item.id : parseInt(String(item.id), 10);
-            if (!isNaN(itemId) && proficientItemIds.includes(itemId)) {
-                return true;
-            }
-        }
-
-        // Check weapon proficiency
-        const weaponCategory = getFieldValue(item, 'weapon.category') as number | undefined;
-        if (weaponCategory !== undefined && proficientWeaponCategories) {
-            return proficientWeaponCategories.includes(weaponCategory);
-        }
-
-        // Check armor proficiency
-        const armorCategory = getFieldValue(item, 'armor.category') as number | undefined;
-        if (armorCategory !== undefined && proficientArmorCategories) {
-            return proficientArmorCategories.includes(armorCategory);
-        }
-
-        // If item is a weapon or armor but doesn't match any proficiency, it's not proficient
-        if (weaponCategory !== undefined || armorCategory !== undefined) {
-            return false;
-        }
-
-        // For non-weapon/armor items, allow them (they don't require proficiency)
+        // Default: all items are enabled
         return true;
-    }, [allowAll, proficientWeaponCategories, proficientArmorCategories, proficientItemIds]);
+    }, [itemFilter]);
 
-    // Combine proficiency check with existing isActionDisabled
+    // Combine item filter check with existing isActionDisabled
     const combinedIsActionDisabled = useCallback((item: T): boolean => {
-        // Check proficiency first
-        if (!isItemProficient(item)) {
+        // Check item filter first
+        if (!isItemEnabled(item)) {
             return true;
         }
         // Then check custom disabled logic
@@ -371,7 +376,7 @@ export function ScrollableCategorizedList<T extends { id?: number | string }>({
             return isActionDisabled(item);
         }
         return false;
-    }, [isItemProficient, isActionDisabled]);
+    }, [isItemEnabled, isActionDisabled]);
 
     // Load collapsed categories from localStorage
     useEffect(() => {
@@ -423,8 +428,16 @@ export function ScrollableCategorizedList<T extends { id?: number | string }>({
         }
     }, [searchQuery, columns]);
 
-    // Process columns (similar to GenericList)
+    // Process columns - filter out hidden columns for display but keep them for formatting
     const processedColumns = useMemo<ColumnDef<T, unknown>[]>(() => {
+        return columns.filter(col => {
+            // Keep columns that don't have meta.hidden or have meta.hidden === false
+            return !('meta' in col && col.meta && typeof col.meta === 'object' && 'hidden' in col.meta && col.meta.hidden === true);
+        });
+    }, [columns]);
+
+    // Keep all columns (including hidden) for formatting category labels
+    const allColumnsForFormatting = useMemo<ColumnDef<T, unknown>[]>(() => {
         return columns;
     }, [columns]);
 
@@ -450,19 +463,60 @@ export function ScrollableCategorizedList<T extends { id?: number | string }>({
     useEffect(() => {
         if (maxHeight === 'auto' && containerRef.current) {
             const updateHeight = () => {
-                const parent = containerRef.current?.parentElement;
-                if (parent) {
-                    const parentHeight = parent.clientHeight;
-                    // Subtract search input height and padding (approximately 80px)
-                    setCalculatedHeight(parentHeight - 80);
+                if (containerRef.current) {
+                    // The parent is the h-[500px] div, but the padding is on the grandparent (p-6)
+                    const parent = containerRef.current.parentElement;
+                    const grandparent = parent?.parentElement;
+                    const containerHeight = containerRef.current.clientHeight;
+                    const parentClientHeight = parent ? parent.clientHeight : containerHeight;
+
+                    // The parent has h-[500px] but is inside a grandparent with p-6 padding
+                    // The parent's clientHeight is 500px, but the grandparent's bottom padding
+                    // reduces the actual available visual space, causing clipping
+                    let availableContainerHeight = parentClientHeight;
+                    if (grandparent) {
+                        const grandparentPaddingBottom = parseFloat(window.getComputedStyle(grandparent).paddingBottom) || 0;
+                        // Subtract the grandparent's bottom padding from available height
+                        // to prevent the table from being clipped
+                        availableContainerHeight = parentClientHeight - grandparentPaddingBottom;
+                    }
+
+                    // Get actual search div height (including padding, excluding margin)
+                    // The margin-bottom (mb-4 = 16px) is handled by flexbox spacing
+                    const searchHeight = searchRef.current ?
+                        searchRef.current.offsetHeight : 0;
+                    // Calculate available height for the table container
+                    // This should be availableContainerHeight - searchHeight (margin is handled by flex)
+                    const availableHeight = availableContainerHeight - searchHeight;
+                    setCalculatedHeight(Math.max(200, availableHeight)); // Minimum 200px
                 }
             };
 
-            updateHeight();
-            const resizeObserver = new ResizeObserver(updateHeight);
-            resizeObserver.observe(containerRef.current.parentElement!);
+            // Use requestAnimationFrame to ensure DOM is ready
+            const timeoutId = setTimeout(() => {
+                updateHeight();
+            }, 0);
 
-            return () => resizeObserver.disconnect();
+            // Watch for container and parent size changes
+            const resizeObserver = new ResizeObserver(() => {
+                updateHeight();
+            });
+            if (containerRef.current) {
+                resizeObserver.observe(containerRef.current);
+            }
+            const parent = containerRef.current?.parentElement;
+            if (parent) {
+                resizeObserver.observe(parent);
+            }
+
+            // Also watch for window resize
+            window.addEventListener('resize', updateHeight);
+
+            return () => {
+                clearTimeout(timeoutId);
+                resizeObserver.disconnect();
+                window.removeEventListener('resize', updateHeight);
+            };
         }
     }, [maxHeight]);
 
@@ -477,8 +531,8 @@ export function ScrollableCategorizedList<T extends { id?: number | string }>({
     // Group items
     const filteredData = table.getFilteredRowModel().rows.map(row => row.original);
     const groupedData = useMemo(() => {
-        return groupItemsByFields(filteredData, groupingFields);
-    }, [filteredData, groupingFields]);
+        return groupItemsByFields(filteredData, groupingFields, groupingConfig);
+    }, [filteredData, groupingFields, groupingConfig]);
 
     // Handle errors
     const currentError = error || queryResult?.error;
@@ -519,9 +573,9 @@ export function ScrollableCategorizedList<T extends { id?: number | string }>({
     const processedItems = new Set<T>();
 
     return (
-        <div ref={containerRef}>
+        <div ref={containerRef} className="h-full flex flex-col overflow-hidden">
             {/* Search input */}
-            <div className="mb-4">
+            <div ref={searchRef} className="mb-4 flex-shrink-0">
                 <input
                     type="text"
                     placeholder={searchPlaceholder}
@@ -532,45 +586,58 @@ export function ScrollableCategorizedList<T extends { id?: number | string }>({
             </div>
 
             {isLoading ? (
-                <div className="text-center py-8">
+                <div className="text-center py-8 flex-1 flex items-center justify-center">
                     <div className="text-lg font-medium text-gray-600 dark:text-gray-400">Loading...</div>
                 </div>
             ) : filteredData.length === 0 ? (
-                <div className="text-center py-8">
+                <div className="text-center py-8 flex-1 flex items-center justify-center">
                     <div className="text-lg font-medium text-gray-600 dark:text-gray-400">
                         No {itemDesc} found.
                     </div>
                 </div>
             ) : (
                 <div
-                    className="border border-solid border-gray-600 flex flex-col"
-                    style={actualMaxHeight ? { height: `${actualMaxHeight}px` } : undefined}
+                    className="border border-solid border-gray-600 flex flex-col flex-1 min-h-0"
+                    style={actualMaxHeight ? {
+                        height: `${actualMaxHeight}px`,
+                        maxHeight: `${actualMaxHeight}px`,
+                        minHeight: `${actualMaxHeight}px`
+                    } : undefined}
                 >
                     {/* Fixed header */}
                     <div className="flex-shrink-0 bg-gray-200 dark:bg-gray-700 border-b border-solid border-gray-600">
                         <table className="table-fixed w-full border-collapse">
+                            <colgroup>
+                                {table.getVisibleLeafColumns().map(column => (
+                                    <col key={column.id} style={{ width: column.getSize() }} />
+                                ))}
+                                <col style={{ width: '80px' }} />
+                            </colgroup>
                             <thead>
                                 {table.getHeaderGroups().map(headerGroup => (
                                     <tr key={headerGroup.id}>
-                                        {headerGroup.headers.map(header => (
-                                            <th
-                                                key={header.id}
-                                                className="px-1 bg-gray-200 dark:bg-gray-700"
-                                                style={{ width: header.getSize() }}
-                                            >
-                                                <div
-                                                    className="flex items-center space-x-2 cursor-pointer select-none"
-                                                    onClick={header.column.getToggleSortingHandler()}
+                                        {table.getVisibleLeafColumns().map(column => {
+                                            const header = headerGroup.headers.find(h => h.id === column.id);
+                                            if (!header) return null;
+                                            return (
+                                                <th
+                                                    key={header.id}
+                                                    className="px-1 bg-gray-200 dark:bg-gray-700"
                                                 >
-                                                    {flexRender(header.column.columnDef.header, header.getContext())}
-                                                    {{
-                                                        asc: ' ↑',
-                                                        desc: ' ↓',
-                                                    }[header.column.getIsSorted() as string] ?? null}
-                                                </div>
-                                            </th>
-                                        ))}
-                                        <th className="px-1 bg-gray-200 dark:bg-gray-700">Action</th>
+                                                    <div
+                                                        className="flex items-center space-x-2 cursor-pointer select-none"
+                                                        onClick={header.column.getToggleSortingHandler()}
+                                                    >
+                                                        {flexRender(header.column.columnDef.header, header.getContext())}
+                                                        {{
+                                                            asc: ' ↑',
+                                                            desc: ' ↓',
+                                                        }[header.column.getIsSorted() as string] ?? null}
+                                                    </div>
+                                                </th>
+                                            );
+                                        })}
+                                        <th className="px-1 bg-gray-200 dark:bg-gray-700 text-center">Action</th>
                                     </tr>
                                 ))}
                             </thead>
@@ -580,8 +647,14 @@ export function ScrollableCategorizedList<T extends { id?: number | string }>({
                     {/* Scrollable body */}
                     <ScrollArea.Root className="flex-1 min-h-0">
                         <ScrollArea.Viewport className="h-full">
-                            <ScrollArea.Content>
+                            <ScrollArea.Content className="p-0">
                                 <table className="table-fixed w-full border-collapse border border-solid border-gray-600">
+                                    <colgroup>
+                                        {table.getVisibleLeafColumns().map(column => (
+                                            <col key={column.id} style={{ width: column.getSize() }} />
+                                        ))}
+                                        <col style={{ width: '80px' }} />
+                                    </colgroup>
                                     <tbody>
                                         {renderCategoryGroup(
                                             groupedData,
@@ -589,6 +662,7 @@ export function ScrollableCategorizedList<T extends { id?: number | string }>({
                                             groupingFields,
                                             0,
                                             processedColumns,
+                                            allColumnsForFormatting,
                                             actionButtonLabel,
                                             onAction,
                                             combinedIsActionDisabled,
@@ -596,7 +670,8 @@ export function ScrollableCategorizedList<T extends { id?: number | string }>({
                                             toggleCategory,
                                             '',
                                             table,
-                                            processedItems
+                                            processedItems,
+                                            groupingConfig
                                         )}
                                     </tbody>
                                 </table>
