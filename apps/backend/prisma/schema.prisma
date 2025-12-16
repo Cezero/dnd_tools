@@ -735,6 +735,12 @@ model UserCharacter {
     isGestalt             Boolean @default(false) // Gestalt multiclassing
     ignoreLevelAdjustment Boolean @default(false) // Ignore LA for XP calculation
 
+    // Money fields
+    platinum Int @default(0)
+    gold     Int @default(0)
+    silver   Int @default(0)
+    copper   Int @default(0)
+
     abilityScores     UserCharacterAbilityScore[]
     characterItems    CharacterItem[]
     advancements      CharacterAdvancement[]

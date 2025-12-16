@@ -11,7 +11,7 @@ import { useLogPanel } from '@/components/log-panel';
 import { useToast } from '@/components/toast/useToast';
 import { useCharacterEditState } from '@/features/character';
 import { CharacterApi } from '@/features/character/CharacterApi';
-import { CharacterEditStateUpdateType } from '@/features/character/types';
+import { CharacterEditStateUpdateType, type EquipmentItem } from '@/features/character/types';
 import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
 import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import type { Race, DnDClass, CharacterWithAllDetailsResponse, SkillRank } from '@shared/schema';
@@ -246,6 +246,32 @@ export function CharacterEdit(): React.JSX.Element {
                 // Load ability scores
                 updateState({ type: CharacterEditStateUpdateType.SET_ABILITY_SCORES, payload: { abilityScores: character.abilityScores } });
 
+                // Load money
+                updateState({
+                    type: CharacterEditStateUpdateType.SET_MONEY,
+                    payload: {
+                        money: {
+                            platinum: character.platinum ?? 0,
+                            gold: character.gold ?? 0,
+                            silver: character.silver ?? 0,
+                            copper: character.copper ?? 0,
+                        },
+                    },
+                });
+
+                // Load equipment
+                if (character.characterItems) {
+                    const equipment: EquipmentItem[] = character.characterItems.map((item, index) => ({
+                        id: item.id,
+                        itemId: item.baseItemId,
+                        costInGp: null, // Cost not stored in CharacterItem, would need to fetch from baseItem
+                        quantity: item.quantity ?? 1,
+                        location: null, // Location not stored in CharacterItem
+                        notes: item.name,
+                    }));
+                    updateState({ type: CharacterEditStateUpdateType.SET_EQUIPMENT, payload: { equipment } });
+                }
+
                 // Load advancement data if it exists
                 if (advancement) {
                     updateState({ type: CharacterEditStateUpdateType.SET_CURRENT_ADVANCEMENT_ID, payload: { currentAdvancementId: advancement.id } });
@@ -354,6 +380,11 @@ export function CharacterEdit(): React.JSX.Element {
                 allowVariantClasses: state.allowVariantClasses,
                 isGestalt: state.isGestalt,
                 ignoreLevelAdjustment: state.ignoreLevelAdjustment,
+                // Include money
+                platinum: state.money.platinum,
+                gold: state.money.gold,
+                silver: state.money.silver,
+                copper: state.money.copper,
                 // Include ability scores if any exist
                 abilityScores: state.abilityScores.length > 0 ? state.abilityScores.map(score => ({
                     abilityId: score.abilityId,
@@ -377,6 +408,14 @@ export function CharacterEdit(): React.JSX.Element {
                         featId,
                     })),
                 } : undefined,
+                // Include equipment (only items with itemId, which are purchased items)
+                equipment: state.equipment
+                    .filter(item => item.itemId !== null)
+                    .map(item => ({
+                        name: item.notes || 'Unknown Item',
+                        quantity: item.quantity,
+                        baseItemId: item.itemId!,
+                    })),
             };
 
             // Use unified save endpoint - backend handles all orchestration

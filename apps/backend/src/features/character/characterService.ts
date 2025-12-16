@@ -175,6 +175,7 @@ export const characterService: CharacterService = {
                     },
                 },
                 disallowedSources: true,
+                characterItems: true,
             },
         });
 
@@ -191,7 +192,7 @@ export const characterService: CharacterService = {
 
     async saveCharacter(characterId: number | null, data: SaveCharacterRequest): Promise<CreateResponse | UpdateResponse> {
         // Extract nested data
-        const { abilityScores, advancement, ...characterData } = data;
+        const { abilityScores, advancement, equipment, ...characterData } = data;
 
         return await prisma.$transaction(async (tx) => {
             let finalCharacterId = characterId;
@@ -318,6 +319,33 @@ export const characterService: CharacterService = {
                                 create: feats
                             } : undefined,
                         },
+                    });
+                }
+            }
+
+            // Handle equipment if provided
+            if (equipment !== undefined) {
+                // Get existing equipment
+                const existingEquipment = await tx.characterItem.findMany({
+                    where: { characterId: finalCharacterId },
+                });
+
+                // Delete all existing equipment
+                if (existingEquipment.length > 0) {
+                    await tx.characterItem.deleteMany({
+                        where: { characterId: finalCharacterId },
+                    });
+                }
+
+                // Create new equipment items
+                if (equipment.length > 0) {
+                    await tx.characterItem.createMany({
+                        data: equipment.map(item => ({
+                            characterId: finalCharacterId,
+                            name: item.name,
+                            quantity: item.quantity ?? null,
+                            baseItemId: item.baseItemId,
+                        })),
                     });
                 }
             }

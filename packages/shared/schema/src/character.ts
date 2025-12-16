@@ -46,6 +46,12 @@ export const BaseCharacterSchema = z.object({
     allowVariantClasses: z.boolean().default(false),
     isGestalt: z.boolean().default(false),
     ignoreLevelAdjustment: z.boolean().default(false),
+
+    // Money fields
+    platinum: z.number().int().min(0, 'Platinum must be non-negative').default(0),
+    gold: z.number().int().min(0, 'Gold must be non-negative').default(0),
+    silver: z.number().int().min(0, 'Silver must be non-negative').default(0),
+    copper: z.number().int().min(0, 'Copper must be non-negative').default(0),
 });
 
 export const CharacterSchema = BaseCharacterSchema.extend({
@@ -161,12 +167,22 @@ export const CharacterDisallowedSourceSchema = z.object({
     sourceBookId: z.number().int().positive('Source book ID must be a positive integer'),
 });
 
+// Character item schemas (defined before CharacterWithAllDetailsSchema to avoid forward reference)
+export const CharacterItemSchema = z.object({
+    id: z.number().int().positive('Character item ID must be a positive integer'),
+    name: z.string().min(1, 'Character item name is required').max(100, 'Character item name must be less than 100 characters').trim(),
+    quantity: z.number().int().min(1, 'Quantity must be at least 1').nullable(),
+    characterId: z.number().int().positive('Character ID must be a positive integer'),
+    baseItemId: z.number().int().positive('Base item ID must be a positive integer'),
+});
+
 // Character with all related data
 export const CharacterWithAllDetailsSchema = CharacterWithRaceSchema.extend({
     abilityScores: z.array(CharacterAbilityScoreSchema),
     advancements: z.array(CharacterAdvancementWithDetailsSchema),
     preparedSpells: z.array(CharacterSpellPreparationWithMetamagicSchema),
     disallowedSources: z.array(CharacterDisallowedSourceSchema),
+    characterItems: z.array(CharacterItemSchema).optional(),
 });
 
 export const GetAllCharactersResponseSchema = QueryResponseSchema.extend({
@@ -217,15 +233,6 @@ export const UpsertCharacterAbilityScoresSchema = z.object({
     abilityScores: z.array(CreateCharacterAbilityScoreSchema.omit({ characterId: true })).max(6, 'Maximum 6 ability scores allowed'),
 });
 
-// Character item schemas
-export const CharacterItemSchema = z.object({
-    id: z.number().int().positive('Character item ID must be a positive integer'),
-    name: z.string().min(1, 'Character item name is required').max(100, 'Character item name must be less than 100 characters').trim(),
-    quantity: z.number().int().min(1, 'Quantity must be at least 1').nullable(),
-    characterId: z.number().int().positive('Character ID must be a positive integer'),
-    baseItemId: z.number().int().positive('Base item ID must be a positive integer'),
-});
-
 export const CharacterItemPropertySchema = z.object({
     id: z.number().int().positive('Character item property ID must be a positive integer'),
     characterItemId: z.number().int().positive('Character item ID must be a positive integer'),
@@ -254,6 +261,8 @@ export const SaveCharacterSchema = BaseCharacterSchema.extend({
     abilityScores: z.array(CreateCharacterAbilityScoreSchema.omit({ characterId: true })).optional(),
     // Optional advancement data (nested)
     advancement: CreateAdvancementSchema.omit({ characterId: true }).optional(),
+    // Optional equipment (nested)
+    equipment: z.array(CreateCharacterItemSchema.omit({ characterId: true })).optional(),
 }).partial(); // Make all fields optional for updates
 
 // Request/response schemas for character disallowed sources

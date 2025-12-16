@@ -135,6 +135,8 @@ export type DescriptionTabUpdates = Partial<DescriptionTabState>;
 // ============================================================================
 export interface EquipmentItem {
     id: number;
+    itemId: number | null; // ID of the purchased item (for refunds)
+    costInGp: number | null; // Cost in gold pieces (for refunds)
     quantity: number;
     location: string | null;
     notes: string | null;

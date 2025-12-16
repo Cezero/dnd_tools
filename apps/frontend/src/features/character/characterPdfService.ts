@@ -294,17 +294,6 @@ export async function generateCharacterPdf(
         drawHeaderBox(x + sumFirst(secondRowColumnWidths, 2), secondRowY, secondRowColumnWidths[2], rowHeight, 'TYPE', type);
         drawHeaderBox(x + sumFirst(secondRowColumnWidths, 3), secondRowY, secondRowColumnWidths[3], rowHeight, 'SIZE', size);
         drawHeaderBox(x + sumFirst(secondRowColumnWidths, 4), secondRowY, secondRowColumnWidths[4], rowHeight, 'SPECIAL PROPERTIES', specialProperties);
-
-        const ammoRowY = y + 11 + rowHeight + rowHeight;
-        let ammoRowX = x + firstRowColumnWidths[0] + 4;
-        doc.setFontSize(5);
-        doc.setFont('ArchivoNarrow', 'normal');
-        doc.setTextColor(0, 0, 0);
-        doc.text('AMMUNITION', ammoRowX, ammoRowY);
-        ammoRowX += 30;
-        for (let i = 0; i < 20; i++) {
-            doc.text('O', ammoRowX + i * 4, ammoRowY);
-        }
     };
 
     // Format class abbreviations with forward slash (e.g., "War/Wiz")
@@ -1310,7 +1299,7 @@ export async function generateCharacterPdf(
     const skillsColumnHeaderY = skillsHeaderStartY + 14;
     const skillsColumnHeaderHeight = 11;
     const classSkillWidth = 7;
-    const skillNameWidth = 80;
+    const skillNameWidth = 94;
     const keyAbilityWidth = 25;
     const skillModifierWidth = 25;
     const abilityModifierWidth = 25;
@@ -1320,6 +1309,13 @@ export async function generateCharacterPdf(
     const skillsColumnSpacing = 2; // get rid of this later
 
     let skillsHeaderX = skillsStartX + classSkillWidth;
+
+    // draw white background for skills column headers so + and = are visible
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(1);
+    doc.setFillColor(255, 255, 255);
+    doc.rect(skillsHeaderX, skillsColumnHeaderY, 242, skillsColumnHeaderHeight, 'FD');
+    doc.setTextColor(0, 0, 0);
 
     // SKILL NAME header
     drawLabelBox(skillsHeaderX, skillsColumnHeaderY, skillNameWidth, skillsColumnHeaderHeight, 'SKILL NAME');
@@ -1331,7 +1327,7 @@ export async function generateCharacterPdf(
 
     // SKILL MODIFIER header
     drawLabelBox(skillsHeaderX, skillsColumnHeaderY, skillModifierWidth, skillsColumnHeaderHeight, 'SKILL MODIFIER', true);
-    skillsHeaderX += skillModifierWidth;
+    skillsHeaderX += skillModifierWidth + 2;
 
     // '=' text
     doc.setFontSize(8);
@@ -1374,7 +1370,7 @@ export async function generateCharacterPdf(
         let skillX = skillsStartX;
 
         // CLASS SKILL indicator (plain text - 'x' if class skill, nothing otherwise)
-        doc.setFontSize(4);
+        doc.setFontSize(5);
         doc.setFont('ArchivoNarrow', 'normal');
         if (skill.isClassSkill) {
             doc.text('x', skillX + classSkillWidth / 2, skillY, { align: 'center' });
@@ -1385,16 +1381,16 @@ export async function generateCharacterPdf(
         const skillData = SKILL_LIST.find(s => s.id === skill.skillId);
         const canBeUsedUntrained = skillData && !skillData.trainedOnly;
 
-        doc.setFontSize(6);
+        doc.setFontSize(7);
         doc.setFont('ArchivoNarrow', 'normal');
         const skillNameTextWidth = doc.getTextWidth(skill.skillName);
         doc.text(skill.skillName, skillX, skillY);
 
         // Add superscript '1' if skill can be used untrained
         if (canBeUsedUntrained) {
-            doc.setFontSize(4);
+            doc.setFontSize(5);
             doc.text('1', skillX + skillNameTextWidth + 1, skillY - 2);
-            doc.setFontSize(6); // Reset font size for rest of the line
+            doc.setFontSize(7); // Reset font size for rest of the line
         }
         skillX += skillNameWidth - 2;
 
@@ -1408,7 +1404,7 @@ export async function generateCharacterPdf(
         const hasArmorCheckPenalty = skillFromDb?.affectedByArmor ?? false;
         const isSwim = skillData && skill.skillId === Skill.Swim; // Swim has double penalty
 
-        doc.setFontSize(6);
+        doc.setFontSize(7);
         doc.setFont('ArchivoNarrow', 'normal');
         const abbrWidth = doc.getTextWidth(keyAbilityAbbr);
         const abbrX = skillX + (keyAbilityWidth / 2) - (abbrWidth / 2);
@@ -1416,18 +1412,18 @@ export async function generateCharacterPdf(
 
         // Add superscript asterisk(s) if armor check penalty applies
         if (hasArmorCheckPenalty) {
-            doc.setFontSize(4);
+            doc.setFontSize(5);
             const asterisks = isSwim ? '**' : '*';
             doc.text(asterisks, abbrX + abbrWidth + 1, skillY - 2);
-            doc.setFontSize(6); // Reset font size for rest of the line
+            doc.setFontSize(7); // Reset font size for rest of the line
         }
         skillX += keyAbilityWidth;
 
         // SKILL MODIFIER (bold)
-        doc.setFontSize(6); // Ensure font size is correct
+        doc.setFontSize(7); // Ensure font size is correct
         doc.setFont('ArchivoNarrow', 'bold');
         doc.text(formatModifier(skill.total), skillX + (skillModifierWidth / 2), skillY, { align: 'center' });
-        skillX += skillModifierWidth;
+        skillX += skillModifierWidth + 2;
 
         // '=' text
         doc.setFont('ArchivoNarrow', 'normal');
@@ -1436,7 +1432,7 @@ export async function generateCharacterPdf(
 
         // ABILITY MODIFIER (plain text)
         doc.text(formatModifier(skill.abilityMod), skillX + (abilityModifierWidth / 2), skillY, { align: 'center' });
-        skillX += abilityModifierWidth;
+        skillX += abilityModifierWidth + 2;
 
         // '+' text
         doc.text('+', skillX, skillY);
@@ -1444,7 +1440,7 @@ export async function generateCharacterPdf(
 
         // RANKS (plain text)
         doc.text(skill.ranks.toString(), skillX + (ranksWidth / 2), skillY, { align: 'center' });
-        skillX += ranksWidth;
+        skillX += ranksWidth + 2;
 
         // '+' text
         doc.text('+', skillX, skillY);
@@ -1457,11 +1453,11 @@ export async function generateCharacterPdf(
     // ============================================================================
     // LEGEND - Lower right corner
     // ============================================================================
-    doc.setFontSize(4);
+    doc.setFontSize(5);
     doc.setFont('ArchivoNarrow', 'normal');
     doc.setTextColor(0, 0, 0);
 
-    const legendStartX = 448; // Right side
+    const legendStartX = 440; // Right side
     const legendStartY = 738; // Near bottom
     const legendLineHeight = 6;
 
@@ -1482,8 +1478,8 @@ export async function generateCharacterPdf(
     doc.text('Armor check penalty, if any, applies.', legendStartX + 4, legendY);
 
     // Line 4: Double armor check penalty
-    doc.text('**', legendStartX + 62, legendY);
-    doc.text('Double the armor check penalty.', legendStartX + 66, legendY);
+    doc.text('**', legendStartX + 72, legendY);
+    doc.text('Double the armor check penalty.', legendStartX + 76, legendY);
 
     // Save PDF
     const filename = `${character.name.replace(/[^a-z0-9]/gi, '_')}_CharacterSheet.pdf`;
