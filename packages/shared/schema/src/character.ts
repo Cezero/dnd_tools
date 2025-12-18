@@ -172,8 +172,19 @@ export const CharacterItemSchema = z.object({
     id: z.number().int().positive('Character item ID must be a positive integer'),
     name: z.string().min(1, 'Character item name is required').max(100, 'Character item name must be less than 100 characters').trim(),
     quantity: z.number().int().min(1, 'Quantity must be at least 1').nullable(),
+    location: z.number().int().min(0).max(15).nullable(),
     characterId: z.number().int().positive('Character ID must be a positive integer'),
     baseItemId: z.number().int().positive('Base item ID must be a positive integer'),
+});
+
+// Character attack definition schemas (defined before CharacterWithAllDetailsSchema to avoid forward reference)
+export const CharacterAttackDefinitionSchema = z.object({
+    id: z.number().int().positive('Attack definition ID must be a positive integer'),
+    characterId: z.number().int().positive('Character ID must be a positive integer'),
+    attackTypeId: z.number().int().positive('Attack type ID must be a positive integer'),
+    attackSlot: z.number().int().min(1).max(7).nullable(),
+    mainHandCharacterItemId: z.number().int().positive('Main hand character item ID must be a positive integer').nullable(),
+    offHandCharacterItemId: z.number().int().positive('Off hand character item ID must be a positive integer').nullable(),
 });
 
 // Character with all related data
@@ -183,6 +194,7 @@ export const CharacterWithAllDetailsSchema = CharacterWithRaceSchema.extend({
     preparedSpells: z.array(CharacterSpellPreparationWithMetamagicSchema),
     disallowedSources: z.array(CharacterDisallowedSourceSchema),
     characterItems: z.array(CharacterItemSchema).optional(),
+    attackDefinitions: z.array(CharacterAttackDefinitionSchema).optional(),
 });
 
 export const GetAllCharactersResponseSchema = QueryResponseSchema.extend({
@@ -246,6 +258,10 @@ export const UpdateCharacterItemSchema = CharacterItemSchema.partial().omit({ id
 // Request/response schemas for character item properties
 export const CreateCharacterItemPropertySchema = CharacterItemPropertySchema.omit({ id: true });
 
+// Request/response schemas for character attack definitions
+export const CreateCharacterAttackDefinitionSchema = CharacterAttackDefinitionSchema.omit({ id: true });
+export const UpdateCharacterAttackDefinitionSchema = CreateCharacterAttackDefinitionSchema.partial();
+
 // Request/response schemas for character feature choices
 export const CreateCharacterFeatureChoiceSchema = CharacterFeatureChoiceSchema.omit({ id: true });
 export const UpdateCharacterFeatureChoiceSchema = CharacterFeatureChoiceSchema.partial().omit({ id: true });
@@ -263,6 +279,8 @@ export const SaveCharacterSchema = BaseCharacterSchema.extend({
     advancement: CreateAdvancementSchema.omit({ characterId: true }).optional(),
     // Optional equipment (nested)
     equipment: z.array(CreateCharacterItemSchema.omit({ characterId: true })).optional(),
+    // Optional attack definitions (nested)
+    attackDefinitions: z.array(CreateCharacterAttackDefinitionSchema.omit({ characterId: true })).optional(),
 }).partial(); // Make all fields optional for updates
 
 // Request/response schemas for character disallowed sources
@@ -311,6 +329,11 @@ export type UpdateCharacterItemRequest = z.infer<typeof UpdateCharacterItemSchem
 export type CharacterItemProperty = z.infer<typeof CharacterItemPropertySchema>;
 export type CreateCharacterItemPropertyRequest = z.infer<typeof CreateCharacterItemPropertySchema>;
 export type UpdateCharacterItemPropertyRequest = z.infer<typeof UpdateCharacterItemPropertySchema>;
+
+// Character attack definition types
+export type CharacterAttackDefinition = z.infer<typeof CharacterAttackDefinitionSchema>;
+export type CreateCharacterAttackDefinitionRequest = z.infer<typeof CreateCharacterAttackDefinitionSchema>;
+export type UpdateCharacterAttackDefinitionRequest = z.infer<typeof UpdateCharacterAttackDefinitionSchema>;
 
 // Character feature choice types
 export type CharacterFeatureChoice = z.infer<typeof CharacterFeatureChoiceSchema>;

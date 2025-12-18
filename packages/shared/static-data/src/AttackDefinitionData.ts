@@ -1,0 +1,18 @@
+import type { CoreComponent, BaseMap } from './types';
+
+export const ATTACK_DEFINITION_TYPE_ENUM = {
+    UNARMED_STRIKE: 1,
+    MAIN_HAND: 2,
+    DUAL_WIELD: 3,
+    RANGED: 4,
+} as const;
+
+export const ATTACK_DEFINITION_TYPES: BaseMap<CoreComponent> = {
+    [ATTACK_DEFINITION_TYPE_ENUM.UNARMED_STRIKE]: { id: ATTACK_DEFINITION_TYPE_ENUM.UNARMED_STRIKE, name: 'Unarmed Strike' },
+    [ATTACK_DEFINITION_TYPE_ENUM.MAIN_HAND]: { id: ATTACK_DEFINITION_TYPE_ENUM.MAIN_HAND, name: 'Main Hand' },
+    [ATTACK_DEFINITION_TYPE_ENUM.DUAL_WIELD]: { id: ATTACK_DEFINITION_TYPE_ENUM.DUAL_WIELD, name: 'Dual Wield' },
+    [ATTACK_DEFINITION_TYPE_ENUM.RANGED]: { id: ATTACK_DEFINITION_TYPE_ENUM.RANGED, name: 'Ranged' },
+};
+
+export const ATTACK_DEFINITION_TYPE_LIST = Object.values(ATTACK_DEFINITION_TYPES);
+

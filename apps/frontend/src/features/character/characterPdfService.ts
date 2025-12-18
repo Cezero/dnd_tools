@@ -1,20 +1,23 @@
 import jsPDF from 'jspdf';
 
 import { registerArchivoNarrowFonts } from '@/assets/fonts/registerArchivoNarrow';
+import { calculateAttackStats } from '@/lib/attack-calculation';
 import { RaceApi } from '@/features/race/RaceApi';
 import { SkillApi } from '@/features/skill/SkillApi';
-import type { CharacterWithAllDetailsResponse, DnDClass, Race } from '@shared/schema';
-import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, SIZE_MAP, SKILL_LIST, Skill } from '@shared/static-data';
-
+import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
+import type { AttackDefinition } from './types';
 import type { CalculatedCharacterStats } from './characterStatsCalculator';
 import { calculateCharacterStats } from './characterStatsCalculator';
+import type { CharacterWithAllDetailsResponse, DnDClass, Race, ItemWithDetails, FeatureProgression } from '@shared/schema';
+import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, SIZE_MAP, SKILL_LIST, Skill } from '@shared/static-data';
 
 /**
  * Generate a PDF character sheet for a character matching the D&D 3.5 character sheet format
  */
 export async function generateCharacterPdf(
     character: CharacterWithAllDetailsResponse,
-    classDetailsMap: Map<number, DnDClass>
+    classDetailsMap: Map<number, DnDClass>,
+    resolvedProgressions?: FeatureProgression[]
 ): Promise<void> {
     // Fetch full race object if we need sizeId
     let fullRace: Race | null = null;
@@ -41,6 +44,17 @@ export async function generateCharacterPdf(
 
     // Calculate all stats
     const stats = calculateCharacterStats(character, classDetailsMap);
+
+    // Fetch items for attack calculations
+    let items: ItemWithDetails[] = [];
+    try {
+        const itemsResponse = await ItemQueryHooks.getItems();
+        if (itemsResponse?.results) {
+            items = itemsResponse.results;
+        }
+    } catch (error) {
+        console.warn('Failed to fetch items for attack calculations:', error);
+    }
 
     // Create PDF (US Letter size: 8.5 x 11 inches = 612 x 792 points)
     const doc = new jsPDF({
@@ -244,7 +258,9 @@ export async function generateCharacterPdf(
         const secondRowColumnWidths = [30, 30, 40, 50, 130]; // 280px total
 
         const weaponName = weaponInfo ? weaponInfo.name ?? '' : '';
-        const totalAttackBonus = weaponInfo ? weaponInfo.totalAttackBonus?.toString() ?? '' : '';
+        const totalAttackBonus = weaponInfo && weaponInfo.totalAttackBonus !== null
+            ? formatModifier(weaponInfo.totalAttackBonus)
+            : '';
         const damage = weaponInfo ? weaponInfo.damage ?? '' : '';
         const critical = weaponInfo ? weaponInfo.critical ?? '' : '';
         const range = weaponInfo ? weaponInfo.range ?? '' : '';
@@ -1266,8 +1282,82 @@ export async function generateCharacterPdf(
     const weaponBoxStartX = leftColX;
     const weaponBoxStartY = rangedRowY + rowHeight + 7;
 
+    // Calculate attack info for each slot
+    const weaponInfos: (WeaponInfo | null)[] = [];
+    if (character.attackDefinitions && resolvedProgressions && items.length > 0) {
+        const characterItems = character.characterItems || [];
+        const itemsWithDetails = items.filter(item =>
+            characterItems.some(ci => ci.baseItemId === item.id)
+        );
+
+        for (let slot = 1; slot <= 7; slot++) {
+            const definition = character.attackDefinitions.find(def => def.attackSlot === slot);
+            if (!definition) {
+                weaponInfos.push(null);
+                continue;
+            }
+
+            try {
+                // Convert schema definition to AttackDefinition type (attackSlot is required in our type)
+                const attackDef: AttackDefinition = {
+                    id: definition.id,
+                    attackTypeId: definition.attackTypeId,
+                    attackSlot: definition.attackSlot ?? null,
+                    mainHandCharacterItemId: definition.mainHandCharacterItemId,
+                    offHandCharacterItemId: definition.offHandCharacterItemId,
+                };
+                const result = calculateAttackStats({
+                    attackDefinition: attackDef,
+                    character,
+                    characterItems,
+                    items: itemsWithDetails,
+                    classDetailsMap,
+                    resolvedProgressions,
+                    stats,
+                });
+
+                weaponInfos.push({
+                    name: result.weaponName,
+                    totalAttackBonus: result.totalAttackBonus,
+                    damage: result.damage,
+                    critical: result.critical,
+                    range: result.range,
+                    weight: result.weight,
+                    type: result.type,
+                    size: result.size,
+                    specialProperties: result.specialProperties,
+                });
+
+                // For dual wield, also handle off-hand (next slot)
+                if (result.isDualWield && result.offHandResult && slot < 7) {
+                    weaponInfos.push({
+                        name: result.offHandResult.weaponName,
+                        totalAttackBonus: result.offHandResult.totalAttackBonus,
+                        damage: result.offHandResult.damage,
+                        critical: result.offHandResult.critical,
+                        range: result.offHandResult.range,
+                        weight: result.offHandResult.weight,
+                        type: result.offHandResult.type,
+                        size: result.offHandResult.size,
+                        specialProperties: result.offHandResult.specialProperties,
+                    });
+                    slot++; // Skip next slot as it's used by off-hand
+                }
+            } catch (error) {
+                console.error(`Error calculating attack stats for slot ${slot}:`, error);
+                weaponInfos.push(null);
+            }
+        }
+    } else {
+        // No attack definitions or resolved progressions - fill with nulls
+        for (let i = 0; i < 7; i++) {
+            weaponInfos.push(null);
+        }
+    }
+
     for (let i = 0; i < 7; i++) {
-        drawWeaponBox(weaponBoxStartX, weaponBoxStartY + i * 50, 'ATTACK ' + (i + 1), null);
+        const weaponInfo = weaponInfos[i] || null;
+        drawWeaponBox(weaponBoxStartX, weaponBoxStartY + i * 50, 'ATTACK ' + (i + 1), weaponInfo);
     }
 
     // Skills Section - to the right of flat-footed AC box, running down right half of page

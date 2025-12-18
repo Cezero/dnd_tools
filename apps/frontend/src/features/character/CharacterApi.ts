@@ -16,7 +16,11 @@ import {
     UpsertCharacterAbilityScoresSchema,
     CharacterIdParamSchema2,
     SaveCharacterSchema,
+    CreateCharacterAttackDefinitionSchema,
+    UpdateCharacterAttackDefinitionSchema,
+    CharacterAttackDefinitionSchema,
 } from '@shared/schema';
+import { z } from 'zod';
 
 export const CharacterApi = {
     getCharacters: typedApi({
@@ -111,5 +115,44 @@ export const CharacterApi = {
         method: 'POST',
         requestSchema: SaveCharacterSchema,
         responseSchema: CreateResponseSchema,
+    }),
+
+    // Attack definition methods
+    getCharacterAttackDefinitions: typedApi<undefined, z.ZodArray<typeof CharacterAttackDefinitionSchema>, typeof CharacterIdParamSchema>({
+        path: '/characters/:id/attack-definitions',
+        method: 'GET',
+        paramsSchema: CharacterIdParamSchema,
+        responseSchema: z.array(CharacterAttackDefinitionSchema),
+    }),
+
+    createCharacterAttackDefinition: typedApi<typeof CreateCharacterAttackDefinitionSchema, typeof CreateResponseSchema, typeof CharacterIdParamSchema>({
+        path: '/characters/:id/attack-definitions',
+        method: 'POST',
+        requestSchema: CreateCharacterAttackDefinitionSchema,
+        paramsSchema: CharacterIdParamSchema,
+        responseSchema: CreateResponseSchema,
+    }),
+
+    updateCharacterAttackDefinition: typedApi<typeof UpdateCharacterAttackDefinitionSchema, typeof UpdateResponseSchema, ReturnType<typeof CharacterIdParamSchema.extend<{ attackId: z.ZodString }>>>({
+        path: '/characters/:id/attack-definitions/:attackId',
+        method: 'PUT',
+        requestSchema: UpdateCharacterAttackDefinitionSchema,
+        paramsSchema: CharacterIdParamSchema.extend({ attackId: z.string() }),
+        responseSchema: UpdateResponseSchema,
+    }),
+
+    deleteCharacterAttackDefinition: typedApi<undefined, typeof UpdateResponseSchema, ReturnType<typeof CharacterIdParamSchema.extend<{ attackId: z.ZodString }>>>({
+        path: '/characters/:id/attack-definitions/:attackId',
+        method: 'DELETE',
+        paramsSchema: CharacterIdParamSchema.extend({ attackId: z.string() }),
+        responseSchema: UpdateResponseSchema,
+    }),
+
+    reorderCharacterAttackDefinitions: typedApi<ReturnType<typeof z.object<{ attackDefinitionIds: z.ZodArray<z.ZodNumber> }>>, typeof UpdateResponseSchema, typeof CharacterIdParamSchema>({
+        path: '/characters/:id/attack-definitions/reorder',
+        method: 'PUT',
+        requestSchema: z.object({ attackDefinitionIds: z.array(z.number().int().positive()) }),
+        paramsSchema: CharacterIdParamSchema,
+        responseSchema: UpdateResponseSchema,
     }),
 }; 

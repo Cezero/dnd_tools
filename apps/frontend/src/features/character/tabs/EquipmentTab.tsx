@@ -1,17 +1,20 @@
+import { ChevronUpDownIcon } from '@heroicons/react/24/outline';
 import { ColumnDef } from '@tanstack/react-table';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
+import { CustomSelect } from '@/components/forms/FormComponents';
 import { createContainsFilter } from '@/components/generic-list/filterFunctions';
 
 import { TabComponentProps, CharacterEditStateUpdateType } from '@/features/character/types';
 import { useStartingGold } from '@/features/character/utils/startingGold';
 import { formatCostAsCurrency } from '@/features/item/utils';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
-import type { ItemWithDetails, FeatureProgression, FeatureEntity } from '@shared/schema';
-import { CURRENCY_LIST, ITEM_TYPES, ITEM_TYPE_LIST, WEAPON_CATEGORIES, WEAPON_TYPES, ARMOR_CATEGORIES, DAMAGE_TYPES, FilterType, PROFICIENCY_TYPES, FeatBenefitType, EntityType, EntityAppliesToType, ITEM_TYPE_ENUM } from '@shared/static-data';
+import type { ItemWithDetails, FeatureProgression } from '@shared/schema';
+import { CURRENCY_LIST, ITEM_TYPES, ITEM_TYPE_LIST, WEAPON_CATEGORIES, WEAPON_TYPES, ARMOR_CATEGORIES, DAMAGE_TYPES, FilterType, PROFICIENCY_TYPES, FeatBenefitType, EntityType, EntityAppliesToType, ITEM_TYPE_ENUM, LOCATION_ENUM, LOCATION_LIST } from '@shared/static-data';
 
 import { EquipmentList } from '../components/EquipmentList';
 import type { EquipmentItem } from '../types';
+import { extractProficiencies } from '@/lib/attack-calculation';
 
 /**
  * Convert Money object to total gold pieces
@@ -55,57 +58,7 @@ function getItemCostInGp(item: ItemWithDetails): number {
  * Extract proficiencies from resolved feature progressions
  * Returns weapon category IDs, armor category IDs, and specific item IDs
  */
-function extractProficiencies(progressions: FeatureProgression[]): {
-    weaponCategories: number[];
-    armorCategories: number[];
-    itemIds: number[];
-} {
-    const weaponCategories = new Set<number>();
-    const armorCategories = new Set<number>();
-    const itemIds = new Set<number>();
-
-    for (const progression of progressions) {
-        if (progression.entities) {
-            for (const entity of progression.entities) {
-                // Check if this is a proficiency entity
-                if (entity.type === EntityType.Proficiency && entity.appliesTo === EntityAppliesToType.Feat) {
-                    if (!entity.appliesToId) continue;
-
-                    // Check if it's a category-based proficiency (appliesToSubId === -1 means "all")
-                    if (entity.appliesToSubId === -1 || entity.appliesToSubId === null) {
-                        // Category-based proficiency - get the proficiency type from the feat
-                        if (entity.feat?.benefits) {
-                            const proficiencyBenefit = entity.feat.benefits.find(
-                                benefit => benefit.typeId === FeatBenefitType.PROFICIENCY
-                            );
-
-                            if (proficiencyBenefit?.referenceId) {
-                                const proficiencyType = PROFICIENCY_TYPES[proficiencyBenefit.referenceId];
-                                if (proficiencyType) {
-                                    // Check if it's a weapon or armor proficiency
-                                    if (proficiencyType.itemTypeId === ITEM_TYPE_ENUM.Weapon) {
-                                        weaponCategories.add(proficiencyType.category);
-                                    } else if (proficiencyType.itemTypeId === ITEM_TYPE_ENUM.Armor) {
-                                        armorCategories.add(proficiencyType.category);
-                                    }
-                                }
-                            }
-                        }
-                    } else if (entity.appliesToSubId && entity.appliesToSubId > 0) {
-                        // Specific item proficiency - appliesToSubId is the item ID
-                        itemIds.add(entity.appliesToSubId);
-                    }
-                }
-            }
-        }
-    }
-
-    return {
-        weaponCategories: Array.from(weaponCategories),
-        armorCategories: Array.from(armorCategories),
-        itemIds: Array.from(itemIds),
-    };
-}
+// extractProficiencies is now imported from shared attackCalculationService
 
 export function EquipmentTab({
     state,
@@ -114,6 +67,11 @@ export function EquipmentTab({
     isLoading
 }: TabComponentProps): React.JSX.Element {
     const { generateRandomGold, convertGpToMoney, isReady: isDiceReady } = useStartingGold();
+
+    // Split dialog state
+    const [splitDialogOpen, setSplitDialogOpen] = useState(false);
+    const [splitItem, setSplitItem] = useState<OwnedItemWithEquipmentId | null>(null);
+    const [splitKeepQuantity, setSplitKeepQuantity] = useState<number>(1);
 
     // Extract proficiencies from resolved features
     const proficiencies = useMemo(() => {
@@ -344,8 +302,9 @@ export function EquipmentTab({
     // Extended type to track which equipment item this represents and aggregated quantity
     type OwnedItemWithEquipmentId = ItemWithDetails & {
         _equipmentItemId: number;
-        _quantity: number; // Aggregated quantity for items with same itemId
+        _quantity: number; // Aggregated quantity for items with same itemId and location
         _equipmentItemIds: number[]; // All equipment item IDs that make up this aggregated item
+        _location?: number | null; // Location for this aggregated group
     };
 
     // Column definitions for owned items (reduced sizes to prevent horizontal scroll)
@@ -414,7 +373,93 @@ export function EquipmentTab({
                 return quantity.toString();
             },
         },
-    ], []);
+        {
+            accessorKey: 'location',
+            header: 'Location',
+            enableSorting: true,
+            enableResizing: true,
+            size: 95,
+            cell: info => {
+                const item = info.row.original;
+                // Find the first equipment item instance (since items are aggregated by itemId)
+                // For now, we'll edit the first instance's location
+                const firstEquipmentItemId = item._equipmentItemIds?.[0] ?? item._equipmentItemId;
+                const equipmentItem = state.equipment.find(eq => eq.id === firstEquipmentItemId);
+                const currentLocation = equipmentItem?.location ?? null;
+
+                // Get all occupied locations (except 'carried' which allows multiple)
+                const occupiedLocations = new Set(
+                    state.equipment
+                        .filter(eq => eq.id !== equipmentItem?.id && eq.location !== null && eq.location !== LOCATION_ENUM.Carried)
+                        .map(eq => eq.location)
+                        .filter((loc): loc is number => loc !== null)
+                );
+
+                return (
+                    <CustomSelect
+                        value={currentLocation ?? LOCATION_ENUM.Owned}
+                        onValueChange={(newLocation) => {
+                            if (equipmentItem) {
+                                const updatedEquipment = state.equipment.map(eq =>
+                                    eq.id === equipmentItem.id
+                                        ? { ...eq, location: newLocation === LOCATION_ENUM.Owned ? null : newLocation }
+                                        : eq
+                                );
+                                updateState({
+                                    type: CharacterEditStateUpdateType.SET_EQUIPMENT,
+                                    payload: { equipment: updatedEquipment }
+                                });
+                            }
+                        }}
+                        options={LOCATION_LIST}
+                        getOptionDisabled={(option) => {
+                            // Disable if location is occupied (except for 'Carried')
+                            return option.id !== LOCATION_ENUM.Carried && occupiedLocations.has(option.id);
+                        }}
+                        componentExtraClassName="w-[95px]"
+                        triggerExtraClassName="px-2 py-0.5 text-sm w-full"
+                        itemTextExtraClassName="text-sm"
+                        icon={<ChevronUpDownIcon className="h-4 w-4" aria-hidden="true" />}
+                    />
+                );
+            },
+        },
+        {
+            accessorKey: 'split',
+            header: 'Split',
+            enableSorting: false,
+            enableResizing: false,
+            size: 80,
+            cell: info => {
+                const item = info.row.original;
+                const currentLocation = item._location ?? null;
+                const quantity = item._quantity;
+
+                // Show split button only if:
+                // - Quantity > 1
+                // - Location is Owned (null/0) or Carried (1)
+                const canSplit = quantity > 1 &&
+                    (currentLocation === null || currentLocation === LOCATION_ENUM.Owned || currentLocation === LOCATION_ENUM.Carried);
+
+                if (!canSplit) {
+                    return null;
+                }
+
+                return (
+                    <button
+                        onClick={() => {
+                            setSplitItem(item);
+                            setSplitKeepQuantity(Math.floor(quantity / 2));
+                            setSplitDialogOpen(true);
+                        }}
+                        className="px-2 py-0.5 text-sm rounded bg-green-600 text-white hover:bg-green-700"
+                    >
+                        Split
+                    </button>
+                );
+            },
+        },
+    ], [state.equipment, updateState]);
 
     // Grouping fields for available items (with sub-groupings)
     const purchaseGroupingFields = useMemo(() => {
@@ -459,30 +504,35 @@ export function EquipmentTab({
         // Fetch all items to get details for owned items
         const allItemsResult = await ItemQueryHooks.getItems();
 
-        // Aggregate items by itemId
-        const itemMap = new Map<number, {
+        // Aggregate items by itemId and location (only group items with same location)
+        // Use a composite key: `${itemId}-${location ?? 'null'}`
+        const itemMap = new Map<string, {
             item: ItemWithDetails;
             quantity: number;
             equipmentItemIds: number[];
             firstEquipmentItemId: number;
+            location: number | null;
         }>();
 
         for (const equipmentItem of purchasedItems) {
             if (equipmentItem.itemId) {
                 const item = allItemsResult.results.find(i => i.id === equipmentItem.itemId);
                 if (item) {
-                    const existing = itemMap.get(equipmentItem.itemId);
+                    const location = equipmentItem.location ?? null;
+                    const key = `${equipmentItem.itemId}-${location ?? 'null'}`;
+                    const existing = itemMap.get(key);
                     if (existing) {
-                        // Aggregate: sum quantities and collect equipment item IDs
+                        // Aggregate: sum quantities and collect equipment item IDs (same itemId and location)
                         existing.quantity += equipmentItem.quantity || 1;
                         existing.equipmentItemIds.push(equipmentItem.id);
                     } else {
                         // First occurrence: create entry
-                        itemMap.set(equipmentItem.itemId, {
+                        itemMap.set(key, {
                             item,
                             quantity: equipmentItem.quantity || 1,
                             equipmentItemIds: [equipmentItem.id],
                             firstEquipmentItemId: equipmentItem.id,
+                            location: location,
                         });
                     }
                 }
@@ -495,6 +545,7 @@ export function EquipmentTab({
             _equipmentItemId: entry.firstEquipmentItemId, // Use first ID for return functionality
             _quantity: entry.quantity,
             _equipmentItemIds: entry.equipmentItemIds,
+            _location: entry.location, // Store location for split logic
         }));
 
         return {
@@ -526,7 +577,7 @@ export function EquipmentTab({
         // Update both equipment and money
         updateState({ type: CharacterEditStateUpdateType.SET_EQUIPMENT, payload: { equipment: newItems } });
         updateState({ type: CharacterEditStateUpdateType.SET_MONEY, payload: { money: newMoney } });
-    }, [state.equipment, availableGold, updateState]);
+    }, [state.equipment, availableGold, convertGpToMoney, updateState]);
 
     const handleReturn = useCallback((item: ItemWithDetails & { _equipmentItemId?: number; _equipmentItemIds?: number[] }) => {
         // For aggregated items, remove one instance (the first equipment item ID)
@@ -558,6 +609,67 @@ export function EquipmentTab({
         const costInGp = getItemCostInGp(item);
         return costInGp > availableGold;
     }, [availableGold]);
+
+    const handleSplit = useCallback(() => {
+        if (!splitItem) return;
+
+        // Get all equipment items that are part of this aggregated group
+        const equipmentItems = state.equipment.filter(eq =>
+            splitItem._equipmentItemIds?.includes(eq.id) || eq.id === splitItem._equipmentItemId
+        );
+
+        if (equipmentItems.length === 0 || !equipmentItems[0].itemId) return;
+
+        const firstItem = equipmentItems[0];
+        const totalQuantity = splitItem._quantity;
+        const keepQuantity = Math.max(1, Math.min(splitKeepQuantity, totalQuantity - 1));
+        const moveQuantity = totalQuantity - keepQuantity;
+
+        if (moveQuantity <= 0) {
+            setSplitDialogOpen(false);
+            return;
+        }
+
+        // Use the location from the aggregated item (stored in _location)
+        const currentLocation = splitItem._location ?? null;
+        const newLocation = currentLocation === null || currentLocation === LOCATION_ENUM.Owned
+            ? LOCATION_ENUM.Carried
+            : LOCATION_ENUM.Owned;
+
+        // Remove all existing items that are part of this aggregated group
+        const otherEquipment = state.equipment.filter(eq =>
+            !splitItem._equipmentItemIds?.includes(eq.id) && eq.id !== splitItem._equipmentItemId
+        );
+
+        // Create two new items: one for keep, one for move
+        const keepItem: EquipmentItem = {
+            id: Date.now(),
+            itemId: firstItem.itemId,
+            costInGp: firstItem.costInGp,
+            quantity: keepQuantity,
+            location: currentLocation,
+            notes: firstItem.notes,
+        };
+
+        const moveItem: EquipmentItem = {
+            id: Date.now() + 1,
+            itemId: firstItem.itemId,
+            costInGp: firstItem.costInGp,
+            quantity: moveQuantity,
+            location: newLocation === LOCATION_ENUM.Owned ? null : newLocation,
+            notes: firstItem.notes,
+        };
+
+        const finalEquipment = [...otherEquipment, keepItem, moveItem];
+
+        updateState({
+            type: CharacterEditStateUpdateType.SET_EQUIPMENT,
+            payload: { equipment: finalEquipment }
+        });
+
+        setSplitDialogOpen(false);
+        setSplitItem(null);
+    }, [splitItem, splitKeepQuantity, state.equipment, updateState]);
 
     const canGenerateGold = state.classId !== null && isDiceReady;
 
@@ -666,6 +778,60 @@ export function EquipmentTab({
                     />
                 </div>
             </div>
+
+            {/* Split Dialog */}
+            {splitDialogOpen && splitItem && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                            Split {splitItem.name}
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                            Total quantity: {splitItem._quantity}
+                        </p>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Keep in current location:
+                            </label>
+                            <input
+                                type="number"
+                                min="1"
+                                max={splitItem._quantity - 1}
+                                value={splitKeepQuantity}
+                                onChange={(e) => {
+                                    const value = parseInt(e.target.value) || 1;
+                                    const max = splitItem._quantity - 1;
+                                    setSplitKeepQuantity(Math.max(1, Math.min(value, max)));
+                                }}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {splitItem._quantity - splitKeepQuantity} will be moved to{' '}
+                                {(splitItem._location === null || splitItem._location === LOCATION_ENUM.Owned)
+                                    ? 'Carried'
+                                    : 'Owned'}
+                            </p>
+                        </div>
+                        <div className="flex gap-3 justify-end">
+                            <button
+                                onClick={() => {
+                                    setSplitDialogOpen(false);
+                                    setSplitItem(null);
+                                }}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSplit}
+                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                            >
+                                Split
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

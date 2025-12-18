@@ -21,6 +21,10 @@ import {
     // NEW: Character disallowed source types
     CreateCharacterDisallowedSourceRequest,
     CharacterDisallowedSource,
+    // NEW: Character attack definition types
+    CreateCharacterAttackDefinitionRequest,
+    UpdateCharacterAttackDefinitionRequest,
+    CharacterAttackDefinition,
 } from '@shared/schema';
 import {
     isGestaltCharacter,
@@ -176,6 +180,7 @@ export const characterService: CharacterService = {
                 },
                 disallowedSources: true,
                 characterItems: true,
+                attackDefinitions: true,
             },
         });
 
@@ -192,7 +197,7 @@ export const characterService: CharacterService = {
 
     async saveCharacter(characterId: number | null, data: SaveCharacterRequest): Promise<CreateResponse | UpdateResponse> {
         // Extract nested data
-        const { abilityScores, advancement, equipment, ...characterData } = data;
+        const { abilityScores, advancement, equipment, attackDefinitions, ...characterData } = data;
 
         return await prisma.$transaction(async (tx) => {
             let finalCharacterId = characterId;
@@ -324,11 +329,21 @@ export const characterService: CharacterService = {
             }
 
             // Handle equipment if provided
+            // We need to track item ID mappings for attack definitions
+            const itemIdMap = new Map<number, number>(); // old item ID -> new item ID
+            
             if (equipment !== undefined) {
                 // Get existing equipment
                 const existingEquipment = await tx.characterItem.findMany({
                     where: { characterId: finalCharacterId },
                 });
+
+                // Create a map of baseItemId+location+name -> old item ID for matching
+                const existingItemMap = new Map<string, number>();
+                for (const existingItem of existingEquipment) {
+                    const key = `${existingItem.baseItemId}|${existingItem.location ?? 'null'}|${existingItem.name}`;
+                    existingItemMap.set(key, existingItem.id);
+                }
 
                 // Delete all existing equipment
                 if (existingEquipment.length > 0) {
@@ -337,15 +352,81 @@ export const characterService: CharacterService = {
                     });
                 }
 
-                // Create new equipment items
+                // Create new equipment items and build ID mapping
                 if (equipment.length > 0) {
-                    await tx.characterItem.createMany({
-                        data: equipment.map(item => ({
-                            characterId: finalCharacterId,
-                            name: item.name,
-                            quantity: item.quantity ?? null,
-                            baseItemId: item.baseItemId,
-                        })),
+                    const createdItems = await Promise.all(
+                        equipment.map(async (item) => {
+                            const created = await tx.characterItem.create({
+                                data: {
+                                    characterId: finalCharacterId,
+                                    name: item.name,
+                                    quantity: item.quantity ?? null,
+                                    location: item.location ?? null,
+                                    baseItemId: item.baseItemId,
+                                },
+                            });
+                            
+                            // Map old ID to new ID if we can match them
+                            const key = `${item.baseItemId}|${item.location ?? 'null'}|${item.name}`;
+                            const oldId = existingItemMap.get(key);
+                            if (oldId) {
+                                itemIdMap.set(oldId, created.id);
+                            }
+                            
+                            return created;
+                        })
+                    );
+                }
+            }
+
+            // Handle attack definitions if provided
+            if (attackDefinitions !== undefined) {
+                // Get existing attack definitions
+                const existingAttackDefinitions = await tx.characterAttackDefinition.findMany({
+                    where: { characterId: finalCharacterId },
+                });
+
+                // Delete all existing attack definitions
+                if (existingAttackDefinitions.length > 0) {
+                    await tx.characterAttackDefinition.deleteMany({
+                        where: { characterId: finalCharacterId },
+                    });
+                }
+
+                // Create new attack definitions with mapped item IDs
+                if (attackDefinitions.length > 0) {
+                    // Get all current character items to validate references
+                    const currentItems = await tx.characterItem.findMany({
+                        where: { characterId: finalCharacterId },
+                    });
+                    const validItemIds = new Set(currentItems.map(item => item.id));
+                    
+                    await tx.characterAttackDefinition.createMany({
+                        data: attackDefinitions.map(def => {
+                            // Map old item IDs to new ones if equipment was recreated
+                            let mainHandItemId = def.mainHandCharacterItemId 
+                                ? (itemIdMap.get(def.mainHandCharacterItemId) ?? def.mainHandCharacterItemId)
+                                : null;
+                            let offHandItemId = def.offHandCharacterItemId
+                                ? (itemIdMap.get(def.offHandCharacterItemId) ?? def.offHandCharacterItemId)
+                                : null;
+                            
+                            // Validate that the item IDs exist (after mapping)
+                            if (mainHandItemId && !validItemIds.has(mainHandItemId)) {
+                                mainHandItemId = null; // Clear invalid reference
+                            }
+                            if (offHandItemId && !validItemIds.has(offHandItemId)) {
+                                offHandItemId = null; // Clear invalid reference
+                            }
+                            
+                            return {
+                                characterId: finalCharacterId,
+                                attackTypeId: def.attackTypeId,
+                                attackSlot: def.attackSlot ?? null,
+                                mainHandCharacterItemId: mainHandItemId,
+                                offHandCharacterItemId: offHandItemId,
+                            };
+                        }),
                     });
                 }
             }
@@ -657,6 +738,328 @@ export const characterService: CharacterService = {
         });
 
         return disallowedSources as CharacterDisallowedSource[];
+    },
+
+    // Character attack definition methods
+    async getCharacterAttackDefinitions(characterId: number): Promise<CharacterAttackDefinition[]> {
+        const attackDefinitions = await prisma.characterAttackDefinition.findMany({
+            where: { characterId },
+            orderBy: { attackSlot: 'asc' },
+        });
+
+        return attackDefinitions as CharacterAttackDefinition[];
+    },
+
+    async createCharacterAttackDefinition(characterId: number, data: CreateCharacterAttackDefinitionRequest): Promise<CreateResponse> {
+        // Validate that character items belong to the character
+        if (data.mainHandCharacterItemId) {
+            const mainHandItem = await prisma.characterItem.findFirst({
+                where: {
+                    id: data.mainHandCharacterItemId,
+                    characterId: characterId,
+                },
+            });
+            if (!mainHandItem) {
+                throw new Error('Main hand character item does not belong to this character');
+            }
+        }
+
+        if (data.offHandCharacterItemId) {
+            const offHandItem = await prisma.characterItem.findFirst({
+                where: {
+                    id: data.offHandCharacterItemId,
+                    characterId: characterId,
+                },
+            });
+            if (!offHandItem) {
+                throw new Error('Off hand character item does not belong to this character');
+            }
+        }
+
+        // Validate attack type specific rules
+        if (data.attackTypeId === 1) {
+            // Unarmed strike: no character items
+            if (data.mainHandCharacterItemId || data.offHandCharacterItemId) {
+                throw new Error('Unarmed strike cannot have associated character items');
+            }
+        } else if (data.attackTypeId === 2 || data.attackTypeId === 4) {
+            // Main hand or ranged: only main hand item
+            if (!data.mainHandCharacterItemId) {
+                throw new Error('Main hand or ranged attack requires a main hand character item');
+            }
+            if (data.offHandCharacterItemId) {
+                throw new Error('Main hand or ranged attack cannot have an off hand character item');
+            }
+        } else if (data.attackTypeId === 3) {
+            // Dual wield: both items required and different
+            if (!data.mainHandCharacterItemId || !data.offHandCharacterItemId) {
+                throw new Error('Dual wield requires both main hand and off hand character items');
+            }
+            if (data.mainHandCharacterItemId === data.offHandCharacterItemId) {
+                throw new Error('Main hand and off hand items must be different');
+            }
+            // Dual wield cannot use slot 7 (off-hand would need slot 8)
+            if (data.attackSlot === 7) {
+                throw new Error('Dual wield cannot use attack slot 7 (off-hand would need slot 8)');
+            }
+        }
+
+        // Validate slot conflicts
+        if (data.attackSlot !== null) {
+            const existingDefinitions = await prisma.characterAttackDefinition.findMany({
+                where: {
+                    characterId: characterId,
+                    attackSlot: { not: null },
+                },
+            });
+
+            // Check for slot conflicts
+            for (const existing of existingDefinitions) {
+                if (existing.attackSlot === data.attackSlot) {
+                    throw new Error(`Attack slot ${data.attackSlot} is already occupied`);
+                }
+                // For dual wield, also check slot+1
+                if (data.attackTypeId === 3 && existing.attackSlot === data.attackSlot + 1) {
+                    throw new Error(`Attack slot ${data.attackSlot + 1} is already occupied (needed for dual wield off-hand)`);
+                }
+                // If existing is dual wield, check if it occupies our slot
+                if (existing.attackSlot !== null && data.attackSlot === existing.attackSlot + 1) {
+                    // Check if existing is dual wield by checking if it has offHandCharacterItemId
+                    const existingIsDualWield = existing.offHandCharacterItemId !== null;
+                    if (existingIsDualWield) {
+                        throw new Error(`Attack slot ${data.attackSlot} is already occupied by dual wield off-hand`);
+                    }
+                }
+            }
+        }
+
+        const result = await prisma.characterAttackDefinition.create({
+            data: {
+                characterId: characterId,
+                attackTypeId: data.attackTypeId,
+                attackSlot: data.attackSlot ?? null,
+                mainHandCharacterItemId: data.mainHandCharacterItemId ?? null,
+                offHandCharacterItemId: data.offHandCharacterItemId ?? null,
+            },
+        });
+
+        return { id: result.id.toString(), message: 'Attack definition created successfully' };
+    },
+
+    async updateCharacterAttackDefinition(characterId: number, attackId: number, data: UpdateCharacterAttackDefinitionRequest): Promise<UpdateResponse> {
+        // Verify the attack definition belongs to the character
+        const existing = await prisma.characterAttackDefinition.findFirst({
+            where: {
+                id: attackId,
+                characterId: characterId,
+            },
+        });
+
+        if (!existing) {
+            throw new Error('Attack definition not found or does not belong to this character');
+        }
+
+        // Validate character items if provided
+        if (data.mainHandCharacterItemId !== undefined && data.mainHandCharacterItemId !== null) {
+            const mainHandItem = await prisma.characterItem.findFirst({
+                where: {
+                    id: data.mainHandCharacterItemId,
+                    characterId: characterId,
+                },
+            });
+            if (!mainHandItem) {
+                throw new Error('Main hand character item does not belong to this character');
+            }
+        }
+
+        if (data.offHandCharacterItemId !== undefined && data.offHandCharacterItemId !== null) {
+            const offHandItem = await prisma.characterItem.findFirst({
+                where: {
+                    id: data.offHandCharacterItemId,
+                    characterId: characterId,
+                },
+            });
+            if (!offHandItem) {
+                throw new Error('Off hand character item does not belong to this character');
+            }
+        }
+
+        // Get the final attack type (use existing if not provided)
+        const attackTypeId = data.attackTypeId ?? existing.attackTypeId;
+
+        // Validate attack type specific rules
+        if (attackTypeId === 1) {
+            // Unarmed strike: no character items
+            const mainHand = data.mainHandCharacterItemId ?? existing.mainHandCharacterItemId;
+            const offHand = data.offHandCharacterItemId ?? existing.offHandCharacterItemId;
+            if (mainHand || offHand) {
+                throw new Error('Unarmed strike cannot have associated character items');
+            }
+        } else if (attackTypeId === 2 || attackTypeId === 4) {
+            // Main hand or ranged: only main hand item
+            const mainHand = data.mainHandCharacterItemId ?? existing.mainHandCharacterItemId;
+            const offHand = data.offHandCharacterItemId ?? existing.offHandCharacterItemId;
+            if (!mainHand) {
+                throw new Error('Main hand or ranged attack requires a main hand character item');
+            }
+            if (offHand) {
+                throw new Error('Main hand or ranged attack cannot have an off hand character item');
+            }
+        } else if (attackTypeId === 3) {
+            // Dual wield: both items required and different
+            const mainHand = data.mainHandCharacterItemId ?? existing.mainHandCharacterItemId;
+            const offHand = data.offHandCharacterItemId ?? existing.offHandCharacterItemId;
+            if (!mainHand || !offHand) {
+                throw new Error('Dual wield requires both main hand and off hand character items');
+            }
+            if (mainHand === offHand) {
+                throw new Error('Main hand and off hand items must be different');
+            }
+            // Dual wield cannot use slot 7
+            const attackSlot = data.attackSlot ?? existing.attackSlot;
+            if (attackSlot === 7) {
+                throw new Error('Dual wield cannot use attack slot 7 (off-hand would need slot 8)');
+            }
+        }
+
+        // Validate slot conflicts (excluding current definition)
+        const attackSlot = data.attackSlot !== undefined ? data.attackSlot : existing.attackSlot;
+        if (attackSlot !== null) {
+            const existingDefinitions = await prisma.characterAttackDefinition.findMany({
+                where: {
+                    characterId: characterId,
+                    id: { not: attackId },
+                    attackSlot: { not: null },
+                },
+            });
+
+            for (const other of existingDefinitions) {
+                if (other.attackSlot === attackSlot) {
+                    throw new Error(`Attack slot ${attackSlot} is already occupied`);
+                }
+                // For dual wield, also check slot+1
+                if (attackTypeId === 3 && other.attackSlot === attackSlot + 1) {
+                    throw new Error(`Attack slot ${attackSlot + 1} is already occupied (needed for dual wield off-hand)`);
+                }
+                // If other is dual wield, check if it occupies our slot
+                if (other.attackSlot !== null && attackSlot === other.attackSlot + 1) {
+                    const otherIsDualWield = other.offHandCharacterItemId !== null;
+                    if (otherIsDualWield) {
+                        throw new Error(`Attack slot ${attackSlot} is already occupied by dual wield off-hand`);
+                    }
+                }
+            }
+        }
+
+        await prisma.characterAttackDefinition.update({
+            where: { id: attackId },
+            data: {
+                attackTypeId: data.attackTypeId,
+                attackSlot: data.attackSlot,
+                mainHandCharacterItemId: data.mainHandCharacterItemId,
+                offHandCharacterItemId: data.offHandCharacterItemId,
+            },
+        });
+
+        return { message: 'Attack definition updated successfully' };
+    },
+
+    async deleteCharacterAttackDefinition(characterId: number, attackId: number): Promise<UpdateResponse> {
+        // Verify the attack definition belongs to the character
+        const existing = await prisma.characterAttackDefinition.findFirst({
+            where: {
+                id: attackId,
+                characterId: characterId,
+            },
+        });
+
+        if (!existing) {
+            throw new Error('Attack definition not found or does not belong to this character');
+        }
+
+        await prisma.characterAttackDefinition.delete({
+            where: { id: attackId },
+        });
+
+        return { message: 'Attack definition deleted successfully' };
+    },
+
+    async reorderCharacterAttackDefinitions(characterId: number, attackDefinitionIds: number[]): Promise<UpdateResponse> {
+        // Verify all attack definitions belong to the character
+        const existingDefinitions = await prisma.characterAttackDefinition.findMany({
+            where: {
+                characterId: characterId,
+            },
+        });
+
+        const existingIds = new Set(existingDefinitions.map(def => def.id));
+        for (const id of attackDefinitionIds) {
+            if (!existingIds.has(id)) {
+                throw new Error(`Attack definition ${id} does not belong to this character`);
+            }
+        }
+
+        // Verify all IDs are provided (no missing definitions)
+        if (attackDefinitionIds.length !== existingDefinitions.length) {
+            throw new Error('All attack definitions must be included in reorder');
+        }
+
+        // Update slots based on order
+        // Dual wield definitions take two consecutive slots
+        await prisma.$transaction(async (tx) => {
+            let currentSlot = 1;
+            let i = 0;
+            while (i < attackDefinitionIds.length) {
+                const attackId = attackDefinitionIds[i];
+                const definition = existingDefinitions.find(def => def.id === attackId);
+                
+                if (!definition) {
+                    throw new Error(`Attack definition ${attackId} not found`);
+                }
+
+                // Check if this is dual wield
+                const isDualWield = definition.attackTypeId === 3 && definition.offHandCharacterItemId !== null;
+                
+                if (isDualWield) {
+                    // Dual wield: check if slot 7 would be needed
+                    if (currentSlot === 7) {
+                        throw new Error('Cannot place dual wield at slot 7 (off-hand would need slot 8)');
+                    }
+                    // Update main hand slot
+                    await tx.characterAttackDefinition.update({
+                        where: { id: attackId },
+                        data: { attackSlot: currentSlot },
+                    });
+                    // Off-hand automatically uses currentSlot + 1, but we need to ensure no conflict
+                    // The next definition should skip currentSlot + 1
+                    currentSlot += 2;
+                } else {
+                    // Single slot attack
+                    await tx.characterAttackDefinition.update({
+                        where: { id: attackId },
+                        data: { attackSlot: currentSlot },
+                    });
+                    currentSlot += 1;
+                }
+
+                i += 1;
+            }
+
+            // Set remaining definitions to null (not displayed on sheet)
+            // This shouldn't happen if all definitions are in the list, but handle it anyway
+            const updatedIds = new Set(attackDefinitionIds);
+            const toNullify = existingDefinitions.filter(def => !updatedIds.has(def.id));
+            if (toNullify.length > 0) {
+                await tx.characterAttackDefinition.updateMany({
+                    where: {
+                        id: { in: toNullify.map(def => def.id) },
+                    },
+                    data: { attackSlot: null },
+                });
+            }
+        });
+
+        return { message: 'Attack definitions reordered successfully' };
     },
 
     // Gestalt character calculation functions

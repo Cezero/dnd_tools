@@ -68,6 +68,9 @@ export function useCharacterEditState(initialState?: Partial<CharacterEditState>
         equipment: [],
         money: { platinum: 0, gold: 0, silver: 0, copper: 0 },
 
+        // Combat Tab UI State
+        attackDefinitions: [],
+
         // Apply any initial state overrides
         ...initialState
     });
@@ -146,6 +149,8 @@ export function useCharacterEditState(initialState?: Partial<CharacterEditState>
                     return { ...prev, resolutionError: update.payload.error, isLoadingResolution: false };
                 case CharacterEditStateUpdateType.SET_CURRENT_ADVANCEMENT_ID:
                     return { ...prev, currentAdvancementId: update.payload.currentAdvancementId };
+                case CharacterEditStateUpdateType.SET_ATTACK_DEFINITIONS:
+                    return { ...prev, attackDefinitions: update.payload.attackDefinitions };
                 default:
                     return prev;
             }

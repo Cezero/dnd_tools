@@ -1,5 +1,5 @@
 import {
-    UserIcon, ShieldCheckIcon, AcademicCapIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, CogIcon, ListBulletIcon
+    UserIcon, ShieldCheckIcon, AcademicCapIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, CogIcon, ListBulletIcon, BoltIcon
 } from '@heroicons/react/24/outline';
 import { Dialog } from '@base-ui-components/react/dialog';
 import { useQueryClient } from '@tanstack/react-query';
@@ -18,7 +18,7 @@ import type { Race, DnDClass, CharacterWithAllDetailsResponse, SkillRank } from 
 import { EditionId } from '@shared/static-data';
 
 import { generateCharacterPdf } from './characterPdfService';
-import { AbilitiesRaceTab, ChoicesTab, ClassTab, ConfigurationTab, DescriptionTab, EquipmentTab, FeatsTab, SkillsTab } from './tabs';
+import { AbilitiesRaceTab, ChoicesTab, ClassTab, ConfigurationTab, DescriptionTab, EquipmentTab, FeatsTab, SkillsTab, CombatTab } from './tabs';
 import type { TabConfig, TabComponentProps } from './types';
 import { useFeatureProgressionPool } from './useFeatureProgressionPool';
 
@@ -266,10 +266,18 @@ export function CharacterEdit(): React.JSX.Element {
                         itemId: item.baseItemId,
                         costInGp: null, // Cost not stored in CharacterItem, would need to fetch from baseItem
                         quantity: item.quantity ?? 1,
-                        location: null, // Location not stored in CharacterItem
+                        location: item.location ?? null,
                         notes: item.name,
                     }));
                     updateState({ type: CharacterEditStateUpdateType.SET_EQUIPMENT, payload: { equipment } });
+                }
+
+                // Load attack definitions
+                if (character.attackDefinitions) {
+                    updateState({
+                        type: CharacterEditStateUpdateType.SET_ATTACK_DEFINITIONS,
+                        payload: { attackDefinitions: character.attackDefinitions },
+                    });
                 }
 
                 // Load advancement data if it exists
@@ -409,33 +417,24 @@ export function CharacterEdit(): React.JSX.Element {
                     })),
                 } : undefined,
                 // Include equipment (only items with itemId, which are purchased items)
-                // Aggregate items by baseItemId and sum quantities
+                // Send individual items to preserve location per instance
                 equipment: (() => {
-                    const itemMap = new Map<number, {
-                        name: string;
-                        quantity: number;
-                        baseItemId: number;
-                    }>();
-                    
-                    for (const item of state.equipment) {
-                        if (item.itemId !== null) {
-                            const existing = itemMap.get(item.itemId);
-                            if (existing) {
-                                // Aggregate: sum quantities
-                                existing.quantity += item.quantity || 1;
-                            } else {
-                                // First occurrence: create entry
-                                itemMap.set(item.itemId, {
-                                    name: item.notes || 'Unknown Item',
-                                    quantity: item.quantity || 1,
-                                    baseItemId: item.itemId,
-                                });
-                            }
-                        }
-                    }
-                    
-                    return Array.from(itemMap.values());
+                    return state.equipment
+                        .filter(item => item.itemId !== null)
+                        .map(item => ({
+                            name: item.notes || 'Unknown Item',
+                            quantity: item.quantity || 1,
+                            location: item.location ?? null,
+                            baseItemId: item.itemId!,
+                        }));
                 })(),
+                // Include attack definitions
+                attackDefinitions: state.attackDefinitions.map(def => ({
+                    attackTypeId: def.attackTypeId,
+                    attackSlot: def.attackSlot,
+                    mainHandCharacterItemId: def.mainHandCharacterItemId,
+                    offHandCharacterItemId: def.offHandCharacterItemId,
+                })),
             };
 
             // Use unified save endpoint - backend handles all orchestration
@@ -543,7 +542,7 @@ export function CharacterEdit(): React.JSX.Element {
             }
 
             // Generate PDF
-            await generateCharacterPdf(character, classDetailsMap);
+            await generateCharacterPdf(character, classDetailsMap, resolvedData.progressions);
 
             toastManager?.add({
                 title: 'Export Successful',
@@ -578,6 +577,7 @@ export function CharacterEdit(): React.JSX.Element {
         { id: 'choices', label: 'Choices', icon: ListBulletIcon, component: ChoicesTab },
         { id: 'description', label: 'Description', icon: DocumentTextIcon, component: DescriptionTab },
         { id: 'equipment', label: 'Equipment', icon: BriefcaseIcon, component: EquipmentTab },
+        { id: 'combat', label: 'Combat', icon: BoltIcon, component: CombatTab },
         { id: 'configuration', label: 'Configuration', icon: CogIcon, component: ConfigurationTab }
     ];
 

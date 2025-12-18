@@ -17,7 +17,11 @@ import {
     UpsertCharacterAbilityScoresSchema,
     // NEW: Character disallowed source schemas
     CreateCharacterDisallowedSourceSchema,
+    // NEW: Character attack definition schemas
+    CreateCharacterAttackDefinitionSchema,
+    UpdateCharacterAttackDefinitionSchema,
 } from '@shared/schema';
+import { z } from 'zod';
 
 import {
     GetAllCharacters,
@@ -45,6 +49,12 @@ import {
     AddDisallowedSource,
     RemoveDisallowedSource,
     GetDisallowedSources,
+    // NEW: Character attack definition controllers
+    GetCharacterAttackDefinitions,
+    CreateCharacterAttackDefinition,
+    UpdateCharacterAttackDefinition,
+    DeleteCharacterAttackDefinition,
+    ReorderCharacterAttackDefinitions,
 } from './characterController';
 import { requireAuth } from '../../middleware/authMiddleware.js';
 
@@ -86,5 +96,12 @@ put('/:characterId/abilities', requireAuth, { params: CharacterIdParamSchema2, b
 get('/:characterId/disallowed-sources', requireAuth, { params: CharacterIdParamSchema2 }, GetDisallowedSources);
 post('/disallowed-sources', requireAuth, { body: CreateCharacterDisallowedSourceSchema }, AddDisallowedSource);
 deleteRoute('/:characterId/disallowed-sources/:sourceBookId', requireAuth, { params: CharacterIdParamSchema2 }, RemoveDisallowedSource);
+
+// NEW: Character Attack Definition Routes
+get('/:id/attack-definitions', requireAuth, { params: CharacterIdParamSchema }, GetCharacterAttackDefinitions);
+post('/:id/attack-definitions', requireAuth, { params: CharacterIdParamSchema, body: CreateCharacterAttackDefinitionSchema }, CreateCharacterAttackDefinition);
+put('/:id/attack-definitions/:attackId', requireAuth, { params: CharacterIdParamSchema.extend({ attackId: z.string() }), body: UpdateCharacterAttackDefinitionSchema }, UpdateCharacterAttackDefinition);
+deleteRoute('/:id/attack-definitions/:attackId', requireAuth, { params: CharacterIdParamSchema.extend({ attackId: z.string() }) }, DeleteCharacterAttackDefinition);
+put('/:id/attack-definitions/reorder', requireAuth, { params: CharacterIdParamSchema, body: z.object({ attackDefinitionIds: z.array(z.number().int().positive()) }) }, ReorderCharacterAttackDefinitions);
 
 export { CharacterRouter };

@@ -1,5 +1,5 @@
 import type { CharacterWithAllDetailsResponse, DnDClass } from '@shared/schema';
-import { AbilityId, GetAbilityModifier, SKILL_LIST, SpecialFeatureId, EntityAppliesToType } from '@shared/static-data';
+import { AbilityId, GetAbilityModifier, SKILL_LIST, SpecialFeatureId, EntityAppliesToType, CRAFT_SKILL_MAP, KNOWLEDGE_SKILL_MAP, SkillSubType, SKILL_SUB_TYPE_COMPATIBILITY } from '@shared/static-data';
 import { getBABProgression, getSaveProgression } from '@shared/utils';
 import { ClassSkillService } from '@/features/class/ClassSkillService';
 
@@ -56,6 +56,8 @@ export interface CalculatedSavingThrows {
 
 export interface CalculatedSkill {
     skillId: number;
+    skillSubId: number | null;
+    customSubtype: string | null;
     skillName: string;
     total: number;
     abilityMod: number;
@@ -183,60 +185,111 @@ export function calculateCharacterStats(
         }
     };
 
+    // Helper function to format skill name with subtype
+    const formatSkillName = (skillId: number, skillSubId: number | null, customSubtype: string | null): string => {
+        const skillData = SKILL_LIST.find(s => s.id === skillId);
+        if (!skillData) return '';
+
+        // Get subtype name
+        let subtypeName = '';
+        if (SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.skillSubId].includes(skillId as 6 | 19) && skillSubId) {
+            if (skillId === 6) { // Skill.Craft
+                const craftSubtype = CRAFT_SKILL_MAP[skillSubId as keyof typeof CRAFT_SKILL_MAP];
+                subtypeName = craftSubtype ? craftSubtype.name : '';
+            }
+            if (skillId === 19) { // Skill.Knowledge
+                const knowledgeSubtype = KNOWLEDGE_SKILL_MAP[skillSubId as keyof typeof KNOWLEDGE_SKILL_MAP];
+                subtypeName = knowledgeSubtype ? knowledgeSubtype.name : '';
+            }
+        }
+        if (SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.customSubtype].includes(skillId as 32 | 33) && customSubtype && customSubtype !== '__placeholder__') {
+            subtypeName = customSubtype;
+        }
+
+        // Format display name
+        if (subtypeName) {
+            return `${skillData.name} (${subtypeName})`;
+        }
+        return skillData.name;
+    };
+
     // Calculate skills
     const skills: CalculatedSkill[] = [];
     
+    // Collect all unique skill entries (skillId + skillSubId + customSubtype combinations)
+    const skillEntryMap = new Map<string, {
+        skillId: number;
+        skillSubId: number | null;
+        customSubtype: string | null;
+        totalRanks: number;
+        miscBonus: number;
+    }>();
+
     // Get all skills from SKILL_LIST (excluding analog skills and Speak Language which has no total)
     const allocatableSkills = SKILL_LIST.filter(skill => 
         skill.abilityId !== 0 && // Exclude Speak Language
         !skill.isAnalog // Exclude analog skills
     );
 
-    for (const skillData of allocatableSkills) {
-        // Get ability score for this skill
-        const abilityScore = abilityScores.find(a => a.abilityId === skillData.abilityId);
-        const abilityValue = abilityScore?.score ?? 10;
-        const abilityMod = abilityScore?.modifier ?? 0;
+    // Process all skill entries from advancements
+    if (character.advancements && character.advancements.length > 0) {
+        for (const advancement of character.advancements) {
+            const classDetails = classDetailsMap.get(advancement.classId);
+            
+            for (const skillEntry of (advancement.skills || [])) {
+                // Only process allocatable skills
+                if (!allocatableSkills.some(s => s.id === skillEntry.skillId)) {
+                    continue;
+                }
 
-        // Calculate ranks from all advancements
-        let totalRanks = 0;
-        let miscBonus = 0;
-
-        // Check if character has any advancements
-        if (!character.advancements || character.advancements.length === 0) {
-            // No advancements, so no skills allocated yet
-            // Still include the skill with 0 ranks for display
-        } else {
-            for (const advancement of character.advancements) {
-                const classDetails = classDetailsMap.get(advancement.classId);
+                // Create unique key for this skill entry
+                const key = `${skillEntry.skillId}|${skillEntry.skillSubId ?? 'null'}|${skillEntry.customSubtype ?? 'null'}`;
                 
-                // Find all skill entries for this skill ID in this advancement
-                const skillEntries = (advancement.skills || []).filter(s => s.skillId === skillData.id);
-                
-                for (const skillEntry of skillEntries) {
-                    // Check if this skill is a class skill for this advancement's class
-                    const isClassSkill = ClassSkillService.isSkillClassSkillForAdvancement(
-                        classDetails,
-                        advancement,
-                        skillData.id,
-                        skillEntry.skillSubId,
-                        skillEntry.customSubtype
-                    );
+                // Get or create entry
+                let entry = skillEntryMap.get(key);
+                if (!entry) {
+                    entry = {
+                        skillId: skillEntry.skillId,
+                        skillSubId: skillEntry.skillSubId,
+                        customSubtype: skillEntry.customSubtype,
+                        totalRanks: 0,
+                        miscBonus: 0
+                    };
+                    skillEntryMap.set(key, entry);
+                }
 
-                    if (isClassSkill) {
-                        // Class skills: 1 point = 1 rank
-                        totalRanks += skillEntry.pointsSpent;
-                    } else {
-                        // Cross-class skills: 2 points = 1 rank
-                        totalRanks += skillEntry.pointsSpent * 0.5;
-                    }
+                // Check if this skill is a class skill for this advancement's class
+                const isClassSkill = ClassSkillService.isSkillClassSkillForAdvancement(
+                    classDetails,
+                    advancement,
+                    skillEntry.skillId,
+                    skillEntry.skillSubId,
+                    skillEntry.customSubtype
+                );
+
+                if (isClassSkill) {
+                    // Class skills: 1 point = 1 rank
+                    entry.totalRanks += skillEntry.pointsSpent;
+                } else {
+                    // Cross-class skills: 2 points = 1 rank
+                    entry.totalRanks += skillEntry.pointsSpent * 0.5;
                 }
             }
         }
+    }
+
+    // Convert entries to CalculatedSkill objects
+    for (const entry of skillEntryMap.values()) {
+        const skillData = SKILL_LIST.find(s => s.id === entry.skillId);
+        if (!skillData) continue;
+
+        // Get ability score for this skill
+        const abilityScore = abilityScores.find(a => a.abilityId === skillData.abilityId);
+        const abilityMod = abilityScore?.modifier ?? 0;
 
         // Floor the ranks (half ranks don't count for the total)
-        const ranks = Math.floor(totalRanks);
-        const total = ranks + abilityMod + miscBonus;
+        const ranks = Math.floor(entry.totalRanks);
+        const total = ranks + abilityMod + entry.miscBonus;
 
         // Check if this skill is a class skill for any of the character's classes
         let isClassSkill = false;
@@ -247,8 +300,10 @@ export function calculateCharacterStats(
                     prog.featureId === SpecialFeatureId.ClassSkill &&
                     prog.entities?.some(entity =>
                         entity.appliesTo === EntityAppliesToType.Skill &&
-                        entity.appliesToId === skillData.id &&
-                        (entity.appliesToSubId === -1 || entity.appliesToSubId === null)
+                        entity.appliesToId === entry.skillId &&
+                        (entity.appliesToSubId === entry.skillSubId || 
+                         entity.appliesToSubId === -1 || 
+                         (entity.appliesToSubId === null && entry.skillSubId === null))
                     )
                 );
                 if (hasClassSkill) {
@@ -258,16 +313,68 @@ export function calculateCharacterStats(
             }
         }
 
-        // Include all skills (even with 0 ranks) for the PDF
+        // Format skill name with subtype
+        const skillName = formatSkillName(entry.skillId, entry.skillSubId, entry.customSubtype);
+
         skills.push({
-            skillId: skillData.id,
-            skillName: skillData.name,
+            skillId: entry.skillId,
+            skillSubId: entry.skillSubId,
+            customSubtype: entry.customSubtype,
+            skillName,
             total,
             abilityMod,
             ranks,
-            misc: miscBonus,
+            misc: entry.miscBonus,
             isClassSkill
         });
+    }
+
+    // Also include skills with 0 ranks that don't have entries yet (for display purposes)
+    // Only for skills that don't require subtypes
+    for (const skillData of allocatableSkills) {
+        const needsSubtype = SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.skillSubId].includes(skillData.id as 6 | 19) ||
+                            SKILL_SUB_TYPE_COMPATIBILITY[SkillSubType.customSubtype].includes(skillData.id as 32 | 33);
+        
+        if (!needsSubtype) {
+            // Check if we already have an entry for this skill (without subtype)
+            const hasEntry = skills.some(s => s.skillId === skillData.id && s.skillSubId === null && s.customSubtype === null);
+            if (!hasEntry) {
+                const abilityScore = abilityScores.find(a => a.abilityId === skillData.abilityId);
+                const abilityMod = abilityScore?.modifier ?? 0;
+
+                // Check if this skill is a class skill
+                let isClassSkill = false;
+                for (const [classId] of classLevelCounts.entries()) {
+                    const classDetails = classDetailsMap.get(classId);
+                    if (classDetails && classDetails.features) {
+                        const hasClassSkill = classDetails.features.some(prog =>
+                            prog.featureId === SpecialFeatureId.ClassSkill &&
+                            prog.entities?.some(entity =>
+                                entity.appliesTo === EntityAppliesToType.Skill &&
+                                entity.appliesToId === skillData.id &&
+                                (entity.appliesToSubId === -1 || entity.appliesToSubId === null)
+                            )
+                        );
+                        if (hasClassSkill) {
+                            isClassSkill = true;
+                            break;
+                        }
+                    }
+                }
+
+                skills.push({
+                    skillId: skillData.id,
+                    skillSubId: null,
+                    customSubtype: null,
+                    skillName: skillData.name,
+                    total: abilityMod,
+                    abilityMod,
+                    ranks: 0,
+                    misc: 0,
+                    isClassSkill
+                });
+            }
+        }
     }
 
     // Sort skills alphabetically by name

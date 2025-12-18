@@ -151,11 +151,11 @@ export const useRaceColumns = (): ColumnDef<RaceSummary, unknown>[] => {
             },
             meta: {
                 filterType: FilterType.SINGLE_SELECT,
-                options: (currentFilters: Array<{ id: string; value: unknown }>) => {
+                options: async (currentFilters: Array<{ id: string; value: unknown }>) => {
                     const editionFilter = currentFilters.find(f => f.id === 'editionId');
                     const editionId = editionFilter?.value as EditionId || EditionId.DND_3x;
 
-                    const classes = getBaseClassSelectByEdition(editionId);
+                    const classes = await getBaseClassSelectByEdition(editionId);
                     return [
                         { id: -1, name: 'Any' },
                         ...classes

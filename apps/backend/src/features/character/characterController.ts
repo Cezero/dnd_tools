@@ -26,6 +26,10 @@ import {
     // NEW: Character disallowed source types
     CreateCharacterDisallowedSourceRequest,
     CharacterDisallowedSource,
+    // NEW: Character attack definition types
+    CreateCharacterAttackDefinitionRequest,
+    UpdateCharacterAttackDefinitionRequest,
+    CharacterAttackDefinition,
 } from '@shared/schema';
 
 import { characterService } from './characterService';
@@ -212,4 +216,80 @@ export async function RemoveDisallowedSource(req: ValidatedParamsT<CharacterIdPa
 export async function GetDisallowedSources(req: ValidatedParamsT<CharacterIdParam2Request, CharacterDisallowedSource[]>, res: Response, _next: NextFunction) {
     const disallowedSources = await characterService.getDisallowedSources(req.params.characterId);
     res.json(disallowedSources);
+}
+
+// Character attack definition methods
+export async function GetCharacterAttackDefinitions(req: ValidatedParamsT<CharacterIdParamRequest, CharacterAttackDefinition[]>, res: Response, _next: NextFunction) {
+    try {
+        const attackDefinitions = await characterService.getCharacterAttackDefinitions(req.params.id);
+        res.json(attackDefinitions);
+    } catch (error) {
+        if (error instanceof Error) {
+            res.status(400).json({ error: error.message });
+        } else {
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+}
+
+export async function CreateCharacterAttackDefinition(req: ValidatedParamsBodyT<CharacterIdParamRequest, CreateCharacterAttackDefinitionRequest>, res: Response, _next: NextFunction) {
+    try {
+        const result = await characterService.createCharacterAttackDefinition(req.params.id, req.body);
+        res.status(201).json(result);
+    } catch (error) {
+        if (error instanceof Error) {
+            res.status(400).json({ error: error.message });
+        } else {
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+}
+
+export async function UpdateCharacterAttackDefinition(req: ValidatedParamsBodyT<CharacterIdParamRequest & { attackId: string }, UpdateCharacterAttackDefinitionRequest>, res: Response, _next: NextFunction) {
+    try {
+        const attackId = parseInt(req.params.attackId, 10);
+        if (isNaN(attackId)) {
+            res.status(400).json({ error: 'Invalid attack definition ID' });
+            return;
+        }
+        await characterService.updateCharacterAttackDefinition(req.params.id, attackId, req.body);
+        res.json({ message: 'Attack definition updated successfully' });
+    } catch (error) {
+        if (error instanceof Error) {
+            res.status(400).json({ error: error.message });
+        } else {
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+}
+
+export async function DeleteCharacterAttackDefinition(req: ValidatedParamsT<CharacterIdParamRequest & { attackId: string }>, res: Response, _next: NextFunction) {
+    try {
+        const attackId = parseInt(req.params.attackId, 10);
+        if (isNaN(attackId)) {
+            res.status(400).json({ error: 'Invalid attack definition ID' });
+            return;
+        }
+        await characterService.deleteCharacterAttackDefinition(req.params.id, attackId);
+        res.json({ message: 'Attack definition deleted successfully' });
+    } catch (error) {
+        if (error instanceof Error) {
+            res.status(400).json({ error: error.message });
+        } else {
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+}
+
+export async function ReorderCharacterAttackDefinitions(req: ValidatedParamsBodyT<CharacterIdParamRequest, { attackDefinitionIds: number[] }>, res: Response, _next: NextFunction) {
+    try {
+        await characterService.reorderCharacterAttackDefinitions(req.params.id, req.body.attackDefinitionIds);
+        res.json({ message: 'Attack definitions reordered successfully' });
+    } catch (error) {
+        if (error instanceof Error) {
+            res.status(400).json({ error: error.message });
+        } else {
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
 }

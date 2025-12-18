@@ -138,7 +138,7 @@ export interface EquipmentItem {
     itemId: number | null; // ID of the purchased item (for refunds)
     costInGp: number | null; // Cost in gold pieces (for refunds)
     quantity: number;
-    location: string | null;
+    location: number | null; // Location enum value (null/0 = Owned, other values = specific locations)
     notes: string | null;
 }
 
@@ -147,6 +147,17 @@ export interface Money {
     gold: number;
     silver: number;
     copper: number;
+}
+
+// ============================================================================
+// Combat Tab Types
+// ============================================================================
+export interface AttackDefinition {
+    id: number;
+    attackTypeId: number;
+    attackSlot: number | null;
+    mainHandCharacterItemId: number | null;
+    offHandCharacterItemId: number | null;
 }
 
 export interface EquipmentTabState {
@@ -463,6 +474,9 @@ export interface CharacterEditState {
     // Equipment Tab UI State
     equipment: EquipmentItem[];
     money: Money;
+
+    // Combat Tab UI State
+    attackDefinitions: AttackDefinition[];
 }
 
 /**
@@ -502,7 +516,8 @@ export enum CharacterEditStateUpdateType {
     SET_RESOLVED_DATA = 29,
     SET_RESOLUTION_LOADING = 30,
     SET_RESOLUTION_ERROR = 31,
-    SET_CURRENT_ADVANCEMENT_ID = 32
+    SET_CURRENT_ADVANCEMENT_ID = 32,
+    SET_ATTACK_DEFINITIONS = 33
 }
 
 export type CharacterEditStateUpdate =
@@ -547,7 +562,8 @@ export type CharacterEditStateUpdate =
     }
     | { type: CharacterEditStateUpdateType.SET_RESOLUTION_LOADING; payload: { isLoading: boolean } }
     | { type: CharacterEditStateUpdateType.SET_RESOLUTION_ERROR; payload: { error: string | null } }
-    | { type: CharacterEditStateUpdateType.SET_CURRENT_ADVANCEMENT_ID; payload: { currentAdvancementId: number | null } };
+    | { type: CharacterEditStateUpdateType.SET_CURRENT_ADVANCEMENT_ID; payload: { currentAdvancementId: number | null } }
+    | { type: CharacterEditStateUpdateType.SET_ATTACK_DEFINITIONS; payload: { attackDefinitions: AttackDefinition[] } };
 
 /**
  * Props interface for tab components using the centralized state system.

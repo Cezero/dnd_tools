@@ -5,4 +5,5 @@ export { FeatsTab } from './FeatsTab';
 export { ChoicesTab } from './ChoicesTab';
 export { DescriptionTab } from './DescriptionTab';
 export { EquipmentTab } from './EquipmentTab';
+export { CombatTab } from './CombatTab';
 export { ConfigurationTab } from './ConfigurationTab'; 

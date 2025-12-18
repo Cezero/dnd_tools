@@ -20,6 +20,10 @@ import type {
     // NEW: Character disallowed source types
     CreateCharacterDisallowedSourceRequest,
     CharacterDisallowedSource,
+    // NEW: Character attack definition types
+    CreateCharacterAttackDefinitionRequest,
+    UpdateCharacterAttackDefinitionRequest,
+    CharacterAttackDefinition,
 } from '@shared/schema';
 import type { GestaltStats } from '@shared/utils';
 
@@ -55,6 +59,13 @@ export interface CharacterService {
     addDisallowedSource: (data: CreateCharacterDisallowedSourceRequest) => Promise<CharacterDisallowedSource>;
     removeDisallowedSource: (characterId: number, sourceBookId: number) => Promise<void>;
     getDisallowedSources: (characterId: number) => Promise<CharacterDisallowedSource[]>;
+
+    // NEW: Character attack definition methods
+    getCharacterAttackDefinitions: (characterId: number) => Promise<CharacterAttackDefinition[]>;
+    createCharacterAttackDefinition: (characterId: number, data: CreateCharacterAttackDefinitionRequest) => Promise<CreateResponse>;
+    updateCharacterAttackDefinition: (characterId: number, attackId: number, data: UpdateCharacterAttackDefinitionRequest) => Promise<UpdateResponse>;
+    deleteCharacterAttackDefinition: (characterId: number, attackId: number) => Promise<UpdateResponse>;
+    reorderCharacterAttackDefinitions: (characterId: number, attackDefinitionIds: number[]) => Promise<UpdateResponse>;
 
     // NEW: Gestalt character calculation methods
     calculateCharacterStats: (character: CharacterWithAllDetailsResponse) => Promise<{

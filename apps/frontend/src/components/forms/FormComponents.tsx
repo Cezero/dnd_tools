@@ -154,6 +154,7 @@ export interface CustomSelectProps<C extends CoreComponent> {
     label?: string;
     required?: boolean;
     disabled?: boolean;
+    getOptionDisabled?: (option: C) => boolean;
     componentExtraClassName?: string;
     triggerExtraClassName?: string;
     popupExtraClassName?: string;
@@ -173,6 +174,7 @@ export function CustomSelect<C extends CoreComponent>({
     label,
     required = false,
     disabled = false,
+    getOptionDisabled,
     componentExtraClassName = "",
     triggerExtraClassName = "",
     popupExtraClassName = "",
@@ -222,11 +224,13 @@ export function CustomSelect<C extends CoreComponent>({
                     <Select.Popup className={`${popupExtraClassName} absolute pt-1 pb-1 pr-1 max-h-60 overflow-auto rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800`}>
                         {options.map((option) => {
                             const displayText = useAbbreviation && option.abbreviation ? option.abbreviation : option.name;
+                            const isDisabled = getOptionDisabled?.(option) ?? false;
                             return (
                                 <Select.Item
                                     key={String(option.id)}
                                     value={option.id}
-                                    className={`${itemExtraClassName} flex items-center justify-end gap-1 text-left select-none cursor-default pl-1 pr-2 hover:bg-blue-600 data-[highlighted]:bg-blue-600 data-[selected]:text-blue-400`}
+                                    disabled={isDisabled}
+                                    className={`${itemExtraClassName} flex items-center justify-end gap-1 text-left select-none cursor-default pl-1 pr-2 hover:bg-blue-600 data-[highlighted]:bg-blue-600 data-[selected]:text-blue-400 data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:hover:bg-transparent`}
                                 >
                                     <Select.ItemIndicator>
                                         <ChevronRightIcon className="h-4 w-4" />

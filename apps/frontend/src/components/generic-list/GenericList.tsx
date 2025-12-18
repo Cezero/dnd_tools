@@ -463,7 +463,11 @@ export function GenericList<T>({
 
         // Extract the route path from the detail route (e.g., 'spells/:id' -> 'spells')
         const routePath = detailRoute.path.split('/:')[0];
-        const detailPath = `${basePath}/${routePath}/${itemId}`;
+        let detailPath = `${basePath}/${routePath}/${itemId}`;
+        // Ensure path is absolute
+        if (!detailPath.startsWith('/')) {
+            detailPath = `/${detailPath}`;
+        }
 
         return (
             <a
@@ -550,11 +554,17 @@ export function GenericList<T>({
             let editPath: string;
             if (editRoute.path.includes('/:id')) {
                 // For routes with :id parameter, replace it with the actual ID
-                editPath = editRoute.path.replace(':id', String(safeItemId));
+                // Ensure path is absolute by prepending '/'
+                const pathWithId = editRoute.path.replace(':id', String(safeItemId));
+                editPath = pathWithId.startsWith('/') ? pathWithId : `/${pathWithId}`;
             } else {
                 // For routes without :id, construct path manually
                 const routePath = editRoute.path.split('/:')[0];
                 editPath = `${basePath}/${routePath}/${safeItemId}/edit`;
+                // Ensure path is absolute
+                if (!editPath.startsWith('/')) {
+                    editPath = `/${editPath}`;
+                }
             }
 
             actions.push(

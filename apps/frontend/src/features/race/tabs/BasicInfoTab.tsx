@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { ValidatedInput, SourceEditor } from '@/components/forms';
 import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
 import { useCacheFunctions } from '@/services/cache';
+import { CoreComponent } from '@shared/schema';
 import { EDITION_LIST, SIZE_LIST, SourceType } from '@shared/static-data';
 
 import type { RaceTabProps } from './types';
@@ -14,6 +15,23 @@ export function BasicInfoTab({
     isLoading: _isLoading = false
 }: RaceTabProps): React.JSX.Element {
     const { getBaseClassSelectByEdition } = useCacheFunctions();
+    const [availableClasses, setAvailableClasses] = useState<CoreComponent[]>([]);
+
+    useEffect(() => {
+        const loadClasses = async () => {
+            try {
+                const classes = await getBaseClassSelectByEdition(formData.editionId);
+                setAvailableClasses(classes);
+            } catch (error) {
+                console.error('Failed to load classes:', error);
+                setAvailableClasses([]);
+            }
+        };
+
+        loadClasses();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formData.editionId]);
+
     return (
         <div className="p-6 space-y-6">
             <div>
@@ -65,7 +83,7 @@ export function BasicInfoTab({
                             onValueChange={(value) => setFormData({ ...formData, favoredClassId: value as number })}
                             options={[
                                 { id: -1, name: 'Any' },
-                                ...getBaseClassSelectByEdition(formData.editionId)
+                                ...availableClasses
                             ]}
                             placeholder="Select favored class"
                         />

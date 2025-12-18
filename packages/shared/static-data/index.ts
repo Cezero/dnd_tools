@@ -33,3 +33,4 @@ export * as FeatureData from './src/FeatureData';
 export * as FormatterData from './src/FormatterData';
 export * as FormulaDefinitions from './src/FormulaDefinitions';
 export * as DeityData from './src/DeityData';
+export * as AttackDefinitionData from './src/AttackDefinitionData';

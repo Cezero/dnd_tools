@@ -233,3 +233,43 @@ export const ITEM_TYPES: BaseMap<CoreComponent> = {
 };
 
 export const ITEM_TYPE_LIST = Object.values(ITEM_TYPES);
+
+export const LOCATION_ENUM = {
+    Owned: 0,
+    Carried: 1,
+    MainHand: 2,
+    OffHand: 3,
+    RightRing: 4,
+    LeftRing: 5,
+    Hands: 6,
+    Arms: 7,
+    Head: 8,
+    Face: 9,
+    Shoulders: 10,
+    Neck: 11,
+    Body: 12,
+    Torso: 13,
+    Waist: 14,
+    Feet: 15,
+};
+
+export const LOCATIONS: BaseMap<CoreComponent> = {
+    [LOCATION_ENUM.Owned]: { id: LOCATION_ENUM.Owned, name: 'Owned' },
+    [LOCATION_ENUM.Carried]: { id: LOCATION_ENUM.Carried, name: 'Carried' },
+    [LOCATION_ENUM.MainHand]: { id: LOCATION_ENUM.MainHand, name: 'Main Hand' },
+    [LOCATION_ENUM.OffHand]: { id: LOCATION_ENUM.OffHand, name: 'Off Hand' },
+    [LOCATION_ENUM.RightRing]: { id: LOCATION_ENUM.RightRing, name: 'Right Ring' },
+    [LOCATION_ENUM.LeftRing]: { id: LOCATION_ENUM.LeftRing, name: 'Left Ring' },
+    [LOCATION_ENUM.Hands]: { id: LOCATION_ENUM.Hands, name: 'Hands' },
+    [LOCATION_ENUM.Arms]: { id: LOCATION_ENUM.Arms, name: 'Arms' },
+    [LOCATION_ENUM.Head]: { id: LOCATION_ENUM.Head, name: 'Head' },
+    [LOCATION_ENUM.Face]: { id: LOCATION_ENUM.Face, name: 'Face' },
+    [LOCATION_ENUM.Shoulders]: { id: LOCATION_ENUM.Shoulders, name: 'Shoulders' },
+    [LOCATION_ENUM.Neck]: { id: LOCATION_ENUM.Neck, name: 'Neck' },
+    [LOCATION_ENUM.Body]: { id: LOCATION_ENUM.Body, name: 'Body' },
+    [LOCATION_ENUM.Torso]: { id: LOCATION_ENUM.Torso, name: 'Torso' },
+    [LOCATION_ENUM.Waist]: { id: LOCATION_ENUM.Waist, name: 'Waist' },
+    [LOCATION_ENUM.Feet]: { id: LOCATION_ENUM.Feet, name: 'Feet' },
+};
+
+export const LOCATION_LIST = Object.values(LOCATIONS);

@@ -51,6 +51,7 @@ export const BaseItemSchema = z.object({
       message: 'Weight must be between 0 and 999.99',
     }).optional(),
   quantity: z.number().int().min(0, 'Quantity must be non-negative').nullable().optional(),
+  sizeId: z.number().int().positive('Size ID must be a positive integer').nullable().default(5), // Default to Medium (5)
 });
 
 export const ItemSchema = BaseItemSchema.extend({
