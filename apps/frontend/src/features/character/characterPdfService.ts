@@ -1,12 +1,17 @@
 import jsPDF from 'jspdf';
 
 import { registerArchivoNarrowFonts } from '@/assets/fonts/registerArchivoNarrow';
-import { calculateAttackStats } from '@/lib/attack-calculation';
 import { RaceApi } from '@/features/race/RaceApi';
 import { SkillApi } from '@/features/skill/SkillApi';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
-import type { AttackDefinition } from './types';
-import type { CalculatedCharacterStats } from './characterStatsCalculator';
+import {
+    CharacterCalculationService,
+    formatAttackBonus,
+    formatWeight,
+    formatSize,
+    formatDamageType,
+    getUnarmedDamageType,
+} from '@/lib/character-calculation';
 import { calculateCharacterStats } from './characterStatsCalculator';
 import type { CharacterWithAllDetailsResponse, DnDClass, Race, ItemWithDetails, FeatureProgression } from '@shared/schema';
 import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, SIZE_MAP, SKILL_LIST, Skill } from '@shared/static-data';
@@ -43,7 +48,7 @@ export async function generateCharacterPdf(
     }
 
     // Calculate all stats
-    const stats = calculateCharacterStats(character, classDetailsMap);
+    const stats = calculateCharacterStats(character, classDetailsMap, resolvedProgressions);
 
     // Fetch items for attack calculations
     let items: ItemWithDetails[] = [];
@@ -241,7 +246,7 @@ export async function generateCharacterPdf(
 
     type WeaponInfo = {
         name: string | null;
-        totalAttackBonus: number | null;
+        totalAttackBonus: number | string | null; // Can be number or "X / Y nonlethal" string
         damage: string | null;
         critical: string | null;
         range: string | null;
@@ -259,7 +264,9 @@ export async function generateCharacterPdf(
 
         const weaponName = weaponInfo ? weaponInfo.name ?? '' : '';
         const totalAttackBonus = weaponInfo && weaponInfo.totalAttackBonus !== null
-            ? formatModifier(weaponInfo.totalAttackBonus)
+            ? (typeof weaponInfo.totalAttackBonus === 'string'
+                ? weaponInfo.totalAttackBonus
+                : formatModifier(weaponInfo.totalAttackBonus))
             : '';
         const damage = weaponInfo ? weaponInfo.damage ?? '' : '';
         const critical = weaponInfo ? weaponInfo.critical ?? '' : '';
@@ -411,7 +418,7 @@ export async function generateCharacterPdf(
     xPos += fieldWidths.line2.alignment + fieldSpacing;
 
     // Deity
-    drawField(xPos, line2Y, fieldWidths.line2.deity, character.deity?.name || '', 'DEITY');
+    drawField(xPos, line2Y, fieldWidths.line2.deity, '', 'DEITY'); // TODO: Add deity name lookup if needed
 
     // LINE 3: Level, Type, Age, Height, Weight, Eyes, Hair
     const line3Y = line2Y + fieldHeight + 2; // Space between lines - tighter spacing
@@ -1297,54 +1304,125 @@ export async function generateCharacterPdf(
                 continue;
             }
 
+            // Declare variables outside try block for error handling
+            let attackType: 'unarmed' | 'main-hand' | 'off-hand' | 'ranged' | 'dual-wield' = 'main-hand';
+            let mainHandItem: ItemWithDetails | undefined;
+            let offHandItem: ItemWithDetails | undefined;
+
             try {
-                // Convert schema definition to AttackDefinition type (attackSlot is required in our type)
-                const attackDef: AttackDefinition = {
-                    id: definition.id,
-                    attackTypeId: definition.attackTypeId,
-                    attackSlot: definition.attackSlot ?? null,
-                    mainHandCharacterItemId: definition.mainHandCharacterItemId,
-                    offHandCharacterItemId: definition.offHandCharacterItemId,
+                // Convert attack definition to combat calculation context
+                const ATTACK_TYPE_MAP: Record<number, 'unarmed' | 'main-hand' | 'off-hand' | 'ranged' | 'dual-wield'> = {
+                    1: 'unarmed',
+                    2: 'main-hand',
+                    3: 'dual-wield',
+                    4: 'ranged',
                 };
-                const result = calculateAttackStats({
-                    attackDefinition: attackDef,
+
+                attackType = ATTACK_TYPE_MAP[definition.attackTypeId] ?? 'main-hand';
+
+                // For unarmed strikes, we don't need items
+                if (attackType === 'unarmed') {
+                    const result = CharacterCalculationService.getCombatValues(
+                        character,
+                        resolvedProgressions ?? [],
+                        { attackType: 'unarmed' },
+                        classDetailsMap
+                    );
+
+                    weaponInfos.push({
+                        name: result.weaponName,
+                        totalAttackBonus: formatAttackBonus(result.value, result.nonlethalAttackBonus),
+                        damage: result.damage,
+                        critical: result.critical,
+                        range: result.range,
+                        weight: null,
+                        type: getUnarmedDamageType(),
+                        size: null,
+                        specialProperties: null,
+                    });
+                    continue;
+                }
+
+                // Find main hand item (required for weapon attacks)
+                mainHandItem = undefined;
+                if (definition.mainHandCharacterItemId) {
+                    const mainHandCharacterItem = characterItems.find(ci => ci.id === definition.mainHandCharacterItemId);
+                    if (mainHandCharacterItem) {
+                        mainHandItem = itemsWithDetails.find(i => i.id === mainHandCharacterItem.baseItemId);
+                        if (!mainHandItem) {
+                            console.warn('PDF: Main hand item not found', {
+                                characterItemId: definition.mainHandCharacterItemId,
+                                baseItemId: mainHandCharacterItem.baseItemId,
+                            });
+                        }
+                    }
+                }
+
+                // Find off hand item
+                offHandItem = undefined;
+                if (definition.offHandCharacterItemId) {
+                    const offHandCharacterItem = characterItems.find(ci => ci.id === definition.offHandCharacterItemId);
+                    if (offHandCharacterItem) {
+                        offHandItem = itemsWithDetails.find(i => i.id === offHandCharacterItem.baseItemId);
+                        if (!offHandItem) {
+                            console.warn('PDF: Off hand item not found', {
+                                characterItemId: definition.offHandCharacterItemId,
+                                baseItemId: offHandCharacterItem.baseItemId,
+                            });
+                        }
+                    }
+                }
+
+                const context = {
+                    attackType,
+                    mainHandItem,
+                    offHandItem,
+                };
+
+                // Use new calculation service
+                const result = CharacterCalculationService.getCombatValues(
                     character,
-                    characterItems,
-                    items: itemsWithDetails,
-                    classDetailsMap,
-                    resolvedProgressions,
-                    stats,
-                });
+                    resolvedProgressions ?? [],
+                    context,
+                    classDetailsMap
+                );
 
                 weaponInfos.push({
                     name: result.weaponName,
-                    totalAttackBonus: result.totalAttackBonus,
+                    totalAttackBonus: formatAttackBonus(result.value, result.nonlethalAttackBonus),
                     damage: result.damage,
                     critical: result.critical,
                     range: result.range,
-                    weight: result.weight,
-                    type: result.type,
-                    size: result.size,
-                    specialProperties: result.specialProperties,
+                    weight: formatWeight(mainHandItem?.weight),
+                    type: formatDamageType(mainHandItem?.weapon?.damageType ?? null),
+                    size: formatSize(mainHandItem?.sizeId),
+                    specialProperties: null,
                 });
 
                 // For dual wield, also handle off-hand (next slot)
-                if (result.isDualWield && result.offHandResult && slot < 7) {
+                if (result.isDualWield && result.offHandResult && slot < 7 && offHandItem) {
                     weaponInfos.push({
                         name: result.offHandResult.weaponName,
-                        totalAttackBonus: result.offHandResult.totalAttackBonus,
+                        totalAttackBonus: formatAttackBonus(result.offHandResult.value, result.offHandResult.nonlethalAttackBonus),
                         damage: result.offHandResult.damage,
                         critical: result.offHandResult.critical,
                         range: result.offHandResult.range,
-                        weight: result.offHandResult.weight,
-                        type: result.offHandResult.type,
-                        size: result.offHandResult.size,
-                        specialProperties: result.offHandResult.specialProperties,
+                        weight: formatWeight(offHandItem.weight),
+                        type: formatDamageType(offHandItem.weapon?.damageType ?? null),
+                        size: formatSize(offHandItem.sizeId),
+                        specialProperties: null,
                     });
                     slot++; // Skip next slot as it's used by off-hand
                 }
             } catch (error) {
-                console.error(`Error calculating attack stats for slot ${slot}:`, error);
+                console.error(`Error calculating attack stats for slot ${slot}:`, error, {
+                    definition,
+                    attackType,
+                    hasMainHandItem: !!mainHandItem,
+                    hasOffHandItem: !!offHandItem,
+                    mainHandItemId: definition.mainHandCharacterItemId,
+                    offHandItemId: definition.offHandCharacterItemId,
+                });
                 weaponInfos.push(null);
             }
         }
@@ -1510,10 +1588,11 @@ export async function generateCharacterPdf(
         skillX += keyAbilityWidth;
 
         // SKILL MODIFIER (bold)
-        doc.setFontSize(7); // Ensure font size is correct
+        doc.setFontSize(8); // Ensure font size is correct
         doc.setFont('ArchivoNarrow', 'bold');
         doc.text(formatModifier(skill.total), skillX + (skillModifierWidth / 2), skillY, { align: 'center' });
         skillX += skillModifierWidth + 2;
+        doc.setFontSize(7); // Reset font size for rest of the line
 
         // '=' text
         doc.setFont('ArchivoNarrow', 'normal');

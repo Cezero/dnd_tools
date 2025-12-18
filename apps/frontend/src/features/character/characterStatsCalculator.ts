@@ -1,7 +1,9 @@
-import type { CharacterWithAllDetailsResponse, DnDClass } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, DnDClass, FeatureProgression } from '@shared/schema';
 import { AbilityId, GetAbilityModifier, SKILL_LIST, SpecialFeatureId, EntityAppliesToType, CRAFT_SKILL_MAP, KNOWLEDGE_SKILL_MAP, SkillSubType, SKILL_SUB_TYPE_COMPATIBILITY } from '@shared/static-data';
 import { getBABProgression, getSaveProgression } from '@shared/utils';
 import { ClassSkillService } from '@/features/class/ClassSkillService';
+import { CharacterCalculationService } from '@/lib/character-calculation';
+import { SaveType } from '@/lib/character-calculation';
 
 export interface CalculatedAbilityScore {
     abilityId: number;
@@ -80,18 +82,32 @@ export interface CalculatedCharacterStats {
  */
 export function calculateCharacterStats(
     character: CharacterWithAllDetailsResponse,
-    classDetailsMap: Map<number, DnDClass>
+    classDetailsMap: Map<number, DnDClass>,
+    resolvedProgressions?: FeatureProgression[]
 ): CalculatedCharacterStats {
-    // Calculate ability scores and modifiers
+    // Calculate ability scores and modifiers using new calculation service
     const abilityScores: CalculatedAbilityScore[] = [];
+    const progressions = resolvedProgressions ?? [];
+    
     for (const abilityId of [AbilityId.Strength, AbilityId.Dexterity, AbilityId.Constitution, AbilityId.Intelligence, AbilityId.Wisdom, AbilityId.Charisma]) {
-        const abilityScore = character.abilityScores.find(a => a.abilityId === abilityId);
-        const score = abilityScore?.value ?? 10;
-        abilityScores.push({
-            abilityId,
-            score,
-            modifier: GetAbilityModifier(score)
-        });
+        if (progressions.length > 0) {
+            // Use new calculation service if progressions are available
+            const result = CharacterCalculationService.getAbilityScore(character, abilityId, progressions);
+            abilityScores.push({
+                abilityId,
+                score: result.value,
+                modifier: CharacterCalculationService.getAbilityModifier(character, abilityId, progressions)
+            });
+        } else {
+            // Fallback to simple calculation if no progressions
+            const abilityScore = character.abilityScores.find(a => a.abilityId === abilityId);
+            const score = abilityScore?.value ?? 10;
+            abilityScores.push({
+                abilityId,
+                score,
+                modifier: GetAbilityModifier(score)
+            });
+        }
     }
 
     // Calculate class levels (count levels per class)
@@ -160,30 +176,61 @@ export function calculateCharacterStats(
         }
     }
 
-    const conMod = abilityScores.find(a => a.abilityId === AbilityId.Constitution)?.modifier ?? 0;
-    const dexMod = abilityScores.find(a => a.abilityId === AbilityId.Dexterity)?.modifier ?? 0;
-    const wisMod = abilityScores.find(a => a.abilityId === AbilityId.Wisdom)?.modifier ?? 0;
+    // Calculate saving throws using new calculation service
+    let savingThrows: CalculatedSavingThrows;
+    if (progressions.length > 0) {
+        // Use new calculation service
+        const fortResult = CharacterCalculationService.getSavingThrow(character, SaveType.Fortitude, progressions, classDetailsMap);
+        const refResult = CharacterCalculationService.getSavingThrow(character, SaveType.Reflex, progressions, classDetailsMap);
+        const willResult = CharacterCalculationService.getSavingThrow(character, SaveType.Will, progressions, classDetailsMap);
+        
+        savingThrows = {
+            fortitude: {
+                total: fortResult.value,
+                base: fortResult.breakdown.base.value,
+                abilityMod: fortResult.breakdown.abilityMod.value,
+                misc: fortResult.breakdown.feat.value + fortResult.breakdown.feature.value + fortResult.breakdown.item.value
+            },
+            reflex: {
+                total: refResult.value,
+                base: refResult.breakdown.base.value,
+                abilityMod: refResult.breakdown.abilityMod.value,
+                misc: refResult.breakdown.feat.value + refResult.breakdown.feature.value + refResult.breakdown.item.value
+            },
+            will: {
+                total: willResult.value,
+                base: willResult.breakdown.base.value,
+                abilityMod: willResult.breakdown.abilityMod.value,
+                misc: willResult.breakdown.feat.value + willResult.breakdown.feature.value + willResult.breakdown.item.value
+            }
+        };
+    } else {
+        // Fallback to simple calculation
+        const conMod = abilityScores.find(a => a.abilityId === AbilityId.Constitution)?.modifier ?? 0;
+        const dexMod = abilityScores.find(a => a.abilityId === AbilityId.Dexterity)?.modifier ?? 0;
+        const wisMod = abilityScores.find(a => a.abilityId === AbilityId.Wisdom)?.modifier ?? 0;
 
-    const savingThrows: CalculatedSavingThrows = {
-        fortitude: {
-            total: fortBase + conMod,
-            base: fortBase,
-            abilityMod: conMod,
-            misc: 0
-        },
-        reflex: {
-            total: refBase + dexMod,
-            base: refBase,
-            abilityMod: dexMod,
-            misc: 0
-        },
-        will: {
-            total: willBase + wisMod,
-            base: willBase,
-            abilityMod: wisMod,
-            misc: 0
-        }
-    };
+        savingThrows = {
+            fortitude: {
+                total: fortBase + conMod,
+                base: fortBase,
+                abilityMod: conMod,
+                misc: 0
+            },
+            reflex: {
+                total: refBase + dexMod,
+                base: refBase,
+                abilityMod: dexMod,
+                misc: 0
+            },
+            will: {
+                total: willBase + wisMod,
+                base: willBase,
+                abilityMod: wisMod,
+                misc: 0
+            }
+        };
+    }
 
     // Helper function to format skill name with subtype
     const formatSkillName = (skillId: number, skillSubId: number | null, customSubtype: string | null): string => {
@@ -387,26 +434,60 @@ export function calculateCharacterStats(
         console.log('First few skills:', skills.slice(0, 5).map(s => ({ name: s.skillName, ranks: s.ranks, total: s.total })));
     }
 
-    // Calculate combat stats
+    // Calculate combat stats using new calculation service
     const strMod = abilityScores.find(a => a.abilityId === AbilityId.Strength)?.modifier ?? 0;
     
     // Calculate HP (sum from all advancements)
     const hitPoints = character.advancements.reduce((sum, adv) => sum + adv.hitPoints, 0);
 
-    // Calculate AC (basic calculation - would need equipment data for full calculation)
-    const armorAC = 0; // Would come from equipment
-    const shieldAC = 0; // Would come from equipment
-    const naturalAC = 0; // Would come from race/features
-    const deflectionAC = 0; // Would come from items/features
-    const sizeMod = 0; // Would come from race size
-    const miscAC = 0; // Would come from features/items
+    // Calculate AC, initiative, and speed using new calculation service
+    let armorAC = 0;
+    let shieldAC = 0;
+    let naturalAC = 0;
+    let deflectionAC = 0;
+    let sizeMod = 0;
+    let miscAC = 0;
+    let totalAC = 10;
+    let touchAC = 10;
+    let flatFootedAC = 10;
+    let initiativeTotal = 0;
+    let initiativeDexMod = 0;
+    let initiativeMisc = 0;
+    let speed = 30;
 
-    const totalAC = 10 + armorAC + shieldAC + dexMod + sizeMod + naturalAC + deflectionAC + miscAC;
-    const touchAC = 10 + dexMod + sizeMod + deflectionAC + miscAC;
-    const flatFootedAC = 10 + armorAC + shieldAC + sizeMod + naturalAC + deflectionAC + miscAC;
+    if (progressions.length > 0) {
+        // Use new calculation service for AC
+        const acResult = CharacterCalculationService.getAC(character, progressions);
+        totalAC = acResult.value;
+        armorAC = acResult.breakdown.armor.value;
+        shieldAC = acResult.breakdown.shield.value;
+        naturalAC = acResult.breakdown.natural.value;
+        deflectionAC = acResult.breakdown.deflection.value;
+        sizeMod = acResult.breakdown.size.value;
+        miscAC = acResult.breakdown.misc.value;
+        touchAC = CharacterCalculationService.getTouchAC(character, progressions);
+        flatFootedAC = CharacterCalculationService.getFlatFootedAC(character, progressions);
 
-    // Get speed from race (default 30 if not available)
-    const speed = character.race?.speed ?? 30;
+        // Use new calculation service for initiative
+        const initiativeResult = CharacterCalculationService.getInitiative(character, progressions);
+        initiativeTotal = initiativeResult.value;
+        initiativeDexMod = initiativeResult.breakdown.dexMod.value;
+        initiativeMisc = initiativeResult.breakdown.feat.value + initiativeResult.breakdown.feature.value + initiativeResult.breakdown.item.value;
+
+        // Use new calculation service for speed
+        const speedResult = CharacterCalculationService.getSpeed(character, progressions);
+        speed = speedResult.value;
+    } else {
+        // Fallback to simple calculation
+        const dexMod = abilityScores.find(a => a.abilityId === AbilityId.Dexterity)?.modifier ?? 0;
+        totalAC = 10 + dexMod;
+        touchAC = 10 + dexMod;
+        flatFootedAC = 10;
+        initiativeTotal = dexMod;
+        initiativeDexMod = dexMod;
+        initiativeMisc = 0;
+        speed = character.race?.speed ?? 30;
+    }
 
     const combatStats: CalculatedCombatStats = {
         hitPoints,
@@ -415,7 +496,7 @@ export function calculateCharacterStats(
             base: 10,
             armor: armorAC,
             shield: shieldAC,
-            dex: dexMod,
+            dex: abilityScores.find(a => a.abilityId === AbilityId.Dexterity)?.modifier ?? 0,
             size: sizeMod,
             natural: naturalAC,
             deflection: deflectionAC,
@@ -424,9 +505,9 @@ export function calculateCharacterStats(
         touchAC,
         flatFootedAC,
         initiative: {
-            total: dexMod,
-            dexMod,
-            misc: 0
+            total: initiativeTotal,
+            dexMod: initiativeDexMod,
+            misc: initiativeMisc
         },
         baseAttackBonus,
         speed

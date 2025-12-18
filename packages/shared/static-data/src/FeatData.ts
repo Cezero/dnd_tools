@@ -29,6 +29,8 @@ export const enum FeatBenefitType {
     DAMAGE_BONUS = 10,
     THREAT_RANGE = 11,
     INITIATIVE = 12,
+    ATTACK_ABILITY_REPLACEMENT = 13,
+    UNARMED_LETHAL_DAMAGE = 14,
 }
 
 export const FEAT_BENEFIT_TYPES: FeatBenefitTypeMap = {
@@ -40,10 +42,12 @@ export const FEAT_BENEFIT_TYPES: FeatBenefitTypeMap = {
     [FeatBenefitType.RANGE_INCREMENT]: { id: FeatBenefitType.RANGE_INCREMENT, name: 'Range Increment', hasSubId: false },
     [FeatBenefitType.DIFFICULTY_CLASS]: { id: FeatBenefitType.DIFFICULTY_CLASS, name: 'Difficulty Class', hasSubId: false },
     [FeatBenefitType.CASTER_LEVEL]: { id: FeatBenefitType.CASTER_LEVEL, name: 'Caster Level', hasSubId: false },
-    [FeatBenefitType.ATTACK_BONUS]: { id: FeatBenefitType.ATTACK_BONUS, name: 'Attack Bonus', hasSubId: false },
-    [FeatBenefitType.DAMAGE_BONUS]: { id: FeatBenefitType.DAMAGE_BONUS, name: 'Damage Bonus', hasSubId: false },
+    [FeatBenefitType.ATTACK_BONUS]: { id: FeatBenefitType.ATTACK_BONUS, name: 'Attack Bonus', hasSubId: true },
+    [FeatBenefitType.DAMAGE_BONUS]: { id: FeatBenefitType.DAMAGE_BONUS, name: 'Damage Bonus', hasSubId: true },
     [FeatBenefitType.THREAT_RANGE]: { id: FeatBenefitType.THREAT_RANGE, name: 'Threat Range', hasSubId: false },
     [FeatBenefitType.INITIATIVE]: { id: FeatBenefitType.INITIATIVE, name: 'Initiative', hasSubId: false },
+    [FeatBenefitType.ATTACK_ABILITY_REPLACEMENT]: { id: FeatBenefitType.ATTACK_ABILITY_REPLACEMENT, name: 'Attack Ability Replacement', hasSubId: false },
+    [FeatBenefitType.UNARMED_LETHAL_DAMAGE]: { id: FeatBenefitType.UNARMED_LETHAL_DAMAGE, name: 'Unarmed Lethal Attack', hasSubId: false },
 }
 
 export const FEAT_BENEFIT_TYPE_BY_ID: IdToNameMap = ObjectIdToNameMap(FEAT_BENEFIT_TYPES);

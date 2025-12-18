@@ -17,7 +17,8 @@ import {
     WEAPON_TYPE_LIST,
     DAMAGE_TYPE_LIST,
     ARMOR_CATEGORY_LIST,
-    ITEM_TYPE_LIST
+    ITEM_TYPE_LIST,
+    SIZE_LIST
 } from '@shared/static-data';
 
 import { formatCostAsCurrency, parseCurrencyInput, parseWeightInput } from './utils';
@@ -61,6 +62,7 @@ export function ItemEdit() {
         typeId: 3,
         cost: null,
         weight: null,
+        sizeId: 5,
         armor: null,
         weapon: null,
         ...(id !== 'new' && { id: parseInt(id) })
@@ -436,6 +438,15 @@ export function ItemEdit() {
                             componentExtraClassName='flex items-center gap-2'
                             labelExtraClassName='w-24'
                             inputExtraClassName='w-20'
+                        />
+                        <CustomSelect
+                            label="Size"
+                            componentExtraClassName='flex items-center gap-2'
+                            labelExtraClassName='w-24'
+                            itemTextExtraClassName='w-36'
+                            options={SIZE_LIST}
+                            value={formData.sizeId ?? 5}
+                            onValueChange={(value) => setFormData(prev => ({ ...prev, sizeId: value as number }))}
                         />
                     </div>
                 </div>

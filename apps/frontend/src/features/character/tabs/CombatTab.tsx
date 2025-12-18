@@ -18,7 +18,14 @@ import { CSS } from '@dnd-kit/utilities';
 import { TabComponentProps, CharacterEditStateUpdateType, AttackDefinition } from '@/features/character/types';
 import { AttackDefinitionModal } from '../components/AttackDefinitionModal';
 import { CharacterApi } from '../CharacterApi';
-import { calculateAttackStats } from '@/lib/attack-calculation';
+import {
+    CharacterCalculationService,
+    formatAttackBonus,
+    formatWeight,
+    formatSize,
+    formatDamageType,
+    getUnarmedDamageType,
+} from '@/lib/character-calculation';
 import type { CharacterWithAllDetailsResponse, DnDClass } from '@shared/schema';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
@@ -28,7 +35,7 @@ import { useToast } from '@/components/toast/useToast';
 interface CalculatedAttackDisplay {
     attackDefinition: AttackDefinition;
     weaponName: string;
-    totalAttackBonus: number;
+    totalAttackBonus: number | string; // Can be number or "X / Y nonlethal" string
     damage: string;
     critical: string;
     range: string | null;
@@ -82,7 +89,9 @@ function SortableAttackRow({
                     <span className="font-medium text-gray-900 dark:text-white">{attackDisplay.weaponName}</span>
                 </div>
                 <div className="col-span-1 text-sm text-gray-700 dark:text-gray-300">
-                    {attackDisplay.totalAttackBonus >= 0 ? '+' : ''}{attackDisplay.totalAttackBonus}
+                    {typeof attackDisplay.totalAttackBonus === 'string'
+                        ? attackDisplay.totalAttackBonus
+                        : `${attackDisplay.totalAttackBonus >= 0 ? '+' : ''}${attackDisplay.totalAttackBonus}`}
                 </div>
                 <div className="col-span-1 text-sm text-gray-700 dark:text-gray-300">{attackDisplay.damage}</div>
                 <div className="col-span-1 text-sm text-gray-700 dark:text-gray-300">{attackDisplay.critical}</div>
@@ -113,7 +122,9 @@ function SortableAttackRow({
                         {attackDisplay.offHandDisplay.weaponName} (Off-hand)
                     </div>
                     <div className="col-span-1 text-sm text-gray-700 dark:text-gray-300">
-                        {attackDisplay.offHandDisplay.totalAttackBonus >= 0 ? '+' : ''}{attackDisplay.offHandDisplay.totalAttackBonus}
+                        {typeof attackDisplay.offHandDisplay.totalAttackBonus === 'string'
+                            ? attackDisplay.offHandDisplay.totalAttackBonus
+                            : `${attackDisplay.offHandDisplay.totalAttackBonus >= 0 ? '+' : ''}${attackDisplay.offHandDisplay.totalAttackBonus}`}
                     </div>
                     <div className="col-span-1 text-sm text-gray-700 dark:text-gray-300">{attackDisplay.offHandDisplay.damage}</div>
                     <div className="col-span-1 text-sm text-gray-700 dark:text-gray-300">{attackDisplay.offHandDisplay.critical}</div>
@@ -150,7 +161,7 @@ export function CombatTab({
     const [characterData, setCharacterData] = React.useState<CharacterWithAllDetailsResponse | null>(null);
     const [items, setItems] = React.useState<Array<{ id: number; name: string; weight: number | null; sizeId: number | null; weapon?: { category: number; type: number; damageMedium: string | null; critical: string | null; range: number | null; damageType: string | null } | null }>>([]);
     const [classDetailsMap, setClassDetailsMap] = React.useState<Map<number, DnDClass>>(new Map());
-    
+
     useEffect(() => {
         if (state.characterId) {
             CharacterApi.getCharacterWithAllDetails(undefined, { id: state.characterId })
@@ -218,11 +229,27 @@ export function CombatTab({
 
     // Calculate attack displays
     const calculatedAttacks = useMemo<CalculatedAttackDisplay[]>(() => {
-        if (!characterData || !stats || !items.length || classDetailsMap.size === 0) return [];
+        if (!characterData || !stats || classDetailsMap.size === 0) {
+            console.log('CombatTab: Missing prerequisites', {
+                hasCharacterData: !!characterData,
+                hasStats: !!stats,
+                itemsLength: items.length,
+                classDetailsMapSize: classDetailsMap.size,
+            });
+            return [];
+        }
+
+        // Items are only needed for weapon attacks, not unarmed strikes
 
         const attacks: CalculatedAttackDisplay[] = [];
         const definitions = state.attackDefinitions.filter(def => def.attackSlot !== null);
-        
+
+        console.log('CombatTab: Processing attack definitions', {
+            totalDefinitions: state.attackDefinitions.length,
+            definitionsWithSlots: definitions.length,
+            definitions,
+        });
+
         // Sort by attack slot
         definitions.sort((a, b) => {
             if (a.attackSlot === null) return 1;
@@ -233,47 +260,148 @@ export function CombatTab({
         for (const definition of definitions) {
             try {
                 const characterItems = characterData.characterItems || [];
-                const itemsWithDetails = items.filter(item => 
-                    characterItems.some(ci => ci.baseItemId === item.id)
+
+                console.log('CombatTab: Processing definition', {
+                    definition,
+                    characterItemsCount: characterItems.length,
+                    itemsCount: items.length,
+                });
+
+                // Convert attack definition to combat calculation context
+                const ATTACK_TYPE_MAP: Record<number, 'unarmed' | 'main-hand' | 'off-hand' | 'ranged' | 'dual-wield'> = {
+                    1: 'unarmed',
+                    2: 'main-hand',
+                    3: 'dual-wield',
+                    4: 'ranged',
+                };
+
+                const attackType = ATTACK_TYPE_MAP[definition.attackTypeId] ?? 'main-hand';
+
+                // For unarmed strikes, we don't need items
+                if (attackType === 'unarmed') {
+                    const progressions = resolvedData?.progressions ?? [];
+                    const result = CharacterCalculationService.getCombatValues(
+                        characterData,
+                        progressions,
+                        { attackType: 'unarmed' },
+                        classDetailsMap
+                    );
+
+                    attacks.push({
+                        attackDefinition: definition,
+                        weaponName: result.weaponName,
+                        totalAttackBonus: formatAttackBonus(result.value, result.nonlethalAttackBonus),
+                        damage: result.damage,
+                        critical: result.critical,
+                        range: result.range,
+                        weight: null,
+                        type: getUnarmedDamageType(),
+                        size: null,
+                        specialProperties: null,
+                    });
+                    continue;
+                }
+
+                // Find main hand item (required for weapon attacks)
+                let mainHandItem: typeof items[0] | undefined;
+                if (definition.mainHandCharacterItemId) {
+                    const mainHandCharacterItem = characterItems.find(ci => ci.id === definition.mainHandCharacterItemId);
+                    if (mainHandCharacterItem) {
+                        mainHandItem = items.find(i => i.id === mainHandCharacterItem.baseItemId);
+                        if (!mainHandItem) {
+                            console.warn('CombatTab: Main hand item not found', {
+                                characterItemId: definition.mainHandCharacterItemId,
+                                baseItemId: mainHandCharacterItem.baseItemId,
+                                availableItemIds: items.map(i => i.id),
+                            });
+                        }
+                    }
+                }
+
+                // Find off hand item
+                let offHandItem: typeof items[0] | undefined;
+                if (definition.offHandCharacterItemId) {
+                    const offHandCharacterItem = characterItems.find(ci => ci.id === definition.offHandCharacterItemId);
+                    if (offHandCharacterItem) {
+                        offHandItem = items.find(i => i.id === offHandCharacterItem.baseItemId);
+                        if (!offHandItem) {
+                            console.warn('CombatTab: Off hand item not found', {
+                                characterItemId: definition.offHandCharacterItemId,
+                                baseItemId: offHandCharacterItem.baseItemId,
+                                availableItemIds: items.map(i => i.id),
+                            });
+                        }
+                    }
+                }
+
+                const context = {
+                    attackType,
+                    mainHandItem,
+                    offHandItem,
+                };
+
+                // Use new calculation service
+                const progressions = resolvedData?.progressions ?? [];
+                console.log('CombatTab: Calling getCombatValues', {
+                    attackType,
+                    hasMainHandItem: !!mainHandItem,
+                    hasOffHandItem: !!offHandItem,
+                    progressionsCount: progressions.length,
+                });
+
+                const result = CharacterCalculationService.getCombatValues(
+                    characterData,
+                    progressions,
+                    context,
+                    classDetailsMap
                 );
 
-                const result = calculateAttackStats({
-                    attackDefinition: definition,
-                    character: characterData,
-                    characterItems,
-                    items: itemsWithDetails,
-                    classDetailsMap,
-                    resolvedProgressions: resolvedData.progressions,
-                    stats,
-                });
+                console.log('CombatTab: Got result', result);
 
                 attacks.push({
                     attackDefinition: definition,
                     weaponName: result.weaponName,
-                    totalAttackBonus: result.totalAttackBonus,
+                    totalAttackBonus: formatAttackBonus(result.value, result.nonlethalAttackBonus),
                     damage: result.damage,
                     critical: result.critical,
                     range: result.range,
-                    weight: result.weight,
-                    type: result.type,
-                    size: result.size,
-                    specialProperties: result.specialProperties,
+                    weight: formatWeight(mainHandItem?.weight),
+                    type: formatDamageType(mainHandItem?.weapon?.damageType ?? null),
+                    size: formatSize(mainHandItem?.sizeId),
+                    specialProperties: null,
                     isDualWield: result.isDualWield,
                     offHandDisplay: result.offHandResult ? {
                         attackDefinition: definition, // Same definition for off-hand
                         weaponName: result.offHandResult.weaponName,
-                        totalAttackBonus: result.offHandResult.totalAttackBonus,
+                        totalAttackBonus: formatAttackBonus(result.offHandResult.value, result.offHandResult.nonlethalAttackBonus),
                         damage: result.offHandResult.damage,
                         critical: result.offHandResult.critical,
                         range: result.offHandResult.range,
-                        weight: result.offHandResult.weight,
-                        type: result.offHandResult.type,
-                        size: result.offHandResult.size,
-                        specialProperties: result.offHandResult.specialProperties,
+                        weight: formatWeight(offHandItem?.weight),
+                        type: formatDamageType(offHandItem?.weapon?.damageType ?? null),
+                        size: formatSize(offHandItem?.sizeId),
+                        specialProperties: null,
                     } : undefined,
                 });
             } catch (error) {
-                console.error('Error calculating attack stats:', error);
+                console.error('Error calculating attack stats:', error, {
+                    definition,
+                    mainHandItemId: definition.mainHandCharacterItemId,
+                    offHandItemId: definition.offHandCharacterItemId,
+                });
+                // Don't silently fail - add a placeholder so user knows something is wrong
+                attacks.push({
+                    attackDefinition: definition,
+                    weaponName: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                    totalAttackBonus: 0,
+                    damage: 'N/A',
+                    critical: 'N/A',
+                    range: null,
+                    weight: null,
+                    type: '',
+                    size: null,
+                    specialProperties: null,
+                });
             }
         }
 
@@ -425,7 +553,7 @@ export function CombatTab({
             const updated = state.attackDefinitions.map(def => {
                 const newIndex = attackDefinitionIds.indexOf(def.id);
                 if (newIndex === -1) return def;
-                
+
                 // Calculate new slot (1-based, accounting for dual wield taking 2 slots)
                 let slot = 1;
                 for (let i = 0; i < newIndex; i++) {

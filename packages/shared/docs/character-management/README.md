@@ -16,6 +16,7 @@
 - **[character-advancement.md](character-advancement.md)** — Leveling up and multiclassing
 - **[character-sheet.md](character-sheet.md)** — Character sheet display and calculations
 - **[character-integration.md](character-integration.md)** — Integration with other game systems
+- **[attack-calculation.md](attack-calculation.md)** — Attack calculation library for combat statistics
 
 ## 🎯 **System Overview**
 
