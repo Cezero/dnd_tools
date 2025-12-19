@@ -4,7 +4,7 @@ import { SimpleFeatureResolution } from '@/features/character';
 import { FeatureProgressionSourceType } from '@/features/character/types';
 import type { SkillBonus, PendingChoice } from '@/features/character/types';
 import { useCacheFunctions } from '@/services/cache';
-import type { FeatureEntity, FeatureProgression } from '@shared/schema';
+import type { FeatureEntity, FeatureProgression, FeatInQueryResponse } from '@shared/schema';
 import { EntityAppliesToType } from '@shared/static-data';
 
 import { ResolvedFeatureService } from './ResolvedFeatureService';
@@ -12,7 +12,7 @@ import { ResolvedFeatureService } from './ResolvedFeatureService';
 /**
  * React hook for managing FeatureProgression pool and triggering resolution
  */
-export function useFeatureProgressionPool() {
+export function useFeatureProgressionPool(allFeats?: FeatInQueryResponse[]) {
     const [isResolving, setIsResolving] = useState(false);
     const [resolutionError, setResolutionError] = useState<string | null>(null);
     const [resolvedData, setResolvedData] = useState<{
@@ -22,13 +22,15 @@ export function useFeatureProgressionPool() {
         pendingChoices: PendingChoice[];
         grantedFeats: FeatureEntity[];
         availableFeats: number;
+        availableFighterBonusFeats: number;
     }>({
         progressions: [],
         classSkills: [],
         skillBonuses: [],
         pendingChoices: [],
         grantedFeats: [],
-        availableFeats: 0
+        availableFeats: 0,
+        availableFighterBonusFeats: 0
     });
 
     const resolutionRef = useRef(new SimpleFeatureResolution());
@@ -37,7 +39,7 @@ export function useFeatureProgressionPool() {
     /**
      * Trigger feature resolution on the current pool
      */
-    const triggerResolution = useCallback(async () => {
+    const triggerResolution = useCallback(async (existingChoices?: Array<{ progressionId: number; featureEntityId: number }>) => {
         console.log('Triggering feature resolution...');
         setIsResolving(true);
         setResolutionError(null);
@@ -59,11 +61,11 @@ export function useFeatureProgressionPool() {
                 getClassNameById,
                 getDomainSelectByEdition
             };
-            const pendingChoices = await ResolvedFeatureService.getPendingChoices(allProgressions, cacheService);
+            const pendingChoices = await ResolvedFeatureService.getPendingChoices(allProgressions, cacheService, undefined, existingChoices, allFeats);
 
-            // Calculate available feats (simplified - in reality this would be more complex)
-            // For now, use a basic calculation based on level
-            const availableFeats = Math.floor(1 / 3) + 1; // Basic level 1 calculation
+            // Calculate available feats from resolved progressions
+            const availableFeats = ResolvedFeatureService.getAvailableFeats(allProgressions);
+            const availableFighterBonusFeats = ResolvedFeatureService.getAvailableFighterBonusFeats(allProgressions);
 
             console.log('Extracted resolved data:', {
                 classSkillsCount: classSkills.length,
@@ -73,7 +75,8 @@ export function useFeatureProgressionPool() {
                 pendingChoicesCount: pendingChoices.length,
                 grantedFeatsCount: grantedFeats.length,
                 grantedFeats: grantedFeats,
-                availableFeats: availableFeats
+                availableFeats: availableFeats,
+                availableFighterBonusFeats: availableFighterBonusFeats
             });
 
             setResolvedData(prev => ({
@@ -83,7 +86,8 @@ export function useFeatureProgressionPool() {
                 skillBonuses,
                 pendingChoices,
                 grantedFeats,
-                availableFeats
+                availableFeats,
+                availableFighterBonusFeats
             }));
 
             console.log('Feature resolution completed');
@@ -227,7 +231,8 @@ export function useFeatureProgressionPool() {
             skillBonuses: [],
             pendingChoices: [],
             grantedFeats: [],
-            availableFeats: 0
+            availableFeats: 0,
+            availableFighterBonusFeats: 0
         });
     }, []);
 

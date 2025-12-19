@@ -1,9 +1,10 @@
 import {
-    UserIcon, ShieldCheckIcon, AcademicCapIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, CogIcon, ListBulletIcon, BoltIcon
+    UserIcon, ShieldCheckIcon, AcademicCapIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, CogIcon, ListBulletIcon, BoltIcon, Bars3Icon
 } from '@heroicons/react/24/outline';
 import { Dialog } from '@base-ui-components/react/dialog';
+import { Menu } from '@base-ui-components/react/menu';
 import { useQueryClient } from '@tanstack/react-query';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
@@ -12,20 +13,27 @@ import { useToast } from '@/components/toast/useToast';
 import { useCharacterEditState } from '@/features/character';
 import { CharacterApi } from '@/features/character/CharacterApi';
 import { CharacterEditStateUpdateType, type EquipmentItem } from '@/features/character/types';
+import { CharacterQueryHooks } from '@/services/query/CharacterQueryHooks';
 import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
+import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
-import type { Race, DnDClass, CharacterWithAllDetailsResponse, SkillRank } from '@shared/schema';
+import type { Race, DnDClass, CharacterWithAllDetailsResponse, FeatInQueryResponse, Feat } from '@shared/schema';
+import type { SkillRank } from '@/features/character/types';
 import { EditionId } from '@shared/static-data';
 
 import { generateCharacterPdf } from './characterPdfService';
 import { AbilitiesRaceTab, ChoicesTab, ClassTab, ConfigurationTab, DescriptionTab, EquipmentTab, FeatsTab, SkillsTab, CombatTab } from './tabs';
 import type { TabConfig, TabComponentProps } from './types';
 import { useFeatureProgressionPool } from './useFeatureProgressionPool';
+import { displayStrategyFactory } from '@/lib/formatters';
+import { DisplayType } from '@shared/static-data';
+import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
+import type { ItemWithDetails } from '@shared/schema';
+import { useMemo } from 'react';
 
 export function CharacterEdit(): React.JSX.Element {
     const { user, isLoading: isAuthLoading } = useAuthAuto();
     const { state, updateState } = useCharacterEditState();
-    const { isResolving, resolutionError, resolvedData, addRace, addClass, addSecondaryClass, triggerResolution, handleChoiceSelection } = useFeatureProgressionPool();
     const queryClient = useQueryClient();
     const { id } = useParams<{ id: string }>();
     const toastManager = useToast();
@@ -48,6 +56,17 @@ export function CharacterEdit(): React.JSX.Element {
     const [_selectedClassDetails, setSelectedClassDetails] = useState<(DnDClass & { id: number }) | null>(null);
     const [_selectedSecondaryClassDetails, setSelectedSecondaryClassDetails] = useState<(DnDClass & { id: number }) | null>(null);
 
+    // Character data for formatting
+    const [characterData, setCharacterData] = useState<CharacterWithAllDetailsResponse | null>(null);
+    const [items, setItems] = useState<ItemWithDetails[]>([]);
+    const [classDetailsMap, setClassDetailsMap] = useState<Map<number, DnDClass>>(new Map());
+
+    // Shared data for all tabs - feats, classes, race (must be declared before useFeatureProgressionPool)
+    const [allFeats, setAllFeats] = useState<FeatInQueryResponse[]>([]);
+    const [isLoadingFeats, setIsLoadingFeats] = useState(false);
+    const [featsMap, setFeatsMap] = useState<Map<number, Feat>>(new Map());
+    const [isLoadingFullFeats, setIsLoadingFullFeats] = useState(false);
+
     // Initialize from user preferences
     useEffect(() => {
         if (!isAuthLoading && user) {
@@ -61,22 +80,119 @@ export function CharacterEdit(): React.JSX.Element {
     }, [user, isAuthLoading, updateState]);
 
     // Use imperative API for race, class, and secondary class details
-    const [raceDetailsData, setRaceDetailsData] = useState<unknown | null>(null);
-    const [classDetailsData, setClassDetailsData] = useState<unknown | null>(null);
-    const [secondaryClassDetailsData, setSecondaryClassDetailsData] = useState<unknown | null>(null);
+    const [raceDetailsData, setRaceDetailsData] = useState<(Race & { features?: unknown[] }) | null>(null);
+    const [classDetailsData, setClassDetailsData] = useState<(DnDClass & { features?: unknown[] }) | null>(null);
+    const [secondaryClassDetailsData, setSecondaryClassDetailsData] = useState<(DnDClass & { features?: unknown[] }) | null>(null);
     const [isLoadingRace, setIsLoadingRace] = useState(false);
     const [isLoadingClass, setIsLoadingClass] = useState(false);
     const [isLoadingSecondaryClass, setIsLoadingSecondaryClass] = useState(false);
 
+    // Initialize feature progression pool with allFeats (will be updated when feats are loaded)
+    const { isResolving, resolutionError, resolvedData, addRace, addClass, addSecondaryClass, triggerResolution, handleChoiceSelection } = useFeatureProgressionPool(allFeats);
+
+    const [primaryClassData, setPrimaryClassData] = useState<DnDClass | null>(null);
+    const [secondaryClassData, setSecondaryClassData] = useState<DnDClass | null>(null);
+    const [raceData, setRaceData] = useState<Race | null>(null);
+    const [isLoadingPrimaryClass, setIsLoadingPrimaryClass] = useState(false);
+    const [isLoadingSecondaryClassData, setIsLoadingSecondaryClassData] = useState(false);
+    const [isLoadingRaceData, setIsLoadingRaceData] = useState(false);
+
     // TODO: Add domain queries back when we implement domain choice handling
     // For now, we'll skip domain queries to avoid the 404 errors
 
-    // Fetch races data on component mount
+    // Fetch all feats on component mount (shared across tabs)
+    // Use TanStack Query to leverage caching and prevent infinite loops
+    useEffect(() => {
+        let isMounted = true;
+        const fetchAllFeats = async () => {
+            try {
+                setIsLoadingFeats(true);
+                // Use queryClient.fetchQuery to leverage TanStack Query cache
+                const featResponse = await queryClient.fetchQuery({
+                    queryKey: FeatQueryHooks.getFeatsQueryKey(),
+                    queryFn: FeatQueryHooks.getFeatsQueryFn,
+                    staleTime: 5 * 60 * 1000, // 5 minutes
+                    gcTime: 10 * 60 * 1000, // 10 minutes
+                });
+                // getFeats returns GetAllFeatsResponse which has results: FeatInQueryResponse[]
+                if (isMounted && featResponse?.results) {
+                    setAllFeats(featResponse.results);
+                } else if (isMounted) {
+                    setAllFeats([]);
+                }
+            } catch (error) {
+                console.error('Failed to fetch feats:', error);
+                if (isMounted) {
+                    setAllFeats([]);
+                }
+            } finally {
+                if (isMounted) {
+                    setIsLoadingFeats(false);
+                }
+            }
+        };
+        fetchAllFeats();
+        return () => {
+            isMounted = false;
+        };
+    }, [queryClient]);
+
+    // Fetch all full feats (with benefits and prereqs) on component mount
+    // Use TanStack Query to leverage caching
+    useEffect(() => {
+        let isMounted = true;
+        const fetchAllFullFeats = async () => {
+            try {
+                setIsLoadingFullFeats(true);
+                // Use TanStack Query fetch method which handles caching automatically
+                const fullFeatResponse = await FeatQueryHooks.getAllFeatsFull(
+                    undefined,
+                    {
+                        staleTime: 5 * 60 * 1000, // 5 minutes
+                        cacheTime: 10 * 60 * 1000, // 10 minutes
+                    },
+                    queryClient
+                );
+                // getAllFeatsFull returns FeatQueryResponse which has results: Feat[]
+                if (isMounted && fullFeatResponse?.results) {
+                    // Build a Map for fast lookup by feat ID
+                    const map = new Map<number, Feat>();
+                    for (const feat of fullFeatResponse.results) {
+                        map.set(feat.id, feat);
+                    }
+                    console.log('[CharacterEdit] FeatsMap populated:', { size: map.size, hasFeat306: map.has(306) });
+                    setFeatsMap(map);
+                } else if (isMounted) {
+                    setFeatsMap(new Map());
+                }
+            } catch (error) {
+                console.error('Failed to fetch full feats:', error);
+                if (isMounted) {
+                    setFeatsMap(new Map());
+                }
+            } finally {
+                if (isMounted) {
+                    setIsLoadingFullFeats(false);
+                }
+            }
+        };
+        fetchAllFullFeats();
+        return () => {
+            isMounted = false;
+        };
+    }, [queryClient]);
+
+    // Fetch races data on component mount using cache
     useEffect(() => {
         const fetchRaces = async () => {
             try {
                 setIsLoadingRaces(true);
-                const races = await RaceQueryHooks.getRaces({});
+                const races = await queryClient.fetchQuery({
+                    queryKey: RaceQueryHooks.getRacesQueryKey(),
+                    queryFn: () => RaceQueryHooks.getRacesQueryFn(),
+                    staleTime: 5 * 60 * 1000, // 5 minutes
+                    gcTime: 10 * 60 * 1000, // 10 minutes
+                });
                 setRacesData(races.results || []);
             } catch (error) {
                 console.error('Failed to fetch races:', error);
@@ -85,7 +201,7 @@ export function CharacterEdit(): React.JSX.Element {
             }
         };
         fetchRaces();
-    }, []);
+    }, [queryClient]);
 
     // Fetch race details when raceId changes
     useEffect(() => {
@@ -93,11 +209,13 @@ export function CharacterEdit(): React.JSX.Element {
             if (!state.raceId) {
                 setRaceDetailsData(null);
                 setSelectedRaceDetails(null);
+                setRaceData(null);
                 return;
             }
 
             try {
                 setIsLoadingRace(true);
+                setIsLoadingRaceData(true);
                 // Use queryClient.fetchQuery to leverage TanStack Query cache
                 const raceData = await queryClient.fetchQuery({
                     queryKey: RaceQueryHooks.getRaceByIdQueryKey(state.raceId),
@@ -107,12 +225,15 @@ export function CharacterEdit(): React.JSX.Element {
                 });
                 setRaceDetailsData(raceData);
                 setSelectedRaceDetails({ ...raceData, id: state.raceId });
+                setRaceData(raceData);
             } catch (error) {
                 console.error('Failed to fetch race details:', error);
                 setRaceDetailsData(null);
                 setSelectedRaceDetails(null);
+                setRaceData(null);
             } finally {
                 setIsLoadingRace(false);
+                setIsLoadingRaceData(false);
             }
         };
         fetchRaceDetails();
@@ -124,11 +245,13 @@ export function CharacterEdit(): React.JSX.Element {
             if (!state.classId) {
                 setClassDetailsData(null);
                 setSelectedClassDetails(null);
+                setPrimaryClassData(null);
                 return;
             }
 
             try {
                 setIsLoadingClass(true);
+                setIsLoadingPrimaryClass(true);
                 // Use queryClient.fetchQuery to leverage TanStack Query cache
                 const classData = await queryClient.fetchQuery({
                     queryKey: ClassQueryHooks.getClassByIdQueryKey(state.classId),
@@ -138,12 +261,15 @@ export function CharacterEdit(): React.JSX.Element {
                 });
                 setClassDetailsData(classData);
                 setSelectedClassDetails({ ...classData, id: state.classId });
+                setPrimaryClassData(classData);
             } catch (error) {
                 console.error('Failed to fetch class details:', error);
                 setClassDetailsData(null);
                 setSelectedClassDetails(null);
+                setPrimaryClassData(null);
             } finally {
                 setIsLoadingClass(false);
+                setIsLoadingPrimaryClass(false);
             }
         };
         fetchClassDetails();
@@ -155,11 +281,13 @@ export function CharacterEdit(): React.JSX.Element {
             if (!state.secondaryClassId) {
                 setSecondaryClassDetailsData(null);
                 setSelectedSecondaryClassDetails(null);
+                setSecondaryClassData(null);
                 return;
             }
 
             try {
                 setIsLoadingSecondaryClass(true);
+                setIsLoadingSecondaryClassData(true);
                 // Use queryClient.fetchQuery to leverage TanStack Query cache
                 const classData = await queryClient.fetchQuery({
                     queryKey: ClassQueryHooks.getClassByIdQueryKey(state.secondaryClassId),
@@ -169,12 +297,15 @@ export function CharacterEdit(): React.JSX.Element {
                 });
                 setSecondaryClassDetailsData(classData);
                 setSelectedSecondaryClassDetails({ ...classData, id: state.secondaryClassId });
+                setSecondaryClassData(classData);
             } catch (error) {
                 console.error('Failed to fetch secondary class details:', error);
                 setSecondaryClassDetailsData(null);
                 setSelectedSecondaryClassDetails(null);
+                setSecondaryClassData(null);
             } finally {
                 setIsLoadingSecondaryClass(false);
+                setIsLoadingSecondaryClassData(false);
             }
         };
         fetchSecondaryClassDetails();
@@ -206,7 +337,7 @@ export function CharacterEdit(): React.JSX.Element {
 
     // TODO: Add domain management back when we implement domain choice handling
 
-    // Load character when ID is present in URL
+    // Load character when ID is present in URL - use TanStack Query cache
     useEffect(() => {
         const loadCharacter = async () => {
             if (!id || !user) return;
@@ -216,7 +347,13 @@ export function CharacterEdit(): React.JSX.Element {
 
             try {
                 setIsLoadingCharacter(true);
-                const character = await CharacterApi.getCharacterWithAllDetails(undefined, { id: characterId }) as CharacterWithAllDetailsResponse;
+                const character = await queryClient.fetchQuery({
+                    queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(characterId),
+                    queryFn: () => CharacterQueryHooks.getCharacterWithAllDetailsQueryFn({ pathParams: { id: characterId } }),
+                    staleTime: 5 * 60 * 1000, // 5 minutes
+                    gcTime: 10 * 60 * 1000, // 10 minutes
+                }) as CharacterWithAllDetailsResponse;
+                setCharacterData(character);
 
                 // Find advancement for current level (default level 1)
                 const currentLevel = 1; // Default to level 1 for now
@@ -260,15 +397,19 @@ export function CharacterEdit(): React.JSX.Element {
                 });
 
                 // Load equipment
+                // Only load items that have a valid baseItemId (purchased items)
+                // Items without baseItemId would be filtered out on save anyway
                 if (character.characterItems) {
-                    const equipment: EquipmentItem[] = character.characterItems.map((item, index) => ({
-                        id: item.id,
-                        itemId: item.baseItemId,
-                        costInGp: null, // Cost not stored in CharacterItem, would need to fetch from baseItem
-                        quantity: item.quantity ?? 1,
-                        location: item.location ?? null,
-                        notes: item.name,
-                    }));
+                    const equipment: EquipmentItem[] = character.characterItems
+                        .filter(item => item.baseItemId !== null && item.baseItemId !== undefined)
+                        .map((item) => ({
+                            id: item.id,
+                            itemId: item.baseItemId!,
+                            costInGp: null, // Cost not stored in CharacterItem, would need to fetch from baseItem
+                            quantity: item.quantity ?? 1,
+                            location: item.location ?? null,
+                            notes: item.name,
+                        }));
                     updateState({ type: CharacterEditStateUpdateType.SET_EQUIPMENT, payload: { equipment } });
                 }
 
@@ -276,7 +417,14 @@ export function CharacterEdit(): React.JSX.Element {
                 if (character.attackDefinitions) {
                     updateState({
                         type: CharacterEditStateUpdateType.SET_ATTACK_DEFINITIONS,
-                        payload: { attackDefinitions: character.attackDefinitions },
+                        payload: {
+                            attackDefinitions: character.attackDefinitions.map(def => ({
+                                id: def.id,
+                                attackSlot: def.attackSlot ?? null,
+                                mainHandCharacterItemId: def.mainHandCharacterItemId ?? null,
+                                offHandCharacterItemId: def.offHandCharacterItemId ?? null,
+                            }))
+                        },
                     });
                 }
 
@@ -299,7 +447,14 @@ export function CharacterEdit(): React.JSX.Element {
 
                     // Load feat selections
                     const selectedFeats = advancement.feats.map(feat => feat.featId);
+                    const featSubIds: Record<number, number | null> = {};
+                    advancement.feats.forEach(feat => {
+                        if (feat.featSubId !== null && feat.featSubId !== undefined) {
+                            featSubIds[feat.featId] = feat.featSubId;
+                        }
+                    });
                     updateState({ type: CharacterEditStateUpdateType.SET_SELECTED_FEATS, payload: { selectedFeats } });
+                    updateState({ type: CharacterEditStateUpdateType.SET_FEAT_SUB_IDS, payload: { featSubIds } });
 
                     // Load feature choices
                     updateState({ type: CharacterEditStateUpdateType.SET_FEATURE_CHOICES, payload: { featureChoices: advancement.featureChoices } });
@@ -315,7 +470,7 @@ export function CharacterEdit(): React.JSX.Element {
         };
 
         loadCharacter();
-    }, [id, user, state.level, updateState]);
+    }, [id, user, state.level, updateState, queryClient]);
 
     const _handleClassDetailsChange = (classDetails: (DnDClass & { id: number }) | null) => {
         setSelectedClassDetails(classDetails);
@@ -328,7 +483,7 @@ export function CharacterEdit(): React.JSX.Element {
     // Save handler
     const handleSave = async (nameToUse?: string): Promise<void> => {
         const characterName = nameToUse || state.name.trim();
-        
+
         if (!characterName) {
             setNameModalOpen(true);
             setNameModalValue('');
@@ -414,12 +569,23 @@ export function CharacterEdit(): React.JSX.Element {
                     })),
                     feats: state.selectedFeats.map(featId => ({
                         featId,
+                        featSubId: state.featSubIds[featId] ?? null,
                     })),
+                    // Include feature choices (choices made in ChoicesTab)
+                    // Omit id, characterId, and advancementId as per CreateCharacterFeatureChoiceSchema
+                    featureChoices: state.featureChoices.length > 0 ? state.featureChoices.map(choice => ({
+                        progressionId: choice.progressionId,
+                        featureEntityId: choice.featureEntityId,
+                        appliesToId: choice.appliesToId,
+                        appliesToSubId: choice.appliesToSubId ?? null,
+                        choiceIndex: choice.choiceIndex ?? null,
+                    })) : undefined,
                 } : undefined,
                 // Include equipment (only items with itemId, which are purchased items)
                 // Send individual items to preserve location per instance
+                // Only send if there are items to avoid accidentally deleting all equipment
                 equipment: (() => {
-                    return state.equipment
+                    const equipmentItems = state.equipment
                         .filter(item => item.itemId !== null)
                         .map(item => ({
                             name: item.notes || 'Unknown Item',
@@ -427,16 +593,18 @@ export function CharacterEdit(): React.JSX.Element {
                             location: item.location ?? null,
                             baseItemId: item.itemId!,
                         }));
+                    // Return undefined if empty to preserve existing equipment
+                    return equipmentItems.length > 0 ? equipmentItems : undefined;
                 })(),
                 // Include attack definitions
                 attackDefinitions: state.attackDefinitions.map(def => ({
-                    attackTypeId: def.attackTypeId,
-                    attackSlot: def.attackSlot,
+                    attackSlot: def.attackSlot ?? null,
                     mainHandCharacterItemId: def.mainHandCharacterItemId,
                     offHandCharacterItemId: def.offHandCharacterItemId,
                 })),
             };
 
+            // Debug: Log the save data to verify featureChoices are included
             // Use unified save endpoint - backend handles all orchestration
             let result;
             if (state.characterId) {
@@ -461,10 +629,58 @@ export function CharacterEdit(): React.JSX.Element {
                 source: 'character-editor',
             });
 
-            // Invalidate queries
+            // Invalidate queries to ensure fresh data on next load
             await queryClient.invalidateQueries({ queryKey: ['characters'] });
             if (state.characterId) {
                 await queryClient.invalidateQueries({ queryKey: ['characters', 'item', state.characterId] });
+                await queryClient.invalidateQueries({ queryKey: ['characters', 'details', state.characterId] });
+
+                // Reload character data to get updated featureChoices from the database
+                // This ensures the UI reflects what was actually saved
+                try {
+                    const updatedCharacter = await queryClient.fetchQuery({
+                        queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(state.characterId),
+                        queryFn: () => CharacterQueryHooks.getCharacterWithAllDetailsQueryFn({ pathParams: { id: state.characterId } }),
+                        staleTime: 5 * 60 * 1000,
+                        gcTime: 10 * 60 * 1000,
+                    }) as CharacterWithAllDetailsResponse;
+
+                    setCharacterData(updatedCharacter);
+
+                    // Reload advancement data including featureChoices from the updated character
+                    const currentLevel = state.level || 1;
+                    const advancement = updatedCharacter.advancements.find(adv => adv.level === currentLevel);
+                    if (advancement) {
+                        // Update featureChoices from the database
+                        updateState({
+                            type: CharacterEditStateUpdateType.SET_FEATURE_CHOICES,
+                            payload: { featureChoices: advancement.featureChoices || [] }
+                        });
+
+                        // Reload attack definitions to prevent them from being lost
+                        if (updatedCharacter.attackDefinitions) {
+                            updateState({
+                                type: CharacterEditStateUpdateType.SET_ATTACK_DEFINITIONS,
+                                payload: {
+                                    attackDefinitions: updatedCharacter.attackDefinitions.map(def => ({
+                                        id: def.id,
+                                        attackSlot: def.attackSlot ?? null,
+                                        mainHandCharacterItemId: def.mainHandCharacterItemId ?? null,
+                                        offHandCharacterItemId: def.offHandCharacterItemId ?? null,
+                                    }))
+                                },
+                            });
+                        }
+
+                        // Trigger feature resolution to apply feat benefits
+                        // Use setTimeout to allow state updates to complete first
+                        setTimeout(async () => {
+                            await triggerFeatureResolution();
+                        }, 200);
+                    }
+                } catch (error) {
+                    console.error('Failed to reload character after save:', error);
+                }
             }
         } catch (error) {
             console.error('Failed to save character:', error);
@@ -474,7 +690,7 @@ export function CharacterEdit(): React.JSX.Element {
             } else if (typeof error === 'string') {
                 errorMessage = error;
             }
-            
+
             toastManager?.add({
                 title: 'Save Failed',
                 description: errorMessage,
@@ -512,8 +728,13 @@ export function CharacterEdit(): React.JSX.Element {
         try {
             setIsExporting(true);
 
-            // Fetch character with all details
-            const character = await CharacterApi.getCharacterWithAllDetails(undefined, { id: state.characterId }) as CharacterWithAllDetailsResponse;
+            // Fetch character with all details - use TanStack Query cache
+            const character = await queryClient.fetchQuery({
+                queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(state.characterId),
+                queryFn: () => CharacterQueryHooks.getCharacterWithAllDetailsQueryFn({ pathParams: { id: state.characterId } }),
+                staleTime: 5 * 60 * 1000, // 5 minutes
+                gcTime: 10 * 60 * 1000, // 10 minutes
+            }) as CharacterWithAllDetailsResponse;
 
             if (!character) {
                 throw new Error('Character not found');
@@ -521,7 +742,7 @@ export function CharacterEdit(): React.JSX.Element {
 
             // Build class details map
             const classDetailsMap = new Map<number, DnDClass>();
-            
+
             // Get unique class IDs from advancements
             const classIds = new Set<number>();
             for (const advancement of character.advancements) {
@@ -531,18 +752,23 @@ export function CharacterEdit(): React.JSX.Element {
                 }
             }
 
-            // Fetch class details
+            // Fetch class details using TanStack Query cache
             for (const classId of classIds) {
                 try {
-                    const classData = await ClassQueryHooks.getClassById(classId);
+                    const classData = await queryClient.fetchQuery({
+                        queryKey: ClassQueryHooks.getClassByIdQueryKey(classId),
+                        queryFn: () => ClassQueryHooks.getClassByIdQueryFn({ pathParams: { id: classId } }),
+                        staleTime: 5 * 60 * 1000, // 5 minutes
+                        gcTime: 10 * 60 * 1000, // 10 minutes
+                    });
                     classDetailsMap.set(classId, classData);
                 } catch (error) {
                     console.error(`Failed to fetch class ${classId}:`, error);
                 }
             }
 
-            // Generate PDF
-            await generateCharacterPdf(character, classDetailsMap, resolvedData.progressions);
+            // Generate PDF (pass queryClient and raceData to use cache)
+            await generateCharacterPdf(character, classDetailsMap, resolvedData.progressions, queryClient, raceData);
 
             toastManager?.add({
                 title: 'Export Successful',
@@ -557,7 +783,7 @@ export function CharacterEdit(): React.JSX.Element {
             } else if (typeof error === 'string') {
                 errorMessage = error;
             }
-            
+
             toastManager?.add({
                 title: 'Export Failed',
                 description: errorMessage,
@@ -568,7 +794,122 @@ export function CharacterEdit(): React.JSX.Element {
         }
     };
 
+    // Fetch items for formatting using cache
+    useEffect(() => {
+        const fetchItems = async () => {
+            try {
+                const itemsResponse = await queryClient.fetchQuery({
+                    queryKey: ItemQueryHooks.getItemsQueryKey(),
+                    queryFn: () => ItemQueryHooks.getItemsQueryFn(),
+                    staleTime: 5 * 60 * 1000, // 5 minutes
+                    gcTime: 10 * 60 * 1000, // 10 minutes
+                });
+                if (itemsResponse?.results) {
+                    setItems(itemsResponse.results);
+                }
+            } catch (error) {
+                console.error('Failed to fetch items:', error);
+            }
+        };
+        fetchItems();
+    }, [queryClient]);
+
+    // Fetch class details for formatting
+    useEffect(() => {
+        const fetchClassDetails = async () => {
+            if (!characterData) return;
+
+            const classIds = new Set<number>();
+            for (const advancement of characterData.advancements) {
+                classIds.add(advancement.classId);
+                if (advancement.secondaryClassId) {
+                    classIds.add(advancement.secondaryClassId);
+                }
+            }
+
+            const map = new Map<number, DnDClass>();
+            const fetchPromises = Array.from(classIds).map(async (classId) => {
+                try {
+                    const classData = await queryClient.fetchQuery({
+                        queryKey: ClassQueryHooks.getClassByIdQueryKey(classId),
+                        queryFn: () => ClassQueryHooks.getClassByIdQueryFn({ pathParams: { id: classId } }),
+                        staleTime: 5 * 60 * 1000, // 5 minutes
+                        gcTime: 10 * 60 * 1000, // 10 minutes
+                    });
+                    map.set(classId, classData);
+                } catch (error) {
+                    console.error(`Failed to fetch class ${classId}:`, error);
+                }
+            });
+
+            Promise.all(fetchPromises).then(() => {
+                setClassDetailsMap(map);
+            });
+        };
+
+        fetchClassDetails();
+    }, [characterData, queryClient]);
+
+    // Cache formatted character
+    // Create a stable key for progressions to prevent unnecessary recalculations
+    const progressionsKey = useMemo(() => {
+        if (!resolvedData.progressions) return '';
+        return resolvedData.progressions.map(p => p.id).sort((a, b) => a - b).join(',');
+    }, [resolvedData.progressions]);
+
+    const formattedCharacter = useMemo(() => {
+        if (!characterData || !resolvedData.progressions || classDetailsMap.size === 0 || items.length === 0 || featsMap.size === 0) {
+            return null;
+        }
+
+        const characterSheetStrategy = displayStrategyFactory.createStrategy(DisplayType.CharacterSheet);
+        if (!characterSheetStrategy.formatCharacter) {
+            return null;
+        }
+
+        // Build character context for formatting
+        const characterContext: import('@/lib/formatters/types').BaseCharacterInfo = {
+            abilityScores: Object.fromEntries(
+                characterData.abilityScores.map(a => [a.abilityId, a.value])
+            ),
+            classLevels: Object.fromEntries(
+                Array.from(classDetailsMap.keys()).map(classId => {
+                    const level = characterData.advancements.filter(a => a.classId === classId || a.secondaryClassId === classId).length;
+                    return [classId, level];
+                })
+            ),
+            raceId: characterData.raceId ?? undefined,
+            sizeId: (characterData.race && 'sizeId' in characterData.race && typeof characterData.race.sizeId === 'number') ? characterData.race.sizeId : undefined
+        };
+
+        try {
+            return characterSheetStrategy.formatCharacter(
+                characterData,
+                resolvedData.progressions,
+                items,
+                characterData.characterItems || [],
+                classDetailsMap,
+                { character: characterContext, featsMap },
+                raceDetailsData ?? null
+            );
+        } catch (error) {
+            console.error('Error formatting character:', error);
+            return null;
+        }
+    }, [characterData, progressionsKey, classDetailsMap, items, raceDetailsData, featsMap]);
+
     // Tab configuration
+    // Wrapper for triggerResolution (no longer needs character state)
+    // MUST be defined before any early returns to follow rules of hooks
+    const triggerFeatureResolution = useCallback(async () => {
+        // Extract existing choices from state.featureChoices to filter them out from pending choices
+        const existingChoices = state.featureChoices.map(choice => ({
+            progressionId: choice.progressionId,
+            featureEntityId: choice.featureEntityId
+        }));
+        await triggerResolution(existingChoices);
+    }, [triggerResolution, state.featureChoices]);
+
     const tabs: TabConfig[] = [
         { id: 'abilities-race', label: 'Abilities & Race', icon: UserIcon, component: AbilitiesRaceTab },
         { id: 'class', label: 'Class', icon: AcademicCapIcon, component: ClassTab },
@@ -602,8 +943,21 @@ export function CharacterEdit(): React.JSX.Element {
         updateState,
         resolvedData,
         isLoading: isResolving,
-        triggerFeatureResolution: triggerResolution,
-        handleChoiceSelection
+        triggerFeatureResolution,
+        handleChoiceSelection,
+        formattedCharacter,
+        sharedData: {
+            allFeats,
+            isLoadingFeats,
+            featsMap,
+            isLoadingFullFeats,
+            primaryClass: primaryClassData,
+            secondaryClass: secondaryClassData,
+            race: raceData,
+            isLoadingClasses: isLoadingPrimaryClass || isLoadingSecondaryClassData,
+            isLoadingRace: isLoadingRaceData
+        },
+        character: characterData
     };
 
     return (
@@ -630,22 +984,33 @@ export function CharacterEdit(): React.JSX.Element {
                                 );
                             })}
                         </div>
-                        <div className="ml-auto flex gap-2">
-                            <button
-                                onClick={() => handleExport()}
-                                disabled={isExporting || isLoadingCharacter || !state.characterId}
-                                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                title={!state.characterId ? 'Save character before exporting' : 'Export character sheet as PDF'}
-                            >
-                                {isExporting ? 'Exporting...' : 'Export'}
-                            </button>
-                            <button
-                                onClick={() => handleSave()}
-                                disabled={isSaving || isLoadingCharacter}
-                                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                {isSaving ? 'Saving...' : 'Save'}
-                            </button>
+                        <div className="ml-auto">
+                            <Menu.Root>
+                                <Menu.Trigger className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                    <Bars3Icon className="h-5 w-5" />
+                                </Menu.Trigger>
+                                <Menu.Portal>
+                                    <Menu.Positioner className="outline-none" sideOffset={8}>
+                                        <Menu.Popup className="min-w-[160px] origin-[var(--transform-origin)] rounded-md bg-white dark:bg-gray-800 py-1 text-gray-900 dark:text-gray-100 shadow-lg shadow-gray-200 dark:shadow-gray-900 outline outline-1 outline-gray-200 dark:outline-gray-700 transition-[transform,scale,opacity] data-[ending-style]:scale-90 data-[ending-style]:opacity-0 data-[starting-style]:scale-90 data-[starting-style]:opacity-0">
+                                            <Menu.Item
+                                                onClick={() => handleSave()}
+                                                disabled={isSaving || isLoadingCharacter}
+                                                className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer focus:bg-gray-100 dark:focus:bg-gray-700 focus:outline-none"
+                                            >
+                                                {isSaving ? 'Saving...' : 'Save'}
+                                            </Menu.Item>
+                                            <Menu.Item
+                                                onClick={() => handleExport()}
+                                                disabled={isExporting || isLoadingCharacter || !state.characterId}
+                                                className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer focus:bg-gray-100 dark:focus:bg-gray-700 focus:outline-none"
+                                                title={!state.characterId ? 'Save character before exporting' : 'Export character sheet as PDF'}
+                                            >
+                                                {isExporting ? 'Exporting...' : 'Export Character Sheet'}
+                                            </Menu.Item>
+                                        </Menu.Popup>
+                                    </Menu.Positioner>
+                                </Menu.Portal>
+                            </Menu.Root>
                         </div>
                     </nav>
                 </div>

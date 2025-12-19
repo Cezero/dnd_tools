@@ -1,12 +1,17 @@
+import { useQueryClient } from '@tanstack/react-query';
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { SelectedEntityDisplay } from '@/features/character';
+import { FeatSubIdSelectionModal } from '@/features/character/components/FeatSubIdSelectionModal';
 import type { TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
 import { useCacheFunctions } from '@/services/cache';
 import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
-import { EntityAppliesToType } from '@shared/static-data';
+import type { Feat, FeatInQueryResponse } from '@shared/schema';
+import { EntityAppliesToType, EntityType, FeatureFeatChoiceFilter } from '@shared/static-data';
+import { ChoiceResolver } from '../ChoiceResolver';
+import { filterAvailableFeats } from '../utils/featFiltering';
 
 export function ChoicesTab({
     state,
@@ -14,29 +19,216 @@ export function ChoicesTab({
     resolvedData,
     isLoading,
     triggerFeatureResolution: _triggerFeatureResolution,
-    handleChoiceSelection
+    handleChoiceSelection,
+    sharedData,
+    character
 }: TabComponentProps): React.JSX.Element {
-    const { getDomainSelectByEdition } = useCacheFunctions();
+    const queryClient = useQueryClient();
+    const { getDomainSelectByEdition, getClassNameById } = useCacheFunctions();
 
     // State for domain options
     const [domainOptions, setDomainOptions] = useState<{ id: number; name: string; abbreviation?: string }[]>([]);
     const [isLoadingDomains, setIsLoadingDomains] = useState(false);
 
+    // State for feat sub-id selection modal
+    const [featSubIdModalOpen, setFeatSubIdModalOpen] = useState(false);
+    const [selectedFeatForSubId, setSelectedFeatForSubId] = useState<Feat | null>(null);
+    const [pendingFeatChoiceId, setPendingFeatChoiceId] = useState<string | null>(null);
+
+    // State for feat search/filtering (for feat choices) - keyed by choiceId
+    const [featSearchTerms, setFeatSearchTerms] = useState<Record<string, string>>({});
+
+    // Get filtered feats for each feat choice
+    const [filteredFeatsForChoices, setFilteredFeatsForChoices] = useState<Record<string, FeatInQueryResponse[]>>({});
+    const [isFilteringFeats, setIsFilteringFeats] = useState(false);
+
+    useEffect(() => {
+        if (!character || resolvedData.pendingChoices.length === 0) {
+            setFilteredFeatsForChoices({});
+            return;
+        }
+
+        const filterFeatsForChoices = async () => {
+            setIsFilteringFeats(true);
+            const filtered: Record<string, FeatInQueryResponse[]> = {};
+
+            if (!character) {
+                setFilteredFeatsForChoices({});
+                setIsFilteringFeats(false);
+                return;
+            }
+
+            for (const choice of resolvedData.pendingChoices) {
+                if (choice.type === EntityAppliesToType.Feat) {
+                    // Find the corresponding entity to check filterType
+                    let entityFilterType: number | null = null;
+                    for (const progression of resolvedData.progressions) {
+                        if (progression.entities) {
+                            const entity = progression.entities.find(e =>
+                                `${progression.id}-${e.id}` === choice.id
+                            );
+                            if (entity) {
+                                entityFilterType = entity.filterType ?? null;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Start with all feats
+                    let availableFeats = sharedData.allFeats;
+
+                    // Apply filterType filtering (e.g., FighterBonus)
+                    if (entityFilterType === FeatureFeatChoiceFilter.FighterBonus) {
+                        availableFeats = availableFeats.filter(feat => feat.fighterBonus === true);
+                    } else if (entityFilterType === FeatureFeatChoiceFilter.MetamagicOrItemCreation) {
+                        // Filter for metamagic or item creation feats
+                        // This would need to be determined by feat category or flags
+                        // For now, include all feats (can be refined later)
+                    }
+
+                    // Get all available feats filtered by prerequisites
+                    const allFilteredFeats = await filterAvailableFeats(availableFeats, state, resolvedData, sharedData, character);
+
+                    // Apply search filter if there's a search term for this choice
+                    const searchTerm = featSearchTerms[choice.id]?.toLowerCase() || '';
+                    const filteredBySearch = searchTerm
+                        ? allFilteredFeats.filter(feat =>
+                            feat.name.toLowerCase().includes(searchTerm) ||
+                            (feat.description && feat.description.toLowerCase().includes(searchTerm))
+                        )
+                        : allFilteredFeats;
+
+                    filtered[choice.id] = filteredBySearch;
+                }
+            }
+
+            setFilteredFeatsForChoices(filtered);
+            setIsFilteringFeats(false);
+        };
+
+        filterFeatsForChoices().catch(error => {
+            console.error('Error filtering feats for choices:', error);
+            setFilteredFeatsForChoices({});
+            setIsFilteringFeats(false);
+        });
+    }, [
+        // Use stable keys to prevent infinite loops
+        resolvedData.pendingChoices.length,
+        resolvedData.progressions.length,
+        state.level,
+        state.classId,
+        state.raceId,
+        state.abilityScores?.length,
+        state.selectedFeats.length,
+        sharedData.allFeats.length,
+        character?.id,
+        // Re-filter when search terms change (use JSON.stringify to detect value changes)
+        JSON.stringify(featSearchTerms)
+    ]);
+
     // Derive selectedChoices directly from global state
     const selectedChoices = useMemo(() => {
         const choices: Record<string, number[]> = {};
-        console.log('Deriving selectedChoices from state.featureChoices:', state.featureChoices);
         state.featureChoices.forEach(choice => {
             const choiceId = `${choice.progressionId}-${choice.featureEntityId}`;
-            console.log(`Processing choice: progressionId=${choice.progressionId}, featureEntityId=${choice.featureEntityId}, appliesToId=${choice.appliesToId}, choiceId=${choiceId}`);
             if (!choices[choiceId]) {
                 choices[choiceId] = [];
             }
             choices[choiceId].push(choice.appliesToId);
         });
-        console.log('Final selectedChoices:', choices);
         return choices;
     }, [state.featureChoices]);
+
+    // Create a stable list of choices that includes both pending and selected choices
+    // This ensures the order stays consistent and selected choices are still shown
+    const [allChoices, setAllChoices] = useState<Array<{ choice: typeof resolvedData.pendingChoices[0]; isSelected: boolean; selectedId?: number }>>([]);
+
+    useEffect(() => {
+        const loadAllChoices = async () => {
+            // Create a map of selected choices by their choice key (progressionId-featureEntityId)
+            const selectedChoicesMap = new Map<string, { progressionId: number; featureEntityId: number; appliesToId: number }>();
+            state.featureChoices.forEach(choice => {
+                const choiceKey = `${choice.progressionId}-${choice.featureEntityId}`;
+                if (!selectedChoicesMap.has(choiceKey)) {
+                    selectedChoicesMap.set(choiceKey, {
+                        progressionId: choice.progressionId,
+                        featureEntityId: choice.featureEntityId,
+                        appliesToId: choice.appliesToId
+                    });
+                }
+            });
+
+            // Get all choices (both pending and selected) from progressions
+            // Pass empty array to not filter out selected choices
+            const allPendingChoices = await ChoiceResolver.identifyPendingChoices(
+                resolvedData.progressions,
+                {
+                    getClassNameById: async (id: number) => await getClassNameById(id),
+                    getDomainSelectByEdition: async (editionId: number) => await getDomainSelectByEdition(editionId)
+                },
+                state.editionId,
+                [], // Don't filter out any choices - we want to see all of them
+                sharedData.allFeats // Pass feats from sharedData instead of fetching
+            );
+
+            // Build the combined list with selection status, preserving order from progressions
+            // Sort by progression level and entity order to ensure stable ordering
+            const combined: Array<{ choice: typeof allPendingChoices[0]; isSelected: boolean; selectedId?: number }> = [];
+
+            // Create a map of choices by their ID for quick lookup
+            const choicesMap = new Map(allPendingChoices.map(c => [c.id, c]));
+
+            // Iterate through progressions in order to maintain stable ordering
+            // Sort progressions by sourceType and level to ensure consistent order
+            const sortedProgressions = [...resolvedData.progressions].sort((a, b) => {
+                // First sort by sourceType (Race, Class, etc.)
+                if (a.sourceType !== b.sourceType) {
+                    return a.sourceType - b.sourceType;
+                }
+                // Then by level
+                if (a.level !== b.level) {
+                    return a.level - b.level;
+                }
+                // Finally by ID for stability
+                return a.id - b.id;
+            });
+
+            for (const progression of sortedProgressions) {
+                if (!progression.entities) continue;
+
+                // Sort entities by ID for stable ordering
+                const sortedEntities = [...(progression.entities || [])].sort((a, b) => a.id - b.id);
+
+                for (const entity of sortedEntities) {
+                    if (entity.type !== EntityType.Choice) continue;
+
+                    const choiceId = `${progression.id}-${entity.id}`;
+                    const pendingChoice = choicesMap.get(choiceId);
+                    if (!pendingChoice) continue;
+
+                    // Extract progressionId and featureEntityId from the choice ID
+                    const [progressionId, featureEntityId] = choiceId.split('-').map(Number);
+                    const choiceKey = `${progressionId}-${featureEntityId}`;
+                    const selected = selectedChoicesMap.get(choiceKey);
+
+                    combined.push({
+                        choice: pendingChoice,
+                        isSelected: !!selected,
+                        selectedId: selected?.appliesToId
+                    });
+                }
+            }
+
+            setAllChoices(combined);
+        };
+
+        loadAllChoices().catch(console.error);
+    }, [
+        // Only depend on stable values that indicate actual changes
+        resolvedData.progressions.length,
+        state.featureChoices.length,
+        state.editionId
+    ]);
 
     // Fetch domain options when edition changes
     useEffect(() => {
@@ -70,11 +262,23 @@ export function ChoicesTab({
         .map(query => query.id);
 
     // Handle choice selection with imperative API
-    const handleSelectionChange = useCallback(async (choiceId: string, selectedValues: number[]) => {
+    const handleSelectionChange = useCallback(async (choiceId: string, selectedValues: number[], subId?: number | null) => {
         if (selectedValues.length > 0) {
             const choice = resolvedData.pendingChoices.find(c => c.id === choiceId);
             if (choice) {
                 const selectedId = selectedValues[0];
+
+                // Check if this is a feat choice that requires useSubId
+                if (choice.type === EntityAppliesToType.Feat) {
+                    const featData = sharedData.allFeats.find(f => f.id === selectedId);
+                    if (featData?.useSubId && subId === undefined) {
+                        // Feat requires sub-id selection, show modal
+                        setSelectedFeatForSubId(featData);
+                        setPendingFeatChoiceId(choiceId);
+                        setFeatSubIdModalOpen(true);
+                        return; // Don't proceed with choice creation yet
+                    }
+                }
 
                 // Add to pending queries map
                 setPendingQueries(prev => ({
@@ -91,31 +295,54 @@ export function ChoicesTab({
                     advancementId: 0, // Will be set when saving to backend
                     featureEntityId,
                     appliesToId: selectedId,
-                    appliesToSubId: null,
+                    appliesToSubId: subId ?? null,
                     choiceIndex: null
                 };
 
-                // Add the choice to the global state
+                // Remove any existing choice for this progression/entity combination before adding the new one
+                // This prevents duplicates when changing a selection
+                const existingChoicesFiltered = state.featureChoices.filter(choice =>
+                    !(choice.progressionId === progressionId && choice.featureEntityId === featureEntityId)
+                );
+
+                // Add the choice to the global state first (optimistic update)
+                // This allows the UI to update immediately without waiting for feature resolution
                 updateState({
                     type: CharacterEditStateUpdateType.SET_FEATURE_CHOICES,
                     payload: {
-                        featureChoices: [...state.featureChoices, newChoice]
+                        featureChoices: [...existingChoicesFiltered, newChoice]
                     }
                 });
 
-                // Handle the choice immediately with imperative API
-                if (choice.type === EntityAppliesToType.Domain) {
+                // Handle the choice asynchronously to avoid blocking the UI
+                // Use setTimeout to defer the feature resolution to the next event loop,
+                // allowing the UI to update first and preventing the blanking effect
+                setTimeout(async () => {
                     try {
-                        const domainData = await DomainQueryHooks.getDomainById(selectedId);
-                        if (domainData?.features && handleChoiceSelection) {
-                            await handleChoiceSelection(choice.type, selectedId, domainData.features);
+                        if (choice.type === EntityAppliesToType.Domain) {
+                            const domainData = await queryClient.fetchQuery({
+                                queryKey: DomainQueryHooks.getDomainByIdQueryKey(selectedId),
+                                queryFn: () => DomainQueryHooks.getDomainByIdQueryFn({ pathParams: { id: selectedId } }),
+                                staleTime: 5 * 60 * 1000, // 5 minutes
+                                gcTime: 10 * 60 * 1000, // 10 minutes
+                            });
+                            if (domainData?.features && handleChoiceSelection) {
+                                await handleChoiceSelection(choice.type, selectedId, domainData.features);
+                            }
+                        } else if (choice.type === EntityAppliesToType.Feat) {
+                            // Feats don't have features - they have benefits that are applied directly
+                            // The feat is already tracked in featureChoices, and getAllCharacterFeats will include it
+                            // Just trigger feature resolution to ensure benefits are recalculated
+                            if (_triggerFeatureResolution) {
+                                await _triggerFeatureResolution();
+                            }
+                        } else if (handleChoiceSelection) {
+                            await handleChoiceSelection(choice.type, selectedId, []);
                         }
                     } catch (error) {
-                        console.error(`Error fetching domain ${selectedId}:`, error);
+                        console.error(`Error handling choice selection:`, error);
                     }
-                } else if (handleChoiceSelection) {
-                    await handleChoiceSelection(choice.type, selectedId, []);
-                }
+                }, 0);
             }
         } else {
             setPendingQueries(prev => {
@@ -137,8 +364,27 @@ export function ChoicesTab({
         }
     }, [resolvedData.pendingChoices, handleChoiceSelection, updateState, state.featureChoices, state.characterId]);
 
-    // Check if prerequisites are met
-    const hasPrerequisites = resolvedData.pendingChoices.length > 0;
+    // Handle weapon selection from modal
+    const handleWeaponSelection = useCallback(async (weaponId: number) => {
+        if (pendingFeatChoiceId) {
+            // Get the selected feat ID from the pending choice
+            const choice = resolvedData.pendingChoices.find(c => c.id === pendingFeatChoiceId);
+            if (choice && selectedFeatForSubId) {
+                // Get the selected value from pending queries
+                const pendingQuery = pendingQueries[pendingFeatChoiceId];
+                if (pendingQuery) {
+                    // Complete the choice selection with sub-id
+                    await handleSelectionChange(pendingFeatChoiceId, [pendingQuery.id], weaponId);
+                }
+            }
+            setFeatSubIdModalOpen(false);
+            setSelectedFeatForSubId(null);
+            setPendingFeatChoiceId(null);
+        }
+    }, [pendingFeatChoiceId, selectedFeatForSubId, resolvedData.pendingChoices, pendingQueries, handleSelectionChange, sharedData.allFeats]);
+
+    // Check if there are any choices to display (pending or selected)
+    const hasChoices = allChoices.length > 0;
 
     return (
         <div className="p-6">
@@ -166,7 +412,7 @@ export function ChoicesTab({
             )}
 
             {/* No Choices Message */}
-            {!hasPrerequisites && !isLoading && (
+            {!hasChoices && !isLoading && (
                 <div className="text-center py-8">
                     <div className="text-gray-500 dark:text-gray-400">
                         <svg className="mx-auto h-12 w-12 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -180,10 +426,164 @@ export function ChoicesTab({
             )}
 
             {/* Choices Content */}
-            {!isLoading && hasPrerequisites && (
+            {!isLoading && hasChoices && (
                 <div className="space-y-6">
-                    {resolvedData.pendingChoices.map((choice) => {
-                        console.log('Rendering choice:', { id: choice.id, name: choice.name, type: choice.type });
+                    {allChoices.map(({ choice, isSelected, selectedId }) => {
+                        if (!choice) return null;
+
+                        // Special handling for feat choices - use the same view as FeatsTab
+                        if (choice.type === EntityAppliesToType.Feat) {
+                            const filteredFeats = filteredFeatsForChoices[choice.id] || [];
+                            const selectedFeatId = isSelected ? selectedId : undefined;
+                            const searchTerm = featSearchTerms[choice.id] || '';
+
+                            // Override choice name if it's a race choice and we have race data
+                            let displayName = choice.name;
+                            if (choice.name.startsWith('Race:') && sharedData.race) {
+                                displayName = choice.name.replace('Race:', `${sharedData.race.name}:`);
+                            }
+
+                            // Update display name when a choice is selected
+                            if (isSelected && selectedFeatId) {
+                                const selectedFeat = sharedData.allFeats.find(f => f.id === selectedFeatId);
+                                if (selectedFeat) {
+                                    // Change "Select a Fighter Bonus Feat" to "Bonus Feat Selected"
+                                    // Change "Select a Feat" to "Feat Selected"
+                                    if (displayName.includes('Select a Fighter Bonus Feat')) {
+                                        displayName = displayName.replace('Select a Fighter Bonus Feat', 'Bonus Feat Selected');
+                                    } else if (displayName.includes('Select a Feat')) {
+                                        displayName = displayName.replace('Select a Feat', 'Feat Selected');
+                                    } else if (displayName.includes('Select')) {
+                                        // Generic fallback for other choice types
+                                        displayName = displayName.replace(/Select.*$/, 'Selected');
+                                    }
+                                }
+                            }
+
+                            // If a feat is selected, show only the selected feat with a remove button
+                            if (isSelected && selectedFeatId) {
+                                const selectedFeat = sharedData.allFeats.find(f => f.id === selectedFeatId);
+                                if (!selectedFeat) return null;
+
+                                return (
+                                    <div key={choice.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                                        <h3 className="text-lg font-medium mb-4">{displayName}</h3>
+                                        <div className="p-3 border border-blue-500 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex-1">
+                                                    <h4 className="font-medium text-gray-900 dark:text-white mb-1">
+                                                        {selectedFeat.name}
+                                                    </h4>
+                                                    {selectedFeat.description && (
+                                                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                                                            {selectedFeat.description}
+                                                        </p>
+                                                    )}
+                                                    {selectedFeat.prerequisites && (
+                                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                            <span className="font-medium">Prerequisites:</span> {selectedFeat.prerequisites}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        handleSelectionChange(choice.id, []);
+                                                    }}
+                                                    className="ml-3 px-4 py-2 rounded-md text-sm font-medium bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 hover:bg-red-200 dark:hover:bg-red-800"
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            // Otherwise, show the full list of available feats
+                            // Make sure displayName is reset to original when not selected
+                            if (!isSelected) {
+                                // Reset to original name if not selected
+                                displayName = choice.name;
+                                if (choice.name.startsWith('Race:') && sharedData.race) {
+                                    displayName = choice.name.replace('Race:', `${sharedData.race.name}:`);
+                                }
+                            }
+
+                            return (
+                                <div key={choice.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                                    <h3 className="text-lg font-medium mb-4">{displayName}</h3>
+
+                                    {/* Search input */}
+                                    <div className="mb-4">
+                                        <input
+                                            type="text"
+                                            placeholder="Search feats..."
+                                            value={searchTerm}
+                                            onChange={(e) => setFeatSearchTerms(prev => ({ ...prev, [choice.id]: e.target.value }))}
+                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        />
+                                    </div>
+
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                        Showing {filteredFeats.length} feats you qualify for based on your character's abilities, skills, and level.
+                                    </p>
+
+                                    {/* Feat list */}
+                                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                                        {filteredFeats.length === 0 ? (
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                                                No feats available matching your search.
+                                            </p>
+                                        ) : (
+                                            filteredFeats.map((feat) => {
+                                                const featIsSelected = selectedFeatId === feat.id;
+                                                return (
+                                                    <div
+                                                        key={feat.id}
+                                                        className={`p-3 border rounded-lg ${featIsSelected
+                                                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                                            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
+                                                            }`}
+                                                    >
+                                                        <div className="flex items-start justify-between">
+                                                            <div className="flex-1">
+                                                                <h4 className="font-medium text-gray-900 dark:text-white mb-1">
+                                                                    {feat.name}
+                                                                </h4>
+                                                                {feat.description && (
+                                                                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                                                                        {feat.description}
+                                                                    </p>
+                                                                )}
+                                                                {feat.prerequisites && (
+                                                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                                        <span className="font-medium">Prerequisites:</span> {feat.prerequisites}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                            <button
+                                                                onClick={() => {
+                                                                    const newValues = featIsSelected ? [] : [feat.id];
+                                                                    handleSelectionChange(choice.id, newValues);
+                                                                }}
+                                                                className={`ml-3 px-4 py-2 rounded-md text-sm font-medium ${featIsSelected
+                                                                    ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 hover:bg-red-200 dark:hover:bg-red-800'
+                                                                    : 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-800'
+                                                                    }`}
+                                                            >
+                                                                {featIsSelected ? 'Remove' : 'Select'}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        }
+
+                        // Non-feat choices use the original rendering
                         return (
                             <div key={choice.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                                 {choice.maxSelections === 1 ? (
@@ -256,6 +656,19 @@ export function ChoicesTab({
                     })}
                 </div>
             )}
+
+            {/* Feat Sub-ID Selection Modal */}
+            <FeatSubIdSelectionModal
+                isOpen={featSubIdModalOpen}
+                onClose={() => {
+                    setFeatSubIdModalOpen(false);
+                    setSelectedFeatForSubId(null);
+                    setPendingFeatChoiceId(null);
+                }}
+                onConfirm={handleWeaponSelection}
+                feat={selectedFeatForSubId}
+                resolvedProgressions={resolvedData.progressions}
+            />
         </div>
     );
 }

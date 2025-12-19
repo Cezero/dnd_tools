@@ -1,20 +1,14 @@
+import { QueryClient } from '@tanstack/react-query';
 import jsPDF from 'jspdf';
 
 import { registerArchivoNarrowFonts } from '@/assets/fonts/registerArchivoNarrow';
-import { RaceApi } from '@/features/race/RaceApi';
-import { SkillApi } from '@/features/skill/SkillApi';
+import { displayStrategyFactory } from '@/lib/formatters';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
-import {
-    CharacterCalculationService,
-    formatAttackBonus,
-    formatWeight,
-    formatSize,
-    formatDamageType,
-    getUnarmedDamageType,
-} from '@/lib/character-calculation';
-import { calculateCharacterStats } from './characterStatsCalculator';
-import type { CharacterWithAllDetailsResponse, DnDClass, Race, ItemWithDetails, FeatureProgression } from '@shared/schema';
-import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, SIZE_MAP, SKILL_LIST, Skill } from '@shared/static-data';
+import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
+import { SkillQueryHooks } from '@/services/query/SkillQueryHooks';
+import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
+import type { CharacterWithAllDetailsResponse, DnDClass, Race, ItemWithDetails, FeatureProgression, Feat } from '@shared/schema';
+import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, DisplayType, SIZE_MAP, SKILL_LIST, Skill } from '@shared/static-data';
 
 /**
  * Generate a PDF character sheet for a character matching the D&D 3.5 character sheet format
@@ -22,43 +16,116 @@ import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, SIZE_MAP, SKILL_LIST, Skill } fr
 export async function generateCharacterPdf(
     character: CharacterWithAllDetailsResponse,
     classDetailsMap: Map<number, DnDClass>,
-    resolvedProgressions?: FeatureProgression[]
+    resolvedProgressions?: FeatureProgression[],
+    queryClient?: QueryClient,
+    raceData?: Race | null
 ): Promise<void> {
-    // Fetch full race object if we need sizeId
-    let fullRace: Race | null = null;
-    if (character.race?.id) {
+    // Use provided race data or fetch from cache if available
+    let fullRace: Race | null = raceData || null;
+    if (!fullRace && character.race?.id) {
+        if (queryClient) {
         try {
-            fullRace = await RaceApi.getRaceById(undefined, { id: character.race.id });
+                fullRace = await queryClient.fetchQuery({
+                    queryKey: RaceQueryHooks.getRaceByIdQueryKey(character.race.id),
+                    queryFn: () => RaceQueryHooks.getRaceByIdQueryFn({ pathParams: { id: character.race.id } }),
+                    staleTime: 5 * 60 * 1000, // 5 minutes
+                    gcTime: 10 * 60 * 1000, // 10 minutes
+                });
         } catch (error) {
-            console.warn('Failed to fetch full race data:', error);
+                console.warn('Failed to fetch full race data from cache:', error);
+            }
         }
     }
 
-    // Fetch all skills to get affectedByArmor property
+    // Fetch all skills to get affectedByArmor property using cache
     let skillsMap: Map<number, { affectedByArmor: boolean }> = new Map();
+    if (queryClient) {
     try {
-        const skillsResponse = await SkillApi.getSkills(undefined);
+            const skillsResponse = await queryClient.fetchQuery({
+                queryKey: SkillQueryHooks.getSkillsQueryKey(),
+                queryFn: () => SkillQueryHooks.getSkillsQueryFn(),
+                staleTime: 5 * 60 * 1000, // 5 minutes
+                gcTime: 10 * 60 * 1000, // 10 minutes
+            });
         if (skillsResponse?.results) {
             skillsMap = new Map(
                 skillsResponse.results.map(skill => [skill.id, { affectedByArmor: skill.affectedByArmor }])
             );
         }
     } catch (error) {
-        console.warn('Failed to fetch skills data:', error);
+            console.warn('Failed to fetch skills data from cache:', error);
+        }
     }
 
-    // Calculate all stats
-    const stats = calculateCharacterStats(character, classDetailsMap, resolvedProgressions);
-
-    // Fetch items for attack calculations
+    // Fetch items for formatting using cache
     let items: ItemWithDetails[] = [];
+    if (queryClient) {
     try {
-        const itemsResponse = await ItemQueryHooks.getItems();
+            const itemsResponse = await queryClient.fetchQuery({
+                queryKey: ItemQueryHooks.getItemsQueryKey(),
+                queryFn: () => ItemQueryHooks.getItemsQueryFn(),
+                staleTime: 5 * 60 * 1000, // 5 minutes
+                gcTime: 10 * 60 * 1000, // 10 minutes
+            });
         if (itemsResponse?.results) {
             items = itemsResponse.results;
         }
     } catch (error) {
-        console.warn('Failed to fetch items for attack calculations:', error);
+            console.warn('Failed to fetch items for formatting from cache:', error);
+        }
+    }
+
+    // Fetch all feats to build featsMap using cache
+    let featsMap: Map<number, Feat> = new Map();
+    if (queryClient) {
+        try {
+            const featsResponse = await queryClient.fetchQuery({
+                queryKey: FeatQueryHooks.getAllFeatsFullQueryKey(),
+                queryFn: () => FeatQueryHooks.getAllFeatsFullQueryFn({}),
+                staleTime: 5 * 60 * 1000, // 5 minutes
+                gcTime: 10 * 60 * 1000, // 10 minutes
+            });
+            if (featsResponse?.results) {
+                featsMap = new Map(featsResponse.results.map(feat => [feat.id, feat]));
+            }
+        } catch (error) {
+            console.warn('Failed to fetch feats for formatting from cache:', error);
+        }
+    }
+
+    // Format character using unified formatter
+    const characterSheetStrategy = displayStrategyFactory.createStrategy(DisplayType.CharacterSheet);
+    let formattedCharacter: import('@/lib/formatters/types').FormattedCharacterResult | null = null;
+
+    if (characterSheetStrategy.formatCharacter && resolvedProgressions) {
+        try {
+            // Build character context
+            const characterContext: import('@/lib/formatters/types').BaseCharacterInfo = {
+                abilityScores: Object.fromEntries(
+                    character.abilityScores.map(a => [a.abilityId, a.value])
+                ),
+                classLevels: Object.fromEntries(
+                    Array.from(classDetailsMap.keys()).map(classId => {
+                        const level = character.advancements.filter(a => a.classId === classId || a.secondaryClassId === classId).length;
+                        return [classId, level];
+                    })
+                ),
+                raceId: character.raceId ?? undefined,
+                sizeId: fullRace?.sizeId ?? undefined
+            };
+
+            formattedCharacter = characterSheetStrategy.formatCharacter(
+                character,
+                resolvedProgressions,
+                items,
+                character.characterItems || [],
+                classDetailsMap,
+                { character: characterContext, featsMap },
+                fullRace
+            );
+        } catch (error) {
+            console.error('Error formatting character for PDF:', error);
+        }
     }
 
     // Create PDF (US Letter size: 8.5 x 11 inches = 612 x 792 points)
@@ -72,14 +139,25 @@ export async function generateCharacterPdf(
     registerArchivoNarrowFonts(doc);
 
     const pageWidth = 612;
-    const pageHeight = 792;
     const margin = 36;
-    const contentWidth = pageWidth - (margin * 2);
 
     // Helper function to format ability modifier
     const formatModifier = (mod: number): string => {
         return mod >= 0 ? `+${mod}` : `${mod}`;
     };
+
+    // Helper functions to extract numeric values from formatted strings
+    const parseModifier = (formatted: string): number => {
+        // Remove + sign and parse
+        const cleaned = formatted.replace(/^\+/, '');
+        return parseInt(cleaned, 10) || 0;
+    };
+
+
+    // Ensure formattedCharacter is available
+    if (!formattedCharacter) {
+        throw new Error('formattedCharacter is required for PDF generation');
+    }
 
     // Helper function to format height
     const formatHeight = (inches: number | null | undefined): string => {
@@ -322,7 +400,7 @@ export async function generateCharacterPdf(
     // Format class abbreviations with forward slash (e.g., "War/Wiz")
     const formatClassAbbreviations = (): string => {
         const abbreviations: string[] = [];
-        for (const classLevel of stats.classLevels) {
+        for (const classLevel of formattedCharacter.classLevels) {
             const classDetails = classDetailsMap.get(classLevel.classId);
             if (classDetails?.abbreviation) {
                 abbreviations.push(classDetails.abbreviation);
@@ -334,7 +412,7 @@ export async function generateCharacterPdf(
     // Format levels matching class order (e.g., "1/1" for War 1/Wiz 1)
     const formatLevels = (): string => {
         const levels: string[] = [];
-        for (const classLevel of stats.classLevels) {
+        for (const classLevel of formattedCharacter.classLevels) {
             levels.push(classLevel.level.toString());
         }
         return levels.join('/');
@@ -553,7 +631,7 @@ export async function generateCharacterPdf(
 
     // Draw each ability row
     for (const abilityId of abilityOrder) {
-        const ability = stats.abilityScores.find(a => a.abilityId === abilityId);
+        const ability = formattedCharacter.abilities.find(a => a.abilityId === abilityId);
         if (!ability) continue;
 
         const abilityData = ABILITY_MAP[abilityId];
@@ -566,11 +644,11 @@ export async function generateCharacterPdf(
         colX += abilityBoxWidth + abilityBoxSpacingX + 2; // Add 2px gap after ability name column
 
         // Column 2: Ability Score (white box with border)
-        drawScoreBox(colX, abilityGridY, valueBoxWidth, rowHeight, ability.score.toString());
+        drawScoreBox(colX, abilityGridY, valueBoxWidth, rowHeight, ability.score);
         colX += valueBoxWidth + abilityBoxSpacingX;
 
         // Column 3: Ability Modifier (white box with border)
-        drawScoreBox(colX, abilityGridY, valueBoxWidth, rowHeight, formatModifier(ability.modifier));
+        drawScoreBox(colX, abilityGridY, valueBoxWidth, rowHeight, ability.modifier);
         colX += valueBoxWidth + abilityBoxSpacingX;
 
         // Column 4: Temp Score (empty dotted box)
@@ -634,7 +712,7 @@ export async function generateCharacterPdf(
     hpX += hpBoxWidth + hpBoxSpacing;
 
     // TOTAL white box with hit points (10px bigger)
-    drawScoreBox(hpX, hpStartY, totalBoxWidth, rowHeight, stats.combatStats.hitPoints.toString());
+    drawScoreBox(hpX, hpStartY, totalBoxWidth, rowHeight, formattedCharacter.hitPoints);
     hpX += totalBoxWidth + hpBoxSpacing;
 
     // WOUNDS empty box with solid border
@@ -646,7 +724,7 @@ export async function generateCharacterPdf(
     hpX += nonlethalWidth + hpBoxSpacing;
 
     // SPEED box with speed value and solid border
-    drawScoreBox(hpX, hpStartY, speedWidth, rowHeight, `${stats.combatStats.speed} ft.`);
+    drawScoreBox(hpX, hpStartY, speedWidth, rowHeight, formattedCharacter.speed);
 
     // AC Row - directly beneath HP row, aligned with DEX row
     // Calculate AC row Y position: should align with DEX row (second ability row)
@@ -667,8 +745,8 @@ export async function generateCharacterPdf(
     acX += hpBoxWidth + acBoxSpacing + 1;
 
     // Total AC white box
-    const acStats = stats.combatStats.armorClass;
-    drawScoreBox(acX, acRowY, acBoxWidth, rowHeight, acStats.total.toString());
+    const acStats = formattedCharacter.armorClass;
+    drawScoreBox(acX, acRowY, acBoxWidth, rowHeight, acStats.total);
     acX += acBoxWidth + acBoxTextSpacing;
 
     // '=' text (not in a box)
@@ -686,7 +764,7 @@ export async function generateCharacterPdf(
     acX += acBoxSpacing + acBoxTextSpacing;
 
     // Armor bonus white box
-    drawScoreBox(acX, acRowY, acBoxWidth, rowHeight, acStats.armor.toString());
+    drawScoreBox(acX, acRowY, acBoxWidth, rowHeight, acStats.armor);
     acX += acBoxWidth + acBoxSpacing - acBoxTextSpacing;
 
     // '+' text
@@ -695,7 +773,7 @@ export async function generateCharacterPdf(
 
     // Shield bonus white box
     const shieldBonusX = acX; // Save X position for alignment
-    drawScoreBox(acX, acRowY, acBoxWidth, rowHeight, acStats.shield.toString());
+    drawScoreBox(acX, acRowY, acBoxWidth, rowHeight, acStats.shield);
     shieldBonusRightEdge = shieldBonusX + acBoxWidth; // Right edge of shield bonus box
     acX += acBoxWidth + acBoxSpacing - acBoxTextSpacing;
 
@@ -704,7 +782,7 @@ export async function generateCharacterPdf(
     acX += acBoxSpacing + acBoxTextSpacing;
 
     // Dex modifier white box
-    drawScoreBox(acX, acRowY, acBoxWidth, rowHeight, formatModifier(acStats.dex));
+    drawScoreBox(acX, acRowY, acBoxWidth, rowHeight, acStats.dex);
     acX += acBoxWidth + acBoxSpacing - acBoxTextSpacing;
 
     // '+' text
@@ -712,7 +790,7 @@ export async function generateCharacterPdf(
     acX += acBoxSpacing + acBoxTextSpacing;
 
     // Size modifier white box
-    drawScoreBox(acX, acRowY, acBoxWidth, rowHeight, formatModifier(acStats.size));
+    drawScoreBox(acX, acRowY, acBoxWidth, rowHeight, acStats.size);
     acX += acBoxWidth + acBoxSpacing - acBoxTextSpacing;
 
     // '+' text
@@ -720,7 +798,7 @@ export async function generateCharacterPdf(
     acX += acBoxSpacing + acBoxTextSpacing;
 
     // Natural armor white box
-    drawScoreBox(acX, acRowY, acBoxWidth, rowHeight, acStats.natural.toString());
+    drawScoreBox(acX, acRowY, acBoxWidth, rowHeight, acStats.natural);
     acX += acBoxWidth + acBoxSpacing - acBoxTextSpacing;
 
     // '+' text
@@ -728,7 +806,7 @@ export async function generateCharacterPdf(
     acX += acBoxSpacing + acBoxTextSpacing;
 
     // Deflection bonus white box
-    drawScoreBox(acX, acRowY, acBoxWidth, rowHeight, acStats.deflection.toString());
+    drawScoreBox(acX, acRowY, acBoxWidth, rowHeight, acStats.deflection);
     acX += acBoxWidth + acBoxSpacing - acBoxTextSpacing;
 
     // '+' text
@@ -736,7 +814,7 @@ export async function generateCharacterPdf(
     acX += acBoxSpacing + acBoxTextSpacing;
 
     // Misc bonus white box
-    drawScoreBox(acX, acRowY, acBoxWidth, rowHeight, acStats.misc.toString());
+    drawScoreBox(acX, acRowY, acBoxWidth, rowHeight, acStats.misc);
     acX += acBoxWidth + acBoxSpacing - acBoxTextSpacing;
     acX += acBoxSpacing + acBoxTextSpacing; // Skip '+'
     acX += acBoxSpacing - 3; // Gap after MISC (no '+' here) - reduced by 3px
@@ -818,7 +896,7 @@ export async function generateCharacterPdf(
     touchAcX += touchBoxWidth + hpBoxSpacing;
 
     // Touch AC white box
-    drawScoreBox(touchAcX, touchAcRowY, acBoxWidth, rowHeight, stats.combatStats.touchAC.toString());
+    drawScoreBox(touchAcX, touchAcRowY, acBoxWidth, rowHeight, acStats.touchAC);
     touchAcX += acBoxWidth + hpBoxSpacing;
 
     // FLAT-FOOTED black box (definitely wider)
@@ -828,7 +906,7 @@ export async function generateCharacterPdf(
 
     // Flat-footed AC white box - calculate width to align with SHIELD BONUS right edge
     const flatFootedAcWidth = shieldBonusRightEdge - touchAcX;
-    drawScoreBox(touchAcX, touchAcRowY, flatFootedAcWidth, rowHeight, stats.combatStats.flatFootedAC.toString());
+    drawScoreBox(touchAcX, touchAcRowY, flatFootedAcWidth, rowHeight, acStats.flatFootedAC);
 
     // Initiative Row - below TOUCH/FLAT-FOOTED row
     const initiativeRowY = touchAcRowY + rowHeight + rowSpacing;
@@ -841,7 +919,7 @@ export async function generateCharacterPdf(
 
     // Total Initiative white box
     const initWhiteBoxWidth = acBoxWidth - 4;
-    const initiativeTotal = stats.combatStats.initiative.total;
+    const initiativeTotal = parseModifier(formattedCharacter.initiative.total);
     drawScoreBox(initX, initiativeRowY, initWhiteBoxWidth, rowHeight, formatModifier(initiativeTotal));
     initX += initWhiteBoxWidth + acBoxTextSpacing;
 
@@ -852,8 +930,7 @@ export async function generateCharacterPdf(
     initX += 6; // Small space for '='
 
     // Dex modifier white box
-    const dexMod = stats.abilityScores.find(a => a.abilityId === AbilityId.Dexterity)?.modifier ?? 0;
-    drawScoreBox(initX, initiativeRowY, initWhiteBoxWidth, rowHeight, formatModifier(dexMod));
+    drawScoreBox(initX, initiativeRowY, initWhiteBoxWidth, rowHeight, formattedCharacter.initiative.dexMod);
     initX += initWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
@@ -861,7 +938,7 @@ export async function generateCharacterPdf(
     initX += acBoxSpacing + acBoxTextSpacing;
 
     // Misc bonus white box
-    const initiativeMisc = stats.combatStats.initiative.misc;
+    const initiativeMisc = parseModifier(formattedCharacter.initiative.misc);
     drawScoreBox(initX, initiativeRowY, initWhiteBoxWidth, rowHeight, formatModifier(initiativeMisc));
 
     // Labels beneath the boxes (4pt font, ALL CAPS, word-wrapped)
@@ -899,7 +976,7 @@ export async function generateCharacterPdf(
     const baseAttackBoxStartX = hpStartX + initiativeBoxWidth + hpBoxSpacing;
     const baseAttackBoxEndX = baseAttackBoxStartX + initWhiteBoxWidth + acBoxTextSpacing + 6 + initWhiteBoxWidth;
     const baseAttackBoxWidth = baseAttackBoxEndX - baseAttackBoxStartX;
-    drawScoreBox(baseAttackBoxStartX, baseAttackRowY, baseAttackBoxWidth, rowHeight, stats.combatStats.baseAttackBonus);
+    drawScoreBox(baseAttackBoxStartX, baseAttackRowY, baseAttackBoxWidth, rowHeight, formattedCharacter.baseAttackBonus);
 
     // Empty dotted box next to BASE ATTACK (spaced and sized same as MISC BONUS from INITIATIVE line)
     const baseAttackDottedBoxX = baseAttackBoxEndX + acBoxSpacing + acBoxSpacing + 1; // Same spacing as MISC BONUS
@@ -936,10 +1013,21 @@ export async function generateCharacterPdf(
     drawLabel(savingThrowsHeaderX, savingThrowsHeaderY, savingThrowsWhiteBoxWidth, ['TEMP', 'MODIFIER']);
 
     // Draw three rows: FORTITUDE, REFLEX, WILL
+    // DEBUG: Check what we have
+    console.log('[PDF] formattedCharacter?.savingThrows:', formattedCharacter?.savingThrows);
+
+    const savingThrowsData = formattedCharacter?.savingThrows || {
+        fortitude: formattedCharacter.savingThrows.fortitude,
+        reflex: formattedCharacter.savingThrows.reflex,
+        will: formattedCharacter.savingThrows.will
+    };
+
+    console.log('[PDF] Final savingThrowsData.fortitude.base:', savingThrowsData.fortitude.base);
+
     const savingThrows = [
-        { name: 'CONSTITUTION', abbr: 'FORTITUDE', data: stats.savingThrows.fortitude },
-        { name: 'DEXTERITY', abbr: 'REFLEX', data: stats.savingThrows.reflex },
-        { name: 'WISDOM', abbr: 'WILL', data: stats.savingThrows.will }
+        { name: 'CONSTITUTION', abbr: 'FORTITUDE', data: savingThrowsData.fortitude },
+        { name: 'DEXTERITY', abbr: 'REFLEX', data: savingThrowsData.reflex },
+        { name: 'WISDOM', abbr: 'WILL', data: savingThrowsData.will }
     ];
 
     savingThrows.forEach((save, index) => {
@@ -951,7 +1039,7 @@ export async function generateCharacterPdf(
         saveX += savingThrowsBoxWidth + hpBoxSpacing;
 
         // TOTAL white box
-        drawScoreBox(saveX, saveRowY, valueBoxWidth, rowHeight, formatModifier(save.data.total));
+        drawScoreBox(saveX, saveRowY, valueBoxWidth, rowHeight, save.data.total);
         saveX += valueBoxWidth + acBoxTextSpacing;
 
         // '=' text
@@ -961,7 +1049,7 @@ export async function generateCharacterPdf(
         saveX += 6; // Small space for '='
 
         // BASE SAVE white box
-        drawScoreBox(saveX, saveRowY, savingThrowsWhiteBoxWidth, rowHeight, formatModifier(save.data.base));
+        drawScoreBox(saveX, saveRowY, savingThrowsWhiteBoxWidth, rowHeight, save.data.base);
         saveX += savingThrowsWhiteBoxWidth + acBoxSpacing - 1;
 
         // '+' text
@@ -969,7 +1057,7 @@ export async function generateCharacterPdf(
         saveX += acBoxSpacing + acBoxTextSpacing;
 
         // ABILITY MODIFIER white box
-        drawScoreBox(saveX, saveRowY, savingThrowsWhiteBoxWidth, rowHeight, formatModifier(save.data.abilityMod));
+        drawScoreBox(saveX, saveRowY, savingThrowsWhiteBoxWidth, rowHeight, save.data.abilityMod);
         saveX += savingThrowsWhiteBoxWidth + acBoxSpacing - 1;
 
         // '+' text
@@ -977,7 +1065,7 @@ export async function generateCharacterPdf(
         saveX += acBoxSpacing + acBoxTextSpacing;
 
         // MISC BONUS white box
-        drawScoreBox(saveX, saveRowY, savingThrowsWhiteBoxWidth, rowHeight, formatModifier(save.data.misc));
+        drawScoreBox(saveX, saveRowY, savingThrowsWhiteBoxWidth, rowHeight, save.data.misc);
         saveX += savingThrowsWhiteBoxWidth + acBoxSpacing - 1;
 
         // '+' text
@@ -996,9 +1084,9 @@ export async function generateCharacterPdf(
     // Calculate grapple values
     // Grapple = BAB + STR modifier + Special Size Modifier
     // Parse BAB from string (e.g., "+8/+3" -> 8)
-    const babString = stats.combatStats.baseAttackBonus;
+    const babString = formattedCharacter.baseAttackBonus;
     const firstBab = parseInt(babString.split('/')[0].replace(/[^-\d]/g, ''), 10) || 0;
-    const strMod = stats.abilityScores.find(a => a.abilityId === AbilityId.Strength)?.modifier ?? 0;
+    const strMod = parseModifier(formattedCharacter.abilities.find(a => a.abilityId === AbilityId.Strength)?.modifier ?? '+0');
 
     // Special Size Modifier for grapple (from SIZE_MAP)
     const sizeMod = fullRace?.sizeId ? (SIZE_MAP[fullRace.sizeId as keyof typeof SIZE_MAP]?.grappleModifier ?? 0) : 0;
@@ -1171,10 +1259,10 @@ export async function generateCharacterPdf(
 
     // Calculate attack values (reuse variables from grapple section if available, otherwise calculate)
     // Note: These may already be calculated in the grapple section, but we'll recalculate here for clarity
-    const attackBabString = stats.combatStats.baseAttackBonus;
+    const attackBabString = formattedCharacter.baseAttackBonus;
     const attackFirstBab = parseInt(attackBabString.split('/')[0].replace(/[^-\d]/g, ''), 10) || 0;
-    const attackStrMod = stats.abilityScores.find(a => a.abilityId === AbilityId.Strength)?.modifier ?? 0;
-    const attackDexMod = stats.abilityScores.find(a => a.abilityId === AbilityId.Dexterity)?.modifier ?? 0;
+    const attackStrMod = parseModifier(formattedCharacter.abilities.find(a => a.abilityId === AbilityId.Strength)?.modifier ?? '+0');
+    const attackDexMod = parseModifier(formattedCharacter.abilities.find(a => a.abilityId === AbilityId.Dexterity)?.modifier ?? '+0');
     const attackSizeMod = fullRace?.sizeId ? (SIZE_MAP[fullRace.sizeId as keyof typeof SIZE_MAP]?.sizeModifier ?? 0) : 0;
     const meleeMisc = 0; // Misc bonus not calculated yet
     const rangedMisc = 0; // Misc bonus not calculated yet
@@ -1289,145 +1377,131 @@ export async function generateCharacterPdf(
     const weaponBoxStartX = leftColX;
     const weaponBoxStartY = rangedRowY + rowHeight + 7;
 
-    // Calculate attack info for each slot
+    // Calculate attack info for each slot using formattedCharacter
     const weaponInfos: (WeaponInfo | null)[] = [];
-    if (character.attackDefinitions && resolvedProgressions && items.length > 0) {
+    if (formattedCharacter && formattedCharacter.attacks && formattedCharacter.attacks.length > 0 && character.attackDefinitions) {
         const characterItems = character.characterItems || [];
-        const itemsWithDetails = items.filter(item =>
-            characterItems.some(ci => ci.baseItemId === item.id)
-        );
+        let currentSlot = 1;
 
-        for (let slot = 1; slot <= 7; slot++) {
-            const definition = character.attackDefinitions.find(def => def.attackSlot === slot);
-            if (!definition) {
+        // Sort definitions by attack slot
+        const sortedDefinitions = character.attackDefinitions
+            .filter(def => def.attackSlot !== null)
+            .sort((a, b) => (a.attackSlot ?? 0) - (b.attackSlot ?? 0));
+
+        // Track which attacks have been matched to avoid double-matching
+        const matchedAttackIndices = new Set<number>();
+
+        for (const definition of sortedDefinitions) {
+            // Fill in any gaps with nulls
+            while (currentSlot < (definition.attackSlot ?? 0)) {
                 weaponInfos.push(null);
-                continue;
+                currentSlot++;
             }
 
-            // Declare variables outside try block for error handling
-            let attackType: 'unarmed' | 'main-hand' | 'off-hand' | 'ranged' | 'dual-wield' = 'main-hand';
-            let mainHandItem: ItemWithDetails | undefined;
-            let offHandItem: ItemWithDetails | undefined;
+            // Get formatted attacks for this definition (may be multiple for dual-wield)
+            // Match by checking if the attack's weapon name matches items in the definition
+            const matchingAttacks: typeof formattedCharacter.attacks = [];
 
-            try {
-                // Convert attack definition to combat calculation context
-                const ATTACK_TYPE_MAP: Record<number, 'unarmed' | 'main-hand' | 'off-hand' | 'ranged' | 'dual-wield'> = {
-                    1: 'unarmed',
-                    2: 'main-hand',
-                    3: 'dual-wield',
-                    4: 'ranged',
-                };
+            if (definition.mainHandCharacterItemId || definition.offHandCharacterItemId) {
+                // Get the expected items for this definition
+                const mainHandCharItem = definition.mainHandCharacterItemId
+                    ? characterItems.find(ci => ci.id === definition.mainHandCharacterItemId)
+                    : null;
+                const offHandCharItem = definition.offHandCharacterItemId
+                    ? characterItems.find(ci => ci.id === definition.offHandCharacterItemId)
+                    : null;
 
-                attackType = ATTACK_TYPE_MAP[definition.attackTypeId] ?? 'main-hand';
+                const mainHandItem = mainHandCharItem
+                    ? items.find(i => i.id === mainHandCharItem.baseItemId)
+                    : null;
+                const offHandItem = offHandCharItem
+                    ? items.find(i => i.id === offHandCharItem.baseItemId)
+                    : null;
 
-                // For unarmed strikes, we don't need items
-                if (attackType === 'unarmed') {
-                    const result = CharacterCalculationService.getCombatValues(
-                        character,
-                        resolvedProgressions ?? [],
-                        { attackType: 'unarmed' },
-                        classDetailsMap
-                    );
+                // For dual-wield, we expect exactly 2 attacks (mainhand and offhand)
+                // For single weapon, we expect 1 attack
+                const expectedCount = definition.offHandCharacterItemId ? 2 : 1;
 
-                    weaponInfos.push({
-                        name: result.weaponName,
-                        totalAttackBonus: formatAttackBonus(result.value, result.nonlethalAttackBonus),
-                        damage: result.damage,
-                        critical: result.critical,
-                        range: result.range,
-                        weight: null,
-                        type: getUnarmedDamageType(),
-                        size: null,
-                        specialProperties: null,
-                    });
-                    continue;
-                }
+                // Match attacks in order, only using unmatched attacks
+                for (let attackIndex = 0; attackIndex < formattedCharacter.attacks.length; attackIndex++) {
+                    if (matchedAttackIndices.has(attackIndex)) continue;
+                    if (matchingAttacks.length >= expectedCount) break;
 
-                // Find main hand item (required for weapon attacks)
-                mainHandItem = undefined;
-                if (definition.mainHandCharacterItemId) {
-                    const mainHandCharacterItem = characterItems.find(ci => ci.id === definition.mainHandCharacterItemId);
-                    if (mainHandCharacterItem) {
-                        mainHandItem = itemsWithDetails.find(i => i.id === mainHandCharacterItem.baseItemId);
-                        if (!mainHandItem) {
-                            console.warn('PDF: Main hand item not found', {
-                                characterItemId: definition.mainHandCharacterItemId,
-                                baseItemId: mainHandCharacterItem.baseItemId,
-                            });
+                    const formattedAttack = formattedCharacter.attacks[attackIndex];
+
+                    // Strip labeler suffixes from weapon name for matching (e.g., "Longsword (main-hand)" -> "Longsword")
+                    const baseWeaponName = formattedAttack.weaponName.replace(/\s*\(main-hand\)$/, '')
+                        .replace(/\s*\(off-hand\)$/, '')
+                        .replace(/\s*\(both hands\)$/, '');
+
+                    // Check if this attack matches the mainhand item
+                    const mainHandName = mainHandCharItem?.name || mainHandItem?.name;
+                    const matchesMainHand = mainHandItem && baseWeaponName === mainHandName;
+
+                    // Check if this attack matches the offhand item
+                    const offHandName = offHandCharItem?.name || offHandItem?.name;
+                    const matchesOffHand = offHandItem && baseWeaponName === offHandName;
+
+                    // For single weapon attacks, match mainhand only
+                    if (!definition.offHandCharacterItemId && matchesMainHand) {
+                        matchedAttackIndices.add(attackIndex);
+                        matchingAttacks.push(formattedAttack);
+                    }
+                    // For dual-wield, match mainhand first, then offhand
+                    else if (definition.offHandCharacterItemId) {
+                        if (matchingAttacks.length === 0 && matchesMainHand) {
+                            // First attack should be mainhand
+                            matchedAttackIndices.add(attackIndex);
+                            matchingAttacks.push(formattedAttack);
+                        } else if (matchingAttacks.length === 1 && matchesOffHand) {
+                            // Second attack should be offhand
+                            matchedAttackIndices.add(attackIndex);
+                            matchingAttacks.push(formattedAttack);
                         }
                     }
                 }
-
-                // Find off hand item
-                offHandItem = undefined;
-                if (definition.offHandCharacterItemId) {
-                    const offHandCharacterItem = characterItems.find(ci => ci.id === definition.offHandCharacterItemId);
-                    if (offHandCharacterItem) {
-                        offHandItem = itemsWithDetails.find(i => i.id === offHandCharacterItem.baseItemId);
-                        if (!offHandItem) {
-                            console.warn('PDF: Off hand item not found', {
-                                characterItemId: definition.offHandCharacterItemId,
-                                baseItemId: offHandCharacterItem.baseItemId,
-                            });
-                        }
+            } else {
+                // Unarmed or no items - take next available unmatched attack
+                for (let attackIndex = 0; attackIndex < formattedCharacter.attacks.length; attackIndex++) {
+                    if (!matchedAttackIndices.has(attackIndex)) {
+                        matchedAttackIndices.add(attackIndex);
+                        matchingAttacks.push(formattedCharacter.attacks[attackIndex]);
+                        break;
                     }
                 }
+            }
 
-                const context = {
-                    attackType,
-                    mainHandItem,
-                    offHandItem,
-                };
-
-                // Use new calculation service
-                const result = CharacterCalculationService.getCombatValues(
-                    character,
-                    resolvedProgressions ?? [],
-                    context,
-                    classDetailsMap
-                );
-
+            // Add matching attacks to weaponInfos
+            for (let i = 0; i < matchingAttacks.length && currentSlot <= 7; i++) {
+                const attack = matchingAttacks[i];
                 weaponInfos.push({
-                    name: result.weaponName,
-                    totalAttackBonus: formatAttackBonus(result.value, result.nonlethalAttackBonus),
-                    damage: result.damage,
-                    critical: result.critical,
-                    range: result.range,
-                    weight: formatWeight(mainHandItem?.weight),
-                    type: formatDamageType(mainHandItem?.weapon?.damageType ?? null),
-                    size: formatSize(mainHandItem?.sizeId),
+                    name: attack.weaponName,
+                    totalAttackBonus: attack.attackBonus,
+                    damage: attack.damage,
+                    critical: attack.critical,
+                    range: attack.range,
+                    weight: attack.weight,
+                    type: attack.type ?? '',
+                    size: attack.size,
                     specialProperties: null,
                 });
+                currentSlot++;
+            }
 
-                // For dual wield, also handle off-hand (next slot)
-                if (result.isDualWield && result.offHandResult && slot < 7 && offHandItem) {
-                    weaponInfos.push({
-                        name: result.offHandResult.weaponName,
-                        totalAttackBonus: formatAttackBonus(result.offHandResult.value, result.offHandResult.nonlethalAttackBonus),
-                        damage: result.offHandResult.damage,
-                        critical: result.offHandResult.critical,
-                        range: result.offHandResult.range,
-                        weight: formatWeight(offHandItem.weight),
-                        type: formatDamageType(offHandItem.weapon?.damageType ?? null),
-                        size: formatSize(offHandItem.sizeId),
-                        specialProperties: null,
-                    });
-                    slot++; // Skip next slot as it's used by off-hand
-                }
-            } catch (error) {
-                console.error(`Error calculating attack stats for slot ${slot}:`, error, {
-                    definition,
-                    attackType,
-                    hasMainHandItem: !!mainHandItem,
-                    hasOffHandItem: !!offHandItem,
-                    mainHandItemId: definition.mainHandCharacterItemId,
-                    offHandItemId: definition.offHandCharacterItemId,
-                });
+            // If no matches found, add null
+            if (matchingAttacks.length === 0 && currentSlot <= 7) {
                 weaponInfos.push(null);
+                currentSlot++;
             }
         }
+
+        // Fill remaining slots with nulls
+        while (currentSlot <= 7) {
+            weaponInfos.push(null);
+            currentSlot++;
+        }
     } else {
-        // No attack definitions or resolved progressions - fill with nulls
+        // No formatted attacks or attack definitions - fill with nulls
         for (let i = 0; i < 7; i++) {
             weaponInfos.push(null);
         }
@@ -1533,7 +1607,20 @@ export async function generateCharacterPdf(
     // Need to get ability ID from skill - check if it's in the skill data or need to look it up
     // TODO make skills font a little bigger
     // TODO remove ammunition
-    stats.skills.forEach((skill, index) => {
+    const skillsToDisplay = formattedCharacter.skills.map(skill => ({
+        skillId: skill.skillId,
+        skillSubId: skill.skillSubId,
+        customSubtype: skill.customSubtype,
+        skillName: skill.skillName,
+        total: skill.total,
+        abilityMod: skill.abilityMod,
+        ranks: skill.ranks,
+        misc: skill.misc,
+        isClassSkill: skill.isClassSkill,
+        breakdown: { components: [] }
+    }));
+
+    skillsToDisplay.forEach((skill, index) => {
         const skillY = skillsStartY + index * skillRowHeight;
         let skillX = skillsStartX;
 
@@ -1590,7 +1677,7 @@ export async function generateCharacterPdf(
         // SKILL MODIFIER (bold)
         doc.setFontSize(8); // Ensure font size is correct
         doc.setFont('ArchivoNarrow', 'bold');
-        doc.text(formatModifier(skill.total), skillX + (skillModifierWidth / 2), skillY, { align: 'center' });
+        doc.text(skill.total, skillX + (skillModifierWidth / 2), skillY, { align: 'center' });
         skillX += skillModifierWidth + 2;
         doc.setFontSize(7); // Reset font size for rest of the line
 
@@ -1600,7 +1687,7 @@ export async function generateCharacterPdf(
         skillX += 6;
 
         // ABILITY MODIFIER (plain text)
-        doc.text(formatModifier(skill.abilityMod), skillX + (abilityModifierWidth / 2), skillY, { align: 'center' });
+        doc.text(skill.abilityMod, skillX + (abilityModifierWidth / 2), skillY, { align: 'center' });
         skillX += abilityModifierWidth + 2;
 
         // '+' text
@@ -1608,7 +1695,7 @@ export async function generateCharacterPdf(
         skillX += 6;
 
         // RANKS (plain text)
-        doc.text(skill.ranks.toString(), skillX + (ranksWidth / 2), skillY, { align: 'center' });
+        doc.text(skill.ranks, skillX + (ranksWidth / 2), skillY, { align: 'center' });
         skillX += ranksWidth + 2;
 
         // '+' text
@@ -1616,7 +1703,7 @@ export async function generateCharacterPdf(
         skillX += 6;
 
         // MISC BONUS (plain text)
-        doc.text(formatModifier(skill.misc), skillX + (miscBonusWidth / 2), skillY, { align: 'center' });
+        doc.text(skill.misc, skillX + (miscBonusWidth / 2), skillY, { align: 'center' });
     });
 
     // ============================================================================

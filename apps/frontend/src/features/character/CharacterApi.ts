@@ -14,13 +14,14 @@ import {
     UpdateCharacterAbilityScoreSchema,
     AbilityIdParamSchema,
     UpsertCharacterAbilityScoresSchema,
-    CharacterIdParamSchema2,
     SaveCharacterSchema,
     CreateCharacterAttackDefinitionSchema,
     UpdateCharacterAttackDefinitionSchema,
-    CharacterAttackDefinitionSchema,
+    CharacterAttackIdParamSchema,
+    GetAllCharacterAttackDefinitionsResponseSchema,
+    ReorderCharacterAttackDefinitionsSchema,
 } from '@shared/schema';
-import { z } from 'zod';
+
 
 export const CharacterApi = {
     getCharacters: typedApi({
@@ -94,11 +95,11 @@ export const CharacterApi = {
         responseSchema: UpdateResponseSchema,
     }),
 
-    upsertCharacterAbilityScores: typedApi<typeof UpsertCharacterAbilityScoresSchema, typeof UpdateResponseSchema, typeof CharacterIdParamSchema2>({
-        path: '/characters/:characterId/abilities',
+    upsertCharacterAbilityScores: typedApi<typeof UpsertCharacterAbilityScoresSchema, typeof UpdateResponseSchema, typeof CharacterIdParamSchema>({
+        path: '/characters/:id/abilities',
         method: 'PUT',
         requestSchema: UpsertCharacterAbilityScoresSchema,
-        paramsSchema: CharacterIdParamSchema2,
+        paramsSchema: CharacterIdParamSchema,
         responseSchema: UpdateResponseSchema,
     }),
 
@@ -118,11 +119,11 @@ export const CharacterApi = {
     }),
 
     // Attack definition methods
-    getCharacterAttackDefinitions: typedApi<undefined, z.ZodArray<typeof CharacterAttackDefinitionSchema>, typeof CharacterIdParamSchema>({
+    getCharacterAttackDefinitions: typedApi<undefined, typeof GetAllCharacterAttackDefinitionsResponseSchema, typeof CharacterIdParamSchema>({
         path: '/characters/:id/attack-definitions',
         method: 'GET',
         paramsSchema: CharacterIdParamSchema,
-        responseSchema: z.array(CharacterAttackDefinitionSchema),
+        responseSchema: GetAllCharacterAttackDefinitionsResponseSchema,
     }),
 
     createCharacterAttackDefinition: typedApi<typeof CreateCharacterAttackDefinitionSchema, typeof CreateResponseSchema, typeof CharacterIdParamSchema>({
@@ -133,25 +134,25 @@ export const CharacterApi = {
         responseSchema: CreateResponseSchema,
     }),
 
-    updateCharacterAttackDefinition: typedApi<typeof UpdateCharacterAttackDefinitionSchema, typeof UpdateResponseSchema, ReturnType<typeof CharacterIdParamSchema.extend<{ attackId: z.ZodString }>>>({
+    updateCharacterAttackDefinition: typedApi<typeof UpdateCharacterAttackDefinitionSchema, typeof UpdateResponseSchema, typeof CharacterAttackIdParamSchema>({
         path: '/characters/:id/attack-definitions/:attackId',
         method: 'PUT',
         requestSchema: UpdateCharacterAttackDefinitionSchema,
-        paramsSchema: CharacterIdParamSchema.extend({ attackId: z.string() }),
+        paramsSchema: CharacterAttackIdParamSchema,
         responseSchema: UpdateResponseSchema,
     }),
 
-    deleteCharacterAttackDefinition: typedApi<undefined, typeof UpdateResponseSchema, ReturnType<typeof CharacterIdParamSchema.extend<{ attackId: z.ZodString }>>>({
+    deleteCharacterAttackDefinition: typedApi<undefined, typeof UpdateResponseSchema, typeof CharacterAttackIdParamSchema>({
         path: '/characters/:id/attack-definitions/:attackId',
         method: 'DELETE',
-        paramsSchema: CharacterIdParamSchema.extend({ attackId: z.string() }),
+        paramsSchema: CharacterAttackIdParamSchema,
         responseSchema: UpdateResponseSchema,
     }),
 
-    reorderCharacterAttackDefinitions: typedApi<ReturnType<typeof z.object<{ attackDefinitionIds: z.ZodArray<z.ZodNumber> }>>, typeof UpdateResponseSchema, typeof CharacterIdParamSchema>({
+    reorderCharacterAttackDefinitions: typedApi<typeof ReorderCharacterAttackDefinitionsSchema, typeof UpdateResponseSchema, typeof CharacterIdParamSchema>({
         path: '/characters/:id/attack-definitions/reorder',
         method: 'PUT',
-        requestSchema: z.object({ attackDefinitionIds: z.array(z.number().int().positive()) }),
+        requestSchema: ReorderCharacterAttackDefinitionsSchema,
         paramsSchema: CharacterIdParamSchema,
         responseSchema: UpdateResponseSchema,
     }),

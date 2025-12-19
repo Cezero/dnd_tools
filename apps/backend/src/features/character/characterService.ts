@@ -26,6 +26,7 @@ import {
     UpdateCharacterAttackDefinitionRequest,
     CharacterAttackDefinition,
 } from '@shared/schema';
+import { EditionId } from '@shared/static-data';
 import {
     isGestaltCharacter,
     calculateGestaltCharacterStats,
@@ -166,6 +167,18 @@ export const characterService: CharacterService = {
                 abilityScores: true,
                 advancements: {
                     include: {
+                        class: {
+                            select: {
+                                id: true,
+                                abbreviation: true,
+                            },
+                        },
+                        secondaryClass: {
+                            select: {
+                                id: true,
+                                abbreviation: true,
+                            },
+                        },
                         skills: true,
                         feats: true,
                         spellsKnown: true,
@@ -184,12 +197,55 @@ export const characterService: CharacterService = {
             },
         });
 
-        return character;
+        if (!character) {
+            return null;
+        }
+
+        const advancements = character.advancements || [];
+
+        // Calculate character level (max level from advancements)
+        const characterLevel = advancements.length > 0
+            ? Math.max(...advancements.map(a => a.level))
+            : 0;
+
+        // Build class/level string
+        let classLevelString = '';
+        if (advancements.length > 0) {
+            // Sort advancements by level
+            const sortedAdvancements = [...advancements].sort((a, b) => a.level - b.level);
+
+            const parts: string[] = [];
+
+            sortedAdvancements.forEach(adv => {
+                const primaryAbbr = adv.class?.abbreviation || '?';
+                const secondaryAbbr = adv.secondaryClass?.abbreviation || null;
+
+                if (secondaryAbbr) {
+                    // Gestalt: "Ftr/Clr 1" (both classes at same level)
+                    parts.push(`${primaryAbbr}/${secondaryAbbr} ${adv.level}`);
+                } else {
+                    // Single class: "Ftr 1"
+                    parts.push(`${primaryAbbr} ${adv.level}`);
+                }
+            });
+
+            // Join with "/" for multiclass: "Ftr 1/Clr 1"
+            classLevelString = parts.join('/');
+        }
+
+        return {
+            ...character,
+            characterLevel,
+            classLevelString,
+        };
     },
 
     async createCharacter(data: CreateCharacterRequest): Promise<CreateResponse> {
         const result = await prisma.userCharacter.create({
-            data,
+            data: {
+                ...data,
+                editionId: data.editionId ?? EditionId.DND_3_5E, // Default to D&D 3.5 Edition if not provided
+            },
         });
 
         return { id: result.id.toString(), message: 'Character created successfully' };
@@ -204,16 +260,41 @@ export const characterService: CharacterService = {
 
             // Create or update character
             if (!finalCharacterId) {
-                // Create new character
+                // Create new character - ensure required fields are present
+                if (!characterData.userId || !characterData.name || !characterData.raceId) {
+                    throw new Error('Missing required fields: userId, name, and raceId are required for character creation');
+                }
                 const character = await tx.userCharacter.create({
-                    data: characterData as CreateCharacterRequest,
+                    data: {
+                        userId: characterData.userId,
+                        name: characterData.name,
+                        raceId: characterData.raceId,
+                        alignmentId: characterData.alignmentId ?? null,
+                        deityId: characterData.deityId ?? null,
+                        age: characterData.age ?? null,
+                        height: characterData.height ?? null,
+                        weight: characterData.weight ?? null,
+                        eyes: characterData.eyes ?? null,
+                        hair: characterData.hair ?? null,
+                        gender: characterData.gender ?? null,
+                        notes: characterData.notes ?? null,
+                        editionId: characterData.editionId ?? EditionId.DND_3_5E, // Default to D&D 3.5 Edition if not provided
+                        allowVariantClasses: characterData.allowVariantClasses ?? false,
+                        isGestalt: characterData.isGestalt ?? false,
+                        ignoreLevelAdjustment: characterData.ignoreLevelAdjustment ?? false,
+                        platinum: characterData.platinum ?? 0,
+                        gold: characterData.gold ?? 0,
+                        silver: characterData.silver ?? 0,
+                        copper: characterData.copper ?? 0,
+                    },
                 });
                 finalCharacterId = character.id;
             } else {
-                // Update existing character
+                // Update existing character - exclude userId as it shouldn't be updated
+                const { userId: _userId, ...updateData } = characterData;
                 await tx.userCharacter.update({
                     where: { id: finalCharacterId },
-                    data: characterData,
+                    data: updateData as typeof updateData & { editionId?: number },
                 });
             }
 
@@ -269,7 +350,7 @@ export const characterService: CharacterService = {
                     },
                 });
 
-                const { skills, feats, ...advancementData } = advancement;
+                const { skills, feats, featureChoices, ...advancementData } = advancement;
 
                 if (existingAdvancement) {
                     // Update existing advancement
@@ -310,9 +391,25 @@ export const characterService: CharacterService = {
                             });
                         }
                     }
+
+                    // Handle featureChoices: delete existing and create new if provided
+                    if (featureChoices !== undefined) {
+                        await tx.characterFeatureChoice.deleteMany({
+                            where: { advancementId: existingAdvancement.id },
+                        });
+                        if (featureChoices.length > 0) {
+                            await tx.characterFeatureChoice.createMany({
+                                data: featureChoices.map(choice => ({
+                                    ...choice,
+                                    characterId: finalCharacterId,
+                                    advancementId: existingAdvancement.id,
+                                })),
+                            });
+                        }
+                    }
                 } else {
                     // Create new advancement
-                    await tx.characterAdvancement.create({
+                    const newAdvancement = await tx.characterAdvancement.create({
                         data: {
                             ...advancementData,
                             characterId: finalCharacterId,
@@ -323,27 +420,68 @@ export const characterService: CharacterService = {
                             feats: feats ? {
                                 create: feats
                             } : undefined,
+                            featureChoices: featureChoices ? {
+                                create: featureChoices.map(choice => ({
+                                    ...choice,
+                                    characterId: finalCharacterId,
+                                    advancementId: 0, // Will be updated below
+                                }))
+                            } : undefined,
                         },
                     });
+
+                    // Update featureChoices with the correct advancementId if they were created
+                    if (featureChoices && featureChoices.length > 0) {
+                        await tx.characterFeatureChoice.updateMany({
+                            where: {
+                                characterId: finalCharacterId,
+                                advancementId: 0,
+                                progressionId: { in: featureChoices.map(c => c.progressionId) }
+                            },
+                            data: {
+                                advancementId: newAdvancement.id
+                            }
+                        });
+                    }
                 }
             }
 
             // Handle equipment if provided
             // We need to track item ID mappings for attack definitions
             const itemIdMap = new Map<number, number>(); // old item ID -> new item ID
-            
+
             if (equipment !== undefined) {
                 // Get existing equipment
                 const existingEquipment = await tx.characterItem.findMany({
                     where: { characterId: finalCharacterId },
                 });
 
-                // Create a map of baseItemId+location+name -> old item ID for matching
-                const existingItemMap = new Map<string, number>();
+                // Create multiple maps for flexible matching:
+                // 1. Exact match: baseItemId|location|name -> old item ID
+                const exactMatchMap = new Map<string, number>();
+                // 2. Location match: baseItemId|location -> array of old item IDs
+                const locationMatchMap = new Map<string, number[]>();
+                // 3. BaseItemId match: baseItemId -> array of old item IDs
+                const baseItemMatchMap = new Map<number, number[]>();
+
                 for (const existingItem of existingEquipment) {
-                    const key = `${existingItem.baseItemId}|${existingItem.location ?? 'null'}|${existingItem.name}`;
-                    existingItemMap.set(key, existingItem.id);
+                    const exactKey = `${existingItem.baseItemId}|${existingItem.location ?? 'null'}|${existingItem.name}`;
+                    exactMatchMap.set(exactKey, existingItem.id);
+
+                    const locationKey = `${existingItem.baseItemId}|${existingItem.location ?? 'null'}`;
+                    if (!locationMatchMap.has(locationKey)) {
+                        locationMatchMap.set(locationKey, []);
+                    }
+                    locationMatchMap.get(locationKey)!.push(existingItem.id);
+
+                    if (!baseItemMatchMap.has(existingItem.baseItemId)) {
+                        baseItemMatchMap.set(existingItem.baseItemId, []);
+                    }
+                    baseItemMatchMap.get(existingItem.baseItemId)!.push(existingItem.id);
                 }
+
+                // Track which old IDs have been matched to avoid duplicate mappings
+                const matchedOldIds = new Set<number>();
 
                 // Delete all existing equipment
                 if (existingEquipment.length > 0) {
@@ -365,14 +503,35 @@ export const characterService: CharacterService = {
                                     baseItemId: item.baseItemId,
                                 },
                             });
-                            
-                            // Map old ID to new ID if we can match them
-                            const key = `${item.baseItemId}|${item.location ?? 'null'}|${item.name}`;
-                            const oldId = existingItemMap.get(key);
+
+                            // Try multiple matching strategies in order of preference
+                            let oldId: number | undefined;
+
+                            // Strategy 1: Exact match (baseItemId|location|name)
+                            const exactKey = `${item.baseItemId}|${item.location ?? 'null'}|${item.name}`;
+                            const exactMatch = exactMatchMap.get(exactKey);
+                            if (exactMatch && !matchedOldIds.has(exactMatch)) {
+                                oldId = exactMatch;
+                            } else {
+                                // Strategy 2: Location match (baseItemId|location) - only if exactly one match
+                                const locationKey = `${item.baseItemId}|${item.location ?? 'null'}`;
+                                const locationMatches = locationMatchMap.get(locationKey);
+                                if (locationMatches && locationMatches.length === 1 && !matchedOldIds.has(locationMatches[0])) {
+                                    oldId = locationMatches[0];
+                                } else {
+                                    // Strategy 3: BaseItemId match - only if exactly one match
+                                    const baseItemMatches = baseItemMatchMap.get(item.baseItemId);
+                                    if (baseItemMatches && baseItemMatches.length === 1 && !matchedOldIds.has(baseItemMatches[0])) {
+                                        oldId = baseItemMatches[0];
+                                    }
+                                }
+                            }
+
                             if (oldId) {
                                 itemIdMap.set(oldId, created.id);
+                                matchedOldIds.add(oldId);
                             }
-                            
+
                             return created;
                         })
                     );
@@ -400,17 +559,17 @@ export const characterService: CharacterService = {
                         where: { characterId: finalCharacterId },
                     });
                     const validItemIds = new Set(currentItems.map(item => item.id));
-                    
+
                     await tx.characterAttackDefinition.createMany({
                         data: attackDefinitions.map(def => {
                             // Map old item IDs to new ones if equipment was recreated
-                            let mainHandItemId = def.mainHandCharacterItemId 
+                            let mainHandItemId = def.mainHandCharacterItemId
                                 ? (itemIdMap.get(def.mainHandCharacterItemId) ?? def.mainHandCharacterItemId)
                                 : null;
                             let offHandItemId = def.offHandCharacterItemId
                                 ? (itemIdMap.get(def.offHandCharacterItemId) ?? def.offHandCharacterItemId)
                                 : null;
-                            
+
                             // Validate that the item IDs exist (after mapping)
                             if (mainHandItemId && !validItemIds.has(mainHandItemId)) {
                                 mainHandItemId = null; // Clear invalid reference
@@ -418,10 +577,9 @@ export const characterService: CharacterService = {
                             if (offHandItemId && !validItemIds.has(offHandItemId)) {
                                 offHandItemId = null; // Clear invalid reference
                             }
-                            
+
                             return {
                                 characterId: finalCharacterId,
-                                attackTypeId: def.attackTypeId,
                                 attackSlot: def.attackSlot ?? null,
                                 mainHandCharacterItemId: mainHandItemId,
                                 offHandCharacterItemId: offHandItemId,
@@ -449,7 +607,7 @@ export const characterService: CharacterService = {
 
     // Character advancement methods
     async createAdvancement(data: CreateAdvancementRequest): Promise<CreateResponse> {
-        const { skills, feats, ...advancementData } = data;
+        const { skills, feats, featureChoices, ...advancementData } = data;
 
         const result = await prisma.characterAdvancement.create({
             data: {
@@ -461,17 +619,48 @@ export const characterService: CharacterService = {
                 feats: feats ? {
                     create: feats
                 } : undefined,
+                featureChoices: featureChoices ? {
+                    create: featureChoices.map(choice => ({
+                        ...choice,
+                        characterId: advancementData.characterId,
+                        advancementId: 0, // Will be set after creation
+                    }))
+                } : undefined,
             },
         });
+
+        // Update featureChoices with the correct advancementId if they were created
+        if (featureChoices && featureChoices.length > 0) {
+            await prisma.characterFeatureChoice.updateMany({
+                where: {
+                    characterId: advancementData.characterId,
+                    advancementId: 0,
+                    progressionId: { in: featureChoices.map(c => c.progressionId) }
+                },
+                data: {
+                    advancementId: result.id
+                }
+            });
+        }
 
         return { id: result.id.toString(), message: 'Character advancement created successfully' };
     },
 
     async updateAdvancement(id: number, data: UpdateAdvancementRequest): Promise<UpdateResponse> {
-        const { skills, feats, ...advancementData } = data;
+        const { skills, feats, featureChoices, ...advancementData } = data;
 
         // Handle nested updates: delete existing and create new
         await prisma.$transaction(async (tx) => {
+            // Get the advancement to get characterId
+            const advancement = await tx.characterAdvancement.findUnique({
+                where: { id },
+                select: { characterId: true }
+            });
+
+            if (!advancement) {
+                throw new Error(`Advancement with id ${id} not found`);
+            }
+
             // Update the advancement itself
             await tx.characterAdvancement.update({
                 where: { id },
@@ -502,6 +691,22 @@ export const characterService: CharacterService = {
                     await tx.advancementFeat.createMany({
                         data: feats.map(feat => ({
                             ...feat,
+                            advancementId: id,
+                        })),
+                    });
+                }
+            }
+
+            // Handle featureChoices: delete existing and create new if provided
+            if (featureChoices !== undefined) {
+                await tx.characterFeatureChoice.deleteMany({
+                    where: { advancementId: id },
+                });
+                if (featureChoices.length > 0) {
+                    await tx.characterFeatureChoice.createMany({
+                        data: featureChoices.map(choice => ({
+                            ...choice,
+                            characterId: advancement.characterId,
                             advancementId: id,
                         })),
                     });
@@ -776,23 +981,10 @@ export const characterService: CharacterService = {
             }
         }
 
-        // Validate attack type specific rules
-        if (data.attackTypeId === 1) {
-            // Unarmed strike: no character items
-            if (data.mainHandCharacterItemId || data.offHandCharacterItemId) {
-                throw new Error('Unarmed strike cannot have associated character items');
-            }
-        } else if (data.attackTypeId === 2 || data.attackTypeId === 4) {
-            // Main hand or ranged: only main hand item
+        // Validate attack definition rules based on items
+        // Dual-wield: both items required and different
+        if (data.offHandCharacterItemId !== null && data.offHandCharacterItemId !== undefined) {
             if (!data.mainHandCharacterItemId) {
-                throw new Error('Main hand or ranged attack requires a main hand character item');
-            }
-            if (data.offHandCharacterItemId) {
-                throw new Error('Main hand or ranged attack cannot have an off hand character item');
-            }
-        } else if (data.attackTypeId === 3) {
-            // Dual wield: both items required and different
-            if (!data.mainHandCharacterItemId || !data.offHandCharacterItemId) {
                 throw new Error('Dual wield requires both main hand and off hand character items');
             }
             if (data.mainHandCharacterItemId === data.offHandCharacterItemId) {
@@ -819,7 +1011,8 @@ export const characterService: CharacterService = {
                     throw new Error(`Attack slot ${data.attackSlot} is already occupied`);
                 }
                 // For dual wield, also check slot+1
-                if (data.attackTypeId === 3 && existing.attackSlot === data.attackSlot + 1) {
+                const isDualWield = data.offHandCharacterItemId !== null && data.offHandCharacterItemId !== undefined;
+                if (isDualWield && existing.attackSlot === data.attackSlot + 1) {
                     throw new Error(`Attack slot ${data.attackSlot + 1} is already occupied (needed for dual wield off-hand)`);
                 }
                 // If existing is dual wield, check if it occupies our slot
@@ -836,7 +1029,6 @@ export const characterService: CharacterService = {
         const result = await prisma.characterAttackDefinition.create({
             data: {
                 characterId: characterId,
-                attackTypeId: data.attackTypeId,
                 attackSlot: data.attackSlot ?? null,
                 mainHandCharacterItemId: data.mainHandCharacterItemId ?? null,
                 offHandCharacterItemId: data.offHandCharacterItemId ?? null,
@@ -884,32 +1076,13 @@ export const characterService: CharacterService = {
             }
         }
 
-        // Get the final attack type (use existing if not provided)
-        const attackTypeId = data.attackTypeId ?? existing.attackTypeId;
+        // Validate attack definition rules based on items
+        const mainHand = data.mainHandCharacterItemId ?? existing.mainHandCharacterItemId;
+        const offHand = data.offHandCharacterItemId ?? existing.offHandCharacterItemId;
 
-        // Validate attack type specific rules
-        if (attackTypeId === 1) {
-            // Unarmed strike: no character items
-            const mainHand = data.mainHandCharacterItemId ?? existing.mainHandCharacterItemId;
-            const offHand = data.offHandCharacterItemId ?? existing.offHandCharacterItemId;
-            if (mainHand || offHand) {
-                throw new Error('Unarmed strike cannot have associated character items');
-            }
-        } else if (attackTypeId === 2 || attackTypeId === 4) {
-            // Main hand or ranged: only main hand item
-            const mainHand = data.mainHandCharacterItemId ?? existing.mainHandCharacterItemId;
-            const offHand = data.offHandCharacterItemId ?? existing.offHandCharacterItemId;
+        // Dual-wield: both items required and different
+        if (offHand !== null && offHand !== undefined) {
             if (!mainHand) {
-                throw new Error('Main hand or ranged attack requires a main hand character item');
-            }
-            if (offHand) {
-                throw new Error('Main hand or ranged attack cannot have an off hand character item');
-            }
-        } else if (attackTypeId === 3) {
-            // Dual wield: both items required and different
-            const mainHand = data.mainHandCharacterItemId ?? existing.mainHandCharacterItemId;
-            const offHand = data.offHandCharacterItemId ?? existing.offHandCharacterItemId;
-            if (!mainHand || !offHand) {
                 throw new Error('Dual wield requires both main hand and off hand character items');
             }
             if (mainHand === offHand) {
@@ -938,7 +1111,8 @@ export const characterService: CharacterService = {
                     throw new Error(`Attack slot ${attackSlot} is already occupied`);
                 }
                 // For dual wield, also check slot+1
-                if (attackTypeId === 3 && other.attackSlot === attackSlot + 1) {
+                const isDualWield = offHand !== null && offHand !== undefined;
+                if (isDualWield && other.attackSlot === attackSlot + 1) {
                     throw new Error(`Attack slot ${attackSlot + 1} is already occupied (needed for dual wield off-hand)`);
                 }
                 // If other is dual wield, check if it occupies our slot
@@ -954,7 +1128,6 @@ export const characterService: CharacterService = {
         await prisma.characterAttackDefinition.update({
             where: { id: attackId },
             data: {
-                attackTypeId: data.attackTypeId,
                 attackSlot: data.attackSlot,
                 mainHandCharacterItemId: data.mainHandCharacterItemId,
                 offHandCharacterItemId: data.offHandCharacterItemId,
@@ -1012,14 +1185,14 @@ export const characterService: CharacterService = {
             while (i < attackDefinitionIds.length) {
                 const attackId = attackDefinitionIds[i];
                 const definition = existingDefinitions.find(def => def.id === attackId);
-                
+
                 if (!definition) {
                     throw new Error(`Attack definition ${attackId} not found`);
                 }
 
-                // Check if this is dual wield
-                const isDualWield = definition.attackTypeId === 3 && definition.offHandCharacterItemId !== null;
-                
+                // Check if this is dual wield (has off-hand item)
+                const isDualWield = definition.offHandCharacterItemId !== null;
+
                 if (isDualWield) {
                     // Dual wield: check if slot 7 would be needed
                     if (currentSlot === 7) {

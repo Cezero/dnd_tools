@@ -1,5 +1,4 @@
 import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
-import { useQueryClient } from '@tanstack/react-query';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 import { useDiceBox } from '@/components/dice-box';
@@ -11,7 +10,6 @@ import { CharacterEditStateUpdateType } from '@/features/character/types';
 import { RaceDisplay } from '@/features/race/RaceDisplay';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useCacheFunctions } from '@/services/cache';
-import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import {
     ABILITY_LIST,
     ABILITY_MAP,
@@ -34,10 +32,10 @@ export function AbilitiesRaceTab({
     updateState,
     resolvedData: _resolvedData,
     isLoading,
-    triggerFeatureResolution
+    triggerFeatureResolution,
+    sharedData
 }: TabComponentProps): React.JSX.Element {
     const { getRaceSelectByEdition } = useCacheFunctions();
-    const queryClient = useQueryClient();
     const { rollDice, rollDiceGroups, isReady, isRolling, lastResult, onRollComplete } = useDiceBox();
     const toastManager = useToast();
     const logPanel = useLogPanel();
@@ -474,10 +472,8 @@ export function AbilitiesRaceTab({
     const [races, setRaces] = useState<CoreComponent[]>([]);
     const [isLoadingRaces, setIsLoadingRaces] = useState(false);
 
-    // Get selected race details using imperative API
+    // Get selected race details from sharedData
     const [selectedRaceDetails, setSelectedRaceDetails] = useState<{ features?: unknown[] } | null>(null);
-    const [isLoadingRace, setIsLoadingRace] = useState(false);
-    const [_raceError, setRaceError] = useState<Error | null>(null);
 
     // Track which race we've already resolved to prevent infinite loops
     const resolvedRaceIdRef = useRef<number | null>(null);
@@ -504,35 +500,24 @@ export function AbilitiesRaceTab({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [state.editionId]);
 
-    // Fetch race data when raceId changes
+    // Use race data from sharedData (fetched in CharacterEdit with cache)
+    // Update selectedRaceDetails when sharedData.race changes
     useEffect(() => {
-        if (state.raceId) {
-            setIsLoadingRace(true);
-            setRaceError(null);
-            // Use queryClient.fetchQuery to leverage TanStack Query cache
-            queryClient.fetchQuery({
-                queryKey: RaceQueryHooks.getRaceByIdQueryKey(state.raceId),
-                queryFn: () => RaceQueryHooks.getRaceByIdQueryFn({ pathParams: { id: state.raceId } }),
-                staleTime: 5 * 60 * 1000, // 5 minutes
-                gcTime: 10 * 60 * 1000, // 10 minutes
-            })
-                .then(race => {
-                    setSelectedRaceDetails(race);
-                })
-                .catch(err => setRaceError(err))
-                .finally(() => setIsLoadingRace(false));
-        } else {
+        if (sharedData.race && state.raceId) {
+            // sharedData.race doesn't have an id property, but we know it matches state.raceId
+            setSelectedRaceDetails({ ...sharedData.race, features: sharedData.race.features } as { features?: unknown[] });
+        } else if (!state.raceId) {
             setSelectedRaceDetails(null);
         }
-    }, [state.raceId, queryClient]);
+    }, [sharedData.race, state.raceId]);
 
     // Trigger feature resolution when race data is loaded
     useEffect(() => {
-        if (state.raceId && selectedRaceDetails && !isLoadingRace && resolvedRaceIdRef.current !== state.raceId) {
+        if (state.raceId && selectedRaceDetails && !sharedData.isLoadingRace && resolvedRaceIdRef.current !== state.raceId) {
             resolvedRaceIdRef.current = state.raceId;
             triggerFeatureResolution();
         }
-    }, [state.raceId, selectedRaceDetails, isLoadingRace, triggerFeatureResolution]);
+    }, [state.raceId, selectedRaceDetails, sharedData.isLoadingRace, triggerFeatureResolution]);
 
     // Helper function to get racial modifier for ability scores
     const getRacialModifier = useCallback((abilityId: number): number => {

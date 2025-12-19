@@ -1,7 +1,8 @@
 import React from 'react';
 
-import type { FeatureProgression, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse, Race, DnDClass, FeatureEntity, CharacterAbilityScoreResponse, CharacterFeatureChoice, CharacterDisallowedSource } from '@shared/schema';
+import type { FeatureProgression, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse, Race, DnDClass, FeatureEntity, CharacterAbilityScoreResponse, CharacterFeatureChoice, CharacterDisallowedSource, Feat, FeatInQueryResponse } from '@shared/schema';
 import { EntityAppliesToType, PROFICIENCY_TYPE_ENUM, ResolutionStepType, CoreComponent } from '@shared/static-data';
+import type { FormattedCharacterResult } from '@/lib/formatters';
 
 // ============================================================================
 // Tab Configuration Types
@@ -154,7 +155,6 @@ export interface Money {
 // ============================================================================
 export interface AttackDefinition {
     id: number;
-    attackTypeId: number;
     attackSlot: number | null;
     mainHandCharacterItemId: number | null;
     offHandCharacterItemId: number | null;
@@ -374,8 +374,8 @@ export interface FeatureResolutionReturn {
     error: string | null;
     isClassSkill: (skillId: number, skillSubId?: number | null) => boolean;
     getGrantedFeats: () => number[];
-    getGrantedProficiencies: () => GrantedProficiency[];
-    getPendingChoices: () => unknown[];
+    getGrantedProficiencies: () => Array<{ type: string; id: number; source: string }>;
+    getPendingChoices: () => Promise<PendingChoice[]>;
     calculateSkillTotal: (skillId: number, skillSubId: number | null, baseTotal: number) => number;
 }
 
@@ -460,6 +460,7 @@ export interface CharacterEditState {
 
     // Feats Tab UI State
     selectedFeats: number[];
+    featSubIds: Record<number, number | null>; // Map of featId -> featSubId (for feats with useSubId)
 
     // Description Tab UI State
     alignmentId: number | null;
@@ -503,21 +504,22 @@ export enum CharacterEditStateUpdateType {
     SET_MAX_CLASS_SKILL_RANKS = 16,
     SET_MAX_CROSS_CLASS_SKILL_RANKS = 17,
     SET_SELECTED_FEATS = 18,
-    SET_ALIGNMENT = 19,
-    SET_AGE = 20,
-    SET_HEIGHT = 21,
-    SET_WEIGHT = 22,
-    SET_EYES = 23,
-    SET_HAIR = 24,
-    SET_GENDER = 25,
-    SET_NOTES = 26,
-    SET_EQUIPMENT = 27,
-    SET_MONEY = 28,
-    SET_RESOLVED_DATA = 29,
-    SET_RESOLUTION_LOADING = 30,
-    SET_RESOLUTION_ERROR = 31,
-    SET_CURRENT_ADVANCEMENT_ID = 32,
-    SET_ATTACK_DEFINITIONS = 33
+    SET_FEAT_SUB_IDS = 19,
+    SET_ALIGNMENT = 20,
+    SET_AGE = 22,
+    SET_HEIGHT = 23,
+    SET_WEIGHT = 24,
+    SET_EYES = 25,
+    SET_HAIR = 26,
+    SET_GENDER = 27,
+    SET_NOTES = 28,
+    SET_EQUIPMENT = 29,
+    SET_MONEY = 30,
+    SET_RESOLVED_DATA = 31,
+    SET_RESOLUTION_LOADING = 32,
+    SET_RESOLUTION_ERROR = 33,
+    SET_CURRENT_ADVANCEMENT_ID = 34,
+    SET_ATTACK_DEFINITIONS = 35
 }
 
 export type CharacterEditStateUpdate =
@@ -540,6 +542,7 @@ export type CharacterEditStateUpdate =
     | { type: CharacterEditStateUpdateType.SET_MAX_CLASS_SKILL_RANKS; payload: { maxClassSkillRanks: number } }
     | { type: CharacterEditStateUpdateType.SET_MAX_CROSS_CLASS_SKILL_RANKS; payload: { maxCrossClassSkillRanks: number } }
     | { type: CharacterEditStateUpdateType.SET_SELECTED_FEATS; payload: { selectedFeats: number[] } }
+    | { type: CharacterEditStateUpdateType.SET_FEAT_SUB_IDS; payload: { featSubIds: Record<number, number | null> } }
     | { type: CharacterEditStateUpdateType.SET_ALIGNMENT; payload: { alignmentId: number | null } }
     | { type: CharacterEditStateUpdateType.SET_AGE; payload: { age: number | null } }
     | { type: CharacterEditStateUpdateType.SET_HEIGHT; payload: { height: number | null } }
@@ -578,10 +581,26 @@ export interface TabComponentProps {
         pendingChoices: PendingChoice[];
         grantedFeats: FeatureEntity[];
         availableFeats: number;
+        availableFighterBonusFeats: number;
     };
     isLoading: boolean;
     triggerFeatureResolution: () => Promise<void>;
     handleChoiceSelection?: (choiceType: number, selectedId: number, features: FeatureProgression[]) => Promise<void>;
+    formattedCharacter?: FormattedCharacterResult | null;
+    // Shared data fetched in CharacterEdit and passed to all tabs
+    sharedData: {
+        allFeats: FeatInQueryResponse[];
+        isLoadingFeats: boolean;
+        featsMap: Map<number, Feat>;
+        isLoadingFullFeats: boolean;
+        primaryClass: DnDClass | null;
+        secondaryClass: DnDClass | null;
+        race: Race | null;
+        isLoadingClasses: boolean;
+        isLoadingRace: boolean;
+    };
+    // Character data for prerequisite checking
+    character: CharacterWithAllDetailsResponse | null;
 }
 
 /**

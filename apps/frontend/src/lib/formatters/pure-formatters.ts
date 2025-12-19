@@ -430,7 +430,7 @@ export class SizeCategoryFormatter implements BaseFormatter {
 
         const sizeCategory = SIZE_MAP[modifier.appliesToId];
         if (sizeCategory) {
-            if (value !== 0) {
+            if (value !== 0 && value !== null && value !== undefined) {
                 const stringValue = typeof value === 'string' ? value : formatSignedValue(value);
                 return `${sizeCategory.name}: ${stringValue}`;
             }
@@ -485,5 +485,101 @@ export class ResistanceFormatter implements BaseFormatter {
         }
 
         return `${value}`;
+    }
+}
+
+export class WeightFormatter implements BaseFormatter {
+    format(modifier: CalculatedEntity): string {
+        const value = modifier.value;
+
+        if (value === null || value === undefined) {
+            return '';
+        }
+
+        // Handle both number and Decimal (Prisma) types
+        return `${value.toString()} lb.`;
+    }
+}
+
+export class CriticalFormatter implements BaseFormatter {
+    format(modifier: CalculatedEntity): string {
+        const value = modifier.value;
+
+        if (value === null || value === undefined) {
+            return '20/x2'; // Default critical
+        }
+
+        // Value should be a string like "20/x2" or "19-20/x2"
+        return typeof value === 'string' ? value : value.toString();
+    }
+}
+
+export class AttackBonusFormatter implements BaseFormatter {
+    format(modifier: CalculatedEntity): string {
+        const value = modifier.value;
+
+        if (value === null || value === undefined) {
+            return '0';
+        }
+
+        const numericValue = typeof value === 'number' ? value : parseFloat(value.toString()) || 0;
+
+        // For character sheet formatting, nonlethal bonus is handled separately
+        // This formatter just formats the main attack bonus
+        return formatSignedValue(numericValue);
+    }
+
+    /**
+     * Format attack bonus with nonlethal handling (utility method)
+     */
+    formatWithNonlethal(lethalBonus: number, nonlethalBonus?: number): string {
+        if (nonlethalBonus !== undefined && nonlethalBonus !== lethalBonus) {
+            const lethalSign = lethalBonus >= 0 ? '+' : '';
+            const nonlethalSign = nonlethalBonus >= 0 ? '+' : '';
+            return `${lethalSign}${lethalBonus} (${nonlethalSign}${nonlethalBonus} nonlethal)`;
+        }
+        return formatSignedValue(lethalBonus);
+    }
+}
+
+/**
+ * Formatter for damage strings (e.g., "1d8+3")
+ * Formats damage from components: baseDamage + abilityModifier + featBonus
+ */
+export class DamageStringFormatter implements BaseFormatter {
+    format(entity: CalculatedEntity): string {
+        // Damage components can be stored in formulaParams or as structured data
+        // For now, we'll check if value is a string (legacy) or if we have structured data
+        if (typeof entity.value === 'string') {
+            // Legacy: already formatted string
+            return entity.value;
+        }
+
+        // Extract damage components from formulaParams if available
+        const formulaParams = entity.formulaParams;
+        if (formulaParams && typeof formulaParams === 'object') {
+            const baseDamage = (formulaParams as { baseDamage?: string }).baseDamage ?? '1d4';
+            const abilityModifier = (formulaParams as { abilityModifier?: number }).abilityModifier ?? 0;
+            const featBonus = (formulaParams as { featBonus?: number }).featBonus ?? 0;
+
+            return this.formatFromComponents(baseDamage, abilityModifier, featBonus);
+        }
+
+        // Fallback: try to use value as modifier if it's a number
+        if (typeof entity.value === 'number') {
+            return this.formatFromComponents('1d4', entity.value, 0);
+        }
+
+        // Default fallback
+        return '1d4';
+    }
+
+    /**
+     * Format damage from components (utility method for direct use)
+     */
+    formatFromComponents(baseDamage: string, abilityModifier: number, featBonus: number): string {
+        const totalModifier = abilityModifier + featBonus;
+        const modifierStr = totalModifier >= 0 ? `+${totalModifier}` : `${totalModifier}`;
+        return `${baseDamage}${modifierStr}`;
     }
 }

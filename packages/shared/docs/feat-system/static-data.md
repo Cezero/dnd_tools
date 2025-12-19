@@ -37,8 +37,21 @@ Defines the different types of benefits that feats can provide.
 - **`SKILL` (1)**: Skill bonuses and proficiencies
 - **`SAVE` (2)**: Saving throw bonuses
 - **`PROFICIENCY` (3)**: Weapon and armor proficiencies
+- **`TURN_ATTEMPTS` (4)**: Turn undead attempts
+- **`SPELLS_LEARNED` (5)**: Spells learned bonuses
+- **`RANGE_INCREMENT` (6)**: Range increment bonuses
+- **`DIFFICULTY_CLASS` (7)**: Difficulty class bonuses
+- **`CASTER_LEVEL` (8)**: Caster level bonuses
+- **`ATTACK_BONUS` (9)**: Attack bonus (general, can specify attack type via referenceId)
+- **`DAMAGE_BONUS` (10)**: Damage bonus (general, can specify attack type via referenceId)
+- **`THREAT_RANGE` (11)**: Threat range bonuses
+- **`INITIATIVE` (12)**: Initiative bonuses
+- **`ATTACK_ABILITY_REPLACEMENT` (13)**: Attack ability replacement (e.g., Weapon Finesse)
+- **`UNARMED_LETHAL_DAMAGE` (14)**: Unarmed lethal damage
+- **`TWO_WEAPON_MAIN_HAND` (15)**: Two-weapon fighting main hand bonus (only applies when dual-wielding with main hand)
+- **`TWO_WEAPON_OFF_HAND` (16)**: Two-weapon fighting off hand bonus (only applies when dual-wielding with off hand)
 
-**Usage**: Used in feat benefit definitions to specify the type of benefit provided.
+**Usage**: Used in feat benefit definitions to specify the type of benefit provided. The `TWO_WEAPON_MAIN_HAND` and `TWO_WEAPON_OFF_HAND` types are specifically designed for feats like Two-Weapon Fighting that grant different bonuses to different hands.
 
 **Source File**: `packages/shared/static-data/src/FeatData.ts` (FeatBenefitType enum)
 

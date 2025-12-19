@@ -1,172 +1,110 @@
+import { useQueryClient } from '@tanstack/react-query';
 import React, { useMemo, useState, useEffect } from 'react';
 
 import type { TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
-import { meetsPrerequisites } from '@/lib/characterUtils';
-import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
-import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
-import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
-import type { DnDClass, Race, Feat } from '@shared/schema';
+import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
+import type { ItemWithDetails, FeatInQueryResponse } from '@shared/schema';
+import { ITEM_TYPE_ENUM, EntityAppliesToType } from '@shared/static-data';
+
+import { FeatSubIdSelectionModal } from '../components/FeatSubIdSelectionModal';
+import { filterAvailableFeats } from '../utils/featFiltering';
 
 // Custom hook that filters feats based on character qualifications
-const useFilteredFeats = (state: TabComponentProps['state'], resolvedData: TabComponentProps['resolvedData']) => {
-    const { data: featResponse, isLoading } = FeatQueryHooks.useFeatQuery({
-        queryType: 'all'
-    });
+const useFilteredFeats = (
+    state: TabComponentProps['state'],
+    resolvedData: TabComponentProps['resolvedData'],
+    sharedData: TabComponentProps['sharedData'],
+    character: TabComponentProps['character']
+) => {
+    const isLoading = sharedData.isLoadingFeats;
+    const [availableFeats, setAvailableFeats] = useState<FeatInQueryResponse[]>([]);
+    const [isFiltering, setIsFiltering] = useState(false);
 
-    // Fetch class and race details for prerequisite checking
-    const [classDetails, setClassDetails] = useState<{ primary?: DnDClass; secondary?: DnDClass }>({});
-    const [raceDetails, setRaceDetails] = useState<Race | null>(null);
-
-    // Fetch class details when class IDs change
     useEffect(() => {
-        const fetchClassDetails = async () => {
-            const newClassDetails: { primary?: DnDClass; secondary?: DnDClass } = {};
+        if (!character || sharedData.allFeats.length === 0) {
+            setAvailableFeats([]);
+            setIsFiltering(false);
+            return;
+        }
 
-            if (state.classId) {
-                try {
-                    const primaryClass = await ClassQueryHooks.getClassById(state.classId);
-                    newClassDetails.primary = primaryClass;
-                } catch (error) {
-                    console.error('Failed to fetch primary class details:', error);
-                }
-            }
-
-            if (state.isGestalt && state.secondaryClassId) {
-                try {
-                    const secondaryClass = await ClassQueryHooks.getClassById(state.secondaryClassId);
-                    newClassDetails.secondary = secondaryClass;
-                } catch (error) {
-                    console.error('Failed to fetch secondary class details:', error);
-                }
-            }
-
-            setClassDetails(newClassDetails);
-        };
-
-        fetchClassDetails();
-    }, [state.classId, state.secondaryClassId, state.isGestalt]);
-
-    // Fetch race details when raceId changes
-    useEffect(() => {
-        const fetchRaceDetails = async () => {
-            let newRaceDetails: Race | null = null;
-            if (state.raceId) {
-                try {
-                    const raceData = await RaceQueryHooks.getRaceById(state.raceId);
-                    newRaceDetails = raceData;
-                } catch (error) {
-                    console.error('Failed to fetch race details:', error);
-                }
-            }
-            setRaceDetails(newRaceDetails);
-        };
-
-        fetchRaceDetails();
-    }, [state.raceId]);
-
-    const allFeats = useMemo(() => featResponse?.results || [], [featResponse?.results]);
-
-    const availableFeats = useMemo(() => {
-        // Get granted feats from resolved data (includes both direct feats and proficiency feats)
-        const grantedFeats = resolvedData.grantedFeats;
-        const grantedFeatIds = grantedFeats.map(entity => entity.appliesToId).filter((id): id is number => id !== null && id !== undefined);
-
-        // Combine user-selected feats with all granted feats
-        const allOwnedFeats = new Set([...state.selectedFeats, ...grantedFeatIds]);
-
-        return allFeats.filter(feat => {
-            // Check if character already has this feat
-            if (allOwnedFeats.has(feat.id)) {
-                // If it's repeatable, check if they have the "all" version (appliesToSubId: -1)
-                if (feat.repeatable === true) {
-                    // Check if this feat was granted with appliesToSubId: -1 (all iterations)
-                    const hasAllIterations = grantedFeats.some(entity =>
-                        entity.appliesToId === feat.id && entity.appliesToSubId === -1
-                    );
-
-                    // If they have all iterations, filter it out
-                    if (hasAllIterations) {
-                        return false;
-                    }
-
-                    // Otherwise, allow it (they can take more iterations)
-                    return true;
-                }
-
-                // Non-repeatable feat - filter it out
-                return false;
-            }
-
-            // If feat has no prerequisites, it's available
-            if (!feat.prereqs || feat.prereqs.length === 0) {
-                return true;
-            }
-
-            // If we don't have sufficient character data to evaluate prerequisites, filter out the feat
-            if (!state.abilityScores || state.abilityScores.length === 0 || !classDetails.primary) {
-                return false;
-            }
-
-            // Create character object for prerequisite checking
-            const character = {
-                abilityScores: state.abilityScores,
-                advancements: [{
-                    skills: state.skillRanks?.map(sr => ({
-                        skillId: sr.skillId,
-                        pointsSpent: sr.pointsSpent
-                    })) || [],
-                    feats: Array.from(allOwnedFeats).map(featId => ({ featId }))
-                }]
-            };
-
-            try {
-                // Create a minimal character object that matches the expected interface
-                const characterForPrereqs = {
-                    ...character,
-                    // Add required fields that meetsPrerequisites expects
-                    id: 1, // Placeholder ID
-                    name: 'Character',
-                    level: state.level,
-                    raceId: state.raceId,
-                    alignmentId: 1, // Placeholder
-                    allowVariantClasses: state.allowVariantClasses,
-                    isGestalt: state.isGestalt,
-                    ignoreLevelAdjustment: state.ignoreLevelAdjustment,
-                    race: raceDetails ? { id: state.raceId || 0, name: raceDetails.name } : { id: 0, name: 'Unknown' }
-                };
-
-                return meetsPrerequisites(
-                    feat as Feat,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    characterForPrereqs as any, // TODO: Fix this type when characterUtils is updated
-                    classDetails.primary,
-                    raceDetails,
-                    { results: allFeats, total: allFeats.length }
-                );
-            } catch (error) {
-                // If prerequisite checking fails, filter out the feat
-                console.warn('Failed to check prerequisites for feat:', feat.name, error);
-                return false;
-            }
+        setIsFiltering(true);
+        filterAvailableFeats(sharedData.allFeats, state, resolvedData, sharedData, character)
+            .then(filtered => {
+                setAvailableFeats(filtered);
+                setIsFiltering(false);
+            })
+            .catch(error => {
+                console.error('Error filtering feats:', error);
+                setAvailableFeats([]);
+                setIsFiltering(false);
         });
-    }, [allFeats, state.selectedFeats, state.abilityScores, state.skillRanks, state.allowVariantClasses, state.ignoreLevelAdjustment, state.isGestalt, state.level, state.raceId, classDetails, raceDetails, resolvedData.grantedFeats]);
+    }, [sharedData.allFeats, state, resolvedData, sharedData, character]);
 
     return {
         data: { results: availableFeats, total: availableFeats.length },
-        isLoading
+        isLoading: isLoading || isFiltering
     };
 };
 
 export function FeatsTab({
+    formattedCharacter,
     state,
     updateState,
     resolvedData,
     isLoading,
-    triggerFeatureResolution
+    triggerFeatureResolution,
+    sharedData,
+    character
 }: TabComponentProps): React.JSX.Element {
-    const { data: featResponse, isLoading: isLoadingFeats } = useFilteredFeats(state, resolvedData);
+    const queryClient = useQueryClient();
+    const { data: featResponse, isLoading: isLoadingFeats } = useFilteredFeats(state, resolvedData, sharedData, character);
     const [searchTerm, setSearchTerm] = useState('');
+    const [modalFeat, setModalFeat] = useState<FeatInQueryResponse | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [items, setItems] = useState<ItemWithDetails[]>([]);
+
+    // Load items to get names for feat sub-ids
+    // Note: Loading all items, not just weapons, in case feats can apply to other item types
+    useEffect(() => {
+        const fetchItems = async () => {
+            try {
+                // Use queryClient.fetchQuery to leverage TanStack Query cache
+                const allItemsResponse = await queryClient.fetchQuery({
+                    queryKey: ItemQueryHooks.getItemsQueryKey(),
+                    queryFn: () => ItemQueryHooks.getItemsQueryFn(),
+                    staleTime: 5 * 60 * 1000, // 5 minutes
+                    gcTime: 10 * 60 * 1000, // 10 minutes
+                });
+                if (allItemsResponse?.results) {
+                    setItems(allItemsResponse.results);
+                    console.log(`Loaded ${allItemsResponse.results.length} items for feat display`);
+                } else {
+                    // Fallback to just weapons if getAllItems doesn't work
+                    const weaponsResponse = await ItemQueryHooks.itemQueryQueryFn({
+                        queryType: 'byType',
+                        typeId: ITEM_TYPE_ENUM.Weapon.toString()
+                    });
+                    if (weaponsResponse?.results) {
+                        setItems(weaponsResponse.results);
+                        console.log(`Loaded ${weaponsResponse.results.length} weapons for feat display`);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to fetch items for feat display:', error);
+            }
+        };
+        fetchItems();
+    }, [queryClient]);
+
+    // Create a map of item ID to item name for quick lookup
+    const itemNameMap = useMemo(() => {
+        const map = new Map<number, string>();
+        items.forEach(item => {
+            map.set(item.id, item.name);
+        });
+        return map;
+    }, [items]);
 
     const availableSlots = resolvedData.availableFeats;
     const selectedCount = state.selectedFeats.length;
@@ -186,6 +124,7 @@ export function FeatsTab({
         );
     }, [availableFeats, searchTerm]);
 
+
     // Get granted feats from resolved data
     const grantedFeats = useMemo(() => {
         return resolvedData.grantedFeats;
@@ -195,25 +134,86 @@ export function FeatsTab({
     const selectedFeats = useMemo(() => {
         return state.selectedFeats.map(featId => {
             const feat = availableFeats.find(f => f.id === featId);
-            return feat ? { ...feat, source: 'selected' as const } : null;
+            if (!feat) return null;
+            
+            // Get sub-id from state.featSubIds (stored in AdvancementFeat.featSubId)
+            const featSubId = state.featSubIds[featId];
+            const subIdName = featSubId && featSubId > 0
+                ? itemNameMap.get(featSubId) 
+                : undefined;
+            
+            return { 
+                ...feat, 
+                source: 'selected' as const,
+                subIdName
+            };
         }).filter(Boolean);
-    }, [state.selectedFeats, availableFeats]);
+    }, [state.selectedFeats, availableFeats, state.featSubIds, itemNameMap]);
 
     // Get granted feat details (from class/race features)
     const grantedFeatDetails = useMemo(() => {
         return grantedFeats.map(entity => {
             // Look in the unfiltered feat response since granted feats are filtered out of availableFeats
             const feat = featResponse?.results?.find(f => f.id === entity.appliesToId);
-            return feat ? { ...feat, source: 'granted' as const } : null;
+            if (!feat) return null;
+            
+            // Get sub-id name if present (for granted feats with useSubId)
+            const subIdName = entity.appliesToSubId && entity.appliesToSubId > 0
+                ? itemNameMap.get(entity.appliesToSubId)
+                : undefined;
+            
+            return { ...feat, source: 'granted' as const, subIdName };
         }).filter(Boolean);
-    }, [grantedFeats, featResponse?.results]);
+    }, [grantedFeats, featResponse?.results, itemNameMap]);
 
-    // Combine all owned feats for display
+    // Get choice-based feat details (from CharacterFeatureChoice, e.g., fighter bonus feats)
+    const choiceFeatDetails = useMemo(() => {
+        const choiceFeats: Array<FeatInQueryResponse & { source: 'choice'; subIdName?: string; sourceFeature?: string }> = [];
+
+        // Extract feat choices from state.featureChoices
+        for (const choice of state.featureChoices) {
+            // Look up the FeatureEntity in resolved progressions to determine if this is a feat choice
+            let entityAppliesTo: number | null = null;
+            let sourceFeatureName: string | null = null;
+
+            for (const progression of resolvedData.progressions) {
+                if (progression.id === choice.progressionId && progression.entities) {
+                    const entity = progression.entities.find(e => e.id === choice.featureEntityId);
+                    if (entity) {
+                        entityAppliesTo = entity.appliesTo;
+                        sourceFeatureName = progression.feature?.name || null;
+                        break;
+                    }
+                }
+            }
+
+            // Only include if this is a feat choice
+            if (entityAppliesTo === EntityAppliesToType.Feat) {
+                const feat = availableFeats.find(f => f.id === choice.appliesToId);
+                if (feat) {
+                    const subIdName = choice.appliesToSubId && choice.appliesToSubId > 0
+                        ? itemNameMap.get(choice.appliesToSubId)
+                        : undefined;
+
+                    choiceFeats.push({
+                        ...feat,
+                        source: 'choice' as const,
+                        subIdName,
+                        sourceFeature: sourceFeatureName || undefined,
+                    });
+                }
+            }
+        }
+
+        return choiceFeats;
+    }, [state.featureChoices, resolvedData.progressions, availableFeats, itemNameMap]);
+
+    // Combine all owned feats for display (selected, granted, and choice-based)
     const allOwnedFeats = useMemo(() => {
-        return [...selectedFeats, ...grantedFeatDetails];
-    }, [selectedFeats, grantedFeatDetails]);
+        return [...selectedFeats, ...grantedFeatDetails, ...choiceFeatDetails];
+    }, [selectedFeats, grantedFeatDetails, choiceFeatDetails]);
 
-    // Handle feat selection
+    // Handle feat selection (regular feats)
     const handleFeatToggle = async (featId: number) => {
         const isSelected = state.selectedFeats.includes(featId);
         let newSelectedFeats: number[];
@@ -221,16 +221,71 @@ export function FeatsTab({
         if (isSelected) {
             // Remove the feat
             newSelectedFeats = state.selectedFeats.filter(id => id !== featId);
+            
+            // Remove feat sub-id if it exists
+            const newFeatSubIds = { ...state.featSubIds };
+            delete newFeatSubIds[featId];
+            
+            updateState({
+                type: CharacterEditStateUpdateType.SET_SELECTED_FEATS,
+                payload: { selectedFeats: newSelectedFeats }
+            });
+            
+            updateState({
+                type: CharacterEditStateUpdateType.SET_FEAT_SUB_IDS,
+                payload: { featSubIds: newFeatSubIds }
+            });
+            
+            // Trigger feature resolution when feats change
+            await triggerFeatureResolution();
         } else {
             // Add the feat (if we have available slots)
             if (selectedCount >= availableSlots) return;
-            newSelectedFeats = [...state.selectedFeats, featId];
+            
+            // Check if the feat requires a sub-id selection
+            const feat = availableFeats.find(f => f.id === featId);
+            if (feat?.useSubId) {
+                // Show modal for weapon selection
+                setModalFeat(feat);
+                setIsModalOpen(true);
+            } else {
+                // Add the feat directly
+                newSelectedFeats = [...state.selectedFeats, featId];
+                updateState({
+                    type: CharacterEditStateUpdateType.SET_SELECTED_FEATS,
+                    payload: { selectedFeats: newSelectedFeats }
+                });
+                // Trigger feature resolution when feats change
+                await triggerFeatureResolution();
+            }
         }
+    };
 
+    // Handle weapon selection from modal
+    const handleWeaponSelection = async (weaponId: number) => {
+        if (!modalFeat) return;
+
+        // Add the feat to selected feats
+        const newSelectedFeats = state.selectedFeats.includes(modalFeat.id)
+            ? state.selectedFeats
+            : [...state.selectedFeats, modalFeat.id];
+        
+        // Store the weapon sub-id for this feat
+        const newFeatSubIds = { ...state.featSubIds, [modalFeat.id]: weaponId };
+        
         updateState({
             type: CharacterEditStateUpdateType.SET_SELECTED_FEATS,
             payload: { selectedFeats: newSelectedFeats }
         });
+        
+        updateState({
+            type: CharacterEditStateUpdateType.SET_FEAT_SUB_IDS,
+            payload: { featSubIds: newFeatSubIds }
+        });
+
+        // Close modal and reset
+        setIsModalOpen(false);
+        setModalFeat(null);
 
         // Trigger feature resolution when feats change
         await triggerFeatureResolution();
@@ -243,6 +298,7 @@ export function FeatsTab({
         }
         return true;
     };
+
 
     if (isLoadingFeats) {
         return (
@@ -277,6 +333,11 @@ export function FeatsTab({
                                             <div className="flex items-center gap-3 mb-1">
                                                 <h4 className="font-medium text-gray-900 dark:text-white">
                                                     {feat.name}
+                                                    {(feat as { subIdName?: string }).subIdName && (
+                                                        <span className="text-gray-600 dark:text-gray-400 font-normal">
+                                                            {' '}({(feat as { subIdName: string }).subIdName})
+                                                        </span>
+                                                    )}
                                                 </h4>
                                                 {feat.source === 'granted' && (
                                                     <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">
@@ -287,6 +348,18 @@ export function FeatsTab({
                                                     <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
                                                         Selected
                                                     </span>
+                                                )}
+                                                {feat.source === 'choice' && (
+                                                    <>
+                                                        <span className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-1 rounded">
+                                                            Choice
+                                                        </span>
+                                                        {(feat as { sourceFeature?: string }).sourceFeature && (
+                                                            <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded">
+                                                                {(feat as { sourceFeature: string }).sourceFeature}
+                                                            </span>
+                                                        )}
+                                                    </>
                                                 )}
                                             </div>
                                             {feat.description && (
@@ -305,10 +378,21 @@ export function FeatsTab({
                                                 </p>
                                             )}
                                         </div>
-                                        {feat.source === 'selected' && (
+                                        {(feat.source === 'selected' || feat.source === 'choice') && (
                                             <button
-                                                onClick={() => handleFeatToggle(feat.id)}
+                                                onClick={() => {
+                                                    if (feat.source === 'selected') {
+                                                        handleFeatToggle(feat.id);
+                                                    } else {
+                                                        // For choice-based feats, we'd need to remove from featureChoices
+                                                        // This would require updating the choice system
+                                                        // For now, just show a message or handle it via ChoicesTab
+                                                        console.log('Choice-based feats should be removed via ChoicesTab');
+                                                    }
+                                                }}
                                                 className="ml-3 text-red-500 hover:text-red-700 text-sm font-medium"
+                                                disabled={feat.source === 'choice'}
+                                                title={feat.source === 'choice' ? 'Remove this feat via the Choices tab' : 'Remove feat'}
                                             >
                                                 Remove
                                             </button>
@@ -425,6 +509,18 @@ export function FeatsTab({
                     )}
                 </div>
             </div>
+
+            {/* Feat Sub-ID Selection Modal */}
+            <FeatSubIdSelectionModal
+                isOpen={isModalOpen}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setModalFeat(null);
+                }}
+                onConfirm={(weaponId: number) => handleWeaponSelection(weaponId)}
+                feat={modalFeat}
+                resolvedProgressions={resolvedData.progressions}
+            />
         </div>
     );
 }

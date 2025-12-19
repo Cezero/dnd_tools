@@ -1,4 +1,4 @@
-import type { CharacterWithAllDetailsResponse, FeatureProgression } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, FeatureProgression, Feat } from '@shared/schema';
 import { AbilityId, GetAbilityModifier, SIZE_MAP } from '@shared/static-data';
 import { resolveFeatBenefits } from '../core/featBenefitResolver';
 import { resolveFeatureBonuses, resolveFeatureFormulaModifications } from '../core/featureBonusResolver';
@@ -27,7 +27,8 @@ export interface ACBreakdownMap {
 export function getAC(
     character: CharacterWithAllDetailsResponse,
     resolvedProgressions: FeatureProgression[],
-    items?: Array<{ id: number; armor?: { bonus: number | null }; weapon?: unknown }>
+    items?: Array<{ id: number; armor?: { bonus: number | null }; weapon?: unknown }>,
+    featsMap?: Map<number, Feat>
 ): CalculationResult<ACBreakdownMap> {
     // Base AC
     const baseAC = 10;
@@ -77,7 +78,7 @@ export function getAC(
     // TODO: Implement deflection bonus detection
 
     // Get feat benefits
-    const featBenefits = resolveFeatBenefits(character, FeatBenefitType.ATTACK_BONUS); // Note: AC might need different type
+    const featBenefits = resolveFeatBenefits(character, FeatBenefitType.ATTACK_BONUS, undefined, featsMap, resolvedProgressions); // Note: AC might need different type
     const featBonus = 0; // TODO: Check if feats can directly affect AC
 
     // Get feature bonuses (including formula modifications like Monk AC)
@@ -159,9 +160,10 @@ export function getAC(
  */
 export function getTouchAC(
     character: CharacterWithAllDetailsResponse,
-    resolvedProgressions: FeatureProgression[]
+    resolvedProgressions: FeatureProgression[],
+    featsMap?: Map<number, Feat>
 ): number {
-    const acResult = getAC(character, resolvedProgressions);
+    const acResult = getAC(character, resolvedProgressions, undefined, featsMap);
     // Touch AC = base + dex + size + deflection + misc (no armor, shield, natural)
     return (
         acResult.breakdown.base.value +
@@ -177,9 +179,10 @@ export function getTouchAC(
  */
 export function getFlatFootedAC(
     character: CharacterWithAllDetailsResponse,
-    resolvedProgressions: FeatureProgression[]
+    resolvedProgressions: FeatureProgression[],
+    featsMap?: Map<number, Feat>
 ): number {
-    const acResult = getAC(character, resolvedProgressions);
+    const acResult = getAC(character, resolvedProgressions, undefined, featsMap);
     // Flat-footed AC = base + armor + shield + size + natural + deflection + misc (no dex)
     return (
         acResult.breakdown.base.value +

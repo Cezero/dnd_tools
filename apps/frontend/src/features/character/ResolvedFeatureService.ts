@@ -1,5 +1,5 @@
 import { FeatureProgression, FeatureEntity, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse, Race, DnDClass } from '@shared/schema';
-import { EntityType, EntityAppliesToType, CoreComponent } from '@shared/static-data';
+import { EntityType, EntityAppliesToType, CoreComponent, FeatureFeatChoiceFilter } from '@shared/static-data';
 
 import { CharacterFeatureResolutionService } from './CharacterFeatureResolutionService';
 import { ChoiceResolver } from './ChoiceResolver';
@@ -164,10 +164,97 @@ export class ResolvedFeatureService {
 
     /**
      * Get pending choices from resolved features
+     * Filters out choices that have already been made
      */
-    static async getPendingChoices(resolvedProgressions: FeatureProgression[], cacheService: { getClassNameById: (id: number) => CoreComponent | undefined; getDomainSelectByEdition: (editionId: number) => CoreComponent[] }, editionId?: number): Promise<PendingChoice[]> {
+    static async getPendingChoices(
+        resolvedProgressions: FeatureProgression[],
+        cacheService: {
+            getClassNameById: (id: number) => Promise<CoreComponent | undefined> | CoreComponent | undefined;
+            getDomainSelectByEdition: (editionId: number) => Promise<CoreComponent[]> | CoreComponent[];
+        },
+        editionId?: number,
+        existingChoices?: Array<{ progressionId: number; featureEntityId: number }>,
+        allFeats?: import('@shared/schema').FeatInQueryResponse[]
+    ): Promise<PendingChoice[]> {
         // Use the ChoiceResolver to identify pending choices
-        return await ChoiceResolver.identifyPendingChoices(resolvedProgressions, cacheService, editionId);
+        // Create an adapter to normalize return types (cacheService may return sync or async)
+        const normalizedCacheService = {
+            getClassNameById: async (id: number): Promise<CoreComponent | undefined> => {
+                const result = cacheService.getClassNameById(id);
+                return result instanceof Promise ? await result : result;
+            },
+            getDomainSelectByEdition: async (editionId: number): Promise<CoreComponent[]> => {
+                const result = cacheService.getDomainSelectByEdition(editionId);
+                const resolved = result instanceof Promise ? await result : result;
+                return Array.isArray(resolved) ? resolved : [];
+            }
+        };
+
+        return await ChoiceResolver.identifyPendingChoices(
+            resolvedProgressions,
+            normalizedCacheService,
+            editionId,
+            existingChoices,
+            allFeats
+        );
+    }
+
+    /**
+     * Count available feat slots from resolved progressions
+     * Counts pending choices of type Feat, but EXCLUDES racial/class bonus feats
+     * (those are handled in ChoicesTab, not FeatsTab)
+     * Only counts advancement-level feat choices (sourceType should indicate advancement-level)
+     */
+    static getAvailableFeats(resolvedProgressions: FeatureProgression[]): number {
+        let count = 0;
+
+        for (const progression of resolvedProgressions) {
+            if (progression.entities) {
+                for (const entity of progression.entities) {
+                    if (entity.type === EntityType.Choice &&
+                        entity.appliesTo === EntityAppliesToType.Feat) {
+                        // Exclude racial feats (sourceType 0 = Race) and class bonus feats
+                        // Only count advancement-level feats (typically sourceType 1 = Class at specific levels)
+                        // For now, exclude if it's from a race source (raceId is set)
+                        // This is a heuristic - ideally we'd have a better way to distinguish
+                        if (progression.raceId !== null && progression.raceId !== undefined) {
+                            // This is a racial feat choice - don't count it in availableFeats
+                            continue;
+                        }
+
+                        // Count each feat choice (value is usually 1, but could be more for multiple selections)
+                        const selections = entity.value || 1;
+                        count += selections;
+                    }
+                }
+            }
+        }
+
+        return count;
+    }
+
+    /**
+     * Count available fighter bonus feat slots from resolved progressions
+     * Counts pending choices of type Feat with filterType === FighterBonus
+     */
+    static getAvailableFighterBonusFeats(resolvedProgressions: FeatureProgression[]): number {
+        let count = 0;
+
+        for (const progression of resolvedProgressions) {
+            if (progression.entities) {
+                for (const entity of progression.entities) {
+                    if (entity.type === EntityType.Choice &&
+                        entity.appliesTo === EntityAppliesToType.Feat &&
+                        entity.filterType === FeatureFeatChoiceFilter.FighterBonus) {
+                        // Count each fighter bonus feat choice
+                        const selections = entity.value || 1;
+                        count += selections;
+                    }
+                }
+            }
+        }
+
+        return count;
     }
 
     /**

@@ -53,6 +53,7 @@ export function useCharacterEditState(initialState?: Partial<CharacterEditState>
 
         // Feats Tab UI State
         selectedFeats: [],
+        featSubIds: {},
 
         // Description Tab UI State
         alignmentId: null,
@@ -116,6 +117,8 @@ export function useCharacterEditState(initialState?: Partial<CharacterEditState>
                     return { ...prev, maxCrossClassSkillRanks: update.payload.maxCrossClassSkillRanks };
                 case CharacterEditStateUpdateType.SET_SELECTED_FEATS:
                     return { ...prev, selectedFeats: update.payload.selectedFeats };
+                case CharacterEditStateUpdateType.SET_FEAT_SUB_IDS:
+                    return { ...prev, featSubIds: update.payload.featSubIds };
                 case CharacterEditStateUpdateType.SET_ALIGNMENT:
                     return { ...prev, alignmentId: update.payload.alignmentId };
                 case CharacterEditStateUpdateType.SET_AGE:

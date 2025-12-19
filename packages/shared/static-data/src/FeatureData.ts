@@ -95,6 +95,7 @@ export const EntityAppliesToType = {
     Spell: 27,          // Direct spell grants (e.g., Domain spells, bonus spells)
     Feature: 25,        // Direct feature grants (e.g., Ranger Endurance)
     Domain: 29,         // NEW: Domain grants by other systems (loose coupling)
+    SkillPoints: 31,    // Skill points (e.g., Human bonus skill points)
 } as const;
 
 export type EntityAppliesToType = typeof EntityAppliesToType[keyof typeof EntityAppliesToType];
@@ -137,6 +138,7 @@ export const ENTITY_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
     [EntityAppliesToType.Spell]: { id: EntityAppliesToType.Spell, name: 'Spell', displayName: 'Spell' },
     [EntityAppliesToType.Feature]: { id: EntityAppliesToType.Feature, name: 'Feature', displayName: 'Feature' },
     [EntityAppliesToType.Domain]: { id: EntityAppliesToType.Domain, name: 'Domain', displayName: 'Domain' },
+    [EntityAppliesToType.SkillPoints]: { id: EntityAppliesToType.SkillPoints, name: 'Skill Points', displayName: 'Skill Points' },
 }
 
 export const ENTITY_APPLIES_TO_LIST = Object.values(ENTITY_APPLIES_TO_TYPES);
@@ -196,6 +198,7 @@ export const ENTITY_TYPE_COMPATIBILITY = {
         EntityAppliesToType.Feature, // Choice between features
         EntityAppliesToType.CreatureType, // Choice between creature types (e.g., Ranger favored enemy)
         EntityAppliesToType.Domain, // Choice between domains
+        EntityAppliesToType.SkillPoints, // Choice for skill points (e.g., Human bonus skill points)
     ],
     [EntityType.Allocation]: [
         EntityAppliesToType.Feat, // Allocation to feats

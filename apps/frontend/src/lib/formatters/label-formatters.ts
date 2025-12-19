@@ -233,3 +233,31 @@ export function groupedAutomaticLanguageLabeler(formattedItems: string): string 
     const pluralSuffix = isPlural ? 's' : '';
     return `Automatic Language${pluralSuffix}: ${formattedItems}`;
 }
+
+// Labeler for grouped skill points - uses "Bonus Skill Points" instead of "Choose a Skill Points"
+export function groupedSkillPointsLabeler(formattedItems: string): string {
+    return `Bonus Skill Points: (${formattedItems})`;
+}
+
+// Labeler for weapon names - adds suffix based on usage context
+export interface WeaponNameLabelerContext {
+    isDualWield: boolean;
+    isMainHand: boolean;
+    isTwoHanded: boolean;
+}
+
+export function weaponNameLabeler(
+    weaponName: string,
+    context: WeaponNameLabelerContext
+): string {
+    if (context.isDualWield) {
+        if (context.isMainHand) {
+            return `${weaponName} (main-hand)`;
+        } else {
+            return `${weaponName} (off-hand)`;
+        }
+    } else if (context.isTwoHanded) {
+        return `${weaponName} (both hands)`;
+    }
+    return weaponName;
+}

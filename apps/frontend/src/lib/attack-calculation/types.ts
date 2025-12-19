@@ -1,5 +1,4 @@
 import type { AttackDefinition } from '@/features/character/types';
-import type { CalculatedCharacterStats } from '@/features/character/characterStatsCalculator';
 import type {
     CharacterWithAllDetailsResponse,
     CharacterItem,
@@ -15,7 +14,6 @@ export interface AttackCalculationInput {
     items: ItemWithDetails[];
     classDetailsMap: Map<number, DnDClass>;
     resolvedProgressions: FeatureProgression[];
-    stats: CalculatedCharacterStats;
 }
 
 export interface AttackCalculationResult {

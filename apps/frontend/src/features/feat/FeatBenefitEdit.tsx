@@ -55,15 +55,31 @@ export function FeatBenefitEdit({ isOpen, onClose, onSave, initialBenefitData, f
 
     useEffect(() => {
         if (initialBenefitData) {
-            setFormData({
-                ...initialBenefitData,
-                index: initialBenefitData.index || 0,
-                typeId: initialBenefitData.typeId || null,
-                referenceId: initialBenefitData.referenceId || null,
-                amount: initialBenefitData.amount || null,
+            setFormData(prev => {
+                // Only update if values actually changed to prevent infinite loops
+                const newData = {
+                    ...initialBenefitData,
+                    index: initialBenefitData.index || 0,
+                    typeId: initialBenefitData.typeId || null,
+                    referenceId: initialBenefitData.referenceId || null,
+                    amount: initialBenefitData.amount || null,
+                };
+
+                // Check if values actually changed
+                if (
+                    prev.index === newData.index &&
+                    prev.typeId === newData.typeId &&
+                    prev.referenceId === newData.referenceId &&
+                    prev.amount === newData.amount
+                ) {
+                    return prev; // No change, return previous state
+                }
+
+                return newData;
             });
         }
-    }, [initialBenefitData]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialBenefitData?.index, initialBenefitData?.typeId, initialBenefitData?.referenceId, initialBenefitData?.amount]);
 
     const HandleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

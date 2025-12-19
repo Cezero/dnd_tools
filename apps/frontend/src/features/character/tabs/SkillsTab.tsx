@@ -5,9 +5,7 @@ import { CustomSelect } from '@/components/forms/FormComponents';
 import { AnalogSkillService } from '@/features/character';
 import type { SkillRank, TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
-import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
-import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
-import type { DnDClass, Race } from '@shared/schema';
+import type { FeatureProgression, FeatureEntity } from '@shared/schema';
 import {
     SKILL_LIST,
     ABILITY_MAP,
@@ -18,69 +16,34 @@ import {
     SkillSubType,
     SKILL_SUB_TYPE_COMPATIBILITY,
     Skill,
-    AbilityId
+    AbilityId,
+    EntityType,
+    EntityAppliesToType,
+    FORMULA_MAP,
+    FeatureSourceType,
+    DisplayType
 } from '@shared/static-data';
+import { buildFormulaParams } from '@/lib/formatters/formula-utils';
 
 export function SkillsTab({
     state,
     updateState,
     resolvedData,
-    isLoading: _isLoading
+    isLoading: _isLoading,
+    formattedCharacter,
+    sharedData
 }: TabComponentProps): React.JSX.Element {
-    const [classDetails, setClassDetails] = useState<{ primary?: DnDClass; secondary?: DnDClass }>({});
-    const [raceDetails, setRaceDetails] = useState<Race | null>(null);
+    // Use shared data instead of fetching
+    const classDetails = useMemo(() => ({
+        primary: sharedData.primaryClass || undefined,
+        secondary: sharedData.secondaryClass || undefined
+    }), [sharedData.primaryClass, sharedData.secondaryClass]);
+    const raceDetails = sharedData.race;
 
     // Extract data from centralized state
     const { skillRanks, abilityScores, level } = state;
     const { classSkills, skillBonuses } = resolvedData;
     const isNewCharacter = level === 1; // If level is 1, we're creating a new character
-
-    // Fetch class details when class IDs change
-    React.useEffect(() => {
-        const fetchClassDetails = async () => {
-            const newClassDetails: { primary?: DnDClass; secondary?: DnDClass } = {};
-
-            if (state.classId) {
-                try {
-                    const primaryClass = await ClassQueryHooks.getClassById(state.classId);
-                    newClassDetails.primary = primaryClass;
-                } catch (error) {
-                    console.error('Failed to fetch primary class details:', error);
-                }
-            }
-
-            if (state.isGestalt && state.secondaryClassId) {
-                try {
-                    const secondaryClass = await ClassQueryHooks.getClassById(state.secondaryClassId);
-                    newClassDetails.secondary = secondaryClass;
-                } catch (error) {
-                    console.error('Failed to fetch secondary class details:', error);
-                }
-            }
-
-            setClassDetails(newClassDetails);
-        };
-
-        fetchClassDetails();
-    }, [state.classId, state.secondaryClassId, state.isGestalt]);
-
-    // Fetch race details when raceId changes
-    React.useEffect(() => {
-        const fetchRaceDetails = async () => {
-            let newRaceDetails: Race | null = null;
-            if (state.raceId) {
-                try {
-                    const raceData = await RaceQueryHooks.getRaceById(state.raceId);
-                    newRaceDetails = raceData;
-                } catch (error) {
-                    console.error('Failed to fetch race details:', error);
-                }
-            }
-            setRaceDetails(newRaceDetails);
-        };
-
-        fetchRaceDetails();
-    }, [state.raceId]);
 
     // Check if a skill is a class skill
     const isSkillClassSkill = useCallback((skillId: number, skillSubId?: number | null): boolean => {
@@ -158,6 +121,86 @@ export function SkillsTab({
         return skillRanks.filter(skill => skill.skillId === skillId);
     };
 
+    // Get source name from a feature progression
+    const getProgressionSourceName = (progression: FeatureProgression): string => {
+        if (progression.class?.name) {
+            return progression.class.name;
+        }
+        if (progression.raceId && state.raceId === progression.raceId && raceDetails) {
+            return raceDetails.name;
+        }
+        // Fallback to source type name
+        if (progression.sourceType === FeatureSourceType.Race) {
+            return raceDetails?.name || 'Race';
+        }
+        if (progression.sourceType === FeatureSourceType.Class) {
+            return progression.class?.name || 'Class';
+        }
+        return 'Unknown Source';
+    };
+
+    // Calculate bonus skill points from feature progressions
+    const getBonusSkillPoints = useMemo(() => {
+        const bonusPoints: Array<{ source: string; value: number }> = [];
+        
+        for (const progression of resolvedData.progressions) {
+            if (!progression.entities) continue;
+            
+            for (const entity of progression.entities) {
+                // Check if this is a Choice entity for SkillPoints
+                if (entity.type === EntityType.Choice && entity.appliesTo === EntityAppliesToType.SkillPoints) {
+                    let value = 0;
+                    
+                    if (entity.formulaParams) {
+                        // Calculate value using formula
+                        const formulaDef = FORMULA_MAP[entity.formulaParams.formulaId];
+                        if (formulaDef) {
+                            const mockCharacter = {
+                                abilityScores: abilityScores.reduce((acc, score) => {
+                                    acc[score.abilityId] = score.value;
+                                    return acc;
+                                }, {} as Record<number, number>),
+                                classLevels: {} // Not needed for STATIC_EVERY_N_LEVELS
+                            };
+                            const mockContext = {
+                                character: mockCharacter,
+                                displayType: DisplayType.Edit,
+                                currentLevel: level,
+                                showBreakdown: false
+                            };
+                            const params = buildFormulaParams(
+                                entity.formulaParams,
+                                level,
+                                progression.level,
+                                mockContext,
+                                entity.value || 0
+                            );
+                            const calculatedValue = formulaDef.calculate(params);
+                            if (calculatedValue !== null && calculatedValue !== 0) {
+                                value = calculatedValue;
+                            }
+                        }
+                    } else if (entity.value) {
+                        // Static value
+                        value = entity.value;
+                    }
+                    
+                    if (value > 0) {
+                        const sourceName = getProgressionSourceName(progression);
+                        bonusPoints.push({ source: sourceName, value });
+                    }
+                }
+            }
+        }
+        
+        return bonusPoints;
+    }, [resolvedData.progressions, level, abilityScores, raceDetails]);
+
+    // Calculate total bonus skill points
+    const totalBonusSkillPoints = useMemo(() => {
+        return getBonusSkillPoints.reduce((sum, bonus) => sum + bonus.value, 0);
+    }, [getBonusSkillPoints]);
+
     // Calculate skill points available
     const skillPointsAvailable = useMemo(() => {
         // If skillPointsAvailable is already set in state, use it
@@ -171,10 +214,6 @@ export function SkillsTab({
         // Get Intelligence modifier
         const intelligenceScore = getAbilityScore(AbilityId.Intelligence);
         const intelligenceModifier = GetAbilityModifier(intelligenceScore);
-
-        // Check for Human race bonus
-        const isHuman = raceId && raceDetails?.name.toLowerCase() === 'human';
-        const humanBonus = isHuman ? (level === 1 ? 4 : 1) : 0;
 
         // Get class skill points from actual class details
         let classSkillPoints = 2; // Default for most classes
@@ -195,18 +234,18 @@ export function SkillsTab({
         let totalSkillPoints = 0;
 
         if (level === 1) {
-            // 1st level: (class skill points + Intelligence modifier) × 4 + Human bonus
-            totalSkillPoints = (classSkillPoints + intelligenceModifier) * 4 + humanBonus;
+            // 1st level: (class skill points + Intelligence modifier) × 4 + bonus skill points
+            totalSkillPoints = (classSkillPoints + intelligenceModifier) * 4 + totalBonusSkillPoints;
         } else {
-            // Additional levels: (class skill points + Intelligence modifier) × level + Human bonus
-            totalSkillPoints = (classSkillPoints + intelligenceModifier) * level + humanBonus;
+            // Additional levels: (class skill points + Intelligence modifier) × level + bonus skill points
+            totalSkillPoints = (classSkillPoints + intelligenceModifier) * level + totalBonusSkillPoints;
         }
 
         // Ensure minimum of 1 skill point per level
         totalSkillPoints = Math.max(totalSkillPoints, level);
 
         return totalSkillPoints;
-    }, [state, level, getAbilityScore, classDetails, raceDetails]);
+    }, [state, level, getAbilityScore, classDetails, totalBonusSkillPoints]);
 
     // Calculate skill points spent
     const skillPointsSpent = useMemo(() => {
@@ -496,17 +535,19 @@ export function SkillsTab({
             className = `${classDetails.primary.name}/${classDetails.secondary.name}`;
         }
 
-        // Check for Human race bonus
-        const isHuman = raceId === 1; // Assuming Human is race ID 1
+        // Build bonus skill points string
+        const bonusParts: string[] = [];
+        for (const bonus of getBonusSkillPoints) {
+            bonusParts.push(`${bonus.source}: ${bonus.value}`);
+        }
+        const bonusStr = bonusParts.length > 0 ? bonusParts.join(' + ') + (isNewCharacter ? ' + (' : ' + ') : '';
 
         if (isNewCharacter) {
-            const raceStr = !isHuman ? '' : 'Human: 4 + (';
             const multiplierStr = '× 4';
-            const closeParenthesis = isHuman ? ')' : '';
-            return `${raceStr}(${className}: ${classSkillPoints} ${intModifier < 0 ? '-' : '+'} INT: ${intModifier}) ${multiplierStr}${closeParenthesis}`;
+            const closeParenthesis = bonusParts.length > 0 ? ')' : '';
+            return `${bonusStr}(${className}: ${classSkillPoints} ${intModifier < 0 ? '-' : '+'} INT: ${intModifier}) ${multiplierStr}${closeParenthesis}`;
         } else {
-            const raceStr = !isHuman ? '' : 'Human: 1 + ';
-            return `${raceStr}(${className}: ${classSkillPoints} ${intModifier < 0 ? '-' : '+'} INT: ${intModifier})`;
+            return `${bonusStr}(${className}: ${classSkillPoints} ${intModifier < 0 ? '-' : '+'} INT: ${intModifier})`;
         }
     };
 

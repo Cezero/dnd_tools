@@ -86,6 +86,7 @@ export function FormulaManager({
                     case FormulaId.LINEAR_SCALING:
                     case FormulaId.EVERY_N_LEVELS:
                     case FormulaId.DICE_SCALING:
+                    case FormulaId.STATIC_EVERY_N_LEVELS:
                         return (
                             <div className="space-y-3">
                                 <div className="grid grid-cols-2 gap-3">

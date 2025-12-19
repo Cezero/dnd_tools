@@ -54,6 +54,7 @@ export interface CharacterService {
     updateCharacterAbilityScore: (id: number, data: UpdateCharacterAbilityScoreRequest) => Promise<UpdateResponse>;
     deleteCharacterAbilityScore: (id: number) => Promise<UpdateResponse>;
     getCharacterAbilityScores: (characterId: number) => Promise<CharacterAbilityScoreResponse[]>;
+    upsertCharacterAbilityScores: (data: { characterId: number; abilityScores: Array<{ abilityId: number; value: number }> }) => Promise<UpdateResponse>;
 
     // NEW: Character disallowed sources methods
     addDisallowedSource: (data: CreateCharacterDisallowedSourceRequest) => Promise<CharacterDisallowedSource>;

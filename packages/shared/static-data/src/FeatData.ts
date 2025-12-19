@@ -31,6 +31,8 @@ export const enum FeatBenefitType {
     INITIATIVE = 12,
     ATTACK_ABILITY_REPLACEMENT = 13,
     UNARMED_LETHAL_DAMAGE = 14,
+    TWO_WEAPON_MAIN_HAND = 15,
+    TWO_WEAPON_OFF_HAND = 16,
 }
 
 export const FEAT_BENEFIT_TYPES: FeatBenefitTypeMap = {
@@ -48,6 +50,8 @@ export const FEAT_BENEFIT_TYPES: FeatBenefitTypeMap = {
     [FeatBenefitType.INITIATIVE]: { id: FeatBenefitType.INITIATIVE, name: 'Initiative', hasSubId: false },
     [FeatBenefitType.ATTACK_ABILITY_REPLACEMENT]: { id: FeatBenefitType.ATTACK_ABILITY_REPLACEMENT, name: 'Attack Ability Replacement', hasSubId: false },
     [FeatBenefitType.UNARMED_LETHAL_DAMAGE]: { id: FeatBenefitType.UNARMED_LETHAL_DAMAGE, name: 'Unarmed Lethal Attack', hasSubId: false },
+    [FeatBenefitType.TWO_WEAPON_MAIN_HAND]: { id: FeatBenefitType.TWO_WEAPON_MAIN_HAND, name: 'Two-Weapon Main Hand', hasSubId: false },
+    [FeatBenefitType.TWO_WEAPON_OFF_HAND]: { id: FeatBenefitType.TWO_WEAPON_OFF_HAND, name: 'Two-Weapon Off Hand', hasSubId: false },
 }
 
 export const FEAT_BENEFIT_TYPE_BY_ID: IdToNameMap = ObjectIdToNameMap(FEAT_BENEFIT_TYPES);

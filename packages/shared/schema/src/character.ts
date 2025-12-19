@@ -11,12 +11,12 @@ export const AdvancementIdParamSchema = z.object({
     id: z.string().transform((val: string) => parseInt(val)),
 });
 
-export const CharacterIdParamSchema2 = z.object({
-    characterId: z.string().transform((val: string) => parseInt(val)),
+export const CharacterAttackIdParamSchema = CharacterIdParamSchema.extend({
+    attackId: z.string().transform((val: string) => parseInt(val)),
 });
 
 export const SpellPreparationParamSchema = z.object({
-    characterId: z.string().transform((val: string) => parseInt(val)),
+    id: z.string().transform((val: string) => parseInt(val)),
     prepKey: z.string(),
 });
 
@@ -106,6 +106,7 @@ export const CreateAdvancementSkillSchema = AdvancementSkillSchema.omit({ advanc
 export const AdvancementFeatSchema = z.object({
     advancementId: z.number().int().positive('Advancement ID must be a positive integer'),
     featId: z.number().int().positive('Feat ID must be a positive integer'),
+    featSubId: z.number().int().positive('Feat sub ID must be a positive integer').nullable().optional(),
 });
 
 // Schema for creating advancement feats (without advancementId, as it's set by the parent)
@@ -127,6 +128,10 @@ export const CharacterFeatureChoiceSchema = z.object({
     appliesToSubId: z.number().int().nullable(),
     choiceIndex: z.number().int().nullable(),
 });
+
+// Request/response schemas for character feature choices (defined early to avoid forward reference)
+export const CreateCharacterFeatureChoiceSchema = CharacterFeatureChoiceSchema.omit({ id: true });
+export const UpdateCharacterFeatureChoiceSchema = CharacterFeatureChoiceSchema.partial().omit({ id: true });
 
 // Character advancement with related data
 export const CharacterAdvancementWithDetailsSchema = CharacterAdvancementSchema.extend({
@@ -181,7 +186,6 @@ export const CharacterItemSchema = z.object({
 export const CharacterAttackDefinitionSchema = z.object({
     id: z.number().int().positive('Attack definition ID must be a positive integer'),
     characterId: z.number().int().positive('Character ID must be a positive integer'),
-    attackTypeId: z.number().int().positive('Attack type ID must be a positive integer'),
     attackSlot: z.number().int().min(1).max(7).nullable(),
     mainHandCharacterItemId: z.number().int().positive('Main hand character item ID must be a positive integer').nullable(),
     offHandCharacterItemId: z.number().int().positive('Off hand character item ID must be a positive integer').nullable(),
@@ -216,6 +220,7 @@ export const CreateAdvancementSchema = z.object({
     notes: z.union([z.string().max(1000, 'Notes must be less than 1000 characters'), z.null()]),
     skills: z.array(CreateAdvancementSkillSchema).optional(),
     feats: z.array(CreateAdvancementFeatSchema).optional(),
+    featureChoices: z.array(CreateCharacterFeatureChoiceSchema.omit({ characterId: true, advancementId: true })).optional(),
 });
 
 export const UpdateAdvancementSchema = CreateAdvancementSchema.partial();
@@ -261,10 +266,11 @@ export const CreateCharacterItemPropertySchema = CharacterItemPropertySchema.omi
 // Request/response schemas for character attack definitions
 export const CreateCharacterAttackDefinitionSchema = CharacterAttackDefinitionSchema.omit({ id: true });
 export const UpdateCharacterAttackDefinitionSchema = CreateCharacterAttackDefinitionSchema.partial();
+export const GetAllCharacterAttackDefinitionsResponseSchema = z.array(CharacterAttackDefinitionSchema);
+export const ReorderCharacterAttackDefinitionsSchema = z.object({
+    attackDefinitionIds: z.array(z.number().int().positive('Attack definition ID must be a positive integer')),
+});
 
-// Request/response schemas for character feature choices
-export const CreateCharacterFeatureChoiceSchema = CharacterFeatureChoiceSchema.omit({ id: true });
-export const UpdateCharacterFeatureChoiceSchema = CharacterFeatureChoiceSchema.partial().omit({ id: true });
 
 export const UpdateCharacterItemPropertySchema = CharacterItemPropertySchema.partial().omit({ id: true });
 
@@ -297,8 +303,8 @@ export const CharacterContextSchema = z.object({
 
 export type CharacterIdParamRequest = z.infer<typeof CharacterIdParamSchema>;
 export type AdvancementIdParamRequest = z.infer<typeof AdvancementIdParamSchema>;
-export type CharacterIdParam2Request = z.infer<typeof CharacterIdParamSchema2>;
 export type SpellPreparationParamRequest = z.infer<typeof SpellPreparationParamSchema>;
+export type CharacterAttackIdParamRequest = z.infer<typeof CharacterAttackIdParamSchema>;
 export type AbilityIdParamRequest = z.infer<typeof AbilityIdParamSchema>;
 
 export type CreateCharacterRequest = z.infer<typeof CreateCharacterSchema>;

@@ -14,6 +14,7 @@ function hasValidFormulaParamsGeneric(entity: { formulaParams?: { formulaId?: nu
         case FormulaId.LINEAR_SCALING:
         case FormulaId.EVERY_N_LEVELS:
         case FormulaId.DICE_SCALING:
+        case FormulaId.STATIC_EVERY_N_LEVELS:
             return !!entity.formulaParams.interval;
 
         case FormulaId.ABILITY_BASED:

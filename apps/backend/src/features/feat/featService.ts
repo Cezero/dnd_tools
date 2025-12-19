@@ -250,8 +250,33 @@ export const featService: FeatService = {
                 isVisible: true,
                 typeId: true,
                 fighterBonus: true,
+                useSubId: true,
             }
         });
+
+        return {
+            total: feats.length,
+            results: feats,
+        };
+    },
+
+    async getAllFeatsFull(): Promise<FeatQueryResponse> {
+        const [feats] = await Promise.all([
+            prisma.feat.findMany({
+                include: {
+                    benefits: true,
+                    prereqs: true,
+                    sourceBookInfo: {
+                        select: {
+                            sourceBookId: true,
+                            pageNumber: true
+                        }
+                    }
+                },
+                orderBy: { name: 'asc' },
+            }),
+            prisma.feat.count(),
+        ]);
 
         return {
             total: feats.length,

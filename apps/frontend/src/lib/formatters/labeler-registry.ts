@@ -1,6 +1,6 @@
 import { EntityAppliesToType, EntityType } from '@shared/static-data';
 
-import { classSkillLabeler, skillModifierLabeler, displayNameLabeler, emptyStringLabeler, bonusLanguageLabeler, automaticLanguageLabeler, abilityModifierLabeler, savingThrowModifierLabeler, creatureTypeLabeler, sizeCategoryLabeler, choiceLabeler, groupedChoiceLabeler, grantedFeatLabeler, weaponFamiliarityLabeler, groupedWeaponFamiliarityLabeler, groupedUsesLabeler, spellSaveDCLabeler, groupedResistanceLabeler, domainLabeler, casterLevelLabeler, groupedBonusLanguageLabeler, groupedAutomaticLanguageLabeler } from './label-formatters';
+import { classSkillLabeler, skillModifierLabeler, displayNameLabeler, emptyStringLabeler, bonusLanguageLabeler, automaticLanguageLabeler, abilityModifierLabeler, savingThrowModifierLabeler, creatureTypeLabeler, sizeCategoryLabeler, choiceLabeler, groupedChoiceLabeler, grantedFeatLabeler, weaponFamiliarityLabeler, groupedWeaponFamiliarityLabeler, groupedUsesLabeler, spellSaveDCLabeler, groupedResistanceLabeler, domainLabeler, casterLevelLabeler, groupedBonusLanguageLabeler, groupedAutomaticLanguageLabeler, groupedSkillPointsLabeler } from './label-formatters';
 import { generateKey } from './registry-utils';
 import type { CalculatedEntity } from './types';
 
@@ -163,6 +163,7 @@ export class LabelerRegistry implements ILabelerRegistry {
         this.registerGroupedLabeler(EntityAppliesToType.Resistance, groupedResistanceLabeler);
         this.registerGroupedLabeler(EntityAppliesToType.BonusLanguage, groupedBonusLanguageLabeler);
         this.registerGroupedLabeler(EntityAppliesToType.AutomaticLanguage, groupedAutomaticLanguageLabeler);
+        this.registerGroupedLabeler(EntityAppliesToType.SkillPoints, groupedSkillPointsLabeler);
     }
 }
 

@@ -277,6 +277,23 @@ export class ValueGenerationPhase {
             return formula.thresholds?.map((threshold, index) => [threshold, formula.values?.[index] as number]) || [];
         }
 
+        // Special handling for STATIC_EVERY_N_LEVELS formulas
+        // Always include all levels where value is non-zero, even if it doesn't change
+        // This ensures progression displays show all levels (e.g., "1 skill point every level")
+        if (formula.formulaId === FormulaId.STATIC_EVERY_N_LEVELS) {
+            const allLevels: Array<[number, number]> = [];
+            for (let level = progressionLevel; level <= this.MAX_CHARACTER_LEVEL; level++) {
+                // Pass entityValue to buildFormulaParams - it will use this value or default to 1
+                const params = buildFormulaParams(formula, level, progressionLevel, mockContext, entityValue);
+                const value = formulaDef.calculate(params);
+                // Include all levels where value is non-zero (not null and not 0)
+                if (value !== null && value !== 0) {
+                    allLevels.push([level, value]);
+                }
+            }
+            return allLevels;
+        }
+
         // Single loop: build array of [level, value] tuples for non-null values
         const changingValues: Array<[number, number]> = [];
 

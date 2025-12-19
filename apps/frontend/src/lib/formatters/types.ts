@@ -2,7 +2,13 @@ import type {
     FeatureEntity,
     FeatureEntityCondition,
     FormulaParamsData,
-    FeatureProgression
+    FeatureProgression,
+    ItemWithDetails,
+    CharacterItem,
+    Race,
+    DnDClass,
+    CharacterWithAllDetailsResponse,
+    Feat
 } from '@shared/schema';
 import type { BreakdownComponentType, Formula } from '@shared/static-data';
 import { EntityAppliesToType, EntityType } from '@shared/static-data';
@@ -120,6 +126,7 @@ export interface BaseFormatterContext {
 export interface DisplayContext extends BaseFormatterContext {
     currentLevel?: number;
     showBreakdown?: boolean;
+    featsMap?: Map<number, Feat>;
 }
 
 // Calculation context for formatter calculations
@@ -208,6 +215,129 @@ export interface FormattedEntityResult {
 export interface CharacterSheetDisplayResult extends DisplayResult {
     groupedByType: Record<EntityAppliesToType, FormattedEntityResult[]>;
     individualEntities: FormattedEntityResult[];
+}
+
+// Formatted attack result for character sheet
+export interface FormattedAttackResult {
+    attackBonus: string; // e.g., "+5" or "+5 (+7 nonlethal)"
+    damage: string; // e.g., "1d8+3"
+    critical: string; // e.g., "20/x2" or "19-20/x2"
+    range: string | null; // e.g., "30 ft." or null
+    weight: string | null; // e.g., "3 lb." or null
+    type: string | null; // e.g., "Slashing" or null
+    size: string | null; // e.g., "Medium" or null
+    weaponName: string; // e.g., "Longsword"
+}
+
+// Formatted skill result
+export interface FormattedSkill {
+    skillId: number;
+    skillSubId: number | null;
+    customSubtype: string | null;
+    skillName: string;
+    total: string; // Formatted total modifier
+    abilityMod: string; // Formatted ability modifier
+    ranks: string; // Formatted ranks
+    misc: string; // Formatted misc bonus
+    isClassSkill: boolean;
+    breakdown: CalculationBreakdown;
+}
+
+// Formatted saving throw result
+export interface FormattedSavingThrow {
+    total: string;
+    base: string;
+    abilityMod: string;
+    misc: string;
+    breakdown: CalculationBreakdown;
+}
+
+// Formatted armor class result
+export interface FormattedArmorClass {
+    total: string;
+    base: string;
+    armor: string;
+    shield: string;
+    dex: string;
+    size: string;
+    natural: string;
+    deflection: string;
+    misc: string;
+    touchAC: string;
+    flatFootedAC: string;
+    breakdown: CalculationBreakdown;
+}
+
+// Formatted feat result
+export interface FormattedFeat {
+    featId: number;
+    featName: string;
+    formattedValue: string;
+    breakdown: CalculationBreakdown;
+    level: number;
+}
+
+// Formatted feature result
+export interface FormattedFeature {
+    featureId: number;
+    featureName: string;
+    formattedValue: string;
+    breakdown: CalculationBreakdown;
+    level: number;
+}
+
+// Formatted ability score result
+export interface FormattedAbilityScore {
+    abilityId: number;
+    score: string;
+    modifier: string;
+    breakdown: CalculationBreakdown;
+}
+
+// Formatted class level result
+export interface FormattedClassLevel {
+    classId: number;
+    className: string;
+    level: number;
+}
+
+// Formatted initiative result
+export interface FormattedInitiative {
+    total: string;
+    dexMod: string;
+    misc: string;
+    breakdown: CalculationBreakdown;
+}
+
+// Formatted grapple result
+export interface FormattedGrapple {
+    total: string;
+    bab: string;
+    strMod: string;
+    sizeMod: string;
+    misc: string;
+    breakdown: CalculationBreakdown;
+}
+
+// Main formatted character result
+export interface FormattedCharacterResult {
+    abilities: FormattedAbilityScore[];
+    attacks: FormattedAttackResult[];
+    skills: FormattedSkill[];
+    savingThrows: {
+        fortitude: FormattedSavingThrow;
+        reflex: FormattedSavingThrow;
+        will: FormattedSavingThrow;
+    };
+    armorClass: FormattedArmorClass;
+    initiative: FormattedInitiative;
+    baseAttackBonus: string;
+    grapple: FormattedGrapple;
+    speed: string;
+    hitPoints: string;
+    classLevels: FormattedClassLevel[];
+    feats: FormattedFeat[];
+    features: FormattedFeature[];
 }
 
 // Character sheet calculation input
@@ -350,6 +480,16 @@ export enum ProgressionGeneratorType {
 // Display strategy interface
 export interface DisplayStrategy {
     format(input: FeatureProgression | FeatureProgression[], context?: DisplayContext, showLabels?: boolean): DisplayResult;
+    formatAttack?(attackResult: import('@/lib/character-calculation/calculations/combatValues').CombatValuesResult, item: ItemWithDetails | CharacterItem | null): FormattedAttackResult; // Optional method for character sheet formatting
+    formatCharacter?(
+        character: CharacterWithAllDetailsResponse,
+        resolvedProgressions: FeatureProgression[],
+        items: ItemWithDetails[],
+        characterItems: CharacterItem[],
+        classDetailsMap: Map<number, DnDClass>,
+        context?: DisplayContext,
+        race?: Race | null
+    ): FormattedCharacterResult;
 }
 
 // Conditional value detector interface

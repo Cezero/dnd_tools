@@ -115,6 +115,7 @@ export class CalculatorRegistry implements ICalculatorRegistry {
         this.registerFormulaCalculator(FormulaId.LEVEL_TIMES_VALUE, formulaCalculator);
         this.registerFormulaCalculator(FormulaId.VALUE_PLUS_LEVEL, formulaCalculator);
         this.registerFormulaCalculator(FormulaId.LEVEL_PLUS_ABILITY, formulaCalculator);
+        this.registerFormulaCalculator(FormulaId.STATIC_EVERY_N_LEVELS, formulaCalculator);
 
         // Register progression generators
         this.registerProgressionGenerator(ProgressionGeneratorType.default, progressionGenerator); // Default progression generator

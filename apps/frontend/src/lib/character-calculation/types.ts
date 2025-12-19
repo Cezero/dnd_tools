@@ -11,7 +11,6 @@ import type { FeatBenefitType } from '@shared/static-data';
  * Simplified context for combat calculations
  */
 export interface CombatCalculationContext {
-    attackType: 'unarmed' | 'main-hand' | 'off-hand' | 'ranged' | 'dual-wield';
     mainHandItem?: ItemWithDetails | CharacterItem;
     offHandItem?: ItemWithDetails | CharacterItem;
 }
@@ -157,12 +156,13 @@ export interface ItemBonus {
  * Context for resolving feat benefits
  */
 export interface FeatBenefitContext {
-    attackType?: string;
     itemId?: number;
     weaponType?: number;
     isDualWield?: boolean;
     isOffHand?: boolean;
     isLightWeapon?: boolean;
+    isUnarmed?: boolean;
+    isRanged?: boolean;
 }
 
 /**

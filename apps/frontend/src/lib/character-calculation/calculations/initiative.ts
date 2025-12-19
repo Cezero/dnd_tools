@@ -1,4 +1,4 @@
-import type { CharacterWithAllDetailsResponse, FeatureProgression } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, FeatureProgression, Feat } from '@shared/schema';
 import { AbilityId, GetAbilityModifier } from '@shared/static-data';
 import { resolveFeatBenefits } from '../core/featBenefitResolver';
 import { resolveFeatureBonuses } from '../core/featureBonusResolver';
@@ -21,7 +21,8 @@ export interface InitiativeBreakdownMap {
  */
 export function getInitiative(
     character: CharacterWithAllDetailsResponse,
-    resolvedProgressions: FeatureProgression[]
+    resolvedProgressions: FeatureProgression[],
+    featsMap?: Map<number, Feat>
 ): CalculationResult<InitiativeBreakdownMap> {
     // Get Dex modifier
     const dexScore = character.abilityScores.find(a => a.abilityId === AbilityId.Dexterity);
@@ -29,7 +30,7 @@ export function getInitiative(
     const dexMod = GetAbilityModifier(dexValue);
 
     // Get feat benefits
-    const featBenefits = resolveFeatBenefits(character, FeatBenefitType.INITIATIVE);
+    const featBenefits = resolveFeatBenefits(character, FeatBenefitType.INITIATIVE, undefined, featsMap, resolvedProgressions);
     const featBonus = featBenefits.reduce((sum, b) => sum + b.amount, 0);
 
     // Get feature bonuses

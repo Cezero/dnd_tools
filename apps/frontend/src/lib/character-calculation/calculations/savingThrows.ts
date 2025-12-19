@@ -1,10 +1,11 @@
-import type { CharacterWithAllDetailsResponse, FeatureProgression } from '@shared/schema';
-import { AbilityId, GetAbilityModifier, ABILITY_MAP } from '@shared/static-data';
+import type { CharacterWithAllDetailsResponse, FeatureProgression, DnDClass, Feat } from '@shared/schema';
+import { AbilityId, GetAbilityModifier, ABILITY_MAP, ProgressionType, FeatBenefitType, EntityAppliesToType } from '@shared/static-data';
+import { getSaveProgression } from '@shared/utils';
+
 import { resolveFeatBenefits } from '../core/featBenefitResolver';
 import { resolveFeatureBonuses } from '../core/featureBonusResolver';
-import { FeatBenefitType, EntityAppliesToType } from '@shared/static-data';
+import type { CalculationResult, BreakdownMap, BreakdownComponent } from '../types';
 import { buildBreakdownString, createBreakdownComponent } from '../utils/breakdownBuilder';
-import type { CalculationResult } from '../types';
 
 /**
  * Save type enum
@@ -18,12 +19,12 @@ export const SaveType = {
 /**
  * Breakdown map for saving throw
  */
-export interface SavingThrowBreakdownMap {
-    base: { value: number; source: string | null; sourceType: 'base' | null; sourceId?: number };
-    abilityMod: { value: number; source: string | null; sourceType: 'ability' | null; sourceId?: number };
-    feat: { value: number; source: string | null; sourceType: 'feat' | null; sourceId?: number };
-    feature: { value: number; source: string | null; sourceType: 'feature' | null; sourceId?: number };
-    item: { value: number; source: string | null; sourceType: 'item' | null; sourceId?: number };
+export interface SavingThrowBreakdownMap extends BreakdownMap {
+    base: BreakdownComponent;
+    abilityMod: BreakdownComponent;
+    feat: BreakdownComponent;
+    feature: BreakdownComponent;
+    item: BreakdownComponent;
 }
 
 /**
@@ -33,7 +34,8 @@ export function getSavingThrow(
     character: CharacterWithAllDetailsResponse,
     saveType: number,
     resolvedProgressions: FeatureProgression[],
-    classDetailsMap: Map<number, { saveProgression?: string }>
+    classDetailsMap: Map<number, DnDClass>,
+    featsMap?: Map<number, Feat>
 ): CalculationResult<SavingThrowBreakdownMap> {
     // Determine ability score for this save
     let abilityId: number;
@@ -59,31 +61,48 @@ export function getSavingThrow(
         classLevelCounts.set(advancement.classId, currentLevel + 1);
     }
 
-    // Calculate base save from class progressions
+    // Calculate base save from class progressions using existing utility functions
     for (const [classId, level] of classLevelCounts.entries()) {
         const classDetails = classDetailsMap.get(classId);
-        if (classDetails?.saveProgression) {
-            // Parse save progression (e.g., "good" = +2 per level after 1st, "poor" = +1 per 3 levels)
-            // This is simplified - actual implementation would need proper parsing
-            if (classDetails.saveProgression === 'good') {
-                baseSave += Math.floor(level / 2) + 2;
-            } else {
-                baseSave += Math.floor(level / 3);
+        if (!classDetails) continue;
+
+        let progression: number | undefined;
+        if (saveType === SaveType.Fortitude) {
+            progression = classDetails.fortProgression;
+        } else if (saveType === SaveType.Reflex) {
+            progression = classDetails.refProgression;
+        } else {
+            progression = classDetails.willProgression;
+        }
+
+        // Check for progression value - must check !== undefined, not truthy (0 is valid for good)
+        if (progression !== undefined && progression !== null) {
+            // Use existing getSaveProgression utility function
+            if (progression === ProgressionType.good || progression === ProgressionType.poor) {
+                baseSave += getSaveProgression(level, progression);
             }
+            // progression === 1 (average) is not used in D&D 3.5, skip it
         }
     }
 
     // Get feat benefits
-    const featBenefits = resolveFeatBenefits(character, FeatBenefitType.SAVE, { saveType });
+    // Note: FeatBenefitContext doesn't support saveType filtering, but FeatBenefitType.SAVE is sufficient
+    const featBenefits = resolveFeatBenefits(
+        character,
+        FeatBenefitType.SAVE,
+        undefined,
+        featsMap,
+        resolvedProgressions
+    );
     const featBonus = featBenefits.reduce((sum, b) => sum + b.amount, 0);
 
     // Get feature bonuses
+    // Note: Feature bonus context doesn't support saveType filtering
     const featureBonuses = resolveFeatureBonuses(
         resolvedProgressions,
         EntityAppliesToType.SavingThrow,
         character,
-        character.advancements.length,
-        { saveType }
+        character.advancements.length
     );
     const featureBonus = featureBonuses.reduce((sum, b) => sum + b.value, 0);
 

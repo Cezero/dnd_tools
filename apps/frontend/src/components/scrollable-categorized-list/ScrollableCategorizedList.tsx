@@ -241,7 +241,7 @@ function renderCategoryGroup<T>(
 
                             return (
                                 <tr
-                                    key={`item-${index}-${(item as { id?: number | string }).id || index}`}
+                                    key={`item-${index}-${(item as { id?: number }).id || index}`}
                                     className={`hover:bg-gray-100 dark:hover:bg-gray-800 odd:bg-gray-500 even:bg-white dark:odd:bg-[#141e2d] dark:even:bg-[#121212] ${isDisabled ? 'opacity-50' : ''}`}
                                 >
                                     {row.getVisibleCells().map((cell) => (
@@ -273,7 +273,7 @@ function renderCategoryGroup<T>(
     return result;
 }
 
-export function ScrollableCategorizedList<T extends { id?: number | string }>({
+export function ScrollableCategorizedList<T extends { id?: number }>({
     queryHook,
     dataFetcher,
     serviceFunction,

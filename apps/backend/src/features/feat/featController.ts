@@ -80,4 +80,12 @@ export async function DeleteFeat(req: ValidatedParamsT<FeatIdParamRequest>, res:
 export async function GetFeatCache(req: ValidatedQueryT<FeatQueryRequest, FeatCacheResponse>, res: Response) {
     const feats = await featService.getFeatCache(req.query);
     res.json(feats);
+}
+
+/**
+ * Fetches all feats with full data (benefits and prereqs).
+ */
+export async function GetAllFeatsFull(req: ValidatedNoInput<FeatQueryResponse>, res: Response) {
+    const feats = await featService.getAllFeatsFull();
+    res.json(feats);
 } 

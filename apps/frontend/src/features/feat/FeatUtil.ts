@@ -2,7 +2,7 @@ import ordinal from 'ordinal';
 
 // Note: This utility function now requires the cache function to be passed as a parameter
 import { FeatPrerequisiteMap } from '@shared/schema';
-import { SAVING_THROW_LIST, PROFICIENCY_TYPE_LIST, SKILL_LIST, FeatBenefitType, FeatPrerequisiteType, ABILITY_LIST, FEAT_PREREQ_BY_ID, CoreComponent, EditionId, SIZE_LIST } from '@shared/static-data';
+import { SAVING_THROW_LIST, PROFICIENCY_TYPE_LIST, SKILL_LIST, FeatBenefitType, FeatPrerequisiteType, ABILITY_LIST, FEAT_PREREQ_BY_ID, CoreComponent, EditionId, SIZE_LIST, ATTACK_TYPE_LIST } from '@shared/static-data';
 
 export const FeatOptions = (benefitType: number): CoreComponent[] => {
     switch (benefitType) {
@@ -12,6 +12,13 @@ export const FeatOptions = (benefitType: number): CoreComponent[] => {
             return PROFICIENCY_TYPE_LIST;
         case FeatBenefitType.SAVE:
             return SAVING_THROW_LIST;
+        case FeatBenefitType.ATTACK_BONUS:
+        case FeatBenefitType.DAMAGE_BONUS:
+            return ATTACK_TYPE_LIST;
+        case FeatBenefitType.TWO_WEAPON_MAIN_HAND:
+        case FeatBenefitType.TWO_WEAPON_OFF_HAND:
+            // These benefit types don't need reference options
+            return [];
         default:
             return [];
     }

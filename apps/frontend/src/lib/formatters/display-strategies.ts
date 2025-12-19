@@ -1,6 +1,7 @@
 import type { FeatureProgression } from '@shared/schema';
-import { DisplayType, EntityAppliesToType } from '@shared/static-data';
+import { DisplayType } from '@shared/static-data';
 
+import { CharacterSheetDisplayStrategy } from './characterSheetDisplayStrategy';
 import { DisplayStrategyBase } from './displayStrategyBase';
 import type {
     DisplayContext,
@@ -9,10 +10,6 @@ import type {
     DisplayStrategy,
     GroupedLevelItem,
     CalculatedValueWithLevel,
-    FormattedEntityResult,
-    CharacterSheetDisplayResult,
-    FormattedItemWithLevel,
-    CalculatedEntity
 } from './types';
 
 export class EditPageDisplayStrategy extends DisplayStrategyBase {
@@ -204,180 +201,6 @@ export class DetailPageDisplayStrategy extends DisplayStrategyBase {
 
         // Sort by level
         return levelEntries.sort((a, b) => a.level - b.level);
-    }
-}
-
-export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
-    protected formatProgressions(
-        progressions: FeatureProgression[],
-        context?: DisplayContext,
-        showLabels: boolean = true
-    ): CharacterSheetDisplayResult {
-        // Process all progressions through phases 1-4 (skip grouping phases)
-        const allFormattedItems: FormattedItemWithLevel[] = [];
-
-        for (const progression of progressions) {
-            const calculatedValues = this.generateValues(progression, context);
-            const formattedItems = this.formattingPhase.formatItems(calculatedValues, progression.level, showLabels);
-            allFormattedItems.push(...formattedItems);
-        }
-
-        // Convert to FormattedEntityResult
-        const individualEntities: FormattedEntityResult[] = allFormattedItems.map(item => ({
-            formattedValue: item.formattedValue,
-            breakdown: item.breakdown,
-            entity: item.entity,
-            level: item.level,
-            computedValue: this.extractComputedValue(item),
-            structuredData: this.extractStructuredData(item)
-        }));
-
-        // Group by EntityAppliesToType
-        const groupedByType = this.groupByEntityType(individualEntities);
-
-        return {
-            formattedValue: '', // Not used for character sheet
-            breakdown: { components: [] },
-            showBreakdown: false,
-            components: [],
-            levelEntries: [],
-            groupedByType,
-            individualEntities
-        };
-    }
-
-    /**
-     * Extract computed numeric value from formatted item
-     */
-    private extractComputedValue(item: FormattedItemWithLevel): number | undefined {
-        // For bonuses, try to extract the numeric value
-        if (item.entity.type === 0 && item.entity.value !== null) { // EntityType.Bonus
-            // Handle both number and string values
-            if (typeof item.entity.value === 'number') {
-                return item.entity.value;
-            }
-            // If it's a string, try to parse it as a number
-            const parsed = parseFloat(item.entity.value);
-            return isNaN(parsed) ? undefined : parsed;
-        }
-
-        // For other types, try to extract from breakdown
-        if (item.breakdown.components.length > 0) {
-            const lastComponent = item.breakdown.components[item.breakdown.components.length - 1];
-            if (typeof lastComponent.value === 'number') {
-                return lastComponent.value;
-            }
-        }
-
-        return undefined;
-    }
-
-    /**
-     * Extract structured data from formatted item
-     * TODO: what is the poiunt of this function? when is it called?
-     */
-    private extractStructuredData(item: FormattedItemWithLevel): FormattedEntityResult['structuredData'] {
-        const entity = item.entity;
-
-        // For bonuses
-        if (entity.type === 0) { // EntityType.Bonus
-            const value = typeof entity.value === 'number' ? entity.value : 0;
-            return {
-                type: 'bonus',
-                value: value,
-                target: this.getTargetName(entity)
-            };
-        }
-
-        // For uses
-        if (entity.appliesTo === EntityAppliesToType.Uses) {
-            const value = typeof entity.value === 'number' ? entity.value : 0;
-            return {
-                type: 'uses',
-                value: value,
-                interval: 'day' // Default, could be extracted from formula params
-            };
-        }
-
-        // For proficiencies
-        if (entity.appliesTo === EntityAppliesToType.Feat) {
-            return {
-                type: 'proficiency',
-                value: 1, // Proficiency is binary
-                target: this.getTargetName(entity)
-            };
-        }
-
-        return undefined;
-    }
-
-    /**
-     * Get target name for structured data
-     */
-    private getTargetName(entity: CalculatedEntity): string | undefined {
-        if (entity.item?.name) {
-            return entity.item.name;
-        }
-        if (entity.feat?.name) {
-            return entity.feat.name;
-        }
-        if (entity.feature?.name) {
-            return entity.feature.name;
-        }
-        return undefined;
-    }
-
-    /**
-     * Group entities by EntityAppliesToType
-     */
-    private groupByEntityType(entities: FormattedEntityResult[]): Record<EntityAppliesToType, FormattedEntityResult[]> {
-        const grouped: Record<EntityAppliesToType, FormattedEntityResult[]> = {} as Record<EntityAppliesToType, FormattedEntityResult[]>;
-
-        for (const entity of entities) {
-            const appliesTo = entity.entity.appliesTo;
-            if (appliesTo !== null && appliesTo !== undefined) {
-                if (!grouped[appliesTo]) {
-                    grouped[appliesTo] = [];
-                }
-                grouped[appliesTo].push(entity);
-            }
-        }
-
-        return grouped;
-    }
-
-    /**
-     * Override Phase 6 to implement DisplayType.CharacterSheet specific logic
-     */
-    protected createDisplayResult(
-        withinProgressionGrouped: GroupedLevelItem[],
-        context?: DisplayContext,
-        _progression?: FeatureProgression
-    ): DisplayResult {
-        // DisplayType.CharacterSheet: filter to current character level only
-        const currentLevel = context?.character?.classLevels ?
-            Math.max(...Object.values(context.character.classLevels)) : 1;
-
-        // Find the item for the current level
-        const currentItem = withinProgressionGrouped.find(item => item.level === currentLevel);
-
-        if (!currentItem) {
-            return {
-                formattedValue: '',
-                breakdown: { components: [] },
-                showBreakdown: context?.showBreakdown || false,
-                components: [],
-                levelEntries: []
-            };
-        }
-
-        return {
-            formattedValue: currentItem.formattedValue,
-            breakdown: { components: [] },
-            showBreakdown: context?.showBreakdown || false,
-            components: [],
-            levelEntries: []
-        };
     }
 }
 

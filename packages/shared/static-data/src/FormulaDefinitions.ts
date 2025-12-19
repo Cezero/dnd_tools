@@ -16,6 +16,8 @@ export const enum FormulaId {
     VALUE_PLUS_LEVEL = 10,      // Fixed value + level (e.g., 10 + level for Spell Resistance)
     // NEW: Level plus ability modifier
     LEVEL_PLUS_ABILITY = 11,  // Level + ability modifier (e.g., level + CHA for Wild Empathy)
+    // NEW: Static value every N levels (doesn't multiply by level)
+    STATIC_EVERY_N_LEVELS = 12, // Fixed value every N levels (e.g., 1 skill point every level)
 }
 
 // ============================================================================
@@ -305,6 +307,60 @@ export const FORMULA_MAP: BaseMap<Formula> = {
             return `${params.level} + ${abilityName}`;
         },
         isCharacterDependent: true
+    },
+
+    [FormulaId.STATIC_EVERY_N_LEVELS]: {
+        id: FormulaId.STATIC_EVERY_N_LEVELS,
+        name: 'Static Value Every N Levels',
+        description: 'Grants a fixed value every N levels without multiplying by level (e.g., 1 skill point every level, 2 skill points every 2 levels). Returns the value for THIS level only, not cumulative.',
+        parameters: [
+            { name: 'level', description: 'Character level', required: true },
+            { name: 'startLevel', description: 'Starting level for the progression', required: true },
+            { name: 'scalingValue', description: 'Fixed value granted at each interval (from FeatureModifier.value)', required: true },
+            { name: 'interval', description: 'Level interval (from ProgressionFormulaParams.interval)', required: true },
+            { name: 'formulaStartLevel', description: 'Level when formula progression begins (from ProgressionFormulaParams.formulaStartLevel)', required: false }
+        ],
+        calculate: (params) => {
+            // If character level is before the starting level, return null
+            if (params.level < params.startLevel) {
+                return null;
+            }
+
+            // Handle includeProgressionLevel logic within the formula
+            if (params.includeProgressionLevel === false && params.formulaStartLevel && params.level < params.formulaStartLevel) {
+                return null; // Don't include anything before the formula start level
+            }
+
+            // Determine the effective start level for interval calculation
+            const effectiveStartLevel = params.formulaStartLevel ?? params.startLevel;
+
+            // If character level is before the effective start level, return null
+            if (params.level < effectiveStartLevel) {
+                return null;
+            }
+
+            // Calculate how many levels have passed since the effective start level
+            const levelsSinceStart = params.level - effectiveStartLevel;
+
+            // Check if this level is at an interval boundary
+            // At the start level (levelsSinceStart = 0), we always grant the value
+            // Then every 'interval' levels after that
+            if (levelsSinceStart % params.interval === 0) {
+                // This level is at an interval boundary, grant the value
+                return params.scalingValue;
+            }
+
+            // This level is not at an interval boundary, return 0 (no value this level)
+            return 0;
+        },
+        getDisplayString: (params) => {
+            const effectiveStartLevel = params.formulaStartLevel ?? params.startLevel;
+            if (params.interval === 1) {
+                return `${params.scalingValue} every level (starting at ${effectiveStartLevel})`;
+            }
+            return `${params.scalingValue} every ${params.interval} levels (starting at ${effectiveStartLevel})`;
+        },
+        isCharacterDependent: false
     },
 
 };

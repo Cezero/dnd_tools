@@ -6,7 +6,6 @@ import type { TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
 import { ClassDisplay } from '@/features/class/ClassDisplay';
 import { useCacheFunctions } from '@/services/cache';
-import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
 import { EditionId, CoreComponent } from '@shared/static-data';
 
 export function ClassTab({
@@ -14,7 +13,8 @@ export function ClassTab({
     updateState,
     resolvedData: _resolvedData,
     isLoading: _isLoading,
-    triggerFeatureResolution
+    triggerFeatureResolution,
+    sharedData
 }: TabComponentProps): React.JSX.Element {
     const { getClassSelectByEdition } = useCacheFunctions();
 
@@ -26,20 +26,10 @@ export function ClassTab({
     const [allClasses, setAllClasses] = useState<CoreComponent[]>([]);
     const [isLoadingClasses, setIsLoadingClasses] = useState(false);
 
-    // Use TanStack Query for primary class details
-    const { data: primaryClassData, isLoading: isLoadingPrimary } = ClassQueryHooks.useGetClassById(
-        { pathParams: { id: currentClassId } },
-        { enabled: !!currentClassId }
-    );
-
-    // Use TanStack Query for secondary class details
-    const { data: secondaryClassData, isLoading: isLoadingSecondary } = ClassQueryHooks.useGetClassById(
-        { pathParams: { id: currentSecondaryClassId } },
-        { enabled: !!state.isGestalt && !!currentSecondaryClassId }
-    );
-
-    // Combined loading state
-    const isLoadingClass = isLoadingPrimary || isLoadingSecondary;
+    // Use class data from sharedData (fetched in CharacterEdit with cache)
+    const primaryClassData = sharedData.primaryClass;
+    const secondaryClassData = sharedData.secondaryClass;
+    const isLoadingClass = sharedData.isLoadingClasses;
 
     // Fetch classes when edition or variant settings change
     useEffect(() => {
@@ -66,19 +56,19 @@ export function ClassTab({
 
     // Trigger feature resolution when primary class data is loaded
     useEffect(() => {
-        if (state.classId && primaryClassData && !isLoadingPrimary && resolvedPrimaryClassIdRef.current !== state.classId) {
+        if (state.classId && primaryClassData && !isLoadingClass && resolvedPrimaryClassIdRef.current !== state.classId) {
             resolvedPrimaryClassIdRef.current = state.classId;
             triggerFeatureResolution();
         }
-    }, [state.classId, primaryClassData, isLoadingPrimary, triggerFeatureResolution]);
+    }, [state.classId, primaryClassData, isLoadingClass, triggerFeatureResolution]);
 
     // Trigger feature resolution when secondary class data is loaded
     useEffect(() => {
-        if (state.secondaryClassId && secondaryClassData && !isLoadingSecondary && resolvedSecondaryClassIdRef.current !== state.secondaryClassId) {
+        if (state.secondaryClassId && secondaryClassData && !isLoadingClass && resolvedSecondaryClassIdRef.current !== state.secondaryClassId) {
             resolvedSecondaryClassIdRef.current = state.secondaryClassId;
             triggerFeatureResolution();
         }
-    }, [state.secondaryClassId, secondaryClassData, isLoadingSecondary, triggerFeatureResolution]);
+    }, [state.secondaryClassId, secondaryClassData, isLoadingClass, triggerFeatureResolution]);
 
     const handleClassChange = async (classId: number | null, isSecondary = false) => {
         if (classId === null) {

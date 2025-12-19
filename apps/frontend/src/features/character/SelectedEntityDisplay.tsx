@@ -1,10 +1,14 @@
+import { useQueryClient } from '@tanstack/react-query';
 import React, { useState, useEffect } from 'react';
+import { z } from 'zod';
 
 import { DomainDisplay } from '@/features/domain/DomainDisplay';
 import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import { SpellQueryHooks } from '@/services/query/SpellQueryHooks';
+import type { Domain, GetSpellResponse, GetFeatureResponse } from '@shared/schema';
+import { FeatSchema } from '@shared/schema';
 import { EntityAppliesToType } from '@shared/static-data';
 
 interface SelectedEntityDisplayProps {
@@ -39,7 +43,8 @@ export function SelectedEntityDisplay({
 
 // Domain Display Wrapper
 function DomainDisplayWrapper({ domainId, showHeader }: { domainId: number; showHeader: boolean }): React.JSX.Element | null {
-    const [domain, setDomain] = useState<unknown | null>(null);
+    const queryClient = useQueryClient();
+    const [domain, setDomain] = useState<Domain | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<Error | null>(null);
 
@@ -50,7 +55,12 @@ function DomainDisplayWrapper({ domainId, showHeader }: { domainId: number; show
             try {
                 setIsLoading(true);
                 setError(null);
-                const domainData = await DomainQueryHooks.getDomainById(domainId);
+                const domainData = await queryClient.fetchQuery({
+                    queryKey: DomainQueryHooks.getDomainByIdQueryKey(domainId),
+                    queryFn: () => DomainQueryHooks.getDomainByIdQueryFn({ pathParams: { id: domainId } }),
+                    staleTime: 5 * 60 * 1000, // 5 minutes
+                    gcTime: 10 * 60 * 1000, // 10 minutes
+                });
                 setDomain(domainData);
             } catch (err) {
                 setError(err instanceof Error ? err : new Error('Failed to fetch domain'));
@@ -60,7 +70,7 @@ function DomainDisplayWrapper({ domainId, showHeader }: { domainId: number; show
         };
 
         fetchDomain();
-    }, [domainId]);
+    }, [domainId, queryClient]);
 
     if (isLoading) {
         return (
@@ -91,8 +101,9 @@ function DomainDisplayWrapper({ domainId, showHeader }: { domainId: number; show
 }
 
 // Feat Display Wrapper
-function FeatDisplayWrapper({ featId, showHeader }: { featId: number; showHeader: boolean }): React.JSX.Element | null {
-    const [feat, setFeat] = useState<unknown | null>(null);
+function FeatDisplayWrapper({ featId, showHeader: _showHeader }: { featId: number; showHeader: boolean }): React.JSX.Element | null {
+    const queryClient = useQueryClient();
+    const [feat, setFeat] = useState<z.infer<typeof FeatSchema> | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<Error | null>(null);
 
@@ -103,7 +114,12 @@ function FeatDisplayWrapper({ featId, showHeader }: { featId: number; showHeader
             try {
                 setIsLoading(true);
                 setError(null);
-                const featData = await FeatQueryHooks.getFeatById(featId);
+                const featData = await queryClient.fetchQuery({
+                    queryKey: FeatQueryHooks.getFeatByIdQueryKey(featId),
+                    queryFn: () => FeatQueryHooks.getFeatByIdQueryFn({ pathParams: { id: featId } }),
+                    staleTime: 5 * 60 * 1000, // 5 minutes
+                    gcTime: 10 * 60 * 1000, // 10 minutes
+                });
                 setFeat(featData);
             } catch (err) {
                 setError(err instanceof Error ? err : new Error('Failed to fetch feat'));
@@ -113,7 +129,7 @@ function FeatDisplayWrapper({ featId, showHeader }: { featId: number; showHeader
         };
 
         fetchFeat();
-    }, [featId]);
+    }, [featId, queryClient]);
 
     if (isLoading) {
         return (
@@ -136,17 +152,18 @@ function FeatDisplayWrapper({ featId, showHeader }: { featId: number; showHeader
 
     return (
         <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
-            <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">{(feat as any).name}</h4>
-            {(feat as any).description && (
-                <p className="text-blue-600 dark:text-blue-300 text-sm">{(feat as any).description}</p>
+            <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">{feat.name}</h4>
+            {feat.description && (
+                <p className="text-blue-600 dark:text-blue-300 text-sm">{feat.description}</p>
             )}
         </div>
     );
 }
 
 // Spell Display Wrapper
-function SpellDisplayWrapper({ spellId, showHeader }: { spellId: number; showHeader: boolean }): React.JSX.Element | null {
-    const [spell, setSpell] = useState<unknown | null>(null);
+function SpellDisplayWrapper({ spellId, showHeader: _showHeader }: { spellId: number; showHeader: boolean }): React.JSX.Element | null {
+    const queryClient = useQueryClient();
+    const [spell, setSpell] = useState<GetSpellResponse | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<Error | null>(null);
 
@@ -157,7 +174,12 @@ function SpellDisplayWrapper({ spellId, showHeader }: { spellId: number; showHea
             try {
                 setIsLoading(true);
                 setError(null);
-                const spellData = await SpellQueryHooks.getSpellById(spellId);
+                const spellData = await queryClient.fetchQuery({
+                    queryKey: SpellQueryHooks.getSpellByIdQueryKey(spellId),
+                    queryFn: () => SpellQueryHooks.getSpellByIdQueryFn({ pathParams: { id: spellId } }),
+                    staleTime: 5 * 60 * 1000, // 5 minutes
+                    gcTime: 10 * 60 * 1000, // 10 minutes
+                });
                 setSpell(spellData);
             } catch (err) {
                 setError(err instanceof Error ? err : new Error('Failed to fetch spell'));
@@ -167,7 +189,7 @@ function SpellDisplayWrapper({ spellId, showHeader }: { spellId: number; showHea
         };
 
         fetchSpell();
-    }, [spellId]);
+    }, [spellId, queryClient]);
 
     if (isLoading) {
         return (
@@ -190,17 +212,18 @@ function SpellDisplayWrapper({ spellId, showHeader }: { spellId: number; showHea
 
     return (
         <div className="mt-4 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg">
-            <h4 className="font-semibold text-purple-800 dark:text-purple-200 mb-2">{(spell as any).name}</h4>
-            {(spell as any).summary && (
-                <p className="text-purple-600 dark:text-purple-300 text-sm">{(spell as any).summary}</p>
+            <h4 className="font-semibold text-purple-800 dark:text-purple-200 mb-2">{spell.name}</h4>
+            {spell.summary && (
+                <p className="text-purple-600 dark:text-purple-300 text-sm">{spell.summary}</p>
             )}
         </div>
     );
 }
 
 // Feature Display Wrapper
-function FeatureDisplayWrapper({ featureId, showHeader }: { featureId: number; showHeader: boolean }): React.JSX.Element | null {
-    const [feature, setFeature] = useState<unknown | null>(null);
+function FeatureDisplayWrapper({ featureId, showHeader: _showHeader }: { featureId: number; showHeader: boolean }): React.JSX.Element | null {
+    const queryClient = useQueryClient();
+    const [feature, setFeature] = useState<GetFeatureResponse | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<Error | null>(null);
 
@@ -211,7 +234,19 @@ function FeatureDisplayWrapper({ featureId, showHeader }: { featureId: number; s
             try {
                 setIsLoading(true);
                 setError(null);
-                const featureData = await FeatureQueryHooks.getFeatureById(featureId);
+                // FeatureQueryHooks doesn't expose query key/fn, so construct them manually
+                // based on the pattern from useGetFeatureById
+                const queryKey = ['features', 'item', featureId];
+                const queryFn = async () => {
+                    const result = await FeatureQueryHooks.getFeatureById(featureId);
+                    return result;
+                };
+                const featureData = await queryClient.fetchQuery({
+                    queryKey,
+                    queryFn,
+                    staleTime: 5 * 60 * 1000, // 5 minutes
+                    gcTime: 10 * 60 * 1000, // 10 minutes
+                });
                 setFeature(featureData);
             } catch (err) {
                 setError(err instanceof Error ? err : new Error('Failed to fetch feature'));
@@ -221,7 +256,7 @@ function FeatureDisplayWrapper({ featureId, showHeader }: { featureId: number; s
         };
 
         fetchFeature();
-    }, [featureId]);
+    }, [featureId, queryClient]);
 
     if (isLoading) {
         return (
@@ -244,9 +279,9 @@ function FeatureDisplayWrapper({ featureId, showHeader }: { featureId: number; s
 
     return (
         <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg">
-            <h4 className="font-semibold text-green-800 dark:text-green-200 mb-2">{(feature as any).name}</h4>
-            {(feature as any).description && (
-                <p className="text-green-600 dark:text-green-300 text-sm">{(feature as any).description}</p>
+            <h4 className="font-semibold text-green-800 dark:text-green-200 mb-2">{feature.name}</h4>
+            {feature.description && (
+                <p className="text-green-600 dark:text-green-300 text-sm">{feature.description}</p>
             )}
         </div>
     );

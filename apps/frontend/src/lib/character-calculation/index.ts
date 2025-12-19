@@ -21,7 +21,7 @@ export { getInitiative } from './calculations/initiative';
 export { getSpeed } from './calculations/speed';
 export { getSavingThrow, SaveType } from './calculations/savingThrows';
 export { getCombatValues } from './calculations/combatValues';
-export type { CombatValuesResult } from './calculations/combatValues';
+export type { CombatValuesResult, DamageComponents } from './calculations/combatValues';
 
 // Breakdown types
 export type { AbilityScoreBreakdownMap } from './calculations/abilityScore';
@@ -35,10 +35,9 @@ export type { CombatValuesBreakdownMap } from './calculations/combatValues';
 export { buildBreakdownString, createBreakdownComponent } from './utils/breakdownBuilder';
 export { applyFeatureFormula, getFormulaDisplayString } from './utils/formulaApplier';
 export {
-    formatAttackBonus,
-    formatWeight,
-    formatSize,
-    formatDamageType,
-    getUnarmedDamageType,
-} from './utils/displayFormatters';
+    isOffHandWeapon,
+    isUnarmedWeapon,
+    isRangedWeapon,
+    canUseTwoHanded,
+} from './utils/weaponHelpers';
 

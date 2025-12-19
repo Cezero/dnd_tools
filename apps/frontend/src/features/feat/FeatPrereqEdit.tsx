@@ -80,16 +80,35 @@ export function FeatPrereqEdit({ isOpen, onClose, onSave, initialPrereqData }: F
         };
 
         fetchClassLevelOptions();
+    }, []);
+
+    useEffect(() => {
         if (initialPrereqData) {
-            setFormData({
-                ...initialPrereqData,
-                index: initialPrereqData.index || 0,
-                typeId: initialPrereqData.typeId || null,
-                referenceId: initialPrereqData.referenceId || null,
-                amount: initialPrereqData.amount || null,
+            setFormData(prev => {
+                // Only update if values actually changed to prevent infinite loops
+                const newData = {
+                    ...initialPrereqData,
+                    index: initialPrereqData.index || 0,
+                    typeId: initialPrereqData.typeId || null,
+                    referenceId: initialPrereqData.referenceId || null,
+                    amount: initialPrereqData.amount || null,
+                };
+                
+                // Check if values actually changed
+                if (
+                    prev.index === newData.index &&
+                    prev.typeId === newData.typeId &&
+                    prev.referenceId === newData.referenceId &&
+                    prev.amount === newData.amount
+                ) {
+                    return prev; // No change, return previous state
+                }
+                
+                return newData;
             });
         }
-    }, [initialPrereqData]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialPrereqData?.index, initialPrereqData?.typeId, initialPrereqData?.referenceId, initialPrereqData?.amount]);
 
     const HandleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

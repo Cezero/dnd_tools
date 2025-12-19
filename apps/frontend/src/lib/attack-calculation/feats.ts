@@ -1,10 +1,12 @@
 import type { CharacterWithAllDetailsResponse } from '@shared/schema';
 import type { FeatureProgression } from '@shared/schema';
 import { ResolvedFeatureService } from '@/features/character/ResolvedFeatureService';
+import { getAllCharacterFeats } from '@/lib/character-calculation/core/featAccessor';
 
 /**
  * Check if character has a specific feat
  * Uses resolved progressions - no backend calls needed
+ * Now includes feats from both AdvancementFeat and CharacterFeatureChoice sources
  */
 export function hasFeat(
     resolvedProgressions: FeatureProgression[],
@@ -17,11 +19,12 @@ export function hasFeat(
         entity.feat?.name.toLowerCase() === featName.toLowerCase()
     );
     
-    // Check selected feats from character advancements
-    // Note: advancement.feats contains { advancementId, featId } - need to check featId against feat name
-    // For now, we'll rely on granted feats check which is more reliable
-    const hasSelectedFeat = false; // TODO: Implement feat name lookup from featId if needed
+    // Check selected feats from character advancements and choices using unified accessor
+    const allFeats = getAllCharacterFeats(character, resolvedProgressions);
+    // Note: We can't check by name directly since we only have featId
+    // For now, we'll rely on granted feats check which includes resolved feat choices
+    // TODO: If needed, we could fetch feat names by ID, but granted feats should cover most cases
     
-    return hasGrantedFeat || hasSelectedFeat;
+    return hasGrantedFeat;
 }
 

@@ -1,4 +1,4 @@
-import type { CharacterWithAllDetailsResponse, FeatureProgression } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, FeatureProgression, Feat } from '@shared/schema';
 import { AbilityId, GetAbilityModifier } from '@shared/static-data';
 import { resolveFeatBenefits } from '../core/featBenefitResolver';
 import { resolveFeatureBonuses } from '../core/featureBonusResolver';
@@ -23,7 +23,8 @@ export interface AbilityScoreBreakdownMap {
 export function getAbilityScore(
     character: CharacterWithAllDetailsResponse,
     abilityId: number,
-    resolvedProgressions: FeatureProgression[]
+    resolvedProgressions: FeatureProgression[],
+    featsMap?: Map<number, Feat>
 ): CalculationResult<AbilityScoreBreakdownMap> {
     // Get base ability score
     const abilityScore = character.abilityScores.find(a => a.abilityId === abilityId);
@@ -41,7 +42,9 @@ export function getAbilityScore(
     const featBenefits = resolveFeatBenefits(
         character,
         FeatBenefitType.SKILL, // Note: Ability bonuses might be a different type, but for now using SKILL
-        { abilityId }
+        { abilityId },
+        featsMap,
+        resolvedProgressions
     );
     const featBonus = featBenefits.reduce((sum, b) => sum + b.amount, 0);
 
@@ -99,9 +102,10 @@ export function getAbilityScore(
 export function getAbilityModifierWithBonuses(
     character: CharacterWithAllDetailsResponse,
     abilityId: number,
-    resolvedProgressions: FeatureProgression[]
+    resolvedProgressions: FeatureProgression[],
+    featsMap?: Map<number, Feat>
 ): number {
-    const result = getAbilityScore(character, abilityId, resolvedProgressions);
+    const result = getAbilityScore(character, abilityId, resolvedProgressions, featsMap);
     return GetAbilityModifier(result.value);
 }
 

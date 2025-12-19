@@ -1,5 +1,3 @@
-import { PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
-import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import {
     DndContext,
     closestCenter,
@@ -15,22 +13,16 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { TabComponentProps, CharacterEditStateUpdateType, AttackDefinition } from '@/features/character/types';
-import { AttackDefinitionModal } from '../components/AttackDefinitionModal';
-import { CharacterApi } from '../CharacterApi';
-import {
-    CharacterCalculationService,
-    formatAttackBonus,
-    formatWeight,
-    formatSize,
-    formatDamageType,
-    getUnarmedDamageType,
-} from '@/lib/character-calculation';
-import type { CharacterWithAllDetailsResponse, DnDClass } from '@shared/schema';
-import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
-import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
-import { calculateCharacterStats } from '../characterStatsCalculator';
+import { PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { useQueryClient } from '@tanstack/react-query';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
+
 import { useToast } from '@/components/toast/useToast';
+import { TabComponentProps, CharacterEditStateUpdateType, AttackDefinition } from '@/features/character/types';
+import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
+import type { CharacterWithAllDetailsResponse, ItemWithDetails } from '@shared/schema';
+
+import { AttackDefinitionModal } from '../components/AttackDefinitionModal';
 
 interface CalculatedAttackDisplay {
     attackDefinition: AttackDefinition;
@@ -43,20 +35,17 @@ interface CalculatedAttackDisplay {
     type: string;
     size: string | null;
     specialProperties: string | null;
-    isDualWield?: boolean;
-    offHandDisplay?: CalculatedAttackDisplay;
+    uniqueKey: string; // Unique identifier for React keys
 }
 
 function SortableAttackRow({
     attack: attackDisplay,
     onEdit,
     onDelete,
-    isDualWieldGroup,
 }: {
     attack: CalculatedAttackDisplay;
     onEdit: () => void;
     onDelete: () => void;
-    isDualWieldGroup: boolean;
 }): React.JSX.Element {
     const {
         attributes,
@@ -65,7 +54,7 @@ function SortableAttackRow({
         transform,
         transition,
         isDragging,
-    } = useSortable({ id: attackDisplay.attackDefinition.id });
+    } = useSortable({ id: attackDisplay.uniqueKey });
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -116,25 +105,6 @@ function SortableAttackRow({
                     </button>
                 </div>
             </div>
-            {attackDisplay.isDualWield && attackDisplay.offHandDisplay && (
-                <div className="grid grid-cols-10 gap-4 py-3 px-4 items-center bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700">
-                    <div className="col-span-2 pl-8 text-sm text-gray-600 dark:text-gray-400">
-                        {attackDisplay.offHandDisplay.weaponName} (Off-hand)
-                    </div>
-                    <div className="col-span-1 text-sm text-gray-700 dark:text-gray-300">
-                        {typeof attackDisplay.offHandDisplay.totalAttackBonus === 'string'
-                            ? attackDisplay.offHandDisplay.totalAttackBonus
-                            : `${attackDisplay.offHandDisplay.totalAttackBonus >= 0 ? '+' : ''}${attackDisplay.offHandDisplay.totalAttackBonus}`}
-                    </div>
-                    <div className="col-span-1 text-sm text-gray-700 dark:text-gray-300">{attackDisplay.offHandDisplay.damage}</div>
-                    <div className="col-span-1 text-sm text-gray-700 dark:text-gray-300">{attackDisplay.offHandDisplay.critical}</div>
-                    <div className="col-span-1 text-sm text-gray-700 dark:text-gray-300">{attackDisplay.offHandDisplay.range || '-'}</div>
-                    <div className="col-span-1 text-sm text-gray-700 dark:text-gray-300">{attackDisplay.offHandDisplay.weight || '-'}</div>
-                    <div className="col-span-1 text-sm text-gray-700 dark:text-gray-300">{attackDisplay.offHandDisplay.type}</div>
-                    <div className="col-span-1 text-sm text-gray-700 dark:text-gray-300">{attackDisplay.offHandDisplay.size || '-'}</div>
-                    <div className="col-span-1"></div>
-                </div>
-            )}
         </div>
     );
 }
@@ -142,11 +112,12 @@ function SortableAttackRow({
 export function CombatTab({
     state,
     updateState,
-    resolvedData,
+    resolvedData: _resolvedData,
+    formattedCharacter,
+    character: characterData,
 }: TabComponentProps): React.JSX.Element {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingDefinition, setEditingDefinition] = useState<AttackDefinition | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
     const toast = useToast();
 
     const sensors = useSensors(
@@ -157,256 +128,190 @@ export function CombatTab({
         })
     );
 
-    // Fetch character data - use state if available, otherwise fetch
-    const [characterData, setCharacterData] = React.useState<CharacterWithAllDetailsResponse | null>(null);
-    const [items, setItems] = React.useState<Array<{ id: number; name: string; weight: number | null; sizeId: number | null; weapon?: { category: number; type: number; damageMedium: string | null; critical: string | null; range: number | null; damageType: string | null } | null }>>([]);
-    const [classDetailsMap, setClassDetailsMap] = React.useState<Map<number, DnDClass>>(new Map());
+    const [items, setItems] = React.useState<ItemWithDetails[]>([]);
 
+    // Fetch items for weapons - use TanStack Query cache
+    const queryClient = useQueryClient();
     useEffect(() => {
-        if (state.characterId) {
-            CharacterApi.getCharacterWithAllDetails(undefined, { id: state.characterId })
-                .then(setCharacterData)
-                .catch(console.error);
-        }
-    }, [state.characterId]);
-
-    // Fetch items for weapons
-    useEffect(() => {
-        ItemQueryHooks.getItems()
+        queryClient.fetchQuery({
+            queryKey: ItemQueryHooks.getItemsQueryKey(),
+            queryFn: () => ItemQueryHooks.getItemsQueryFn(),
+            staleTime: 5 * 60 * 1000, // 5 minutes
+            gcTime: 10 * 60 * 1000, // 10 minutes
+        })
             .then(result => {
                 if (result?.results) {
-                    setItems(result.results.map(item => ({
-                        id: item.id,
-                        name: item.name,
-                        weight: item.weight,
-                        sizeId: item.sizeId,
-                        weapon: item.weapon ? {
-                            category: item.weapon.category,
-                            type: item.weapon.type,
-                            damageMedium: item.weapon.damageMedium,
-                            critical: item.weapon.critical,
-                            range: item.weapon.range,
-                            damageType: item.weapon.damageType,
-                        } : null,
-                    })));
+                    setItems(result.results);
                 }
             })
             .catch(console.error);
-    }, []);
+    }, [queryClient]);
 
-    // Fetch class details
-    useEffect(() => {
-        if (characterData) {
-            const classIds = new Set<number>();
-            if (characterData.advancements) {
-                for (const adv of characterData.advancements) {
-                    if (adv.classId) classIds.add(adv.classId);
-                    if (adv.secondaryClassId) classIds.add(adv.secondaryClassId);
+
+    // Map formatted attacks to attack definitions
+    // Process all definitions together to avoid cross-matching attacks
+    const processAllAttackDefinitions = useCallback((): Map<number, CalculatedAttackDisplay[]> => {
+        const result = new Map<number, CalculatedAttackDisplay[]>();
+
+        if (!formattedCharacter || !formattedCharacter.attacks || formattedCharacter.attacks.length === 0) {
+            return result;
+        }
+
+        const characterItems = characterData?.characterItems || [];
+        const matchedAttackIndices = new Set<number>();
+
+        // Process definitions in the order they appear in state (which should match formattedCharacter order)
+        for (const definition of state.attackDefinitions) {
+            if (definition.attackSlot === null) continue;
+
+            const matchingAttacks: CalculatedAttackDisplay[] = [];
+
+            // Get the expected items for this definition
+            const mainHandCharItem = definition.mainHandCharacterItemId
+                ? characterItems.find(ci => ci.id === definition.mainHandCharacterItemId)
+                : null;
+            const offHandCharItem = definition.offHandCharacterItemId
+                ? characterItems.find(ci => ci.id === definition.offHandCharacterItemId)
+                : null;
+
+            const mainHandItem = mainHandCharItem
+                ? items.find(i => i.id === mainHandCharItem.baseItemId)
+                : null;
+            const offHandItem = offHandCharItem
+                ? items.find(i => i.id === offHandCharItem.baseItemId)
+                : null;
+
+            // For dual-wield, we expect exactly 2 attacks (mainhand and offhand)
+            // For single weapon, we expect 1 attack
+            const expectedCount = definition.offHandCharacterItemId ? 2 : 1;
+
+            // Match attacks in order, only using unmatched attacks
+            for (let attackIndex = 0; attackIndex < formattedCharacter.attacks.length; attackIndex++) {
+                if (matchedAttackIndices.has(attackIndex)) continue;
+                if (matchingAttacks.length >= expectedCount) break;
+
+                const formattedAttack = formattedCharacter.attacks[attackIndex];
+
+                // Strip labeler suffixes from weapon name for matching (e.g., "Longsword (main-hand)" -> "Longsword")
+                const baseWeaponName = formattedAttack.weaponName.replace(/\s*\(main-hand\)$/, '')
+                    .replace(/\s*\(off-hand\)$/, '')
+                    .replace(/\s*\(both hands\)$/, '');
+
+                // Check if this attack matches the mainhand item
+                const mainHandName = mainHandCharItem?.name || mainHandItem?.name;
+                const matchesMainHand = mainHandItem && baseWeaponName === mainHandName;
+
+                // Check if this attack matches the offhand item
+                const offHandName = offHandCharItem?.name || offHandItem?.name;
+                const matchesOffHand = offHandItem && baseWeaponName === offHandName;
+
+                // For single weapon attacks, match mainhand only
+                if (!definition.offHandCharacterItemId && matchesMainHand) {
+                    matchedAttackIndices.add(attackIndex);
+                    matchingAttacks.push({
+                        attackDefinition: definition,
+                        weaponName: formattedAttack.weaponName,
+                        totalAttackBonus: formattedAttack.attackBonus,
+                        damage: formattedAttack.damage,
+                        critical: formattedAttack.critical,
+                        range: formattedAttack.range,
+                        weight: formattedAttack.weight,
+                        type: formattedAttack.type ?? '',
+                        size: formattedAttack.size,
+                        specialProperties: null,
+                        uniqueKey: `${definition.id}-${formattedAttack.weaponName}`,
+                    });
+                }
+                // For dual-wield, match mainhand first, then offhand
+                else if (definition.offHandCharacterItemId) {
+                    if (matchingAttacks.length === 0 && matchesMainHand) {
+                        // First attack should be mainhand
+                        matchedAttackIndices.add(attackIndex);
+                        matchingAttacks.push({
+                            attackDefinition: definition,
+                            weaponName: formattedAttack.weaponName,
+                            totalAttackBonus: formattedAttack.attackBonus,
+                            damage: formattedAttack.damage,
+                            critical: formattedAttack.critical,
+                            range: formattedAttack.range,
+                            weight: formattedAttack.weight,
+                            type: formattedAttack.type ?? '',
+                            size: formattedAttack.size,
+                            specialProperties: null,
+                            uniqueKey: `${definition.id}-mainhand-${formattedAttack.weaponName}`,
+                        });
+                    } else if (matchingAttacks.length === 1 && matchesOffHand) {
+                        // Second attack should be offhand
+                        matchedAttackIndices.add(attackIndex);
+                        matchingAttacks.push({
+                            attackDefinition: definition,
+                            weaponName: formattedAttack.weaponName,
+                            totalAttackBonus: formattedAttack.attackBonus,
+                            damage: formattedAttack.damage,
+                            critical: formattedAttack.critical,
+                            range: formattedAttack.range,
+                            weight: formattedAttack.weight,
+                            type: formattedAttack.type ?? '',
+                            size: formattedAttack.size,
+                            specialProperties: null,
+                            uniqueKey: `${definition.id}-offhand-${formattedAttack.weaponName}`,
+                        });
+                    }
                 }
             }
 
-            const map = new Map<number, DnDClass>();
-            const fetchPromises = Array.from(classIds).map(async (classId) => {
-                try {
-                    const classData = await ClassQueryHooks.getClassById(classId);
-                    map.set(classId, classData);
-                } catch (error) {
-                    console.error(`Failed to fetch class ${classId}:`, error);
-                }
-            });
-
-            Promise.all(fetchPromises).then(() => {
-                setClassDetailsMap(map);
-            });
-        }
-    }, [characterData]);
-
-    // Calculate character stats
-    const stats = useMemo(() => {
-        if (!characterData || classDetailsMap.size === 0) return null;
-        return calculateCharacterStats(characterData, classDetailsMap);
-    }, [characterData, classDetailsMap]);
-
-    // Calculate attack displays
-    const calculatedAttacks = useMemo<CalculatedAttackDisplay[]>(() => {
-        if (!characterData || !stats || classDetailsMap.size === 0) {
-            console.log('CombatTab: Missing prerequisites', {
-                hasCharacterData: !!characterData,
-                hasStats: !!stats,
-                itemsLength: items.length,
-                classDetailsMapSize: classDetailsMap.size,
-            });
-            return [];
+            if (matchingAttacks.length > 0) {
+                result.set(definition.id, matchingAttacks);
+            }
         }
 
-        // Items are only needed for weapon attacks, not unarmed strikes
+        return result;
+    }, [formattedCharacter, characterData, items, state.attackDefinitions]);
 
-        const attacks: CalculatedAttackDisplay[] = [];
-        const definitions = state.attackDefinitions.filter(def => def.attackSlot !== null);
+    // Calculate attack displays - separate assigned and unassigned
+    const { assignedAttacks, unassignedAttacks } = useMemo(() => {
+        if (!formattedCharacter || !formattedCharacter.attacks) {
+            return { assignedAttacks: [], unassignedAttacks: [] };
+        }
 
-        console.log('CombatTab: Processing attack definitions', {
-            totalDefinitions: state.attackDefinitions.length,
-            definitionsWithSlots: definitions.length,
-            definitions,
-        });
+        // Process all definitions together to avoid cross-matching
+        const definitionAttacksMap = processAllAttackDefinitions();
 
-        // Sort by attack slot
-        definitions.sort((a, b) => {
+        const assigned: CalculatedAttackDisplay[] = [];
+        const unassigned: CalculatedAttackDisplay[] = [];
+
+        // Separate definitions by whether they have a slot
+        const definitionsWithSlots = state.attackDefinitions.filter(def => def.attackSlot !== null);
+        const definitionsWithoutSlots = state.attackDefinitions.filter(def => def.attackSlot === null);
+
+        // Sort assigned definitions by attack slot
+        definitionsWithSlots.sort((a, b) => {
             if (a.attackSlot === null) return 1;
             if (b.attackSlot === null) return -1;
             return a.attackSlot - b.attackSlot;
         });
 
-        for (const definition of definitions) {
-            try {
-                const characterItems = characterData.characterItems || [];
-
-                console.log('CombatTab: Processing definition', {
-                    definition,
-                    characterItemsCount: characterItems.length,
-                    itemsCount: items.length,
-                });
-
-                // Convert attack definition to combat calculation context
-                const ATTACK_TYPE_MAP: Record<number, 'unarmed' | 'main-hand' | 'off-hand' | 'ranged' | 'dual-wield'> = {
-                    1: 'unarmed',
-                    2: 'main-hand',
-                    3: 'dual-wield',
-                    4: 'ranged',
-                };
-
-                const attackType = ATTACK_TYPE_MAP[definition.attackTypeId] ?? 'main-hand';
-
-                // For unarmed strikes, we don't need items
-                if (attackType === 'unarmed') {
-                    const progressions = resolvedData?.progressions ?? [];
-                    const result = CharacterCalculationService.getCombatValues(
-                        characterData,
-                        progressions,
-                        { attackType: 'unarmed' },
-                        classDetailsMap
-                    );
-
-                    attacks.push({
-                        attackDefinition: definition,
-                        weaponName: result.weaponName,
-                        totalAttackBonus: formatAttackBonus(result.value, result.nonlethalAttackBonus),
-                        damage: result.damage,
-                        critical: result.critical,
-                        range: result.range,
-                        weight: null,
-                        type: getUnarmedDamageType(),
-                        size: null,
-                        specialProperties: null,
-                    });
-                    continue;
-                }
-
-                // Find main hand item (required for weapon attacks)
-                let mainHandItem: typeof items[0] | undefined;
-                if (definition.mainHandCharacterItemId) {
-                    const mainHandCharacterItem = characterItems.find(ci => ci.id === definition.mainHandCharacterItemId);
-                    if (mainHandCharacterItem) {
-                        mainHandItem = items.find(i => i.id === mainHandCharacterItem.baseItemId);
-                        if (!mainHandItem) {
-                            console.warn('CombatTab: Main hand item not found', {
-                                characterItemId: definition.mainHandCharacterItemId,
-                                baseItemId: mainHandCharacterItem.baseItemId,
-                                availableItemIds: items.map(i => i.id),
-                            });
-                        }
-                    }
-                }
-
-                // Find off hand item
-                let offHandItem: typeof items[0] | undefined;
-                if (definition.offHandCharacterItemId) {
-                    const offHandCharacterItem = characterItems.find(ci => ci.id === definition.offHandCharacterItemId);
-                    if (offHandCharacterItem) {
-                        offHandItem = items.find(i => i.id === offHandCharacterItem.baseItemId);
-                        if (!offHandItem) {
-                            console.warn('CombatTab: Off hand item not found', {
-                                characterItemId: definition.offHandCharacterItemId,
-                                baseItemId: offHandCharacterItem.baseItemId,
-                                availableItemIds: items.map(i => i.id),
-                            });
-                        }
-                    }
-                }
-
-                const context = {
-                    attackType,
-                    mainHandItem,
-                    offHandItem,
-                };
-
-                // Use new calculation service
-                const progressions = resolvedData?.progressions ?? [];
-                console.log('CombatTab: Calling getCombatValues', {
-                    attackType,
-                    hasMainHandItem: !!mainHandItem,
-                    hasOffHandItem: !!offHandItem,
-                    progressionsCount: progressions.length,
-                });
-
-                const result = CharacterCalculationService.getCombatValues(
-                    characterData,
-                    progressions,
-                    context,
-                    classDetailsMap
-                );
-
-                console.log('CombatTab: Got result', result);
-
-                attacks.push({
-                    attackDefinition: definition,
-                    weaponName: result.weaponName,
-                    totalAttackBonus: formatAttackBonus(result.value, result.nonlethalAttackBonus),
-                    damage: result.damage,
-                    critical: result.critical,
-                    range: result.range,
-                    weight: formatWeight(mainHandItem?.weight),
-                    type: formatDamageType(mainHandItem?.weapon?.damageType ?? null),
-                    size: formatSize(mainHandItem?.sizeId),
-                    specialProperties: null,
-                    isDualWield: result.isDualWield,
-                    offHandDisplay: result.offHandResult ? {
-                        attackDefinition: definition, // Same definition for off-hand
-                        weaponName: result.offHandResult.weaponName,
-                        totalAttackBonus: formatAttackBonus(result.offHandResult.value, result.offHandResult.nonlethalAttackBonus),
-                        damage: result.offHandResult.damage,
-                        critical: result.offHandResult.critical,
-                        range: result.offHandResult.range,
-                        weight: formatWeight(offHandItem?.weight),
-                        type: formatDamageType(offHandItem?.weapon?.damageType ?? null),
-                        size: formatSize(offHandItem?.sizeId),
-                        specialProperties: null,
-                    } : undefined,
-                });
-            } catch (error) {
-                console.error('Error calculating attack stats:', error, {
-                    definition,
-                    mainHandItemId: definition.mainHandCharacterItemId,
-                    offHandItemId: definition.offHandCharacterItemId,
-                });
-                // Don't silently fail - add a placeholder so user knows something is wrong
-                attacks.push({
-                    attackDefinition: definition,
-                    weaponName: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                    totalAttackBonus: 0,
-                    damage: 'N/A',
-                    critical: 'N/A',
-                    range: null,
-                    weight: null,
-                    type: '',
-                    size: null,
-                    specialProperties: null,
-                });
+        // Process assigned attacks
+        for (const definition of definitionsWithSlots) {
+            const attacks = definitionAttacksMap.get(definition.id) || [];
+            if (attacks.length > 0) {
+                assigned.push(...attacks);
             }
         }
 
-        return attacks;
-    }, [state.attackDefinitions, characterData, items, classDetailsMap, resolvedData.progressions, stats]);
+        // Process unassigned attacks
+        for (const definition of definitionsWithoutSlots) {
+            const attacks = definitionAttacksMap.get(definition.id) || [];
+            if (attacks.length > 0) {
+                unassigned.push(...attacks);
+            }
+        }
+
+        return { assignedAttacks: assigned, unassignedAttacks: unassigned };
+    }, [state.attackDefinitions, formattedCharacter, processAllAttackDefinitions]);
+
+    // For backward compatibility, keep calculatedAttacks as assigned attacks only (for drag-and-drop)
+    const calculatedAttacks = assignedAttacks;
 
     const handleAddAttack = () => {
         setEditingDefinition(null);
@@ -423,11 +328,14 @@ export function CombatTab({
             return;
         }
 
+        if (!state.characterId) {
+            return;
+        }
+
         try {
-            setIsLoading(true);
             await CharacterApi.deleteCharacterAttackDefinition(undefined, {
-                id: state.characterId.toString(),
-                attackId: definition.id.toString(),
+                id: state.characterId,
+                attackId: definition.id,
             });
 
             // Update local state
@@ -449,24 +357,25 @@ export function CombatTab({
                 description: 'Failed to delete attack definition',
                 type: 'error',
             });
-        } finally {
-            setIsLoading(false);
         }
     }, [state.characterId, state.attackDefinitions, updateState, toast]);
 
     const handleSaveAttack = useCallback(async (definitionData: Omit<AttackDefinition, 'id'>) => {
         if (!state.characterId) return;
 
+        if (!state.characterId) {
+            return;
+        }
+
         try {
-            setIsLoading(true);
             if (editingDefinition) {
                 // Update existing
                 await CharacterApi.updateCharacterAttackDefinition({
                     ...definitionData,
                     characterId: state.characterId,
                 }, {
-                    id: state.characterId.toString(),
-                    attackId: editingDefinition.id.toString(),
+                    id: state.characterId,
+                    attackId: editingDefinition.id,
                 });
 
                 const updated = state.attackDefinitions.map(def =>
@@ -489,11 +398,11 @@ export function CombatTab({
                     ...definitionData,
                     characterId: state.characterId,
                 }, {
-                    id: state.characterId.toString(),
+                    id: state.characterId,
                 });
 
                 const newDefinition: AttackDefinition = {
-                    id: parseInt(result.id, 10),
+                    id: Number.parseInt(result.id, 10),
                     ...definitionData,
                 };
 
@@ -509,15 +418,21 @@ export function CombatTab({
             }
             setIsModalOpen(false);
             setEditingDefinition(null);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error saving attack definition:', error);
+            const errorMessage = error && typeof error === 'object' && 'response' in error
+                && typeof error.response === 'object' && error.response !== null
+                && 'data' in error.response
+                && typeof error.response.data === 'object' && error.response.data !== null
+                && 'error' in error.response.data
+                && typeof error.response.data.error === 'string'
+                ? error.response.data.error
+                : 'Failed to save attack definition';
             toast?.add({
                 title: 'Error',
-                description: error?.response?.data?.error || 'Failed to save attack definition',
+                description: errorMessage,
                 type: 'error',
             });
-        } finally {
-            setIsLoading(false);
         }
     }, [state.characterId, state.attackDefinitions, editingDefinition, updateState, toast]);
 
@@ -528,25 +443,32 @@ export function CombatTab({
             return;
         }
 
-        const oldIndex = calculatedAttacks.findIndex(a => a.attackDefinition.id === active.id);
-        const newIndex = calculatedAttacks.findIndex(a => a.attackDefinition.id === over.id);
+        const oldIndex = calculatedAttacks.findIndex(a => a.uniqueKey === active.id);
+        const newIndex = calculatedAttacks.findIndex(a => a.uniqueKey === over.id);
 
         if (oldIndex === -1 || newIndex === -1) {
             return;
         }
 
-        // Handle dual wield groups - if dragging a dual wield, move both main and off-hand together
-        const draggedAttack = calculatedAttacks[oldIndex];
-        const isDualWield = draggedAttack.isDualWield;
-
         // Reorder attacks
         const reordered = arrayMove(calculatedAttacks, oldIndex, newIndex);
-        const attackDefinitionIds = reordered.map(a => a.attackDefinition.id);
+        // Extract unique attack definition IDs in order (deduplicate for dual-wield)
+        const attackDefinitionIds: number[] = [];
+        const seenIds = new Set<number>();
+        for (const attack of reordered) {
+            if (!seenIds.has(attack.attackDefinition.id)) {
+                attackDefinitionIds.push(attack.attackDefinition.id);
+                seenIds.add(attack.attackDefinition.id);
+            }
+        }
+
+        if (!state.characterId) {
+            return;
+        }
 
         try {
-            setIsLoading(true);
             await CharacterApi.reorderCharacterAttackDefinitions({ attackDefinitionIds }, {
-                id: state.characterId.toString(),
+                id: state.characterId,
             });
 
             // Update slots based on new order
@@ -558,7 +480,7 @@ export function CombatTab({
                 let slot = 1;
                 for (let i = 0; i < newIndex; i++) {
                     const prevDef = state.attackDefinitions.find(d => d.id === attackDefinitionIds[i]);
-                    if (prevDef?.attackTypeId === 3 && prevDef.offHandCharacterItemId !== null) {
+                    if (prevDef?.offHandCharacterItemId !== null) {
                         slot += 2; // Dual wield takes 2 slots
                     } else {
                         slot += 1;
@@ -566,7 +488,7 @@ export function CombatTab({
                 }
 
                 // For dual wield, ensure we don't exceed slot 6
-                if (def.attackTypeId === 3 && def.offHandCharacterItemId !== null && slot === 7) {
+                if (def.offHandCharacterItemId !== null && slot === 7) {
                     slot = 6; // Move to slot 6 instead
                 }
 
@@ -590,19 +512,11 @@ export function CombatTab({
                 description: 'Failed to reorder attack definitions',
                 type: 'error',
             });
-        } finally {
-            setIsLoading(false);
         }
     }, [calculatedAttacks, state.characterId, state.attackDefinitions, updateState, toast]);
 
-    // Update character data when attack definitions change
-    useEffect(() => {
-        if (state.characterId && state.attackDefinitions.length > 0) {
-            CharacterApi.getCharacterWithAllDetails(undefined, { id: state.characterId })
-                .then(setCharacterData)
-                .catch(console.error);
-        }
-    }, [state.characterId, state.attackDefinitions.length]);
+    // Note: Character data is now provided via props from CharacterEdit, which uses TanStack Query cache
+    // No need to fetch character data here - it's already available via the character prop
 
     if (!characterData) {
         return <div className="p-4">Loading character data...</div>;
@@ -621,37 +535,77 @@ export function CombatTab({
                 </button>
             </div>
 
-            {/* Table Header */}
-            <div className="grid grid-cols-10 gap-4 py-2 px-4 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 font-medium text-sm text-gray-700 dark:text-gray-300">
-                <div className="col-span-2">Weapon Name</div>
-                <div className="col-span-1">Attack Bonus</div>
-                <div className="col-span-1">Damage</div>
-                <div className="col-span-1">Critical</div>
-                <div className="col-span-1">Range</div>
-                <div className="col-span-1">Weight</div>
-                <div className="col-span-1">Type</div>
-                <div className="col-span-1">Size</div>
-                <div className="col-span-1"></div>
-            </div>
+            {/* Assigned Attacks Section */}
+            {assignedAttacks.length > 0 && (
+                <>
+                    <div className="mb-2 mt-4">
+                        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Assigned Attacks</h3>
+                    </div>
+                    {/* Table Header */}
+                    <div className="grid grid-cols-10 gap-4 py-2 px-4 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 font-medium text-sm text-gray-700 dark:text-gray-300">
+                        <div className="col-span-2">Weapon Name</div>
+                        <div className="col-span-1">Attack Bonus</div>
+                        <div className="col-span-1">Damage</div>
+                        <div className="col-span-1">Critical</div>
+                        <div className="col-span-1">Range</div>
+                        <div className="col-span-1">Weight</div>
+                        <div className="col-span-1">Type</div>
+                        <div className="col-span-1">Size</div>
+                        <div className="col-span-1"></div>
+                    </div>
 
-            {/* Sortable Attack List */}
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={calculatedAttacks.map(a => a.attackDefinition.id)} strategy={verticalListSortingStrategy}>
+                    {/* Sortable Attack List */}
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                        <SortableContext items={calculatedAttacks.map(a => a.uniqueKey)} strategy={verticalListSortingStrategy}>
+                            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                                {calculatedAttacks.map(attack => (
+                                    <SortableAttackRow
+                                        key={attack.uniqueKey}
+                                        attack={attack}
+                                        onEdit={() => handleEditAttack(attack.attackDefinition)}
+                                        onDelete={() => handleDeleteAttack(attack.attackDefinition)}
+                                    />
+                                ))}
+                            </div>
+                        </SortableContext>
+                    </DndContext>
+                </>
+            )}
+
+            {/* Unassigned Attacks Section */}
+            {unassignedAttacks.length > 0 && (
+                <>
+                    <div className="mb-2 mt-6">
+                        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Unassigned Attacks (not displayed on sheet)</h3>
+                    </div>
+                    {/* Table Header */}
+                    <div className="grid grid-cols-10 gap-4 py-2 px-4 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 font-medium text-sm text-gray-700 dark:text-gray-300">
+                        <div className="col-span-2">Weapon Name</div>
+                        <div className="col-span-1">Attack Bonus</div>
+                        <div className="col-span-1">Damage</div>
+                        <div className="col-span-1">Critical</div>
+                        <div className="col-span-1">Range</div>
+                        <div className="col-span-1">Weight</div>
+                        <div className="col-span-1">Type</div>
+                        <div className="col-span-1">Size</div>
+                        <div className="col-span-1"></div>
+                    </div>
+
+                    {/* Non-sortable Attack List */}
                     <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {calculatedAttacks.map(attack => (
+                        {unassignedAttacks.map(attack => (
                             <SortableAttackRow
-                                key={attack.attackDefinition.id}
+                                key={attack.uniqueKey}
                                 attack={attack}
                                 onEdit={() => handleEditAttack(attack.attackDefinition)}
                                 onDelete={() => handleDeleteAttack(attack.attackDefinition)}
-                                isDualWieldGroup={attack.isDualWield || false}
                             />
                         ))}
                     </div>
-                </SortableContext>
-            </DndContext>
+                </>
+            )}
 
-            {calculatedAttacks.length === 0 && (
+            {assignedAttacks.length === 0 && unassignedAttacks.length === 0 && (
                 <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                     No attack definitions. Click "Add Attack" to create one.
                 </div>

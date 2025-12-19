@@ -1,14 +1,18 @@
 import type {
     CharacterWithAllDetailsResponse,
     FeatureProgression,
+    DnDClass,
+    Feat,
 } from '@shared/schema';
-import type { CalculationServiceInput, CombatCalculationContext, CalculationContext } from '../types';
+
+import type { CombatCalculationContext } from '../types';
+import type { CombatValuesResult } from '../calculations/combatValues';
 import { getAbilityScore, getAbilityModifierWithBonuses } from '../calculations/abilityScore';
 import { getAC, getTouchAC, getFlatFootedAC } from '../calculations/armorClass';
+import { getCombatValues } from '../calculations/combatValues';
 import { getInitiative } from '../calculations/initiative';
 import { getSpeed } from '../calculations/speed';
 import { getSavingThrow } from '../calculations/savingThrows';
-import { getCombatValues } from '../calculations/combatValues';
 
 /**
  * Main character calculation service
@@ -20,9 +24,10 @@ export class CharacterCalculationService {
     static getAbilityScore(
         character: CharacterWithAllDetailsResponse,
         abilityId: number,
-        resolvedProgressions: FeatureProgression[]
+        resolvedProgressions: FeatureProgression[],
+        featsMap?: Map<number, Feat>
     ) {
-        return getAbilityScore(character, abilityId, resolvedProgressions);
+        return getAbilityScore(character, abilityId, resolvedProgressions, featsMap);
     }
 
     /**
@@ -31,9 +36,10 @@ export class CharacterCalculationService {
     static getAbilityModifier(
         character: CharacterWithAllDetailsResponse,
         abilityId: number,
-        resolvedProgressions: FeatureProgression[]
+        resolvedProgressions: FeatureProgression[],
+        featsMap?: Map<number, Feat>
     ): number {
-        return getAbilityModifierWithBonuses(character, abilityId, resolvedProgressions);
+        return getAbilityModifierWithBonuses(character, abilityId, resolvedProgressions, featsMap);
     }
 
     /**
@@ -42,9 +48,10 @@ export class CharacterCalculationService {
     static getAC(
         character: CharacterWithAllDetailsResponse,
         resolvedProgressions: FeatureProgression[],
-        items?: Array<{ id: number; armor?: { bonus: number | null }; weapon?: unknown }>
+        items?: Array<{ id: number; armor?: { bonus: number | null }; weapon?: unknown }>,
+        featsMap?: Map<number, Feat>
     ) {
-        return getAC(character, resolvedProgressions, items);
+        return getAC(character, resolvedProgressions, items, featsMap);
     }
 
     /**
@@ -52,9 +59,10 @@ export class CharacterCalculationService {
      */
     static getTouchAC(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[]
+        resolvedProgressions: FeatureProgression[],
+        featsMap?: Map<number, Feat>
     ): number {
-        return getTouchAC(character, resolvedProgressions);
+        return getTouchAC(character, resolvedProgressions, featsMap);
     }
 
     /**
@@ -62,9 +70,10 @@ export class CharacterCalculationService {
      */
     static getFlatFootedAC(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[]
+        resolvedProgressions: FeatureProgression[],
+        featsMap?: Map<number, Feat>
     ): number {
-        return getFlatFootedAC(character, resolvedProgressions);
+        return getFlatFootedAC(character, resolvedProgressions, featsMap);
     }
 
     /**
@@ -72,9 +81,10 @@ export class CharacterCalculationService {
      */
     static getInitiative(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[]
+        resolvedProgressions: FeatureProgression[],
+        featsMap?: Map<number, Feat>
     ) {
-        return getInitiative(character, resolvedProgressions);
+        return getInitiative(character, resolvedProgressions, featsMap);
     }
 
     /**
@@ -82,9 +92,10 @@ export class CharacterCalculationService {
      */
     static getSpeed(
         character: CharacterWithAllDetailsResponse,
-        resolvedProgressions: FeatureProgression[]
+        resolvedProgressions: FeatureProgression[],
+        race: import('@shared/schema').Race | null
     ) {
-        return getSpeed(character, resolvedProgressions);
+        return getSpeed(character, resolvedProgressions, race);
     }
 
     /**
@@ -94,21 +105,24 @@ export class CharacterCalculationService {
         character: CharacterWithAllDetailsResponse,
         saveType: number,
         resolvedProgressions: FeatureProgression[],
-        classDetailsMap: Map<number, { saveProgression?: string }>
+        classDetailsMap: Map<number, DnDClass>,
+        featsMap?: Map<number, Feat>
     ) {
-        return getSavingThrow(character, saveType, resolvedProgressions, classDetailsMap);
+        return getSavingThrow(character, saveType, resolvedProgressions, classDetailsMap, featsMap);
     }
 
     /**
      * Get combat values (attack bonus, damage, etc.)
+     * Returns an array: [mainHandResult] for single weapons, [mainHandResult, offHandResult] for dual-wield
      */
     static getCombatValues(
         character: CharacterWithAllDetailsResponse,
         resolvedProgressions: FeatureProgression[],
         context: CombatCalculationContext,
-        classDetailsMap: Map<number, { babProgression?: string | number }>
-    ) {
-        return getCombatValues(character, resolvedProgressions, context, classDetailsMap);
+        classDetailsMap: Map<number, DnDClass>,
+        featsMap?: Map<number, import('@shared/schema').Feat>
+    ): CombatValuesResult[] {
+        return getCombatValues(character, resolvedProgressions, context, classDetailsMap, featsMap);
     }
 }
 

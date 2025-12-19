@@ -2,14 +2,19 @@ import { useState, useEffect, useCallback } from 'react';
 
 import { useCacheFunctions } from '@/services/cache';
 import { FeatureProgression, CharacterFeatureChoice } from '@shared/schema';
+import { EntityAppliesToType } from '@shared/static-data';
 
 import { ResolvedFeatureService } from './ResolvedFeatureService';
 import type { PendingChoice, UseResolvedFeaturesProps, FeatureResolutionReturn } from './types';
 
 /**
  * Extract existing choices from advancement.featureChoices and convert to userChoices format
+ * Uses resolved progressions to look up FeatureEntity and determine choice type synchronously
  */
-function extractExistingChoices(featureChoices: CharacterFeatureChoice[]): {
+function extractExistingChoices(
+    featureChoices: CharacterFeatureChoice[],
+    resolvedProgressions: FeatureProgression[]
+): {
     domains?: number[];
     feats?: number[];
     skills?: number[];
@@ -25,12 +30,60 @@ function extractExistingChoices(featureChoices: CharacterFeatureChoice[]): {
     } = {};
 
     featureChoices.forEach(choice => {
-        // For now, we'll assume all choices are domain choices since that's what we're testing
-        // In a full implementation, we'd need to query the FeatureEntity to determine the choice type
-        if (!choices.domains) {
-            choices.domains = [];
+        // Look up the FeatureEntity in resolved progressions to determine choice type
+        let entityAppliesTo: number | null = null;
+
+        for (const progression of resolvedProgressions) {
+            if (progression.id === choice.progressionId && progression.entities) {
+                const entity = progression.entities.find(e => e.id === choice.featureEntityId);
+                if (entity) {
+                    entityAppliesTo = entity.appliesTo;
+                    break;
+                }
+            }
         }
-        choices.domains.push(choice.appliesToId);
+
+        // If we couldn't find the entity, skip this choice (shouldn't happen in normal flow)
+        if (entityAppliesTo === null) {
+            console.warn(`Could not find FeatureEntity for choice: progressionId=${choice.progressionId}, featureEntityId=${choice.featureEntityId}`);
+            return;
+        }
+
+        // Route the choice to the appropriate array based on appliesTo type
+        switch (entityAppliesTo) {
+            case EntityAppliesToType.Domain:
+                if (!choices.domains) {
+                    choices.domains = [];
+                }
+                choices.domains.push(choice.appliesToId);
+                break;
+            case EntityAppliesToType.Feat:
+                if (!choices.feats) {
+                    choices.feats = [];
+                }
+                choices.feats.push(choice.appliesToId);
+                break;
+            case EntityAppliesToType.Skill:
+                if (!choices.skills) {
+                    choices.skills = [];
+                }
+                choices.skills.push(choice.appliesToId);
+                break;
+            case EntityAppliesToType.Spell:
+                if (!choices.spells) {
+                    choices.spells = [];
+                }
+                choices.spells.push(choice.appliesToId);
+                break;
+            case EntityAppliesToType.Feature:
+                if (!choices.features) {
+                    choices.features = [];
+                }
+                choices.features.push(choice.appliesToId);
+                break;
+            default:
+                console.warn(`Unknown appliesTo type ${entityAppliesTo} for choice: progressionId=${choice.progressionId}, featureEntityId=${choice.featureEntityId}`);
+        }
     });
 
     return choices;
@@ -73,8 +126,30 @@ export function useResolvedFeatures({
                     setTimeout(() => reject(new Error('Feature resolution timeout')), 10000); // 10 second timeout
                 });
 
-                // Extract existing choices from advancement.featureChoices
-                const existingChoices = extractExistingChoices(advancement.featureChoices || []);
+                // Two-pass resolution to handle circular dependency:
+                // 1. First pass: Resolve without user choices to get base progressions
+                // 2. Extract choices from base progressions
+                // 3. Second pass: Resolve with extracted choices merged
+
+                // First pass: Resolve base features without user choices
+                const baseResolved = await Promise.race([
+                    ResolvedFeatureService.getResolvedFeatures(
+                        character,
+                        targetLevel,
+                        advancement,
+                        raceDetails,
+                        classDetails,
+                        secondaryClassDetails,
+                        undefined // No user choices for first pass
+                    ),
+                    timeoutPromise
+                ]);
+
+                // Extract existing choices from advancement.featureChoices using base progressions
+                const existingChoices = extractExistingChoices(
+                    advancement.featureChoices || [],
+                    baseResolved
+                );
 
                 // Merge with any new userChoices
                 const mergedChoices = {
@@ -82,6 +157,7 @@ export function useResolvedFeatures({
                     ...userChoices
                 };
 
+                // Second pass: Resolve with extracted choices
                 const resolved = await Promise.race([
                     ResolvedFeatureService.getResolvedFeatures(
                         character,
@@ -114,18 +190,31 @@ export function useResolvedFeatures({
 
     // Memoized granted feats getter
     const getGrantedFeats = useCallback((): number[] => {
-        return ResolvedFeatureService.getGrantedFeats(resolvedProgressions);
+        const grantedFeatEntities = ResolvedFeatureService.getGrantedFeats(resolvedProgressions);
+        return grantedFeatEntities.map(entity => entity.appliesToId).filter((id): id is number => id !== null && id !== undefined);
     }, [resolvedProgressions]);
 
     // Memoized granted proficiencies getter
-    const getGrantedProficiencies = useCallback(() => {
-        return ResolvedFeatureService.getGrantedProficiencies(resolvedProgressions);
-    }, [resolvedProgressions]);
+    const getGrantedProficiencies = useCallback((): Array<{ type: string; id: number; source: string }> => {
+        // TODO: Implement getGrantedProficiencies in ResolvedFeatureService
+        // For now, return empty array
+        return [];
+    }, []);
 
     // Memoized pending choices getter
     const getPendingChoices = useCallback(async (): Promise<PendingChoice[]> => {
-        return await ResolvedFeatureService.getPendingChoices(resolvedProgressions, { getClassNameById, getDomainSelectByEdition }, character.editionId);
-    }, [resolvedProgressions, character.editionId, getClassNameById, getDomainSelectByEdition]);
+        // Extract existing choices from advancement.featureChoices to filter them out
+        const existingChoices = advancement?.featureChoices?.map(choice => ({
+            progressionId: choice.progressionId,
+            featureEntityId: choice.featureEntityId
+        })) || [];
+        return await ResolvedFeatureService.getPendingChoices(
+            resolvedProgressions,
+            { getClassNameById, getDomainSelectByEdition },
+            character.editionId,
+            existingChoices
+        );
+    }, [resolvedProgressions, character.editionId, getClassNameById, getDomainSelectByEdition, advancement]);
 
     // Memoized skill total calculator
     const calculateSkillTotal = useCallback((skillId: number, skillSubId: number | null, baseTotal: number): number => {

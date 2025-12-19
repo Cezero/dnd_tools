@@ -1,5 +1,5 @@
-import { FeatureProgression, FeatureEntity } from '@shared/schema';
-import { EntityType, EntityAppliesToType, CoreComponent } from '@shared/static-data';
+import { FeatureProgression, FeatureEntity, FeatInQueryResponse } from '@shared/schema';
+import { EntityType, EntityAppliesToType, CoreComponent, FeatureFeatChoiceFilter } from '@shared/static-data';
 
 import type { PendingChoice, ChoiceOption } from './types';
 
@@ -15,15 +15,37 @@ type CacheService = {
 export class ChoiceResolver {
     /**
      * Identify pending choices from feature progressions
+     * Filters out choices that have already been made
      */
-    static async identifyPendingChoices(progressions: FeatureProgression[], cacheService: CacheService, editionId?: number): Promise<PendingChoice[]> {
+    static async identifyPendingChoices(
+        progressions: FeatureProgression[],
+        cacheService: CacheService,
+        editionId?: number,
+        existingChoices?: Array<{ progressionId: number; featureEntityId: number }>,
+        allFeats?: FeatInQueryResponse[]
+    ): Promise<PendingChoice[]> {
         const choices: PendingChoice[] = [];
+
+        // Create a Set for fast lookup of existing choices
+        const existingChoicesSet = new Set<string>();
+        if (existingChoices) {
+            for (const choice of existingChoices) {
+                existingChoicesSet.add(`${choice.progressionId}-${choice.featureEntityId}`);
+            }
+        }
 
         for (const progression of progressions) {
             if (progression.entities) {
                 for (const entity of progression.entities) {
                     if (entity.type === EntityType.Choice) {
-                        const choice = await this.createPendingChoice(entity, progression, cacheService, editionId);
+                        // Check if this choice has already been made
+                        const choiceKey = `${progression.id}-${entity.id}`;
+                        if (existingChoicesSet.has(choiceKey)) {
+                            // Skip this choice - it's already been made
+                            continue;
+                        }
+
+                        const choice = await this.createPendingChoice(entity, progression, cacheService, editionId, allFeats);
                         if (choice) {
                             choices.push(choice);
                         }
@@ -206,15 +228,18 @@ export class ChoiceResolver {
         entity: FeatureEntity,
         progression: FeatureProgression,
         cacheService: CacheService,
-        editionId?: number
+        editionId?: number,
+        allFeats?: FeatInQueryResponse[]
     ): Promise<PendingChoice | null> {
         if (!entity.appliesTo) {
             return null;
         }
 
-        // For domain choices, appliesToId can be null (player chooses from all domains)
+        // For domain and feat choices, appliesToId can be null (player chooses from all available options)
         // For other choices, appliesToId should be specified
-        if (entity.appliesTo !== EntityAppliesToType.Domain && !entity.appliesToId) {
+        if (entity.appliesTo !== EntityAppliesToType.Domain &&
+            entity.appliesTo !== EntityAppliesToType.Feat &&
+            !entity.appliesToId) {
             return null;
         }
 
@@ -227,7 +252,12 @@ export class ChoiceResolver {
         if (entity.appliesTo === EntityAppliesToType.Domain) {
             choiceName = `${source}: Select a Domain`;
         } else if (entity.appliesTo === EntityAppliesToType.Feat) {
+            // Check if this is a fighter bonus feat choice
+            if (entity.filterType === FeatureFeatChoiceFilter.FighterBonus) {
+                choiceName = `${source}: Select a Fighter Bonus Feat`;
+            } else {
             choiceName = `${source}: Select a Feat`;
+            }
         } else if (entity.appliesTo === EntityAppliesToType.Skill) {
             choiceName = `${source}: Select a Skill`;
         } else if (entity.appliesTo === EntityAppliesToType.Spell) {
@@ -244,7 +274,7 @@ export class ChoiceResolver {
             source,
             level: progression.level,
             required: true, // TODO: Determine from entity properties
-            options: await this.getChoiceOptions(entity, progression, cacheService, editionId),
+            options: await this.getChoiceOptions(entity, progression, cacheService, editionId, allFeats),
             maxSelections: entity.value || 1,
             minSelections: 1,
         };
@@ -255,7 +285,7 @@ export class ChoiceResolver {
      * Get choice options based on entity type
      * Uses the pre-populated data from the FeatureProgression entities
      */
-    private static async getChoiceOptions(entity: FeatureEntity, _progression: FeatureProgression, cacheService: CacheService, editionId?: number): Promise<ChoiceOption[]> {
+    private static async getChoiceOptions(entity: FeatureEntity, _progression: FeatureProgression, cacheService: CacheService, editionId?: number, allFeats?: FeatInQueryResponse[]): Promise<ChoiceOption[]> {
         const options: ChoiceOption[] = [];
 
         // The data is already populated by featureSystemService.getFeatureProgressionsByIds
@@ -310,6 +340,7 @@ export class ChoiceResolver {
                 break;
             case EntityAppliesToType.Feat:
                 if (entity.feat) {
+                    // Specific feat choice (entity.feat is populated)
                     options.push({
                         id: `feat-${entity.feat.id}`,
                         name: entity.feat.name,
@@ -317,6 +348,40 @@ export class ChoiceResolver {
                         value: entity.feat.id,
                         prerequisites: entity.feat.prerequisites ? [entity.feat.prerequisites] : []
                     });
+                } else {
+                    // General feat choice (player chooses from all available feats)
+                    // Filter by filterType if specified (e.g., FighterBonus)
+                    if (!allFeats || allFeats.length === 0) {
+                        // No feats provided - add placeholder
+                        options.push({
+                            id: 'feat-no-data',
+                            name: 'No feats available',
+                            description: 'Feats data not provided',
+                            value: 0,
+                            prerequisites: []
+                        });
+                    } else {
+                        let availableFeats = allFeats;
+
+                        // Filter by filterType if specified
+                        if (entity.filterType === FeatureFeatChoiceFilter.FighterBonus) {
+                            availableFeats = availableFeats.filter(feat => feat.fighterBonus === true);
+                        } else if (entity.filterType === FeatureFeatChoiceFilter.MetamagicOrItemCreation) {
+                            // Filter for metamagic or item creation feats
+                            // This would need to be determined by feat category or flags
+                            // For now, include all feats (can be refined later)
+                        }
+
+                        availableFeats.forEach(feat => {
+                            options.push({
+                                id: `feat-${feat.id}`,
+                                name: feat.name,
+                                description: feat.description || `Feat: ${feat.name}`,
+                                value: feat.id,
+                                prerequisites: feat.prerequisites ? [feat.prerequisites] : []
+                            });
+                        });
+                    }
                 }
                 break;
             case EntityAppliesToType.Skill:
@@ -372,6 +437,10 @@ export class ChoiceResolver {
         }
 
         if (progression.sourceType === 0) {
+            // Race source - check if we have raceId and can get race name from sharedData
+            // Note: progression.race is not always populated, so we return generic "Race"
+            // The actual race name should be passed via sharedData or resolved elsewhere
+            // For now, return generic "Race" - this will be improved when race data is available in progression
             return 'Race';
         }
 
@@ -379,7 +448,7 @@ export class ChoiceResolver {
             return 'Domain';
         }
 
-        // TODO: Add race and domain name resolution when those fields are available
+        // TODO: Add domain name resolution when those fields are available
         return 'Unknown Source';
     }
 }

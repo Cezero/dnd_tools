@@ -1,20 +1,21 @@
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline';
 import { ColumnDef } from '@tanstack/react-table';
-import React, { useCallback, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react';
 
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { createContainsFilter } from '@/components/generic-list/filterFunctions';
-
 import { TabComponentProps, CharacterEditStateUpdateType } from '@/features/character/types';
 import { useStartingGold } from '@/features/character/utils/startingGold';
 import { formatCostAsCurrency } from '@/features/item/utils';
+import { extractProficiencies } from '@/lib/attack-calculation';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
-import type { ItemWithDetails, FeatureProgression } from '@shared/schema';
-import { CURRENCY_LIST, ITEM_TYPES, ITEM_TYPE_LIST, WEAPON_CATEGORIES, WEAPON_TYPES, ARMOR_CATEGORIES, DAMAGE_TYPES, FilterType, PROFICIENCY_TYPES, FeatBenefitType, EntityType, EntityAppliesToType, ITEM_TYPE_ENUM, LOCATION_ENUM, LOCATION_LIST } from '@shared/static-data';
+import type { ItemWithDetails } from '@shared/schema';
+import { CURRENCY_LIST, ITEM_TYPES, ITEM_TYPE_LIST, WEAPON_CATEGORIES, WEAPON_TYPES, ARMOR_CATEGORIES, DAMAGE_TYPES, FilterType, LOCATION_ENUM, LOCATION_LIST } from '@shared/static-data';
 
 import { EquipmentList } from '../components/EquipmentList';
 import type { EquipmentItem } from '../types';
-import { extractProficiencies } from '@/lib/attack-calculation';
+
 
 /**
  * Convert Money object to total gold pieces
@@ -66,7 +67,16 @@ export function EquipmentTab({
     resolvedData,
     isLoading
 }: TabComponentProps): React.JSX.Element {
+    const queryClient = useQueryClient();
     const { generateRandomGold, convertGpToMoney, isReady: isDiceReady } = useStartingGold();
+
+    // Use a ref to always access the latest equipment state
+    const equipmentRef = useRef(state.equipment);
+    const [equipmentVersion, setEquipmentVersion] = useState(0);
+    useEffect(() => {
+        equipmentRef.current = state.equipment;
+        setEquipmentVersion(prev => prev + 1); // Increment to force dataFetcher recreation
+    }, [state.equipment]);
 
     // Split dialog state
     const [splitDialogOpen, setSplitDialogOpen] = useState(false);
@@ -474,7 +484,13 @@ export function EquipmentTab({
     // Data fetcher for available items - filter out items with negative IDs (like -1 for "all items")
     const purchaseDataFetcher = useMemo(() => {
         return async () => {
-            const result = await ItemQueryHooks.getItems();
+            // Use queryClient.fetchQuery to leverage TanStack Query cache
+            const result = await queryClient.fetchQuery({
+                queryKey: ItemQueryHooks.getItemsQueryKey(),
+                queryFn: () => ItemQueryHooks.getItemsQueryFn(),
+                staleTime: 5 * 60 * 1000, // 5 minutes
+                gcTime: 10 * 60 * 1000, // 10 minutes
+            });
             // Filter out items with negative IDs (these are special placeholder items used in proficiency editor)
             const filteredResults = result.results.filter(item => {
                 const itemId = typeof item.id === 'number' ? item.id : parseInt(String(item.id), 10);
@@ -485,14 +501,16 @@ export function EquipmentTab({
                 total: filteredResults.length,
             };
         };
-    }, []);
+    }, [queryClient]);
 
     // Data fetcher for owned items - convert EquipmentItem[] to ItemWithDetails[] with equipment item ID
     // Aggregates items with the same itemId and sums their quantities
     // Use useCallback to ensure it updates when equipment changes
     const ownedItemsDataFetcher = useCallback(async () => {
         // Only show items that were purchased (have itemId)
-        const purchasedItems = state.equipment.filter(eq => eq.itemId !== null);
+        // Use ref to get the latest equipment state (avoids stale closure issues)
+        const currentEquipment = equipmentRef.current;
+        const purchasedItems = currentEquipment.filter(eq => eq.itemId !== null);
 
         if (purchasedItems.length === 0) {
             return {
@@ -501,8 +519,13 @@ export function EquipmentTab({
             };
         }
 
-        // Fetch all items to get details for owned items
-        const allItemsResult = await ItemQueryHooks.getItems();
+        // Fetch all items to get details for owned items - use TanStack Query cache
+        const allItemsResult = await queryClient.fetchQuery({
+            queryKey: ItemQueryHooks.getItemsQueryKey(),
+            queryFn: () => ItemQueryHooks.getItemsQueryFn(),
+            staleTime: 5 * 60 * 1000, // 5 minutes
+            gcTime: 10 * 60 * 1000, // 10 minutes
+        });
 
         // Aggregate items by itemId and location (only group items with same location)
         // Use a composite key: `${itemId}-${location ?? 'null'}`
@@ -517,24 +540,25 @@ export function EquipmentTab({
         for (const equipmentItem of purchasedItems) {
             if (equipmentItem.itemId) {
                 const item = allItemsResult.results.find(i => i.id === equipmentItem.itemId);
-                if (item) {
-                    const location = equipmentItem.location ?? null;
-                    const key = `${equipmentItem.itemId}-${location ?? 'null'}`;
-                    const existing = itemMap.get(key);
-                    if (existing) {
-                        // Aggregate: sum quantities and collect equipment item IDs (same itemId and location)
-                        existing.quantity += equipmentItem.quantity || 1;
-                        existing.equipmentItemIds.push(equipmentItem.id);
-                    } else {
-                        // First occurrence: create entry
-                        itemMap.set(key, {
-                            item,
-                            quantity: equipmentItem.quantity || 1,
-                            equipmentItemIds: [equipmentItem.id],
-                            firstEquipmentItemId: equipmentItem.id,
-                            location: location,
-                        });
-                    }
+                if (!item) {
+                    continue;
+                }
+                const location = equipmentItem.location ?? null;
+                const key = `${equipmentItem.itemId}-${location ?? 'null'}`;
+                const existing = itemMap.get(key);
+                if (existing) {
+                    // Aggregate: sum quantities and collect equipment item IDs (same itemId and location)
+                    existing.quantity += equipmentItem.quantity || 1;
+                    existing.equipmentItemIds.push(equipmentItem.id);
+                } else {
+                    // First occurrence: create entry
+                    itemMap.set(key, {
+                        item,
+                        quantity: equipmentItem.quantity || 1,
+                        equipmentItemIds: [equipmentItem.id],
+                        firstEquipmentItemId: equipmentItem.id,
+                        location: location,
+                    });
                 }
             }
         }
@@ -552,7 +576,8 @@ export function EquipmentTab({
             results: ownedItems,
             total: ownedItems.length,
         };
-    }, [state.equipment]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [equipmentVersion]); // Include version so function reference changes when equipment changes (needed to trigger useEffect in ScrollableCategorizedList)
 
     const handlePurchase = useCallback((item: ItemWithDetails) => {
         const costInGp = getItemCostInGp(item);
@@ -739,7 +764,7 @@ export function EquipmentTab({
                 </h3>
                 <div className="h-[400px]">
                     <EquipmentList<OwnedItemWithEquipmentId>
-                        key={`owned-${state.equipment.length}`}
+                        key={`owned-${state.equipment.length}-${state.equipment.map(e => e.id).join(',')}`}
                         dataFetcher={ownedItemsDataFetcher}
                         groupingFields={ownedGroupingFields}
                         columns={ownedItemColumns}

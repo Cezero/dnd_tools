@@ -5,7 +5,6 @@ import {
     SaveCharacterSchema,
     // New schemas for advancement and spell preparation
     AdvancementIdParamSchema,
-    CharacterIdParamSchema2,
     SpellPreparationParamSchema,
     AbilityIdParamSchema,
     CreateAdvancementSchema,
@@ -73,29 +72,29 @@ put('/save/:id', requireAuth, { params: CharacterIdParamSchema, body: SaveCharac
 deleteRoute('/:id', requireAuth, { params: CharacterIdParamSchema }, DeleteCharacter);
 
 // Character Advancement Routes
-get('/:characterId/advancements', requireAuth, { params: CharacterIdParamSchema2 }, GetCharacterAdvancements);
+get('/:id/advancements', requireAuth, { params: CharacterIdParamSchema }, GetCharacterAdvancements);
 get('/advancements/:id', requireAuth, { params: AdvancementIdParamSchema }, GetAdvancementById);
 post('/advancements', requireAuth, { body: CreateAdvancementSchema }, CreateAdvancement);
 put('/advancements/:id', requireAuth, { params: AdvancementIdParamSchema, body: UpdateAdvancementSchema }, UpdateAdvancement);
 deleteRoute('/advancements/:id', requireAuth, { params: AdvancementIdParamSchema }, DeleteAdvancement);
 
 // Spell Preparation Routes
-get('/:characterId/spell-preparations', requireAuth, { params: CharacterIdParamSchema2 }, GetCharacterSpellPreparations);
+get('/:id/spell-preparations', requireAuth, { params: CharacterIdParamSchema }, GetCharacterSpellPreparations);
 post('/spell-preparations', requireAuth, { body: CreateSpellPreparationSchema }, CreateSpellPreparation);
-put('/spell-preparations/:characterId/:prepKey', requireAuth, { params: SpellPreparationParamSchema, body: UpdateSpellPreparationSchema }, UpdateSpellPreparation);
-deleteRoute('/spell-preparations/:characterId/:prepKey', requireAuth, { params: SpellPreparationParamSchema }, DeleteSpellPreparation);
+put('/spell-preparations/:id/:prepKey', requireAuth, { params: SpellPreparationParamSchema, body: UpdateSpellPreparationSchema }, UpdateSpellPreparation);
+deleteRoute('/spell-preparations/:id/:prepKey', requireAuth, { params: SpellPreparationParamSchema }, DeleteSpellPreparation);
 
 // Character Ability Score Routes
-get('/:characterId/abilities', requireAuth, { params: CharacterIdParamSchema2 }, GetCharacterAbilityScores);
+get('/:id/abilities', requireAuth, { params: CharacterIdParamSchema }, GetCharacterAbilityScores);
 post('/abilities', requireAuth, { body: CreateCharacterAbilityScoreSchema }, CreateCharacterAbilityScore);
 put('/abilities/:id', requireAuth, { params: AbilityIdParamSchema, body: UpdateCharacterAbilityScoreSchema }, UpdateCharacterAbilityScore);
 deleteRoute('/abilities/:id', requireAuth, { params: AbilityIdParamSchema }, DeleteCharacterAbilityScore);
-put('/:characterId/abilities', requireAuth, { params: CharacterIdParamSchema2, body: UpsertCharacterAbilityScoresSchema }, UpsertCharacterAbilityScores);
+put('/:id/abilities', requireAuth, { params: CharacterIdParamSchema, body: UpsertCharacterAbilityScoresSchema }, UpsertCharacterAbilityScores);
 
 // NEW: Character Disallowed Sources Routes
-get('/:characterId/disallowed-sources', requireAuth, { params: CharacterIdParamSchema2 }, GetDisallowedSources);
+get('/:id/disallowed-sources', requireAuth, { params: CharacterIdParamSchema }, GetDisallowedSources);
 post('/disallowed-sources', requireAuth, { body: CreateCharacterDisallowedSourceSchema }, AddDisallowedSource);
-deleteRoute('/:characterId/disallowed-sources/:sourceBookId', requireAuth, { params: CharacterIdParamSchema2 }, RemoveDisallowedSource);
+deleteRoute('/:id/disallowed-sources/:sourceBookId', requireAuth, { params: CharacterIdParamSchema }, RemoveDisallowedSource);
 
 // NEW: Character Attack Definition Routes
 get('/:id/attack-definitions', requireAuth, { params: CharacterIdParamSchema }, GetCharacterAttackDefinitions);

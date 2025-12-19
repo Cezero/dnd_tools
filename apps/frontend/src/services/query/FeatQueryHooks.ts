@@ -77,6 +77,14 @@ const featListConfig = createQueryHooks({
     queryKeyBuilder: (params) => ['feats', 'list', params as string | number | object],
 });
 
+const getAllFeatsFullConfig = createQueryHooks({
+    path: '/feats/full',
+    method: 'GET',
+    responseSchema: FeatQueryResponseSchema,
+    queryKey: 'feats',
+    queryKeyBuilder: () => ['feats', 'full'],
+});
+
 export const FeatQueryHooks = {
     // Keep existing hooks for backward compatibility during transition
     useGetFeats: featsConfig.useQuery,
@@ -86,6 +94,7 @@ export const FeatQueryHooks = {
     useDeleteFeat: deleteFeatConfig.useMutation,
     useFeatQuery: featQueryConfig.useQuery,
     useGetFeatList: featListConfig.useQuery,
+    useGetAllFeatsFull: getAllFeatsFullConfig.useQuery,
 
     // Add imperative methods
     getFeats: (params?: unknown) => featsConfig.fetch(params),
@@ -100,14 +109,18 @@ export const FeatQueryHooks = {
     }),
     featQuery: (data: unknown) => featQueryConfig.fetch({ requestData: data }),
     getFeatList: (data: unknown) => featListConfig.fetch({ requestData: data }),
+    getAllFeatsFull: (params?: unknown, options?: { staleTime?: number; cacheTime?: number }, queryClient?: any) => 
+        getAllFeatsFullConfig.fetch(params, options, queryClient),
 
     // Expose query functions for advanced usage
     getFeatsQueryFn: featsConfig.queryFn,
     getFeatByIdQueryFn: featByIdConfig.queryFn,
     featQueryQueryFn: featQueryConfig.queryFn,
     getFeatListQueryFn: featListConfig.queryFn,
+    getAllFeatsFullQueryFn: getAllFeatsFullConfig.queryFn,
     getFeatsQueryKey: (params?: unknown) => featsConfig.queryKeyBuilder(params),
     getFeatByIdQueryKey: (featId: number) => featByIdConfig.queryKeyBuilder({ pathParams: { id: featId } }),
     featQueryQueryKey: (params?: unknown) => featQueryConfig.queryKeyBuilder(params),
     getFeatListQueryKey: (params?: unknown) => featListConfig.queryKeyBuilder(params),
+    getAllFeatsFullQueryKey: () => getAllFeatsFullConfig.queryKeyBuilder(),
 };

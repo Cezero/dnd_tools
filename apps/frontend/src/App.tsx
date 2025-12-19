@@ -48,7 +48,7 @@ export function App(): React.JSX.Element {
                   </Route>
                 ))}
                 {/* Add more protected routes here as needed */}
-                <Route path="/" element={<Navigate to="/spells" replace />} />
+                <Route path="/" element={<Navigate to="/characters" replace />} />
               </Route>
             </Routes>
           </Router>

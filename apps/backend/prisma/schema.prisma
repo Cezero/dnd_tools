@@ -488,7 +488,7 @@ model Item {
   cost        Decimal? @db.Decimal(10, 2)
   weight      Decimal? @db.Decimal(5, 2)
   quantity    Int?
-  sizeId      Int?     // Size ID (defaults to Medium = 5 in application layer)
+  sizeId      Int? // Size ID (defaults to Medium = 5 in application layer)
 
   armor  Armor?
   weapon Weapon?
@@ -633,7 +633,6 @@ model CharacterItemProperty {
 model CharacterAttackDefinition {
   id                      Int  @id @default(autoincrement())
   characterId             Int
-  attackTypeId            Int // References ATTACK_DEFINITION_TYPE_ENUM
   attackSlot              Int? // 1-7, nullable for attacks not displayed on sheet
   mainHandCharacterItemId Int? // CharacterItem ID for main hand weapon (nullable)
   offHandCharacterItemId  Int? // CharacterItem ID for off-hand weapon (nullable, only for dual wield)
@@ -823,6 +822,7 @@ model AdvancementSkill {
 model AdvancementFeat {
   advancementId Int
   featId        Int
+  featSubId     Int? // For feats with useSubId: true (e.g., Weapon Focus weapon selection)
 
   advancement CharacterAdvancement @relation(fields: [advancementId], references: [id])
   feat        Feat                 @relation(fields: [featId], references: [id])
