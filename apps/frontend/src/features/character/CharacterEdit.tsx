@@ -1,10 +1,10 @@
+import { Dialog } from '@base-ui-components/react/dialog';
+import { Menu } from '@base-ui-components/react/menu';
 import {
     UserIcon, ShieldCheckIcon, AcademicCapIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, CogIcon, ListBulletIcon, BoltIcon, Bars3Icon
 } from '@heroicons/react/24/outline';
-import { Dialog } from '@base-ui-components/react/dialog';
-import { Menu } from '@base-ui-components/react/menu';
 import { useQueryClient } from '@tanstack/react-query';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
@@ -12,25 +12,20 @@ import { useLogPanel } from '@/components/log-panel';
 import { useToast } from '@/components/toast/useToast';
 import { useCharacterEditState } from '@/features/character';
 import { CharacterApi } from '@/features/character/CharacterApi';
-import { CharacterEditStateUpdateType, type EquipmentItem } from '@/features/character/types';
+import { CharacterEditStateUpdateType, type EquipmentItem, type SkillRank, type TabConfig, type TabComponentProps } from '@/features/character/types';
+import { displayStrategyFactory } from '@/lib/formatters';
+import { LanguageService } from '@/lib/LanguageService';
 import { CharacterQueryHooks } from '@/services/query/CharacterQueryHooks';
 import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
+import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
-import type { Race, DnDClass, CharacterWithAllDetailsResponse, FeatInQueryResponse, Feat } from '@shared/schema';
-import type { SkillRank } from '@/features/character/types';
-import { EditionId, Skill, AbilityId } from '@shared/static-data';
-import { LanguageService } from '@/lib/LanguageService';
+import type { Race, DnDClass, CharacterWithAllDetailsResponse, FeatInQueryResponse, Feat, ItemWithDetails, FeatureProgression } from '@shared/schema';
+import { EditionId, Skill, DisplayType } from '@shared/static-data';
 
 import { generateCharacterPdf } from './characterPdfService';
 import { AbilitiesRaceTab, ChoicesTab, ClassTab, ConfigurationTab, DescriptionTab, EquipmentTab, FeatsTab, SkillsTab, CombatTab } from './tabs';
-import type { TabConfig, TabComponentProps } from './types';
 import { useFeatureProgressionPool } from './useFeatureProgressionPool';
-import { displayStrategyFactory } from '@/lib/formatters';
-import { DisplayType } from '@shared/static-data';
-import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
-import type { ItemWithDetails } from '@shared/schema';
-import { useMemo } from 'react';
 
 export function CharacterEdit(): React.JSX.Element {
     const { user, isLoading: isAuthLoading } = useAuthAuto();
@@ -45,10 +40,6 @@ export function CharacterEdit(): React.JSX.Element {
     const [isExporting, setIsExporting] = useState(false);
     const [nameModalOpen, setNameModalOpen] = useState(false);
     const [nameModalValue, setNameModalValue] = useState('');
-
-    // Use imperative API for data fetching
-    const [racesData, setRacesData] = useState<unknown[]>([]);
-    const [isLoadingRaces, setIsLoadingRaces] = useState(false);
 
     // Race data state
     const [_selectedRaceDetails, setSelectedRaceDetails] = useState<(Race & { id: number }) | null>(null);
@@ -81,12 +72,9 @@ export function CharacterEdit(): React.JSX.Element {
     }, [user, isAuthLoading, updateState]);
 
     // Use imperative API for race, class, and secondary class details
-    const [raceDetailsData, setRaceDetailsData] = useState<(Race & { features?: unknown[] }) | null>(null);
-    const [classDetailsData, setClassDetailsData] = useState<(DnDClass & { features?: unknown[] }) | null>(null);
-    const [secondaryClassDetailsData, setSecondaryClassDetailsData] = useState<(DnDClass & { features?: unknown[] }) | null>(null);
-    const [isLoadingRace, setIsLoadingRace] = useState(false);
-    const [isLoadingClass, setIsLoadingClass] = useState(false);
-    const [isLoadingSecondaryClass, setIsLoadingSecondaryClass] = useState(false);
+    const [raceDetailsData, setRaceDetailsData] = useState<(Race & { features?: FeatureProgression[] }) | null>(null);
+    const [classDetailsData, setClassDetailsData] = useState<(DnDClass & { features?: FeatureProgression[] }) | null>(null);
+    const [secondaryClassDetailsData, setSecondaryClassDetailsData] = useState<(DnDClass & { features?: FeatureProgression[] }) | null>(null);
 
     // Initialize feature progression pool with allFeats (will be updated when feats are loaded)
     const { isResolving, resolutionError, resolvedData, addRace, addClass, addSecondaryClass, triggerResolution, handleChoiceSelection } = useFeatureProgressionPool(allFeats);
@@ -183,26 +171,6 @@ export function CharacterEdit(): React.JSX.Element {
         };
     }, [queryClient]);
 
-    // Fetch races data on component mount using cache
-    useEffect(() => {
-        const fetchRaces = async () => {
-            try {
-                setIsLoadingRaces(true);
-                const races = await queryClient.fetchQuery({
-                    queryKey: RaceQueryHooks.getRacesQueryKey(),
-                    queryFn: () => RaceQueryHooks.getRacesQueryFn(),
-                    staleTime: 5 * 60 * 1000, // 5 minutes
-                    gcTime: 10 * 60 * 1000, // 10 minutes
-                });
-                setRacesData(races.results || []);
-            } catch (error) {
-                console.error('Failed to fetch races:', error);
-            } finally {
-                setIsLoadingRaces(false);
-            }
-        };
-        fetchRaces();
-    }, [queryClient]);
 
     // Fetch race details when raceId changes
     useEffect(() => {
@@ -215,7 +183,6 @@ export function CharacterEdit(): React.JSX.Element {
             }
 
             try {
-                setIsLoadingRace(true);
                 setIsLoadingRaceData(true);
                 // Use queryClient.fetchQuery to leverage TanStack Query cache
                 const raceData = await queryClient.fetchQuery({
@@ -233,7 +200,6 @@ export function CharacterEdit(): React.JSX.Element {
                 setSelectedRaceDetails(null);
                 setRaceData(null);
             } finally {
-                setIsLoadingRace(false);
                 setIsLoadingRaceData(false);
             }
         };
@@ -251,7 +217,6 @@ export function CharacterEdit(): React.JSX.Element {
             }
 
             try {
-                setIsLoadingClass(true);
                 setIsLoadingPrimaryClass(true);
                 // Use queryClient.fetchQuery to leverage TanStack Query cache
                 const classData = await queryClient.fetchQuery({
@@ -269,7 +234,6 @@ export function CharacterEdit(): React.JSX.Element {
                 setSelectedClassDetails(null);
                 setPrimaryClassData(null);
             } finally {
-                setIsLoadingClass(false);
                 setIsLoadingPrimaryClass(false);
             }
         };
@@ -287,7 +251,6 @@ export function CharacterEdit(): React.JSX.Element {
             }
 
             try {
-                setIsLoadingSecondaryClass(true);
                 setIsLoadingSecondaryClassData(true);
                 // Use queryClient.fetchQuery to leverage TanStack Query cache
                 const classData = await queryClient.fetchQuery({
@@ -305,7 +268,6 @@ export function CharacterEdit(): React.JSX.Element {
                 setSelectedSecondaryClassDetails(null);
                 setSecondaryClassData(null);
             } finally {
-                setIsLoadingSecondaryClass(false);
                 setIsLoadingSecondaryClassData(false);
             }
         };
