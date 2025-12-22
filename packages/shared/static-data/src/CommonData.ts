@@ -211,6 +211,58 @@ export const SIZE_MAP: SizeMap = {
 
 export const SIZE_LIST = Object.values(SIZE_MAP);
 
+// Carrying Capacity Table (for Medium bipedal creatures)
+export interface CarryingCapacityEntry {
+    light: number;
+    medium: number;
+    heavy: number;
+}
+
+export const CARRYING_CAPACITY_TABLE: Record<number, CarryingCapacityEntry> = {
+    1: { light: 3, medium: 6, heavy: 10 },
+    2: { light: 6, medium: 13, heavy: 20 },
+    3: { light: 10, medium: 20, heavy: 30 },
+    4: { light: 13, medium: 26, heavy: 40 },
+    5: { light: 16, medium: 33, heavy: 50 },
+    6: { light: 20, medium: 40, heavy: 60 },
+    7: { light: 23, medium: 46, heavy: 70 },
+    8: { light: 26, medium: 53, heavy: 80 },
+    9: { light: 30, medium: 60, heavy: 90 },
+    10: { light: 33, medium: 66, heavy: 100 },
+    11: { light: 38, medium: 76, heavy: 115 },
+    12: { light: 43, medium: 86, heavy: 130 },
+    13: { light: 50, medium: 100, heavy: 150 },
+    14: { light: 58, medium: 116, heavy: 175 },
+    15: { light: 66, medium: 133, heavy: 200 },
+    16: { light: 76, medium: 153, heavy: 230 },
+    17: { light: 86, medium: 173, heavy: 260 },
+    18: { light: 100, medium: 200, heavy: 300 },
+    19: { light: 116, medium: 233, heavy: 350 },
+    20: { light: 133, medium: 266, heavy: 400 },
+    21: { light: 153, medium: 306, heavy: 460 },
+    22: { light: 173, medium: 346, heavy: 520 },
+    23: { light: 200, medium: 400, heavy: 600 },
+    24: { light: 233, medium: 466, heavy: 700 },
+    25: { light: 266, medium: 533, heavy: 800 },
+    26: { light: 306, medium: 613, heavy: 920 },
+    27: { light: 346, medium: 693, heavy: 1040 },
+    28: { light: 400, medium: 800, heavy: 1200 },
+    29: { light: 466, medium: 933, heavy: 1400 },
+};
+
+// Size multipliers for carrying capacity (bipedal creatures)
+export const CARRYING_CAPACITY_SIZE_MULTIPLIERS: Record<number, number> = {
+    1: 0.125, // Fine
+    2: 0.25,  // Diminutive
+    3: 0.5,   // Tiny
+    4: 0.75,  // Small
+    5: 1,     // Medium (default)
+    6: 2,     // Large
+    7: 4,     // Huge
+    8: 8,     // Gargantuan
+    9: 16,    // Colossal
+};
+
 export const LANGUAGE_MAP: LanguageMap = {
     1: { id: 1, name: 'Abyssal', typicalSpeakers: 'Demons, chaotic evil outsiders', alphabet: 'Infernal' },
     2: { id: 2, name: 'Aquan', typicalSpeakers: 'Water-based creatures', alphabet: 'Elven' },

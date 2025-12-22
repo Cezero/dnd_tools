@@ -2,13 +2,15 @@ import { QueryClient } from '@tanstack/react-query';
 import jsPDF from 'jspdf';
 
 import { registerArchivoNarrowFonts } from '@/assets/fonts/registerArchivoNarrow';
+import { resolveFeatBenefits } from '@/lib/character-calculation/core/featBenefitResolver';
 import { displayStrategyFactory } from '@/lib/formatters';
+import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import { SkillQueryHooks } from '@/services/query/SkillQueryHooks';
-import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
-import type { CharacterWithAllDetailsResponse, DnDClass, Race, ItemWithDetails, FeatureProgression, Feat } from '@shared/schema';
-import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, DisplayType, SIZE_MAP, SKILL_LIST, Skill } from '@shared/static-data';
+import type { CharacterWithAllDetailsResponse, DnDClass, Race, ItemWithDetails, FeatureProgression, Feat, CharacterItem } from '@shared/schema';
+import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, DisplayType, SIZE_MAP, SKILL_LIST, Skill, FeatBenefitType, ARMOR_CATEGORY_ENUM, LOCATION_ENUM, LANGUAGE_MAP, GetAbilityModifier, ITEM_TYPES } from '@shared/static-data';
+import { getXPTotalForLevel, calculateCarryingCapacity } from '@shared/utils';
 
 /**
  * Generate a PDF character sheet for a character matching the D&D 3.5 character sheet format
@@ -24,14 +26,14 @@ export async function generateCharacterPdf(
     let fullRace: Race | null = raceData || null;
     if (!fullRace && character.race?.id) {
         if (queryClient) {
-        try {
+            try {
                 fullRace = await queryClient.fetchQuery({
                     queryKey: RaceQueryHooks.getRaceByIdQueryKey(character.race.id),
                     queryFn: () => RaceQueryHooks.getRaceByIdQueryFn({ pathParams: { id: character.race.id } }),
                     staleTime: 5 * 60 * 1000, // 5 minutes
                     gcTime: 10 * 60 * 1000, // 10 minutes
                 });
-        } catch (error) {
+            } catch (error) {
                 console.warn('Failed to fetch full race data from cache:', error);
             }
         }
@@ -40,19 +42,19 @@ export async function generateCharacterPdf(
     // Fetch all skills to get affectedByArmor property using cache
     let skillsMap: Map<number, { affectedByArmor: boolean }> = new Map();
     if (queryClient) {
-    try {
+        try {
             const skillsResponse = await queryClient.fetchQuery({
                 queryKey: SkillQueryHooks.getSkillsQueryKey(),
                 queryFn: () => SkillQueryHooks.getSkillsQueryFn(),
                 staleTime: 5 * 60 * 1000, // 5 minutes
                 gcTime: 10 * 60 * 1000, // 10 minutes
             });
-        if (skillsResponse?.results) {
-            skillsMap = new Map(
-                skillsResponse.results.map(skill => [skill.id, { affectedByArmor: skill.affectedByArmor }])
-            );
-        }
-    } catch (error) {
+            if (skillsResponse?.results) {
+                skillsMap = new Map(
+                    skillsResponse.results.map(skill => [skill.id, { affectedByArmor: skill.affectedByArmor }])
+                );
+            }
+        } catch (error) {
             console.warn('Failed to fetch skills data from cache:', error);
         }
     }
@@ -60,17 +62,17 @@ export async function generateCharacterPdf(
     // Fetch items for formatting using cache
     let items: ItemWithDetails[] = [];
     if (queryClient) {
-    try {
+        try {
             const itemsResponse = await queryClient.fetchQuery({
                 queryKey: ItemQueryHooks.getItemsQueryKey(),
                 queryFn: () => ItemQueryHooks.getItemsQueryFn(),
                 staleTime: 5 * 60 * 1000, // 5 minutes
                 gcTime: 10 * 60 * 1000, // 10 minutes
             });
-        if (itemsResponse?.results) {
-            items = itemsResponse.results;
-        }
-    } catch (error) {
+            if (itemsResponse?.results) {
+                items = itemsResponse.results;
+            }
+        } catch (error) {
             console.warn('Failed to fetch items for formatting from cache:', error);
         }
     }
@@ -97,22 +99,23 @@ export async function generateCharacterPdf(
     const characterSheetStrategy = displayStrategyFactory.createStrategy(DisplayType.CharacterSheet);
     let formattedCharacter: import('@/lib/formatters/types').FormattedCharacterResult | null = null;
 
+    // Build character context (used for both page 1 and page 2)
+    const characterContext: import('@/lib/formatters/types').BaseCharacterInfo = {
+        abilityScores: Object.fromEntries(
+            character.abilityScores.map(a => [a.abilityId, a.value])
+        ),
+        classLevels: Object.fromEntries(
+            Array.from(classDetailsMap.keys()).map(classId => {
+                const level = character.advancements.filter(a => a.classId === classId || a.secondaryClassId === classId).length;
+                return [classId, level];
+            })
+        ),
+        raceId: character.raceId ?? undefined,
+        sizeId: fullRace?.sizeId ?? undefined
+    };
+
     if (characterSheetStrategy.formatCharacter && resolvedProgressions) {
         try {
-            // Build character context
-            const characterContext: import('@/lib/formatters/types').BaseCharacterInfo = {
-                abilityScores: Object.fromEntries(
-                    character.abilityScores.map(a => [a.abilityId, a.value])
-                ),
-                classLevels: Object.fromEntries(
-                    Array.from(classDetailsMap.keys()).map(classId => {
-                        const level = character.advancements.filter(a => a.classId === classId || a.secondaryClassId === classId).length;
-                        return [classId, level];
-                    })
-                ),
-                raceId: character.raceId ?? undefined,
-                sizeId: fullRace?.sizeId ?? undefined
-            };
 
             formattedCharacter = characterSheetStrategy.formatCharacter(
                 character,
@@ -1736,6 +1739,620 @@ export async function generateCharacterPdf(
     // Line 4: Double armor check penalty
     doc.text('**', legendStartX + 72, legendY);
     doc.text('Double the armor check penalty.', legendStartX + 76, legendY);
+
+    // ============================================================================
+    // PAGE 2 - Back Side of Character Sheet
+    // ============================================================================
+    doc.addPage();
+
+    // Helper to find equipped armor
+    const findEquippedArmor = (characterItems: CharacterItem[], items: ItemWithDetails[]): { charItem: CharacterItem; item: ItemWithDetails } | null => {
+        const armorCharItem = characterItems.find(ci => ci.location === LOCATION_ENUM.Body);
+        if (!armorCharItem) return null;
+        const armorItem = items.find(i => i.id === armorCharItem.baseItemId);
+        if (!armorItem || !armorItem.armor || armorItem.armor.category === ARMOR_CATEGORY_ENUM.Shield) return null;
+        return { charItem: armorCharItem, item: armorItem };
+    };
+
+    // Helper to find equipped shield
+    const findEquippedShield = (characterItems: CharacterItem[], items: ItemWithDetails[]): { charItem: CharacterItem; item: ItemWithDetails } | null => {
+        const shieldCharItem = characterItems.find(ci => ci.location === LOCATION_ENUM.OffHand);
+        if (!shieldCharItem) return null;
+        const shieldItem = items.find(i => i.id === shieldCharItem.baseItemId);
+        if (!shieldItem || !shieldItem.armor || shieldItem.armor.category !== ARMOR_CATEGORY_ENUM.Shield) return null;
+        return { charItem: shieldCharItem, item: shieldItem };
+    };
+
+    // Helper to get cleric level
+    const getClericLevel = (classDetailsMap: Map<number, DnDClass>, character: CharacterWithAllDetailsResponse): number => {
+        let clericLevel = 0;
+        for (const [classId, classDetails] of classDetailsMap.entries()) {
+            if (classDetails.name.toLowerCase().includes('cleric')) {
+                const level = character.advancements.filter(a => a.classId === classId || a.secondaryClassId === classId).length;
+                clericLevel += level;
+            }
+        }
+        return clericLevel;
+    };
+
+    // Helper to get languages from character's known languages
+    const getCharacterLanguages = (characterLanguages?: Array<{ languageId: number }>): string[] => {
+        if (!characterLanguages || characterLanguages.length === 0) return [];
+        return characterLanguages
+            .map(cl => LANGUAGE_MAP[cl.languageId as keyof typeof LANGUAGE_MAP]?.name)
+            .filter((name): name is string => Boolean(name))
+            .sort();
+    };
+
+    // Calculate column widths for page 2
+    const page2LeftColWidth = (pageWidth - margin * 2) * (2 / 3);
+    const page2RightColWidth = (pageWidth - margin * 2) * (1 / 3);
+    const page2LeftColX = margin;
+    const page2RightColX = margin + page2LeftColWidth;
+    let page2Y = margin;
+
+    // ============================================================================
+    // LEFT COLUMN - Campaign/XP, Gear, Possessions, Notes, Languages
+    // ============================================================================
+
+    // Campaign and Experience Points Section
+    const campaignXpBoxHeight = 20;
+    const campaignXpBoxWidth = (page2LeftColWidth - 4) / 2; // Split 50/50 with 4px gap
+    const campaignX = page2LeftColX;
+    const xpX = page2LeftColX + campaignXpBoxWidth + 4;
+
+    // Campaign box
+    drawScoreBox(campaignX, page2Y, campaignXpBoxWidth, campaignXpBoxHeight, '');
+    doc.setFontSize(4);
+    doc.setFont('ArchivoNarrow', 'normal');
+    doc.text('CAMPAIGN', campaignX + campaignXpBoxWidth / 2, page2Y + campaignXpBoxHeight + 5, { align: 'center' });
+
+    // Experience Points box
+    const currentLevel = character.advancements.length;
+    const nextLevelXP = getXPTotalForLevel(currentLevel + 1);
+    const xpText = ` / ${nextLevelXP}`;
+    drawScoreBox(xpX, page2Y, campaignXpBoxWidth, campaignXpBoxHeight, xpText);
+    doc.setFontSize(4);
+    doc.setFont('ArchivoNarrow', 'normal');
+    doc.text('EXPERIENCE POINTS', xpX + campaignXpBoxWidth / 2, page2Y + campaignXpBoxHeight + 5, { align: 'center' });
+
+    page2Y += campaignXpBoxHeight + 10;
+
+    // GEAR Header
+    const gearHeaderHeight = 12;
+    drawAbilityNameBox(page2LeftColX, page2Y, page2LeftColWidth, gearHeaderHeight, 'GEAR', '');
+    page2Y += gearHeaderHeight + 4;
+
+    // ARMOR/PROTECTIVE ITEM Section
+    const armorInfo = findEquippedArmor(character.characterItems || [], items);
+    if (armorInfo) {
+        const _armorBoxHeight = 50;
+        const _armorBoxWidth = page2LeftColWidth;
+        const armorStartY = page2Y;
+
+        // Draw header boxes similar to weapon box
+        const armorRow1ColWidths = [120, 60, 60, 40];
+        const armorRow2ColWidths = [30, 30, 40, 50, 130];
+        const armorRowHeight = 18;
+        const armorHeaderY = armorStartY + 6;
+
+        // Row 1: NAME (unlabeled), TYPE, ARMOR BONUS, MAX DEX BONUS
+        let armorX = page2LeftColX;
+        // NAME box (unlabeled)
+        drawScoreBox(armorX, armorHeaderY, armorRow1ColWidths[0], armorRowHeight, armorInfo.charItem.name || armorInfo.item.name);
+        armorX += armorRow1ColWidths[0] + 2;
+
+        const armorTypeName = armorInfo.item.typeId ? ITEM_TYPES[armorInfo.item.typeId]?.name || '' : '';
+        drawHeaderBox(armorX, armorHeaderY, armorRow1ColWidths[1], armorRowHeight, 'TYPE', armorTypeName);
+        armorX += armorRow1ColWidths[1] + 2;
+
+        const armorBonus = armorInfo.item.armor?.bonus?.toString() || '';
+        drawHeaderBox(armorX, armorHeaderY, armorRow1ColWidths[2], armorRowHeight, 'ARMOR BONUS', armorBonus);
+        armorX += armorRow1ColWidths[2] + 2;
+
+        const maxDex = armorInfo.item.armor?.dexterityCap?.toString() || '';
+        drawHeaderBox(armorX, armorHeaderY, armorRow1ColWidths[3], armorRowHeight, 'MAX DEX BONUS', maxDex);
+
+        // Row 2: ACP, SPELL FAILURE, SPEED, WEIGHT, SPECIAL PROPERTIES
+        const armorRow2Y = armorHeaderY + armorRowHeight;
+        armorX = page2LeftColX;
+        const acp = armorInfo.item.armor?.checkPenalty?.toString() || '';
+        drawHeaderBox(armorX, armorRow2Y, armorRow2ColWidths[0], armorRowHeight, 'ACP', acp);
+        armorX += armorRow2ColWidths[0] + 2;
+
+        const spellFailure = armorInfo.item.armor?.arcaneSpellFailure ? `${armorInfo.item.armor.arcaneSpellFailure}%` : '';
+        drawHeaderBox(armorX, armorRow2Y, armorRow2ColWidths[1], armorRowHeight, 'SPELL FAILURE', spellFailure);
+        armorX += armorRow2ColWidths[1] + 2;
+
+        const speed = armorInfo.item.armor?.speedCapThirty?.toString() || armorInfo.item.armor?.speedCapTwenty?.toString() || '';
+        drawHeaderBox(armorX, armorRow2Y, armorRow2ColWidths[2], armorRowHeight, 'SPEED', speed);
+        armorX += armorRow2ColWidths[2] + 2;
+
+        const armorWeight = armorInfo.item.weight ? `${armorInfo.item.weight} lb.` : '';
+        drawHeaderBox(armorX, armorRow2Y, armorRow2ColWidths[3], armorRowHeight, 'WEIGHT', armorWeight);
+        armorX += armorRow2ColWidths[3] + 2;
+
+        drawHeaderBox(armorX, armorRow2Y, armorRow2ColWidths[4], armorRowHeight, 'SPECIAL PROPERTIES', '');
+
+        page2Y = armorRow2Y + armorRowHeight + 4;
+    } else {
+        // Empty armor box
+        const _armorBoxHeight = 50;
+        const armorRowHeight = 18;
+        const armorHeaderY = page2Y + 6;
+        let armorX = page2LeftColX;
+        drawScoreBox(armorX, armorHeaderY, 120, armorRowHeight, '');
+        armorX += 122;
+        drawHeaderBox(armorX, armorHeaderY, 60, armorRowHeight, 'TYPE', '');
+        armorX += 62;
+        drawHeaderBox(armorX, armorHeaderY, 60, armorRowHeight, 'ARMOR BONUS', '');
+        armorX += 62;
+        drawHeaderBox(armorX, armorHeaderY, 40, armorRowHeight, 'MAX DEX BONUS', '');
+        const armorRow2Y = armorHeaderY + armorRowHeight;
+        armorX = page2LeftColX;
+        drawHeaderBox(armorX, armorRow2Y, 30, armorRowHeight, 'ACP', '');
+        armorX += 32;
+        drawHeaderBox(armorX, armorRow2Y, 30, armorRowHeight, 'SPELL FAILURE', '');
+        armorX += 32;
+        drawHeaderBox(armorX, armorRow2Y, 40, armorRowHeight, 'SPEED', '');
+        armorX += 42;
+        drawHeaderBox(armorX, armorRow2Y, 50, armorRowHeight, 'WEIGHT', '');
+        armorX += 52;
+        drawHeaderBox(armorX, armorRow2Y, 130, armorRowHeight, 'SPECIAL PROPERTIES', '');
+        page2Y = armorRow2Y + armorRowHeight + 4;
+    }
+
+    // SHIELD/PROTECTIVE ITEM Section
+    const shieldInfo = findEquippedShield(character.characterItems || [], items);
+    if (shieldInfo) {
+        const _shieldBoxHeight = 36;
+        const shieldRowHeight = 18;
+        const shieldHeaderY = page2Y + 6;
+        let shieldX = leftColX;
+
+        // Row 1: NAME (unlabeled), ARMOR BONUS, WEIGHT, CHECK PENALTY, SPELL FAILURE
+        const shieldRow1ColWidths = [120, 60, 50, 50, 60];
+        drawScoreBox(shieldX, shieldHeaderY, shieldRow1ColWidths[0], shieldRowHeight, shieldInfo.charItem.name || shieldInfo.item.name);
+        shieldX += shieldRow1ColWidths[0] + 2;
+
+        const shieldBonus = shieldInfo.item.armor?.bonus?.toString() || '';
+        drawHeaderBox(shieldX, shieldHeaderY, shieldRow1ColWidths[1], shieldRowHeight, 'ARMOR BONUS', shieldBonus);
+        shieldX += shieldRow1ColWidths[1] + 2;
+
+        const shieldWeight = shieldInfo.item.weight ? `${shieldInfo.item.weight} lb.` : '';
+        drawHeaderBox(shieldX, shieldHeaderY, shieldRow1ColWidths[2], shieldRowHeight, 'WEIGHT', shieldWeight);
+        shieldX += shieldRow1ColWidths[2] + 2;
+
+        const shieldCheckPenalty = shieldInfo.item.armor?.checkPenalty?.toString() || '';
+        drawHeaderBox(shieldX, shieldHeaderY, shieldRow1ColWidths[3], shieldRowHeight, 'CHECK PENALTY', shieldCheckPenalty);
+        shieldX += shieldRow1ColWidths[3] + 2;
+
+        const shieldSpellFailure = shieldInfo.item.armor?.arcaneSpellFailure ? `${shieldInfo.item.armor.arcaneSpellFailure}%` : '';
+        drawHeaderBox(shieldX, shieldHeaderY, shieldRow1ColWidths[4], shieldRowHeight, 'SPELL FAILURE', shieldSpellFailure);
+
+        // Row 2: SPECIAL PROPERTIES
+        const shieldRow2Y = shieldHeaderY + shieldRowHeight;
+        drawHeaderBox(page2LeftColX, shieldRow2Y, page2LeftColWidth, shieldRowHeight, 'SPECIAL PROPERTIES', '');
+
+        page2Y = shieldRow2Y + shieldRowHeight + 4;
+    } else {
+        // Empty shield box
+        const shieldRowHeight = 18;
+        const shieldHeaderY = page2Y + 6;
+        let shieldX = leftColX;
+        drawScoreBox(shieldX, shieldHeaderY, 120, shieldRowHeight, '');
+        shieldX += 122;
+        drawHeaderBox(shieldX, shieldHeaderY, 60, shieldRowHeight, 'ARMOR BONUS', '');
+        shieldX += 62;
+        drawHeaderBox(shieldX, shieldHeaderY, 50, shieldRowHeight, 'WEIGHT', '');
+        shieldX += 52;
+        drawHeaderBox(shieldX, shieldHeaderY, 50, shieldRowHeight, 'CHECK PENALTY', '');
+        shieldX += 52;
+        drawHeaderBox(shieldX, shieldHeaderY, 60, shieldRowHeight, 'SPELL FAILURE', '');
+        const shieldRow2Y = shieldHeaderY + shieldRowHeight;
+        drawHeaderBox(page2LeftColX, shieldRow2Y, page2LeftColWidth, shieldRowHeight, 'SPECIAL PROPERTIES', '');
+        page2Y = shieldRow2Y + shieldRowHeight + 4;
+    }
+
+    // OTHER POSSESSIONS Table
+    const possessionsHeaderY = page2Y;
+    const _possessionsTableHeight = 36 * 10; // 36 rows at 10pt each
+    const leftSubColWidth = (page2LeftColWidth - 4) / 2;
+    const rightSubColWidth = (page2LeftColWidth - 4) / 2;
+
+    // Headers
+    doc.setFontSize(4);
+    doc.setFont('ArchivoNarrow', 'normal');
+    doc.text('ITEM', page2LeftColX + leftSubColWidth / 2, possessionsHeaderY, { align: 'center' });
+    doc.text('WEIGHT', page2LeftColX + leftSubColWidth + leftSubColWidth / 2, possessionsHeaderY, { align: 'center' });
+    doc.text('ITEM', page2LeftColX + leftSubColWidth + 2 + rightSubColWidth / 2, possessionsHeaderY, { align: 'center' });
+    doc.text('WEIGHT', page2LeftColX + leftSubColWidth + 2 + rightSubColWidth + rightSubColWidth / 2, possessionsHeaderY, { align: 'center' });
+
+    // Draw table lines and populate with items
+    const possessionsRowHeight = 10;
+    let possessionsY = possessionsHeaderY + 6;
+    let totalWeight = 0;
+
+    // Get items that are not in specific equipment slots (Owned, Carried, or null location)
+    const generalItems = (character.characterItems || []).filter(ci =>
+        !ci.location || ci.location === LOCATION_ENUM.Owned || ci.location === LOCATION_ENUM.Carried
+    );
+
+    // Left column - 36 rows, populate with general items
+    doc.setFontSize(7);
+    doc.setFont('ArchivoNarrow', 'normal');
+    for (let i = 0; i < 36; i++) {
+        if (i < generalItems.length) {
+            const charItem = generalItems[i];
+            const item = items.find(it => it.id === charItem.baseItemId);
+            const itemName = charItem.name || item?.name || '';
+            const itemWeight = item?.weight ? `${item.weight} lb.` : '';
+            if (item?.weight) {
+                totalWeight += Number(item.weight);
+            }
+            doc.text(itemName, page2LeftColX + 2, possessionsY);
+            doc.text(itemWeight, page2LeftColX + leftSubColWidth + 2, possessionsY, { align: 'right' });
+        }
+        doc.setLineWidth(0.5);
+        doc.line(page2LeftColX, possessionsY, page2LeftColX + page2LeftColWidth, possessionsY);
+        possessionsY += possessionsRowHeight;
+    }
+
+    // Right column - 10 rows, then "Items Equipped by Slot"
+    possessionsY = possessionsHeaderY + 6;
+    const rightColItems = generalItems.slice(36, 46); // Next 10 items
+    doc.setFontSize(7);
+    doc.setFont('ArchivoNarrow', 'normal');
+    for (let i = 0; i < 10; i++) {
+        if (i < rightColItems.length) {
+            const charItem = rightColItems[i];
+            const item = items.find(it => it.id === charItem.baseItemId);
+            const itemName = charItem.name || item?.name || '';
+            const itemWeight = item?.weight ? `${item.weight} lb.` : '';
+            if (item?.weight) {
+                totalWeight += Number(item.weight);
+            }
+            doc.text(itemName, page2LeftColX + leftSubColWidth + 4, possessionsY);
+            doc.text(itemWeight, page2LeftColX + leftSubColWidth + 2 + rightSubColWidth, possessionsY, { align: 'right' });
+        }
+        possessionsY += possessionsRowHeight;
+    }
+
+    // Items Equipped by Slot section
+    const slotItems = [
+        { slot: 'Ring Slot (RH)', location: LOCATION_ENUM.RightRing },
+        { slot: 'Ring Slot (LH)', location: LOCATION_ENUM.LeftRing },
+        { slot: 'Hand Slot', location: LOCATION_ENUM.Hands },
+        { slot: 'Arm Slot', location: LOCATION_ENUM.Arms },
+        { slot: 'Head Slot', location: LOCATION_ENUM.Head },
+        { slot: 'Face Slot', location: LOCATION_ENUM.Face },
+        { slot: 'Shoulder Slot', location: LOCATION_ENUM.Shoulders },
+        { slot: 'Neck Slot', location: LOCATION_ENUM.Neck },
+        { slot: 'Body Slot', location: LOCATION_ENUM.Body },
+        { slot: 'Torso Slot', location: LOCATION_ENUM.Torso },
+        { slot: 'Waist Slot', location: LOCATION_ENUM.Waist },
+        { slot: 'Feet Slot', location: LOCATION_ENUM.Feet },
+    ];
+
+    doc.setFontSize(5);
+    doc.setFont('ArchivoNarrow', 'normal');
+    doc.text('Items Equipped by Slot', page2LeftColX + leftSubColWidth + 2 + rightSubColWidth / 2, possessionsY, { align: 'center' });
+    possessionsY += possessionsRowHeight;
+
+    for (const slotItem of slotItems) {
+        const equippedItem = (character.characterItems || []).find(ci => ci.location === slotItem.location);
+        const item = equippedItem ? items.find(i => i.id === equippedItem.baseItemId) : null;
+        const itemName = equippedItem?.name || item?.name || '';
+        const itemWeight = item?.weight ? `${item.weight} lb.` : '';
+        if (item?.weight) {
+            totalWeight += Number(item.weight);
+        }
+
+        doc.setFontSize(6);
+        doc.setFont('ArchivoNarrow', 'normal');
+        doc.text(slotItem.slot, page2LeftColX + leftSubColWidth + 2, possessionsY);
+        doc.setFontSize(7);
+        doc.text(itemName, page2LeftColX + leftSubColWidth + 2 + rightSubColWidth / 2, possessionsY);
+        doc.text(itemWeight, page2LeftColX + leftSubColWidth + 2 + rightSubColWidth, possessionsY);
+        possessionsY += possessionsRowHeight;
+    }
+
+    // TOTAL WEIGHT CARRIED
+    doc.setFontSize(7);
+    doc.setFont('ArchivoNarrow', 'bold');
+    doc.text('TOTAL WEIGHT CARRIED', page2LeftColX + leftSubColWidth + 2, possessionsY);
+    doc.text(`${totalWeight.toFixed(1)} lb.`, page2LeftColX + leftSubColWidth + 2 + rightSubColWidth, possessionsY);
+    possessionsY += possessionsRowHeight + 4;
+
+    // NOTES Section (75% of column width)
+    const notesWidth = page2LeftColWidth * 0.75;
+    const notesX = page2LeftColX;
+    const notesHeaderY = possessionsY;
+    doc.setFontSize(4);
+    doc.setFont('ArchivoNarrow', 'normal');
+    doc.text('NOTES', notesX + notesWidth / 2, notesHeaderY, { align: 'center' });
+    const notesBoxHeight = 100;
+    const notesBoxY = notesHeaderY + 6;
+    const notesColWidth = (notesWidth - 2) / 2;
+
+    // Draw two columns with lines
+    for (let i = 0; i < 20; i++) {
+        const lineY = notesBoxY + i * 5;
+        doc.setLineWidth(0.5);
+        doc.line(notesX, lineY, notesX + notesWidth, lineY);
+    }
+    doc.line(notesX + notesColWidth, notesBoxY, notesX + notesColWidth, notesBoxY + notesBoxHeight);
+
+    // Add character notes if available
+    if (character.notes) {
+        doc.setFontSize(6);
+        doc.setFont('ArchivoNarrow', 'normal');
+        const notesLines = doc.splitTextToSize(character.notes, notesColWidth - 4);
+        let notesTextY = notesBoxY + 4;
+        for (let i = 0; i < Math.min(notesLines.length, 20); i++) {
+            const col = i < 10 ? 0 : 1; // First 10 lines in left column, next 10 in right
+            const colX = col === 0 ? notesX + 2 : notesX + notesColWidth + 2;
+            const lineY = col === 0 ? notesTextY + (i * 5) : notesTextY + ((i - 10) * 5);
+            doc.text(notesLines[i], colX, lineY);
+        }
+    }
+
+    // LANGUAGES Section (25% of column width, to the right of NOTES)
+    const languagesWidth = page2LeftColWidth * 0.25;
+    const languagesX = notesX + notesWidth + 2;
+    const languagesHeaderY = notesHeaderY;
+    doc.setFontSize(4);
+    doc.setFont('ArchivoNarrow', 'normal');
+    doc.text('LANGUAGES', languagesX + languagesWidth / 2, languagesHeaderY, { align: 'center' });
+    const languagesBoxY = languagesHeaderY + 6;
+    const languages = getCharacterLanguages(character.characterLanguages);
+
+    doc.setFontSize(7);
+    doc.setFont('ArchivoNarrow', 'normal');
+    let languagesY = languagesBoxY;
+    for (const lang of languages) {
+        doc.text(lang, languagesX + 2, languagesY);
+        languagesY += 8;
+    }
+    // Draw lines for remaining space
+    while (languagesY < notesBoxY + notesBoxHeight) {
+        doc.setLineWidth(0.5);
+        doc.line(languagesX, languagesY, languagesX + languagesWidth, languagesY);
+        languagesY += 8;
+    }
+
+    // ============================================================================
+    // RIGHT COLUMN - Special Abilities, Carrying Info, Money, Turn Attempts
+    // ============================================================================
+    let rightColY = margin;
+
+    // SPECIAL ABILITIES Box
+    const specialAbilitiesBoxHeight = 300;
+    const specialAbilitiesHeaderHeight = 12;
+    drawAbilityNameBox(page2RightColX, rightColY, page2RightColWidth, specialAbilitiesHeaderHeight, 'SPECIAL ABILITIES', '');
+    rightColY += specialAbilitiesHeaderHeight;
+
+    // Draw main box
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(1);
+    doc.setFillColor(255, 255, 255);
+    doc.rect(page2RightColX, rightColY, page2RightColWidth, specialAbilitiesBoxHeight - specialAbilitiesHeaderHeight, 'FD');
+
+    // Format and display abilities
+    if (formattedCharacter && resolvedProgressions) {
+        let abilitiesY = rightColY + 4;
+        doc.setFontSize(6);
+        doc.setFont('ArchivoNarrow', 'bold');
+
+        // Racial Abilities
+        const raceProgressions = resolvedProgressions.filter(p => p.sourceType === 2); // Race
+        if (raceProgressions.length > 0) {
+            doc.text('-- RACIAL ABILITIES --', page2RightColX + 2, abilitiesY);
+            abilitiesY += 8;
+            doc.setFontSize(5);
+            doc.setFont('ArchivoNarrow', 'normal');
+            // Use formatted features from formattedCharacter
+            const raceFeatures = formattedCharacter.features.filter(f => {
+                const prog = resolvedProgressions.find(p => p.id === f.featureId && p.sourceType === 2);
+                return prog !== undefined;
+            });
+            for (const feature of raceFeatures.slice(0, 5)) {
+                doc.text(feature.formattedValue || '', page2RightColX + 2, abilitiesY);
+                abilitiesY += 6;
+            }
+            abilitiesY += 4;
+        }
+
+        // Class Abilities
+        const classProgressions = resolvedProgressions.filter(p => p.sourceType === 1); // Class
+        if (classProgressions.length > 0) {
+            doc.setFontSize(6);
+            doc.setFont('ArchivoNarrow', 'bold');
+            doc.text('-- CLASS ABILITIES --', page2RightColX + 2, abilitiesY);
+            abilitiesY += 8;
+            doc.setFontSize(5);
+            doc.setFont('ArchivoNarrow', 'normal');
+            const classFeatures = formattedCharacter.features.filter(f => {
+                const prog = resolvedProgressions.find(p => p.id === f.featureId && p.sourceType === 1);
+                return prog !== undefined;
+            });
+            for (const feature of classFeatures.slice(0, 5)) {
+                doc.text(feature.formattedValue || '', page2RightColX + 2, abilitiesY);
+                abilitiesY += 6;
+            }
+            abilitiesY += 4;
+        }
+
+        // Feats
+        if (formattedCharacter.feats && formattedCharacter.feats.length > 0) {
+            doc.setFontSize(6);
+            doc.setFont('ArchivoNarrow', 'bold');
+            doc.text('-- FEATS --', page2RightColX + 2, abilitiesY);
+            abilitiesY += 8;
+            doc.setFontSize(5);
+            doc.setFont('ArchivoNarrow', 'normal');
+            for (const feat of formattedCharacter.feats.slice(0, 10)) { // Limit to first 10
+                const featText = feat.formattedValue ? `${feat.featName}: ${feat.formattedValue}` : feat.featName;
+                doc.text(featText, page2RightColX + 2, abilitiesY, { maxWidth: page2RightColWidth - 4 });
+                abilitiesY += 6;
+            }
+        }
+    }
+
+    rightColY += specialAbilitiesBoxHeight - specialAbilitiesHeaderHeight + 4;
+
+    // CARRYING INFO Section (left sub-column of right column)
+    const carryingSubColWidth = page2RightColWidth / 3;
+    const carryingSubColX = page2RightColX;
+    const carryingBoxWidth = carryingSubColWidth - 2;
+    const carryingBoxHeight = 18;
+    const carryingHeaderY = rightColY;
+    doc.setFontSize(4);
+    doc.setFont('ArchivoNarrow', 'normal');
+    doc.text('CARRYING INFO', carryingSubColX + carryingSubColWidth / 2, carryingHeaderY, { align: 'center' });
+
+    const strScore = character.abilityScores.find(a => a.abilityId === AbilityId.Strength)?.value || 10;
+    const carrying = calculateCarryingCapacity(strScore, fullRace?.sizeId);
+
+    let carryingY = carryingHeaderY + 6;
+    const carryingLabels = ['LIGHT LOAD', 'MED LOAD', 'HEAVY LOAD', 'LIFT OVER', 'LIFT OFF GROUND', 'PUSH DRAG'];
+    const carryingValues = [
+        `${carrying.light} lb.`,
+        `${carrying.medium} lb.`,
+        `${carrying.heavy} lb.`,
+        `${carrying.liftOver} lb.`,
+        `${carrying.liftOffGround} lb.`,
+        `${carrying.pushDrag} lb.`,
+    ];
+
+    for (let i = 0; i < carryingLabels.length; i++) {
+        drawScoreBox(carryingSubColX, carryingY, carryingBoxWidth, carryingBoxHeight, carryingValues[i]);
+        doc.setFontSize(4);
+        doc.setFont('ArchivoNarrow', 'normal');
+        doc.text(carryingLabels[i], carryingSubColX + carryingBoxWidth / 2, carryingY + carryingBoxHeight + 4, { align: 'center' });
+        carryingY += carryingBoxHeight + 8;
+    }
+
+    // MONEY Table (below CARRYING INFO)
+    const moneyY = carryingY + 4;
+    doc.setFontSize(4);
+    doc.setFont('ArchivoNarrow', 'normal');
+    doc.text('MONEY', carryingSubColX + carryingSubColWidth / 2, moneyY, { align: 'center' });
+    const moneyTableY = moneyY + 6;
+    const moneyRowHeight = 12;
+    const moneyLabels = ['PP', 'GP', 'SP', 'CP', 'Art', 'Gems', 'Other (gp)'];
+    const moneyValues = [
+        character.platinum?.toString() || '0',
+        character.gold?.toString() || '0',
+        character.silver?.toString() || '0',
+        character.copper?.toString() || '0',
+        '',
+        '',
+        '',
+    ];
+
+    let currentMoneyY = moneyTableY;
+    for (let i = 0; i < moneyLabels.length; i++) {
+        doc.setFontSize(6);
+        doc.setFont('ArchivoNarrow', 'normal');
+        doc.text(moneyLabels[i], carryingSubColX + 2, currentMoneyY);
+        doc.text(moneyValues[i], carryingSubColX + carryingSubColWidth - 2, currentMoneyY, { align: 'right' });
+        currentMoneyY += moneyRowHeight;
+    }
+
+    // TURN ATTEMPTS Section (right sub-column of right column)
+    const turnSubColWidth = (page2RightColWidth * 2) / 3;
+    const turnSubColX = page2RightColX + carryingSubColWidth;
+    const turnHeaderY = rightColY;
+    doc.setFontSize(4);
+    doc.setFont('ArchivoNarrow', 'normal');
+    doc.text('TURN ATTEMPTS', turnSubColX + turnSubColWidth / 2, turnHeaderY, { align: 'center' });
+
+    const clericLevel = getClericLevel(classDetailsMap, character);
+    if (clericLevel > 0) {
+        const chaScore = character.abilityScores.find(a => a.abilityId === AbilityId.Charisma)?.value || 10;
+        const chaMod = GetAbilityModifier(chaScore);
+
+        // Calculate turn attempts using feat benefits
+        const turnAttemptBenefits = resolveFeatBenefits(
+            character,
+            FeatBenefitType.TURN_ATTEMPTS,
+            undefined,
+            featsMap,
+            resolvedProgressions
+        );
+        const turnAttemptBonus = turnAttemptBenefits.reduce((sum, b) => sum + b.amount, 0);
+        const timesPerDay = 3 + chaMod + turnAttemptBonus;
+
+        // Calculate turning check modifier (Charisma modifier + any feat benefits)
+        // Note: There may not be a specific benefit type for turning check modifier, using TURN_ATTEMPTS for now
+        const turningCheckMod = chaMod + turnAttemptBonus;
+
+        let turnY = turnHeaderY + 6;
+        const turnBoxWidth = 40;
+        const turnBoxHeight = 18;
+
+        // Times/Day box
+        drawScoreBox(turnSubColX, turnY, turnBoxWidth, turnBoxHeight, timesPerDay.toString());
+        doc.setFontSize(4);
+        doc.setFont('ArchivoNarrow', 'normal');
+        doc.text('Times/Day [ ]', turnSubColX + turnBoxWidth / 2, turnY + turnBoxHeight + 4, { align: 'center' });
+        turnY += turnBoxHeight + 8;
+
+        // USED box
+        drawScoreBox(turnSubColX, turnY, turnBoxWidth, turnBoxHeight, '');
+        doc.text('USED [ ]', turnSubColX + turnBoxWidth / 2, turnY + turnBoxHeight + 4, { align: 'center' });
+        turnY += turnBoxHeight + 8;
+
+        // Turning Check Modifier box
+        drawScoreBox(turnSubColX, turnY, turnBoxWidth, turnBoxHeight, formatModifier(turningCheckMod));
+        doc.text('Turning Check Modifier [ ]', turnSubColX + turnBoxWidth / 2, turnY + turnBoxHeight + 4, { align: 'center' });
+        turnY += turnBoxHeight + 12;
+
+        // Turning Check Table
+        doc.setFontSize(4);
+        doc.setFont('ArchivoNarrow', 'normal');
+        doc.text('Turning Check', turnSubColX + 20, turnY, { align: 'center' });
+        doc.text('Most Powerful Undead Affected (Max HD)', turnSubColX + turnSubColWidth - 20, turnY, { align: 'center' });
+        turnY += 8;
+
+        const turningCheckRanges = [
+            { range: '0 or lower', offset: -4 },
+            { range: '1—3', offset: -3 },
+            { range: '4—6', offset: -2 },
+            { range: '7—9', offset: -1 },
+            { range: '10—12', offset: 0 },
+            { range: '13—15', offset: 1 },
+            { range: '16—18', offset: 2 },
+            { range: '19—21', offset: 3 },
+            { range: '22 or higher', offset: 4 },
+        ];
+
+        doc.setFontSize(5);
+        for (const checkRange of turningCheckRanges) {
+            const maxHD = clericLevel + checkRange.offset;
+            doc.text(checkRange.range, turnSubColX + 2, turnY);
+            doc.text(`Cleric's level ${checkRange.offset >= 0 ? '+' : ''}${checkRange.offset}`, turnSubColX + 20, turnY);
+            doc.text(maxHD.toString(), turnSubColX + turnSubColWidth - 2, turnY, { align: 'right' });
+            turnY += 6;
+        }
+
+        turnY += 4;
+
+        // # of HD Turned
+        const hdTurnedX = clericLevel + chaMod;
+        doc.setFontSize(6);
+        doc.setFont('ArchivoNarrow', 'normal');
+        doc.text(`# of HD Turned`, turnSubColX + 2, turnY);
+        doc.text(`2d6+${hdTurnedX}`, turnSubColX + turnSubColWidth - 2, turnY, { align: 'right' });
+        turnY += 10;
+
+        // Descriptive text
+        doc.setFontSize(4);
+        doc.setFont('ArchivoNarrow', 'normal');
+        const description = "If your cleric level is double the HD of the undead or more, the undead are destroyed rather than turned. Dispelling/rebuking works like turning but you must equal or exceed the check result of the cleric who turned";
+        doc.text(description, turnSubColX + 2, turnY, { maxWidth: turnSubColWidth - 4 });
+    }
 
     // Save PDF
     const filename = `${character.name.replace(/[^a-z0-9]/gi, '_')}_CharacterSheet.pdf`;

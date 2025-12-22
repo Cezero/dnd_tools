@@ -64,6 +64,7 @@ export function useCharacterEditState(initialState?: Partial<CharacterEditState>
         hair: null,
         gender: null,
         notes: null,
+        selectedBonusLanguages: [],
 
         // Equipment Tab UI State
         equipment: [],
@@ -154,6 +155,8 @@ export function useCharacterEditState(initialState?: Partial<CharacterEditState>
                     return { ...prev, currentAdvancementId: update.payload.currentAdvancementId };
                 case CharacterEditStateUpdateType.SET_ATTACK_DEFINITIONS:
                     return { ...prev, attackDefinitions: update.payload.attackDefinitions };
+                case CharacterEditStateUpdateType.SET_SELECTED_BONUS_LANGUAGES:
+                    return { ...prev, selectedBonusLanguages: update.payload.selectedBonusLanguages };
                 default:
                     return prev;
             }

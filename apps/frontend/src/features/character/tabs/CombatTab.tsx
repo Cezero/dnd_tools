@@ -18,6 +18,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
 
 import { useToast } from '@/components/toast/useToast';
+import { CharacterApi } from '@/features/character';
 import { TabComponentProps, CharacterEditStateUpdateType, AttackDefinition } from '@/features/character/types';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import type { CharacterWithAllDetailsResponse, ItemWithDetails } from '@shared/schema';
@@ -115,6 +116,7 @@ export function CombatTab({
     resolvedData: _resolvedData,
     formattedCharacter,
     character: characterData,
+    refetchCharacter,
 }: TabComponentProps): React.JSX.Element {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingDefinition, setEditingDefinition] = useState<AttackDefinition | null>(null);
@@ -338,12 +340,17 @@ export function CombatTab({
                 attackId: definition.id,
             });
 
-            // Update local state
-            const updated = state.attackDefinitions.filter(def => def.id !== definition.id);
-            updateState({
-                type: CharacterEditStateUpdateType.SET_ATTACK_DEFINITIONS,
-                payload: { attackDefinitions: updated },
-            });
+            // Refetch character data to get updated attack definitions
+            if (refetchCharacter) {
+                await refetchCharacter();
+            } else {
+                // Fallback: Update local state if refetchCharacter is not available
+                const updated = state.attackDefinitions.filter(def => def.id !== definition.id);
+                updateState({
+                    type: CharacterEditStateUpdateType.SET_ATTACK_DEFINITIONS,
+                    payload: { attackDefinitions: updated },
+                });
+            }
 
             toast?.add({
                 title: 'Success',
@@ -358,7 +365,7 @@ export function CombatTab({
                 type: 'error',
             });
         }
-    }, [state.characterId, state.attackDefinitions, updateState, toast]);
+    }, [state.characterId, state.attackDefinitions, updateState, toast, refetchCharacter]);
 
     const handleSaveAttack = useCallback(async (definitionData: Omit<AttackDefinition, 'id'>) => {
         if (!state.characterId) return;
@@ -378,15 +385,22 @@ export function CombatTab({
                     attackId: editingDefinition.id,
                 });
 
-                const updated = state.attackDefinitions.map(def =>
-                    def.id === editingDefinition.id
-                        ? { ...editingDefinition, ...definitionData }
-                        : def
-                );
-                updateState({
-                    type: CharacterEditStateUpdateType.SET_ATTACK_DEFINITIONS,
-                    payload: { attackDefinitions: updated },
-                });
+                // Refetch character data to get updated attack definitions
+                if (refetchCharacter) {
+                    await refetchCharacter();
+                } else {
+                    // Fallback: Update local state if refetchCharacter is not available
+                    const updated = state.attackDefinitions.map(def =>
+                        def.id === editingDefinition.id
+                            ? { ...editingDefinition, ...definitionData }
+                            : def
+                    );
+                    updateState({
+                        type: CharacterEditStateUpdateType.SET_ATTACK_DEFINITIONS,
+                        payload: { attackDefinitions: updated },
+                    });
+                }
+
                 toast?.add({
                     title: 'Success',
                     description: 'Attack definition updated',
@@ -401,15 +415,21 @@ export function CombatTab({
                     id: state.characterId,
                 });
 
-                const newDefinition: AttackDefinition = {
-                    id: Number.parseInt(result.id, 10),
-                    ...definitionData,
-                };
+                // Refetch character data to get updated attack definitions
+                if (refetchCharacter) {
+                    await refetchCharacter();
+                } else {
+                    // Fallback: Update local state if refetchCharacter is not available
+                    const newDefinition: AttackDefinition = {
+                        id: Number.parseInt(result.id, 10),
+                        ...definitionData,
+                    };
+                    updateState({
+                        type: CharacterEditStateUpdateType.SET_ATTACK_DEFINITIONS,
+                        payload: { attackDefinitions: [...state.attackDefinitions, newDefinition] },
+                    });
+                }
 
-                updateState({
-                    type: CharacterEditStateUpdateType.SET_ATTACK_DEFINITIONS,
-                    payload: { attackDefinitions: [...state.attackDefinitions, newDefinition] },
-                });
                 toast?.add({
                     title: 'Success',
                     description: 'Attack definition created',
@@ -434,7 +454,7 @@ export function CombatTab({
                 type: 'error',
             });
         }
-    }, [state.characterId, state.attackDefinitions, editingDefinition, updateState, toast]);
+    }, [state.characterId, state.attackDefinitions, editingDefinition, updateState, toast, refetchCharacter]);
 
     const handleDragEnd = useCallback(async (event: DragEndEvent) => {
         const { active, over } = event;
@@ -471,34 +491,39 @@ export function CombatTab({
                 id: state.characterId,
             });
 
-            // Update slots based on new order
-            const updated = state.attackDefinitions.map(def => {
-                const newIndex = attackDefinitionIds.indexOf(def.id);
-                if (newIndex === -1) return def;
+            // Refetch character data to get updated attack definitions
+            if (refetchCharacter) {
+                await refetchCharacter();
+            } else {
+                // Fallback: Update slots based on new order if refetchCharacter is not available
+                const updated = state.attackDefinitions.map(def => {
+                    const newIndex = attackDefinitionIds.indexOf(def.id);
+                    if (newIndex === -1) return def;
 
-                // Calculate new slot (1-based, accounting for dual wield taking 2 slots)
-                let slot = 1;
-                for (let i = 0; i < newIndex; i++) {
-                    const prevDef = state.attackDefinitions.find(d => d.id === attackDefinitionIds[i]);
-                    if (prevDef?.offHandCharacterItemId !== null) {
-                        slot += 2; // Dual wield takes 2 slots
-                    } else {
-                        slot += 1;
+                    // Calculate new slot (1-based, accounting for dual wield taking 2 slots)
+                    let slot = 1;
+                    for (let i = 0; i < newIndex; i++) {
+                        const prevDef = state.attackDefinitions.find(d => d.id === attackDefinitionIds[i]);
+                        if (prevDef?.offHandCharacterItemId !== null) {
+                            slot += 2; // Dual wield takes 2 slots
+                        } else {
+                            slot += 1;
+                        }
                     }
-                }
 
-                // For dual wield, ensure we don't exceed slot 6
-                if (def.offHandCharacterItemId !== null && slot === 7) {
-                    slot = 6; // Move to slot 6 instead
-                }
+                    // For dual wield, ensure we don't exceed slot 6
+                    if (def.offHandCharacterItemId !== null && slot === 7) {
+                        slot = 6; // Move to slot 6 instead
+                    }
 
-                return { ...def, attackSlot: slot };
-            });
+                    return { ...def, attackSlot: slot };
+                });
 
-            updateState({
-                type: CharacterEditStateUpdateType.SET_ATTACK_DEFINITIONS,
-                payload: { attackDefinitions: updated },
-            });
+                updateState({
+                    type: CharacterEditStateUpdateType.SET_ATTACK_DEFINITIONS,
+                    payload: { attackDefinitions: updated },
+                });
+            }
 
             toast?.add({
                 title: 'Success',
@@ -513,7 +538,7 @@ export function CombatTab({
                 type: 'error',
             });
         }
-    }, [calculatedAttacks, state.characterId, state.attackDefinitions, updateState, toast]);
+    }, [calculatedAttacks, state.characterId, state.attackDefinitions, updateState, toast, refetchCharacter]);
 
     // Note: Character data is now provided via props from CharacterEdit, which uses TanStack Query cache
     // No need to fetch character data here - it's already available via the character prop

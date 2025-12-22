@@ -19,7 +19,8 @@ import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import type { Race, DnDClass, CharacterWithAllDetailsResponse, FeatInQueryResponse, Feat } from '@shared/schema';
 import type { SkillRank } from '@/features/character/types';
-import { EditionId } from '@shared/static-data';
+import { EditionId, Skill, AbilityId } from '@shared/static-data';
+import { LanguageService } from '@/lib/LanguageService';
 
 import { generateCharacterPdf } from './characterPdfService';
 import { AbilitiesRaceTab, ChoicesTab, ClassTab, ConfigurationTab, DescriptionTab, EquipmentTab, FeatsTab, SkillsTab, CombatTab } from './tabs';
@@ -462,6 +463,8 @@ export function CharacterEdit(): React.JSX.Element {
                     // No advancement for current level
                     updateState({ type: CharacterEditStateUpdateType.SET_CURRENT_ADVANCEMENT_ID, payload: { currentAdvancementId: null } });
                 }
+
+                // Languages will be loaded and separated in a useEffect when resolvedData is available
             } catch (error) {
                 console.error('Failed to load character:', error);
             } finally {
@@ -521,6 +524,37 @@ export function CharacterEdit(): React.JSX.Element {
                 setIsSaving(false);
                 return; // Return early to prevent duplicate error toast and API call
             }
+
+            // Calculate all languages to save
+            const allLanguages: number[] = [];
+
+            // Add automatic languages from feature progressions (any source)
+            if (resolvedData.progressions && resolvedData.progressions.length > 0) {
+                const automaticLanguages = LanguageService.getAutomaticLanguages(resolvedData.progressions);
+                allLanguages.push(...automaticLanguages);
+            }
+
+            // Add selected bonus languages
+            allLanguages.push(...state.selectedBonusLanguages);
+
+            // Add skill-based languages from skill ranks
+            const skillBasedLanguages = state.skillRanks
+                .filter(skill => skill.skillId === Skill.SpeakLanguage)
+                .map(skill => {
+                    if (skill.skillSubId !== null && skill.skillSubId !== undefined) {
+                        return skill.skillSubId;
+                    }
+                    if (skill.customSubtype) {
+                        const parsed = parseInt(skill.customSubtype, 10);
+                        return isNaN(parsed) ? null : parsed;
+                    }
+                    return null;
+                })
+                .filter((id): id is number => id !== null);
+            allLanguages.push(...skillBasedLanguages);
+
+            // Remove duplicates
+            const uniqueLanguages = Array.from(new Set(allLanguages));
 
             // Build the complete character object with nested data
             const saveData = {
@@ -602,6 +636,10 @@ export function CharacterEdit(): React.JSX.Element {
                     mainHandCharacterItemId: def.mainHandCharacterItemId,
                     offHandCharacterItemId: def.offHandCharacterItemId,
                 })),
+                // Include character languages
+                characterLanguages: uniqueLanguages.length > 0 ? uniqueLanguages.map(languageId => ({
+                    languageId
+                })) : undefined,
             };
 
             // Debug: Log the save data to verify featureChoices are included
@@ -898,6 +936,57 @@ export function CharacterEdit(): React.JSX.Element {
         }
     }, [characterData, progressionsKey, classDetailsMap, items, raceDetailsData, featsMap]);
 
+    // Separate bonus languages from characterLanguages when characterData is available
+    useEffect(() => {
+        if (!characterData?.characterLanguages || characterData.characterLanguages.length === 0) {
+            // If no languages in database, clear selected bonus languages
+            if (state.selectedBonusLanguages.length > 0) {
+                updateState({
+                    type: CharacterEditStateUpdateType.SET_SELECTED_BONUS_LANGUAGES,
+                    payload: { selectedBonusLanguages: [] }
+                });
+            }
+            return;
+        }
+
+        // Get all languages from character
+        const allLanguageIds = characterData.characterLanguages.map(cl => cl.languageId);
+
+        // Calculate automatic languages from all progressions (any source)
+        // Use empty array if progressions aren't resolved yet - will update when they resolve
+        const automaticLanguages = LanguageService.getAutomaticLanguages(resolvedData.progressions || []);
+
+        // Get skill-based languages from skill ranks
+        const skillBasedLanguages = state.skillRanks
+            .filter(skill => skill.skillId === Skill.SpeakLanguage)
+            .map(skill => {
+                if (skill.skillSubId !== null && skill.skillSubId !== undefined) {
+                    return skill.skillSubId;
+                }
+                if (skill.customSubtype) {
+                    const parsed = parseInt(skill.customSubtype, 10);
+                    return isNaN(parsed) ? null : parsed;
+                }
+                return null;
+            })
+            .filter((id): id is number => id !== null);
+
+        // Bonus languages are the remainder (not automatic, not skill-based)
+        const bonusLanguages = allLanguageIds.filter(
+            langId => !automaticLanguages.includes(langId) && !skillBasedLanguages.includes(langId)
+        );
+
+        // Only update if different to avoid infinite loops
+        const currentBonus = [...state.selectedBonusLanguages].sort().join(',');
+        const newBonus = [...bonusLanguages].sort().join(',');
+        if (currentBonus !== newBonus) {
+            updateState({
+                type: CharacterEditStateUpdateType.SET_SELECTED_BONUS_LANGUAGES,
+                payload: { selectedBonusLanguages: bonusLanguages }
+            });
+        }
+    }, [characterData?.characterLanguages, resolvedData.progressions, state.skillRanks, state.selectedBonusLanguages, updateState]);
+
     // Tab configuration
     // Wrapper for triggerResolution (no longer needs character state)
     // MUST be defined before any early returns to follow rules of hooks
@@ -909,6 +998,46 @@ export function CharacterEdit(): React.JSX.Element {
         }));
         await triggerResolution(existingChoices);
     }, [triggerResolution, state.featureChoices]);
+
+    // Refetch character data (e.g., after attack definition changes)
+    // Must be defined before early returns to avoid React Hook rules violation
+    const refetchCharacter = useCallback(async () => {
+        if (!state.characterId) return;
+
+        try {
+            // Invalidate the query to force a fresh fetch
+            await queryClient.invalidateQueries({
+                queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(state.characterId),
+            });
+
+            // Refetch the character data
+            const updatedCharacter = await queryClient.fetchQuery({
+                queryKey: CharacterQueryHooks.getCharacterWithAllDetailsQueryKey(state.characterId),
+                queryFn: () => CharacterQueryHooks.getCharacterWithAllDetailsQueryFn({ pathParams: { id: state.characterId } }),
+                staleTime: 5 * 60 * 1000,
+                gcTime: 10 * 60 * 1000,
+            }) as CharacterWithAllDetailsResponse;
+
+            setCharacterData(updatedCharacter);
+
+            // Update attack definitions in state
+            if (updatedCharacter.attackDefinitions) {
+                updateState({
+                    type: CharacterEditStateUpdateType.SET_ATTACK_DEFINITIONS,
+                    payload: {
+                        attackDefinitions: updatedCharacter.attackDefinitions.map(def => ({
+                            id: def.id,
+                            attackSlot: def.attackSlot ?? null,
+                            mainHandCharacterItemId: def.mainHandCharacterItemId ?? null,
+                            offHandCharacterItemId: def.offHandCharacterItemId ?? null,
+                        }))
+                    },
+                });
+            }
+        } catch (error) {
+            console.error('Error refetching character:', error);
+        }
+    }, [state.characterId, queryClient, updateState]);
 
     const tabs: TabConfig[] = [
         { id: 'abilities-race', label: 'Abilities & Race', icon: UserIcon, component: AbilitiesRaceTab },
@@ -957,7 +1086,8 @@ export function CharacterEdit(): React.JSX.Element {
             isLoadingClasses: isLoadingPrimaryClass || isLoadingSecondaryClassData,
             isLoadingRace: isLoadingRaceData
         },
-        character: characterData
+        character: characterData,
+        refetchCharacter
     };
 
     return (

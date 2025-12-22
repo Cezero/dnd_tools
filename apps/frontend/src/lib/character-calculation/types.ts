@@ -95,6 +95,13 @@ export interface BreakdownComponent {
 }
 
 /**
+ * Breakdown component with a specific source type
+ */
+export type TypedBreakdownComponent<T extends BreakdownSourceType = BreakdownSourceType> = Omit<BreakdownComponent, 'sourceType'> & {
+    sourceType: T | null;
+};
+
+/**
  * Base breakdown map interface
  */
 export interface BreakdownMap {
@@ -158,6 +165,7 @@ export interface ItemBonus {
 export interface FeatBenefitContext {
     itemId?: number;
     weaponType?: number;
+    abilityId?: number;
     isDualWield?: boolean;
     isOffHand?: boolean;
     isLightWeapon?: boolean;

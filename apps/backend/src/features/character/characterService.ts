@@ -194,6 +194,7 @@ export const characterService: CharacterService = {
                 disallowedSources: true,
                 characterItems: true,
                 attackDefinitions: true,
+                characterLanguages: true,
             },
         });
 
@@ -253,7 +254,7 @@ export const characterService: CharacterService = {
 
     async saveCharacter(characterId: number | null, data: SaveCharacterRequest): Promise<CreateResponse | UpdateResponse> {
         // Extract nested data
-        const { abilityScores, advancement, equipment, attackDefinitions, ...characterData } = data;
+        const { abilityScores, advancement, equipment, attackDefinitions, characterLanguages, ...characterData } = data;
 
         return await prisma.$transaction(async (tx) => {
             let finalCharacterId = characterId;
@@ -585,6 +586,23 @@ export const characterService: CharacterService = {
                                 offHandCharacterItemId: offHandItemId,
                             };
                         }),
+                    });
+                }
+            }
+
+            // Handle character languages if provided
+            if (characterLanguages !== undefined) {
+                // Delete existing languages
+                await tx.characterLanguageMap.deleteMany({
+                    where: { characterId: finalCharacterId },
+                });
+                // Create new languages
+                if (characterLanguages.length > 0) {
+                    await tx.characterLanguageMap.createMany({
+                        data: characterLanguages.map(lang => ({
+                            characterId: finalCharacterId,
+                            languageId: lang.languageId,
+                        })),
                     });
                 }
             }

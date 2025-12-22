@@ -172,6 +172,16 @@ export const CharacterDisallowedSourceSchema = z.object({
     sourceBookId: z.number().int().positive('Source book ID must be a positive integer'),
 });
 
+// Character language map schemas
+export const CharacterLanguageMapSchema = z.object({
+    id: z.number().int().positive('Character language map ID must be a positive integer'),
+    characterId: z.number().int().positive('Character ID must be a positive integer'),
+    languageId: z.number().int().positive('Language ID must be a positive integer'),
+});
+
+// Request/response schemas for character language map
+export const CreateCharacterLanguageMapSchema = CharacterLanguageMapSchema.omit({ id: true });
+
 // Character item schemas (defined before CharacterWithAllDetailsSchema to avoid forward reference)
 export const CharacterItemSchema = z.object({
     id: z.number().int().positive('Character item ID must be a positive integer'),
@@ -197,6 +207,7 @@ export const CharacterWithAllDetailsSchema = CharacterWithRaceSchema.extend({
     advancements: z.array(CharacterAdvancementWithDetailsSchema),
     preparedSpells: z.array(CharacterSpellPreparationWithMetamagicSchema),
     disallowedSources: z.array(CharacterDisallowedSourceSchema),
+    characterLanguages: z.array(CharacterLanguageMapSchema).optional(),
     characterItems: z.array(CharacterItemSchema).optional(),
     attackDefinitions: z.array(CharacterAttackDefinitionSchema).optional(),
 });
@@ -287,6 +298,8 @@ export const SaveCharacterSchema = BaseCharacterSchema.extend({
     equipment: z.array(CreateCharacterItemSchema.omit({ characterId: true })).optional(),
     // Optional attack definitions (nested)
     attackDefinitions: z.array(CreateCharacterAttackDefinitionSchema.omit({ characterId: true })).optional(),
+    // Optional character languages (nested)
+    characterLanguages: z.array(CreateCharacterLanguageMapSchema.omit({ characterId: true })).optional(),
 }).partial(); // Make all fields optional for updates
 
 // Request/response schemas for character disallowed sources
@@ -355,6 +368,10 @@ export type UpsertCharacterAbilityScoresRequest = z.infer<typeof UpsertCharacter
 export type CharacterDisallowedSource = z.infer<typeof CharacterDisallowedSourceSchema>;
 export type CreateCharacterDisallowedSourceRequest = z.infer<typeof CreateCharacterDisallowedSourceSchema>;
 export type UpdateCharacterDisallowedSourceRequest = z.infer<typeof UpdateCharacterDisallowedSourceSchema>;
+
+// Character language map types
+export type CharacterLanguageMap = z.infer<typeof CharacterLanguageMapSchema>;
+export type CreateCharacterLanguageMapRequest = z.infer<typeof CreateCharacterLanguageMapSchema>;
 
 // Character context type
 export type CharacterContext = z.infer<typeof CharacterContextSchema>;

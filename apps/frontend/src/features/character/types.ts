@@ -471,6 +471,7 @@ export interface CharacterEditState {
     hair: string | null;
     gender: string | null;
     notes: string | null;
+    selectedBonusLanguages: number[];
 
     // Equipment Tab UI State
     equipment: EquipmentItem[];
@@ -519,7 +520,8 @@ export enum CharacterEditStateUpdateType {
     SET_RESOLUTION_LOADING = 32,
     SET_RESOLUTION_ERROR = 33,
     SET_CURRENT_ADVANCEMENT_ID = 34,
-    SET_ATTACK_DEFINITIONS = 35
+    SET_ATTACK_DEFINITIONS = 35,
+    SET_SELECTED_BONUS_LANGUAGES = 36
 }
 
 export type CharacterEditStateUpdate =
@@ -566,7 +568,8 @@ export type CharacterEditStateUpdate =
     | { type: CharacterEditStateUpdateType.SET_RESOLUTION_LOADING; payload: { isLoading: boolean } }
     | { type: CharacterEditStateUpdateType.SET_RESOLUTION_ERROR; payload: { error: string | null } }
     | { type: CharacterEditStateUpdateType.SET_CURRENT_ADVANCEMENT_ID; payload: { currentAdvancementId: number | null } }
-    | { type: CharacterEditStateUpdateType.SET_ATTACK_DEFINITIONS; payload: { attackDefinitions: AttackDefinition[] } };
+    | { type: CharacterEditStateUpdateType.SET_ATTACK_DEFINITIONS; payload: { attackDefinitions: AttackDefinition[] } }
+    | { type: CharacterEditStateUpdateType.SET_SELECTED_BONUS_LANGUAGES; payload: { selectedBonusLanguages: number[] } };
 
 /**
  * Props interface for tab components using the centralized state system.
@@ -601,6 +604,8 @@ export interface TabComponentProps {
     };
     // Character data for prerequisite checking
     character: CharacterWithAllDetailsResponse | null;
+    // Callback to refetch character data (e.g., after attack definition changes)
+    refetchCharacter?: () => Promise<void>;
 }
 
 /**

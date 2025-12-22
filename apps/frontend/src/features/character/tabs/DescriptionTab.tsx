@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { TrashIcon } from '@heroicons/react/24/outline';
 
 import { useDiceBox } from '@/components/dice-box';
 import type { LocalDiceRollResult } from '@/components/dice-box/types';
@@ -6,8 +7,14 @@ import { CustomSelect } from '@/components/forms/FormComponents';
 import type { TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
 import { useCacheFunctions } from '@/services/cache';
+import { LanguageService } from '@/lib/LanguageService';
 import {
-    ALIGNMENT_LIST
+    ALIGNMENT_LIST,
+    LANGUAGE_MAP,
+    GetAbilityModifier,
+    AbilityId,
+    Skill,
+    EntityAppliesToType
 } from '@shared/static-data';
 
 /**
@@ -163,7 +170,8 @@ function getHeightWeightConfig(raceName: string, gender: string | null | undefin
 export function DescriptionTab({
     state,
     updateState,
-    isLoading
+    isLoading,
+    resolvedData
 }: TabComponentProps): React.JSX.Element {
     const { getRaceNameById, getClassNameById } = useCacheFunctions();
     const { rollDice, rollDiceGroups, isReady, onRollComplete } = useDiceBox();
@@ -313,6 +321,99 @@ export function DescriptionTab({
     };
 
     const canRollHeightWeight = state.raceId !== null && isReady;
+
+    // Calculate languages
+    const languageData = useMemo(() => {
+        if (!state.raceId) {
+            return {
+                automaticLanguages: [] as number[],
+                availableBonusLanguages: [] as number[],
+                skillBasedLanguages: [] as number[],
+                intModifier: 0,
+                maxBonusLanguages: 0,
+                allKnownLanguages: [] as number[]
+            };
+        }
+
+        // Calculate automatic languages from all progressions (any source)
+        const automaticLanguages = LanguageService.getAutomaticLanguages(resolvedData.progressions);
+
+        // Calculate available bonus languages from all progressions (any source)
+        // Remove duplicates since a language can be available from multiple sources
+        const availableBonusLanguages = Array.from(new Set(
+            LanguageService.getBonusLanguages(resolvedData.progressions)
+        ));
+
+        // Calculate INT modifier
+        const intelligenceScore = state.abilityScores.find(a => a.abilityId === AbilityId.Intelligence);
+        const intValue = intelligenceScore?.value ?? 10;
+        const intModifier = GetAbilityModifier(intValue);
+        const maxBonusLanguages = Math.max(0, intModifier);
+
+        // Get skill-based languages from skill ranks
+        const skillBasedLanguages = state.skillRanks
+            .filter(skill => skill.skillId === Skill.SpeakLanguage)
+            .map(skill => {
+                // Try skillSubId first, then customSubtype
+                if (skill.skillSubId !== null && skill.skillSubId !== undefined) {
+                    return skill.skillSubId;
+                }
+                if (skill.customSubtype) {
+                    const parsed = parseInt(skill.customSubtype, 10);
+                    return isNaN(parsed) ? null : parsed;
+                }
+                return null;
+            })
+            .filter((id): id is number => id !== null);
+
+        // Combine all known languages and remove duplicates
+        const allKnownLanguages = Array.from(new Set([
+            ...automaticLanguages,
+            ...state.selectedBonusLanguages,
+            ...skillBasedLanguages
+        ]));
+
+        return {
+            automaticLanguages,
+            availableBonusLanguages,
+            skillBasedLanguages,
+            intModifier,
+            maxBonusLanguages,
+            allKnownLanguages
+        };
+    }, [state.raceId, state.abilityScores, state.selectedBonusLanguages, state.skillRanks, resolvedData.progressions]);
+
+    // Handle adding a bonus language
+    const handleAddBonusLanguage = useCallback((languageId: number) => {
+        if (!languageData.availableBonusLanguages.includes(languageId)) {
+            return;
+        }
+        if (state.selectedBonusLanguages.includes(languageId)) {
+            return;
+        }
+        if (state.selectedBonusLanguages.length >= languageData.maxBonusLanguages) {
+            return;
+        }
+        updateState({
+            type: CharacterEditStateUpdateType.SET_SELECTED_BONUS_LANGUAGES,
+            payload: { selectedBonusLanguages: [...state.selectedBonusLanguages, languageId] }
+        });
+    }, [state.selectedBonusLanguages, languageData, updateState]);
+
+    // Handle removing a bonus language
+    const handleRemoveBonusLanguage = useCallback((languageId: number) => {
+        updateState({
+            type: CharacterEditStateUpdateType.SET_SELECTED_BONUS_LANGUAGES,
+            payload: { selectedBonusLanguages: state.selectedBonusLanguages.filter(id => id !== languageId) }
+        });
+    }, [state.selectedBonusLanguages, updateState]);
+
+    // Filter available bonus languages (exclude already selected)
+    const availableBonusLanguagesForSelection = useMemo(() => {
+        return languageData.availableBonusLanguages.filter(
+            langId => !state.selectedBonusLanguages.includes(langId)
+        );
+    }, [languageData.availableBonusLanguages, state.selectedBonusLanguages]);
 
     return (
         <div className="p-6">
@@ -482,6 +583,77 @@ export function DescriptionTab({
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                {/* Languages */}
+                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        Languages
+                    </h3>
+                    <div className="space-y-4">
+                        {/* Display all known languages */}
+                        {languageData.allKnownLanguages.length > 0 ? (
+                            <div className="flex flex-wrap gap-2 items-center">
+                                {languageData.allKnownLanguages.map((languageId) => {
+                                    const language = LANGUAGE_MAP[languageId];
+                                    if (!language) return null;
+
+                                    const isAutomatic = languageData.automaticLanguages.includes(languageId);
+                                    const isSkillBased = languageData.skillBasedLanguages.includes(languageId);
+                                    const isBonus = state.selectedBonusLanguages.includes(languageId);
+                                    const canRemove = isBonus && !isAutomatic && !isSkillBased;
+
+                                    return (
+                                        <span
+                                            key={languageId}
+                                            className="group relative inline-flex items-center gap-1 px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-sm text-gray-700 dark:text-gray-300"
+                                        >
+                                            {language.name}
+                                            {canRemove && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveBonusLanguage(languageId)}
+                                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600"
+                                                    aria-label={`Remove ${language.name}`}
+                                                >
+                                                    <TrashIcon className="h-4 w-4" />
+                                                </button>
+                                            )}
+                                        </span>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+                                No languages known.
+                            </p>
+                        )}
+
+                        {/* Bonus language selection dropdown */}
+                        {languageData.maxBonusLanguages > 0 && 
+                         state.selectedBonusLanguages.length < languageData.maxBonusLanguages && 
+                         availableBonusLanguagesForSelection.length > 0 && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Bonus Languages (Choose {languageData.maxBonusLanguages - state.selectedBonusLanguages.length} more)
+                                </label>
+                                <CustomSelect
+                                    value={null}
+                                    onValueChange={(value) => {
+                                        if (value && typeof value === 'number') {
+                                            handleAddBonusLanguage(value);
+                                        }
+                                    }}
+                                    options={availableBonusLanguagesForSelection.map(langId => ({
+                                        id: langId,
+                                        name: LANGUAGE_MAP[langId]?.name || `Language ${langId}`
+                                    }))}
+                                    placeholder="Select a bonus language..."
+                                    componentExtraClassName="flex items-center gap-2"
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
 

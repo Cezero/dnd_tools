@@ -6,3 +6,4 @@ export * from './FormulaUtils';
 export * from './DiceUtils';
 export * from './VariantOverrideUtils';
 export * from './gestaltUtils';
+export * from './CharacterUtils';
