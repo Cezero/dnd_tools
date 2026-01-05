@@ -8,6 +8,9 @@ export interface FeatureDisplayProps {
     onAddProgression?: (feature: Feature) => void;
     showAddProgressionButton?: boolean;
     className?: string;
+    onEditFeature?: (featureId: number) => void;
+    parentType?: 'class' | 'race';
+    parentId?: number;
 }
 
 export interface FeatureDisplayData {

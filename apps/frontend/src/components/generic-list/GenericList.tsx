@@ -90,8 +90,6 @@ function SortableHeaderCell({ header, allColumns, onToggleVisibility, onSort, co
 export function GenericList<T>({
     storageKey,
     columns,
-    serviceFunction,
-    queryHook,
     dataFetcher,
     itemDesc = 'items',
     initialLimit = 20,
@@ -109,9 +107,6 @@ export function GenericList<T>({
     const [error, setError] = useState<Error | null>(null);
     const navigate = useNavigate();
     const { isAdmin } = useAuthAuto();
-
-    // Use imperative API if dataFetcher provided, otherwise fall back to queryHook
-    const queryResult = queryHook ? queryHook({}) : null;
 
     // Imperative data fetching
     const fetchData = useCallback(async () => {
@@ -135,7 +130,7 @@ export function GenericList<T>({
         if (dataFetcher) {
             fetchData();
         }
-    }, [fetchData]);
+    }, [dataFetcher, fetchData]);
 
     // Internal state for selected IDs when in option selector mode
     const [internalSelectedIds, setInternalSelectedIds] = useState<(string | number)[]>(selectedIds);
@@ -507,18 +502,8 @@ export function GenericList<T>({
                                 try {
                                     await functions.delete!(item);
                                     // Refresh the data after successful deletion
-                                    if (queryResult?.refetch) {
-                                        const result = await queryResult.refetch();
-                                        if (result.data) {
-                                            setData(result.data.results);
-                                            setTotal(result.data.total);
-                                        }
-                                    } else if (dataFetcher) {
+                                    if (dataFetcher) {
                                         await fetchData();
-                                    } else if (serviceFunction) {
-                                        const { results, total } = await serviceFunction();
-                                        setData(results);
-                                        setTotal(total);
                                     }
                                 } catch (error) {
                                     console.error(`Failed to delete ${itemDesc}:`, error);
@@ -588,18 +573,8 @@ export function GenericList<T>({
                             try {
                                 await deleteServiceFunction(safeItemId);
                                 // Refresh the data after successful deletion
-                                if (queryResult?.refetch) {
-                                    const result = await queryResult.refetch();
-                                    if (result.data) {
-                                        setData(result.data.results);
-                                        setTotal(result.data.total);
-                                    }
-                                } else if (dataFetcher) {
+                                if (dataFetcher) {
                                     await fetchData();
-                                } else if (serviceFunction) {
-                                    const { results, total } = await serviceFunction();
-                                    setData(results);
-                                    setTotal(total);
                                 }
                             } catch (error) {
                                 console.error(`Failed to delete ${itemDesc}:`, error);
@@ -648,17 +623,6 @@ export function GenericList<T>({
         getSortedRowModel: getSortedRowModel()
     });
 
-    // Handle queryResult data when using queryHook
-    useEffect(() => {
-        if (queryResult) {
-            if (queryResult.data) {
-                setData(queryResult.data.results);
-                setTotal(queryResult.data.total);
-            }
-            setIsLoading(queryResult.isLoading);
-        }
-    }, [queryResult?.data, queryResult?.isLoading]);
-
     const paginatedRows = table.getPaginationRowModel().rows;
     const filteredRows = table.getFilteredRowModel().rows;
 
@@ -666,27 +630,18 @@ export function GenericList<T>({
     const end = start + paginatedRows.length - 1;
     const filteredTotal = filteredRows.length;
 
-    // Handle errors from both imperative and hook-based approaches
-    const currentError = error || queryResult?.error;
-    if (currentError) {
+    // Handle errors
+    if (error) {
         return (
             <div className="p-4">
                 <div className="text-red-600">
                     <h3 className="text-lg font-semibold mb-2">Error Loading {itemDesc}</h3>
-                    <p className="mb-4">{currentError.message}</p>
-                    {(queryResult?.refetch || dataFetcher) && (
+                    <p className="mb-4">{error.message}</p>
+                    {dataFetcher && (
                         <button
                             onClick={async () => {
                                 try {
-                                    if (queryResult?.refetch) {
-                                        const result = await queryResult.refetch();
-                                        if (result.data) {
-                                            setData(result.data.results);
-                                            setTotal(result.data.total);
-                                        }
-                                    } else if (dataFetcher) {
-                                        await fetchData();
-                                    }
+                                    await fetchData();
                                 } catch (error) {
                                     console.error('Failed to retry:', error);
                                 }

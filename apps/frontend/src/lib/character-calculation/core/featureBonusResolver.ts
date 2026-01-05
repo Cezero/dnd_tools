@@ -26,6 +26,11 @@ export function resolveFeatureBonuses(
             // Check if entity applies to the requested type
             if (entity.appliesTo !== appliesTo) continue;
 
+            // Skip entities with conditions - these are conditional modifiers and should not be included in regular bonuses
+            if (entity.conditions && entity.conditions.length > 0) {
+                continue;
+            }
+
             // Check item-specific filtering
             if (context?.itemId && entity.appliesToId !== context.itemId) {
                 continue;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
@@ -15,25 +15,13 @@ export function SkillList(): React.JSX.Element {
     const location = useLocation();
     const { isLoading: isAuthLoading, isAdmin } = useAuthAuto();
 
-    // Use the delete mutation hook
-    const { mutate: deleteSkillMutation } = SkillQueryHooks.useDeleteSkill();
-
-    // Create a wrapper function for the delete operation
-    const deleteSkill = async (params: undefined, idParams: { id: number }) => {
-        return new Promise((resolve, reject) => {
-            deleteSkillMutation(
-                { pathParams: { id: idParams.id } },
-                {
-                    onSuccess: () => resolve(undefined),
-                    onError: (error) => reject(error)
-                }
-            );
-        });
-    };
-
     const HandleNewSkillClick = (): void => {
         navigate('/skills/new/edit', { state: { fromListParams: location.search } });
     };
+
+    const dataFetcher = useCallback(async () => {
+        return await SkillQueryHooks.getSkills();
+    }, []);
 
     if (isAuthLoading) {
         return <div className="p-4">Loading...</div>;
@@ -55,10 +43,10 @@ export function SkillList(): React.JSX.Element {
             <GenericList<Skill>
                 storageKey="skills-list"
                 columns={SKILL_COLUMNS}
-                queryHook={SkillQueryHooks.useGetSkills}
+                dataFetcher={dataFetcher}
                 itemDesc="skill"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction(deleteSkill)}
+                deleteServiceFunction={createIdDeleteServiceFunction((_, { id }) => SkillQueryHooks.deleteSkill(id))}
             />
         </div>
     );

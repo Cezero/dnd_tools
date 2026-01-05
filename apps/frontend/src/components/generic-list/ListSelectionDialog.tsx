@@ -36,8 +36,8 @@ interface ListSelectionDialogProps<T extends BaseItem, U extends BaseSelectedIte
     parentId?: number;
     /** The type of parent item (class or race) */
     parentType?: 'class' | 'race';
-    /** Service function to fetch all items */
-    serviceFunction: () => Promise<{ results: T[]; total: number }>;
+    /** Data fetcher function to fetch all items */
+    dataFetcher: () => Promise<{ results: T[]; total: number }>;
     /** Storage key for the GenericList */
     storageKey: string;
     /** Item description for UI text */
@@ -64,7 +64,7 @@ export function ListSelectionDialog<T extends BaseItem, U extends BaseSelectedIt
     initialSelectedIds = [],
     parentId,
     parentType,
-    serviceFunction,
+    dataFetcher,
     storageKey,
     itemDesc,
     createNewRoute,
@@ -85,7 +85,7 @@ export function ListSelectionDialog<T extends BaseItem, U extends BaseSelectedIt
         if (isOpen) {
             const fetchItems = async () => {
                 try {
-                    const response = await serviceFunction();
+                    const response = await dataFetcher();
                     setAvailableItems(response.results);
                 } catch (error) {
                     console.error(`Failed to fetch ${itemDesc}s:`, error);
@@ -93,7 +93,7 @@ export function ListSelectionDialog<T extends BaseItem, U extends BaseSelectedIt
             };
             fetchItems();
         }
-    }, [isOpen, serviceFunction, itemDesc]);
+    }, [isOpen, dataFetcher, itemDesc]);
 
     const columns: ColumnDef<T>[] = useMemo(() => [
         {
@@ -163,7 +163,7 @@ export function ListSelectionDialog<T extends BaseItem, U extends BaseSelectedIt
                                     selectedIds={currentSelectedIds}
                                     onSelectedIdsChange={handleSelectedIdsChange}
                                     columns={columns}
-                                    serviceFunction={serviceFunction}
+                                    dataFetcher={dataFetcher}
                                     itemDesc={itemDesc}
                                     initialLimit={10}
                                 />

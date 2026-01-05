@@ -17,10 +17,10 @@ import {
     SPELL_ID_LIST,
 } from '@shared/static-data';
 
-import type { BaseFormatter, CalculatedEntity } from './types';
+import type { BaseFormatter, CalculatedEntity, DisplayContext } from './types';
 
 export class DamageFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = modifier.value;
 
         // For now, use default values since diceType and size aren't in the current schema
@@ -31,7 +31,7 @@ export class DamageFormatter implements BaseFormatter {
 }
 
 export class DamageBonusFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = modifier.value;
 
         // For string values, return as-is; for numeric values, format with sign
@@ -47,7 +47,7 @@ export class DamageBonusFormatter implements BaseFormatter {
 }
 
 export class HealingFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = modifier.value;
 
         return `${value} hp/day`;
@@ -55,14 +55,15 @@ export class HealingFormatter implements BaseFormatter {
 }
 
 export class SignedValueFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, context?: DisplayContext): string {
         const value = modifier.value;
 
         // For string values, return as-is; for numeric values, format with sign
         const baseValue = typeof value === 'string' ? value : formatSignedValue(value);
 
-        // Include bonus type if present
-        if (modifier.bonusType !== null && modifier.bonusType !== undefined) {
+        // Include bonus type if present and displayBonusType is not false
+        const displayBonusType = context?.displayBonusType !== false; // Default to true
+        if (displayBonusType && modifier.bonusType !== null && modifier.bonusType !== undefined) {
             const bonusTypeName = FEATURE_BONUS_TYPES[modifier.bonusType]?.name?.toLowerCase() || 'unknown';
             return `${baseValue} (${bonusTypeName})`;
         }
@@ -72,13 +73,13 @@ export class SignedValueFormatter implements BaseFormatter {
 }
 
 export class EmptyStringFormatter implements BaseFormatter {
-    format(_modifier: CalculatedEntity): string {
+    format(_modifier: CalculatedEntity, _context?: DisplayContext): string {
         return '';
     }
 }
 
 export class LanguageFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = modifier.value;
 
         const languageId = modifier.appliesToId;
@@ -90,7 +91,7 @@ export class LanguageFormatter implements BaseFormatter {
 }
 
 export class FeatFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = modifier.value;
 
         // This is a proficiency - return the item name
@@ -111,7 +112,7 @@ export class FeatFormatter implements BaseFormatter {
 }
 
 export class DomainFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = modifier.value;
 
         // Handle general domains - use included entity data
@@ -126,7 +127,7 @@ export class DomainFormatter implements BaseFormatter {
 }
 
 export class SpellFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = modifier.value;
 
         // Use included spell data if available (from backend)
@@ -149,7 +150,7 @@ export class SpellFormatter implements BaseFormatter {
 }
 
 export class UsesFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = modifier.value;
         const frequencyInfo = USES_FREQUENCIES[modifier.appliesToId || 1];
         const frequency = frequencyInfo?.name || 'day';
@@ -159,7 +160,7 @@ export class UsesFormatter implements BaseFormatter {
 }
 
 export class TargetsFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = modifier.value;
 
         // For string values like "2 + WIS", we can't determine the exact number for pluralization
@@ -173,7 +174,7 @@ export class TargetsFormatter implements BaseFormatter {
 }
 
 export class ValueFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = modifier.value;
 
         return value.toString();
@@ -181,7 +182,7 @@ export class ValueFormatter implements BaseFormatter {
 }
 
 export class DistanceFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = modifier.value;
 
         return `${value} ft.`;
@@ -189,7 +190,7 @@ export class DistanceFormatter implements BaseFormatter {
 }
 
 export class MovementSpeedFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = modifier.value;
 
         return `+${value} ft.`;
@@ -197,7 +198,7 @@ export class MovementSpeedFormatter implements BaseFormatter {
 }
 
 export class DiceFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = modifier.value;
 
         // Use appliesToId to determine the dice type
@@ -213,7 +214,7 @@ export class DiceFormatter implements BaseFormatter {
 
 // TODO: how is this different from the DiceFormatter?
 export class DiceBonusFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = modifier.value;
 
         // Use appliesToId to determine the dice type
@@ -228,7 +229,7 @@ export class DiceBonusFormatter implements BaseFormatter {
 }
 
 export class DamageReductionFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = modifier.value;
 
         const damageTypeId = modifier.appliesToId;
@@ -243,7 +244,7 @@ export class DamageReductionFormatter implements BaseFormatter {
 // this is not how this should be structured, this bypasses the formatter registry and uses the formatter directly
 // this should be refactored to use the formatter registry
 export class FeatureEntityFormatter implements BaseFormatter {
-    format(choice: CalculatedEntity): string {
+    format(choice: CalculatedEntity, _context?: DisplayContext): string {
         // If value is already a formatted string, return it directly
         if (typeof choice.value === 'string') {
             return choice.value;
@@ -382,7 +383,7 @@ export class FeatureEntityFormatter implements BaseFormatter {
 }
 
 export class ProficiencyFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
 
         if (modifier.appliesToSubId === -1) {
             // Use included entity data
@@ -409,7 +410,7 @@ export class ProficiencyFormatter implements BaseFormatter {
 }
 
 export class CreatureTypeFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = modifier.value;
 
         const creatureType = CREATURE_TYPES[modifier.appliesToId];
@@ -425,7 +426,7 @@ export class CreatureTypeFormatter implements BaseFormatter {
 }
 
 export class SizeCategoryFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = modifier.value;
 
         const sizeCategory = SIZE_MAP[modifier.appliesToId];
@@ -441,7 +442,7 @@ export class SizeCategoryFormatter implements BaseFormatter {
 }
 
 export class DamageTypeFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
 
         if (modifier.appliesToId !== null && modifier.appliesToId !== undefined) {
             const damageType = DAMAGE_TYPES[modifier.appliesToId];
@@ -454,7 +455,7 @@ export class DamageTypeFormatter implements BaseFormatter {
 }
 
 export class WeaponFamiliarityFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         // Use the weapon name from the item data
         if (modifier.item) {
             return modifier.item.name;
@@ -467,14 +468,14 @@ export class WeaponFamiliarityFormatter implements BaseFormatter {
 }
 
 export class SpellSaveDCFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = typeof modifier.value === 'string' ? parseInt(modifier.value, 10) || 0 : modifier.value;
         return formatSignedValue(value);
     }
 }
 
 export class ResistanceFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = modifier.value;
 
         if (modifier.appliesToId !== null && modifier.appliesToId !== undefined) {
@@ -489,7 +490,7 @@ export class ResistanceFormatter implements BaseFormatter {
 }
 
 export class WeightFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = modifier.value;
 
         if (value === null || value === undefined) {
@@ -502,7 +503,7 @@ export class WeightFormatter implements BaseFormatter {
 }
 
 export class CriticalFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = modifier.value;
 
         if (value === null || value === undefined) {
@@ -515,7 +516,7 @@ export class CriticalFormatter implements BaseFormatter {
 }
 
 export class AttackBonusFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity): string {
+    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = modifier.value;
 
         if (value === null || value === undefined) {
@@ -547,7 +548,7 @@ export class AttackBonusFormatter implements BaseFormatter {
  * Formats damage from components: baseDamage + abilityModifier + featBonus
  */
 export class DamageStringFormatter implements BaseFormatter {
-    format(entity: CalculatedEntity): string {
+    format(entity: CalculatedEntity, _context?: DisplayContext): string {
         // Damage components can be stored in formulaParams or as structured data
         // For now, we'll check if value is a string (legacy) or if we have structured data
         if (typeof entity.value === 'string') {

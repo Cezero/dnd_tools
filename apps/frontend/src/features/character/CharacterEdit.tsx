@@ -76,8 +76,23 @@ export function CharacterEdit(): React.JSX.Element {
     const [classDetailsData, setClassDetailsData] = useState<(DnDClass & { features?: FeatureProgression[] }) | null>(null);
     const [secondaryClassDetailsData, setSecondaryClassDetailsData] = useState<(DnDClass & { features?: FeatureProgression[] }) | null>(null);
 
+    // Calculate class levels from characterData for filtering feat choices by class level
+    const classLevels = useMemo(() => {
+        if (!characterData?.advancements) return new Map<number, number>();
+        const levels = new Map<number, number>();
+        for (const advancement of characterData.advancements) {
+            const currentLevel = levels.get(advancement.classId) ?? 0;
+            levels.set(advancement.classId, currentLevel + 1);
+            if (advancement.secondaryClassId) {
+                const secondaryLevel = levels.get(advancement.secondaryClassId) ?? 0;
+                levels.set(advancement.secondaryClassId, secondaryLevel + 1);
+            }
+        }
+        return levels;
+    }, [characterData?.advancements]);
+
     // Initialize feature progression pool with allFeats (will be updated when feats are loaded)
-    const { isResolving, resolutionError, resolvedData, addRace, addClass, addSecondaryClass, triggerResolution, handleChoiceSelection } = useFeatureProgressionPool(allFeats);
+    const { isResolving, resolutionError, resolvedData, addRace, addClass, addSecondaryClass, triggerResolution, handleChoiceSelection } = useFeatureProgressionPool(allFeats, state.level, classLevels);
 
     const [primaryClassData, setPrimaryClassData] = useState<DnDClass | null>(null);
     const [secondaryClassData, setSecondaryClassData] = useState<DnDClass | null>(null);

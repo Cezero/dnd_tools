@@ -178,6 +178,7 @@ model Feature {
   slug        String @unique
   name        String
   description String @db.Text
+  summary     String? @db.Text
 
   progressions  FeatureProgression[]
   prerequisites FeaturePrerequisite[]
@@ -391,6 +392,7 @@ model Feat {
   typeId         Int
   description    String?             @db.Text
   benefit        String?             @db.Text
+  summary        String?             @db.Text
   normalEffect   String?             @db.Text
   specialEffect  String?             @db.Text
   prerequisites  String?             @db.Text

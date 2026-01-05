@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 import { FeatureDisplay } from '@/components/feature-system/FeatureDisplay';
-import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { ListSelectionDialog } from '@/components/generic-list';
+import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import { Feature, FeatureProgression } from '@shared/schema';
 import { FeatureSourceType } from '@shared/static-data';
 
@@ -47,6 +48,8 @@ export function FeaturesTab({
     setIsProgressionDialogOpen
 }: FeaturesTabProps): React.JSX.Element {
     const [isFeatureSelectionOpen, setIsFeatureSelectionOpen] = useState(false);
+    const navigate = useNavigate();
+    const location = useLocation();
 
     // Group progressions by feature, excluding special features based on context
     const featuresByFeature = featureProgressions
@@ -86,6 +89,20 @@ export function FeaturesTab({
         setIsProgressionDialogOpen?.(true);
     };
 
+    const handleEditFeature = (featureId: number) => {
+        const fromListParams = location.state?.fromListParams || location.search || '';
+        const fromPage = parentType === 'class' ? 'classes' : parentType === 'race' ? 'races' : 'features';
+
+        navigate(`/features/${featureId}/edit`, {
+            state: {
+                fromPage,
+                fromListParams: fromListParams.replace('?', ''),
+                parentType,
+                parentId: contextId
+            }
+        });
+    };
+
     return (
         <>
             <div className="p-6">
@@ -111,6 +128,9 @@ export function FeaturesTab({
                                 onRemoveProgression={handleRemoveProgression}
                                 onAddProgression={handleAddProgression}
                                 showAddProgressionButton={true}
+                                onEditFeature={handleEditFeature}
+                                parentType={parentType}
+                                parentId={contextId}
                             />
                         ))}
                     </div>
@@ -147,9 +167,8 @@ export function FeaturesTab({
                 initialSelectedIds={featureProgressions.map(p => p.featureId)}
                 parentId={contextId}
                 parentType={parentType}
-                serviceFunction={async () => {
-                    const response = await FeatureSystemApi.getFeatures({ sourceType: contextType });
-                    return response;
+                dataFetcher={async () => {
+                    return await FeatureQueryHooks.getFeatures({ requestData: { sourceTypes: [contextType] } });
                 }}
                 storageKey="feature-selection"
                 itemDesc="feature"

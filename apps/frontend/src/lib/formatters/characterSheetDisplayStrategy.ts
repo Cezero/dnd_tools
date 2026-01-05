@@ -2,13 +2,15 @@ import { ClassSkillService } from '@/features/class/ClassSkillService';
 import { CharacterCalculationService } from '@/lib/character-calculation';
 import type { CombatValuesResult } from '@/lib/character-calculation/calculations/combatValues';
 import { SaveType } from '@/lib/character-calculation/calculations/savingThrows';
+import { getAllCharacterFeats } from '@/lib/character-calculation/core/featAccessor';
 import type { BreakdownMap } from '@/lib/character-calculation/types';
 import { canUseTwoHanded, isTwoHandedWeapon } from '@/lib/character-calculation/utils/weaponHelpers';
-import type { FeatureProgression, ItemWithDetails, CharacterItem, CharacterWithAllDetailsResponse, DnDClass, Race } from '@shared/schema';
-import { EntityAppliesToType, AbilityId, SKILL_LIST, CRAFT_SKILL_MAP, KNOWLEDGE_SKILL_MAP, SkillSubType, SKILL_SUB_TYPE_COMPATIBILITY, SpecialFeatureId, BreakdownComponentType } from '@shared/static-data';
+import type { FeatureProgression, ItemWithDetails, CharacterItem, CharacterWithAllDetailsResponse, DnDClass, Race, FeatureEntityCondition } from '@shared/schema';
+import { EntityAppliesToType, EntityType, AbilityId, SKILL_LIST, CRAFT_SKILL_MAP, KNOWLEDGE_SKILL_MAP, SkillSubType, SKILL_SUB_TYPE_COMPATIBILITY, SpecialFeatureId, BreakdownComponentType, FeatureEntityConditionType } from '@shared/static-data';
 import { getBABProgression } from '@shared/utils';
-import { getAllCharacterFeats } from '@/lib/character-calculation/core/featAccessor';
 
+import { conditionLabelerRegistry } from './condition-labeler-registry';
+import { conditionValueFormatterRegistry } from './condition-value-formatter-registry';
 import { DisplayStrategyBase } from './displayStrategyBase';
 import { weaponNameLabeler, type WeaponNameLabelerContext } from './label-formatters';
 import { WeightFormatter, CriticalFormatter, AttackBonusFormatter, DistanceFormatter, SizeCategoryFormatter, DamageTypeFormatter, DamageStringFormatter } from './pure-formatters';
@@ -31,6 +33,7 @@ import type {
     FormattedArmorClass,
     FormattedFeat,
     FormattedFeature,
+    FormattedProficiency,
     CalculationBreakdown,
     BreakdownComponent,
 } from './types';
@@ -44,21 +47,40 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         // Process all progressions through phases 1-4 (skip grouping phases)
         const allFormattedItems: FormattedItemWithLevel[] = [];
 
+        // Set displayBonusType to false for character sheet display
+        const characterSheetContext: DisplayContext = {
+            ...context,
+            displayBonusType: false
+        };
+
         for (const progression of progressions) {
-            const calculatedValues = this.generateValues(progression, context);
-            const formattedItems = this.formattingPhase.formatItems(calculatedValues, progression.level, showLabels);
+            const calculatedValues = this.generateValues(progression, characterSheetContext);
+            const formattedItems = this.formattingPhase.formatItems(calculatedValues, progression.level, showLabels, characterSheetContext);
             allFormattedItems.push(...formattedItems);
         }
 
-        // Convert to FormattedEntityResult
-        const individualEntities: FormattedEntityResult[] = allFormattedItems.map(item => ({
-            formattedValue: item.formattedValue,
-            breakdown: item.breakdown,
-            entity: item.entity,
-            level: item.level,
-            computedValue: this.extractComputedValue(item),
-            structuredData: this.extractStructuredData(item)
-        }));
+        // Convert to FormattedEntityResult and apply conditions
+        const individualEntities: FormattedEntityResult[] = allFormattedItems.map(item => {
+            let formattedValue = item.formattedValue;
+
+            // Apply condition formatting if entity has conditions
+            if (item.entity.conditions && item.entity.conditions.length > 0) {
+                formattedValue = this.formatConditions(
+                    item.entity.conditions,
+                    formattedValue,
+                    item.entity
+                );
+            }
+
+            return {
+                formattedValue,
+                breakdown: item.breakdown,
+                entity: item.entity,
+                level: item.level,
+                computedValue: this.extractComputedValue(item),
+                structuredData: this.extractStructuredData(item)
+            };
+        });
 
         // Group by EntityAppliesToType
         const groupedByType = this.groupByEntityType(individualEntities);
@@ -153,6 +175,63 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             return entity.feature.name;
         }
         return undefined;
+    }
+
+    /**
+     * Format conditions by grouping conditions of the same type together.
+     * This is the same logic as GroupingPhase.formatConditions but made accessible here.
+     */
+    private formatConditions(
+        conditions: FeatureEntityCondition[],
+        formattedValue: string,
+        entity: CalculatedEntity
+    ): string {
+        if (conditions.length === 0) {
+            return formattedValue;
+        }
+
+        let hasSpellSchoolCondition = false;
+        // Step 1: Group conditions by type
+        const conditionsByType = new Map<FeatureEntityConditionType, number[]>();
+        for (const condition of conditions) {
+            if (!conditionsByType.has(condition.conditionType)) {
+                conditionsByType.set(condition.conditionType, []);
+            }
+            conditionsByType.get(condition.conditionType)!.push(condition.conditionValue);
+        }
+
+        const formattedConditions: string[] = [];
+
+        // Step 2: Process each condition type
+        for (const [conditionType, conditionValues] of conditionsByType) {
+            if (conditionType === FeatureEntityConditionType.spell_school) {
+                hasSpellSchoolCondition = true;
+            }
+            // Step 2a: Format each condition value
+            const formatter = conditionValueFormatterRegistry.getFormatter(conditionType);
+            const formattedValues = conditionValues
+                .map(value => formatter ? formatter.format(value) : '')
+                .filter(Boolean)
+                .join(', ');
+
+            if (formattedValues) {
+                // Step 2b: Apply labeler to the formatted values with entity context
+                const labeler = conditionLabelerRegistry.getLabeler(conditionType, entity.appliesTo);
+                const labeledCondition = labeler ? labeler(formattedValues, entity) : formattedValues;
+                formattedConditions.push(labeledCondition);
+            }
+        }
+
+        // Step 3: Combine with the main formatted value
+        if (formattedConditions.length === 0) {
+            return formattedValue;
+        }
+
+        if (hasSpellSchoolCondition && entity.appliesTo === EntityAppliesToType.SpellSvDC) {
+            return `${formattedConditions.join(' ')} ${formattedValue}`;
+        }
+
+        return `${formattedValue} ${formattedConditions.join(' ')}`;
     }
 
     /**
@@ -398,25 +477,28 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             context
         );
 
-        // 7. Format abilities
+        // 7. Format proficiencies using progressions
+        const proficiencies = this.formatProficiencies(resolvedProgressions, context);
+
+        // 8. Format abilities
         const abilities = this._formatAbilities(character, resolvedProgressions, context);
 
-        // 8. Format initiative
+        // 9. Format initiative
         const initiative = this._formatInitiative(character, resolvedProgressions, context);
 
-        // 9. Format base attack bonus
+        // 10. Format base attack bonus
         const baseAttackBonus = this._formatBaseAttackBonus(character, classDetailsMap);
 
-        // 10. Format grapple
+        // 11. Format grapple
         const grapple = this._formatGrapple(character, resolvedProgressions, classDetailsMap, context);
 
-        // 11. Format speed
+        // 12. Format speed
         const speed = this._formatSpeed(character, resolvedProgressions, race ?? null);
 
-        // 12. Format hit points
+        // 13. Format hit points
         const hitPoints = this._formatHitPoints(character);
 
-        // 13. Format class levels
+        // 14. Format class levels
         const classLevels = this._formatClassLevels(character, classDetailsMap);
 
         return {
@@ -432,7 +514,8 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             hitPoints,
             classLevels,
             feats,
-            features
+            features,
+            proficiencies
         };
     }
 
@@ -616,11 +699,38 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             if (!progression.entities) continue;
 
             for (const entity of progression.entities) {
-                if (entity.appliesTo === EntityAppliesToType.Skill && entity.appliesToId && entity.value) {
-                    const key = `${entity.appliesToId}|${entity.appliesToSubId ?? 'null'}|null`;
-                    const entry = skillEntryMap.get(key);
-                    if (entry) {
-                        entry.miscBonus += entity.value;
+                if (entity.appliesTo === EntityAppliesToType.Skill && entity.appliesToId) {
+                    // Skip entities with conditions - these are conditional modifiers and should not be included in misc bonus
+                    if (entity.conditions && entity.conditions.length > 0) {
+                        continue;
+                    }
+
+                    // Handle both bonus entities (with value) and other entities that might grant skill bonuses
+                    // For bonus entities, use the value directly
+                    // For other entities, check if they have a computed value
+                    let bonusValue = 0;
+                    if (entity.type === EntityType.Bonus && entity.value) {
+                        bonusValue = entity.value;
+                    } else if (entity.type === EntityType.Other && entity.value) {
+                        // Some skill bonuses might be Other type
+                        bonusValue = entity.value;
+                    }
+
+                    if (bonusValue !== 0) {
+                        const key = `${entity.appliesToId}|${entity.appliesToSubId ?? 'null'}|null`;
+                        let entry = skillEntryMap.get(key);
+                        // If entry doesn't exist, create it (for skills with bonuses but no ranks)
+                        if (!entry) {
+                            entry = {
+                                skillId: entity.appliesToId,
+                                skillSubId: entity.appliesToSubId ?? null,
+                                customSubtype: null,
+                                totalRanks: 0,
+                                miscBonus: 0
+                            };
+                            skillEntryMap.set(key, entry);
+                        }
+                        entry.miscBonus += bonusValue;
                     }
                 }
             }
@@ -973,24 +1083,63 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         // Use formatProgressions to format features
         const displayResult = this.formatProgressions(resolvedProgressions, context);
 
-        // Extract features from display result
-        if (displayResult.levelEntries) {
-            for (const levelEntry of displayResult.levelEntries) {
-                if (levelEntry.items) {
-                    for (const item of levelEntry.items) {
-                        features.push({
-                            featureId: item.featureId,
-                            featureName: `Feature ${item.featureId}`, // Would need to get from progression
-                            formattedValue: item.formattedValue,
-                            breakdown: item.breakdown,
-                            level: item.level
-                        });
-                    }
-                }
+        // Extract features from individualEntities (CharacterSheetDisplayResult uses individualEntities, not levelEntries)
+        if (displayResult.individualEntities && displayResult.individualEntities.length > 0) {
+            for (const entity of displayResult.individualEntities) {
+                // Get featureId from the entity's progression
+                const progression = resolvedProgressions.find(p =>
+                    p.entities?.some(e => e.id === entity.entity?.id)
+                );
+                const featureId = progression?.featureId || 0;
+
+                features.push({
+                    featureId,
+                    featureName: progression?.feature?.name || `Feature ${featureId}`,
+                    formattedValue: entity.formattedValue,
+                    breakdown: entity.breakdown,
+                    level: entity.level
+                });
             }
         }
 
         return features;
+    }
+
+    /**
+     * Format proficiencies using progressions
+     */
+    private formatProficiencies(
+        resolvedProgressions: FeatureProgression[],
+        context?: DisplayContext
+    ): FormattedProficiency[] {
+        const proficiencies: FormattedProficiency[] = [];
+
+        // Filter for proficiency progressions - include both ClassProficiency special feature
+        // and any progression that has proficiency entities (for racial weapon proficiencies, etc.)
+        const proficiencyProgressions = resolvedProgressions.filter(p =>
+            p.featureId === SpecialFeatureId.ClassProficiency ||
+            (p.entities?.some(entity => entity.type === EntityType.Proficiency && entity.appliesTo === EntityAppliesToType.Feat) ?? false)
+        );
+
+        if (proficiencyProgressions.length === 0) {
+            return proficiencies;
+        }
+
+        // Use formatProgressions to format proficiencies
+        const displayResult = this.formatProgressions(proficiencyProgressions, context);
+
+        // Extract proficiencies from individualEntities (CharacterSheetDisplayResult uses individualEntities, not levelEntries)
+        if (displayResult.individualEntities && displayResult.individualEntities.length > 0) {
+            for (const entity of displayResult.individualEntities) {
+                proficiencies.push({
+                    formattedValue: entity.formattedValue,
+                    breakdown: entity.breakdown,
+                    level: entity.level
+                });
+            }
+        }
+
+        return proficiencies;
     }
 
     /**

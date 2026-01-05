@@ -1,3 +1,5 @@
+import { useCallback } from 'react';
+
 import { ListSelectionDialog } from '@/components/generic-list';
 import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import type { Feature } from '@shared/schema';
@@ -31,6 +33,10 @@ export function ClassFeatureAssoc({ isOpen, onClose, onSave, initialSelectedFeat
         }));
     };
 
+    const dataFetcher = useCallback(async () => {
+        return await FeatureQueryHooks.getFeatures({ requestData: { sourceTypes: [FeatureSourceType.Class, FeatureSourceType.ClassVariant] } });
+    }, []);
+
     return (
         <ListSelectionDialog<Feature, SelectedFeatureData>
             isOpen={isOpen}
@@ -39,8 +45,7 @@ export function ClassFeatureAssoc({ isOpen, onClose, onSave, initialSelectedFeat
             initialSelectedIds={initialSelectedFeatureIds}
             parentId={classId}
             parentType="class"
-            queryHook={FeatureQueryHooks.useGetFeatures}
-            queryHookParams={{ requestData: { sourceTypes: [FeatureSourceType.Class, FeatureSourceType.ClassVariant] } }}
+            dataFetcher={dataFetcher}
             storageKey="classFeatureSelectionList"
             itemDesc="feature"
             createNewRoute="/features/new/edit"

@@ -1,8 +1,10 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 
-import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
+import { FeatureSystemService } from '@/components/feature-system/FeatureSystemService';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
+import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
 import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
+import type { FeatureEntity } from '@shared/schema';
 import {
     ABILITY_LIST,
     SKILL_LIST,
@@ -18,6 +20,8 @@ import {
     Skill,
     ENERGY_DAMAGE_TYPE_LIST,
     SPELL_SCHOOL_LIST,
+    FeatBenefitType,
+    PROFICIENCY_TYPES,
     CoreComponent
 } from '@shared/static-data';
 
@@ -49,11 +53,14 @@ export function getAppliesToSubIdSelectOptions(appliesTo: EntityAppliesToType, a
 /**
  * Hook to get applies to select options using query hooks
  */
-export function useAppliesToSelectOptions(appliesTo: EntityAppliesToType, entityType?: EntityType | null) {
+export function useAppliesToSelectOptions(appliesTo: EntityAppliesToType | null, entityType?: EntityType | null) {
     // Use the appropriate query hook based on the appliesTo type
-    const featQuery = FeatQueryHooks.useGetFeatList({
-        requestData: { queryType: 'all' }
-    });
+    // For GET requests with requestSchema, pass query params directly (not wrapped in requestData)
+    // If entityType is Proficiency and appliesTo is Feat, only fetch proficiency feats
+    const featQueryType = (entityType === EntityType.Proficiency && appliesTo === EntityAppliesToType.Feat)
+        ? 'proficiency'
+        : 'all';
+    const featQuery = FeatQueryHooks.useGetFeatList({ queryType: featQueryType });
 
     const domainQuery = DomainQueryHooks.useGetDomains({});
 
@@ -62,16 +69,29 @@ export function useAppliesToSelectOptions(appliesTo: EntityAppliesToType, entity
     });
 
     return useMemo(() => {
+        if (appliesTo === null || appliesTo === undefined) {
+            return [];
+        }
+
         switch (appliesTo) {
             case EntityAppliesToType.Feat:
-                if (featQuery.data && featQuery.data.length > 0) {
+                // GetFeatListResponse is an array directly
+                if (featQuery.data && Array.isArray(featQuery.data) && featQuery.data.length > 0) {
                     return featQuery.data;
                 }
+                // Return empty array while loading, placeholder only if not loading
+                if (featQuery.isLoading || featQuery.isPending) {
+                    return [];
+                }
+                // If no data but not loading, return placeholder
                 return [{ id: -1, name: 'Select a feat...' }];
 
             case EntityAppliesToType.Domain:
                 if (domainQuery.data?.results && domainQuery.data.results.length > 0) {
                     return domainQuery.data.results;
+                }
+                if (domainQuery.isLoading || domainQuery.isPending) {
+                    return [];
                 }
                 return [{ id: -1, name: 'Select a domain...' }];
 
@@ -79,13 +99,16 @@ export function useAppliesToSelectOptions(appliesTo: EntityAppliesToType, entity
                 if (featureQuery.data?.results && featureQuery.data.results.length > 0) {
                     return featureQuery.data.results;
                 }
+                if (featureQuery.isLoading || featureQuery.isPending) {
+                    return [];
+                }
                 return [{ id: -1, name: 'Select a feature...' }];
 
             default:
                 // For other types, use the static options
                 return getAppliesToSelectOptionsSync(appliesTo, entityType);
         }
-    }, [appliesTo, entityType, featQuery.data, domainQuery.data, featureQuery.data]);
+    }, [appliesTo, entityType, featQuery.data, featQuery.isLoading, domainQuery.data, domainQuery.isLoading, featureQuery.data, featureQuery.isLoading]);
 }
 
 /**
@@ -120,5 +143,131 @@ export function getAppliesToSelectOptionsSync(appliesTo: EntityAppliesToType, _e
         default:
             return [];
     }
+}
+
+/**
+ * Hook to get appliesToSubId options for proficiency entities
+ * Fetches items based on the selected feat's proficiency type
+ */
+export function useProficiencySubIdOptions(
+    entity: FeatureEntity | undefined,
+    appliesToId: number | null
+): { options: CoreComponent[]; isLoading: boolean } {
+    const [options, setOptions] = useState<CoreComponent[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        const loadProficiencyItems = async () => {
+            // Check if this is a proficiency entity with a feat
+            if (
+                !entity ||
+                entity.type !== EntityType.Proficiency ||
+                entity.appliesTo !== EntityAppliesToType.Feat ||
+                !appliesToId
+            ) {
+                setOptions([]);
+                setIsLoading(false);
+                return;
+            }
+
+            setIsLoading(true);
+
+            try {
+                // Get the feat data - either from entity.feat or fetch it
+                let feat = entity.feat;
+                if (!feat || feat.id !== appliesToId) {
+                    // Fetch the feat if we don't have it
+                    const fetchedFeat = await FeatQueryHooks.getFeatById(appliesToId);
+                    feat = fetchedFeat;
+                }
+
+                if (!feat?.benefits) {
+                    setOptions([]);
+                    setIsLoading(false);
+                    return;
+                }
+
+                // Extract proficiency type from feat benefits
+                const proficiencyBenefit = feat.benefits.find(
+                    benefit => benefit.typeId === FeatBenefitType.PROFICIENCY
+                );
+
+                if (!proficiencyBenefit?.referenceId) {
+                    setOptions([]);
+                    setIsLoading(false);
+                    return;
+                }
+
+                const proficiencyTypeId = proficiencyBenefit.referenceId;
+                const proficiencyType = PROFICIENCY_TYPES[proficiencyTypeId];
+
+                if (!proficiencyType) {
+                    setOptions([]);
+                    setIsLoading(false);
+                    return;
+                }
+
+                // Fetch items for this proficiency type
+                const itemsResult = await FeatureSystemService.getItemsByProficiencyType(proficiencyTypeId);
+
+                // Transform items to CoreComponent format
+                const itemOptions: CoreComponent[] = (itemsResult.results || []).map(item => ({
+                    id: item.id,
+                    name: item.name
+                }));
+
+                // Add "All [category]" option at the beginning
+                const allOption: CoreComponent = {
+                    id: -1,
+                    name: proficiencyType.allName || `All ${proficiencyType.name}`
+                };
+
+                // If there's a current appliesToSubId that's not in the list, add it
+                // This can happen if the item was selected but isn't in the category (edge case)
+                const currentSubId = entity.appliesToSubId;
+                let finalOptions: CoreComponent[] = [allOption, ...itemOptions];
+
+                if (currentSubId !== null && currentSubId !== undefined && currentSubId !== -1) {
+                    const hasCurrentValue = finalOptions.some(opt => opt.id === currentSubId);
+                    if (!hasCurrentValue) {
+                        // Try to get the item from entity.item first
+                        if (entity.item && entity.item.id === currentSubId) {
+                            finalOptions.push({
+                                id: entity.item.id,
+                                name: entity.item.name
+                            });
+                        } else {
+                            // If we don't have the item in entity.item, try to fetch it
+                            // For now, just add a placeholder - the item should be loaded by the backend
+                            // but if it's not, we'll show the ID
+                            finalOptions.push({
+                                id: currentSubId,
+                                name: `Item ${currentSubId}`
+                            });
+                        }
+                    }
+                }
+
+                setOptions(finalOptions);
+            } catch (error) {
+                console.error('Failed to load proficiency items:', error);
+                setOptions([]);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadProficiencyItems();
+    }, [
+        entity?.type,
+        entity?.appliesTo,
+        entity?.feat?.id,
+        entity?.feat?.benefits,
+        entity?.appliesToSubId,
+        entity?.item?.id,
+        appliesToId
+    ]);
+
+    return { options, isLoading };
 }
 

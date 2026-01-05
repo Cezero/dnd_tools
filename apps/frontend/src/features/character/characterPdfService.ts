@@ -1,15 +1,18 @@
 import { QueryClient } from '@tanstack/react-query';
 import jsPDF from 'jspdf';
+import ordinal from 'ordinal';
 
 import { registerArchivoNarrowFonts } from '@/assets/fonts/registerArchivoNarrow';
+import { getAllCharacterFeats, type CharacterFeat } from '@/lib/character-calculation/core/featAccessor';
 import { resolveFeatBenefits } from '@/lib/character-calculation/core/featBenefitResolver';
 import { displayStrategyFactory } from '@/lib/formatters';
+import type { FormattedCharacterResult, BaseCharacterInfo, FormattedFeat, CharacterSheetDisplayResult } from '@/lib/formatters/types';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import { SkillQueryHooks } from '@/services/query/SkillQueryHooks';
 import type { CharacterWithAllDetailsResponse, DnDClass, Race, ItemWithDetails, FeatureProgression, Feat, CharacterItem } from '@shared/schema';
-import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, DisplayType, SIZE_MAP, SKILL_LIST, Skill, FeatBenefitType, ARMOR_CATEGORY_ENUM, LOCATION_ENUM, LANGUAGE_MAP, GetAbilityModifier, ITEM_TYPES } from '@shared/static-data';
+import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, DisplayType, SIZE_MAP, SKILL_LIST, Skill, FeatBenefitType, ARMOR_CATEGORY_ENUM, LOCATION_ENUM, LANGUAGE_MAP, GetAbilityModifier, ITEM_TYPES, FeatureSourceType, EntityType, SpecialFeatureId, EntityAppliesToType } from '@shared/static-data';
 import { getXPTotalForLevel, calculateCarryingCapacity } from '@shared/utils';
 
 /**
@@ -97,10 +100,10 @@ export async function generateCharacterPdf(
 
     // Format character using unified formatter
     const characterSheetStrategy = displayStrategyFactory.createStrategy(DisplayType.CharacterSheet);
-    let formattedCharacter: import('@/lib/formatters/types').FormattedCharacterResult | null = null;
+    let formattedCharacter: FormattedCharacterResult | null = null;
 
     // Build character context (used for both page 1 and page 2)
-    const characterContext: import('@/lib/formatters/types').BaseCharacterInfo = {
+    const characterContext: BaseCharacterInfo = {
         abilityScores: Object.fromEntries(
             character.abilityScores.map(a => [a.abilityId, a.value])
         ),
@@ -141,8 +144,12 @@ export async function generateCharacterPdf(
     // Register ArchivoNarrow fonts
     registerArchivoNarrowFonts(doc);
 
-    const pageWidth = 612;
     const margin = 36;
+
+    const outerBoxX = 32;
+    const outerBoxY = 26;
+    const outerBoxWidth = 553;
+    const outerBoxHeight = 750;
 
     // Helper function to format ability modifier
     const formatModifier = (mod: number): string => {
@@ -425,7 +432,7 @@ export async function generateCharacterPdf(
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(1);
     doc.setFillColor(255, 255, 255);
-    doc.rect(32, 26, 548, 728, 'FD');
+    doc.rect(outerBoxX, outerBoxY, outerBoxWidth, outerBoxHeight, 'FD');
 
     // ============================================================================
     // TOP SECTION - Character Identification (Three Lines)
@@ -541,8 +548,7 @@ export async function generateCharacterPdf(
     // Add logo image in upper right corner
     const logoX = margin + 405;
     const logoY = margin;
-    const logoMaxWidth = pageWidth - margin - logoX; // Available width to right margin
-
+    const logoMaxWidth = 135;
     // Load and add logo image
     try {
         // Load image from assets folder
@@ -680,21 +686,12 @@ export async function generateCharacterPdf(
     // HP black box label (no label above, it's in the box)
     // HP white box label
     hpX += abilityBoxWidth + hpBoxSpacing; // Skip HP black box width
-    const totalBoxWidth = 35; // Define here for label positioning
+    const totalBoxWidth = 35;
+    const woundsWidth = 80;
+    const nonlethalWidth = 80;
+    const speedWidth = 80;
     drawLabel(hpX, hpHeaderY, totalBoxWidth, ['TOTAL']);
     hpX += totalBoxWidth + hpBoxSpacing;
-
-    // Calculate remaining width for WOUNDS, NONLETHAL DAMAGE, and SPEED boxes
-    // Available width = page width - margin - hpStartX - (HP box + TOTAL box + spacing)
-    const hpBoxWidth = abilityBoxWidth;
-    // totalBoxWidth already defined above for label positioning
-    const usedWidth = hpBoxWidth + hpBoxSpacing + totalBoxWidth + hpBoxSpacing;
-    const availableWidth = pageWidth - margin - hpStartX - usedWidth;
-    // Keep WOUNDS and NONLETHAL at their current size, shrink SPEED as needed
-    const woundsWidth = Math.floor(availableWidth / 3); // Keep current size
-    const nonlethalWidth = Math.floor(availableWidth / 3); // Keep current size
-    const remainingForSpeed = availableWidth - woundsWidth - nonlethalWidth - (hpBoxSpacing * 2); // 2 gaps between 3 boxes
-    const speedWidth = remainingForSpeed; // SPEED box shrinks to fit
 
     // WOUNDS label
     drawLabel(hpX, hpHeaderY, woundsWidth, ['WOUNDS']);
@@ -711,8 +708,8 @@ export async function generateCharacterPdf(
     hpX = hpStartX;
 
     // HP black box (same style as ability name boxes)
-    drawAbilityNameBox(hpX, hpStartY, hpBoxWidth, rowHeight, 'HP', 'HIT POINTS');
-    hpX += hpBoxWidth + hpBoxSpacing;
+    drawAbilityNameBox(hpX, hpStartY, abilityBoxWidth, rowHeight, 'HP', 'HIT POINTS');
+    hpX += abilityBoxWidth + hpBoxSpacing;
 
     // TOTAL white box with hit points (10px bigger)
     drawScoreBox(hpX, hpStartY, totalBoxWidth, rowHeight, formattedCharacter.hitPoints);
@@ -744,8 +741,8 @@ export async function generateCharacterPdf(
     let acX = hpStartX;
 
     // AC black box (same style as HP box)
-    drawAbilityNameBox(acX, acRowY, hpBoxWidth, rowHeight, 'AC', 'ARMOR CLASS');
-    acX += hpBoxWidth + acBoxSpacing + 1;
+    drawAbilityNameBox(acX, acRowY, abilityBoxWidth, rowHeight, 'AC', 'ARMOR CLASS');
+    acX += abilityBoxWidth + acBoxSpacing + 1;
 
     // Total AC white box
     const acStats = formattedCharacter.armorClass;
@@ -827,7 +824,7 @@ export async function generateCharacterPdf(
     acX += acBoxWidth + acBoxSpacing + 3; // Increased gap by 3px
 
     // Damage Reduction box (uses remaining space)
-    const damageReductionWidth = pageWidth - margin - acX;
+    const damageReductionWidth = 60;
     drawScoreBox(acX, acRowY, damageReductionWidth, rowHeight, ''); // Empty for now
 
     // Column labels beneath the boxes (4pt font, ALL CAPS, word-wrapped)
@@ -835,7 +832,7 @@ export async function generateCharacterPdf(
     let labelX = hpStartX + 1;
 
     // AC label (no label, it's in the box)
-    labelX += hpBoxWidth + acBoxSpacing + 1;
+    labelX += abilityBoxWidth + acBoxSpacing + 1;
 
     // TOTAL label (single word, no wrapping needed)
     drawLabel(labelX, acLabelY, acBoxWidth, ['TOTAL']);
@@ -988,7 +985,7 @@ export async function generateCharacterPdf(
     // Saving Throws Section - starts at leftmost X, below ability section
     // Calculate Y position: after CHA row (last ability row) with space for headers
     // CHA row ends at: yPos + headerHeight + ((rowHeight + rowSpacing) * 5) + 9
-    const savingThrowsHeaderY = yPos + headerHeight + ((rowHeight + rowSpacing) * 6) + 4;
+    const savingThrowsHeaderY = yPos + headerHeight + ((rowHeight + rowSpacing) * 6) + 6;
     const savingThrowsStartY = savingThrowsHeaderY + headerHeight;
     const savingThrowsBoxWidth = initiativeBoxWidth - 8; // Same width as INITIATIVE and BASE ATTACK black boxes
     const savingThrowsWhiteBoxWidth = initWhiteBoxWidth; // narrow white box
@@ -1195,9 +1192,78 @@ export async function generateCharacterPdf(
     doc.setFillColor(255, 255, 255);
     doc.rect(conditionalModifiersStartX, conditionalModifiersHeaderY + conditionalModifiersHeaderHeight, conditionalModifiersWidth, conditionalModifiersHeight - conditionalModifiersHeaderHeight, 'FD');
 
+    // Populate conditional modifiers box with features that have conditional bonuses
+    if (resolvedProgressions && characterSheetStrategy) {
+        // Find all entities with conditions that apply to saves, AC, attacks, etc.
+        const conditionalModifiers: Array<{ formattedValue: string; progression: FeatureProgression }> = [];
+
+        for (const progression of resolvedProgressions) {
+            if (!progression.entities) continue;
+
+            for (const entity of progression.entities) {
+                // Only include entities with conditions
+                if (!entity.conditions || entity.conditions.length === 0) continue;
+
+                // Only include bonuses (not proficiencies, choices, etc.)
+                if (entity.type !== EntityType.Bonus) continue;
+
+                // Only include entities that apply to saves, AC, attacks, damage, or initiative
+                const appliesToTypes: number[] = [
+                    EntityAppliesToType.SavingThrow,
+                    EntityAppliesToType.AC,
+                    EntityAppliesToType.Attack,
+                    EntityAppliesToType.Damage,
+                    EntityAppliesToType.Initiative
+                ];
+                if (!appliesToTypes.includes(entity.appliesTo)) continue;
+
+                // Format this entity using the display strategy
+                const displayResult = characterSheetStrategy.format([progression], {
+                    character: characterContext,
+                    featsMap
+                });
+
+                // Find the formatted entity in the result
+                // DisplayResult for CharacterSheetDisplayStrategy returns CharacterSheetDisplayResult which has individualEntities
+                const sheetResult = displayResult as CharacterSheetDisplayResult;
+                const formattedEntity = sheetResult.individualEntities?.find(e =>
+                    e.entity?.id === entity.id
+                );
+
+                if (formattedEntity && formattedEntity.formattedValue) {
+                    conditionalModifiers.push({
+                        formattedValue: formattedEntity.formattedValue,
+                        progression
+                    });
+                }
+            }
+        }
+
+        // Display conditional modifiers in 6pt font
+        if (conditionalModifiers.length > 0) {
+            doc.setFontSize(6);
+            doc.setFont('ArchivoNarrow', 'normal');
+            let conditionalY = conditionalModifiersHeaderY + conditionalModifiersHeaderHeight + 6;
+            const lineHeight = 6;
+            const maxWidth = conditionalModifiersWidth - 4;
+
+            for (const modifier of conditionalModifiers) {
+                // Split text if it's too long
+                const lines = doc.splitTextToSize(modifier.formattedValue, maxWidth);
+                for (const line of lines) {
+                    if (conditionalY + lineHeight > conditionalModifiersHeaderY + conditionalModifiersHeight - 2) {
+                        break; // Don't overflow the box
+                    }
+                    doc.text(line, conditionalModifiersStartX + 2, conditionalY);
+                    conditionalY += lineHeight;
+                }
+            }
+        }
+    }
+
     // Spell Resistance / Arcane Spell Failure / Action Points Row
     // Starting at leftColX, 4px below conditionalModifiersBottomY
-    const spellResistanceRowY = conditionalModifiersHeaderY + conditionalModifiersHeight + 4;
+    const spellResistanceRowY = conditionalModifiersHeaderY + conditionalModifiersHeight + 6;
     let spellResistanceX = leftColX;
 
     // SPELL RESISTANCE black box
@@ -1230,7 +1296,7 @@ export async function generateCharacterPdf(
     drawScoreBox(spellResistanceX, spellResistanceRowY, valueBoxWidth, rowHeight, actionPointsValue > 0 ? actionPointsValue.toString() : '');
 
     // Melee and Ranged Attack Rows - below spell resistance row
-    const attackHeaderY = spellResistanceRowY + rowHeight + 7;
+    const attackHeaderY = spellResistanceRowY + rowHeight + 10;
     const attackStartY = attackHeaderY + headerHeight;
     const attackBoxWidth = spellResistanceBoxWidth; // Same width as saving throw black boxes
     const attackWhiteBoxWidth = valueBoxWidth; // Same width as other white boxes
@@ -1749,7 +1815,7 @@ export async function generateCharacterPdf(
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(1);
     doc.setFillColor(255, 255, 255);
-    doc.rect(32, 26, 548, 728, 'FD');
+    doc.rect(outerBoxX, outerBoxY, outerBoxWidth, outerBoxHeight, 'FD');
 
     // Helper to find equipped armor
     const findEquippedArmor = (characterItems: CharacterItem[], items: ItemWithDetails[]): { charItem: CharacterItem; item: ItemWithDetails } | null => {
@@ -1813,10 +1879,10 @@ export async function generateCharacterPdf(
 
     // Calculate column widths for page 2
     const page2LeftColWidth = 336;
-    const page2RightColWidth = 200;
+    const page2RightColWidth = 205;
     const page2LeftColX = margin;
     const page2RightColX = margin + page2LeftColWidth + 4;
-    let page2Y = margin;
+    let page2Y = margin - 4;
 
     // ============================================================================
     // LEFT COLUMN - Campaign/XP, Gear, Possessions, Notes, Languages
@@ -1990,7 +2056,8 @@ export async function generateCharacterPdf(
     // OTHER POSSESSIONS Table
     let possessionsTableY = page2Y;
     const subColWidth = 166;
-    const possessionTableItemColWidth = 136;
+    const possessionTableItemColWidth = 110; // Reduced from 136 to accommodate QTY column
+    const possessionTableQtyColWidth = 20;
     const possessionTableWeightColWidth = 26;
     const possessionsTableLeftX = page2LeftColX;
     const possessionsTableRightX = possessionsTableLeftX + subColWidth + 4;
@@ -2012,64 +2079,132 @@ export async function generateCharacterPdf(
     doc.setFontSize(4);
     doc.setFont('ArchivoNarrow', 'normal');
     doc.setTextColor(0, 0, 0);
+    // Left column headers
     doc.text('ITEM', page2LeftColX + possessionTableItemColWidth / 2, possessionsTableY, { align: 'center' });
-    doc.text('WEIGHT', (page2LeftColX + possessionTableItemColWidth + 4) + (possessionTableWeightColWidth / 2), possessionsTableY, { align: 'center' });
+    doc.text('QTY', page2LeftColX + possessionTableItemColWidth + 2 + (possessionTableQtyColWidth / 2), possessionsTableY, { align: 'center' });
+    doc.text('WEIGHT', (page2LeftColX + possessionTableItemColWidth + 2 + possessionTableQtyColWidth + 2) + (possessionTableWeightColWidth / 2), possessionsTableY, { align: 'center' });
+    // Right column headers
     doc.text('ITEM', possessionsTableRightX + possessionTableItemColWidth / 2, possessionsTableY, { align: 'center' });
-    doc.text('WEIGHT', (possessionsTableRightX + possessionTableItemColWidth + 4) + (possessionTableWeightColWidth / 2), possessionsTableY, { align: 'center' });
+    doc.text('QTY', possessionsTableRightX + possessionTableItemColWidth + 2 + (possessionTableQtyColWidth / 2), possessionsTableY, { align: 'center' });
+    doc.text('WEIGHT', (possessionsTableRightX + possessionTableItemColWidth + 2 + possessionTableQtyColWidth + 2) + (possessionTableWeightColWidth / 2), possessionsTableY, { align: 'center' });
 
     // Draw table lines and populate with items
     const possessionsRowHeight = 10;
     let possessionsY = possessionsTableY + 8;
     let totalWeight = 0;
 
-    // Get items that are not in specific equipment slots (Owned, Carried, or null location)
+    // Get items that are not in specific equipment slots (Owned, Carried, Main Hand, Off Hand, or null location)
     const generalItems = (character.characterItems || []).filter(ci =>
-        !ci.location || ci.location === LOCATION_ENUM.Owned || ci.location === LOCATION_ENUM.Carried
+        !ci.location || ci.location === LOCATION_ENUM.Owned || ci.location === LOCATION_ENUM.Carried ||
+        ci.location === LOCATION_ENUM.MainHand || ci.location === LOCATION_ENUM.OffHand
     );
 
-    // Left column - 36 rows, populate with general items
+    // Group items by baseItemId and location
+    type GroupedItem = {
+        baseItemId: number;
+        location: number | null;
+        totalQuantity: number;
+        name: string;
+        weight: number | null;
+        isOwned: boolean;
+    };
+
+    const groupedItemsMap = new Map<string, GroupedItem>();
+    for (const charItem of generalItems) {
+        const location = charItem.location ?? LOCATION_ENUM.Owned;
+        // Owned items are only those with location === Owned (0) or null
+        // MainHand, OffHand, and Carried are treated as carried (not owned)
+        const isOwned = location === LOCATION_ENUM.Owned || location === null;
+        const key = `${charItem.baseItemId}_${location}`;
+        const item = items.find(it => it.id === charItem.baseItemId);
+        const quantity = charItem.quantity ?? 1;
+
+        if (groupedItemsMap.has(key)) {
+            const existing = groupedItemsMap.get(key)!;
+            existing.totalQuantity += quantity;
+        } else {
+            groupedItemsMap.set(key, {
+                baseItemId: charItem.baseItemId,
+                location,
+                totalQuantity: quantity,
+                name: charItem.name || item?.name || '',
+                weight: item?.weight ? Number(item.weight) : null,
+                isOwned
+            });
+        }
+    }
+
+    const groupedItems = Array.from(groupedItemsMap.values());
+
+    // Left column - 36 rows, populate with grouped items
     doc.setFontSize(7);
     doc.setFont('ArchivoNarrow', 'normal');
     for (let i = 0; i < 36; i++) {
-        if (i < generalItems.length) {
-            const charItem = generalItems[i];
-            const item = items.find(it => it.id === charItem.baseItemId);
-            const itemName = charItem.name || item?.name || '';
-            const itemWeight = item?.weight ? `${item.weight} lb.` : '';
-            if (item?.weight) {
-                totalWeight += Number(item.weight);
+        if (i < groupedItems.length) {
+            const groupedItem = groupedItems[i];
+            // Item name with asterisk prefix if owned
+            const itemName = groupedItem.isOwned ? `*${groupedItem.name}` : groupedItem.name;
+
+            // Quantity - only display if > 1
+            const qtyText = groupedItem.totalQuantity > 1 ? groupedItem.totalQuantity.toString() : '';
+
+            // Weight - blank if owned, otherwise show weight (multiply by quantity if > 1)
+            let itemWeight = '';
+            if (!groupedItem.isOwned && groupedItem.weight !== null) {
+                const itemTotalWeight = groupedItem.totalQuantity > 1
+                    ? groupedItem.weight * groupedItem.totalQuantity
+                    : groupedItem.weight;
+                itemWeight = `${itemTotalWeight} lb.`;
+                // Add to total weight (only for carried items)
+                totalWeight += itemTotalWeight;
             }
+
             doc.text(itemName, possessionsTableLeftX + 2, possessionsY);
-            doc.text(itemWeight, possessionsTableLeftX + possessionTableItemColWidth + possessionTableWeightColWidth + 2, possessionsY, { align: 'right' });
+            doc.text(qtyText, possessionsTableLeftX + possessionTableItemColWidth + 2 + (possessionTableQtyColWidth / 2), possessionsY, { align: 'center' });
+            doc.text(itemWeight, possessionsTableLeftX + possessionTableItemColWidth + 2 + possessionTableQtyColWidth + 2 + (possessionTableWeightColWidth / 2), possessionsY, { align: 'center' });
         }
         possessionsY += 2;
         doc.setLineWidth(0.5);
         doc.line(possessionsTableLeftX, possessionsY, possessionsTableLeftX + possessionTableItemColWidth, possessionsY);
-        doc.line(possessionsTableLeftX + possessionTableItemColWidth + 4, possessionsY, possessionsTableLeftX + possessionTableItemColWidth + 4 + possessionTableWeightColWidth, possessionsY);
+        doc.line(possessionsTableLeftX + possessionTableItemColWidth + 2, possessionsY, possessionsTableLeftX + possessionTableItemColWidth + 2 + possessionTableQtyColWidth, possessionsY);
+        doc.line(possessionsTableLeftX + possessionTableItemColWidth + 2 + possessionTableQtyColWidth + 2, possessionsY, possessionsTableLeftX + possessionTableItemColWidth + 2 + possessionTableQtyColWidth + 2 + possessionTableWeightColWidth, possessionsY);
         possessionsY += possessionsRowHeight;
     }
 
     // Right column - 10 rows, then "Items Equipped by Slot"
     possessionsY = possessionsTableY + 8;
-    const rightColItems = generalItems.slice(36, 46); // Next 10 items
+    const rightColItems = groupedItems.slice(36, 46); // Next 10 grouped items
     doc.setFontSize(7);
     doc.setFont('ArchivoNarrow', 'normal');
     for (let i = 0; i < 10; i++) {
         if (i < rightColItems.length) {
-            const charItem = rightColItems[i];
-            const item = items.find(it => it.id === charItem.baseItemId);
-            const itemName = charItem.name || item?.name || '';
-            const itemWeight = item?.weight ? `${item.weight} lb.` : '';
-            if (item?.weight) {
-                totalWeight += Number(item.weight);
+            const groupedItem = rightColItems[i];
+            // Item name with asterisk prefix if owned
+            const itemName = groupedItem.isOwned ? `*${groupedItem.name}` : groupedItem.name;
+
+            // Quantity - only display if > 1
+            const qtyText = groupedItem.totalQuantity > 1 ? groupedItem.totalQuantity.toString() : '';
+
+            // Weight - blank if owned, otherwise show weight (multiply by quantity if > 1)
+            let itemWeight = '';
+            if (!groupedItem.isOwned && groupedItem.weight !== null) {
+                const itemTotalWeight = groupedItem.totalQuantity > 1
+                    ? groupedItem.weight * groupedItem.totalQuantity
+                    : groupedItem.weight;
+                itemWeight = `${itemTotalWeight} lb.`;
+                // Add to total weight (only for carried items)
+                totalWeight += itemTotalWeight;
             }
+
             doc.text(itemName, possessionsTableRightX + 2, possessionsY);
-            doc.text(itemWeight, possessionsTableRightX + possessionTableItemColWidth + possessionTableWeightColWidth + 2, possessionsY, { align: 'right' });
+            doc.text(qtyText, possessionsTableRightX + possessionTableItemColWidth + 2 + (possessionTableQtyColWidth / 2), possessionsY, { align: 'center' });
+            doc.text(itemWeight, possessionsTableRightX + possessionTableItemColWidth + 2 + possessionTableQtyColWidth + 2 + (possessionTableWeightColWidth / 2), possessionsY, { align: 'center' });
         }
         possessionsY += 2;
         doc.setLineWidth(0.5);
         doc.line(possessionsTableRightX, possessionsY, possessionsTableRightX + possessionTableItemColWidth, possessionsY);
-        doc.line(possessionsTableRightX + possessionTableItemColWidth + 4, possessionsY, possessionsTableRightX + possessionTableItemColWidth + 4 + possessionTableWeightColWidth, possessionsY);
+        doc.line(possessionsTableRightX + possessionTableItemColWidth + 2, possessionsY, possessionsTableRightX + possessionTableItemColWidth + 2 + possessionTableQtyColWidth, possessionsY);
+        doc.line(possessionsTableRightX + possessionTableItemColWidth + 2 + possessionTableQtyColWidth + 2, possessionsY, possessionsTableRightX + possessionTableItemColWidth + 2 + possessionTableQtyColWidth + 2 + possessionTableWeightColWidth, possessionsY);
         possessionsY += possessionsRowHeight;
     }
 
@@ -2116,11 +2251,11 @@ export async function generateCharacterPdf(
         doc.setFontSize(7);
         doc.setFont('ArchivoNarrow', 'normal');
         doc.text(itemName, possessionsTableRightX + possessionTableItemColWidth / 2, possessionsY);
-        doc.text(itemWeight, possessionsTableRightX + possessionTableItemColWidth + possessionTableWeightColWidth + 2, possessionsY, { align: 'right' });
+        doc.text(itemWeight, possessionsTableRightX + possessionTableItemColWidth + 2 + possessionTableQtyColWidth + 2 + (possessionTableWeightColWidth / 2), possessionsY, { align: 'center' });
         possessionsY += 2;
         doc.setLineWidth(0.5);
         doc.line(possessionsTableRightX, possessionsY, possessionsTableRightX + possessionTableItemColWidth, possessionsY);
-        doc.line(possessionsTableRightX + possessionTableItemColWidth + 4, possessionsY, possessionsTableRightX + possessionTableItemColWidth + 4 + possessionTableWeightColWidth, possessionsY);
+        doc.line(possessionsTableRightX + possessionTableItemColWidth + 2 + possessionTableQtyColWidth + 2, possessionsY, possessionsTableRightX + possessionTableItemColWidth + 2 + possessionTableQtyColWidth + 2 + possessionTableWeightColWidth, possessionsY);
         possessionsY += possessionsRowHeight;
     }
 
@@ -2134,10 +2269,10 @@ export async function generateCharacterPdf(
     doc.setFontSize(6);
     doc.setFont('ArchivoNarrow', 'bold');
     doc.text('TOTAL WEIGHT CARRIED', possessionsTableRightX + 2, possessionsY);
-    doc.text(`${totalWeight.toFixed(1)} lb.`, possessionsTableRightX + possessionTableItemColWidth + possessionTableWeightColWidth + 2, possessionsY, { align: 'right' });
+    doc.text(`${totalWeight.toFixed(1)} lb.`, possessionsTableRightX + possessionTableItemColWidth + 2 + possessionTableQtyColWidth + 2 + (possessionTableWeightColWidth / 2), possessionsY, { align: 'center' });
     possessionsY += 2;
     doc.setLineWidth(0.5);
-    doc.line(possessionsTableRightX + possessionTableItemColWidth + 4, possessionsY, possessionsTableRightX + possessionTableItemColWidth + 4 + possessionTableWeightColWidth, possessionsY);
+    doc.line(possessionsTableRightX + possessionTableItemColWidth + 2 + possessionTableQtyColWidth + 2, possessionsY, possessionsTableRightX + possessionTableItemColWidth + 2 + possessionTableQtyColWidth + 2 + possessionTableWeightColWidth, possessionsY);
 
     // NOTES Section
     const notesWidth = 270;
@@ -2160,7 +2295,7 @@ export async function generateCharacterPdf(
     const notesColWidth = (notesWidth - 2) / 2;
 
     // Draw two columns with lines
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 15; i++) {
         const lineY = notesBoxY + i * 9;
         doc.setLineWidth(0.5);
         doc.line(notesX, lineY, notesX + notesColWidth, lineY);
@@ -2174,17 +2309,17 @@ export async function generateCharacterPdf(
         doc.setTextColor(0, 0, 0);
         const notesLines = doc.splitTextToSize(character.notes, notesColWidth - 4);
         let notesTextY = notesBoxY;
-        for (let i = 0; i < Math.min(notesLines.length, 24); i++) {
-            const col = i < 12 ? 0 : 1; // First 12 lines in left column, next 12 in right
+        for (let i = 0; i < Math.min(notesLines.length, 30); i++) {
+            const col = i < 15 ? 0 : 1; // First 15 lines in left column, next 15 in right
             const colX = col === 0 ? notesX + 2 : notesX + notesColWidth + 2;
             const lineY = col === 0 ? notesTextY + (i * 9) : notesTextY + ((i - 12) * 9);
-            doc.text(notesLines[i], colX, lineY);
+            doc.text(notesLines[i], colX, lineY - 1);
         }
     }
 
     // LANGUAGES Section (25% of column width, to the right of NOTES)
-    const languagesWidth = 64
-    const languagesX = notesX + notesWidth + 2;
+    const languagesWidth = 62
+    const languagesX = notesX + notesWidth + 4;
     const languagesHeaderY = notesHeaderY;
 
     doc.setDrawColor(0, 0, 0);
@@ -2203,8 +2338,7 @@ export async function generateCharacterPdf(
     doc.setFontSize(6);
     doc.setFont('ArchivoNarrow', 'normal');
     let languagesY = languagesBoxY;
-    // Draw lines for remaining space
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 15; i++) {
         if (i < languages.length) {
             doc.text(languages[i], languagesX + 2, languagesY);
         }
@@ -2217,10 +2351,10 @@ export async function generateCharacterPdf(
     // ============================================================================
     // RIGHT COLUMN - Special Abilities, Carrying Info, Money, Turn Attempts
     // ============================================================================
-    let rightColY = margin;
+    let rightColY = margin - 4;
 
     // SPECIAL ABILITIES Box
-    const specialAbilitiesBoxHeight = 540;
+    const specialAbilitiesBoxHeight = 564;
     const specialAbilitiesHeaderHeight = 12;
 
     doc.setDrawColor(0, 0, 0);
@@ -2245,60 +2379,461 @@ export async function generateCharacterPdf(
     // Format and display abilities
     if (formattedCharacter && resolvedProgressions) {
         let abilitiesY = rightColY + 10;
-        doc.setFontSize(6);
+        doc.setFontSize(7);
         doc.setFont('ArchivoNarrow', 'bold');
 
-        // Racial Abilities
-        const raceProgressions = resolvedProgressions.filter(p => p.sourceType === 2); // Race
-        if (raceProgressions.length > 0) {
-            doc.text('-- RACIAL ABILITIES --', page2RightColX + 2, abilitiesY);
+        // Racial Abilities - iterate through resolvedProgressions directly to get all race features
+        // Also check formattedCharacter.features to ensure we include features that produce formatted values
+        // Deduplicate by featureId and get summaries from progressions
+        const raceFeatureMap = new Map<number, FeatureProgression>();
+
+        // First, add features from resolvedProgressions
+        for (const progression of resolvedProgressions) {
+            if (
+                progression.sourceType === FeatureSourceType.Race &&
+                progression.featureId !== SpecialFeatureId.ClassProficiency &&
+                progression.featureId !== SpecialFeatureId.ClassSkill &&
+                progression.featureId !== SpecialFeatureId.AutomaticLanguage &&
+                progression.featureId !== SpecialFeatureId.BonusLanguage &&
+                progression.featureId !== SpecialFeatureId.AbilityAdjustment &&
+                progression.level <= character.advancements.length && // Only show features active at current level
+                !raceFeatureMap.has(progression.featureId) // Deduplicate by featureId
+            ) {
+                raceFeatureMap.set(progression.featureId, progression);
+            }
+        }
+
+        // Also check formattedCharacter.features to catch any race features that produce formatted values
+        // but might not have been caught above (e.g., if the feature object wasn't loaded in the first pass)
+        // This ensures we include features like Awareness (skill bonuses) and Weapon Proficiencies
+        for (const formattedFeature of formattedCharacter.features) {
+            // Skip if we already have this feature
+            if (raceFeatureMap.has(formattedFeature.featureId)) {
+                continue;
+            }
+
+            // Find the progression from resolvedProgressions
+            const prog = resolvedProgressions.find(p =>
+                p.featureId === formattedFeature.featureId &&
+                p.sourceType === FeatureSourceType.Race &&
+                p.featureId !== SpecialFeatureId.ClassProficiency &&
+                p.featureId !== SpecialFeatureId.ClassSkill &&
+                p.featureId !== SpecialFeatureId.AutomaticLanguage &&
+                p.featureId !== SpecialFeatureId.BonusLanguage &&
+                p.featureId !== SpecialFeatureId.AbilityAdjustment &&
+                p.level <= character.advancements.length
+            );
+            if (prog) {
+                raceFeatureMap.set(formattedFeature.featureId, prog);
+            }
+        }
+        if (raceFeatureMap.size > 0) {
+            const raceName = character.race?.name || 'Race';
+            doc.text(`-- ${raceName.toUpperCase()} --`, page2RightColX + 2, abilitiesY);
             abilitiesY += 8;
-            doc.setFontSize(5);
-            doc.setFont('ArchivoNarrow', 'normal');
-            // Use formatted features from formattedCharacter
-            const raceFeatures = formattedCharacter.features.filter(f => {
-                const prog = resolvedProgressions.find(p => p.id === f.featureId && p.sourceType === 2);
-                return prog !== undefined;
-            });
-            for (const feature of raceFeatures.slice(0, 5)) {
-                doc.text(feature.formattedValue || '', page2RightColX + 2, abilitiesY);
-                abilitiesY += 6;
+            doc.setFontSize(6);
+            for (const progression of Array.from(raceFeatureMap.values())) {
+                // Get feature name and summary from progression.feature (which should be loaded)
+                // If not available, try to get from formattedCharacter.features as fallback
+                let featureName = progression.feature?.name || '';
+                let summary = progression.feature?.summary || '';
+
+                // Fallback: if feature object isn't loaded, try to get from formattedCharacter
+                if (!featureName && !summary) {
+                    const formattedFeature = formattedCharacter.features.find(f => f.featureId === progression.featureId);
+                    if (formattedFeature) {
+                        featureName = formattedFeature.featureName;
+                        // Note: formattedFeature doesn't have summary, so we can't get it from there
+                    }
+                }
+
+                // Display if we have either a name or summary
+                if (featureName || summary) {
+                    // Format as "feature.name: feature.summary"
+                    const colonText = summary ? ': ' : '';
+                    const featureNameText = featureName + colonText;
+
+                    // Draw feature name in bold
+                    doc.setFont('ArchivoNarrow', 'bold');
+                    const nameWidth = doc.getTextWidth(featureNameText);
+                    doc.text(featureNameText, page2RightColX + 2, abilitiesY);
+
+                    // Draw summary text in normal font right after the name
+                    if (summary) {
+                        doc.setFont('ArchivoNarrow', 'normal');
+                        const remainingWidth = page2RightColWidth - 4 - nameWidth;
+                        const subsequentLineWidth = page2RightColWidth - 4;
+
+                        // Split text for the first line (accounting for feature name width)
+                        const firstLineSplit = doc.splitTextToSize(summary, remainingWidth);
+                        const firstLine = firstLineSplit[0];
+
+                        // Draw first line right after the feature name
+                        doc.text(firstLine, page2RightColX + 2 + nameWidth, abilitiesY, { maxWidth: remainingWidth });
+
+                        // Draw subsequent lines starting at the left margin with full width
+                        if (firstLineSplit.length > 1) {
+                            // Get the remaining text after the first line
+                            const remainingText = firstLineSplit.slice(1).join(' ');
+                            const subsequentLines = doc.splitTextToSize(remainingText, subsequentLineWidth);
+                            let summaryY = abilitiesY;
+                            for (let i = 0; i < subsequentLines.length; i++) {
+                                summaryY += 6; // Move to next line for wrapped text
+                                doc.text(subsequentLines[i], page2RightColX + 2, summaryY, { maxWidth: subsequentLineWidth });
+                            }
+                            abilitiesY = summaryY;
+                        }
+                    }
+                    abilitiesY += 6;
+                }
             }
             abilitiesY += 4;
         }
 
-        // Class Abilities
-        const classProgressions = resolvedProgressions.filter(p => p.sourceType === 1); // Class
-        if (classProgressions.length > 0) {
-            doc.setFontSize(6);
+        // Class Abilities - iterate through resolvedProgressions directly to get all class features
+        // Group by class and show separate sections for each class
+        // Calculate class levels per class for multi-class support
+        const classLevelCounts = new Map<number, number>();
+        for (const advancement of character.advancements) {
+            const currentLevel = classLevelCounts.get(advancement.classId) ?? 0;
+            classLevelCounts.set(advancement.classId, currentLevel + 1);
+
+            if (advancement.secondaryClassId) {
+                const secondaryLevel = classLevelCounts.get(advancement.secondaryClassId) ?? 0;
+                classLevelCounts.set(advancement.secondaryClassId, secondaryLevel + 1);
+            }
+        }
+
+        // Group features by class
+        const classFeaturesByClass = new Map<number, Map<number, FeatureProgression>>();
+        for (const progression of resolvedProgressions) {
+            if (
+                progression.sourceType === FeatureSourceType.Class &&
+                progression.featureId !== SpecialFeatureId.ClassProficiency &&
+                progression.featureId !== SpecialFeatureId.ClassSkill &&
+                progression.featureId !== SpecialFeatureId.AutomaticLanguage &&
+                progression.featureId !== SpecialFeatureId.BonusLanguage &&
+                progression.featureId !== SpecialFeatureId.AbilityAdjustment &&
+                progression.feature && // Ensure feature data exists
+                progression.classId && // Must have a classId
+                // Check if feature is active at the specific class level (not total character level)
+                (progression.level <= (classLevelCounts.get(progression.classId) ?? 0))
+            ) {
+                if (!classFeaturesByClass.has(progression.classId)) {
+                    classFeaturesByClass.set(progression.classId, new Map());
+                }
+                const classFeatures = classFeaturesByClass.get(progression.classId)!;
+                // Deduplicate by featureId
+                if (!classFeatures.has(progression.featureId)) {
+                    classFeatures.set(progression.featureId, progression);
+                }
+            }
+        }
+
+        // Display each class's features in a separate section
+        for (const [classId, classFeatures] of classFeaturesByClass.entries()) {
+            if (classFeatures.size > 0) {
+                const classDetails = classDetailsMap.get(classId);
+                // Get class name from first progression if classDetails not available
+                const firstProgression = Array.from(classFeatures.values())[0];
+                const className = classDetails?.name || firstProgression?.class?.name || 'Class';
+                doc.setFontSize(7);
+                doc.setFont('ArchivoNarrow', 'bold');
+                doc.text(`-- ${className.toUpperCase()} --`, page2RightColX + 2, abilitiesY);
+                abilitiesY += 8;
+                doc.setFontSize(6);
+                for (const progression of Array.from(classFeatures.values())) {
+                    const featureName = progression.feature?.name || '';
+                    const summary = progression.feature?.summary || '';
+                    if (featureName || summary) {
+                        // Format as "feature.name: feature.summary"
+                        const colonText = summary ? ': ' : '';
+                        const featureNameText = featureName + colonText;
+
+                        // Draw feature name in bold
+                        doc.setFont('ArchivoNarrow', 'bold');
+                        const nameWidth = doc.getTextWidth(featureNameText);
+                        doc.text(featureNameText, page2RightColX + 2, abilitiesY);
+
+                        // Draw summary text in normal font right after the name
+                        if (summary) {
+                            doc.setFont('ArchivoNarrow', 'normal');
+                            const remainingWidth = page2RightColWidth - 4 - nameWidth;
+                            const subsequentLineWidth = page2RightColWidth - 4;
+
+                            // Split text for the first line (accounting for feature name width)
+                            const firstLineSplit = doc.splitTextToSize(summary, remainingWidth);
+                            const firstLine = firstLineSplit[0];
+
+                            // Draw first line right after the feature name
+                            doc.text(firstLine, page2RightColX + 2 + nameWidth, abilitiesY, { maxWidth: remainingWidth });
+
+                            // Draw subsequent lines starting at the left margin with full width
+                            if (firstLineSplit.length > 1) {
+                                // Get the remaining text after the first line
+                                const remainingText = firstLineSplit.slice(1).join(' ');
+                                const subsequentLines = doc.splitTextToSize(remainingText, subsequentLineWidth);
+                                let summaryY = abilitiesY;
+                                for (let i = 0; i < subsequentLines.length; i++) {
+                                    summaryY += 6; // Move to next line for wrapped text
+                                    doc.text(subsequentLines[i], page2RightColX + 2, summaryY, { maxWidth: subsequentLineWidth });
+                                }
+                                abilitiesY = summaryY;
+                            }
+                        }
+                        abilitiesY += 6;
+                    }
+                }
+                abilitiesY += 4;
+            }
+        }
+
+        // Proficiencies - use formattedCharacter.proficiencies, join with commas
+        if (formattedCharacter.proficiencies && formattedCharacter.proficiencies.length > 0) {
+            doc.setFontSize(7);
             doc.setFont('ArchivoNarrow', 'bold');
-            doc.text('-- CLASS ABILITIES --', page2RightColX + 2, abilitiesY);
+            doc.text('-- PROFICIENCIES --', page2RightColX + 2, abilitiesY);
             abilitiesY += 8;
-            doc.setFontSize(5);
+            doc.setFontSize(6);
             doc.setFont('ArchivoNarrow', 'normal');
-            const classFeatures = formattedCharacter.features.filter(f => {
-                const prog = resolvedProgressions.find(p => p.id === f.featureId && p.sourceType === 1);
-                return prog !== undefined;
-            });
-            for (const feature of classFeatures.slice(0, 5)) {
-                doc.text(feature.formattedValue || '', page2RightColX + 2, abilitiesY);
-                abilitiesY += 6;
+            const proficiencyText = formattedCharacter.proficiencies
+                .map(p => p.formattedValue)
+                .filter(Boolean)
+                .join(', ');
+            if (proficiencyText) {
+                const proficiencyLines = doc.splitTextToSize(proficiencyText, page2RightColWidth - 4);
+                for (const line of proficiencyLines) {
+                    doc.text(line, page2RightColX + 2, abilitiesY, { maxWidth: page2RightColWidth - 4 });
+                    abilitiesY += 6;
+                }
             }
             abilitiesY += 4;
         }
 
-        // Feats
-        if (formattedCharacter.feats && formattedCharacter.feats.length > 0) {
-            doc.setFontSize(6);
+        // Feats (filter out proficiencies and categorize by source)
+        // Get all character feats to access featSubId and source information
+        const allCharacterFeats = getAllCharacterFeats(character, resolvedProgressions);
+
+        // Create maps for feat lookup
+        const featSubIdMap = new Map<number, number | null>();
+        const featSourceMap = new Map<number, CharacterFeat>();
+        for (const characterFeat of allCharacterFeats) {
+            if (!featSubIdMap.has(characterFeat.featId)) {
+                featSubIdMap.set(characterFeat.featId, characterFeat.featSubId ?? null);
+            }
+            if (!featSourceMap.has(characterFeat.featId)) {
+                featSourceMap.set(characterFeat.featId, characterFeat);
+            }
+        }
+
+        // Also get auto-granted feats from progressions (feats granted directly, not from choices)
+        // These are feats that appear in formattedCharacter.feats but are NOT in allCharacterFeats
+        const autoGrantedFeats = new Map<number, { featId: number; level: number; sourceFeature: string; progressionId: number }>();
+        for (const progression of resolvedProgressions) {
+            if (!progression.entities) continue;
+            for (const entity of progression.entities) {
+                if (entity.appliesTo === EntityAppliesToType.Feat && entity.appliesToId) {
+                    // Check if this is NOT a choice and NOT a proficiency
+                    // If it's not in featSourceMap, it's auto-granted (not selected by player)
+                    if (entity.type !== EntityType.Proficiency &&
+                        entity.type !== EntityType.Choice &&
+                        !featSourceMap.has(entity.appliesToId)) {
+                        // Check if this feat is in formattedCharacter.feats (meaning it was granted)
+                        const isInFormattedFeats = formattedCharacter.feats?.some(f => f.featId === entity.appliesToId);
+                        if (isInFormattedFeats) {
+                            autoGrantedFeats.set(entity.appliesToId, {
+                                featId: entity.appliesToId,
+                                level: progression.level,
+                                sourceFeature: progression.feature?.name || 'Feature',
+                                progressionId: progression.id
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        // Filter out proficiencies and categorize feats
+        const nonProficiencyFeats = formattedCharacter.feats?.filter(feat => {
+            // Check if this feat is actually a proficiency
+            for (const progression of resolvedProgressions) {
+                if (!progression.entities) continue;
+                for (const entity of progression.entities) {
+                    if (entity.type === EntityType.Proficiency &&
+                        entity.appliesTo === EntityAppliesToType.Feat &&
+                        entity.appliesToId === feat.featId) {
+                        return false; // This is a proficiency, not a feat
+                    }
+                }
+            }
+            return true; // This is a real feat
+        }) || [];
+
+        // Categorize feats
+        type FeatCategory = {
+            header: string;
+            feats: Array<{ feat: FormattedFeat; characterFeat?: CharacterFeat; sourceFeature?: string; showLevelIndicator?: boolean }>;
+        };
+
+        // Map to group feats by their source feature name
+        const featCategoriesMap = new Map<string, FeatCategory>();
+        const regularFeats: FeatCategory = { header: 'Regular Feats:', feats: [] };
+
+        for (const feat of nonProficiencyFeats) {
+            const characterFeat = featSourceMap.get(feat.featId);
+            const autoGranted = autoGrantedFeats.get(feat.featId);
+
+            if (autoGranted) {
+                // Auto-granted feat (e.g., Ranger Track)
+                // Get the progression to determine source (race or class) and prefix header
+                const progression = resolvedProgressions.find(p => p.id === autoGranted.progressionId);
+
+                // Prefix feature name with race or class name
+                let featureName = autoGranted.sourceFeature;
+                if (progression?.sourceType === FeatureSourceType.Race) {
+                    // Prefix with race name
+                    const raceName = character.race?.name || 'Race';
+                    featureName = `${raceName} ${featureName}`;
+                } else if (progression?.sourceType === FeatureSourceType.Class && progression.class?.name) {
+                    // Prefix with class name
+                    featureName = `${progression.class.name} Granted`;
+                }
+
+                const header = `${featureName}:`;
+                if (!featCategoriesMap.has(header)) {
+                    featCategoriesMap.set(header, { header, feats: [] });
+                }
+                featCategoriesMap.get(header)!.feats.push({ feat, sourceFeature: autoGranted.sourceFeature });
+            } else if (characterFeat?.source === 'choice' && characterFeat.sourceFeature) {
+                // Get the progression to determine source (race or class)
+                const progression = resolvedProgressions.find(p => p.id === characterFeat.sourceFeature?.progressionId);
+
+                // If feature name is "Bonus Feat", prefix with race or class name
+                let featureName = characterFeat.sourceFeature.featureName;
+                if (progression?.sourceType === FeatureSourceType.Race) {
+                    // Prefix with race name
+                    const raceName = character.race?.name || 'Race';
+                    featureName = `${raceName} ${featureName}`;
+                } else if (progression?.sourceType === FeatureSourceType.Class && progression.class?.name) {
+                    // Prefix with class name
+                    featureName = `${progression.class.name} ${featureName}`;
+                }
+
+                const header = `${featureName}:`;
+                if (!featCategoriesMap.has(header)) {
+                    featCategoriesMap.set(header, { header, feats: [] });
+                }
+                // Check if this is a bonus feat that should show level indicators
+                // (e.g., Fighter Bonus Feat, but not Human Bonus Feat)
+                const isRaceBonus = progression?.sourceType === FeatureSourceType.Race;
+                const showLevelIndicator = !isRaceBonus && characterFeat.sourceFeature.featureName.toLowerCase().includes('bonus');
+                featCategoriesMap.get(header)!.feats.push({
+                    feat,
+                    characterFeat,
+                    showLevelIndicator
+                });
+            } else {
+                // Regular feat from advancement
+                regularFeats.feats.push({ feat, characterFeat });
+            }
+        }
+
+        // Sort feats within each category by level (for bonus feats that show level indicators)
+        for (const category of featCategoriesMap.values()) {
+            category.feats.sort((a, b) => {
+                if (a.showLevelIndicator && b.showLevelIndicator) {
+                    return (a.characterFeat?.sourceFeature?.level || 0) - (b.characterFeat?.sourceFeature?.level || 0);
+                }
+                return 0;
+            });
+        }
+
+        // Draw feats by category
+        const categories: FeatCategory[] = [
+            ...Array.from(featCategoriesMap.values()),
+            regularFeats
+        ].filter(cat => cat.feats.length > 0);
+
+        if (categories.length > 0) {
+            doc.setFontSize(7);
             doc.setFont('ArchivoNarrow', 'bold');
             doc.text('-- FEATS --', page2RightColX + 2, abilitiesY);
             abilitiesY += 8;
-            doc.setFontSize(5);
-            doc.setFont('ArchivoNarrow', 'normal');
-            for (const feat of formattedCharacter.feats.slice(0, 10)) { // Limit to first 10
-                const featText = feat.formattedValue ? `${feat.featName}: ${feat.formattedValue}` : feat.featName;
-                doc.text(featText, page2RightColX + 2, abilitiesY, { maxWidth: page2RightColWidth - 4 });
-                abilitiesY += 6;
+
+            for (const category of categories) {
+                // Draw category header if it exists
+                if (category.header) {
+                    doc.setFontSize(6);
+                    doc.setFont('ArchivoNarrow', 'bold');
+                    doc.text(category.header, page2RightColX + 2, abilitiesY);
+                    abilitiesY += 6;
+                }
+
+                doc.setFontSize(6);
+                doc.setFont('ArchivoNarrow', 'normal');
+
+                for (const { feat, characterFeat, showLevelIndicator } of category.feats) {
+                    // Look up actual feat name from featsMap
+                    const featData = featsMap.get(feat.featId);
+                    const actualFeatName = featData?.name || feat.featName;
+
+                    // Get featSubId and resolve to item name
+                    const featSubId = featSubIdMap.get(feat.featId);
+                    let featNameWithSubId = actualFeatName;
+                    if (featSubId && featSubId > 0) {
+                        const item = items.find(i => i.id === featSubId);
+                        if (item) {
+                            featNameWithSubId = `${actualFeatName} (${item.name})`;
+                        }
+                    }
+
+                    // Add level indicator for bonus feats where appropriate
+                    let featDisplayName = featNameWithSubId;
+                    if (showLevelIndicator && characterFeat?.sourceFeature?.level) {
+                        const level = characterFeat.sourceFeature.level;
+                        const levelOrdinal = ordinal(level);
+                        featDisplayName = `${levelOrdinal}: ${featNameWithSubId}`;
+                    }
+
+                    // Use feat.summary if available, otherwise fall back to feat.benefit
+                    const benefitText = featData?.summary || featData?.benefit || '';
+
+                    // Draw feat name in bold
+                    doc.setFont('ArchivoNarrow', 'bold');
+                    const colonText = benefitText ? ': ' : '';
+                    const featNameText = featDisplayName + colonText;
+                    const nameWidth = doc.getTextWidth(featNameText);
+                    doc.text(featNameText, page2RightColX + 2, abilitiesY);
+
+                    // Draw benefit text in normal font right after the name
+                    if (benefitText) {
+                        doc.setFont('ArchivoNarrow', 'normal');
+                        const remainingWidth = page2RightColWidth - 4 - nameWidth;
+                        const subsequentLineWidth = page2RightColWidth - 4;
+
+                        // Split text for the first line (accounting for feat name width)
+                        const firstLineSplit = doc.splitTextToSize(benefitText, remainingWidth);
+                        const firstLine = firstLineSplit[0];
+
+                        // Draw first line right after the feat name
+                        doc.text(firstLine, page2RightColX + 2 + nameWidth, abilitiesY, { maxWidth: remainingWidth });
+
+                        // Draw subsequent lines starting at the left margin with full width
+                        if (firstLineSplit.length > 1) {
+                            // Get the remaining text after the first line
+                            const remainingText = firstLineSplit.slice(1).join(' ');
+                            const subsequentLines = doc.splitTextToSize(remainingText, subsequentLineWidth);
+                            let benefitY = abilitiesY;
+                            for (let i = 0; i < subsequentLines.length; i++) {
+                                benefitY += 6; // Move to next line for wrapped text
+                                doc.text(subsequentLines[i], page2RightColX + 2, benefitY, { maxWidth: subsequentLineWidth });
+                            }
+                            abilitiesY = benefitY;
+                        }
+                    }
+
+                    abilitiesY += 6;
+                }
             }
         }
     }
@@ -2384,7 +2919,7 @@ export async function generateCharacterPdf(
         doc.text(moneyLabels[i], carryingSubColX + moneyLineOffset, currentMoneyY, { align: 'right' });
         doc.text(moneyValues[i], carryingSubColX + carryingSubColWidth - 2, currentMoneyY, { align: 'right' });
         currentMoneyY += 2;
-        
+
         doc.setLineWidth(0.5);
         doc.line(moneyLineX, currentMoneyY, moneyLineX + carryingSubColWidth - moneyLineOffset - 2, currentMoneyY);
         currentMoneyY += moneyRowHeight;

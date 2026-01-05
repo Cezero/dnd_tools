@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list';
@@ -12,6 +12,10 @@ export function MonsterList(): React.JSX.Element {
     const { isLoading: isAuthLoading } = useAuthAuto();
     const columns = useMonsterColumns();
 
+    const dataFetcher = useCallback(async () => {
+        return await MonsterQueryHooks.getAllMonsters({ requestData: { includeStatblockOnly: true } });
+    }, []);
+
     if (isAuthLoading) {
         return <div className="p-4">Loading...</div>;
     }
@@ -22,10 +26,7 @@ export function MonsterList(): React.JSX.Element {
             <GenericList<Monster>
                 storageKey="monsters-list"
                 columns={columns}
-                queryHook={() => MonsterQueryHooks.useGetAllMonsters(
-                    { includeStatblockOnly: true },
-                    {}
-                )}
+                dataFetcher={dataFetcher}
                 itemDesc="monster"
                 routes={routes}
             />

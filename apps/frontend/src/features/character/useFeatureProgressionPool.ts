@@ -12,7 +12,7 @@ import { ResolvedFeatureService } from './ResolvedFeatureService';
 /**
  * React hook for managing FeatureProgression pool and triggering resolution
  */
-export function useFeatureProgressionPool(allFeats?: FeatInQueryResponse[]) {
+export function useFeatureProgressionPool(allFeats?: FeatInQueryResponse[], characterLevel?: number, classLevels?: Map<number, number>) {
     const [isResolving, setIsResolving] = useState(false);
     const [resolutionError, setResolutionError] = useState<string | null>(null);
     const [resolvedData, setResolvedData] = useState<{
@@ -64,7 +64,9 @@ export function useFeatureProgressionPool(allFeats?: FeatInQueryResponse[]) {
             const pendingChoices = await ResolvedFeatureService.getPendingChoices(allProgressions, cacheService, undefined, existingChoices, allFeats);
 
             // Calculate available feats from resolved progressions
-            const availableFeats = ResolvedFeatureService.getAvailableFeats(allProgressions);
+            // Default to level 1 if characterLevel is not provided
+            const level = characterLevel ?? 1;
+            const availableFeats = ResolvedFeatureService.getAvailableFeats(allProgressions, level, classLevels);
             const availableFighterBonusFeats = ResolvedFeatureService.getAvailableFighterBonusFeats(allProgressions);
 
             console.log('Extracted resolved data:', {

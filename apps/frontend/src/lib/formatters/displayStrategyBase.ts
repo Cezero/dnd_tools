@@ -22,7 +22,8 @@ import type {
     BaseProcessingResult,
     CalculationContext,
     GroupedLevelItem,
-    CalculatedValueWithLevel
+    CalculatedValueWithLevel,
+    CalculatedEntity
 } from './types';
 import {
     BreakdownAnalyzer,
@@ -89,7 +90,7 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
         const calculatedValues = this.generateValues(progression, context);
 
         // Phase 2: Pure Formatting - Format individual calculated values
-        const formattedItems = this.formattingPhase.formatItems(calculatedValues, progression.level, showLabels);
+        const formattedItems = this.formattingPhase.formatItems(calculatedValues, progression.level, showLabels, context);
 
         // Phase 3: Within-Level Grouping
         const withinLevelGrouped = this.groupingPhase.groupWithinLevel(formattedItems, progression);
@@ -190,7 +191,9 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
                     breakdown: { components: [] }
                 };
             }
-            const formattedValue = formatter.format(entity);
+            // Extract DisplayContext from ProcessingContext if available
+            const displayContext = _context.context;
+            const formattedValue = formatter.format(entity as CalculatedEntity, displayContext);
 
             return {
                 formattedValue,

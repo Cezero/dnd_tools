@@ -16,7 +16,7 @@ import { AppliesToSelector } from './AppliesToSelector';
 import { ConditionEditor } from './ConditionEditor';
 import { FormulaManager } from './FormulaManager';
 import type { BaseFormProps } from './types';
-import { getAppliesToSubIdSelectOptions } from './utils';
+import { getAppliesToSubIdSelectOptions, useProficiencySubIdOptions } from './utils';
 
 export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeature, progression: _progression }: BaseFormProps) {
     const { formData, setFormData } = useFormContext();
@@ -28,6 +28,10 @@ export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeatur
 
     const [showConditions, setShowConditions] = useState((entity.conditions && entity.conditions.length > 0) || false);
     const prevAppliesToRef = useRef<number | null>(null);
+
+    // Get proficiency subId options if this is a proficiency entity
+    const isProficiencyWithFeat = entity.type === EntityType.Proficiency && entity.appliesTo === EntityAppliesToType.Feat;
+    const proficiencySubIdOptions = useProficiencySubIdOptions(isProficiencyWithFeat ? entity : undefined, entity.appliesToId);
 
 
     // Update showConditions when entity changes
@@ -217,9 +221,24 @@ export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeatur
                 {/* Applies To Sub ID - only show for specific combinations */}
                 {(() => {
                     const subIdOptions = getAppliesToSubIdSelectOptions(entity.appliesTo, entity.appliesToId);
-                    const shouldShowAppliesToSubId = (entity.type === EntityType.Proficiency && entity.appliesTo === EntityAppliesToType.Feat) || subIdOptions.length > 0;
+                    const shouldShowAppliesToSubId = isProficiencyWithFeat || subIdOptions.length > 0;
 
                     if (shouldShowAppliesToSubId) {
+                        // For proficiency entities, always use dropdown with items
+                        if (isProficiencyWithFeat) {
+                            return (
+                                <ValidatedCustomSelect
+                                    field={`entities.${index}.appliesToSubId`}
+                                    label="Item"
+                                    options={proficiencySubIdOptions.options}
+                                    placeholder={proficiencySubIdOptions.isLoading ? 'Loading items...' : 'Select item...'}
+                                    componentExtraClassName="flex items-center gap-2"
+                                    nested
+                                />
+                            );
+                        }
+
+                        // For other types (like Craft/Knowledge skills), use existing logic
                         if (subIdOptions.length > 0) {
                             return (
                                 <ValidatedCustomSelect

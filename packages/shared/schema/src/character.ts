@@ -300,7 +300,13 @@ export const SaveCharacterSchema = BaseCharacterSchema.extend({
     attackDefinitions: z.array(CreateCharacterAttackDefinitionSchema.omit({ characterId: true })).optional(),
     // Optional character languages (nested)
     characterLanguages: z.array(CreateCharacterLanguageMapSchema.omit({ characterId: true })).optional(),
-}).partial(); // Make all fields optional for updates
+}).partial().transform((data) => {
+    // Transform null editionId to undefined so service can apply default
+    if (data.editionId === null) {
+        return { ...data, editionId: undefined };
+    }
+    return data;
+}); // Make all fields optional for updates
 
 // Request/response schemas for character disallowed sources
 export const CreateCharacterDisallowedSourceSchema = CharacterDisallowedSourceSchema.omit({ id: true });

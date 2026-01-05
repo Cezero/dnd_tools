@@ -121,6 +121,12 @@ export function FeatDetail() {
                         <ProcessMarkdown markdown={feat.benefit} id='benefit' />
                     </div>
                 )}
+                {feat.summary && (
+                    <div>
+                        <h3 className="text-lg font-semibold">Summary</h3>
+                        <ProcessMarkdown markdown={feat.summary} id='summary' />
+                    </div>
+                )}
                 {feat.benefits && feat.benefits.length > 0 && (
                     <div>
                         <div className="flex items-center gap-2">

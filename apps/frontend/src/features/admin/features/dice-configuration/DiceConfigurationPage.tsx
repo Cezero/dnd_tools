@@ -391,7 +391,7 @@ export function DiceConfigurationPage(): React.JSX.Element {
                             <GenericList
                                 key={listKey}
                                 columns={DICE_CONFIGURATION_COLUMNS}
-                                serviceFunction={getConfigurationsService}
+                                dataFetcher={getConfigurationsService}
                                 itemDesc="configuration"
                                 initialLimit={10}
                                 functions={{

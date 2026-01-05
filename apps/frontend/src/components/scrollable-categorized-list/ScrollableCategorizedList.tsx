@@ -274,9 +274,7 @@ function renderCategoryGroup<T>(
 }
 
 export function ScrollableCategorizedList<T extends { id?: number }>({
-    queryHook,
     dataFetcher,
-    serviceFunction,
     groupingFields,
     groupingConfig,
     columns,
@@ -302,9 +300,6 @@ export function ScrollableCategorizedList<T extends { id?: number }>({
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
 
-    // Use queryHook if provided
-    const queryResult = queryHook ? queryHook({}) : null;
-
     // Imperative data fetching
     const fetchData = useCallback(async () => {
         if (dataFetcher) {
@@ -319,42 +314,15 @@ export function ScrollableCategorizedList<T extends { id?: number }>({
             } finally {
                 setIsLoading(false);
             }
-        } else if (serviceFunction) {
-            try {
-                setIsLoading(true);
-                setError(null);
-                const result = await serviceFunction();
-                setData(result.results);
-                setTotal(result.total);
-            } catch (err) {
-                setError(err as Error);
-            } finally {
-                setIsLoading(false);
-            }
         }
-    }, [dataFetcher, serviceFunction]);
+    }, [dataFetcher]);
 
-    // Fetch data on mount and when dataFetcher/serviceFunction changes
+    // Fetch data on mount and when dataFetcher changes
     useEffect(() => {
-        if (dataFetcher || serviceFunction) {
+        if (dataFetcher) {
             fetchData();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dataFetcher, serviceFunction]);
-
-    // Handle queryResult data when using queryHook
-    useEffect(() => {
-        if (queryResult) {
-            if (queryResult.data) {
-                setData(queryResult.data.results);
-                setTotal(queryResult.data.total);
-            }
-            setIsLoading(queryResult.isLoading);
-            if (queryResult.error) {
-                setError(queryResult.error);
-            }
-        }
-    }, [queryResult]);
+    }, [fetchData]);
 
     // Check if an item is enabled (using itemFilter if provided)
     const isItemEnabled = useCallback((item: T): boolean => {
@@ -535,26 +503,17 @@ export function ScrollableCategorizedList<T extends { id?: number }>({
     }, [filteredData, groupingFields, groupingConfig]);
 
     // Handle errors
-    const currentError = error || queryResult?.error;
-    if (currentError) {
+    if (error) {
         return (
             <div className="p-4">
                 <div className="text-red-600">
                     <h3 className="text-lg font-semibold mb-2">Error Loading {itemDesc}</h3>
-                    <p className="mb-4">{currentError.message}</p>
-                    {(queryResult?.refetch || dataFetcher || serviceFunction) && (
+                    <p className="mb-4">{error.message}</p>
+                    {dataFetcher && (
                         <button
                             onClick={async () => {
                                 try {
-                                    if (queryResult?.refetch) {
-                                        const result = await queryResult.refetch();
-                                        if (result.data) {
-                                            setData(result.data.results);
-                                            setTotal(result.data.total);
-                                        }
-                                    } else if (dataFetcher || serviceFunction) {
-                                        await fetchData();
-                                    }
+                                    await fetchData();
                                 } catch (error) {
                                     console.error('Failed to retry:', error);
                                 }

@@ -6,7 +6,8 @@ import type {
     CalculatedValueWithLevel,
     FormattedItemWithLevel,
     BaseFormatter,
-    CalculatedEntity
+    CalculatedEntity,
+    DisplayContext
 } from '../types';
 
 /**
@@ -20,12 +21,13 @@ export class FormattingPhase {
     formatItems(
         calculatedValues: CalculatedValueWithLevel[],
         progressionLevel: number,
-        showLabels: boolean = true
+        showLabels: boolean = true,
+        context?: DisplayContext
     ): FormattedItemWithLevel[] {
         return calculatedValues.map(({ breakdown, entity, level }) => {
             // Use formatter directly - CalculatedEntity.value can be string or number
             const formatter = formatterRegistry.getFormatter(entity.type, entity.appliesTo) as BaseFormatter;
-            let formattedValue = formatter ? formatter.format(entity) : `${entity.value}`;
+            let formattedValue = formatter ? formatter.format(entity, context) : `${entity.value}`;
 
             // Skip labeling for cumulative modifiers - they will be labeled after grouping
             const isCumulativeModifier = entity.formulaParams?.cumulative === true;

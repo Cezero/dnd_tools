@@ -279,7 +279,7 @@ export const characterService: CharacterService = {
                         hair: characterData.hair ?? null,
                         gender: characterData.gender ?? null,
                         notes: characterData.notes ?? null,
-                        editionId: characterData.editionId ?? EditionId.DND_3_5E, // Default to D&D 3.5 Edition if not provided
+                        editionId: characterData.editionId != null ? characterData.editionId : EditionId.DND_3_5E, // Default to D&D 3.5 Edition if not provided or null
                         allowVariantClasses: characterData.allowVariantClasses ?? false,
                         isGestalt: characterData.isGestalt ?? false,
                         ignoreLevelAdjustment: characterData.ignoreLevelAdjustment ?? false,
@@ -410,6 +410,8 @@ export const characterService: CharacterService = {
                     }
                 } else {
                     // Create new advancement
+                    // Note: When using nested creates, Prisma automatically sets advancementId
+                    // so we should NOT include it in the create data
                     const newAdvancement = await tx.characterAdvancement.create({
                         data: {
                             ...advancementData,
@@ -422,28 +424,17 @@ export const characterService: CharacterService = {
                                 create: feats
                             } : undefined,
                             featureChoices: featureChoices ? {
-                                create: featureChoices.map(choice => ({
-                                    ...choice,
-                                    characterId: finalCharacterId,
-                                    advancementId: 0, // Will be updated below
-                                }))
+                                create: featureChoices.map(choice => {
+                                    // Remove advancementId from the choice data - Prisma sets it automatically via the relationship
+                                    const { advancementId: _advancementId, ...choiceData } = choice;
+                                    return {
+                                        ...choiceData,
+                                        characterId: finalCharacterId,
+                                    };
+                                })
                             } : undefined,
                         },
                     });
-
-                    // Update featureChoices with the correct advancementId if they were created
-                    if (featureChoices && featureChoices.length > 0) {
-                        await tx.characterFeatureChoice.updateMany({
-                            where: {
-                                characterId: finalCharacterId,
-                                advancementId: 0,
-                                progressionId: { in: featureChoices.map(c => c.progressionId) }
-                            },
-                            data: {
-                                advancementId: newAdvancement.id
-                            }
-                        });
-                    }
                 }
             }
 

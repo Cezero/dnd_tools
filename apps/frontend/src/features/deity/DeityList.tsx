@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list';
+import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { DEITY_COLUMNS } from '@/features/deity/DeityColumns';
 import { DeityQueryHooks } from '@/services/query/DeityQueryHooks';
 import { DeityInQueryResponse } from '@shared/schema';
@@ -13,11 +14,14 @@ export function DeityList(): React.JSX.Element {
     const navigate = useNavigate();
     const location = useLocation();
     const { isLoading: isAuthLoading, isAdmin } = useAuthAuto();
-    const { mutate: deleteDeity } = DeityQueryHooks.useDeleteDeity();
 
     const HandleNewDeityClick = (): void => {
         navigate('/deities/new/edit', { state: { fromListParams: location.search } });
     };
+
+    const dataFetcher = useCallback(async () => {
+        return await DeityQueryHooks.getDeities();
+    }, []);
 
     if (isAuthLoading) {
         return <div className="p-4">Loading...</div>;
@@ -39,14 +43,10 @@ export function DeityList(): React.JSX.Element {
             <GenericList<DeityInQueryResponse>
                 storageKey="deities-list"
                 columns={DEITY_COLUMNS}
-                queryHook={DeityQueryHooks.useGetDeities}
+                dataFetcher={dataFetcher}
                 itemDesc="deity"
                 routes={routes}
-                functions={{
-                    delete: async (deity) => {
-                        deleteDeity({ pathParams: { id: deity.id } });
-                    }
-                }}
+                deleteServiceFunction={createIdDeleteServiceFunction((_, { id }) => DeityQueryHooks.deleteDeity(id))}
             />
         </div>
     );

@@ -1,6 +1,7 @@
-import { TrashIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 
+import { useAuthAuto } from '@/components/auth';
 import { renderCellValue } from '@/components/generic-list/columnUtils';
 import { displayStrategyFactory } from '@/lib/formatters';
 import { FeaturePrerequisite, FeatureProgression } from '@shared/schema';
@@ -15,8 +16,12 @@ export function FeatureDisplay({
     onRemoveProgression,
     onAddProgression,
     showAddProgressionButton = true,
-    className = ''
+    className = '',
+    onEditFeature,
+    parentType,
+    parentId
 }: FeatureDisplayProps): React.JSX.Element {
+    const { isAdmin } = useAuthAuto();
     // Helper function to format prerequisites for display
     const formatPrerequisites = (prerequisites: FeaturePrerequisite[]) => {
         if (!prerequisites || prerequisites.length === 0) return 'None';
@@ -67,16 +72,34 @@ export function FeatureDisplay({
         onAddProgression?.(feature);
     };
 
+    const handleEditFeature = () => {
+        if (feature?.id && onEditFeature) {
+            onEditFeature(feature.id);
+        }
+    };
+
     return (
         <div className={`border border-gray-200 rounded-md dark:border-gray-600 ${className}`}>
             <div className="p-3 bg-gray-50 dark:bg-gray-700">
                 <div className="flex justify-between items-start">
                     <div className="flex-1">
-                        <div className="text-lg font-medium">
-                            {feature?.name || `Feature ${feature?.id || 'Unknown'}`}
-                            <span className="text-sm text-gray-600 dark:text-gray-400 ml-2">
-                                ({feature?.slug || `feature-${feature?.id || 'unknown'}`})
-                            </span>
+                        <div className="flex items-center gap-2">
+                            <div className="text-lg font-medium">
+                                {feature?.name || `Feature ${feature?.id || 'Unknown'}`}
+                                <span className="text-sm text-gray-600 dark:text-gray-400 ml-2">
+                                    ({feature?.slug || `feature-${feature?.id || 'unknown'}`})
+                                </span>
+                            </div>
+                            {isAdmin && onEditFeature && feature?.id && (
+                                <button
+                                    type="button"
+                                    onClick={handleEditFeature}
+                                    className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-500"
+                                    title="Edit feature definition"
+                                >
+                                    <PencilIcon className="h-4 w-4" />
+                                </button>
+                            )}
                         </div>
                     </div>
                     {/* Show prerequisites if they exist */}

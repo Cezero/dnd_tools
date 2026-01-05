@@ -1,9 +1,10 @@
+import { useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
-import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { GenericList } from '@/components/generic-list/GenericList';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
+import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import { Feature } from '@shared/schema';
 
 import { FEATURE_COLUMNS, routes } from './FeatureConfig';
@@ -16,6 +17,10 @@ export default function FeatureList() {
     const handleNewFeatureClick = (): void => {
         navigate('/features/new/edit', { state: { fromListParams: location.search } });
     };
+
+    const dataFetcher = useCallback(async () => {
+        return await FeatureQueryHooks.getFeatures({});
+    }, []);
 
     if (isAuthLoading) {
         return <div className="p-4">Loading...</div>;
@@ -40,10 +45,10 @@ export default function FeatureList() {
             <GenericList<Feature>
                 storageKey="features-list"
                 columns={FEATURE_COLUMNS}
-                serviceFunction={() => FeatureSystemApi.getFeatures({})}
+                dataFetcher={dataFetcher}
                 itemDesc="feature"
                 routes={routes}
-                deleteServiceFunction={createIdDeleteServiceFunction(FeatureSystemApi.deleteFeature)}
+                deleteServiceFunction={createIdDeleteServiceFunction((_, { id }) => FeatureQueryHooks.deleteFeature(id))}
             />
         </div>
     );

@@ -70,20 +70,10 @@ export interface GenericListFunctions<T> {
     delete?: DeleteFunction<T>;
 }
 
-// TanStack Query hook type
-export type TanStackQueryHook<T> = (params?: Record<string, unknown>) => {
-    data?: { results: T[]; total: number };
-    isLoading: boolean;
-    error: Error | null;
-    refetch: () => Promise<{ data?: { results: T[]; total: number } }>;
-};
-
 export interface GenericListProps<T> {
     storageKey?: string;
     columns: ColumnDef<T, unknown>[];
-    serviceFunction?: () => Promise<{ results: T[]; total: number }>;
-    queryHook?: TanStackQueryHook<T>; // TanStack Query hook (for backward compatibility)
-    dataFetcher?: () => Promise<{ results: T[]; total: number }>; // NEW: Imperative data fetcher
+    dataFetcher?: () => Promise<{ results: T[]; total: number }>;
     itemDesc?: string;
     initialLimit?: number;
     routes?: RouteConfig[];

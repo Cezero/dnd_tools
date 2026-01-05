@@ -1,5 +1,6 @@
 import { FeatureProgression, FeatureEntity, CharacterWithAllDetailsResponse, CharacterAdvancementWithDetailsResponse, Race, DnDClass } from '@shared/schema';
-import { EntityType, EntityAppliesToType, CoreComponent, FeatureFeatChoiceFilter } from '@shared/static-data';
+import { EntityType, EntityAppliesToType, CoreComponent, FeatureFeatChoiceFilter, FeatureSourceType } from '@shared/static-data';
+import { getFeatCount } from '@shared/utils';
 
 import { CharacterFeatureResolutionService } from './CharacterFeatureResolutionService';
 import { ChoiceResolver } from './ChoiceResolver';
@@ -204,21 +205,48 @@ export class ResolvedFeatureService {
      * Counts pending choices of type Feat, but EXCLUDES racial/class bonus feats
      * (those are handled in ChoicesTab, not FeatsTab)
      * Only counts advancement-level feat choices (sourceType should indicate advancement-level)
+     * Also adds base feat count (1 at 1st level, +1 every 3 levels)
+     * 
+     * @param resolvedProgressions - All resolved feature progressions
+     * @param characterLevel - Overall character level (for base feat calculation)
+     * @param classLevels - Map of classId -> class level (for filtering by class level)
      */
-    static getAvailableFeats(resolvedProgressions: FeatureProgression[]): number {
-        let count = 0;
+    static getAvailableFeats(resolvedProgressions: FeatureProgression[], characterLevel: number, classLevels?: Map<number, number>): number {
+        // Base feat count: 1 at 1st level, +1 every 3 levels (4th, 7th, 10th, etc.)
+        const baseFeatCount = getFeatCount(characterLevel);
+        let count = baseFeatCount;
 
         for (const progression of resolvedProgressions) {
             if (progression.entities) {
                 for (const entity of progression.entities) {
                     if (entity.type === EntityType.Choice &&
                         entity.appliesTo === EntityAppliesToType.Feat) {
-                        // Exclude racial feats (sourceType 0 = Race) and class bonus feats
-                        // Only count advancement-level feats (typically sourceType 1 = Class at specific levels)
-                        // For now, exclude if it's from a race source (raceId is set)
-                        // This is a heuristic - ideally we'd have a better way to distinguish
+                        // Only count feat choices from progressions at or below the class level for that class
+                        if (progression.classId && classLevels) {
+                            const classLevel = classLevels.get(progression.classId) ?? 0;
+                            if (progression.level > classLevel) {
+                                continue;
+                            }
+                        } else if (!progression.classId && progression.level > characterLevel) {
+                            // For non-class progressions, use character level
+                            continue;
+                        }
+
+                        // Exclude ALL class bonus feats (feat choices from class progressions)
+                        // Class bonus feats are handled by the choice system, not the Feats tab
+                        if (progression.sourceType === FeatureSourceType.Class) {
+                            continue;
+                        }
+
+                        // Exclude racial feats (sourceType 0 = Race)
                         if (progression.raceId !== null && progression.raceId !== undefined) {
                             // This is a racial feat choice - don't count it in availableFeats
+                            continue;
+                        }
+
+                        // Exclude Fighter bonus feats and Metamagic/Item Creation feats (handled in ChoicesTab)
+                        if (entity.filterType === FeatureFeatChoiceFilter.FighterBonus ||
+                            entity.filterType === FeatureFeatChoiceFilter.MetamagicOrItemCreation) {
                             continue;
                         }
 

@@ -1,7 +1,5 @@
 import { ColumnDef } from '@tanstack/react-table';
 
-import type { TanStackQueryHook } from '@/components/generic-list/types';
-
 /**
  * Configuration for grouping behavior
  */
@@ -14,7 +12,7 @@ export interface GroupingConfig<T> {
      * @returns The effective fields to use for this item
      */
     getEffectiveFields?: (item: T, groupingFields: string[]) => string[];
-    
+
     /**
      * Determine which field path should be used for formatting a category label.
      * This is useful when the actual grouping field differs from the expected field
@@ -34,7 +32,7 @@ export interface GroupingConfig<T> {
         groupingFields: string[],
         currentFieldIndex: number
     ) => string;
-    
+
     /**
      * Sort the keys at a specific grouping level.
      * This allows custom sorting of category groups (e.g., Simple, Martial, Exotic for weapons).
@@ -66,10 +64,8 @@ export interface ItemFilterConfig<T> {
 }
 
 export interface ScrollableCategorizedListProps<T> {
-    // Data fetching (similar to GenericList)
-    queryHook?: TanStackQueryHook<T>;
+    // Data fetching
     dataFetcher?: () => Promise<{ results: T[]; total: number }>;
-    serviceFunction?: () => Promise<{ results: T[]; total: number }>;
 
     // Grouping configuration
     groupingFields: string[]; // Field paths for hierarchical grouping (e.g., ['itemTypeId', 'weapon.category', 'weapon.type'])
@@ -95,7 +91,7 @@ export interface ScrollableCategorizedListProps<T> {
 
     // Display
     itemDesc?: string;
-    
+
     // Height configuration
     maxHeight?: number | 'auto'; // Max height in pixels, or 'auto' to calculate from parent
 }
@@ -138,7 +134,7 @@ export function groupItemsByFields<T>(
 
     for (const item of items) {
         let currentMap = result;
-        
+
         // Determine which fields to actually use for this item
         // Use custom logic if provided, otherwise use all fields
         const effectiveFields = groupingConfig?.getEffectiveFields

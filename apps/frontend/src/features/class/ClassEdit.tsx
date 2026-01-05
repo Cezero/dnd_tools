@@ -7,6 +7,7 @@ import {
 } from '@heroicons/react/24/outline';
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 
 
 import { FeatureProgressionDetailEdit } from '@/components/feature-system';
@@ -42,6 +43,8 @@ import {
     generateFeatureProgressionOverrides
 } from '@shared/utils';
 
+import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
+
 import { ClassApi } from './ClassApi';
 import { ClassFeatureAssoc } from './ClassFeatureAssoc';
 import { ClassProficiencyService } from './ClassProficiencyService';
@@ -63,6 +66,7 @@ export default function ClassEdit() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation();
+    const queryClient = useQueryClient();
 
     // Check if this is a variant class from ID or user toggle
     const [isVariant, setIsVariant] = useState(() => {
@@ -680,10 +684,24 @@ export default function ClassEdit() {
                     }
                     await VariantClassApi.createVariant(variantData as CreateClassVariantRequest);
                     setMessage('Variant class created successfully!');
+                    // Invalidate class caches
+                    await queryClient.invalidateQueries({ 
+                        queryKey: ['classes'],
+                        exact: false
+                    });
                     setTimeout(() => navigate('/classes'), 1500);
                 } else {
-                    await VariantClassApi.updateVariant(variantData as UpdateClassVariantRequest, { id: parseInt(id) });
+                    const numericId = parseInt(id);
+                    await VariantClassApi.updateVariant(variantData as UpdateClassVariantRequest, { id: numericId });
                     setMessage('Variant class updated successfully!');
+                    // Invalidate class caches
+                    await queryClient.invalidateQueries({ 
+                        queryKey: ClassQueryHooks.getClassByIdQueryKey(numericId)
+                    });
+                    await queryClient.invalidateQueries({ 
+                        queryKey: ['classes'],
+                        exact: false
+                    });
                     navigate(`/classes/${id}`, { state: { fromListParams: location.state?.fromListParams, refresh: true, isVariant } });
                 }
             } else {
@@ -742,10 +760,24 @@ export default function ClassEdit() {
                 if (id === 'new') {
                     const newClass = await ClassApi.createClass(classData as CreateClassRequest);
                     setMessage('Class created successfully!');
+                    // Invalidate class caches
+                    await queryClient.invalidateQueries({ 
+                        queryKey: ['classes'],
+                        exact: false
+                    });
                     setTimeout(() => navigate(`/classes/${newClass.id}`), 1500);
                 } else {
-                    await ClassApi.updateClass(classData as UpdateClassRequest, { id: parseInt(id) });
+                    const numericId = parseInt(id);
+                    await ClassApi.updateClass(classData as UpdateClassRequest, { id: numericId });
                     setMessage('Class updated successfully!');
+                    // Invalidate class caches
+                    await queryClient.invalidateQueries({ 
+                        queryKey: ClassQueryHooks.getClassByIdQueryKey(numericId)
+                    });
+                    await queryClient.invalidateQueries({ 
+                        queryKey: ['classes'],
+                        exact: false
+                    });
                     navigate(`/classes/${id}`, { state: { fromListParams: location.state?.fromListParams, refresh: true, isVariant } });
                 }
             }

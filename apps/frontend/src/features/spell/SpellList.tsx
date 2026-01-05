@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 
 import { useAuthAuto } from '@/components/auth';
 import { GenericList } from '@/components/generic-list';
@@ -12,6 +12,10 @@ export function SpellList(): React.JSX.Element {
     const { isLoading: isAuthLoading } = useAuthAuto();
     const columns = useSpellColumns();
 
+    const dataFetcher = useCallback(async () => {
+        return await SpellQueryHooks.getAllSpells();
+    }, []);
+
     if (isAuthLoading) {
         return <div className="p-4">Loading...</div>;
     }
@@ -22,7 +26,7 @@ export function SpellList(): React.JSX.Element {
             <GenericList<Spell>
                 storageKey="spells-list"
                 columns={columns}
-                queryHook={SpellQueryHooks.useGetAllSpells}
+                dataFetcher={dataFetcher}
                 itemDesc="spell"
                 routes={routes}
             />

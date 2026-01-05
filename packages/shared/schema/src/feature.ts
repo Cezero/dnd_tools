@@ -20,6 +20,7 @@ export const FeatureSchema = z.object({
     slug: z.string().min(1, 'Feature slug is required').max(100, 'Feature slug must be less than 100 characters').trim(),
     name: z.string().min(1, 'Feature name is required').max(100, 'Feature name must be less than 100 characters').trim(),
     description: z.string().max(10000, 'Description must be less than 10000 characters'),
+    summary: z.string().max(10000, 'Summary must be less than 10000 characters').nullable().optional(),
     prerequisites: z.array(FeaturePrerequisiteSchema).optional(),
 });
 

@@ -1,6 +1,7 @@
 import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 
 import {
     ValidatedForm,
@@ -40,6 +41,9 @@ export function FeatEdit() {
     // Get cache functions
     const { getFeatNameById, getFeatureNameById } = useCacheFunctions();
 
+    // Get query client for cache invalidation
+    const queryClient = useQueryClient();
+
     // Use the mutation hook for proper cache invalidation
     const updateFeatMutation = FeatQueryHooks.useUpdateFeat();
     const [isAddBenefitModalOpen, setIsAddBenefitModalOpen] = useState(false);
@@ -60,6 +64,7 @@ export function FeatEdit() {
         editionId: 1,
         description: '',
         benefit: '',
+        summary: '',
         normalEffect: '',
         specialEffect: '',
         prerequisites: '',
@@ -106,6 +111,7 @@ export function FeatEdit() {
                     editionId: fetchedFeat.editionId || 1,
                     description: fetchedFeat.description || '',
                     benefit: fetchedFeat.benefit || '',
+                    summary: fetchedFeat.summary || '',
                     normalEffect: fetchedFeat.normalEffect || '',
                     specialEffect: fetchedFeat.specialEffect || '',
                     prerequisites: fetchedFeat.prerequisites || '',
@@ -264,6 +270,20 @@ export function FeatEdit() {
                 setIsCreating(true);
                 const newFeat = await FeatQueryHooks.createFeat(formData as CreateFeatRequest);
                 setMessage('Feat created successfully!');
+                
+                // Invalidate feat-related queries
+                await queryClient.invalidateQueries({ 
+                    queryKey: FeatQueryHooks.getFeatByIdQueryKey(newFeat.id)
+                });
+                await queryClient.invalidateQueries({ 
+                    queryKey: ['feats'],
+                    exact: false
+                });
+                await queryClient.invalidateQueries({ 
+                    queryKey: ['feats-cache'],
+                    exact: false
+                });
+                
                 // Navigate based on where user came from
                 setTimeout(() => {
                     if (fromListParams) {
@@ -280,6 +300,20 @@ export function FeatEdit() {
                     pathParams: { id: parseInt(id) }
                 });
                 setMessage('Feat updated successfully!');
+                
+                // Invalidate feat-related queries
+                await queryClient.invalidateQueries({ 
+                    queryKey: FeatQueryHooks.getFeatByIdQueryKey(parseInt(id))
+                });
+                await queryClient.invalidateQueries({ 
+                    queryKey: ['feats'],
+                    exact: false
+                });
+                await queryClient.invalidateQueries({ 
+                    queryKey: ['feats-cache'],
+                    exact: false
+                });
+                
                 // Navigate based on where user came from
                 setTimeout(() => {
                     if (fromListParams) {
@@ -419,6 +453,23 @@ export function FeatEdit() {
                     {form.validation.getError('benefit') && (
                         <span className="text-red-500 text-sm">{form.validation.getError('benefit')}</span>
                     )}
+
+                    <div className="mt-6">
+                        <div className="space-y-2">
+                            <ValidatedInput
+                                field="summary"
+                                label="Summary (for PDF character sheets)"
+                                type="textarea"
+                                labelExtraClassName="mb-2"
+                                inputExtraClassName="w-full"
+                                placeholder="Enter brief summary for character sheets (plain text, no markdown)"
+                                rows={4}
+                            />
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                This summary will be displayed on PDF character sheets. Keep it concise and avoid markdown formatting.
+                            </p>
+                        </div>
+                    </div>
 
                     <div className="flex items-center gap-2 border p-3 rounded dark:border-gray-600">
                         {formData.benefits && formData.benefits.length > 0 ? (

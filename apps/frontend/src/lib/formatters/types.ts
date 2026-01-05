@@ -127,6 +127,7 @@ export interface DisplayContext extends BaseFormatterContext {
     currentLevel?: number;
     showBreakdown?: boolean;
     featsMap?: Map<number, Feat>;
+    displayBonusType?: boolean; // Whether to display bonus type (e.g., "(racial)"). Defaults to true.
 }
 
 // Calculation context for formatter calculations
@@ -319,6 +320,13 @@ export interface FormattedGrapple {
     breakdown: CalculationBreakdown;
 }
 
+// Formatted proficiency result
+export interface FormattedProficiency {
+    formattedValue: string;
+    breakdown: CalculationBreakdown;
+    level: number;
+}
+
 // Main formatted character result
 export interface FormattedCharacterResult {
     abilities: FormattedAbilityScore[];
@@ -338,6 +346,7 @@ export interface FormattedCharacterResult {
     classLevels: FormattedClassLevel[];
     feats: FormattedFeat[];
     features: FormattedFeature[];
+    proficiencies: FormattedProficiency[];
 }
 
 // Character sheet calculation input
@@ -432,6 +441,7 @@ export interface GroupingStrategyInput extends BaseFormattedValue, BaseEntityInf
 export interface BaseFormatter {
     format(
         entity: CalculatedEntity, // Direct access to entity data with calculated values
+        context?: DisplayContext // Optional context for display settings
     ): string;
 }
 

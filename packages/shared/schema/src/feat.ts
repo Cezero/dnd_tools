@@ -32,6 +32,7 @@ export const BaseFeatSchema = z.object({
     typeId: z.number().int().positive('Type ID must be a positive integer'),
     description: z.string().max(10000, 'Description must be less than 10000 characters').nullable(),
     benefit: z.string().max(2000, 'Benefit must be less than 2000 characters').nullable(),
+    summary: z.string().max(10000, 'Summary must be less than 10000 characters').nullable().optional(),
     normalEffect: z.string().max(2000, 'Normal effect must be less than 2000 characters').nullable(),
     specialEffect: z.string().max(2000, 'Special effect must be less than 2000 characters').nullable(),
     prerequisites: z.string().max(2000, 'Prerequisites must be less than 2000 characters').nullable(),

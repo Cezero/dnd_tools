@@ -6,6 +6,7 @@ import {
 } from '@heroicons/react/24/outline';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { FeatureProgressionDetailEdit } from '@/components/feature-system';
 import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
@@ -41,6 +42,7 @@ export function RaceEdit() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation();
+    const queryClient = useQueryClient();
     const [message, setMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -480,10 +482,24 @@ export function RaceEdit() {
             if (id === 'new') {
                 const newRace = await RaceQueryHooks.createRace(raceData as CreateRaceRequest);
                 setMessage('Race created successfully!');
+                // Invalidate race caches
+                await queryClient.invalidateQueries({ 
+                    queryKey: ['races'],
+                    exact: false
+                });
                 setTimeout(() => navigate(`/races/${newRace.id}`, { state: { fromListParams: fromListParams, refresh: true } }), 1500);
             } else {
-                await RaceQueryHooks.updateRace(parseInt(id), raceData as UpdateRaceRequest);
+                const numericId = parseInt(id);
+                await RaceQueryHooks.updateRace(numericId, raceData as UpdateRaceRequest);
                 setMessage('Race updated successfully!');
+                // Invalidate race caches
+                await queryClient.invalidateQueries({ 
+                    queryKey: RaceQueryHooks.getRaceByIdQueryKey(numericId)
+                });
+                await queryClient.invalidateQueries({ 
+                    queryKey: ['races'],
+                    exact: false
+                });
                 setTimeout(() => navigate(`/races/${id}`, { state: { fromListParams: fromListParams, refresh: true } }), 1500);
             }
         } catch (err) {

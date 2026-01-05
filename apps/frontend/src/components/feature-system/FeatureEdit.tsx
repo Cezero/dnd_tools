@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { useAuthAuto } from '@/components/auth';
 import { FeatureProgressionDetailEdit } from '@/components/feature-system';
 import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
+import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
+import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import {
     ValidatedForm,
     ValidatedInput,
@@ -22,6 +25,7 @@ export function FeatureEdit() {
     const navigate = useNavigate();
     const location = useLocation();
     const { isAdmin } = useAuthAuto();
+    const queryClient = useQueryClient();
     const [feature, setFeature] = useState<GetFeatureResponse | null>(null);
     const [message, setMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
@@ -42,6 +46,7 @@ export function FeatureEdit() {
         name: '',
         slug: '',
         description: '',
+        summary: null,
         prerequisites: [],
     };
 
@@ -68,6 +73,7 @@ export function FeatureEdit() {
                     name: '',
                     slug: '',
                     description: '',
+                    summary: null,
                     prerequisites: [],
                 });
                 return;
@@ -81,6 +87,7 @@ export function FeatureEdit() {
                     name: '',
                     slug: '',
                     description: '',
+                    summary: null,
                     prerequisites: [],
                 });
                 return;
@@ -117,6 +124,19 @@ export function FeatureEdit() {
             return location.state.returnPath;
         }
 
+        // Handle return to class/race edit pages
+        const parentType = location.state?.parentType;
+        const parentId = location.state?.parentId;
+        
+        if (parentType === 'class' && parentId) {
+            return `/classes/${parentId}/edit`;
+        }
+        
+        if (parentType === 'race' && parentId) {
+            return `/races/${parentId}/edit`;
+        }
+
+        // Default to list pages
         switch (fromPage) {
             case 'classes':
                 return fromListParams ? `/classes?${fromListParams}` : '/classes';
@@ -128,6 +148,18 @@ export function FeatureEdit() {
     };
 
     const getBackText = () => {
+        // Handle return to class/race edit pages
+        const parentType = location.state?.parentType;
+        
+        if (parentType === 'class') {
+            return 'Back to Edit Class';
+        }
+        
+        if (parentType === 'race') {
+            return 'Back to Edit Race';
+        }
+
+        // Default to list pages
         switch (fromPage) {
             case 'classes':
                 return 'Back to Classes';
@@ -211,6 +243,12 @@ export function FeatureEdit() {
                 setMessage('Feature created successfully');
                 createdFeatureId = result.id;
 
+                // Invalidate feature-related caches
+                await queryClient.invalidateQueries({ 
+                    queryKey: ['features'],
+                    exact: false
+                });
+
                 // Save FeatureProgressions after feature creation
                 if (featureProgressions.length > 0) {
                     const featureId = parseInt(result.id);
@@ -243,6 +281,41 @@ export function FeatureEdit() {
                 }
                 await FeatureSystemApi.updateFeature(formData as UpdateFeatureRequest, { id: numericId });
                 setMessage('Feature updated successfully');
+
+                // Invalidate feature-related caches to ensure fresh data
+                await queryClient.invalidateQueries({ 
+                    queryKey: ['features', 'item', numericId] 
+                });
+                await queryClient.invalidateQueries({ 
+                    queryKey: ['features', 'progressions', numericId] 
+                });
+                // Also invalidate all feature lists and progressions that might include this feature
+                await queryClient.invalidateQueries({ 
+                    queryKey: ['features'],
+                    exact: false
+                });
+
+                // Invalidate class/race caches if feature was edited from within class/race edit pages
+                const parentType = location.state?.parentType;
+                const parentId = location.state?.parentId;
+                if (parentType === 'class' && parentId) {
+                    await queryClient.invalidateQueries({ 
+                        queryKey: ClassQueryHooks.getClassByIdQueryKey(parentId)
+                    });
+                    await queryClient.invalidateQueries({ 
+                        queryKey: ['classes'],
+                        exact: false
+                    });
+                }
+                if (parentType === 'race' && parentId) {
+                    await queryClient.invalidateQueries({ 
+                        queryKey: RaceQueryHooks.getRaceByIdQueryKey(parentId)
+                    });
+                    await queryClient.invalidateQueries({ 
+                        queryKey: ['races'],
+                        exact: false
+                    });
+                }
 
                 // Save FeatureProgressions after feature update
                 if (featureProgressions.length > 0) {
@@ -399,6 +472,24 @@ export function FeatureEdit() {
                             rows={8}
                             required
                         />
+                    </div>
+                </div>
+
+                {/* Summary */}
+                <div className="mt-6">
+                    <div className="space-y-2">
+                        <ValidatedInput
+                            field="summary"
+                            label="Summary (for PDF character sheets)"
+                            type="textarea"
+                            labelExtraClassName="mb-2"
+                            inputExtraClassName="w-full"
+                            placeholder="Enter brief summary for character sheets (plain text, no markdown)"
+                            rows={4}
+                        />
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                            This summary will be displayed on PDF character sheets. Keep it concise and avoid markdown formatting.
+                        </p>
                     </div>
                 </div>
 

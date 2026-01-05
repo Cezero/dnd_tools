@@ -106,6 +106,13 @@ export function FeatureDetail() {
                 </div>
             </div>
 
+            {feature.summary && (
+                <div className="mb-6">
+                    <h2 className="text-lg font-semibold mb-2">Summary</h2>
+                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{feature.summary}</p>
+                </div>
+            )}
+
             {feature.description && (
                 <div className="mb-6">
                     <h2 className="text-lg font-semibold mb-2">Description</h2>
