@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
@@ -19,6 +19,7 @@ export function FeatDetail() {
     const location = useLocation();
     const fromListParams = location.state?.fromListParams || '';
     const { getFeatNameById, getFeatureNameById } = useCacheFunctions();
+    const prereqsProcessedRef = useRef<string>('');
 
     // Use TanStack Query hook
     const { data: feat, isLoading, error: _error } = FeatQueryHooks.useGetFeatById({
@@ -29,23 +30,38 @@ export function FeatDetail() {
     // Load prerequisite display texts when feat data changes
     useEffect(() => {
         const loadPrereqTexts = async () => {
-            if (feat?.prereqs && feat.prereqs.length > 0) {
-                const texts: Record<number, string> = {};
-                for (let i = 0; i < feat.prereqs.length; i++) {
-                    const prereq = feat.prereqs[i];
-                    try {
-                        texts[i] = await getPrereqDisplayText(prereq, getFeatNameById, getFeatureNameById);
-                    } catch (error) {
-                        console.error('Error loading prerequisite text:', error);
-                        texts[i] = `Prerequisite ${i + 1}`;
-                    }
-                }
-                setPrereqDisplayTexts(texts);
+            if (!feat?.prereqs || feat.prereqs.length === 0) {
+                setPrereqDisplayTexts({});
+                prereqsProcessedRef.current = '';
+                return;
             }
+
+            // Create a stable key from the prereqs to prevent unnecessary re-runs
+            const prereqsKey = JSON.stringify(feat.prereqs.map(p => ({ ...p })));
+
+            // Only resolve if the prereqs have actually changed
+            if (prereqsProcessedRef.current === prereqsKey) {
+                return;
+            }
+
+            prereqsProcessedRef.current = prereqsKey;
+
+            const texts: Record<number, string> = {};
+            for (let i = 0; i < feat.prereqs.length; i++) {
+                const prereq = feat.prereqs[i];
+                try {
+                    texts[i] = await getPrereqDisplayText(prereq, getFeatNameById, getFeatureNameById);
+                } catch (error) {
+                    console.error('Error loading prerequisite text:', error);
+                    texts[i] = `Prerequisite ${i + 1}`;
+                }
+            }
+            setPrereqDisplayTexts(texts);
         };
 
         loadPrereqTexts();
-    }, [feat, getFeatNameById]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [feat?.prereqs]);
 
     const handleBack = () => {
         navigate(`/feats${fromListParams ? `?${fromListParams}` : ''}`);

@@ -12,7 +12,7 @@ import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import { SkillQueryHooks } from '@/services/query/SkillQueryHooks';
 import type { CharacterWithAllDetailsResponse, DnDClass, Race, ItemWithDetails, FeatureProgression, Feat, CharacterItem } from '@shared/schema';
-import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, DisplayType, SIZE_MAP, SKILL_LIST, Skill, FeatBenefitType, ARMOR_CATEGORY_ENUM, LOCATION_ENUM, LANGUAGE_MAP, GetAbilityModifier, ITEM_TYPES, FeatureSourceType, EntityType, SpecialFeatureId, EntityAppliesToType } from '@shared/static-data';
+import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, DisplayType, SIZE_MAP, SKILL_LIST, Skill, FeatBenefitType, ARMOR_CATEGORY_ENUM, LOCATION_ENUM, LANGUAGE_MAP, GetAbilityModifier, ITEM_TYPES, FeatureSourceType, EntityType, SpecialFeatureId, EntityAppliesToType, CRAFT_SKILL_MAP, KNOWLEDGE_SKILL_MAP } from '@shared/static-data';
 import { getXPTotalForLevel, calculateCarryingCapacity } from '@shared/utils';
 
 /**
@@ -1689,8 +1689,97 @@ export async function generateCharacterPdf(
         breakdown: { components: [] }
     }));
 
-    skillsToDisplay.forEach((skill, index) => {
-        const skillY = skillsStartY + index * skillRowHeight;
+    // Build a map of conditional skill modifiers by skillId and skillSubId
+    // Store both the numeric value and the conditional text
+    type ConditionalModifier = {
+        value: number; // Numeric modifier value (e.g., +2)
+        conditionalText: string; // Text after the modifier (e.g., "related to Stone, Metal")
+    };
+    const conditionalSkillModifiersMap = new Map<string, ConditionalModifier>();
+    if (resolvedProgressions && characterSheetStrategy) {
+        for (const progression of resolvedProgressions) {
+            if (!progression.entities) continue;
+
+            for (const entity of progression.entities) {
+                // Only include entities with conditions
+                if (!entity.conditions || entity.conditions.length === 0) continue;
+
+                // Only include bonuses (not proficiencies, choices, etc.)
+                if (entity.type !== EntityType.Bonus) continue;
+
+                // Only include entities that apply to skills
+                if (entity.appliesTo !== EntityAppliesToType.Skill || !entity.appliesToId) continue;
+
+                // Get the numeric value from the entity
+                const modifierValue = typeof entity.value === 'number' ? entity.value : (typeof entity.value === 'string' ? parseFloat(entity.value) || 0 : 0);
+
+                // Format this entity using the display strategy
+                const displayResult = characterSheetStrategy.format([progression], {
+                    character: characterContext,
+                    featsMap
+                });
+
+                // Find the formatted entity in the result
+                const sheetResult = displayResult as CharacterSheetDisplayResult;
+                const formattedEntity = sheetResult.individualEntities?.find(e =>
+                    e.entity?.id === entity.id
+                );
+
+                if (formattedEntity && formattedEntity.formattedValue) {
+                    // Remove skill name prefix if present (format is "Skill Name: value")
+                    let modifierText = formattedEntity.formattedValue;
+                    const skillData = SKILL_LIST.find(s => s.id === entity.appliesToId);
+                    if (skillData) {
+                        // Check for skill name with subtype
+                        let skillNameWithSubtype = skillData.name;
+                        const entitySubId = entity.appliesToSubId;
+                        if (entitySubId !== null && entitySubId !== undefined && entitySubId !== -1) {
+                            if (entity.appliesToId === 6) { // Craft
+                                const craftSubtype = CRAFT_SKILL_MAP[entitySubId as keyof typeof CRAFT_SKILL_MAP];
+                                if (craftSubtype) {
+                                    skillNameWithSubtype = `${skillData.name} (${craftSubtype.name})`;
+                                }
+                            } else if (entity.appliesToId === 19) { // Knowledge
+                                const knowledgeSubtype = KNOWLEDGE_SKILL_MAP[entitySubId as keyof typeof KNOWLEDGE_SKILL_MAP];
+                                if (knowledgeSubtype) {
+                                    skillNameWithSubtype = `${skillData.name} (${knowledgeSubtype.name})`;
+                                }
+                            }
+                        }
+
+                        // Remove skill name prefix if present
+                        const prefix = `${skillNameWithSubtype}: `;
+                        if (modifierText.startsWith(prefix)) {
+                            modifierText = modifierText.substring(prefix.length);
+                        }
+                    }
+
+                    // Extract the conditional text (everything after the modifier value)
+                    // Modifier text might be "+2 related to Stone, Metal" or just "+2"
+                    let conditionalText = '';
+                    const modifierMatch = modifierText.match(/^([+-]?\d+)\s*(.*)$/);
+                    if (modifierMatch) {
+                        conditionalText = modifierMatch[2].trim();
+                    }
+
+                    // Store modifier with key: skillId_subId
+                    // If subId is -1 (all subtypes), we'll check for it when looking up
+                    const subIdKey = entity.appliesToSubId ?? 'null';
+                    const mapKey = `${entity.appliesToId}_${subIdKey}`;
+                    conditionalSkillModifiersMap.set(mapKey, {
+                        value: modifierValue,
+                        conditionalText
+                    });
+                }
+            }
+        }
+    }
+
+    // Track Y position accounting for conditional modifier lines
+    let currentSkillY = skillsStartY;
+
+    skillsToDisplay.forEach((skill) => {
+        const skillY = currentSkillY;
         let skillX = skillsStartX;
 
         // CLASS SKILL indicator (plain text - 'x' if class skill, nothing otherwise)
@@ -1744,6 +1833,8 @@ export async function generateCharacterPdf(
         skillX += keyAbilityWidth;
 
         // SKILL MODIFIER (bold)
+        // Store the X position of the Skill Modifier column for conditional modifier alignment
+        const skillModifierColumnX = skillX;
         doc.setFontSize(8); // Ensure font size is correct
         doc.setFont('ArchivoNarrow', 'bold');
         doc.text(skill.total, skillX + (skillModifierWidth / 2), skillY, { align: 'center' });
@@ -1773,6 +1864,51 @@ export async function generateCharacterPdf(
 
         // MISC BONUS (plain text)
         doc.text(skill.misc, skillX + (miscBonusWidth / 2), skillY, { align: 'center' });
+
+        // Check for conditional modifier for this skill and display it on the next line
+        // Check multiple keys: exact match, all subtypes (-1), or no subtype (null)
+        const skillSubId = skill.skillSubId ?? null;
+        let conditionalModifier: ConditionalModifier | undefined;
+
+        // Try exact match first
+        const exactKey = `${skill.skillId}_${skillSubId ?? 'null'}`;
+        conditionalModifier = conditionalSkillModifiersMap.get(exactKey);
+
+        // If no exact match and skill has a subtype, check for "all subtypes" modifier
+        if (!conditionalModifier && skillSubId !== null) {
+            const allSubtypesKey = `${skill.skillId}_-1`;
+            conditionalModifier = conditionalSkillModifiersMap.get(allSubtypesKey);
+        }
+
+        // If no match and skill has no subtype, check for modifiers without subtype specified
+        if (!conditionalModifier && skillSubId === null) {
+            const noSubtypeKey = `${skill.skillId}_null`;
+            conditionalModifier = conditionalSkillModifiersMap.get(noSubtypeKey);
+        }
+
+        if (conditionalModifier) {
+            // Move to next line for conditional modifier
+            currentSkillY += skillRowHeight;
+            const modifierY = currentSkillY - 2;
+
+            // Calculate the new total by adding the conditional modifier to the current skill total
+            const currentTotal = parseModifier(skill.total);
+            const newTotal = currentTotal + conditionalModifier.value;
+            const formattedNewTotal = formatModifier(newTotal);
+
+            // Build the display text: formatted total + conditional text
+            const displayText = conditionalModifier.conditionalText
+                ? `${formattedNewTotal} ${conditionalModifier.conditionalText}`
+                : formattedNewTotal;
+
+            // Display conditional modifier in 6pt font, aligned with Skill Modifier column
+            doc.setFontSize(6);
+            doc.setFont('ArchivoNarrow', 'normal');
+            doc.text(displayText, skillModifierColumnX + 10, modifierY);
+        }
+
+        // Move to next skill line
+        currentSkillY += skillRowHeight;
     });
 
     // ============================================================================
@@ -2926,12 +3062,19 @@ export async function generateCharacterPdf(
     }
 
     // TURN ATTEMPTS Section (right sub-column of right column)
-    const turnSubColWidth = (page2RightColWidth * 2) / 3;
-    const turnSubColX = page2RightColX + carryingSubColWidth;
+    const turnSubColWidth = 125;
+    const turnSubColX = page2RightColX + carryingSubColWidth + 4;
     const turnHeaderY = rightColY;
-    doc.setFontSize(4);
-    doc.setFont('ArchivoNarrow', 'normal');
-    doc.text('TURN ATTEMPTS', turnSubColX + turnSubColWidth / 2, turnHeaderY, { align: 'center' });
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(1);
+    doc.setFillColor(0, 0, 0);
+    doc.rect(turnSubColX, turnHeaderY, turnSubColWidth, 10, 'FD');
+
+    doc.setFontSize(7);
+    doc.setFont('ArchivoNarrow', 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.text('TURNING UNDEAD', turnSubColX + turnSubColWidth / 2, turnHeaderY + 8, { align: 'center' });
+    doc.setTextColor(0, 0, 0);
 
     const clericLevel = getTurnUndeadLevel(character, resolvedProgressions);
     if (clericLevel > 0) {
@@ -2953,33 +3096,63 @@ export async function generateCharacterPdf(
         // Note: There may not be a specific benefit type for turning check modifier, using TURN_ATTEMPTS for now
         const turningCheckMod = chaMod + turnAttemptBonus;
 
-        let turnY = turnHeaderY + 6;
-        const turnBoxWidth = 40;
-        const turnBoxHeight = 18;
+        let turnY = turnHeaderY + 12;
+        const turnBoxWidth = 24;
+        const turnBoxHeight = 15;
+        const turnBoxSpacing = 6;
 
         // Times/Day box
-        drawScoreBox(turnSubColX, turnY, turnBoxWidth, turnBoxHeight, timesPerDay.toString());
-        doc.setFontSize(4);
+        const timesPerDayX = turnSubColX + turnBoxSpacing;
+        drawScoreBox(timesPerDayX, turnY, turnBoxWidth, turnBoxHeight, timesPerDay.toString());
+        doc.setFontSize(5);
         doc.setFont('ArchivoNarrow', 'normal');
-        doc.text('Times/Day [ ]', turnSubColX + turnBoxWidth / 2, turnY + turnBoxHeight + 4, { align: 'center' });
-        turnY += turnBoxHeight + 8;
+        doc.text('Times/Day', timesPerDayX + turnBoxWidth / 2, turnY + turnBoxHeight + 5, { align: 'center' });
 
         // USED box
-        drawScoreBox(turnSubColX, turnY, turnBoxWidth, turnBoxHeight, '');
-        doc.text('USED [ ]', turnSubColX + turnBoxWidth / 2, turnY + turnBoxHeight + 4, { align: 'center' });
-        turnY += turnBoxHeight + 8;
+        const usedX = turnSubColX + turnBoxWidth + turnBoxSpacing + turnBoxSpacing;
+        drawScoreBox(usedX, turnY, turnBoxWidth, turnBoxHeight, '');
+        doc.setFontSize(5);
+        doc.setFont('ArchivoNarrow', 'normal');
+        doc.text('Used', usedX + turnBoxWidth / 2, turnY + turnBoxHeight + 5, { align: 'center' });
 
         // Turning Check Modifier box
-        drawScoreBox(turnSubColX, turnY, turnBoxWidth, turnBoxHeight, formatModifier(turningCheckMod));
-        doc.text('Turning Check Modifier [ ]', turnSubColX + turnBoxWidth / 2, turnY + turnBoxHeight + 4, { align: 'center' });
-        turnY += turnBoxHeight + 12;
+        const turningCheckModX = turnSubColX + 2 * (turnBoxWidth + turnBoxSpacing) + turnBoxSpacing;
+        drawScoreBox(turningCheckModX, turnY, turnBoxWidth, turnBoxHeight, formatModifier(turningCheckMod));
+        doc.setFontSize(5);
+        doc.setFont('ArchivoNarrow', 'normal');
+        doc.text('Turning Check', turningCheckModX + turnBoxWidth / 2, turnY + turnBoxHeight + 5, { align: 'center' });
+        doc.text('Modifier', turningCheckModX + turnBoxWidth / 2, turnY + turnBoxHeight + 10, { align: 'center' });
+
+        // # of HD Turned
+        const hdTurnedBonus = clericLevel + chaMod;
+        const hdTurnedX = turnSubColX + 3 * (turnBoxWidth + turnBoxSpacing) + turnBoxSpacing;
+        drawScoreBox(hdTurnedX, turnY, turnBoxWidth, turnBoxHeight, `2d6+${hdTurnedBonus}`);
+        doc.setFontSize(5);
+        doc.setFont('ArchivoNarrow', 'normal');
+        doc.text('Total HD', hdTurnedX + turnBoxWidth / 2, turnY + turnBoxHeight + 5, { align: 'center' });
+        doc.text('Turned', hdTurnedX + turnBoxWidth / 2, turnY + turnBoxHeight + 10, { align: 'center' });
+
+        turnY += turnBoxHeight + 20;
 
         // Turning Check Table
-        doc.setFontSize(4);
+        const tableCol1X = turnSubColX + 10;
+        const tableCol1Width = 40;
+        const tableCol2X = turnSubColX + 50;
+        const tableCol2Width = 60;
+        const tableHeaderHeight = 13;
+        const tableRowHeight = 8;
+
+        // Header row with borders
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.5);
+        doc.rect(tableCol1X, turnY, tableCol1Width, tableHeaderHeight, 'S');
+        doc.rect(tableCol2X, turnY, tableCol2Width, tableHeaderHeight, 'S');
+        doc.setFontSize(6);
         doc.setFont('ArchivoNarrow', 'normal');
-        doc.text('Turning Check', turnSubColX + 20, turnY, { align: 'center' });
-        doc.text('Most Powerful Undead Affected (Max HD)', turnSubColX + turnSubColWidth - 20, turnY, { align: 'center' });
-        turnY += 8;
+        doc.text('Turning Check', tableCol1X + tableCol1Width / 2, turnY + 11, { align: 'center' });
+        doc.text('Most Powerful Undead', tableCol2X + tableCol2Width / 2, turnY + 6, { align: 'center' });
+        doc.text('Affected (Max HD)', tableCol2X + tableCol2Width / 2, turnY + 11, { align: 'center' });
+        turnY += tableHeaderHeight;
 
         const turningCheckRanges = [
             { range: '0 or lower', offset: -4 },
@@ -2990,30 +3163,38 @@ export async function generateCharacterPdf(
             { range: '13—15', offset: 1 },
             { range: '16—18', offset: 2 },
             { range: '19—21', offset: 3 },
-            { range: '22 or higher', offset: 4 },
+            { range: '22+', offset: 4 },
         ];
 
-        doc.setFontSize(5);
-        for (const checkRange of turningCheckRanges) {
+        doc.setFontSize(6);
+        for (let i = 0; i < turningCheckRanges.length; i++) {
+            const checkRange = turningCheckRanges[i];
             const maxHD = clericLevel + checkRange.offset;
-            doc.text(checkRange.range, turnSubColX + 2, turnY);
-            doc.text(`Cleric's level ${checkRange.offset >= 0 ? '+' : ''}${checkRange.offset}`, turnSubColX + 20, turnY);
-            doc.text(maxHD.toString(), turnSubColX + turnSubColWidth - 2, turnY, { align: 'right' });
-            turnY += 6;
+            const isEvenRow = i % 2 === 0;
+
+            // Draw alternating grey background for even rows
+            if (isEvenRow) {
+                doc.setDrawColor(230, 230, 230);
+                doc.setFillColor(230, 230, 230);
+                doc.rect(tableCol1X, turnY, tableCol1Width, tableRowHeight, 'FD');
+                doc.rect(tableCol2X, turnY, tableCol2Width, tableRowHeight, 'FD');
+            }
+
+            // Draw cell borders
+            doc.setDrawColor(0, 0, 0);
+            doc.setLineWidth(0.5);
+            doc.rect(tableCol1X, turnY, tableCol1Width, tableRowHeight, 'S');
+            doc.rect(tableCol2X, turnY, tableCol2Width, tableRowHeight, 'S');
+
+            // Draw text
+            doc.text(checkRange.range, tableCol1X + tableCol1Width / 2, turnY + 6, { align: 'center' });
+            doc.text(maxHD.toString(), tableCol2X + tableCol2Width / 2, turnY + 6, { align: 'center' });
+            turnY += tableRowHeight;
         }
 
-        turnY += 4;
-
-        // # of HD Turned
-        const hdTurnedX = clericLevel + chaMod;
-        doc.setFontSize(6);
-        doc.setFont('ArchivoNarrow', 'normal');
-        doc.text(`# of HD Turned`, turnSubColX + 2, turnY);
-        doc.text(`2d6+${hdTurnedX}`, turnSubColX + turnSubColWidth - 2, turnY, { align: 'right' });
         turnY += 10;
-
         // Descriptive text
-        doc.setFontSize(4);
+        doc.setFontSize(6);
         doc.setFont('ArchivoNarrow', 'normal');
         const description = "If your cleric level is double the HD of the undead or more, the undead are destroyed rather than turned. Dispelling/rebuking works like turning but you must equal or exceed the check result of the cleric who turned";
         doc.text(description, turnSubColX + 2, turnY, { maxWidth: turnSubColWidth - 4 });
