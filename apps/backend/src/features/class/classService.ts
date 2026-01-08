@@ -108,7 +108,10 @@ export const classService: ClassService = {
         };
     },
 
-    async getClassById(query: ClassIdParamRequest): Promise<DnDClass | null> {
+    async getClassById(
+        query: ClassIdParamRequest,
+        characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>
+    ): Promise<DnDClass | null> {
         const id = query.id;
 
         // Check if this is a custom variant ID
@@ -146,7 +149,8 @@ export const classService: ClassService = {
         }
 
         // Get feature progressions using the new architecture
-        const features = await featureSystemService.getFeatureProgressionsByClassId(query.id);
+        // Pass character feature choices to enrich progressions with choice data
+        const features = await featureSystemService.getFeatureProgressionsByClassId(query.id, characterFeatureChoices);
 
         // Combine class data with enriched feature progressions
         const transformedClassData = {

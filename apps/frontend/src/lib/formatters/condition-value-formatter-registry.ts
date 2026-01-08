@@ -1,4 +1,4 @@
-import { FeatureEntityConditionType } from '@shared/static-data';
+import { FeatureEntityConditionType, CompanionBenefitConditionType } from '@shared/static-data';
 
 import {
     MaterialValueFormatter,
@@ -8,7 +8,8 @@ import {
     SpellSchoolValueFormatter,
     AttackTypeValueFormatter,
     TargetValueFormatter,
-    EnvironmentValueFormatter
+    EnvironmentValueFormatter,
+    LightingValueFormatter
 } from './condition-value-formatters';
 import type { ConditionValueFormatter } from './types';
 
@@ -48,6 +49,8 @@ class ConditionValueFormatterRegistry {
         this.registerFormatter(FeatureEntityConditionType.attack_type, new AttackTypeValueFormatter());
         this.registerFormatter(FeatureEntityConditionType.target, new TargetValueFormatter());
         this.registerFormatter(FeatureEntityConditionType.environment, new EnvironmentValueFormatter());
+        // Register lighting condition formatter (CompanionBenefitConditionType.lighting = 8)
+        this.registerFormatter(CompanionBenefitConditionType.lighting as FeatureEntityConditionType, new LightingValueFormatter());
     }
 }
 

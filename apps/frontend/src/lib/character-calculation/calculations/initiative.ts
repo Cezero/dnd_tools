@@ -4,6 +4,7 @@ import { resolveFeatBenefits } from '../core/featBenefitResolver';
 import { resolveFeatureBonuses } from '../core/featureBonusResolver';
 import { FeatBenefitType, EntityAppliesToType } from '@shared/static-data';
 import { buildBreakdownString, createBreakdownComponent } from '../utils/breakdownBuilder';
+import { getAbilityScore } from './abilityScore';
 import type { CalculationResult } from '../types';
 
 /**
@@ -24,10 +25,10 @@ export function getInitiative(
     resolvedProgressions: FeatureProgression[],
     featsMap?: Map<number, Feat>
 ): CalculationResult<InitiativeBreakdownMap> {
-    // Get Dex modifier
-    const dexScore = character.abilityScores.find(a => a.abilityId === AbilityId.Dexterity);
-    const dexValue = dexScore?.value ?? 10;
-    const dexMod = GetAbilityModifier(dexValue);
+    // Get Dex modifier using total ability score (base + racial modifiers + feat bonuses, etc.)
+    const dexScoreResult = getAbilityScore(character, AbilityId.Dexterity, resolvedProgressions, featsMap);
+    const dexTotalValue = dexScoreResult.value;
+    const dexMod = GetAbilityModifier(dexTotalValue);
 
     // Get feat benefits
     const featBenefits = resolveFeatBenefits(character, FeatBenefitType.INITIATIVE, undefined, featsMap, resolvedProgressions);

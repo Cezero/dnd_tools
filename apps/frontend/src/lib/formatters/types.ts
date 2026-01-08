@@ -8,7 +8,12 @@ import type {
     Race,
     DnDClass,
     CharacterWithAllDetailsResponse,
-    Feat
+    Feat,
+    CharacterFeatureChoice,
+    CharacterCompanion,
+    Monster,
+    Deity,
+    Domain,
 } from '@shared/schema';
 import type { BreakdownComponentType, Formula } from '@shared/static-data';
 import { EntityAppliesToType, EntityType } from '@shared/static-data';
@@ -128,6 +133,19 @@ export interface DisplayContext extends BaseFormatterContext {
     showBreakdown?: boolean;
     featsMap?: Map<number, Feat>;
     displayBonusType?: boolean; // Whether to display bonus type (e.g., "(racial)"). Defaults to true.
+    choices?: Map<string, CharacterFeatureChoice>; // keyed by choiceGroupId
+    companions?: CharacterCompanion[];
+    deity?: Deity;
+    domains?: Domain[];
+    transformationForms?: Map<number, Monster[]>; // keyed by featureId, contains eligible forms
+    clericEnergyChoice?: {
+        energyType: 'positive' | 'negative';
+        turnRebuke: 'turn' | 'rebuke';
+        spontaneousCasting: 'cure' | 'inflict';
+    };
+    skillRanks?: Array<{ skillId: number; skillSubId: number | null; customSubtype: string | null; pointsSpent: number }>; // Session skill ranks (overrides character.advancements[].skills)
+    classSkills?: Array<{ skillId: number; skillSubId: number | null }>; // Class skills from backend resolution API
+    skillBonuses?: Array<{ skillId: number; skillSubId: number | null; bonus: number; source: string }>; // Skill bonuses from backend resolution API
 }
 
 // Calculation context for formatter calculations

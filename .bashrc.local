@@ -1,0 +1,40 @@
+# Local .bashrc for this project - automatically loaded
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+# Auto-use Node 22 from .nvmrc
+if [ -f .nvmrc ] && [ -r .nvmrc ]; then
+    nvm use > /dev/null 2>&1
+fi
+
+# Function to switch to Node 22 (can be called directly)
+use-node22() {
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    cd /home/countzero/git/dnd_tools 2>/dev/null
+    nvm use 22
+    echo "✓ Now using Node $(node --version)"
+}
+
+# Auto-switch to Node 22 when running pnpm commands
+# This wraps pnpm to ensure correct Node version
+__pnpm_with_node22() {
+    # Ensure nvm is loaded
+    if [ -z "$NVM_DIR" ] || [ ! -s "$NVM_DIR/nvm.sh" ]; then
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" 2>/dev/null
+    fi
+    
+    # Switch to Node 22 if not already using it
+    local current_node=$(node --version 2>/dev/null | sed 's/v//')
+    if [[ "$current_node" != "22."* ]]; then
+        nvm use 22 > /dev/null 2>&1
+    fi
+    
+    # Run pnpm with the correct Node version
+    command pnpm "$@"
+}
+
+# Alias pnpm to use Node 22 automatically
+alias pnpm='__pnpm_with_node22'

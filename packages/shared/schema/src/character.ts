@@ -15,6 +15,18 @@ export const CharacterAttackIdParamSchema = CharacterIdParamSchema.extend({
     attackId: z.string().transform((val: string) => parseInt(val)),
 });
 
+export const RemoveDisallowedSourceParamSchema = CharacterIdParamSchema.extend({
+    sourceBookId: z.string().transform((val: string) => parseInt(val)),
+});
+
+export const CharacterSpellSelectionParamSchema = CharacterIdParamSchema.extend({
+    classId: z.string(),
+});
+
+export const ReorderAttackDefinitionsSchema = z.object({
+    attackDefinitionIds: z.array(z.number().int().positive()),
+});
+
 export const SpellPreparationParamSchema = z.object({
     id: z.string().transform((val: string) => parseInt(val)),
     prepKey: z.string(),
@@ -127,6 +139,9 @@ export const CharacterFeatureChoiceSchema = z.object({
     appliesToId: z.number().int().positive('Applies to ID must be a positive integer'),
     appliesToSubId: z.number().int().nullable(),
     choiceIndex: z.number().int().nullable(),
+    choiceGroupId: z.string().nullable().optional(),
+    choiceData: z.any().nullable().optional(),
+    linkedChoiceGroupId: z.string().nullable().optional(),
 });
 
 // Request/response schemas for character feature choices (defined early to avoid forward reference)
@@ -324,6 +339,7 @@ export type CharacterIdParamRequest = z.infer<typeof CharacterIdParamSchema>;
 export type AdvancementIdParamRequest = z.infer<typeof AdvancementIdParamSchema>;
 export type SpellPreparationParamRequest = z.infer<typeof SpellPreparationParamSchema>;
 export type CharacterAttackIdParamRequest = z.infer<typeof CharacterAttackIdParamSchema>;
+export type RemoveDisallowedSourceParamRequest = z.infer<typeof RemoveDisallowedSourceParamSchema>;
 export type AbilityIdParamRequest = z.infer<typeof AbilityIdParamSchema>;
 
 export type CreateCharacterRequest = z.infer<typeof CreateCharacterSchema>;
@@ -359,6 +375,8 @@ export type UpdateCharacterItemPropertyRequest = z.infer<typeof UpdateCharacterI
 export type CharacterAttackDefinition = z.infer<typeof CharacterAttackDefinitionSchema>;
 export type CreateCharacterAttackDefinitionRequest = z.infer<typeof CreateCharacterAttackDefinitionSchema>;
 export type UpdateCharacterAttackDefinitionRequest = z.infer<typeof UpdateCharacterAttackDefinitionSchema>;
+export type ReorderAttackDefinitionsRequest = z.infer<typeof ReorderAttackDefinitionsSchema>;
+export type CharacterSpellSelectionParamRequest = z.infer<typeof CharacterSpellSelectionParamSchema>;
 
 // Character feature choice types
 export type CharacterFeatureChoice = z.infer<typeof CharacterFeatureChoiceSchema>;

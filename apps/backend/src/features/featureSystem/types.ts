@@ -36,9 +36,9 @@ export interface FeatureSystemService {
     getFeatureProgressions(featureId: number): Promise<FeatureProgression[]>;
 
     // NEW: Core methods for smart population
-    getFeatureProgressionsByIds(progressionIds: number[]): Promise<FeatureProgression[]>;
-    getFeatureProgressionsByClassId(classId: number): Promise<FeatureProgression[]>;
-    getFeatureProgressionsByRaceId(raceId: number): Promise<FeatureProgression[]>;
-    getFeatureProgressionsByDomainId(domainId: number): Promise<FeatureProgression[]>;
-    getFeatureProgressionById(progressionId: number): Promise<FeatureProgression | null>;
+    getFeatureProgressionsByIds(progressionIds: number[], characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureProgression[]>;
+    getFeatureProgressionsByClassId(classId: number, characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureProgression[]>;
+    getFeatureProgressionsByRaceId(raceId: number, characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureProgression[]>;
+    getFeatureProgressionsByDomainId(domainId: number, characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureProgression[]>;
+    getFeatureProgressionById(progressionId: number, characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureProgression | null>;
 } 

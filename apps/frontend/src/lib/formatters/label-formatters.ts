@@ -218,6 +218,10 @@ export function domainLabeler(value: string, _modifier: CalculatedEntity): strin
     return `Domain: ${value}`;
 }
 
+export function animalCompanionLabeler(value: string, _modifier: CalculatedEntity): string {
+    return `Animal Companion: ${value}`;
+}
+
 // Labeler for grouped bonus languages - handles pluralization
 export function groupedBonusLanguageLabeler(formattedItems: string): string {
     // Check if there are multiple languages (contains comma)

@@ -7,12 +7,13 @@ import { getAllCharacterFeats, type CharacterFeat } from '@/lib/character-calcul
 import { resolveFeatBenefits } from '@/lib/character-calculation/core/featBenefitResolver';
 import { displayStrategyFactory } from '@/lib/formatters';
 import type { FormattedCharacterResult, BaseCharacterInfo, FormattedFeat, CharacterSheetDisplayResult } from '@/lib/formatters/types';
+import { CharacterQueryHooks } from '@/services/query/CharacterQueryHooks';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import { SkillQueryHooks } from '@/services/query/SkillQueryHooks';
-import type { CharacterWithAllDetailsResponse, DnDClass, Race, ItemWithDetails, FeatureProgression, Feat, CharacterItem } from '@shared/schema';
-import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, DisplayType, SIZE_MAP, SKILL_LIST, Skill, FeatBenefitType, ARMOR_CATEGORY_ENUM, LOCATION_ENUM, LANGUAGE_MAP, GetAbilityModifier, ITEM_TYPES, FeatureSourceType, EntityType, SpecialFeatureId, EntityAppliesToType, CRAFT_SKILL_MAP, KNOWLEDGE_SKILL_MAP } from '@shared/static-data';
+import type { CharacterWithAllDetailsResponse, DnDClass, Race, ItemWithDetails, FeatureProgression, Feat, CharacterItem, Spell } from '@shared/schema';
+import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, DisplayType, SIZE_MAP, SKILL_LIST, Skill, FeatBenefitType, ARMOR_CATEGORY_ENUM, LOCATION_ENUM, LANGUAGE_MAP, GetAbilityModifier, ITEM_TYPES, FeatureSourceType, EntityType, SpecialFeatureId, EntityAppliesToType, CRAFT_SKILL_MAP, KNOWLEDGE_SKILL_MAP, SPELL_COMPONENT_MAP, SPELL_SCHOOL_MAP, SPELL_SUBSCHOOL_MAP } from '@shared/static-data';
 import { getXPTotalForLevel, calculateCarryingCapacity } from '@shared/utils';
 
 /**
@@ -21,18 +22,42 @@ import { getXPTotalForLevel, calculateCarryingCapacity } from '@shared/utils';
 export async function generateCharacterPdf(
     character: CharacterWithAllDetailsResponse,
     classDetailsMap: Map<number, DnDClass>,
-    resolvedProgressions?: FeatureProgression[],
+    resolvedProgressions: FeatureProgression[],
     queryClient?: QueryClient,
-    raceData?: Race | null
+    raceData?: Race | null,
+    classSkills?: Array<{ skillId: number; skillSubId: number | null }>,
+    skillBonuses?: Array<{ skillId: number; skillSubId: number | null; bonus: number; source: string }>
 ): Promise<void> {
+    // Require resolved progressions from backend API
+    if (!resolvedProgressions || resolvedProgressions.length === 0) {
+        throw new Error('Resolved progressions are required. Use CharacterResolutionApi to resolve features before generating PDF.');
+    }
     // Use provided race data or fetch from cache if available
     let fullRace: Race | null = raceData || null;
     if (!fullRace && character.race?.id) {
         if (queryClient) {
             try {
+                // Extract choices from character advancements
+                const choices: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }> = [];
+                if (character.advancements) {
+                    for (const advancement of character.advancements) {
+                        if (advancement.featureChoices) {
+                            for (const choice of advancement.featureChoices) {
+                                choices.push({
+                                    progressionId: choice.progressionId,
+                                    featureEntityId: choice.featureEntityId,
+                                    appliesToId: choice.appliesToId,
+                                    appliesToSubId: choice.appliesToSubId,
+                                });
+                            }
+                        }
+                    }
+                }
+                const featureChoices = choices.length > 0 ? choices : undefined;
+
                 fullRace = await queryClient.fetchQuery({
-                    queryKey: RaceQueryHooks.getRaceByIdQueryKey(character.race.id),
-                    queryFn: () => RaceQueryHooks.getRaceByIdQueryFn({ pathParams: { id: character.race.id } }),
+                    queryKey: [...RaceQueryHooks.getRaceByIdQueryKey(character.race.id), featureChoices ? JSON.stringify(featureChoices) : 'no-choices'],
+                    queryFn: () => RaceQueryHooks.getRaceById(character.race.id, featureChoices),
                     staleTime: 5 * 60 * 1000, // 5 minutes
                     gcTime: 10 * 60 * 1000, // 10 minutes
                 });
@@ -117,21 +142,33 @@ export async function generateCharacterPdf(
         sizeId: fullRace?.sizeId ?? undefined
     };
 
-    if (characterSheetStrategy.formatCharacter && resolvedProgressions) {
-        try {
+    if (!characterSheetStrategy.formatCharacter) {
+        throw new Error('Character sheet strategy formatCharacter method is not available');
+    }
 
-            formattedCharacter = characterSheetStrategy.formatCharacter(
-                character,
-                resolvedProgressions,
-                items,
-                character.characterItems || [],
-                classDetailsMap,
-                { character: characterContext, featsMap },
-                fullRace
-            );
-        } catch (error) {
-            console.error('Error formatting character for PDF:', error);
-        }
+    try {
+        formattedCharacter = characterSheetStrategy.formatCharacter(
+            character,
+            resolvedProgressions,
+            items,
+            character.characterItems || [],
+            classDetailsMap,
+            {
+                character: characterContext,
+                featsMap,
+                classSkills: classSkills && classSkills.length > 0 ? classSkills : undefined,
+                skillBonuses: skillBonuses && skillBonuses.length > 0 ? skillBonuses : undefined
+            },
+            fullRace
+        );
+    } catch (error) {
+        console.error('Error formatting character for PDF:', error);
+        throw new Error(`Failed to format character for PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+
+    // Ensure formattedCharacter is available
+    if (!formattedCharacter) {
+        throw new Error('formattedCharacter is required for PDF generation. Character formatting returned null or undefined.');
     }
 
     // Create PDF (US Letter size: 8.5 x 11 inches = 612 x 792 points)
@@ -162,12 +199,6 @@ export async function generateCharacterPdf(
         const cleaned = formatted.replace(/^\+/, '');
         return parseInt(cleaned, 10) || 0;
     };
-
-
-    // Ensure formattedCharacter is available
-    if (!formattedCharacter) {
-        throw new Error('formattedCharacter is required for PDF generation');
-    }
 
     // Helper function to format height
     const formatHeight = (inches: number | null | undefined): string => {
@@ -250,7 +281,7 @@ export async function generateCharacterPdf(
         doc.text(value, x + width / 2, y + (height / 2) + 3, { align: 'center' });
     };
 
-    // Helper to draw white box with border (ability score/modifier)
+    // Helper to draw white box with optional word wrapping
     const drawLabelBox = (x: number, y: number, width: number, height: number, value: string, wrap: boolean = false): void => {
         // Draw white box with border
         doc.setDrawColor(0, 0, 0);
@@ -282,6 +313,8 @@ export async function generateCharacterPdf(
         doc.setLineDashPattern([], 0); // Reset to solid
     };
 
+    // Helper to draw a box with a header in white text with black background
+    // and a value in black text with white background
     const drawHeaderBox = (x: number, y: number, width: number, height: number, label: string, value: string): void => {
         const boxHeaderHeight = 6;
         // Draw black box
@@ -937,9 +970,8 @@ export async function generateCharacterPdf(
     doc.text('+', initX, initiativeRowY + rowCenter);
     initX += acBoxSpacing + acBoxTextSpacing;
 
-    // Misc bonus white box
-    const initiativeMisc = parseModifier(formattedCharacter.initiative.misc);
-    drawScoreBox(initX, initiativeRowY, initWhiteBoxWidth, rowHeight, formatModifier(initiativeMisc));
+    // Misc bonus white box (use formatted value directly since it's already formatted without + sign)
+    drawScoreBox(initX, initiativeRowY, initWhiteBoxWidth, rowHeight, formattedCharacter.initiative.misc);
 
     // Labels beneath the boxes (4pt font, ALL CAPS, word-wrapped)
     const initiativeLabelY = initiativeRowY + rowHeight + 5; // 5px below the boxes
@@ -1107,32 +1139,32 @@ export async function generateCharacterPdf(
     doc.text('=', grappleX, grappleRowY + rowCenter);
     grappleX += 6; // Small space for '='
 
-    // BASE ATTACK white box
-    drawScoreBox(grappleX, grappleRowY, savingThrowsWhiteBoxWidth, rowHeight, formatModifier(firstBab));
+    // BASE ATTACK white box (breakdown component - no + sign)
+    drawScoreBox(grappleX, grappleRowY, savingThrowsWhiteBoxWidth, rowHeight, firstBab.toString());
     grappleX += savingThrowsWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
     doc.text('+', grappleX, grappleRowY + rowCenter);
     grappleX += acBoxSpacing + acBoxTextSpacing;
 
-    // STR MODIFIER white box
-    drawScoreBox(grappleX, grappleRowY, savingThrowsWhiteBoxWidth, rowHeight, formatModifier(strMod));
+    // STR MODIFIER white box (breakdown component - no + sign)
+    drawScoreBox(grappleX, grappleRowY, savingThrowsWhiteBoxWidth, rowHeight, strMod.toString());
     grappleX += savingThrowsWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
     doc.text('+', grappleX, grappleRowY + rowCenter);
     grappleX += acBoxSpacing + acBoxTextSpacing;
 
-    // SIZE MODIFIER white box
-    drawScoreBox(grappleX, grappleRowY, savingThrowsWhiteBoxWidth, rowHeight, formatModifier(sizeMod));
+    // SIZE MODIFIER white box (breakdown component - no + sign)
+    drawScoreBox(grappleX, grappleRowY, savingThrowsWhiteBoxWidth, rowHeight, sizeMod.toString());
     grappleX += savingThrowsWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
     doc.text('+', grappleX, grappleRowY + rowCenter);
     grappleX += acBoxSpacing + acBoxTextSpacing;
 
-    // MISC BONUS white box
-    drawScoreBox(grappleX, grappleRowY, savingThrowsWhiteBoxWidth, rowHeight, formatModifier(grappleMisc));
+    // MISC BONUS white box (breakdown component - no + sign)
+    drawScoreBox(grappleX, grappleRowY, savingThrowsWhiteBoxWidth, rowHeight, grappleMisc.toString());
 
     // Labels beneath the boxes (4pt font, ALL CAPS, word-wrapped)
     const grappleLabelY = grappleRowY + rowHeight + 5; // 5px below the boxes
@@ -1193,7 +1225,7 @@ export async function generateCharacterPdf(
     doc.rect(conditionalModifiersStartX, conditionalModifiersHeaderY + conditionalModifiersHeaderHeight, conditionalModifiersWidth, conditionalModifiersHeight - conditionalModifiersHeaderHeight, 'FD');
 
     // Populate conditional modifiers box with features that have conditional bonuses
-    if (resolvedProgressions && characterSheetStrategy) {
+    if (characterSheetStrategy) {
         // Find all entities with conditions that apply to saves, AC, attacks, etc.
         const conditionalModifiers: Array<{ formattedValue: string; progression: FeatureProgression }> = [];
 
@@ -1357,32 +1389,32 @@ export async function generateCharacterPdf(
     doc.text('=', meleeX, meleeRowY + rowCenter);
     meleeX += 6; // Small space for '='
 
-    // BASE ATTACK white box
-    drawScoreBox(meleeX, meleeRowY, attackWhiteBoxWidth, rowHeight, formatModifier(attackFirstBab));
+    // BASE ATTACK white box (breakdown component - no + sign)
+    drawScoreBox(meleeX, meleeRowY, attackWhiteBoxWidth, rowHeight, attackFirstBab.toString());
     meleeX += attackWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
     doc.text('+', meleeX, meleeRowY + rowCenter);
     meleeX += acBoxSpacing + acBoxTextSpacing;
 
-    // ABILITY MODIFIER white box (STR)
-    drawScoreBox(meleeX, meleeRowY, attackWhiteBoxWidth, rowHeight, formatModifier(attackStrMod));
+    // ABILITY MODIFIER white box (STR) (breakdown component - no + sign)
+    drawScoreBox(meleeX, meleeRowY, attackWhiteBoxWidth, rowHeight, attackStrMod.toString());
     meleeX += attackWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
     doc.text('+', meleeX, meleeRowY + rowCenter);
     meleeX += acBoxSpacing + acBoxTextSpacing;
 
-    // SIZE MODIFIER white box
-    drawScoreBox(meleeX, meleeRowY, attackWhiteBoxWidth, rowHeight, formatModifier(attackSizeMod));
+    // SIZE MODIFIER white box (breakdown component - no + sign)
+    drawScoreBox(meleeX, meleeRowY, attackWhiteBoxWidth, rowHeight, attackSizeMod.toString());
     meleeX += attackWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
     doc.text('+', meleeX, meleeRowY + rowCenter);
     meleeX += acBoxSpacing + acBoxTextSpacing;
 
-    // MISC BONUS white box
-    drawScoreBox(meleeX, meleeRowY, attackWhiteBoxWidth, rowHeight, formatModifier(meleeMisc));
+    // MISC BONUS white box (breakdown component - no + sign)
+    drawScoreBox(meleeX, meleeRowY, attackWhiteBoxWidth, rowHeight, meleeMisc.toString());
     meleeX += attackWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
@@ -1408,32 +1440,32 @@ export async function generateCharacterPdf(
     doc.text('=', rangedX, rangedRowY + rowCenter);
     rangedX += 6; // Small space for '='
 
-    // BASE ATTACK white box
-    drawScoreBox(rangedX, rangedRowY, attackWhiteBoxWidth, rowHeight, formatModifier(attackFirstBab));
+    // BASE ATTACK white box (breakdown component - no + sign)
+    drawScoreBox(rangedX, rangedRowY, attackWhiteBoxWidth, rowHeight, attackFirstBab.toString());
     rangedX += attackWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
     doc.text('+', rangedX, rangedRowY + rowCenter);
     rangedX += acBoxSpacing + acBoxTextSpacing;
 
-    // ABILITY MODIFIER white box (DEX)
-    drawScoreBox(rangedX, rangedRowY, attackWhiteBoxWidth, rowHeight, formatModifier(attackDexMod));
+    // ABILITY MODIFIER white box (DEX) (breakdown component - no + sign)
+    drawScoreBox(rangedX, rangedRowY, attackWhiteBoxWidth, rowHeight, attackDexMod.toString());
     rangedX += attackWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
     doc.text('+', rangedX, rangedRowY + rowCenter);
     rangedX += acBoxSpacing + acBoxTextSpacing;
 
-    // SIZE MODIFIER white box
-    drawScoreBox(rangedX, rangedRowY, attackWhiteBoxWidth, rowHeight, formatModifier(attackSizeMod));
+    // SIZE MODIFIER white box (breakdown component - no + sign)
+    drawScoreBox(rangedX, rangedRowY, attackWhiteBoxWidth, rowHeight, attackSizeMod.toString());
     rangedX += attackWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
     doc.text('+', rangedX, rangedRowY + rowCenter);
     rangedX += acBoxSpacing + acBoxTextSpacing;
 
-    // MISC BONUS white box
-    drawScoreBox(rangedX, rangedRowY, attackWhiteBoxWidth, rowHeight, formatModifier(rangedMisc));
+    // MISC BONUS white box (breakdown component - no + sign)
+    drawScoreBox(rangedX, rangedRowY, attackWhiteBoxWidth, rowHeight, rangedMisc.toString());
     rangedX += attackWhiteBoxWidth + acBoxSpacing - 1;
 
     // '+' text
@@ -1696,7 +1728,7 @@ export async function generateCharacterPdf(
         conditionalText: string; // Text after the modifier (e.g., "related to Stone, Metal")
     };
     const conditionalSkillModifiersMap = new Map<string, ConditionalModifier>();
-    if (resolvedProgressions && characterSheetStrategy) {
+    if (characterSheetStrategy) {
         for (const progression of resolvedProgressions) {
             if (!progression.entities) continue;
 
@@ -1955,7 +1987,11 @@ export async function generateCharacterPdf(
 
     // Helper to find equipped armor
     const findEquippedArmor = (characterItems: CharacterItem[], items: ItemWithDetails[]): { charItem: CharacterItem; item: ItemWithDetails } | null => {
-        const armorCharItem = characterItems.find(ci => ci.location === LOCATION_ENUM.Body);
+        // Check both Body and Torso locations for armor
+        const armorCharItem = characterItems.find(ci =>
+            (ci.location === LOCATION_ENUM.Body || ci.location === LOCATION_ENUM.Torso) &&
+            ci.baseItemId !== null
+        );
         if (!armorCharItem) return null;
         const armorItem = items.find(i => i.id === armorCharItem.baseItemId);
         if (!armorItem || !armorItem.armor || armorItem.armor.category === ARMOR_CATEGORY_ENUM.Shield) return null;
@@ -1973,8 +2009,6 @@ export async function generateCharacterPdf(
 
     // Helper to get level of classes with turn undead feature
     const getTurnUndeadLevel = (character: CharacterWithAllDetailsResponse, resolvedProgressions?: FeatureProgression[]): number => {
-        if (!resolvedProgressions) return 0;
-
         let turnUndeadLevel = 0;
         const classesWithTurnUndead = new Set<number>();
 
@@ -2094,7 +2128,7 @@ export async function generateCharacterPdf(
     doc.setFontSize(8);
     doc.setFont('ArchivoNarrow', 'normal');
     doc.setTextColor(0, 0, 0);
-    doc.text(armorName, armorX + armorRow1ColWidths[0] / 2, armorHeaderY + 8, { align: 'center' });
+    doc.text(armorName, armorX + armorRow1ColWidths[0] / 2, armorHeaderY + 21, { align: 'center' });
 
     armorHeaderY += 6;
     armorX += armorRow1ColWidths[0];
@@ -2163,7 +2197,7 @@ export async function generateCharacterPdf(
     doc.setFontSize(8);
     doc.setFont('ArchivoNarrow', 'normal');
     doc.setTextColor(0, 0, 0);
-    doc.text(shieldName, shieldX + shieldRow1ColWidths[0] / 2, shieldHeaderY + 8, { align: 'center' });
+    doc.text(shieldName, shieldX + shieldRow1ColWidths[0] / 2, shieldHeaderY + 21, { align: 'center' });
 
     shieldHeaderY += 6;
     shieldX += shieldRow1ColWidths[0];
@@ -2386,7 +2420,7 @@ export async function generateCharacterPdf(
         possessionsY += possessionsRowHeight + 2;
         doc.setFontSize(7);
         doc.setFont('ArchivoNarrow', 'normal');
-        doc.text(itemName, possessionsTableRightX + possessionTableItemColWidth / 2, possessionsY);
+        doc.text(itemName, possessionsTableRightX + 2, possessionsY);
         doc.text(itemWeight, possessionsTableRightX + possessionTableItemColWidth + 2 + possessionTableQtyColWidth + 2 + (possessionTableWeightColWidth / 2), possessionsY, { align: 'center' });
         possessionsY += 2;
         doc.setLineWidth(0.5);
@@ -2513,7 +2547,7 @@ export async function generateCharacterPdf(
     doc.rect(page2RightColX, rightColY, page2RightColWidth, specialAbilitiesBoxHeight - specialAbilitiesHeaderHeight, 'FD');
 
     // Format and display abilities
-    if (formattedCharacter && resolvedProgressions) {
+    if (formattedCharacter) {
         let abilitiesY = rightColY + 10;
         doc.setFontSize(7);
         doc.setFont('ArchivoNarrow', 'bold');
@@ -3200,7 +3234,607 @@ export async function generateCharacterPdf(
         doc.text(description, turnSubColX + 2, turnY, { maxWidth: turnSubColWidth - 4 });
     }
 
+    // Generate spell sheets for each spellcasting class
+    const spellcastingClassIds = Array.from(classDetailsMap.entries())
+        .filter(([_, c]) => c.canCastSpells)
+        .map(([id, _]) => id);
+
+    if (spellcastingClassIds.length > 0) {
+        for (const classId of spellcastingClassIds) {
+            const spellClass = classDetailsMap.get(classId);
+            if (spellClass) {
+                await generateSpellSheet(
+                    doc,
+                    character,
+                    spellClass,
+                    classId,
+                    classDetailsMap,
+                    queryClient
+                );
+            }
+        }
+    }
+
     // Save PDF
     const filename = `${character.name.replace(/[^a-z0-9]/gi, '_')}_CharacterSheet.pdf`;
     doc.save(filename);
+}
+
+/**
+ * Helper function to format spell components as abbreviations
+ */
+function formatSpellComponents(componentIds: Array<{ componentId: number }> | null | undefined): string {
+    if (!componentIds || componentIds.length === 0) return '';
+    return componentIds.map(c => {
+        const component = SPELL_COMPONENT_MAP[c.componentId as keyof typeof SPELL_COMPONENT_MAP];
+        return component?.abbreviation ?? '';
+    }).filter(Boolean).join(', ');
+}
+
+/**
+ * Helper function to format spell school + subschool
+ */
+function formatSpellSchool(spell: Spell): string {
+    const schools = spell.schoolIds?.map(s => {
+        const school = SPELL_SCHOOL_MAP[s.schoolId as keyof typeof SPELL_SCHOOL_MAP];
+        return school?.abbreviation ?? '';
+    }).filter(Boolean).join(', ') ?? '';
+
+    const subschools = spell.subSchoolIds?.map(s => {
+        const subschool = SPELL_SUBSCHOOL_MAP[s.subSchoolId as keyof typeof SPELL_SUBSCHOOL_MAP];
+        return subschool?.abbreviation ?? '';
+    }).filter(Boolean);
+
+    if (subschools && subschools.length > 0) {
+        return `${schools} [${subschools.join(', ')}]`;
+    }
+    return schools;
+}
+
+/**
+ * Helper function to format spell source reference
+ */
+function formatSpellSource(spell: Spell): string {
+    if (!spell.sourceBookInfo || spell.sourceBookInfo.length === 0) return '';
+    // Get first source (usually primary source)
+    const sourceInfo = spell.sourceBookInfo[0];
+    // Type assertion needed - sourceBook relation is included in the query
+    const sourceBook = (sourceInfo as { sourceBook?: { abbreviation: string } | null }).sourceBook;
+    const abbrev = sourceBook?.abbreviation ?? '';
+    const page = sourceInfo.pageNumber;
+    if (!abbrev && !page) return '';
+    if (!page) return abbrev;
+    return `${abbrev} ${page}`;
+}
+
+/**
+ * Helper function to calculate spell save DC per level
+ */
+function calculateSpellSaveDC(baseDC: number, spellLevel: number): number {
+    return baseDC + spellLevel;
+}
+
+/**
+ * Helper function to calculate spell ranges with caster level
+ */
+function calculateSpellRanges(casterLevel: number): {
+    close: string;
+    medium: string;
+    long: string;
+} {
+    const close = 25 + Math.floor(casterLevel / 2) * 5;
+    const medium = 100 + casterLevel * 10;
+    const long = 400 + casterLevel * 40;
+    return {
+        close: `${close} ft.`,
+        medium: `${medium} ft.`,
+        long: `${long} ft.`
+    };
+}
+
+/**
+ * Generate spell sheet for a spellcasting class
+ */
+async function generateSpellSheet(
+    doc: jsPDF,
+    character: CharacterWithAllDetailsResponse,
+    spellClass: DnDClass,
+    classId: number,
+    classDetailsMap: Map<number, DnDClass>,
+    queryClient?: QueryClient
+): Promise<void> {
+    // Get character's class level for this spellcasting class
+    const classLevel = character.advancements.filter(a =>
+        a.classId === classId || a.secondaryClassId === classId
+    ).length;
+
+    if (classLevel === 0) return; // No levels in this class
+
+    // Get character's domains for this class
+    // Note: Domain information is included in the spell selection response from the backend
+
+    // Fetch spell data for this class
+    let spellData: {
+        spells: Array<{ spell: Spell; classSpellLevel: number | null; isKnown: boolean }>;
+        domainSpells: Array<{ domainId: number; domainName: string; spell: Spell; spellLevel: number; classSpellLevel: number | null; isKnown: boolean }>;
+    } | null = null;
+
+    if (queryClient) {
+        try {
+            const response = await queryClient.fetchQuery({
+                queryKey: CharacterQueryHooks.getCharacterSpellSelectionQueryKey(character.id, classId),
+                queryFn: () => CharacterQueryHooks.getCharacterSpellSelection(character.id, classId),
+                staleTime: 0, // Force fresh request
+                gcTime: 10 * 60 * 1000,
+            });
+
+            if (response) {
+
+                // Extract domain spells - they might be in domainSpells array OR in results with domainName
+                // First, try to get from domainSpells array
+                let domainSpellsFromArray: Array<{ domainId: number; domainName: string; spell: Spell; spellLevel: number; classSpellLevel: number | null; isKnown: boolean }> = [];
+                if (response.domainSpells && response.domainSpells.length > 0) {
+                    domainSpellsFromArray = response.domainSpells.map(ds => ({
+                        domainId: ds.domainId ?? 0,
+                        domainName: ds.domainName ?? '',
+                        spell: ds as unknown as Spell,
+                        spellLevel: ds.domainSpellLevel ?? 0,
+                        classSpellLevel: ds.classSpellLevel,
+                        isKnown: ds.isKnown ?? false
+                    }));
+                }
+
+                // Also check if domain spells are in results array (with domainName property)
+                const domainSpellsFromResults = (response.results ?? [])
+                    .filter(s => s.domainName != null && s.domainName !== undefined)
+                    .map(s => ({
+                        domainId: s.domainId ?? 0,
+                        domainName: s.domainName ?? '',
+                        spell: s as unknown as Spell,
+                        spellLevel: s.domainSpellLevel ?? 0,
+                        classSpellLevel: s.classSpellLevel,
+                        isKnown: s.isKnown ?? false
+                    }));
+
+                // Combine domain spells (avoid duplicates)
+                const domainSpellIds = new Set([...domainSpellsFromArray, ...domainSpellsFromResults].map(ds => ds.spell.id));
+                const domainSpells = [...domainSpellsFromArray, ...domainSpellsFromResults.filter(ds => !domainSpellsFromArray.some(dsa => dsa.spell.id === ds.spell.id))];
+
+                // Regular spells - exclude any that are domain spells
+                const spells = (response.results ?? [])
+                    .filter(s => s.domainName == null && !domainSpellIds.has(s.id))
+                    .map(s => ({
+                        spell: s as unknown as Spell,
+                        classSpellLevel: s.classSpellLevel,
+                        isKnown: s.isKnown ?? false
+                    }));
+
+                spellData = { spells, domainSpells };
+            }
+        } catch (error) {
+            console.warn('Failed to fetch spell data for PDF:', error);
+            return; // Skip spell sheet if data can't be fetched
+        }
+    }
+
+    if (!spellData || (spellData.spells.length === 0 && spellData.domainSpells.length === 0)) {
+        return; // No spells to display
+    }
+
+    // Calculate caster level (typically equals class level, but may have adjustments)
+    const casterLevel = classLevel; // TODO: Add adjustments from features if needed
+
+    // Get casting ability modifier
+    const castingAbilityId = spellClass.castingAbilityId;
+    const abilityScore = character.abilityScores.find(a => a.abilityId === castingAbilityId)?.value ?? 10;
+    const abilityModifier = GetAbilityModifier(abilityScore);
+
+    // Calculate base spell save DC
+    const baseSpellSaveDC = 10 + abilityModifier;
+
+    // Get spells per day from spellcasting progression
+    const spellsPerDay = new Map<number, number>();
+    if (spellClass.spellcastingProgression) {
+        for (const progression of spellClass.spellcastingProgression) {
+            if (progression.classLevel <= classLevel) {
+                for (const slot of progression.slots || []) {
+                    if (slot.spellLevel >= 0 && slot.spellLevel <= 9) {
+                        spellsPerDay.set(slot.spellLevel, slot.slotsPerDay);
+                    }
+                }
+            }
+        }
+    }
+
+    const drawBlackLabelBox = (x: number, y: number, width: number, height: number, label: string, size: number = 7): void => {
+        // Draw black box
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(1);
+        doc.setFillColor(0, 0, 0);
+        doc.rect(x, y, width, height, 'FD');
+
+        // White text - full name in size (shifted down size / 2 total)
+        doc.setFontSize(size);
+        doc.setFont('ArchivoNarrow', 'normal');
+        doc.setTextColor(255, 255, 255);
+        const nameY = y + (height / 2) + (size / 3);
+        doc.text(label, x + width / 2, nameY, { align: 'center' });
+    };
+
+    // Helper to draw white box with border (ability score/modifier)
+    const drawScoreBox = (x: number, y: number, width: number, height: number, value: string): void => {
+        // Draw white box with border
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(1);
+        doc.setFillColor(255, 255, 255);
+        doc.rect(x, y, width, height, 'FD');
+
+        // Black text
+        doc.setFontSize(8);
+        doc.setFont('ArchivoNarrow', 'normal');
+        doc.setTextColor(0, 0, 0);
+        doc.text(value, x + width / 2, y + (height / 2) + 3, { align: 'center' });
+    };
+
+    // Helper function to draw word-wrapped labels
+    const drawWrappedBox = (x: number, y: number, width: number, height: number, words: string[], size: number = 7): void => {
+        // Draw white box with border
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(1);
+        doc.setFillColor(255, 255, 255);
+        doc.rect(x, y, width, height, 'FD');
+
+        doc.setFontSize(size);
+        doc.setFont('ArchivoNarrow', 'normal');
+        doc.setTextColor(0, 0, 0);
+        const centerX = x + width / 2;
+
+        if (words.length === 1) {
+            // Single word - center vertically
+            const labelY = y + (height / 2) + (size / 2) - 1;
+            doc.text(words[0], centerX, labelY, { align: 'center' });
+        } else {
+            // More than one word - each on a new line
+            const lineHeight = (height / words.length);
+            words.forEach((word, index) => {
+                const labelY = y + ((index + 0.5) * lineHeight) + (size / 2) - 1;
+                doc.text(word, centerX, labelY, { align: 'center' });
+            });
+        }
+    };
+
+    const drawPageStaticElements = (x: number, y: number, width: number, height: number, colWidths: Record<string, number>, colGap: number = 4): void => {
+        // draw outer box
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(1);
+        doc.setFillColor(255, 255, 255);
+        doc.rect(x, y, width, height, 'FD');
+
+        // draw header boxes
+        const sideHeaderWidth = 130;
+        const middleHeaderWidth = width - (sideHeaderWidth * 2);
+        const headerHeight = 82;
+        doc.rect(x, y, sideHeaderWidth, headerHeight, 'FD');
+        doc.rect(x + sideHeaderWidth, y, middleHeaderWidth, headerHeight, 'FD');
+        doc.rect(x + width - sideHeaderWidth, y, sideHeaderWidth, headerHeight, 'FD');
+
+        const leftSectionX = x + 23;
+        const leftSectionY = y + 5;
+        const middleSectionX = x + sideHeaderWidth + (middleHeaderWidth - 384) / 2;
+        const middleSectionY = y + 16;
+        const rightSectionX = x + width - sideHeaderWidth + 8;
+        const rightSectionY = y + 5;
+
+        // LEFT SECTION: Character Name, Class, Caster Level, Spell Save mod
+        drawScoreBox(leftSectionX, leftSectionY, 84, 14, character.name);
+        drawBlackLabelBox(leftSectionX, leftSectionY + 18, 84, 14, spellClass.name, 10);
+        drawBlackLabelBox(leftSectionX, leftSectionY + 36, 60, 14, `Caster Level`, 8);
+        drawScoreBox(leftSectionX + 64, leftSectionY + 36, 20, 14, casterLevel.toString());
+        const spellSaveMod = `+${abilityModifier}`;
+        drawBlackLabelBox(leftSectionX, leftSectionY + 54, 60, 14, `Spell Save`, 8);
+        drawScoreBox(leftSectionX + 64, leftSectionY + 54, 20, 14, spellSaveMod);
+
+        // MIDDLE SECTION: Grid with Spell Save DC, Level, Spells Per Day
+        const gridColWidth = 34;
+        const gridRowHeight = 16;
+        const gridLabelSpacing = 10
+
+        // Spell Save DC row
+        drawWrappedBox(middleSectionX, middleSectionY, gridColWidth, gridRowHeight, ['SPELL', 'SAVE DC'], 6);
+        for (let i = 0; i < 10; i++) {
+            const xPos = middleSectionX + gridColWidth + gridLabelSpacing + (i * gridColWidth);
+            const dc = spellsPerDay.get(i) ? calculateSpellSaveDC(baseSpellSaveDC, i).toString() : '';
+            drawScoreBox(xPos, middleSectionY, gridColWidth, gridRowHeight, dc);
+        }
+
+        // Level row
+        drawBlackLabelBox(middleSectionX, middleSectionY + gridRowHeight, gridColWidth, gridRowHeight, 'LEVEL');
+        for (let i = 0; i < 10; i++) {
+            const xPos = middleSectionX + gridColWidth + gridLabelSpacing + (i * gridColWidth);
+            const level = i === 0 ? '0' : `${ordinal(i)}`;
+            drawBlackLabelBox(xPos, middleSectionY + gridRowHeight, gridColWidth, gridRowHeight, level);
+        }
+
+        // Spells Per Day row
+        drawWrappedBox(middleSectionX, middleSectionY + (gridRowHeight * 2), gridColWidth, gridRowHeight, ['SPELLS', 'PER DAY'], 6);
+        for (let i = 0; i < 10; i++) {
+            const xPos = middleSectionX + gridColWidth + gridLabelSpacing + (i * gridColWidth);
+            const spells = spellsPerDay.get(i)?.toString() ?? '';
+            drawScoreBox(xPos, middleSectionY + (gridRowHeight * 2), gridColWidth, gridRowHeight, spells);
+        }
+
+        // RIGHT SECTION: Spell Ranges
+        const rangeRowHeight = 18;
+        drawBlackLabelBox(rightSectionX, rightSectionY, 114, 14, 'SPELL RANGES', 10);
+        const ranges = calculateSpellRanges(casterLevel);
+        drawWrappedBox(rightSectionX, rightSectionY + rangeRowHeight, 84, rangeRowHeight, ['CLOSE RANGE', '(25 ft. + 5 ft. / 2 levels)'], 8);
+        drawScoreBox(rightSectionX + 84, rightSectionY + rangeRowHeight, 30, rangeRowHeight, ranges.close);
+        drawWrappedBox(rightSectionX, rightSectionY + (rangeRowHeight * 2), 84, rangeRowHeight, ['MEDIUM RANGE', '(100 ft. + 10 ft. / level)'], 8);
+        drawScoreBox(rightSectionX + 84, rightSectionY + (rangeRowHeight * 2), 30, rangeRowHeight, ranges.medium);
+        drawWrappedBox(rightSectionX, rightSectionY + (rangeRowHeight * 3), 84, rangeRowHeight, ['LONG RANGE', '(400 ft. + 40 ft. / level)'], 8);
+        drawScoreBox(rightSectionX + 84, rightSectionY + (rangeRowHeight * 3), 30, rangeRowHeight, ranges.long);
+
+        // Spell List Header
+        drawBlackLabelBox(x + 8, y + 88, width - 16, 16, 'SPELL LIST', 10);
+
+        const columnLabelY = y + 114;
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(7);
+        doc.setFont('ArchivoNarrow', 'bold');
+        let colX = x + 8;
+        doc.text('prep', colX, columnLabelY);
+        colX += colWidths.prep + colGap;
+        doc.text('spell Name', colX, columnLabelY);
+        colX += colWidths.name + colGap;
+        doc.text('school', colX, columnLabelY);
+        colX += colWidths.school + colGap;
+        doc.text('comp', colX, columnLabelY);
+        colX += colWidths.comp + colGap;
+        doc.text('cast time', colX, columnLabelY);
+        colX += colWidths.castTime + colGap;
+        doc.text('range', colX, columnLabelY);
+        colX += colWidths.range + colGap;
+        doc.text('duration', colX, columnLabelY);
+        colX += colWidths.duration + colGap;
+        doc.text('save', colX, columnLabelY);
+        colX += colWidths.save + colGap;
+        doc.text('SR', colX, columnLabelY);
+        colX += colWidths.sr + colGap;
+        doc.text('description', colX, columnLabelY);
+        colX += colWidths.description + colGap;
+        doc.text('ref', colX, columnLabelY);
+    }
+
+    // Add new page in landscape orientation
+    doc.addPage([792, 612], 'landscape'); // 11 x 8.5 inches in points, landscape
+
+    const pageWidth = 792;
+    const pageHeight = 612;
+    const margin = 20;
+    const outerBoxWidth = 752;
+    const outerBoxHeight = 572;
+
+    // Spell List Columns
+    const colWidths = {
+        prep: 20,
+        name: 80,
+        school: 50,
+        comp: 30,
+        castTime: 40,
+        range: 50,
+        duration: 50,
+        save: 40,
+        sr: 30,
+        description: 280,
+        ref: 25
+    };
+    const colGap = 4;
+
+    drawPageStaticElements(margin, margin, outerBoxWidth, outerBoxHeight, colWidths, colGap);
+
+    // Spell list table
+    const tableStartY = 144;
+    const tableStartX = margin + 8;
+    let yPos = tableStartY;
+    // Group and sort spells
+    // Domain spells first, grouped by domain, then regular spells by level
+    const sortedSpells: Array<{
+        spell: Spell;
+        level: number;
+        domainName?: string;
+        isDomain: boolean;
+    }> = [];
+
+    // Add domain spells (include all domain spells, don't filter)
+    for (const domainSpell of spellData.domainSpells) {
+        sortedSpells.push({
+            spell: domainSpell.spell,
+            level: domainSpell.spellLevel,
+            domainName: domainSpell.domainName,
+            isDomain: true
+        });
+    }
+
+    // Add regular spells
+    for (const spellEntry of spellData.spells) {
+        if (spellEntry.classSpellLevel !== null) {
+            sortedSpells.push({
+                spell: spellEntry.spell,
+                level: spellEntry.classSpellLevel,
+                isDomain: false
+            });
+        }
+    }
+
+    // Sort: domain spells first (by domain name, then alphabetically), then regular spells by level, then alphabetically
+    sortedSpells.sort((a, b) => {
+        if (a.isDomain && !b.isDomain) return -1;
+        if (!a.isDomain && b.isDomain) return 1;
+        if (a.isDomain && b.isDomain) {
+            // Both domain spells - sort by domain name, then alphabetically
+            if (a.domainName !== b.domainName) {
+                return (a.domainName ?? '').localeCompare(b.domainName ?? '');
+            }
+            return a.level - b.level;
+        }
+        // Both regular spells - sort by level, then alphabetically
+        if (a.level !== b.level) {
+            return a.level - b.level;
+        }
+        return a.spell.name.localeCompare(b.spell.name);
+    });
+
+    // Draw spells
+    doc.setFontSize(6);
+    doc.setFont('ArchivoNarrow', 'normal');
+    let currentPage = 1;
+    let totalPages = 1; // Will be calculated after we know how many pages we need
+
+    // First pass: calculate total pages
+    let testY = yPos;
+    for (const spellEntry of sortedSpells) {
+        // Check if we need a new page
+        if (testY > pageHeight - 25) {
+            totalPages++;
+            testY = tableStartY + 15; // Reset to start of table on new page
+        }
+
+        // Calculate row height (description may wrap)
+        const descriptionLines = doc.splitTextToSize(spellEntry.spell.summary ?? '', colWidths.description);
+        const rowHeight = Math.max(8, descriptionLines.length * 3 + 2);
+        testY += rowHeight;
+    }
+
+    // Determine if divine or arcane for 0-level spell naming
+    const isDivine = spellClass.isDivine ?? false;
+    const zeroLevelLabel = isDivine ? 'Orisons' : 'Cantrips';
+
+    // Calculate total table width for background rectangles
+    const totalTableWidth = Object.values(colWidths).reduce((a, b) => a + b, 0) + (Object.keys(colWidths).length - 1) * colGap;
+
+    // Second pass: actually draw
+    let lastDomainName: string | undefined = undefined;
+    let lastLevel: number | undefined = undefined;
+    let rowIndex = 1; // Track row index for alternating backgrounds
+    for (const spellEntry of sortedSpells) {
+        // Check if we need a new page
+        if (yPos > pageHeight - 25) {
+            // Add page number footer
+            doc.setFontSize(7);
+            doc.text(`Page ${currentPage} of ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+
+            doc.addPage([792, 612], 'landscape');
+            currentPage++;
+            drawPageStaticElements(margin, margin, outerBoxWidth, outerBoxHeight, colWidths);
+            yPos = tableStartY;
+            rowIndex = 1; // Reset row index on new page
+        }
+
+        // Add domain header if needed
+        if (spellEntry.isDomain && spellEntry.domainName !== lastDomainName) {
+            doc.setFontSize(7);
+            doc.setFont('ArchivoNarrow', 'bold');
+            doc.text(`-- ${spellEntry.domainName} Domain --`, tableStartX + colWidths.prep + colGap, yPos);
+            yPos += 8;
+            lastDomainName = spellEntry.domainName;
+            lastLevel = undefined; // Reset level tracking when domain changes
+            rowIndex = 1; // Reset row index on new domain
+        }
+
+        // Add level header for regular spells (not domain spells)
+        if (!spellEntry.isDomain && spellEntry.level !== lastLevel) {
+            doc.setFontSize(7);
+            doc.setFont('ArchivoNarrow', 'bold');
+            const levelLabel = spellEntry.level === 0 ? zeroLevelLabel : `${ordinal(spellEntry.level)}-Level Spells`;
+            doc.text(`-- ${levelLabel} --`, tableStartX + colWidths.prep + colGap, yPos);
+            yPos += 8;
+            lastLevel = spellEntry.level;
+            rowIndex = 1; // Reset row index on new level
+        }
+
+        doc.setFontSize(6);
+        // Calculate row height before drawing (needed for background)
+        const descriptionLines = doc.splitTextToSize(spellEntry.spell.summary ?? '', colWidths.description - 4);
+        const rowHeight = Math.max(8, descriptionLines.length * 3 + 2);
+
+        // Draw alternating grey background for even rows
+        const isEvenRow = rowIndex % 2 === 0;
+        if (isEvenRow) {
+            doc.setDrawColor(230, 230, 230);
+            doc.setFillColor(230, 230, 230);
+            doc.rect(tableStartX, yPos - rowHeight + 2, totalTableWidth, rowHeight - 1, 'FD');
+        }
+
+        // Draw spell row
+
+        doc.setFont('ArchivoNarrow', 'normal');
+
+        let colX = tableStartX;
+
+        // Prep (blank)
+        doc.setLineWidth(0.5);
+        doc.setDrawColor(0, 0, 0);
+        doc.line(colX, yPos + 1, colX + colWidths.prep, yPos + 1);
+        colX += colWidths.prep + colGap;
+
+        // Spell Name
+        doc.text(spellEntry.spell.name, colX + 2, yPos);
+        doc.line(colX, yPos + 1, colX + colWidths.name, yPos + 1);
+        colX += colWidths.name + colGap;
+
+        // School
+        const school = formatSpellSchool(spellEntry.spell);
+        doc.text(school, colX + 2, yPos);
+        doc.line(colX, yPos + 1, colX + colWidths.school, yPos + 1);
+        colX += colWidths.school + colGap;
+
+        // Comp
+        const comp = formatSpellComponents(spellEntry.spell.componentIds);
+        doc.text(comp, colX + 2, yPos);
+        doc.line(colX, yPos + 1, colX + colWidths.comp, yPos + 1);
+        colX += colWidths.comp + colGap;
+
+        // Cast Time
+        doc.text(spellEntry.spell.castingTime ?? '', colX + 2, yPos);
+        doc.line(colX, yPos + 1, colX + colWidths.castTime, yPos + 1);
+        colX += colWidths.castTime + colGap;
+
+        // Range
+        doc.text(spellEntry.spell.range ?? '', colX + 2, yPos);
+        doc.line(colX, yPos + 1, colX + colWidths.range, yPos + 1);
+        colX += colWidths.range + colGap;
+
+        // Duration
+        doc.text(spellEntry.spell.duration ?? '', colX + 2, yPos);
+        doc.line(colX, yPos + 1, colX + colWidths.duration, yPos + 1);
+        colX += colWidths.duration + colGap;
+
+        // Save
+        doc.text(spellEntry.spell.savingThrow ?? '', colX + 2, yPos);
+        doc.line(colX, yPos + 1, colX + colWidths.save, yPos + 1);
+        colX += colWidths.save + colGap;
+
+        // SR
+        doc.text(spellEntry.spell.spellResistance ?? '', colX + 2, yPos);
+        doc.line(colX, yPos + 1, colX + colWidths.sr, yPos + 1);
+        colX += colWidths.sr + colGap;
+
+        // Description (may wrap)
+        doc.text(descriptionLines, colX + 2, yPos);
+        doc.line(colX, yPos + 1, colX + colWidths.description, yPos + 1);
+        colX += colWidths.description + colGap;
+
+        // Ref
+        const ref = formatSpellSource(spellEntry.spell);
+        doc.text(ref, colX + 2, yPos);
+        doc.line(colX, yPos + 1, colX + colWidths.ref, yPos + 1);
+
+        // Move to next row and increment row index
+        yPos += rowHeight;
+        rowIndex++;
+    }
+
+    // Add final page number footer
+    doc.setFontSize(7);
+    doc.text(`Page ${currentPage} of ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
 }

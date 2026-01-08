@@ -6,7 +6,8 @@ import {
     SPELL_SCHOOL_MAP,
     ATTACK_TYPES,
     TARGET_TYPES,
-    ENVIRONMENT_TYPES
+    ENVIRONMENT_TYPES,
+    LIGHTING_CONDITION_TYPES,
 } from '@shared/static-data';
 
 import type { ConditionValueFormatter } from './types';
@@ -80,5 +81,14 @@ export class TargetValueFormatter implements ConditionValueFormatter {
 export class EnvironmentValueFormatter implements ConditionValueFormatter {
     format(conditionValue: number): string {
         return ENVIRONMENT_TYPES[conditionValue]?.name || '';
+    }
+}
+
+/**
+ * Lighting value formatter
+ */
+export class LightingValueFormatter implements ConditionValueFormatter {
+    format(conditionValue: number): string {
+        return LIGHTING_CONDITION_TYPES[conditionValue]?.name || '';
     }
 }

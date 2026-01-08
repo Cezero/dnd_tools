@@ -34,6 +34,12 @@
 		"eslint.nodePath": "/home/countzero/dnd_tools/node_modules",
 		"eslint.useFlatConfig": true,
 		"eslint.runtime": "node",
-		"eslint.debug": false
+		"eslint.debug": false,
+		"terminal.integrated.profiles.linux": {
+			"bash (with nvm)": {
+				"path": "/home/countzero/git/dnd_tools/bash-with-nvm.sh"
+			}
+		},
+		"terminal.integrated.defaultProfile.linux": "bash (with nvm)"
 	}
 }

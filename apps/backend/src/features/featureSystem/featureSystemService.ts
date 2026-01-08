@@ -74,6 +74,27 @@ async function createRelatedEntities(
     }
 }
 
+/**
+ * Helper function to create display conditions for a feature progression
+ */
+async function createDisplayConditions(
+    transactionClient: Prisma.TransactionClient,
+    displayConditions: Array<{ conditionType: number; conditionValue: number; id?: number; progressionId?: number }> | undefined,
+    featureProgressionId: number
+): Promise<void> {
+    if (!displayConditions || displayConditions.length === 0) {
+        return;
+    }
+
+    await transactionClient.featureProgressionCondition.createMany({
+        data: displayConditions.map((condition) => ({
+            progressionId: featureProgressionId,
+            conditionType: condition.conditionType,
+            conditionValue: condition.conditionValue,
+        })),
+    });
+}
+
 // Helper function to create the special feature filter
 function createSpecialFeatureFilter(): Prisma.FeatureWhereInput['id'] {
     return {
@@ -300,7 +321,7 @@ export const featureSystemService: FeatureSystemService = {
 
     // Bulk Feature Progression management (for class/race creation)
     async createFeatureProgressionWithRelations(data: CreateFeatureProgressionRequest): Promise<CreateResponse> {
-        const { entities, ...progressionData } = data;
+        const { entities, displayConditions, ...progressionData } = data;
 
         const result = await prisma.$transaction(async (tx) => {
             // Create the feature progression
@@ -310,6 +331,9 @@ export const featureSystemService: FeatureSystemService = {
 
             // Create related entities
             await createRelatedEntities(tx, entities, featureProgression.id);
+
+            // Create display conditions
+            await createDisplayConditions(tx, displayConditions, featureProgression.id);
 
             return featureProgression;
         });
@@ -329,7 +353,7 @@ export const featureSystemService: FeatureSystemService = {
 
         const executeTransaction = async (transactionClient: Prisma.TransactionClient) => {
             for (const progression of progressions) {
-                const { entities, ...progressionData } = progression;
+                const { entities, displayConditions, ...progressionData } = progression;
 
                 // Determine sourceType from context (override progressionData.sourceType if present)
                 let sourceType = progressionData.sourceType;
@@ -358,6 +382,9 @@ export const featureSystemService: FeatureSystemService = {
 
                 // Create related entities
                 await createRelatedEntities(transactionClient, entities, featureProgression.id);
+
+                // Create display conditions
+                await createDisplayConditions(transactionClient, displayConditions, featureProgression.id);
 
             }
         };
@@ -711,7 +738,10 @@ export const featureSystemService: FeatureSystemService = {
     },
 
     // NEW: Core method for getting feature progressions by IDs with smart population
-    async getFeatureProgressionsByIds(progressionIds: number[]): Promise<FeatureProgression[]> {
+    async getFeatureProgressionsByIds(
+        progressionIds: number[],
+        characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>
+    ): Promise<FeatureProgression[]> {
         if (progressionIds.length === 0) {
             return [];
         }
@@ -750,10 +780,19 @@ export const featureSystemService: FeatureSystemService = {
             .map(p => p.raceId!)
             .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
 
+        // Create a map of character choices by progressionId and featureEntityId
+        const choiceMap = new Map<string, { appliesToId: number | null; appliesToSubId: number | null }>();
+        if (characterFeatureChoices) {
+            for (const choice of characterFeatureChoices) {
+                const key = `${choice.progressionId}:${choice.featureEntityId}`;
+                choiceMap.set(key, { appliesToId: choice.appliesToId, appliesToSubId: choice.appliesToSubId });
+            }
+        }
+
         // Fetch items, feats, and features for entities that need them
         const allEntities = progressions.flatMap(p => p.entities);
         const itemIds = allEntities
-            .filter(e => e.appliesToSubId && e.appliesToSubId > 0)
+            .filter(e => e.appliesToSubId && e.appliesToSubId > 0 && e.appliesTo !== EntityAppliesToType.Skill)
             .map(e => e.appliesToSubId!);
 
         // Also fetch items for Weapon Familiarity entities (stored in appliesToId)
@@ -761,22 +800,52 @@ export const featureSystemService: FeatureSystemService = {
             .filter(e => e.appliesTo === EntityAppliesToType.WeaponFamiliarity && e.appliesToId !== null && e.appliesToId !== undefined)
             .map(e => e.appliesToId!)
             .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
-        const featIds = allEntities
-            .filter(e => e.appliesTo === EntityAppliesToType.Feat && e.appliesToId !== null && e.appliesToId !== undefined)
-            .map(e => e.appliesToId!)
-            .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
-        const featureIds = allEntities
-            .filter(e => e.appliesTo === EntityAppliesToType.Feature && e.appliesToId !== null && e.appliesToId !== undefined)
-            .map(e => e.appliesToId!)
-            .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
-        const spellIds = allEntities
-            .filter(e => e.appliesTo === EntityAppliesToType.Spell && e.appliesToId !== null && e.appliesToId !== undefined)
-            .map(e => e.appliesToId!)
-            .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
-        const domainIds = allEntities
-            .filter(e => e.appliesTo === EntityAppliesToType.Domain && e.appliesToId !== null && e.appliesToId !== undefined)
-            .map(e => e.appliesToId!)
-            .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
+
+        // Collect IDs from entities and from choices
+        const featIdsSet = new Set<number>();
+        const featureIdsSet = new Set<number>();
+        const spellIdsSet = new Set<number>();
+        const domainIdsSet = new Set<number>();
+
+        // Add IDs from entities
+        for (const entity of allEntities) {
+            if (entity.appliesTo === EntityAppliesToType.Feat && entity.appliesToId !== null && entity.appliesToId !== undefined) {
+                featIdsSet.add(entity.appliesToId);
+            }
+            if (entity.appliesTo === EntityAppliesToType.Feature && entity.appliesToId !== null && entity.appliesToId !== undefined) {
+                featureIdsSet.add(entity.appliesToId);
+            }
+            if (entity.appliesTo === EntityAppliesToType.Spell && entity.appliesToId !== null && entity.appliesToId !== undefined) {
+                spellIdsSet.add(entity.appliesToId);
+            }
+            if (entity.appliesTo === EntityAppliesToType.Domain && entity.appliesToId !== null && entity.appliesToId !== undefined) {
+                domainIdsSet.add(entity.appliesToId);
+            }
+        }
+
+        // Add IDs from character choices
+        if (characterFeatureChoices) {
+            for (const choice of characterFeatureChoices) {
+                // Find the entity to determine its appliesTo type
+                const entity = allEntities.find(e => e.id === choice.featureEntityId && e.progressionId === choice.progressionId);
+                if (entity && choice.appliesToId !== null) {
+                    if (entity.appliesTo === EntityAppliesToType.Feat) {
+                        featIdsSet.add(choice.appliesToId);
+                    } else if (entity.appliesTo === EntityAppliesToType.Feature) {
+                        featureIdsSet.add(choice.appliesToId);
+                    } else if (entity.appliesTo === EntityAppliesToType.Spell) {
+                        spellIdsSet.add(choice.appliesToId);
+                    } else if (entity.appliesTo === EntityAppliesToType.Domain) {
+                        domainIdsSet.add(choice.appliesToId);
+                    }
+                }
+            }
+        }
+
+        const featIds = Array.from(featIdsSet);
+        const featureIds = Array.from(featureIdsSet);
+        const spellIds = Array.from(spellIdsSet);
+        const domainIds = Array.from(domainIdsSet);
 
         // Fetch items, feats, and features
         const allItemIds = [...itemIds, ...weaponFamiliarityItemIds];
@@ -850,34 +919,46 @@ export const featureSystemService: FeatureSystemService = {
                 ...progression,
                 ...(classData ? { class: classData } : {}),
                 ...(raceData ? { race: raceData } : {}),
-                entities: progression.entities?.map(entity => ({
-                    ...entity,
-                    formulaParams: entity.formulaParams
-                        ? transformFormulaParamsFromDatabase(entity.formulaParams)
-                        : null,
-                    // Add item data if appliesToSubId > 0 OR if it's Weapon Familiarity (appliesToId)
-                    item: entity.appliesToSubId && entity.appliesToSubId > 0
-                        ? itemMap.get(entity.appliesToSubId) || null
-                        : entity.appliesTo === EntityAppliesToType.WeaponFamiliarity && entity.appliesToId
-                            ? itemMap.get(entity.appliesToId) || null
+                entities: progression.entities?.map(entity => {
+                    // Check if there's a character choice for this entity
+                    const choiceKey = `${progression.id}:${entity.id}`;
+                    const choice = choiceMap.get(choiceKey);
+
+                    // Use choice's appliesToId if available, otherwise use entity's appliesToId
+                    const effectiveAppliesToId = choice?.appliesToId ?? entity.appliesToId;
+                    const effectiveAppliesToSubId = choice?.appliesToSubId ?? entity.appliesToSubId;
+
+                    return {
+                        ...entity,
+                        formulaParams: entity.formulaParams
+                            ? transformFormulaParamsFromDatabase(entity.formulaParams)
                             : null,
-                    // Add feat data if appliesTo === Feat
-                    feat: entity.appliesTo === EntityAppliesToType.Feat && entity.appliesToId
-                        ? featMap.get(entity.appliesToId) || null
-                        : null,
-                    // Add feature data if appliesTo === Feature
-                    feature: entity.appliesTo === EntityAppliesToType.Feature && entity.appliesToId
-                        ? featureMap.get(entity.appliesToId) || null
-                        : null,
-                    // Add spell data if appliesTo === Spell (minimal data only)
-                    spell: entity.appliesTo === EntityAppliesToType.Spell && entity.appliesToId
-                        ? spellMap.get(entity.appliesToId) || null
-                        : null,
-                    // Add domain data if appliesTo === Domain (minimal data only)
-                    domain: entity.appliesTo === EntityAppliesToType.Domain && entity.appliesToId
-                        ? domainMap.get(entity.appliesToId) || null
-                        : null
-                }))
+                        // Add item data if appliesToSubId > 0 (and not a Skill entity, where appliesToSubId is a skill subtype)
+                        // OR if it's Weapon Familiarity (appliesToId)
+                        item: entity.appliesTo !== EntityAppliesToType.Skill &&
+                            effectiveAppliesToSubId && effectiveAppliesToSubId > 0
+                            ? itemMap.get(effectiveAppliesToSubId) || null
+                            : entity.appliesTo === EntityAppliesToType.WeaponFamiliarity && effectiveAppliesToId
+                                ? itemMap.get(effectiveAppliesToId) || null
+                                : null,
+                        // Add feat data if appliesTo === Feat (use choice's appliesToId if available)
+                        feat: entity.appliesTo === EntityAppliesToType.Feat && effectiveAppliesToId
+                            ? featMap.get(effectiveAppliesToId) || null
+                            : null,
+                        // Add feature data if appliesTo === Feature (use choice's appliesToId if available)
+                        feature: entity.appliesTo === EntityAppliesToType.Feature && effectiveAppliesToId
+                            ? featureMap.get(effectiveAppliesToId) || null
+                            : null,
+                        // Add spell data if appliesTo === Spell (use choice's appliesToId if available)
+                        spell: entity.appliesTo === EntityAppliesToType.Spell && effectiveAppliesToId
+                            ? spellMap.get(effectiveAppliesToId) || null
+                            : null,
+                        // Add domain data if appliesTo === Domain (use choice's appliesToId if available)
+                        domain: entity.appliesTo === EntityAppliesToType.Domain && effectiveAppliesToId
+                            ? domainMap.get(effectiveAppliesToId) || null
+                            : null
+                    };
+                })
             };
         });
 
@@ -885,41 +966,53 @@ export const featureSystemService: FeatureSystemService = {
     },
 
     // NEW: Lightweight wrapper methods
-    async getFeatureProgressionsByClassId(classId: number): Promise<FeatureProgression[]> {
+    async getFeatureProgressionsByClassId(
+        classId: number,
+        characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>
+    ): Promise<FeatureProgression[]> {
         // Get progression IDs for this class
         const progressionIds = await prisma.featureProgression.findMany({
             where: { classId },
             select: { id: true }
         });
 
-        // Delegate to core method
-        return await this.getFeatureProgressionsByIds(progressionIds.map(p => p.id));
+        // Delegate to core method with choices
+        return await this.getFeatureProgressionsByIds(progressionIds.map(p => p.id), characterFeatureChoices);
     },
 
-    async getFeatureProgressionsByRaceId(raceId: number): Promise<FeatureProgression[]> {
+    async getFeatureProgressionsByRaceId(
+        raceId: number,
+        characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>
+    ): Promise<FeatureProgression[]> {
         // Get progression IDs for this race
         const progressionIds = await prisma.featureProgression.findMany({
             where: { raceId },
             select: { id: true }
         });
 
-        // Delegate to core method
-        return await this.getFeatureProgressionsByIds(progressionIds.map(p => p.id));
+        // Delegate to core method with choices
+        return await this.getFeatureProgressionsByIds(progressionIds.map(p => p.id), characterFeatureChoices);
     },
 
-    async getFeatureProgressionsByDomainId(domainId: number): Promise<FeatureProgression[]> {
+    async getFeatureProgressionsByDomainId(
+        domainId: number,
+        characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>
+    ): Promise<FeatureProgression[]> {
         // Get progression IDs for this domain
         const progressionIds = await prisma.featureProgression.findMany({
             where: { domainId },
             select: { id: true }
         });
 
-        // Delegate to core method
-        return await this.getFeatureProgressionsByIds(progressionIds.map(p => p.id));
+        // Delegate to core method with choices
+        return await this.getFeatureProgressionsByIds(progressionIds.map(p => p.id), characterFeatureChoices);
     },
 
-    async getFeatureProgressionById(progressionId: number): Promise<FeatureProgression | null> {
-        const progressions = await this.getFeatureProgressionsByIds([progressionId]);
+    async getFeatureProgressionById(
+        progressionId: number,
+        characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>
+    ): Promise<FeatureProgression | null> {
+        const progressions = await this.getFeatureProgressionsByIds([progressionId], characterFeatureChoices);
         return progressions.length > 0 ? progressions[0] : null;
     },
 }; 

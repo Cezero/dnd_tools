@@ -1,8 +1,9 @@
 import { Dialog } from '@base-ui-components/react/dialog';
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import type { AttackDefinition } from '@/features/character/types';
-import type { CharacterItem as CharacterItemSchema } from '@shared/schema';
+import type { CharacterItem as CharacterItemSchema, ItemWithDetails } from '@shared/schema';
 import type { CharacterWithAllDetailsResponse } from '@shared/schema';
+import { ARMOR_CATEGORY_ENUM } from '@shared/static-data';
 
 interface AttackDefinitionModalProps {
     isOpen: boolean;
@@ -11,6 +12,7 @@ interface AttackDefinitionModalProps {
     attackDefinition?: AttackDefinition | null;
     character: CharacterWithAllDetailsResponse;
     characterItems: CharacterItemSchema[];
+    items?: ItemWithDetails[]; // Optional: base items to check if offhand is a shield
 }
 
 export function AttackDefinitionModal({
@@ -20,6 +22,7 @@ export function AttackDefinitionModal({
     attackDefinition,
     character,
     characterItems,
+    items = [],
 }: AttackDefinitionModalProps): React.JSX.Element {
     const [mainHandCharacterItemId, setMainHandCharacterItemId] = useState<number | null>(null);
     const [offHandCharacterItemId, setOffHandCharacterItemId] = useState<number | null>(null);
@@ -36,9 +39,17 @@ export function AttackDefinitionModal({
         for (const def of existingDefinitions) {
             if (def && def.attackSlot !== null && def.attackSlot !== undefined) {
                 slots.add(def.attackSlot);
-                // For dual wield (has off-hand item), also mark the next slot as taken
+                // For dual wield (has off-hand item that is not a shield), also mark the next slot as taken
                 if (def.offHandCharacterItemId !== null && def.attackSlot < 7) {
-                    slots.add(def.attackSlot + 1);
+                    // Check if offhand is a shield
+                    const offHandCharItem = characterItems.find(ci => ci.id === def.offHandCharacterItemId);
+                    const isOffHandShield = offHandCharItem?.baseItemId && items.length > 0
+                        ? items.find(i => i.id === offHandCharItem.baseItemId)?.armor?.category === ARMOR_CATEGORY_ENUM.Shield
+                        : false;
+                    // Only mark slot+1 as taken if it's dual-wield (not a shield)
+                    if (!isOffHandShield) {
+                        slots.add(def.attackSlot + 1);
+                    }
                 }
             }
         }
@@ -46,11 +57,19 @@ export function AttackDefinitionModal({
         if (attackDefinition && attackDefinition.attackSlot !== null && attackDefinition.attackSlot !== undefined) {
             slots.delete(attackDefinition.attackSlot);
             if (attackDefinition.offHandCharacterItemId !== null && attackDefinition.attackSlot < 7) {
-                slots.delete(attackDefinition.attackSlot + 1);
+                // Check if offhand is a shield
+                const offHandCharItem = characterItems.find(ci => ci.id === attackDefinition.offHandCharacterItemId);
+                const isOffHandShield = offHandCharItem?.baseItemId && items.length > 0
+                    ? items.find(i => i.id === offHandCharItem.baseItemId)?.armor?.category === ARMOR_CATEGORY_ENUM.Shield
+                    : false;
+                // Only delete slot+1 if it was marked as taken (i.e., if it was dual-wield)
+                if (!isOffHandShield) {
+                    slots.delete(attackDefinition.attackSlot + 1);
+                }
             }
         }
         return slots;
-    }, [existingDefinitions, attackDefinition]);
+    }, [existingDefinitions, attackDefinition, characterItems, items]);
 
     // Helper function to calculate next available slot
     const calculateNextAvailableSlot = useCallback((forDualWield: boolean): number | null => {
@@ -74,6 +93,19 @@ export function AttackDefinitionModal({
         return null; // No available slots
     }, [takenSlots]);
 
+    // Helper to check if offhand item is a shield (not a weapon for dual-wield)
+    const isOffHandShield = useMemo(() => {
+        if (!offHandCharacterItemId || items.length === 0) {
+            return false;
+        }
+        const offHandCharItem = characterItems.find(ci => ci.id === offHandCharacterItemId);
+        if (!offHandCharItem?.baseItemId) {
+            return false;
+        }
+        const offHandItem = items.find(i => i.id === offHandCharItem.baseItemId);
+        return offHandItem?.armor?.category === ARMOR_CATEGORY_ENUM.Shield;
+    }, [offHandCharacterItemId, characterItems, items]);
+
     // Calculate the next available slot
     const nextAvailableSlot = useMemo(() => {
         // Check if we're creating a new attack (not editing)
@@ -83,9 +115,10 @@ export function AttackDefinitionModal({
             return null; // Don't suggest a slot when editing
         }
 
-        const isDualWield = offHandCharacterItemId !== null;
+        // Only treat as dual-wield if offhand is not a shield
+        const isDualWield = offHandCharacterItemId !== null && !isOffHandShield;
         return calculateNextAvailableSlot(isDualWield);
-    }, [attackDefinition, offHandCharacterItemId, calculateNextAvailableSlot]);
+    }, [attackDefinition, offHandCharacterItemId, isOffHandShield, calculateNextAvailableSlot]);
 
     // Filter character items to only weapons (for main hand and off hand)
     const weaponItems = useMemo(() => {
@@ -144,7 +177,8 @@ export function AttackDefinitionModal({
     }, [offHandCharacterItemId, attackDefinition, attackSlot, nextAvailableSlot, takenSlots]);
 
     const handleSave = () => {
-        const isDualWield = offHandCharacterItemId !== null;
+        // Only treat as dual-wield if offhand is not a shield
+        const isDualWield = offHandCharacterItemId !== null && !isOffHandShield;
 
         // Validation based on items
         if (isDualWield) {
@@ -192,7 +226,8 @@ export function AttackDefinitionModal({
     const isSlotDisabled = (slot: number): boolean => {
         if (takenSlots.has(slot)) return true;
         // For dual wield, also disable if slot+1 is taken
-        const isDualWield = offHandCharacterItemId !== null;
+        // Only treat as dual-wield if offhand is not a shield
+        const isDualWield = offHandCharacterItemId !== null && !isOffHandShield;
         if (isDualWield) {
             if (slot === 7) return true; // Can't use slot 7 for dual wield
             if (takenSlots.has(slot + 1)) return true;
@@ -238,7 +273,7 @@ export function AttackDefinitionModal({
                             {mainHandCharacterItemId && (
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Off Hand Item (optional, for dual wield)
+                                        Off Hand Item (optional - weapon for dual wield, or shield)
                                     </label>
                                     <select
                                         value={offHandCharacterItemId || ''}
@@ -279,9 +314,14 @@ export function AttackDefinitionModal({
                                         </option>
                                     ))}
                                 </select>
-                                {offHandCharacterItemId !== null && attackSlot !== null && attackSlot < 7 && (
+                                {offHandCharacterItemId !== null && !isOffHandShield && attackSlot !== null && attackSlot < 7 && (
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                         Dual wield will occupy slots {attackSlot} and {attackSlot + 1}
+                                    </p>
+                                )}
+                                {isOffHandShield && (
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        Shield in offhand - single weapon attack (not dual-wield)
                                     </p>
                                 )}
                             </div>

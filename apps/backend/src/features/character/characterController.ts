@@ -4,7 +4,6 @@ import { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT, ValidatedNoInpu
 import {
     CharacterIdParamRequest,
     AdvancementIdParamRequest,
-    CharacterIdParam2Request,
     SpellPreparationParamRequest,
     AbilityIdParamRequest,
     CreateCharacterRequest,
@@ -26,10 +25,18 @@ import {
     // NEW: Character disallowed source types
     CreateCharacterDisallowedSourceRequest,
     CharacterDisallowedSource,
+    RemoveDisallowedSourceParamRequest,
     // NEW: Character attack definition types
     CreateCharacterAttackDefinitionRequest,
     UpdateCharacterAttackDefinitionRequest,
     CharacterAttackDefinition,
+    CharacterAttackIdParamRequest,
+    ReorderAttackDefinitionsRequest,
+    // NEW: Spell selection types
+    CharacterSpellSelectionResponse,
+    AddSpellKnownRequest,
+    RemoveSpellKnownRequest,
+    CharacterSpellSelectionParamRequest,
 } from '@shared/schema';
 
 import { characterService } from './characterService';
@@ -43,6 +50,11 @@ export async function GetAllCharacters(req: ValidatedNoInput<GetAllCharactersRes
     }
 
     const result = await characterService.getAllCharacters(userId);
+    res.json(result);
+}
+
+export async function GetAllCharactersAdmin(req: ValidatedNoInput<GetAllCharactersResponse>, res: Response, _next: NextFunction) {
+    const result = await characterService.getAllCharactersAdmin();
     res.json(result);
 }
 
@@ -81,7 +93,7 @@ export async function CreateCharacter(req: ValidatedBodyT<CreateCharacterRequest
     res.status(201).json(result);
 }
 
-export async function SaveCharacter(req: ValidatedParamsBodyT<CharacterIdParamRequest | ValidatedNoInput, SaveCharacterRequest>, res: Response, _next: NextFunction) {
+export async function SaveCharacter(req: ValidatedBodyT<SaveCharacterRequest>, res: Response, _next: NextFunction) {
     const userId = req.user?.id;
     if (!userId) {
         res.status(401).json({ error: 'User not authenticated' });
@@ -94,14 +106,26 @@ export async function SaveCharacter(req: ValidatedParamsBodyT<CharacterIdParamRe
         userId,
     };
 
-    const characterId = (req.params as CharacterIdParamRequest)?.id ? parseInt((req.params as CharacterIdParamRequest).id, 10) : null;
-    const result = await characterService.saveCharacter(characterId, saveData);
-    
-    if (characterId) {
-        res.json(result);
-    } else {
-        res.status(201).json(result);
+    const result = await characterService.saveCharacter(null, saveData);
+    res.status(201).json(result);
+}
+
+export async function UpdateCharacter(req: ValidatedParamsBodyT<CharacterIdParamRequest, SaveCharacterRequest>, res: Response, _next: NextFunction) {
+    const userId = req.user?.id;
+    if (!userId) {
+        res.status(401).json({ error: 'User not authenticated' });
+        return;
     }
+
+    // Ensure userId is set in the request body
+    const saveData: SaveCharacterRequest = {
+        ...req.body,
+        userId,
+    };
+
+    const result = await characterService.saveCharacter(req.params.id, saveData);
+
+    res.json(result);
 }
 
 export async function DeleteCharacter(req: ValidatedParamsT<CharacterIdParamRequest>, res: Response, _next: NextFunction) {
@@ -136,8 +160,8 @@ export async function GetAdvancementById(req: ValidatedParamsT<AdvancementIdPara
     res.json(advancement);
 }
 
-export async function GetCharacterAdvancements(req: ValidatedParamsT<CharacterIdParam2Request, CharacterAdvancementWithDetailsResponse[]>, res: Response, _next: NextFunction) {
-    const advancements = await characterService.getCharacterAdvancements(req.params.characterId);
+export async function GetCharacterAdvancements(req: ValidatedParamsT<CharacterIdParamRequest, CharacterAdvancementWithDetailsResponse[]>, res: Response, _next: NextFunction) {
+    const advancements = await characterService.getCharacterAdvancements(req.params.id);
     res.json(advancements);
 }
 
@@ -148,17 +172,17 @@ export async function CreateSpellPreparation(req: ValidatedBodyT<CreateSpellPrep
 }
 
 export async function UpdateSpellPreparation(req: ValidatedParamsBodyT<SpellPreparationParamRequest, UpdateSpellPreparationRequest>, res: Response, _next: NextFunction) {
-    await characterService.updateSpellPreparation(req.params.characterId, req.params.prepKey, req.body);
+    await characterService.updateSpellPreparation(req.params.id, req.params.prepKey, req.body);
     res.json({ message: 'Spell preparation updated successfully' });
 }
 
 export async function DeleteSpellPreparation(req: ValidatedParamsT<SpellPreparationParamRequest>, res: Response, _next: NextFunction) {
-    await characterService.deleteSpellPreparation(req.params.characterId, req.params.prepKey);
+    await characterService.deleteSpellPreparation(req.params.id, req.params.prepKey);
     res.json({ message: 'Spell preparation deleted successfully' });
 }
 
-export async function GetCharacterSpellPreparations(req: ValidatedParamsT<CharacterIdParam2Request, CharacterSpellPreparationWithMetamagicResponse[]>, res: Response, _next: NextFunction) {
-    const preparations = await characterService.getCharacterSpellPreparations(req.params.characterId);
+export async function GetCharacterSpellPreparations(req: ValidatedParamsT<CharacterIdParamRequest, CharacterSpellPreparationWithMetamagicResponse[]>, res: Response, _next: NextFunction) {
+    const preparations = await characterService.getCharacterSpellPreparations(req.params.id);
     res.json(preparations);
 }
 
@@ -178,14 +202,14 @@ export async function DeleteCharacterAbilityScore(req: ValidatedParamsT<AbilityI
     res.json({ message: 'Character ability score deleted successfully' });
 }
 
-export async function GetCharacterAbilityScores(req: ValidatedParamsT<CharacterIdParam2Request, CharacterAbilityScoreResponse[]>, res: Response, _next: NextFunction) {
-    const abilities = await characterService.getCharacterAbilityScores(req.params.characterId);
+export async function GetCharacterAbilityScores(req: ValidatedParamsT<CharacterIdParamRequest, CharacterAbilityScoreResponse[]>, res: Response, _next: NextFunction) {
+    const abilities = await characterService.getCharacterAbilityScores(req.params.id);
     res.json(abilities);
 }
 
-export async function UpsertCharacterAbilityScores(req: ValidatedParamsBodyT<CharacterIdParam2Request, Omit<UpsertCharacterAbilityScoresRequest, 'characterId'>>, res: Response, _next: NextFunction) {
+export async function UpsertCharacterAbilityScores(req: ValidatedParamsBodyT<CharacterIdParamRequest, Omit<UpsertCharacterAbilityScoresRequest, 'characterId'>>, res: Response, _next: NextFunction) {
     await characterService.upsertCharacterAbilityScores({
-        characterId: req.params.characterId,
+        characterId: req.params.id,
         abilityScores: req.body.abilityScores,
     });
     res.json({ message: 'Character ability scores updated successfully' });
@@ -205,16 +229,15 @@ export async function AddDisallowedSource(req: ValidatedBodyT<CreateCharacterDis
     }
 }
 
-export async function RemoveDisallowedSource(req: ValidatedParamsT<CharacterIdParam2Request>, res: Response, _next: NextFunction) {
-    const { characterId } = req.params;
-    const { sourceBookId } = req.body;
+export async function RemoveDisallowedSource(req: ValidatedParamsT<RemoveDisallowedSourceParamRequest>, res: Response, _next: NextFunction) {
+    const { id, sourceBookId } = req.params;
 
-    await characterService.removeDisallowedSource(characterId, sourceBookId);
+    await characterService.removeDisallowedSource(id, sourceBookId);
     res.json({ message: 'Disallowed source removed successfully' });
 }
 
-export async function GetDisallowedSources(req: ValidatedParamsT<CharacterIdParam2Request, CharacterDisallowedSource[]>, res: Response, _next: NextFunction) {
-    const disallowedSources = await characterService.getDisallowedSources(req.params.characterId);
+export async function GetDisallowedSources(req: ValidatedParamsT<CharacterIdParamRequest, CharacterDisallowedSource[]>, res: Response, _next: NextFunction) {
+    const disallowedSources = await characterService.getDisallowedSources(req.params.id);
     res.json(disallowedSources);
 }
 
@@ -245,14 +268,9 @@ export async function CreateCharacterAttackDefinition(req: ValidatedParamsBodyT<
     }
 }
 
-export async function UpdateCharacterAttackDefinition(req: ValidatedParamsBodyT<CharacterIdParamRequest & { attackId: string }, UpdateCharacterAttackDefinitionRequest>, res: Response, _next: NextFunction) {
+export async function UpdateCharacterAttackDefinition(req: ValidatedParamsBodyT<CharacterAttackIdParamRequest, UpdateCharacterAttackDefinitionRequest>, res: Response, _next: NextFunction) {
     try {
-        const attackId = parseInt(req.params.attackId, 10);
-        if (isNaN(attackId)) {
-            res.status(400).json({ error: 'Invalid attack definition ID' });
-            return;
-        }
-        await characterService.updateCharacterAttackDefinition(req.params.id, attackId, req.body);
+        await characterService.updateCharacterAttackDefinition(req.params.id, req.params.attackId, req.body);
         res.json({ message: 'Attack definition updated successfully' });
     } catch (error) {
         if (error instanceof Error) {
@@ -263,14 +281,9 @@ export async function UpdateCharacterAttackDefinition(req: ValidatedParamsBodyT<
     }
 }
 
-export async function DeleteCharacterAttackDefinition(req: ValidatedParamsT<CharacterIdParamRequest & { attackId: string }>, res: Response, _next: NextFunction) {
+export async function DeleteCharacterAttackDefinition(req: ValidatedParamsT<CharacterAttackIdParamRequest>, res: Response, _next: NextFunction) {
     try {
-        const attackId = parseInt(req.params.attackId, 10);
-        if (isNaN(attackId)) {
-            res.status(400).json({ error: 'Invalid attack definition ID' });
-            return;
-        }
-        await characterService.deleteCharacterAttackDefinition(req.params.id, attackId);
+        await characterService.deleteCharacterAttackDefinition(req.params.id, req.params.attackId);
         res.json({ message: 'Attack definition deleted successfully' });
     } catch (error) {
         if (error instanceof Error) {
@@ -281,10 +294,91 @@ export async function DeleteCharacterAttackDefinition(req: ValidatedParamsT<Char
     }
 }
 
-export async function ReorderCharacterAttackDefinitions(req: ValidatedParamsBodyT<CharacterIdParamRequest, { attackDefinitionIds: number[] }>, res: Response, _next: NextFunction) {
+export async function ReorderCharacterAttackDefinitions(req: ValidatedParamsBodyT<CharacterIdParamRequest, ReorderAttackDefinitionsRequest>, res: Response, _next: NextFunction) {
     try {
         await characterService.reorderCharacterAttackDefinitions(req.params.id, req.body.attackDefinitionIds);
         res.json({ message: 'Attack definitions reordered successfully' });
+    } catch (error) {
+        if (error instanceof Error) {
+            res.status(400).json({ error: error.message });
+        } else {
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+}
+
+export async function GetCharacterSpellSelection(req: ValidatedParamsT<CharacterSpellSelectionParamRequest, CharacterSpellSelectionResponse>, res: Response, _next: NextFunction) {
+    try {
+        const classId = parseInt(req.params.classId, 10);
+        if (isNaN(classId)) {
+            res.status(400).json({ error: 'Invalid class ID' });
+            return;
+        }
+
+        if (!req.params.id) {
+            res.status(400).json({ error: 'Character ID is required' });
+            return;
+        }
+
+        const result = await characterService.getAvailableSpellsForClass(req.params.id, classId);
+
+        // Transform to response format
+        const spells = result.spells.map(s => ({
+            ...s.spell,
+            classSpellLevel: s.classSpellLevel,
+            isKnown: s.isKnown
+        }));
+
+        const domainSpells = result.domainSpells.map(ds => ({
+            ...ds.spell,
+            classSpellLevel: ds.classSpellLevel,
+            isKnown: ds.isKnown,
+            domainId: ds.domainId,
+            domainName: ds.domainName,
+            domainSpellLevel: ds.spellLevel
+        }));
+
+        res.json({
+            total: spells.length + domainSpells.length,
+            results: [...domainSpells, ...spells],
+            domainSpells
+        });
+    } catch (error) {
+        console.error('Error in GetCharacterSpellSelection:', error);
+        if (error instanceof Error) {
+            res.status(400).json({ error: error.message });
+        } else {
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+}
+
+export async function AddSpellKnown(req: ValidatedBodyT<AddSpellKnownRequest>, res: Response, _next: NextFunction) {
+    try {
+        const result = await characterService.addSpellKnown(
+            req.body.characterId,
+            req.body.classId,
+            req.body.spellId,
+            req.body.advancementId
+        );
+        res.json(result);
+    } catch (error) {
+        if (error instanceof Error) {
+            res.status(400).json({ error: error.message });
+        } else {
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+}
+
+export async function RemoveSpellKnown(req: ValidatedBodyT<RemoveSpellKnownRequest>, res: Response, _next: NextFunction) {
+    try {
+        const result = await characterService.removeSpellKnown(
+            req.body.characterId,
+            req.body.spellId,
+            req.body.advancementId
+        );
+        res.json(result);
     } catch (error) {
         if (error instanceof Error) {
             res.status(400).json({ error: error.message });

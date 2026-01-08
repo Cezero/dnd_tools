@@ -25,8 +25,10 @@ import {
     CreateCharacterAttackDefinitionRequest,
     UpdateCharacterAttackDefinitionRequest,
     CharacterAttackDefinition,
+    // NEW: Spell types
+    Spell,
 } from '@shared/schema';
-import { EditionId } from '@shared/static-data';
+import { EditionId, ARMOR_CATEGORY_ENUM, EntityAppliesToType } from '@shared/static-data';
 import {
     isGestaltCharacter,
     calculateGestaltCharacterStats,
@@ -36,7 +38,7 @@ import {
     type GestaltStats
 } from '@shared/utils';
 
-
+import { spellService } from '../spell';
 import type { CharacterService } from './types';
 
 const prisma = new PrismaClient();
@@ -76,6 +78,92 @@ export const characterService: CharacterService = {
             prisma.userCharacter.count({
                 where: { userId },
             }),
+        ]);
+
+        // Calculate class/level string and character level for each character
+        const charactersWithClassInfo = characters.map(character => {
+            const advancements = character.advancements || [];
+
+            // Calculate character level (max level from advancements)
+            const characterLevel = advancements.length > 0
+                ? Math.max(...advancements.map(a => a.level))
+                : 0;
+
+            // Build class/level string
+            let classLevelString = '';
+            if (advancements.length > 0) {
+                // Sort advancements by level
+                const sortedAdvancements = [...advancements].sort((a, b) => a.level - b.level);
+
+                const parts: string[] = [];
+
+                sortedAdvancements.forEach(adv => {
+                    const primaryAbbr = adv.class?.abbreviation || '?';
+                    const secondaryAbbr = adv.secondaryClass?.abbreviation || null;
+
+                    if (secondaryAbbr) {
+                        // Gestalt: "Ftr/Clr 1" (both classes at same level)
+                        parts.push(`${primaryAbbr}/${secondaryAbbr} ${adv.level}`);
+                    } else {
+                        // Single class: "Ftr 1"
+                        parts.push(`${primaryAbbr} ${adv.level}`);
+                    }
+                });
+
+                // Join with "/" for multiclass: "Ftr 1/Clr 1"
+                classLevelString = parts.join('/');
+            }
+
+            return {
+                ...character,
+                characterLevel,
+                classLevelString,
+            };
+        });
+
+        return {
+            total,
+            results: charactersWithClassInfo,
+        };
+    },
+
+    async getAllCharactersAdmin(): Promise<GetAllCharactersResponse> {
+        const [characters, total] = await Promise.all([
+            prisma.userCharacter.findMany({
+                include: {
+                    race: {
+                        select: {
+                            id: true,
+                            name: true,
+                        },
+                    },
+                    user: {
+                        select: {
+                            id: true,
+                            username: true,
+                        },
+                    },
+                    advancements: {
+                        include: {
+                            class: {
+                                select: {
+                                    id: true,
+                                    abbreviation: true,
+                                },
+                            },
+                            secondaryClass: {
+                                select: {
+                                    id: true,
+                                    abbreviation: true,
+                                },
+                            },
+                        },
+                        orderBy: { level: 'asc' },
+                    },
+                },
+                orderBy: { name: 'asc' },
+            }),
+            prisma.userCharacter.count(),
         ]);
 
         // Calculate class/level string and character level for each character
@@ -425,10 +513,9 @@ export const characterService: CharacterService = {
                             } : undefined,
                             featureChoices: featureChoices ? {
                                 create: featureChoices.map(choice => {
-                                    // Remove advancementId from the choice data - Prisma sets it automatically via the relationship
-                                    const { advancementId: _advancementId, ...choiceData } = choice;
+                                    // advancementId is not in the choice type - Prisma sets it automatically via the relationship
                                     return {
-                                        ...choiceData,
+                                        ...choice,
                                         characterId: finalCharacterId,
                                     };
                                 })
@@ -978,6 +1065,7 @@ export const characterService: CharacterService = {
             }
         }
 
+        let isOffHandShield = false;
         if (data.offHandCharacterItemId) {
             const offHandItem = await prisma.characterItem.findFirst({
                 where: {
@@ -988,11 +1076,22 @@ export const characterService: CharacterService = {
             if (!offHandItem) {
                 throw new Error('Off hand character item does not belong to this character');
             }
+            // Check if offhand item is a shield by looking up the base item
+            if (offHandItem.baseItemId) {
+                const baseItem = await prisma.item.findUnique({
+                    where: { id: offHandItem.baseItemId },
+                    include: { armor: true },
+                });
+                if (baseItem?.armor?.category === ARMOR_CATEGORY_ENUM.Shield) {
+                    isOffHandShield = true;
+                }
+            }
         }
 
         // Validate attack definition rules based on items
-        // Dual-wield: both items required and different
-        if (data.offHandCharacterItemId !== null && data.offHandCharacterItemId !== undefined) {
+        // Dual-wield: both items required and different (shields don't count as dual-wield)
+        const isDualWield = data.offHandCharacterItemId !== null && data.offHandCharacterItemId !== undefined && !isOffHandShield;
+        if (isDualWield) {
             if (!data.mainHandCharacterItemId) {
                 throw new Error('Dual wield requires both main hand and off hand character items');
             }
@@ -1019,15 +1118,30 @@ export const characterService: CharacterService = {
                 if (existing.attackSlot === data.attackSlot) {
                     throw new Error(`Attack slot ${data.attackSlot} is already occupied`);
                 }
-                // For dual wield, also check slot+1
-                const isDualWield = data.offHandCharacterItemId !== null && data.offHandCharacterItemId !== undefined;
+                // For dual wield, also check slot+1 (shields don't count as dual-wield)
                 if (isDualWield && existing.attackSlot === data.attackSlot + 1) {
                     throw new Error(`Attack slot ${data.attackSlot + 1} is already occupied (needed for dual wield off-hand)`);
                 }
                 // If existing is dual wield, check if it occupies our slot
                 if (existing.attackSlot !== null && data.attackSlot === existing.attackSlot + 1) {
-                    // Check if existing is dual wield by checking if it has offHandCharacterItemId
-                    const existingIsDualWield = existing.offHandCharacterItemId !== null;
+                    // Check if existing is dual wield by checking if it has offHandCharacterItemId and is not a shield
+                    // We need to check if the existing offhand is a shield
+                    let existingIsDualWield = false;
+                    if (existing.offHandCharacterItemId) {
+                        const existingOffHandItem = await prisma.characterItem.findFirst({
+                            where: { id: existing.offHandCharacterItemId },
+                        });
+                        if (existingOffHandItem?.baseItemId) {
+                            const existingBaseItem = await prisma.item.findUnique({
+                                where: { id: existingOffHandItem.baseItemId },
+                                include: { armor: true },
+                            });
+                            // Only treat as dual-wield if it's not a shield
+                            existingIsDualWield = existingBaseItem?.armor?.category !== ARMOR_CATEGORY_ENUM.Shield;
+                        } else {
+                            existingIsDualWield = true; // If no baseItemId, assume it's a weapon
+                        }
+                    }
                     if (existingIsDualWield) {
                         throw new Error(`Attack slot ${data.attackSlot} is already occupied by dual wield off-hand`);
                     }
@@ -1073,15 +1187,27 @@ export const characterService: CharacterService = {
             }
         }
 
-        if (data.offHandCharacterItemId !== undefined && data.offHandCharacterItemId !== null) {
+        let isOffHandShield = false;
+        const offHandId = data.offHandCharacterItemId ?? existing.offHandCharacterItemId;
+        if (offHandId !== null && offHandId !== undefined) {
             const offHandItem = await prisma.characterItem.findFirst({
                 where: {
-                    id: data.offHandCharacterItemId,
+                    id: offHandId,
                     characterId: characterId,
                 },
             });
             if (!offHandItem) {
                 throw new Error('Off hand character item does not belong to this character');
+            }
+            // Check if offhand item is a shield by looking up the base item
+            if (offHandItem.baseItemId) {
+                const baseItem = await prisma.item.findUnique({
+                    where: { id: offHandItem.baseItemId },
+                    include: { armor: true },
+                });
+                if (baseItem?.armor?.category === ARMOR_CATEGORY_ENUM.Shield) {
+                    isOffHandShield = true;
+                }
             }
         }
 
@@ -1089,8 +1215,9 @@ export const characterService: CharacterService = {
         const mainHand = data.mainHandCharacterItemId ?? existing.mainHandCharacterItemId;
         const offHand = data.offHandCharacterItemId ?? existing.offHandCharacterItemId;
 
-        // Dual-wield: both items required and different
-        if (offHand !== null && offHand !== undefined) {
+        // Dual-wield: both items required and different (shields don't count as dual-wield)
+        const isDualWield = offHand !== null && offHand !== undefined && !isOffHandShield;
+        if (isDualWield) {
             if (!mainHand) {
                 throw new Error('Dual wield requires both main hand and off hand character items');
             }
@@ -1119,14 +1246,29 @@ export const characterService: CharacterService = {
                 if (other.attackSlot === attackSlot) {
                     throw new Error(`Attack slot ${attackSlot} is already occupied`);
                 }
-                // For dual wield, also check slot+1
-                const isDualWield = offHand !== null && offHand !== undefined;
+                // For dual wield, also check slot+1 (shields don't count as dual-wield)
                 if (isDualWield && other.attackSlot === attackSlot + 1) {
                     throw new Error(`Attack slot ${attackSlot + 1} is already occupied (needed for dual wield off-hand)`);
                 }
                 // If other is dual wield, check if it occupies our slot
                 if (other.attackSlot !== null && attackSlot === other.attackSlot + 1) {
-                    const otherIsDualWield = other.offHandCharacterItemId !== null;
+                    // Check if the other definition's offhand is a shield
+                    let otherIsDualWield = false;
+                    if (other.offHandCharacterItemId) {
+                        const otherOffHandItem = await prisma.characterItem.findFirst({
+                            where: { id: other.offHandCharacterItemId },
+                        });
+                        if (otherOffHandItem?.baseItemId) {
+                            const otherBaseItem = await prisma.item.findUnique({
+                                where: { id: otherOffHandItem.baseItemId },
+                                include: { armor: true },
+                            });
+                            // Only treat as dual-wield if it's not a shield
+                            otherIsDualWield = otherBaseItem?.armor?.category !== ARMOR_CATEGORY_ENUM.Shield;
+                        } else {
+                            otherIsDualWield = true; // If no baseItemId, assume it's a weapon
+                        }
+                    }
                     if (otherIsDualWield) {
                         throw new Error(`Attack slot ${attackSlot} is already occupied by dual wield off-hand`);
                     }
@@ -1319,6 +1461,341 @@ export const characterService: CharacterService = {
             errors.push(`Failed to calculate advancement stats: ${error instanceof Error ? error.message : 'Unknown error'}`);
             return { stats: null, errors };
         }
+    },
+
+    async getCharacterDomains(characterId: number, classId: number): Promise<number[]> {
+        // Get all progressions for this class (regardless of sourceType)
+        // Domain choices can be associated with any progression for the class
+        const progressions = await prisma.featureProgression.findMany({
+            where: {
+                classId
+            },
+            select: {
+                id: true
+            }
+        });
+
+        const progressionIds = progressions.map(p => p.id);
+
+        if (progressionIds.length === 0) {
+            return [];
+        }
+
+        // Get character's feature choices where appliesTo = Domain
+        // and the progression is associated with this class
+        const domainChoices = await prisma.characterFeatureChoice.findMany({
+            where: {
+                characterId,
+                progressionId: { in: progressionIds },
+                featureEntity: {
+                    appliesTo: EntityAppliesToType.Domain,
+                }
+            },
+            include: {
+                featureEntity: {
+                    select: {
+                        appliesTo: true
+                    }
+                }
+            }
+        });
+
+        // Filter to ensure appliesTo is actually Domain and extract domain IDs
+        const domainIds = Array.from(new Set(
+            domainChoices
+                .filter(choice => choice.featureEntity?.appliesTo === EntityAppliesToType.Domain)
+                .map(choice => choice.appliesToId)
+                .filter((id): id is number => id !== null)
+        ));
+
+        return domainIds;
+    },
+
+    async getAvailableSpellsForClass(characterId: number, classId: number): Promise<{
+        spells: Array<{ spell: Spell; classSpellLevel: number | null; isKnown: boolean }>;
+        domainSpells: Array<{ domainId: number; domainName: string; spell: Spell; spellLevel: number; classSpellLevel: number | null; isKnown: boolean }>;
+    }> {
+        // Get character
+        const character = await prisma.userCharacter.findUnique({
+            where: { id: characterId },
+            include: {
+                advancements: {
+                    include: {
+                        spellsKnown: {
+                            select: {
+                                spellId: true
+                            }
+                        }
+                    }
+                },
+                disallowedSources: {
+                    select: {
+                        sourceBookId: true
+                    }
+                }
+            }
+        });
+
+        if (!character) {
+            throw new Error('Character not found');
+        }
+
+        // Get class details
+        const classDetails = await prisma.class.findUnique({
+            where: { id: classId },
+            select: {
+                canCastSpells: true,
+                spellsKnown: true,
+            }
+        });
+
+        if (!classDetails || !classDetails.canCastSpells) {
+            return { spells: [], domainSpells: [] };
+        }
+
+        const characterLevel = character.advancements.length;
+        const disallowedSourceIds = character.disallowedSources.map(ds => ds.sourceBookId);
+        const knownSpellIds = new Set(
+            character.advancements.flatMap(adv => adv.spellsKnown.map(s => s.spellId))
+        );
+
+        // Get character's domains for this class
+        const domainIds = await this.getCharacterDomains(characterId, classId);
+
+        // Get domain spells if character has domains
+        let domainSpells: Array<{ domainId: number; domainName: string; spell: Spell; spellLevel: number; classSpellLevel: number | null; isKnown: boolean }> = [];
+        if (domainIds.length > 0) {
+            const domainSpellData = await spellService.getDomainSpells(domainIds, characterLevel, classId);
+
+            domainSpells = domainSpellData.map(ds => {
+                // Filter by source restrictions
+                const spellSourceIds = ds.spell.sourceBookInfo?.map(sb => sb.sourceBookId) || [];
+                const isDisallowed = spellSourceIds.some(sid => disallowedSourceIds.includes(sid));
+
+                if (isDisallowed) {
+                    return null;
+                }
+
+                return {
+                    domainId: ds.domainId,
+                    domainName: ds.domainName,
+                    spell: ds.spell,
+                    spellLevel: ds.spellLevel,
+                    classSpellLevel: ds.classSpellLevel,
+                    isKnown: knownSpellIds.has(ds.spell.id)
+                };
+            }).filter((ds): ds is NonNullable<typeof ds> => ds !== null);
+        }
+
+        // Get spells for this class
+        let spells: Array<{ spell: Spell; classSpellLevel: number | null; isKnown: boolean }> = [];
+
+        if (classDetails.spellsKnown) {
+            // For spellsKnown classes, get spells from AdvancementSpell
+            const knownSpells = await prisma.advancementSpell.findMany({
+                where: {
+                    advancement: {
+                        characterId,
+                        classId
+                    }
+                },
+                include: {
+                    spell: {
+                        include: {
+                            levelMapping: {
+                                where: { classId },
+                                select: {
+                                    classId: true,
+                                    level: true
+                                }
+                            },
+                            descriptorIds: {
+                                select: {
+                                    descriptorId: true
+                                }
+                            },
+                            schoolIds: {
+                                select: {
+                                    schoolId: true
+                                }
+                            },
+                            subSchoolIds: {
+                                select: {
+                                    subSchoolId: true
+                                }
+                            },
+                            componentIds: {
+                                select: {
+                                    componentId: true
+                                }
+                            },
+                            sourceBookInfo: {
+                                select: {
+                                    sourceBookId: true,
+                                    pageNumber: true,
+                                    sourceBook: {
+                                        select: {
+                                            id: true,
+                                            abbreviation: true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            spells = knownSpells.map(as => {
+                const spellSourceIds = as.spell.sourceBookInfo?.map(sb => sb.sourceBookId) || [];
+                const isDisallowed = spellSourceIds.some(sid => disallowedSourceIds.includes(sid));
+
+                if (isDisallowed) {
+                    return null;
+                }
+
+                return {
+                    spell: as.spell,
+                    classSpellLevel: as.spell.levelMapping[0]?.level ?? null,
+                    isKnown: true
+                };
+            }).filter((s): s is NonNullable<typeof s> => s !== null);
+        } else {
+            // For non-spellsKnown classes, get all available spells from SpellLevelMap
+            const spellLevelMappings = await prisma.spellLevelMap.findMany({
+                where: {
+                    classId,
+                    level: { lte: characterLevel }
+                },
+                include: {
+                    spell: {
+                        include: {
+                            levelMapping: {
+                                where: { classId },
+                                select: {
+                                    classId: true,
+                                    level: true
+                                }
+                            },
+                            descriptorIds: {
+                                select: {
+                                    descriptorId: true
+                                }
+                            },
+                            schoolIds: {
+                                select: {
+                                    schoolId: true
+                                }
+                            },
+                            subSchoolIds: {
+                                select: {
+                                    subSchoolId: true
+                                }
+                            },
+                            componentIds: {
+                                select: {
+                                    componentId: true
+                                }
+                            },
+                            sourceBookInfo: {
+                                select: {
+                                    sourceBookId: true,
+                                    pageNumber: true,
+                                    sourceBook: {
+                                        select: {
+                                            id: true,
+                                            abbreviation: true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            spells = spellLevelMappings.map(slm => {
+                const spellSourceIds = slm.spell.sourceBookInfo?.map(sb => sb.sourceBookId) || [];
+                const isDisallowed = spellSourceIds.some(sid => disallowedSourceIds.includes(sid));
+
+                if (isDisallowed) {
+                    return null;
+                }
+
+                return {
+                    spell: slm.spell,
+                    classSpellLevel: slm.level,
+                    isKnown: knownSpellIds.has(slm.spell.id)
+                };
+            }).filter((s): s is NonNullable<typeof s> => s !== null);
+        }
+
+        return { spells, domainSpells };
+    },
+
+    async addSpellKnown(characterId: number, classId: number, spellId: number, advancementId: number): Promise<UpdateResponse> {
+        // Verify advancement belongs to character and class
+        const advancement = await prisma.characterAdvancement.findFirst({
+            where: {
+                id: advancementId,
+                characterId,
+                classId
+            }
+        });
+
+        if (!advancement) {
+            throw new Error('Advancement not found or does not belong to character/class');
+        }
+
+        // Check if spell is already known
+        const existing = await prisma.advancementSpell.findUnique({
+            where: {
+                advancementId_spellId: {
+                    advancementId,
+                    spellId
+                }
+            }
+        });
+
+        if (existing) {
+            return { message: 'Spell already known' };
+        }
+
+        // Add spell to AdvancementSpell
+        await prisma.advancementSpell.create({
+            data: {
+                advancementId,
+                spellId
+            }
+        });
+
+        return { message: 'Spell added successfully' };
+    },
+
+    async removeSpellKnown(characterId: number, spellId: number, advancementId: number): Promise<UpdateResponse> {
+        // Verify advancement belongs to character
+        const advancement = await prisma.characterAdvancement.findFirst({
+            where: {
+                id: advancementId,
+                characterId
+            }
+        });
+
+        if (!advancement) {
+            throw new Error('Advancement not found or does not belong to character');
+        }
+
+        // Remove spell from AdvancementSpell
+        await prisma.advancementSpell.delete({
+            where: {
+                advancementId_spellId: {
+                    advancementId,
+                    spellId
+                }
+            }
+        });
+
+        return { message: 'Spell removed successfully' };
     },
 
 }; 

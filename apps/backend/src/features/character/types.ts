@@ -24,12 +24,15 @@ import type {
     CreateCharacterAttackDefinitionRequest,
     UpdateCharacterAttackDefinitionRequest,
     CharacterAttackDefinition,
+    // NEW: Spell types
+    Spell,
 } from '@shared/schema';
 import type { GestaltStats } from '@shared/utils';
 
 // Service interface
 export interface CharacterService {
     getAllCharacters: (userId: number) => Promise<GetAllCharactersResponse>;
+    getAllCharactersAdmin: () => Promise<GetAllCharactersResponse>;
     getCharacterById: (query: CharacterIdParamRequest) => Promise<Character | null>;
     getCharacterWithAllDetails: (query: CharacterIdParamRequest) => Promise<CharacterWithAllDetailsResponse | null>;
     createCharacter: (data: CreateCharacterRequest) => Promise<CreateResponse>;
@@ -79,5 +82,14 @@ export interface CharacterService {
         stats: GestaltStats | null;
         errors: string[];
     }>;
+
+    // NEW: Spell selection methods
+    getCharacterDomains: (characterId: number, classId: number) => Promise<number[]>;
+    getAvailableSpellsForClass: (characterId: number, classId: number) => Promise<{
+        spells: Array<{ spell: Spell; classSpellLevel: number | null; isKnown: boolean }>;
+        domainSpells: Array<{ domainId: number; domainName: string; spell: Spell; spellLevel: number; classSpellLevel: number | null; isKnown: boolean }>;
+    }>;
+    addSpellKnown: (characterId: number, classId: number, spellId: number, advancementId: number) => Promise<UpdateResponse>;
+    removeSpellKnown: (characterId: number, spellId: number, advancementId: number) => Promise<UpdateResponse>;
 
 } 

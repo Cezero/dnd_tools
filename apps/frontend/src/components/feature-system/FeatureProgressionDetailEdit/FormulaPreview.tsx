@@ -1,5 +1,3 @@
-import React from 'react';
-
 import type { FormulaPreviewProps } from './types';
 import { useFormulaPreview } from './useFormulaPreview';
 

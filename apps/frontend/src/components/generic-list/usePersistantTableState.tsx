@@ -34,6 +34,18 @@ function validateAndFixColumnOrder(storedOrder: string[], validColumns: string[]
     // Find missing columns (new columns that weren't in the stored order)
     const missingColumns = validColumns.filter(columnId => !storedOrder.includes(columnId));
 
+    // If the stored order is completely different from the default (e.g., all columns are in different positions),
+    // or if we have missing columns that should be at the beginning, reset to default order
+    // This handles cases where column definitions have changed significantly
+    if (missingColumns.length > 0 && validColumns.length > 0) {
+        // Check if the first column in default order is missing from stored order
+        // This indicates a significant structural change (e.g., new primary column)
+        if (!storedOrder.includes(validColumns[0])) {
+            console.warn(`Column order reset: first column "${validColumns[0]}" was missing from stored order. Resetting to default.`);
+            return validColumns;
+        }
+    }
+
     // Combine valid stored columns with missing columns
     const fixedOrder = [...validStoredColumns, ...missingColumns];
 

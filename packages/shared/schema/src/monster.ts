@@ -175,6 +175,7 @@ export const GetAllMonstersResponseSchema = QueryResponseSchema.extend({
 
 export const GetAllMonstersQuerySchema = z.object({
     includeStatblockOnly: z.string().optional().transform((val) => val === 'true'),
+    typeId: z.string().optional().transform((val) => val ? parseInt(val, 10) : undefined),
 });
 
 export const GetMonsterResponseSchema = MonsterSchema.omit({

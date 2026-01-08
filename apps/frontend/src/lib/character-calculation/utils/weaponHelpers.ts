@@ -1,5 +1,5 @@
 import type { ItemWithDetails, CharacterItem } from '@shared/schema';
-import { WEAPON_TYPE_ENUM } from '@shared/static-data';
+import { WEAPON_TYPE_ENUM, ARMOR_CATEGORY_ENUM } from '@shared/static-data';
 
 /**
  * Type guard to check if item has weapon property
@@ -9,9 +9,31 @@ function hasWeapon(item: ItemWithDetails | CharacterItem | undefined | null): it
 }
 
 /**
+ * Type guard to check if item has armor property
+ */
+function hasArmor(item: ItemWithDetails | CharacterItem | undefined | null): item is ItemWithDetails {
+    return item !== null && item !== undefined && 'armor' in item && item.armor !== null && item.armor !== undefined;
+}
+
+/**
+ * Check if item is a shield (has armor.category === Shield)
+ */
+export function isShield(item: ItemWithDetails | CharacterItem | undefined | null): boolean {
+    if (!hasArmor(item)) {
+        return false;
+    }
+    return item.armor.category === ARMOR_CATEGORY_ENUM.Shield;
+}
+
+/**
  * Check if off-hand item is a weapon (indicating dual-wield)
+ * Excludes shields - shields in offhand do not count as dual-wield
  */
 export function isOffHandWeapon(offHandItem: ItemWithDetails | CharacterItem | undefined | null): boolean {
+    // If it's a shield, it's not a weapon for dual-wield purposes
+    if (isShield(offHandItem)) {
+        return false;
+    }
     return hasWeapon(offHandItem);
 }
 
@@ -57,15 +79,16 @@ export function isOneHandedMeleeWeapon(item: ItemWithDetails | CharacterItem | u
 
 /**
  * Check if weapon can be used two-handed
- * Returns true if offHandItem is null/undefined AND
+ * Returns true if offHandItem is null/undefined OR is a shield AND
  * (mainHandItem is two-handed OR mainHandItem is one-handed melee weapon that isn't light)
+ * Shields in offhand do not prevent two-handed usage
  */
 export function canUseTwoHanded(
     mainHandItem: ItemWithDetails | CharacterItem | undefined | null,
     offHandItem: ItemWithDetails | CharacterItem | undefined | null
 ): boolean {
-    // If off-hand item exists, cannot use two-handed
-    if (offHandItem !== null && offHandItem !== undefined) {
+    // If off-hand item exists and is not a shield, cannot use two-handed
+    if (offHandItem !== null && offHandItem !== undefined && !isShield(offHandItem)) {
         return false;
     }
 

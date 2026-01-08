@@ -5,6 +5,8 @@ import { routes as characterRoutes } from '@/features/character/CharacterConfig'
 import { routes as classRoutes } from '@/features/class/ClassConfig';
 import { routes as deityRoutes } from '@/features/deity/DeityConfig';
 import { routes as domainRoutes } from '@/features/domain/DomainConfig';
+import { routes as companionRoutes } from '@/features/companion/CompanionConfig';
+import { trickRoutes } from '@/features/trick';
 import { routes as featRoutes } from '@/features/feat/FeatConfig';
 import { routes as itemRoutes } from '@/features/item/ItemConfig';
 import { routes as monsterRoutes } from '@/features/monster/MonsterConfig';
@@ -23,6 +25,8 @@ export const FeatureRoutes: RouteConfig[] = [
     ...raceRoutes,
     ...itemRoutes,
     ...domainRoutes,
+    ...trickRoutes,
+    ...companionRoutes,
     ...deityRoutes,
     ...featureSystemRoutes,
     ...profileRoutes,

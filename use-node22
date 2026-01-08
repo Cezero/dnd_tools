@@ -1,0 +1,5 @@
+#!/bin/bash
+# Wrapper that sources the actual script
+# This can be executed directly and will source into the current shell
+source /home/countzero/git/dnd_tools/use-node22.sh
+

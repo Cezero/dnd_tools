@@ -11,6 +11,7 @@ import {
     ValidatedForm,
     ValidatedInput,
     ValidatedCustomSelect,
+    ValidatedCustomCheckbox,
     useValidatedForm,
     useFormContext
 } from '@/components/forms';
@@ -47,6 +48,7 @@ export function FeatureEdit() {
         slug: '',
         description: '',
         summary: null,
+        displayInCharacterSheet: true,
         prerequisites: [],
     };
 
@@ -74,6 +76,7 @@ export function FeatureEdit() {
                     slug: '',
                     description: '',
                     summary: null,
+                    displayInCharacterSheet: true,
                     prerequisites: [],
                 });
                 return;
@@ -88,6 +91,7 @@ export function FeatureEdit() {
                     slug: '',
                     description: '',
                     summary: null,
+                    displayInCharacterSheet: true,
                     prerequisites: [],
                 });
                 return;
@@ -127,11 +131,11 @@ export function FeatureEdit() {
         // Handle return to class/race edit pages
         const parentType = location.state?.parentType;
         const parentId = location.state?.parentId;
-        
+
         if (parentType === 'class' && parentId) {
             return `/classes/${parentId}/edit`;
         }
-        
+
         if (parentType === 'race' && parentId) {
             return `/races/${parentId}/edit`;
         }
@@ -150,11 +154,11 @@ export function FeatureEdit() {
     const getBackText = () => {
         // Handle return to class/race edit pages
         const parentType = location.state?.parentType;
-        
+
         if (parentType === 'class') {
             return 'Back to Edit Class';
         }
-        
+
         if (parentType === 'race') {
             return 'Back to Edit Race';
         }
@@ -244,7 +248,7 @@ export function FeatureEdit() {
                 createdFeatureId = result.id;
 
                 // Invalidate feature-related caches
-                await queryClient.invalidateQueries({ 
+                await queryClient.invalidateQueries({
                     queryKey: ['features'],
                     exact: false
                 });
@@ -283,14 +287,14 @@ export function FeatureEdit() {
                 setMessage('Feature updated successfully');
 
                 // Invalidate feature-related caches to ensure fresh data
-                await queryClient.invalidateQueries({ 
-                    queryKey: ['features', 'item', numericId] 
+                await queryClient.invalidateQueries({
+                    queryKey: ['features', 'item', numericId]
                 });
-                await queryClient.invalidateQueries({ 
-                    queryKey: ['features', 'progressions', numericId] 
+                await queryClient.invalidateQueries({
+                    queryKey: ['features', 'progressions', numericId]
                 });
                 // Also invalidate all feature lists and progressions that might include this feature
-                await queryClient.invalidateQueries({ 
+                await queryClient.invalidateQueries({
                     queryKey: ['features'],
                     exact: false
                 });
@@ -299,19 +303,19 @@ export function FeatureEdit() {
                 const parentType = location.state?.parentType;
                 const parentId = location.state?.parentId;
                 if (parentType === 'class' && parentId) {
-                    await queryClient.invalidateQueries({ 
+                    await queryClient.invalidateQueries({
                         queryKey: ClassQueryHooks.getClassByIdQueryKey(parentId)
                     });
-                    await queryClient.invalidateQueries({ 
+                    await queryClient.invalidateQueries({
                         queryKey: ['classes'],
                         exact: false
                     });
                 }
                 if (parentType === 'race' && parentId) {
-                    await queryClient.invalidateQueries({ 
+                    await queryClient.invalidateQueries({
                         queryKey: RaceQueryHooks.getRaceByIdQueryKey(parentId)
                     });
-                    await queryClient.invalidateQueries({ 
+                    await queryClient.invalidateQueries({
                         queryKey: ['races'],
                         exact: false
                     });
@@ -484,11 +488,25 @@ export function FeatureEdit() {
                             type="textarea"
                             labelExtraClassName="mb-2"
                             inputExtraClassName="w-full"
-                            placeholder="Enter brief summary for character sheets (plain text, no markdown)"
+                            placeholder="Enter brief summary for character sheets (plain text, no markdown). Can contain template placeholders like {{feature.wild-shape.entities.uses.formattedValue}}"
                             rows={4}
                         />
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                            This summary will be displayed on PDF character sheets. Keep it concise and avoid markdown formatting.
+                            This summary will be displayed on PDF character sheets. Keep it concise and avoid markdown formatting. You can use template placeholders like {`{{feature.wild-shape.entities.uses.formattedValue}}`} for dynamic content.
+                        </p>
+                    </div>
+                </div>
+
+                {/* Display In Character Sheet */}
+                <div className="mt-6">
+                    <div className="space-y-2">
+                        <ValidatedCustomCheckbox
+                            field="displayInCharacterSheet"
+                            label="Display in Character Sheet"
+                            componentExtraClassName="flex items-center gap-2"
+                        />
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                            When unchecked, this feature will be hidden from PDF character sheet output. Useful for features like "ex-clerics" that should not appear on character sheets.
                         </p>
                     </div>
                 </div>
@@ -637,12 +655,14 @@ export function FeatureEdit() {
                     id: feature.id,
                     name: feature.name,
                     description: feature.description,
-                    slug: feature.slug
+                    slug: feature.slug,
+                    displayInCharacterSheet: feature.displayInCharacterSheet
                 } : id === 'new' ? {
                     id: 0, // Will be set by the backend when feature is created
                     name: formData.name || 'New Feature',
                     description: formData.description || '',
-                    slug: formData.slug || 'new-feature'
+                    slug: formData.slug || 'new-feature',
+                    displayInCharacterSheet: formData.displayInCharacterSheet ?? true
                 } : undefined}
             />
         </div>

@@ -65,6 +65,9 @@ export function ClassDisplay({
                                 <p><strong>Display:</strong> {cls.isVisible ? 'Yes' : 'No'}</p>
                                 <p><strong>Prestige Class:</strong> {cls.isPrestige ? 'Yes' : 'No'}</p>
                                 <p><strong>Caster:</strong> {cls.canCastSpells ? 'Yes' : 'No'}</p>
+                                {cls.canCastSpells && (
+                                    <p><strong>Divine Caster:</strong> {cls.isDivine ? 'Yes' : 'No'}</p>
+                                )}
                             </div>
                         </div>
                     )}

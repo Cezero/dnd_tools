@@ -5,7 +5,7 @@ import type { TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import type { ItemWithDetails, FeatInQueryResponse } from '@shared/schema';
-import { ITEM_TYPE_ENUM, EntityAppliesToType } from '@shared/static-data';
+import { ITEM_TYPE_ENUM, EntityAppliesToType, EntityType } from '@shared/static-data';
 
 import { FeatSubIdSelectionModal } from '../components/FeatSubIdSelectionModal';
 import { filterAvailableFeats } from '../utils/featFiltering';
@@ -151,19 +151,27 @@ export function FeatsTab({
     }, [state.selectedFeats, availableFeats, state.featSubIds, itemNameMap]);
 
     // Get granted feat details (from class/race features)
+    // Filter out proficiency feats (those granted by race/class proficiencies)
     const grantedFeatDetails = useMemo(() => {
-        return grantedFeats.map(entity => {
-            // Look in the unfiltered feat response since granted feats are filtered out of availableFeats
-            const feat = featResponse?.results?.find(f => f.id === entity.appliesToId);
-            if (!feat) return null;
-            
-            // Get sub-id name if present (for granted feats with useSubId)
-            const subIdName = entity.appliesToSubId && entity.appliesToSubId > 0
-                ? itemNameMap.get(entity.appliesToSubId)
-                : undefined;
-            
-            return { ...feat, source: 'granted' as const, subIdName };
-        }).filter(Boolean);
+        return grantedFeats
+            .filter(entity => {
+                // Exclude proficiency feats - these are granted by proficiency entities
+                // and should not be shown in the "Your Feats" view
+                return entity.type !== EntityType.Proficiency;
+            })
+            .map(entity => {
+                // Look in the unfiltered feat response since granted feats are filtered out of availableFeats
+                const feat = featResponse?.results?.find(f => f.id === entity.appliesToId);
+                if (!feat) return null;
+                
+                // Get sub-id name if present (for granted feats with useSubId)
+                const subIdName = entity.appliesToSubId && entity.appliesToSubId > 0
+                    ? itemNameMap.get(entity.appliesToSubId)
+                    : undefined;
+                
+                return { ...feat, source: 'granted' as const, subIdName };
+            })
+            .filter(Boolean);
     }, [grantedFeats, featResponse?.results, itemNameMap]);
 
     // Get choice-based feat details (from CharacterFeatureChoice, e.g., fighter bonus feats)

@@ -140,6 +140,7 @@ export class FormatterRegistry implements IFormatterRegistry {
         this.registerBonusFormatter(EntityAppliesToType.SpellSvDC, spellSaveDCFormatter);
         this.registerBonusFormatter(EntityAppliesToType.Resistance, resistanceFormatter);
         this.registerBonusFormatter(EntityAppliesToType.CasterLevel, signedValueFormatter);
+        this.registerBonusFormatter(EntityAppliesToType.HitPoints, signedValueFormatter);
         this.registerBonusFormatter(EntityAppliesToType.Damage, damageBonusFormatter);
 
         // Quantity-compatible types
@@ -182,6 +183,8 @@ export class FormatterRegistry implements IFormatterRegistry {
         this.registerEntityFormatter(EntityType.Choice, EntityAppliesToType.Spell, featureEntityFormatter);
         this.registerEntityFormatter(EntityType.Choice, EntityAppliesToType.Feature, featureEntityFormatter);
         this.registerEntityFormatter(EntityType.Choice, EntityAppliesToType.CreatureType, featureEntityFormatter);
+        this.registerEntityFormatter(EntityType.Choice, EntityAppliesToType.AnimalCompanion, featureEntityFormatter);
+        this.registerEntityFormatter(EntityType.Choice, EntityAppliesToType.Familiar, featureEntityFormatter);
         this.registerEntityFormatter(EntityType.Allocation, EntityAppliesToType.Feat, featureEntityFormatter);
         this.registerEntityFormatter(EntityType.Allocation, EntityAppliesToType.Spell, featureEntityFormatter);
         this.registerEntityFormatter(EntityType.Allocation, EntityAppliesToType.Feature, featureEntityFormatter);

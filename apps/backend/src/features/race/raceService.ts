@@ -52,7 +52,10 @@ export const raceService: RaceService = {
         };
     },
 
-    async getRaceById(id: RaceIdParamRequest): Promise<Race | null> {
+    async getRaceById(
+        id: RaceIdParamRequest,
+        characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>
+    ): Promise<Race | null> {
         const race = await prisma.race.findUnique({
             where: { id: id.id },
             include: {
@@ -65,7 +68,8 @@ export const raceService: RaceService = {
         }
 
         // Get feature progressions using the new architecture
-        const features = await featureSystemService.getFeatureProgressionsByRaceId(id.id);
+        // Pass character feature choices to enrich progressions with choice data
+        const features = await featureSystemService.getFeatureProgressionsByRaceId(id.id, characterFeatureChoices);
 
         // Combine race data with enriched feature progressions
         const transformedRace = {

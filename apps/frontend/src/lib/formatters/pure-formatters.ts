@@ -278,6 +278,10 @@ export class FeatureEntityFormatter implements BaseFormatter {
                 return this.getFeatureName(choice);
             case EntityAppliesToType.CreatureType:
                 return this.getCreatureTypeName(choice);
+            case EntityAppliesToType.AnimalCompanion:
+                return this.getAnimalCompanionName(choice);
+            case EntityAppliesToType.Familiar:
+                return this.getFamiliarName(choice);
             default:
                 // Fallback for unknown appliesTo types
                 return `Choice (${choice.appliesTo})`;
@@ -351,6 +355,37 @@ export class FeatureEntityFormatter implements BaseFormatter {
         return 'Creature Type';
     }
 
+    private getAnimalCompanionName(choice: CalculatedEntity): string {
+        // Priority 1: Use included entity data (specific companion selected)
+        if (choice.companion) {
+            return choice.companion.name;
+        }
+
+        // Priority 2: Use static data filter type name (filter type is set)
+        if (choice.filterType && FEATURE_FEAT_CHOICE_FILTER_TYPES[choice.filterType]) {
+            return FEATURE_FEAT_CHOICE_FILTER_TYPES[choice.filterType].name;
+        }
+
+        // Priority 3: Fall back to "Animal Companion" (labeler will add "Select" or "Choose a" prefix)
+        // This matches the pattern used by Domain Choice and other choice types
+        return 'Animal Companion';
+    }
+
+    private getFamiliarName(choice: CalculatedEntity): string {
+        // Priority 1: Use included entity data (specific familiar selected)
+        if (choice.companion) {
+            return choice.companion.name;
+        }
+
+        // Priority 2: Use static data filter type name (filter type is set)
+        if (choice.filterType && FEATURE_FEAT_CHOICE_FILTER_TYPES[choice.filterType]) {
+            return FEATURE_FEAT_CHOICE_FILTER_TYPES[choice.filterType].name;
+        }
+
+        // Priority 3: Fall back to "Familiar" (labeler will add "Select" or "Choose a" prefix)
+        return 'Familiar';
+    }
+
     private getBaseChoiceName(choice: CalculatedEntity): string {
         switch (choice.appliesTo) {
             case EntityAppliesToType.Feat:
@@ -361,6 +396,8 @@ export class FeatureEntityFormatter implements BaseFormatter {
                 return this.getFeatureName(choice);
             case EntityAppliesToType.CreatureType:
                 return this.getBaseCreatureTypeName(choice);
+            case EntityAppliesToType.AnimalCompanion:
+                return this.getAnimalCompanionName(choice);
             default:
                 return `Choice (${choice.appliesTo})`;
         }
@@ -580,6 +617,10 @@ export class DamageStringFormatter implements BaseFormatter {
      */
     formatFromComponents(baseDamage: string, abilityModifier: number, featBonus: number): string {
         const totalModifier = abilityModifier + featBonus;
+        // Only append modifier if it's not zero
+        if (totalModifier === 0) {
+            return baseDamage;
+        }
         const modifierStr = totalModifier >= 0 ? `+${totalModifier}` : `${totalModifier}`;
         return `${baseDamage}${modifierStr}`;
     }

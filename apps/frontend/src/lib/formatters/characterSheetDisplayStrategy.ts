@@ -1,12 +1,12 @@
-import { ClassSkillService } from '@/features/class/ClassSkillService';
+import { isClassSkill } from '@/features/character/featureProgressionUtils';
 import { CharacterCalculationService } from '@/lib/character-calculation';
 import type { CombatValuesResult } from '@/lib/character-calculation/calculations/combatValues';
 import { SaveType } from '@/lib/character-calculation/calculations/savingThrows';
 import { getAllCharacterFeats } from '@/lib/character-calculation/core/featAccessor';
 import type { BreakdownMap } from '@/lib/character-calculation/types';
 import { canUseTwoHanded, isTwoHandedWeapon } from '@/lib/character-calculation/utils/weaponHelpers';
-import type { FeatureProgression, ItemWithDetails, CharacterItem, CharacterWithAllDetailsResponse, DnDClass, Race, FeatureEntityCondition } from '@shared/schema';
-import { EntityAppliesToType, EntityType, AbilityId, SKILL_LIST, CRAFT_SKILL_MAP, KNOWLEDGE_SKILL_MAP, SkillSubType, SKILL_SUB_TYPE_COMPATIBILITY, SpecialFeatureId, BreakdownComponentType, FeatureEntityConditionType } from '@shared/static-data';
+import type { FeatureProgression, ItemWithDetails, CharacterItem, CharacterWithAllDetailsResponse, DnDClass, Race, FeatureEntityCondition, CharacterFeatureChoice, FeatureEntity } from '@shared/schema';
+import { EntityAppliesToType, EntityType, AbilityId, SKILL_LIST, CRAFT_SKILL_MAP, KNOWLEDGE_SKILL_MAP, SkillSubType, SKILL_SUB_TYPE_COMPATIBILITY, SpecialFeatureId, BreakdownComponentType, FeatureEntityConditionType, ABILITY_MAP } from '@shared/static-data';
 import { getBABProgression } from '@shared/utils';
 
 import { conditionLabelerRegistry } from './condition-labeler-registry';
@@ -473,6 +473,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
 
         // 6. Format features using progressions
         const features = this.formatFeatures(
+            character,
             resolvedProgressions,
             context
         );
@@ -655,82 +656,113 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             skill.abilityId !== 0 && !skill.isAnalog
         );
 
-        // Process skill entries from advancements
-        for (const advancement of character.advancements) {
-            const classDetails = classDetailsMap.get(advancement.classId);
+        // Process skill entries - use context.skillRanks if available (session state), otherwise use character.advancements
+        const skillRanksToUse = _context?.skillRanks || character.advancements.flatMap(adv => adv.skills || []);
 
-            for (const skillEntry of (advancement.skills || [])) {
-                if (!allocatableSkills.some(s => s.id === skillEntry.skillId)) {
-                    continue;
-                }
+        for (const skillEntry of skillRanksToUse) {
+            if (!allocatableSkills.some(s => s.id === skillEntry.skillId)) {
+                continue;
+            }
 
-                const key = `${skillEntry.skillId}|${skillEntry.skillSubId ?? 'null'}|${skillEntry.customSubtype ?? 'null'}`;
+            const key = `${skillEntry.skillId}|${skillEntry.skillSubId ?? 'null'}|${skillEntry.customSubtype ?? 'null'}`;
 
+            let entry = skillEntryMap.get(key);
+            if (!entry) {
+                entry = {
+                    skillId: skillEntry.skillId,
+                    skillSubId: skillEntry.skillSubId,
+                    customSubtype: skillEntry.customSubtype,
+                    totalRanks: 0,
+                    miscBonus: 0
+                };
+                skillEntryMap.set(key, entry);
+            }
+
+            // Check if skill is a class skill - use backend-provided classSkills if available, otherwise fall back to checking progressions
+            let isClassSkillValue = false;
+            if (_context?.classSkills) {
+                // Use backend-provided class skills array
+                isClassSkillValue = _context.classSkills.some(cs =>
+                    cs.skillId === skillEntry.skillId &&
+                    (cs.skillSubId === skillEntry.skillSubId || (cs.skillSubId === null && skillEntry.skillSubId === null))
+                );
+            } else {
+                // Fallback to checking resolved progressions (for backward compatibility)
+                isClassSkillValue = isClassSkill(
+                    skillEntry.skillId,
+                    skillEntry.skillSubId,
+                    resolvedProgressions
+                );
+            }
+
+            if (isClassSkillValue) {
+                entry.totalRanks += skillEntry.pointsSpent;
+            } else {
+                entry.totalRanks += skillEntry.pointsSpent * 0.5;
+            }
+        }
+
+        // Get skill bonuses - use backend-provided skillBonuses if available, otherwise calculate from progressions
+        if (_context?.skillBonuses) {
+            // Use backend-provided skill bonuses array
+            for (const bonus of _context.skillBonuses) {
+                const key = `${bonus.skillId}|${bonus.skillSubId ?? 'null'}|null`;
                 let entry = skillEntryMap.get(key);
+                // If entry doesn't exist, create it (for skills with bonuses but no ranks)
                 if (!entry) {
                     entry = {
-                        skillId: skillEntry.skillId,
-                        skillSubId: skillEntry.skillSubId,
-                        customSubtype: skillEntry.customSubtype,
+                        skillId: bonus.skillId,
+                        skillSubId: bonus.skillSubId ?? null,
+                        customSubtype: null,
                         totalRanks: 0,
                         miscBonus: 0
                     };
                     skillEntryMap.set(key, entry);
                 }
-
-                const isClassSkill = ClassSkillService.isSkillClassSkillForAdvancement(
-                    classDetails,
-                    advancement,
-                    skillEntry.skillId,
-                    skillEntry.skillSubId,
-                    skillEntry.customSubtype
-                );
-
-                if (isClassSkill) {
-                    entry.totalRanks += skillEntry.pointsSpent;
-                } else {
-                    entry.totalRanks += skillEntry.pointsSpent * 0.5;
-                }
+                entry.miscBonus += bonus.bonus;
             }
-        }
+        } else {
+            // Fallback to calculating from progressions (for backward compatibility)
+            for (const progression of skillProgressions) {
+                if (!progression.entities) continue;
 
-        // Get skill bonuses from progressions
-        for (const progression of skillProgressions) {
-            if (!progression.entities) continue;
-
-            for (const entity of progression.entities) {
-                if (entity.appliesTo === EntityAppliesToType.Skill && entity.appliesToId) {
-                    // Skip entities with conditions - these are conditional modifiers and should not be included in misc bonus
-                    if (entity.conditions && entity.conditions.length > 0) {
-                        continue;
-                    }
-
-                    // Handle both bonus entities (with value) and other entities that might grant skill bonuses
-                    // For bonus entities, use the value directly
-                    // For other entities, check if they have a computed value
-                    let bonusValue = 0;
-                    if (entity.type === EntityType.Bonus && entity.value) {
-                        bonusValue = entity.value;
-                    } else if (entity.type === EntityType.Other && entity.value) {
-                        // Some skill bonuses might be Other type
-                        bonusValue = entity.value;
-                    }
-
-                    if (bonusValue !== 0) {
-                        const key = `${entity.appliesToId}|${entity.appliesToSubId ?? 'null'}|null`;
-                        let entry = skillEntryMap.get(key);
-                        // If entry doesn't exist, create it (for skills with bonuses but no ranks)
-                        if (!entry) {
-                            entry = {
-                                skillId: entity.appliesToId,
-                                skillSubId: entity.appliesToSubId ?? null,
-                                customSubtype: null,
-                                totalRanks: 0,
-                                miscBonus: 0
-                            };
-                            skillEntryMap.set(key, entry);
+                for (const entity of progression.entities) {
+                    if (entity.appliesTo === EntityAppliesToType.Skill && entity.appliesToId) {
+                        // Skip entities with conditions - these are conditional modifiers and should not be included in misc bonus
+                        if (entity.conditions && entity.conditions.length > 0) {
+                            continue;
                         }
-                        entry.miscBonus += bonusValue;
+
+                        // Handle both bonus entities (with value) and other entities that might grant skill bonuses
+                        // For bonus entities, use the value directly
+                        // For other entities, check if they have a computed value
+                        let bonusValue = 0;
+                        if (entity.type === EntityType.Bonus && entity.value) {
+                            bonusValue = entity.value;
+                        } else if (entity.type === EntityType.Other && entity.value) {
+                            // Some skill bonuses might be Other type
+                            bonusValue = entity.value;
+                        }
+
+                        if (bonusValue !== 0) {
+                            // Match the key format used for skill entries: skillId|skillSubId|customSubtype
+                            // For bonuses, we use the appliesToId as skillId and appliesToSubId as skillSubId
+                            // customSubtype is null for bonuses from progressions
+                            const key = `${entity.appliesToId}|${entity.appliesToSubId ?? 'null'}|null`;
+                            let entry = skillEntryMap.get(key);
+                            // If entry doesn't exist, create it (for skills with bonuses but no ranks)
+                            if (!entry) {
+                                entry = {
+                                    skillId: entity.appliesToId,
+                                    skillSubId: entity.appliesToSubId ?? null,
+                                    customSubtype: null,
+                                    totalRanks: 0,
+                                    miscBonus: 0
+                                };
+                                skillEntryMap.set(key, entry);
+                            }
+                            entry.miscBonus += bonusValue;
+                        }
                     }
                 }
             }
@@ -747,26 +779,21 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             const ranks = Math.floor(entry.totalRanks);
             const total = ranks + abilityMod + entry.miscBonus;
 
-            // Check if class skill
-            let isClassSkill = false;
-            for (const [classId] of classLevelCounts.entries()) {
-                const classDetails = classDetailsMap.get(classId);
-                if (classDetails?.features) {
-                    const hasClassSkill = classDetails.features.some(prog =>
-                        prog.featureId === SpecialFeatureId.ClassSkill &&
-                        prog.entities?.some(entity =>
-                            entity.appliesTo === EntityAppliesToType.Skill &&
-                            entity.appliesToId === entry.skillId &&
-                            (entity.appliesToSubId === entry.skillSubId ||
-                                entity.appliesToSubId === -1 ||
-                                (entity.appliesToSubId === null && entry.skillSubId === null))
-                        )
-                    );
-                    if (hasClassSkill) {
-                        isClassSkill = true;
-                        break;
-                    }
-                }
+            // Check if class skill - use backend-provided classSkills if available, otherwise fall back to checking progressions
+            let isClassSkillValue = false;
+            if (_context?.classSkills) {
+                // Use backend-provided class skills array
+                isClassSkillValue = _context.classSkills.some(cs =>
+                    cs.skillId === entry.skillId &&
+                    (cs.skillSubId === entry.skillSubId || (cs.skillSubId === null && entry.skillSubId === null))
+                );
+            } else {
+                // Fallback to checking resolved progressions (for backward compatibility)
+                isClassSkillValue = isClassSkill(
+                    entry.skillId,
+                    entry.skillSubId,
+                    resolvedProgressions
+                );
             }
 
             // Format skill name
@@ -785,16 +812,22 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                 skillName = `${skillData.name} (${entry.customSubtype})`;
             }
 
+            // Format ability modifier as "STR +2" or "INT +3" for skills
+            const abilityAbbreviation = ABILITY_MAP[skillData.abilityId]?.abbreviation || '';
+            const abilityModString = abilityAbbreviation
+                ? `${abilityAbbreviation} ${this.formatModifier(abilityMod)}`
+                : this.formatBreakdownComponent(abilityMod);
+
             skills.push({
                 skillId: entry.skillId,
                 skillSubId: entry.skillSubId,
                 customSubtype: entry.customSubtype,
                 skillName,
                 total: this.formatModifier(total),
-                abilityMod: this.formatModifier(abilityMod),
+                abilityMod: abilityModString,
                 ranks: ranks.toString(),
-                misc: this.formatModifier(entry.miscBonus),
-                isClassSkill,
+                misc: this.formatBreakdownComponent(entry.miscBonus),
+                isClassSkill: isClassSkillValue,
                 breakdown: {
                     components: [
                         { source: 'Ability Modifier', value: abilityMod, type: BreakdownComponentType.base },
@@ -835,16 +868,22 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                         }
                     }
 
+                    // Format ability modifier as "STR +2" or "INT +3" for skills
+                    const abilityAbbreviation = ABILITY_MAP[skillData.abilityId]?.abbreviation || '';
+                    const abilityModString = abilityAbbreviation
+                        ? `${abilityAbbreviation} ${this.formatModifier(abilityMod)}`
+                        : this.formatBreakdownComponent(abilityMod);
+
                     skills.push({
                         skillId: skillData.id,
                         skillSubId: null,
                         customSubtype: null,
                         skillName: skillData.name,
                         total: this.formatModifier(abilityMod),
-                        abilityMod: this.formatModifier(abilityMod),
+                        abilityMod: abilityModString,
                         ranks: '0',
-                        misc: this.formatModifier(0),
-                        isClassSkill,
+                        misc: this.formatBreakdownComponent(0),
+                        isClassSkill: isClassSkill,
                         breakdown: {
                             components: [
                                 { source: 'Ability Modifier', value: abilityMod, type: BreakdownComponentType.base }
@@ -876,9 +915,9 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         return {
             fortitude: {
                 total: this.formatModifier(fortResult.value),
-                base: this.formatModifier(fortResult.breakdown.base.value),
-                abilityMod: this.formatModifier(fortResult.breakdown.abilityMod.value),
-                misc: this.formatModifier(fortResult.breakdown.feat.value + fortResult.breakdown.feature.value + fortResult.breakdown.item.value),
+                base: this.formatBreakdownComponent(fortResult.breakdown.base.value),
+                abilityMod: this.formatBreakdownComponent(fortResult.breakdown.abilityMod.value),
+                misc: this.formatBreakdownComponent(fortResult.breakdown.feat.value + fortResult.breakdown.feature.value + fortResult.breakdown.item.value),
                 breakdown: {
                     components: [
                         { source: 'Base', value: fortResult.breakdown.base.value, type: BreakdownComponentType.base },
@@ -889,9 +928,9 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             },
             reflex: {
                 total: this.formatModifier(refResult.value),
-                base: this.formatModifier(refResult.breakdown.base.value),
-                abilityMod: this.formatModifier(refResult.breakdown.abilityMod.value),
-                misc: this.formatModifier(refResult.breakdown.feat.value + refResult.breakdown.feature.value + refResult.breakdown.item.value),
+                base: this.formatBreakdownComponent(refResult.breakdown.base.value),
+                abilityMod: this.formatBreakdownComponent(refResult.breakdown.abilityMod.value),
+                misc: this.formatBreakdownComponent(refResult.breakdown.feat.value + refResult.breakdown.feature.value + refResult.breakdown.item.value),
                 breakdown: {
                     components: [
                         { source: 'Base', value: refResult.breakdown.base.value, type: BreakdownComponentType.base },
@@ -902,9 +941,9 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             },
             will: {
                 total: this.formatModifier(willResult.value),
-                base: this.formatModifier(willResult.breakdown.base.value),
-                abilityMod: this.formatModifier(willResult.breakdown.abilityMod.value),
-                misc: this.formatModifier(willResult.breakdown.feat.value + willResult.breakdown.feature.value + willResult.breakdown.item.value),
+                base: this.formatBreakdownComponent(willResult.breakdown.base.value),
+                abilityMod: this.formatBreakdownComponent(willResult.breakdown.abilityMod.value),
+                misc: this.formatBreakdownComponent(willResult.breakdown.feat.value + willResult.breakdown.feature.value + willResult.breakdown.item.value),
                 breakdown: {
                     components: [
                         { source: 'Base', value: willResult.breakdown.base.value, type: BreakdownComponentType.base },
@@ -932,24 +971,27 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             return charItem && (item.armor || item.weapon); // Include armor and potentially shields
         }).map(item => ({
             id: item.id,
-            armor: item.armor ? { bonus: item.armor.bonus } : undefined,
+            armor: item.armor ? {
+                bonus: item.armor.bonus,
+                category: item.armor.category // Include category to distinguish shields
+            } : undefined,
             weapon: item.weapon
         }));
 
         const acResult = CharacterCalculationService.getAC(character, resolvedProgressions, acItems, context?.featsMap);
-        const touchAC = CharacterCalculationService.getTouchAC(character, resolvedProgressions, context?.featsMap);
-        const flatFootedAC = CharacterCalculationService.getFlatFootedAC(character, resolvedProgressions, context?.featsMap);
+        const touchAC = CharacterCalculationService.getTouchAC(character, resolvedProgressions, acItems, context?.featsMap);
+        const flatFootedAC = CharacterCalculationService.getFlatFootedAC(character, resolvedProgressions, acItems, context?.featsMap);
 
         return {
             total: acResult.value.toString(),
             base: acResult.breakdown.base.value.toString(),
             armor: acResult.breakdown.armor.value.toString(),
             shield: acResult.breakdown.shield.value.toString(),
-            dex: this.formatModifier(acResult.breakdown.dex.value),
-            size: this.formatModifier(acResult.breakdown.size.value),
+            dex: this.formatBreakdownComponent(acResult.breakdown.dex.value),
+            size: this.formatBreakdownComponent(acResult.breakdown.size.value),
             natural: acResult.breakdown.natural.value.toString(),
             deflection: acResult.breakdown.deflection.value.toString(),
-            misc: this.formatModifier(acResult.breakdown.misc.value),
+            misc: this.formatBreakdownComponent(acResult.breakdown.misc.value),
             touchAC: touchAC.toString(),
             flatFootedAC: flatFootedAC.toString(),
             breakdown: {
@@ -1075,10 +1117,45 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
      * Format features using progressions
      */
     private formatFeatures(
+        character: CharacterWithAllDetailsResponse,
         resolvedProgressions: FeatureProgression[],
         context?: DisplayContext
     ): FormattedFeature[] {
         const features: FormattedFeature[] = [];
+
+        // Extract all featureChoices from character advancements
+        const allFeatureChoices: CharacterFeatureChoice[] = [];
+        for (const advancement of character.advancements) {
+            if (advancement.featureChoices) {
+                allFeatureChoices.push(...advancement.featureChoices);
+            }
+        }
+
+        // Build a map of choices keyed by progressionId-featureEntityId for quick lookup
+        const choiceMap = new Map<string, CharacterFeatureChoice>();
+        for (const choice of allFeatureChoices) {
+            const key = `${choice.progressionId}-${choice.featureEntityId}`;
+            choiceMap.set(key, choice);
+        }
+
+        // Build a map of domainId to domain name from resolvedProgressions
+        // This extracts domain information from domain-granted feature progressions
+        const domainMap = new Map<number, string>();
+        for (const prog of resolvedProgressions) {
+            if (prog.domainId) {
+                // Look for domain data in entities
+                if (prog.entities) {
+                    for (const ent of prog.entities) {
+                        if (ent.appliesTo === EntityAppliesToType.Domain &&
+                            ent.domain &&
+                            ent.domain.id === prog.domainId) {
+                            domainMap.set(prog.domainId, ent.domain.name);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
 
         // Use formatProgressions to format features
         const displayResult = this.formatProgressions(resolvedProgressions, context);
@@ -1092,17 +1169,223 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                 );
                 const featureId = progression?.featureId || 0;
 
+                // Check if this entity is a choice entity that has a selected value
+                let formattedValue = entity.formattedValue;
+                let breakdown = entity.breakdown;
+                if (entity.entity && progression) {
+                    const entityData = progression.entities?.find(e => e.id === entity.entity?.id);
+                    // Check both entityData.type and entity.entity.type to ensure we catch choice entities
+                    const isChoiceEntity = entityData && entityData.appliesTo &&
+                        (entityData.type === EntityType.Choice || entity.entity.type === EntityType.Choice);
+
+                    if (isChoiceEntity && entityData) {
+                        // This is a choice entity - check if there's a matching featureChoice
+                        const choiceKey = `${progression.id}-${entityData.id}`;
+                        const choice = choiceMap.get(choiceKey);
+
+                        if (choice && choice.appliesToId) {
+                            // Resolve the actual selected entity name
+                            const resolvedName = this.resolveChoiceEntityName(
+                                choice,
+                                entityData,
+                                resolvedProgressions,
+                                context,
+                                domainMap
+                            );
+                            if (resolvedName) {
+                                formattedValue = resolvedName;
+                            }
+                            // Always replace breakdown with choice-based breakdown when we have a choice
+                            breakdown = this.createChoiceBreakdown(
+                                choice,
+                                entityData,
+                                resolvedName || `ID: ${choice.appliesToId}`
+                            );
+                        }
+                    }
+                }
+
                 features.push({
                     featureId,
                     featureName: progression?.feature?.name || `Feature ${featureId}`,
-                    formattedValue: entity.formattedValue,
-                    breakdown: entity.breakdown,
+                    formattedValue,
+                    breakdown,
                     level: entity.level
                 });
             }
         }
 
         return features;
+    }
+
+    /**
+     * Create a breakdown component for a choice-based entity
+     */
+    private createChoiceBreakdown(
+        choice: CharacterFeatureChoice,
+        entity: FeatureEntity,
+        resolvedName: string
+    ): CalculationBreakdown {
+        // Determine the source description based on appliesTo type
+        let sourceDescription = 'Choice';
+        switch (entity.appliesTo) {
+            case EntityAppliesToType.Domain:
+                sourceDescription = 'Domain Choice';
+                break;
+            case EntityAppliesToType.Feat:
+                sourceDescription = 'Feat Choice';
+                break;
+            case EntityAppliesToType.Feature:
+                sourceDescription = 'Feature Choice';
+                break;
+            case EntityAppliesToType.Skill:
+                sourceDescription = 'Skill Choice';
+                break;
+            case EntityAppliesToType.Spell:
+                sourceDescription = 'Spell Choice';
+                break;
+            default:
+                sourceDescription = 'Choice';
+        }
+
+        return {
+            components: [
+                {
+                    source: sourceDescription,
+                    value: choice.appliesToId || 0,
+                    type: BreakdownComponentType.choice,
+                    description: resolvedName
+                }
+            ]
+        };
+    }
+
+    /**
+     * Resolve the actual entity name from a featureChoice
+     */
+    private resolveChoiceEntityName(
+        choice: CharacterFeatureChoice,
+        entity: FeatureEntity,
+        resolvedProgressions: FeatureProgression[],
+        context?: DisplayContext,
+        domainMap?: Map<number, string>
+    ): string | null {
+        if (!choice.appliesToId) {
+            return null;
+        }
+
+        switch (entity.appliesTo) {
+            case EntityAppliesToType.Domain: {
+                if (!choice.appliesToId) {
+                    return null;
+                }
+
+                // First, check the domainMap built from resolvedProgressions
+                if (domainMap && domainMap.has(choice.appliesToId)) {
+                    return domainMap.get(choice.appliesToId)!;
+                }
+
+                // Check if domain data is available in context
+                if (context?.domains) {
+                    const domain = context.domains.find(d => d.id === choice.appliesToId);
+                    if (domain) {
+                        return domain.name;
+                    }
+                }
+
+                // Look for progressions with matching domainId in resolvedProgressions
+                // These are the domain-granted features that were added when the domain was selected
+                const domainProgressions = resolvedProgressions.filter(
+                    prog => prog.domainId === choice.appliesToId
+                );
+
+                if (domainProgressions.length > 0) {
+                    // Try to get domain name from entities in domain progressions
+                    for (const prog of domainProgressions) {
+                        if (prog.entities) {
+                            for (const ent of prog.entities) {
+                                if (ent.appliesTo === EntityAppliesToType.Domain &&
+                                    ent.domain &&
+                                    ent.domain.id === choice.appliesToId) {
+                                    return ent.domain.name;
+                                }
+                            }
+                        }
+                    }
+                }
+                return null;
+            }
+
+            case EntityAppliesToType.Feat: {
+                // Check if feat data is available in context
+                if (context?.featsMap) {
+                    const feat = context.featsMap.get(choice.appliesToId);
+                    if (feat) {
+                        return feat.name;
+                    }
+                }
+                // Check if feat data is in resolved progressions
+                for (const prog of resolvedProgressions) {
+                    if (prog.entities) {
+                        for (const ent of prog.entities) {
+                            if (ent.appliesTo === EntityAppliesToType.Feat &&
+                                ent.feat &&
+                                ent.feat.id === choice.appliesToId) {
+                                return ent.feat.name;
+                            }
+                        }
+                    }
+                }
+                return null;
+            }
+
+            case EntityAppliesToType.Feature: {
+                // Check if feature data is in resolved progressions
+                for (const prog of resolvedProgressions) {
+                    if (prog.featureId === choice.appliesToId && prog.feature) {
+                        return prog.feature.name;
+                    }
+                    if (prog.entities) {
+                        for (const ent of prog.entities) {
+                            if (ent.appliesTo === EntityAppliesToType.Feature &&
+                                ent.feature &&
+                                ent.feature.id === choice.appliesToId) {
+                                return ent.feature.name;
+                            }
+                        }
+                    }
+                }
+                return null;
+            }
+
+            case EntityAppliesToType.Skill: {
+                // Use SKILL_LIST to get skill name
+                const skill = SKILL_LIST.find(s => s.id === choice.appliesToId);
+                if (skill) {
+                    return skill.name;
+                }
+                return null;
+            }
+
+            case EntityAppliesToType.Spell: {
+                // Check if spell data is in resolved progressions
+                for (const prog of resolvedProgressions) {
+                    if (prog.entities) {
+                        for (const ent of prog.entities) {
+                            if (ent.appliesTo === EntityAppliesToType.Spell &&
+                                ent.spell &&
+                                ent.spell.id === choice.appliesToId) {
+                                return ent.spell.name;
+                            }
+                        }
+                    }
+                }
+                return null;
+            }
+
+            default:
+                return null;
+        }
     }
 
     /**
@@ -1207,8 +1490,8 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
 
         return {
             total: this.formatModifier(result.value),
-            dexMod: this.formatModifier(result.breakdown.dexMod.value),
-            misc: this.formatModifier(result.breakdown.feat.value + result.breakdown.feature.value + result.breakdown.item.value),
+            dexMod: this.formatBreakdownComponent(result.breakdown.dexMod.value),
+            misc: this.formatBreakdownComponent(result.breakdown.feat.value + result.breakdown.feature.value + result.breakdown.item.value),
             breakdown: this._convertBreakdown(result.breakdown as unknown as Record<string, { value: number; source: string | null; sourceType?: string | null }>)
         };
     }
@@ -1290,10 +1573,10 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
 
         return {
             total: this.formatModifier(total),
-            bab: this.formatModifier(totalBAB),
-            strMod: this.formatModifier(strMod),
-            sizeMod: this.formatModifier(sizeMod),
-            misc: this.formatModifier(0), // TODO: Add misc bonuses from features/feats
+            bab: this.formatBreakdownComponent(totalBAB),
+            strMod: this.formatBreakdownComponent(strMod),
+            sizeMod: this.formatBreakdownComponent(sizeMod),
+            misc: this.formatBreakdownComponent(0), // TODO: Add misc bonuses from features/feats
             breakdown: {
                 components: [
                     { source: 'BAB', value: totalBAB, type: BreakdownComponentType.base },
@@ -1356,10 +1639,19 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     }
 
     /**
-     * Helper to format modifier as string
+     * Helper to format modifier as string (with + sign for positive values)
+     * Used for totals in breakdowns
      */
     private formatModifier(mod: number): string {
         return mod >= 0 ? `+${mod}` : `${mod}`;
+    }
+
+    /**
+     * Helper to format breakdown component as string (without + sign)
+     * Used for individual breakdown components since the PDF already has '+' symbols between boxes
+     */
+    private formatBreakdownComponent(value: number): string {
+        return value.toString();
     }
 }
 

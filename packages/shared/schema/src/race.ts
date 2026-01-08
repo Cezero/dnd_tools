@@ -2,9 +2,22 @@ import { z } from 'zod';
 import { QueryResponseSchema } from './query.js';
 import { SourceMapSchema } from './sourcebook.js';
 import { CreateFeatureProgressionSchema, FeatureProgressionSchema } from './feature.js';
+import { CharacterFeatureChoiceForEnrichmentSchema } from './class.js';
 
 export const RaceIdParamSchema = z.object({
     id: z.string().transform((val: string) => parseInt(val)),
+});
+
+// Query schema for optional character feature choices
+export const RaceIdQuerySchema = z.object({
+    characterFeatureChoices: z.string().optional().transform((val) => {
+        if (!val) return undefined;
+        try {
+            return JSON.parse(val) as z.infer<typeof CharacterFeatureChoiceForEnrichmentSchema>[];
+        } catch {
+            return undefined;
+        }
+    }),
 });
 
 export const BaseRaceSchema = z.object({
@@ -56,6 +69,7 @@ export const RaceCacheResponseSchema = QueryResponseSchema.extend({
 });
 
 export type RaceIdParamRequest = z.infer<typeof RaceIdParamSchema>;
+export type RaceIdQueryRequest = z.infer<typeof RaceIdQuerySchema>;
 export type CreateRaceRequest = z.infer<typeof CreateRaceSchema>;
 export type UpdateRaceRequest = z.infer<typeof UpdateRaceSchema>;
 export type RaceSummary = z.infer<typeof RaceSummarySchema>;

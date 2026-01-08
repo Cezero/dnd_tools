@@ -30,6 +30,12 @@ export const CharacterApi = {
         responseSchema: GetAllCharactersResponseSchema,
     }),
 
+    getAllCharactersAdmin: typedApi({
+        path: '/characters/admin/all',
+        method: 'GET',
+        responseSchema: GetAllCharactersResponseSchema,
+    }),
+
     getCharacterById: typedApi<undefined, typeof CharacterSchema, typeof CharacterIdParamSchema>({
         path: '/characters/:id',
         method: 'GET',

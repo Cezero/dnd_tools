@@ -18,7 +18,7 @@ import { FEAT_BENEFIT_TYPE_BY_ID, FEAT_TYPE_LIST, FeatBenefitType, EDITION_LIST,
 
 import { FeatBenefitEdit } from './FeatBenefitEdit';
 import { FeatPrereqEdit } from './FeatPrereqEdit';
-import { FeatOptions, getPrereqDisplayText } from './FeatUtil';
+import { FeatOptions, getPrereqDisplayText, formatFeatBenefit } from './FeatUtil';
 
 // Type definitions for the form state
 type FeatFormData = CreateFeatRequest | UpdateFeatRequest;
@@ -270,20 +270,20 @@ export function FeatEdit() {
                 setIsCreating(true);
                 const newFeat = await FeatQueryHooks.createFeat(formData as CreateFeatRequest);
                 setMessage('Feat created successfully!');
-                
+
                 // Invalidate feat-related queries
-                await queryClient.invalidateQueries({ 
-                    queryKey: FeatQueryHooks.getFeatByIdQueryKey(newFeat.id)
+                await queryClient.invalidateQueries({
+                    queryKey: FeatQueryHooks.getFeatByIdQueryKey(parseInt(newFeat.id, 10))
                 });
-                await queryClient.invalidateQueries({ 
+                await queryClient.invalidateQueries({
                     queryKey: ['feats'],
                     exact: false
                 });
-                await queryClient.invalidateQueries({ 
+                await queryClient.invalidateQueries({
                     queryKey: ['feats-cache'],
                     exact: false
                 });
-                
+
                 // Navigate based on where user came from
                 setTimeout(() => {
                     if (fromListParams) {
@@ -300,20 +300,20 @@ export function FeatEdit() {
                     pathParams: { id: parseInt(id) }
                 });
                 setMessage('Feat updated successfully!');
-                
+
                 // Invalidate feat-related queries
-                await queryClient.invalidateQueries({ 
+                await queryClient.invalidateQueries({
                     queryKey: FeatQueryHooks.getFeatByIdQueryKey(parseInt(id))
                 });
-                await queryClient.invalidateQueries({ 
+                await queryClient.invalidateQueries({
                     queryKey: ['feats'],
                     exact: false
                 });
-                await queryClient.invalidateQueries({ 
+                await queryClient.invalidateQueries({
                     queryKey: ['feats-cache'],
                     exact: false
                 });
-                
+
                 // Navigate based on where user came from
                 setTimeout(() => {
                     if (fromListParams) {
@@ -482,7 +482,7 @@ export function FeatEdit() {
                                                 onClick={() => HandleEditBenefitClick(benefit)}
                                                 className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-600"
                                             >
-                                                {FEAT_BENEFIT_TYPE_BY_ID[benefit.typeId]}: {FeatOptions(benefit.typeId).find(option => option.id === benefit.referenceId)?.name || ''} {benefit.typeId !== FeatBenefitType.PROFICIENCY && benefit.amount && benefit.amount > 0 ? `+${benefit.amount}` : benefit.typeId !== FeatBenefitType.PROFICIENCY && benefit.amount ? `${benefit.amount}` : ''}
+                                                {formatFeatBenefit(benefit)}
                                             </button>
                                             <button
                                                 type="button"

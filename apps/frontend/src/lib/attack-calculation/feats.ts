@@ -1,6 +1,6 @@
 import type { CharacterWithAllDetailsResponse } from '@shared/schema';
 import type { FeatureProgression } from '@shared/schema';
-import { ResolvedFeatureService } from '@/features/character/ResolvedFeatureService';
+import { getGrantedFeats } from '@/features/character/featureProgressionUtils';
 import { getAllCharacterFeats } from '@/lib/character-calculation/core/featAccessor';
 
 /**
@@ -14,7 +14,7 @@ export function hasFeat(
     featName: string
 ): boolean {
     // Check granted feats from resolved progressions
-    const grantedFeats = ResolvedFeatureService.getGrantedFeats(resolvedProgressions);
+    const grantedFeats = getGrantedFeats(resolvedProgressions);
     const hasGrantedFeat = grantedFeats.some(entity => 
         entity.feat?.name.toLowerCase() === featName.toLowerCase()
     );

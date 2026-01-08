@@ -1,5 +1,5 @@
 import { PrismaClient } from '@shared/prisma-client';
-import type { SpellIdParamRequest, UpdateSpellRequest, GetSpellResponse, GetAllSpellsResponse, ClassSpellListResponse, ClassSpellListEntry, SpellCacheResponse } from '@shared/schema';
+import type { SpellIdParamRequest, UpdateSpellRequest, GetSpellResponse, GetAllSpellsResponse, ClassSpellListResponse, ClassSpellListEntry, SpellCacheResponse, Spell } from '@shared/schema';
 import { isVariantId, extractBaseClassId } from '@shared/utils';
 
 import type { SpellService } from './types';
@@ -248,5 +248,78 @@ export const spellService: SpellService = {
             total: spells.length,
             results: spells,
         };
+    },
+
+    async getDomainSpells(domainIds: number[], characterLevel: number, classId: number): Promise<Array<{ domainId: number; domainName: string; spell: Spell; spellLevel: number; classSpellLevel: number | null }>> {
+        if (domainIds.length === 0) {
+            return [];
+        }
+
+        // Get domain spells where spellLevel <= characterLevel
+        const domainSpells = await prisma.domainSpell.findMany({
+            where: {
+                domainId: { in: domainIds },
+                spellLevel: { lte: characterLevel }
+            },
+            include: {
+                domain: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                },
+                spell: {
+                    include: {
+                        levelMapping: {
+                            where: { classId },
+                            select: {
+                                classId: true,
+                                level: true
+                            }
+                        },
+                        descriptorIds: {
+                            select: {
+                                descriptorId: true
+                            }
+                        },
+                        schoolIds: {
+                            select: {
+                                schoolId: true
+                            }
+                        },
+                        subSchoolIds: {
+                            select: {
+                                subSchoolId: true
+                            }
+                        },
+                        componentIds: {
+                            select: {
+                                componentId: true
+                            }
+                        },
+                        sourceBookInfo: {
+                            select: {
+                                sourceBookId: true,
+                                pageNumber: true,
+                                sourceBook: {
+                                    select: {
+                                        id: true,
+                                        abbreviation: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        return domainSpells.map(ds => ({
+            domainId: ds.domainId,
+            domainName: ds.domain.name,
+            spell: ds.spell,
+            spellLevel: ds.spellLevel,
+            classSpellLevel: ds.spell.levelMapping[0]?.level ?? null
+        }));
     }
 };

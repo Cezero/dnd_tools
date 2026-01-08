@@ -17,3 +17,4 @@ Organize imports in the following order:
 - Imports starting with @shared/ or @/ are considered internal/aliased and should come after external packages but before parent/sibling/index imports.
 - Alphabetize alias imports with respect to each other and with other internal imports.
 - Type-only imports follow the same order and grouping as value imports.
+- no inline imports. all imports must be declared at the top of the file

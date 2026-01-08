@@ -15,6 +15,7 @@ export * from './src/FormatterData';
 export * from './src/FormulaDefinitions';
 export * from './src/GenericList';
 export * from './src/DeityData';
+export * from './src/CompanionData';
 
 // Export DiceData with explicit names to avoid conflicts
 export * from './src/DiceData';
@@ -34,3 +35,4 @@ export * as FormatterData from './src/FormatterData';
 export * as FormulaDefinitions from './src/FormulaDefinitions';
 export * as DeityData from './src/DeityData';
 export * as AttackDefinitionData from './src/AttackDefinitionData';
+export * as CompanionData from './src/CompanionData';

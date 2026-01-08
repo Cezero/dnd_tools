@@ -1,5 +1,6 @@
 import {
     ClassIdParamSchema,
+    ClassIdQuerySchema,
     CreateClassSchema,
     UpdateClassSchema,
     BaseClassSchema,
@@ -68,7 +69,16 @@ export const ClassQueryHooks = {
 
     // Add imperative methods
     getClasses: (data: unknown) => classesConfig.fetch({ requestData: data }),
-    getClassById: (classId: number) => classByIdConfig.fetch({ pathParams: { id: classId } }),
+    getClassById: (classId: number, characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>) => {
+        const queryParams: { characterFeatureChoices?: string } = {};
+        if (characterFeatureChoices && characterFeatureChoices.length > 0) {
+            queryParams.characterFeatureChoices = JSON.stringify(characterFeatureChoices);
+        }
+        return classByIdConfig.fetch({
+            pathParams: { id: classId },
+            requestData: Object.keys(queryParams).length > 0 ? queryParams : undefined
+        });
+    },
     createClass: (data: unknown) => createClassConfig.mutate({ requestData: data }),
     updateClass: (classId: number, data: unknown) => updateClassConfig.mutate({
         requestData: data,
@@ -80,7 +90,16 @@ export const ClassQueryHooks = {
 
     // Expose query functions for advanced usage
     getClassesQueryFn: classesConfig.queryFn,
-    getClassByIdQueryFn: classByIdConfig.queryFn,
+    getClassByIdQueryFn: (params: { pathParams: { id: number }; queryParams?: { characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }> } }) => {
+        const queryData: { characterFeatureChoices?: string } = {};
+        if (params.queryParams?.characterFeatureChoices && params.queryParams.characterFeatureChoices.length > 0) {
+            queryData.characterFeatureChoices = JSON.stringify(params.queryParams.characterFeatureChoices);
+        }
+        return classByIdConfig.queryFn({
+            pathParams: params.pathParams,
+            requestData: Object.keys(queryData).length > 0 ? queryData : undefined
+        });
+    },
     getClassesQueryKey: (params?: unknown) => classesConfig.queryKeyBuilder(params),
     getClassByIdQueryKey: (classId: number) => classByIdConfig.queryKeyBuilder({ pathParams: { id: classId } }),
 };

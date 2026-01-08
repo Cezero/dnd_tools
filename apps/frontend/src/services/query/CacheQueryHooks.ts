@@ -6,6 +6,7 @@ import {
     FeatCacheResponseSchema,
     DeityCacheResponseSchema,
     DomainCacheResponseSchema,
+    MonsterCacheResponseSchema,
     FeatQuerySchema,
 } from '@shared/schema';
 
@@ -69,6 +70,14 @@ const domainsCacheConfig = createQueryHooks({
     queryKeyBuilder: () => ['domains-cache'],
 });
 
+const monstersCacheConfig = createQueryHooks({
+    path: '/monsters/cache',
+    method: 'GET',
+    responseSchema: MonsterCacheResponseSchema,
+    queryKey: 'monsters-cache',
+    queryKeyBuilder: () => ['monsters-cache'],
+});
+
 export const CacheQueryHooks = {
     // Keep existing hooks for backward compatibility during transition
     useClassesCache: classesCacheConfig.useQuery,
@@ -78,6 +87,7 @@ export const CacheQueryHooks = {
     useFeatsCache: featsCacheConfig.useQuery,
     useDeitiesCache: deitiesCacheConfig.useQuery,
     useDomainsCache: domainsCacheConfig.useQuery,
+    useMonstersCache: monstersCacheConfig.useQuery,
 
     // Add imperative methods
     getClassesCache: (params?: unknown) => classesCacheConfig.fetch(params),
@@ -87,6 +97,7 @@ export const CacheQueryHooks = {
     getFeatsCache: (data: unknown) => featsCacheConfig.fetch({ requestData: data }),
     getDeitiesCache: (params?: unknown) => deitiesCacheConfig.fetch(params),
     getDomainsCache: (params?: unknown) => domainsCacheConfig.fetch(params),
+    getMonstersCache: (params?: unknown) => monstersCacheConfig.fetch(params),
 
     // Expose query functions for advanced usage
     getClassesCacheQueryFn: classesCacheConfig.queryFn,
@@ -96,4 +107,5 @@ export const CacheQueryHooks = {
     getFeatsCacheQueryFn: featsCacheConfig.queryFn,
     getDeitiesCacheQueryFn: deitiesCacheConfig.queryFn,
     getDomainsCacheQueryFn: domainsCacheConfig.queryFn,
+    getMonstersCacheQueryFn: monstersCacheConfig.queryFn,
 };

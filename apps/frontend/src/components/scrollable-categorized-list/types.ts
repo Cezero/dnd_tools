@@ -75,8 +75,8 @@ export interface ScrollableCategorizedListProps<T> {
     columns: ColumnDef<T, unknown>[];
 
     // Action button configuration
-    actionButtonLabel: string;
-    onAction: (item: T) => void;
+    actionButtonLabel?: string;
+    onAction?: (item: T) => void;
     isActionDisabled?: (item: T) => boolean;
     allowMultiple?: boolean; // If false, items can only be obtained once
 

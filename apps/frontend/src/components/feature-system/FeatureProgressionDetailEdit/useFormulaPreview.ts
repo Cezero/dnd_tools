@@ -34,7 +34,8 @@ export function useFormulaPreview() {
                     id: 0,
                     name: featureName || 'Preview Feature',
                     description: '',
-                    slug: 'preview-feature'
+                    slug: 'preview-feature',
+                    displayInCharacterSheet: true
                 },
                 entities: [item],
                 effects: []

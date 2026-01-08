@@ -43,4 +43,14 @@ export {
 export {
     SpellSearchInput,
     type SpellSearchInputProps,
-} from './SpellSearchInput'; 
+} from './SpellSearchInput';
+
+export {
+    GenericSearchInput,
+    type SearchableItem,
+} from './GenericSearchInput';
+
+export {
+    MonsterSearchInput,
+    type MonsterSearchInputProps,
+} from './MonsterSearchInput'; 

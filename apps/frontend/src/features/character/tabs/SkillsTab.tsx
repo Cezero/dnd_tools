@@ -1,5 +1,5 @@
 import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
-import React, { useMemo, useCallback, useState, useRef } from 'react';
+import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react';
 
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { AnalogSkillService } from '@/features/character';
@@ -24,6 +24,7 @@ import {
     DisplayType
 } from '@shared/static-data';
 import { buildFormulaParams } from '@/lib/formatters/formula-utils';
+import type { BreakdownComponent } from '@/lib/formatters/types';
 
 export function SkillsTab({
     state,
@@ -31,7 +32,8 @@ export function SkillsTab({
     resolvedData,
     isLoading: _isLoading,
     formattedCharacter,
-    sharedData
+    sharedData,
+    handleSkillRankUpdate
 }: TabComponentProps): React.JSX.Element {
     // Use shared data instead of fetching
     const classDetails = useMemo(() => ({
@@ -42,17 +44,29 @@ export function SkillsTab({
 
     // Extract data from centralized state
     const { skillRanks, abilityScores, level } = state;
-    const { classSkills, skillBonuses } = resolvedData;
+    const { classSkills } = resolvedData;
     const isNewCharacter = level === 1; // If level is 1, we're creating a new character
+    
+    // Use formatted character skills from display strategy (includes breakdown and all bonuses)
+    const formattedSkills = formattedCharacter?.skills || [];
 
-    // Check if a skill is a class skill
+    // Check if a skill is a class skill using formatted character data
     const isSkillClassSkill = useCallback((skillId: number, skillSubId?: number | null): boolean => {
-        // Check if the specific skill and subtype combination is a class skill
+        // Use formatted character data which has correctly calculated class skill status
+        const formattedSkill = formattedSkills.find(skill =>
+            skill.skillId === skillId &&
+            (skill.skillSubId === skillSubId || (skill.skillSubId === null && skillSubId === null))
+        );
+        if (formattedSkill) {
+            return formattedSkill.isClassSkill;
+        }
+        
+        // Fallback to resolvedData.classSkills if formatted character doesn't have the skill
         return classSkills.some(skill =>
             skill.skillId === skillId &&
             (skill.skillSubId === skillSubId || skill.skillSubId === null)
         );
-    }, [classSkills]);
+    }, [formattedSkills, classSkills]);
 
     // Get ability score
     const getAbilityScore = useCallback((abilityId: number): number => {
@@ -70,8 +84,20 @@ export function SkillsTab({
         return skillEntry?.pointsSpent || 0;
     };
 
-    // Get skill ranks from state (for display)
+    // Get skill ranks from formatted character (for display)
     const getSkillRanks = (skillId: number, skillSubId?: number | null, customSubtype?: string | null): number => {
+        // Use formatted character data which has correctly calculated ranks
+        const formattedSkill = getFormattedSkill(skillId, skillSubId || null, customSubtype || null);
+        if (formattedSkill) {
+            // Parse the ranks string (e.g., "4" -> 4, "2.5" -> 2.5)
+            const ranksStr = formattedSkill.ranks.trim();
+            if (ranksStr === '' || ranksStr === '-') return 0;
+            const parsed = parseFloat(ranksStr);
+            return isNaN(parsed) ? 0 : parsed;
+        }
+
+        // Fallback to manual calculation if not found in formatted character
+        // (shouldn't happen, but keep for safety)
         const pointsSpent = getSkillPointsSpent(skillId, skillSubId, customSubtype);
 
         // For Craft/Knowledge skills without subtype, we can't determine class skill status yet
@@ -325,6 +351,13 @@ export function SkillsTab({
                 payload: { skillRanks: updatedSkillRanks }
             });
 
+            // Sync to backend resolution API
+            if (handleSkillRankUpdate) {
+                handleSkillRankUpdate(skillId, skillSubId || null, customSubtype || null, pointsNeeded).catch(error => {
+                    console.error('Failed to sync skill rank update to backend:', error);
+                });
+            }
+
             return; // Exit early since we've handled this case
         }
 
@@ -387,6 +420,27 @@ export function SkillsTab({
             type: CharacterEditStateUpdateType.SET_SKILL_RANKS,
             payload: { skillRanks: updatedSkillRanks }
         });
+
+        // Sync to backend resolution API
+        if (handleSkillRankUpdate) {
+            // Find the updated skill entry to get the pointsSpent value
+            const updatedEntry = updatedSkillRanks.find(s =>
+                s.skillId === skillId &&
+                s.skillSubId === skillSubId &&
+                s.customSubtype === customSubtype
+            );
+            
+            if (updatedEntry) {
+                handleSkillRankUpdate(skillId, skillSubId || null, customSubtype || null, updatedEntry.pointsSpent).catch(error => {
+                    console.error('Failed to sync skill rank update to backend:', error);
+                });
+            } else if (newRanks === 0) {
+                // Skill was removed, sync with 0 points
+                handleSkillRankUpdate(skillId, skillSubId || null, customSubtype || null, 0).catch(error => {
+                    console.error('Failed to sync skill rank removal to backend:', error);
+                });
+            }
+        }
     };
 
     // Handle skill increment/decrement
@@ -407,15 +461,17 @@ export function SkillsTab({
     };
 
     // Get feature bonuses breakdown for a skill
-    const _getSkillFeatureBonuses = (skillId: number, skillSubId?: number | null): Array<{ source: string; bonus: number }> => {
-        return skillBonuses.filter(bonus =>
-            bonus.skillId === skillId &&
-            (bonus.skillSubId === skillSubId || bonus.skillSubId === null)
-        );
+    // Get formatted skill data from display strategy
+    const getFormattedSkill = (skillId: number, skillSubId?: number | null, customSubtype?: string | null): import('@/lib/formatters/types').FormattedSkill | null => {
+        return formattedSkills.find(skill =>
+            skill.skillId === skillId &&
+            (skill.skillSubId === skillSubId || (skill.skillSubId === null && skillSubId === null)) &&
+            (skill.customSubtype === customSubtype || (skill.customSubtype === null && customSubtype === null))
+        ) || null;
     };
 
-    // Get total skill bonus (ranks + ability modifier + feature bonuses)
-    const getSkillTotal = (skillId: number, skillSubId?: number | null, _customSubtype?: string | null): number | null => {
+    // Get total skill bonus (ranks + ability modifier + feature bonuses) from formatted character
+    const getSkillTotal = (skillId: number, skillSubId?: number | null, customSubtype?: string | null): number | null => {
         const skill = SKILL_LIST.find(s => s.id === skillId);
         if (!skill) return 0;
 
@@ -427,19 +483,59 @@ export function SkillsTab({
         // Special case: skills with abilityId 0 (like Speak Language) have no total
         if (skill.abilityId === 0) return null;
 
-        // Calculate base total (ranks + ability modifier)
+        // Get formatted skill from display strategy
+        const formattedSkill = getFormattedSkill(skillId, skillSubId || null, customSubtype || null);
+        if (!formattedSkill) {
+            // Fallback to manual calculation if not found in formatted character
+            const abilityScore = getAbilityScore(skill.abilityId);
+            const abilityModifier = GetAbilityModifier(abilityScore);
+            const ranks = getSkillRanks(skillId, skillSubId, customSubtype);
+            return ranks + abilityModifier;
+        }
+
+        // Parse the formatted total (e.g., "+5" -> 5, "-2" -> -2)
+        const totalStr = formattedSkill.total.trim();
+        if (totalStr === '' || totalStr === '-') return null;
+        const parsed = parseInt(totalStr.replace(/[^-\d]/g, ''), 10);
+        return isNaN(parsed) ? null : parsed;
+    };
+    
+    // Get misc bonus from formatted character breakdown
+    const getMiscBonus = (skillId: number, skillSubId?: number | null, customSubtype?: string | null): number => {
+        const formattedSkill = getFormattedSkill(skillId, skillSubId || null, customSubtype || null);
+        if (!formattedSkill) return 0;
+        
+        // Parse the formatted misc bonus (e.g., "+3" -> 3, "-1" -> -1)
+        const miscStr = formattedSkill.misc.trim();
+        if (miscStr === '' || miscStr === '-') return 0;
+        const parsed = parseInt(miscStr.replace(/[^-\d]/g, ''), 10);
+        return isNaN(parsed) ? 0 : parsed;
+    };
+    
+    // Get ability modifier string from formatted character
+    const getAbilityModString = (skillId: number, skillSubId?: number | null, customSubtype?: string | null): string => {
+        const formattedSkill = getFormattedSkill(skillId, skillSubId || null, customSubtype || null);
+        if (formattedSkill) {
+            return formattedSkill.abilityMod;
+        }
+        
+        // Fallback to manual calculation
+        const skill = SKILL_LIST.find(s => s.id === skillId);
+        if (!skill || skill.abilityId === 0) return '';
         const abilityScore = getAbilityScore(skill.abilityId);
-        const abilityModifier = GetAbilityModifier(abilityScore);
-        const ranks = getSkillRanks(skillId, skillSubId, _customSubtype);
-        const baseTotal = ranks + abilityModifier;
-
-        // Add feature bonuses from state
-        const skillBonus = skillBonuses.find(bonus =>
-            bonus.skillId === skillId &&
-            (bonus.skillSubId === skillSubId || bonus.skillSubId === null)
-        );
-
-        return baseTotal + (skillBonus?.bonus || 0);
+        return `${ABILITY_MAP[skill.abilityId]?.abbreviation} ${GetAbilityModifierString(abilityScore)}`;
+    };
+    
+    // Get breakdown components from formatted character
+    const getBreakdownComponents = (skillId: number, skillSubId?: number | null, customSubtype?: string | null): Array<{ source: string; value: number }> => {
+        const formattedSkill = getFormattedSkill(skillId, skillSubId || null, customSubtype || null);
+        if (!formattedSkill || !formattedSkill.breakdown) return [];
+        
+        // Extract all breakdown components (they're already filtered to base type in the formatter)
+        return formattedSkill.breakdown.components.map(comp => ({
+            source: comp.source,
+            value: comp.value
+        }));
     };
 
     // Format skill ranks display (handle half ranks)
@@ -566,6 +662,18 @@ export function SkillsTab({
         const [showSubtypeSelect, setShowSubtypeSelect] = useState(false);
         const inputRef = useRef<HTMLInputElement>(null);
         const skillNameRef = useRef<HTMLDivElement>(null);
+        
+        // Local state for rank input value while editing - initialize with current ranks
+        const [localRankValue, setLocalRankValue] = useState<string>(() => {
+            return getSkillRanks(skillId, skillSubId, customSubtype).toString();
+        });
+        const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+        
+        // Update local value when ranks change externally (e.g., from chevron buttons)
+        useEffect(() => {
+            const newRanks = getSkillRanks(skillId, skillSubId, customSubtype);
+            setLocalRankValue(newRanks.toString());
+        }, [skillId, skillSubId, customSubtype]);
 
         // Focus input when editing starts
         React.useEffect(() => {
@@ -609,15 +717,69 @@ export function SkillsTab({
         if (!skill) return <></>;
 
         const isAnalogSkill = AnalogSkillService.isAnalogSkill(skillId);
-        const isClassSkill = isSkillClassSkill(skillId, skillSubId);
+        const formattedSkill = getFormattedSkill(skillId, skillSubId || null, customSubtype || null);
+        // Use isClassSkill from formatted character if available, otherwise fallback to manual check
+        const isClassSkill = formattedSkill?.isClassSkill ?? isSkillClassSkill(skillId, skillSubId);
         const maxRanks = getMaxRanks(skillId, skillSubId);
         const ranks = getSkillRanks(skillId, skillSubId, customSubtype);
         const total = getSkillTotal(skillId, skillSubId, customSubtype);
-        const featureBonuses = skillBonuses.filter(bonus =>
-            bonus.skillId === skillId &&
-            (bonus.skillSubId === skillSubId || bonus.skillSubId === null)
-        );
-        const totalFeatureBonus = featureBonuses.reduce((sum, bonus) => sum + bonus.bonus, 0);
+        const miscBonus = getMiscBonus(skillId, skillSubId, customSubtype);
+        const breakdownComponents = getBreakdownComponents(skillId, skillSubId, customSubtype);
+        
+        // Apply rank change (called on blur, enter, or after debounce)
+        const applyRankChange = useCallback((value: string) => {
+            const numValue = parseFloat(value) || 0;
+            handleSkillChange(skillId, numValue, skillSubId, customSubtype, entryId);
+        }, [skillId, skillSubId, customSubtype, entryId]);
+        
+        // Handle input change with debouncing
+        const handleRankInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+            const value = e.target.value;
+            setLocalRankValue(value);
+            
+            // Clear existing timeout
+            if (debounceTimeoutRef.current) {
+                clearTimeout(debounceTimeoutRef.current);
+            }
+            
+            // Set new timeout to apply change after 500ms of inactivity
+            debounceTimeoutRef.current = setTimeout(() => {
+                applyRankChange(value);
+            }, 500);
+        }, [applyRankChange]);
+        
+        // Handle blur - apply change immediately
+        const handleRankInputBlur = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
+            // Clear timeout since we're applying immediately
+            if (debounceTimeoutRef.current) {
+                clearTimeout(debounceTimeoutRef.current);
+                debounceTimeoutRef.current = null;
+            }
+            applyRankChange(e.target.value);
+        }, [applyRankChange]);
+        
+        // Handle Enter key - apply change immediately
+        const handleRankInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                // Clear timeout since we're applying immediately
+                if (debounceTimeoutRef.current) {
+                    clearTimeout(debounceTimeoutRef.current);
+                    debounceTimeoutRef.current = null;
+                }
+                applyRankChange(e.currentTarget.value);
+                e.currentTarget.blur();
+            }
+        }, [applyRankChange]);
+        
+        // Cleanup timeout on unmount
+        useEffect(() => {
+            return () => {
+                if (debounceTimeoutRef.current) {
+                    clearTimeout(debounceTimeoutRef.current);
+                }
+            };
+        }, []);
 
         // Get skill name with subtype
         const skillName = getSkillSubtypeName(skillId, skillSubId, customSubtype);
@@ -828,8 +990,10 @@ export function SkillsTab({
                                     step="0.5"
                                     min="0"
                                     max={maxRanks}
-                                    value={ranks}
-                                    onChange={(e) => handleSkillChange(skillId, parseFloat(e.target.value) || 0, skillSubId, customSubtype, entryId)}
+                                    value={localRankValue}
+                                    onChange={handleRankInputChange}
+                                    onBlur={handleRankInputBlur}
+                                    onKeyDown={handleRankInputKeyDown}
                                     className={`w-12 py-1 text-sm border rounded text-center bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${isClassSkill
                                         ? 'border-blue-300 dark:border-blue-600'
                                         : 'border-gray-300 dark:border-gray-600'
@@ -855,16 +1019,19 @@ export function SkillsTab({
                         )}
                     </div>
                     <div className="text-xs">
-                        {skill.abilityId === 0 ? '' : `${ABILITY_MAP[skill.abilityId]?.abbreviation} ${GetAbilityModifierString(getAbilityScore(skill.abilityId))}`}
+                        {getAbilityModString(skillId, skillSubId, customSubtype)}
                     </div>
                     <div className="text-xs text-center">
-                        {totalFeatureBonus !== 0 ? (
+                        {miscBonus !== 0 ? (
                             <div
                                 className="cursor-help"
-                                title={featureBonuses.map(bonus => `${bonus.source}: ${bonus.bonus >= 0 ? '+' : ''}${bonus.bonus}`).join(', ')}
+                                title={breakdownComponents
+                                    .filter(comp => comp.source === 'Misc Bonus')
+                                    .map(comp => `${comp.source}: ${comp.value >= 0 ? '+' : ''}${comp.value}`)
+                                    .join(', ')}
                             >
-                                <span className={totalFeatureBonus > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                                    {totalFeatureBonus >= 0 ? `+${totalFeatureBonus}` : totalFeatureBonus.toString()}
+                                <span className={miscBonus > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                                    {miscBonus >= 0 ? `+${miscBonus}` : miscBonus.toString()}
                                 </span>
                             </div>
                         ) : (
@@ -874,16 +1041,9 @@ export function SkillsTab({
                     <div
                         className={`w-12 text-sm font-medium rounded px-2 py-1 text-center cursor-help ${total === null ? '' : 'border border-gray-300 dark:border-gray-600'}`}
                         title={total !== null ? (() => {
-                            const abilityScore = getAbilityScore(skill.abilityId);
-                            const abilityModifierString = GetAbilityModifierString(abilityScore);
-                            const abilityName = ABILITY_MAP[skill.abilityId]?.abbreviation || 'Unknown';
-
-                            const breakdown = [
-                                `Ranks: ${ranks}`,
-                                `${abilityName}: ${abilityModifierString}`,
-                                ...featureBonuses.map(bonus => `${bonus.source}: ${bonus.bonus >= 0 ? '+' : ''}${bonus.bonus}`)
-                            ];
-
+                            const breakdown = breakdownComponents.map(comp => 
+                                `${comp.source}: ${comp.value >= 0 ? '+' : ''}${comp.value}`
+                            );
                             return `${breakdown.join(', ')} = ${total >= 0 ? '+' : ''}${total}`;
                         })() : ''}
                     >

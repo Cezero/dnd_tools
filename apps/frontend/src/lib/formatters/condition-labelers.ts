@@ -69,3 +69,10 @@ export function environmentConditionLabeler(formattedValues: string, _entity?: C
 export function spellSchoolSpellDCLabeler(formattedValues: string, _entity?: CalculatedEntity): string {
     return `${formattedValues} spell`;
 }
+
+/**
+ * Lighting condition labeler
+ */
+export function lightingConditionLabeler(formattedValues: string, _entity?: CalculatedEntity): string {
+    return `in ${formattedValues}`;
+}

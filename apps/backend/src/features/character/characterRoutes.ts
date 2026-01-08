@@ -16,19 +16,27 @@ import {
     UpsertCharacterAbilityScoresSchema,
     // NEW: Character disallowed source schemas
     CreateCharacterDisallowedSourceSchema,
+    RemoveDisallowedSourceParamSchema,
     // NEW: Character attack definition schemas
     CreateCharacterAttackDefinitionSchema,
     UpdateCharacterAttackDefinitionSchema,
+    CharacterAttackIdParamSchema,
+    ReorderAttackDefinitionsSchema,
+    // NEW: Spell selection schemas
+    AddSpellKnownRequestSchema,
+    RemoveSpellKnownRequestSchema,
+    CharacterSpellSelectionParamSchema,
 } from '@shared/schema';
-import { z } from 'zod';
 
 import {
     GetAllCharacters,
+    GetAllCharactersAdmin,
     GetCharacterById,
     GetCharacterWithAllDetails,
     CreateCharacter,
     DeleteCharacter,
     SaveCharacter,
+    UpdateCharacter,
     // New controller methods
     CreateAdvancement,
     UpdateAdvancement,
@@ -54,13 +62,18 @@ import {
     UpdateCharacterAttackDefinition,
     DeleteCharacterAttackDefinition,
     ReorderCharacterAttackDefinitions,
+    // NEW: Spell selection controllers
+    GetCharacterSpellSelection,
+    AddSpellKnown,
+    RemoveSpellKnown,
 } from './characterController';
-import { requireAuth } from '../../middleware/authMiddleware.js';
+import { requireAuth, requireAdmin } from '../../middleware/authMiddleware.js';
 
 const { router: CharacterRouter, get, post, put, delete: deleteRoute } = buildValidatedRouter();
 
 // Character Read Routes
 get('/', requireAuth, {}, GetAllCharacters);
+get('/admin/all', requireAuth, requireAdmin, {}, GetAllCharactersAdmin);
 get('/:id', requireAuth, { params: CharacterIdParamSchema }, GetCharacterById);
 get('/:id/details', requireAuth, { params: CharacterIdParamSchema }, GetCharacterWithAllDetails);
 
@@ -68,7 +81,7 @@ get('/:id/details', requireAuth, { params: CharacterIdParamSchema }, GetCharacte
 post('/', requireAuth, { body: CreateCharacterSchema }, CreateCharacter);
 // Unified save endpoint - handles character + ability scores + advancement in one transaction
 post('/save', requireAuth, { body: SaveCharacterSchema }, SaveCharacter);
-put('/save/:id', requireAuth, { params: CharacterIdParamSchema, body: SaveCharacterSchema }, SaveCharacter);
+put('/save/:id', requireAuth, { params: CharacterIdParamSchema, body: SaveCharacterSchema }, UpdateCharacter);
 deleteRoute('/:id', requireAuth, { params: CharacterIdParamSchema }, DeleteCharacter);
 
 // Character Advancement Routes
@@ -94,13 +107,18 @@ put('/:id/abilities', requireAuth, { params: CharacterIdParamSchema, body: Upser
 // NEW: Character Disallowed Sources Routes
 get('/:id/disallowed-sources', requireAuth, { params: CharacterIdParamSchema }, GetDisallowedSources);
 post('/disallowed-sources', requireAuth, { body: CreateCharacterDisallowedSourceSchema }, AddDisallowedSource);
-deleteRoute('/:id/disallowed-sources/:sourceBookId', requireAuth, { params: CharacterIdParamSchema }, RemoveDisallowedSource);
+deleteRoute('/:id/disallowed-sources/:sourceBookId', requireAuth, { params: RemoveDisallowedSourceParamSchema }, RemoveDisallowedSource);
 
 // NEW: Character Attack Definition Routes
 get('/:id/attack-definitions', requireAuth, { params: CharacterIdParamSchema }, GetCharacterAttackDefinitions);
 post('/:id/attack-definitions', requireAuth, { params: CharacterIdParamSchema, body: CreateCharacterAttackDefinitionSchema }, CreateCharacterAttackDefinition);
-put('/:id/attack-definitions/:attackId', requireAuth, { params: CharacterIdParamSchema.extend({ attackId: z.string() }), body: UpdateCharacterAttackDefinitionSchema }, UpdateCharacterAttackDefinition);
-deleteRoute('/:id/attack-definitions/:attackId', requireAuth, { params: CharacterIdParamSchema.extend({ attackId: z.string() }) }, DeleteCharacterAttackDefinition);
-put('/:id/attack-definitions/reorder', requireAuth, { params: CharacterIdParamSchema, body: z.object({ attackDefinitionIds: z.array(z.number().int().positive()) }) }, ReorderCharacterAttackDefinitions);
+put('/:id/attack-definitions/:attackId', requireAuth, { params: CharacterAttackIdParamSchema, body: UpdateCharacterAttackDefinitionSchema }, UpdateCharacterAttackDefinition);
+deleteRoute('/:id/attack-definitions/:attackId', requireAuth, { params: CharacterAttackIdParamSchema }, DeleteCharacterAttackDefinition);
+put('/:id/attack-definitions/reorder', requireAuth, { params: CharacterIdParamSchema, body: ReorderAttackDefinitionsSchema }, ReorderCharacterAttackDefinitions);
+
+// NEW: Spell Selection Routes
+get('/:id/spell-selection/:classId', requireAuth, { params: CharacterSpellSelectionParamSchema }, GetCharacterSpellSelection);
+post('/spell-selection/add', requireAuth, { body: AddSpellKnownRequestSchema }, AddSpellKnown);
+post('/spell-selection/remove', requireAuth, { body: RemoveSpellKnownRequestSchema }, RemoveSpellKnown);
 
 export { CharacterRouter };

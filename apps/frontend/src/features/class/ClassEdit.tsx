@@ -321,6 +321,7 @@ export default function ClassEdit() {
         isPrestige: false,
         isVisible: true,
         canCastSpells: false,
+        isDivine: false,
         hitDie: 1,
         skillPoints: 0,
         description: '',

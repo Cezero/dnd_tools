@@ -76,7 +76,16 @@ function formatCategoryLabel<T>(
     if (value === null || value === undefined) {
         return 'Unknown';
     }
-    return String(value);
+    
+    // If fieldPath doesn't match any column and looks like a formatted label
+    // (contains spaces or capital letters, different from default string representation),
+    // use it directly as the label
+    const defaultString = String(value);
+    if (fieldPath !== defaultString && (fieldPath.includes(' ') || /[A-Z]/.test(fieldPath))) {
+        return fieldPath;
+    }
+    
+    return defaultString;
 }
 
 /**
@@ -89,8 +98,8 @@ function renderCategoryGroup<T>(
     currentFieldIndex: number,
     columns: ColumnDef<T, unknown>[],
     allColumnsForFormatting: ColumnDef<T, unknown>[],
-    actionButtonLabel: string,
-    onAction: (item: T) => void,
+    actionButtonLabel: string | undefined,
+    onAction: ((item: T) => void) | undefined,
     isActionDisabled: ((item: T) => boolean) | undefined,
     collapsedCategories: Set<string>,
     toggleCategory: (path: string) => void,
@@ -126,18 +135,20 @@ function renderCategoryGroup<T>(
                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
                     ))}
-                    <td className="px-1 text-center">
-                        <button
-                            onClick={() => onAction(item)}
-                            disabled={isDisabled}
-                            className={`px-2 py-0.5 text-sm rounded disabled:opacity-50 ${isDisabled
-                                ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                                : 'bg-blue-600 text-white hover:bg-blue-700'
-                                }`}
-                        >
-                            {actionButtonLabel}
-                        </button>
-                    </td>
+                    {actionButtonLabel && onAction && (
+                        <td className="px-1 text-center">
+                            <button
+                                onClick={() => onAction(item)}
+                                disabled={isDisabled}
+                                className={`px-2 py-0.5 text-sm rounded disabled:opacity-50 ${isDisabled
+                                    ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                                    }`}
+                            >
+                                {actionButtonLabel}
+                            </button>
+                        </td>
+                    )}
                 </tr>
             );
         }).filter(Boolean) as React.ReactNode[];
@@ -190,7 +201,7 @@ function renderCategoryGroup<T>(
             <React.Fragment key={fullPath}>
                 <tr className="bg-gray-200 dark:bg-gray-700">
                     <td
-                        colSpan={table.getVisibleLeafColumns().length + 1}
+                        colSpan={table.getVisibleLeafColumns().length + (actionButtonLabel ? 1 : 0)}
                         className="px-1 py-1 font-semibold cursor-pointer"
                         onClick={() => toggleCategory(fullPath)}
                     >
@@ -249,18 +260,20 @@ function renderCategoryGroup<T>(
                                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                         </td>
                                     ))}
-                                    <td className="px-2 text-center">
-                                        <button
-                                            onClick={() => onAction(item)}
-                                            disabled={isDisabled}
-                                            className={`px-2 py-0.5 text-sm rounded disabled:opacity-50 ${isDisabled
-                                                ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                                                : 'bg-blue-600 text-white hover:bg-blue-700'
-                                                }`}
-                                        >
-                                            {actionButtonLabel}
-                                        </button>
-                                    </td>
+                                    {actionButtonLabel && onAction && (
+                                        <td className="px-2 text-center">
+                                            <button
+                                                onClick={() => onAction(item)}
+                                                disabled={isDisabled}
+                                                className={`px-2 py-0.5 text-sm rounded disabled:opacity-50 ${isDisabled
+                                                    ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                                                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                                                    }`}
+                                            >
+                                                {actionButtonLabel}
+                                            </button>
+                                        </td>
+                                    )}
                                 </tr>
                             );
                         })}
@@ -570,7 +583,7 @@ export function ScrollableCategorizedList<T extends { id?: number }>({
                                 {table.getVisibleLeafColumns().map(column => (
                                     <col key={column.id} style={{ width: column.getSize() }} />
                                 ))}
-                                <col style={{ width: '80px' }} />
+                                {actionButtonLabel && <col style={{ width: '80px' }} />}
                             </colgroup>
                             <thead>
                                 {table.getHeaderGroups().map(headerGroup => (
@@ -596,7 +609,7 @@ export function ScrollableCategorizedList<T extends { id?: number }>({
                                                 </th>
                                             );
                                         })}
-                                        <th className="px-1 bg-gray-200 dark:bg-gray-700 text-center">Action</th>
+                                        {actionButtonLabel && <th className="px-1 bg-gray-200 dark:bg-gray-700 text-center">Action</th>}
                                     </tr>
                                 ))}
                             </thead>
@@ -612,7 +625,7 @@ export function ScrollableCategorizedList<T extends { id?: number }>({
                                         {table.getVisibleLeafColumns().map(column => (
                                             <col key={column.id} style={{ width: column.getSize() }} />
                                         ))}
-                                        <col style={{ width: '80px' }} />
+                                        {actionButtonLabel && <col style={{ width: '80px' }} />}
                                     </colgroup>
                                     <tbody>
                                         {renderCategoryGroup(

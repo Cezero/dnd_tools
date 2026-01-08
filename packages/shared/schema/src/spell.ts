@@ -121,3 +121,33 @@ export type ClassSpellListResponse = z.infer<typeof ClassSpellListResponseSchema
 
 export type SpellCacheResponse = z.infer<typeof SpellCacheResponseSchema>;
 export type SpellCacheEntry = z.infer<typeof SpellCacheSchema>;
+
+// Spell selection schemas
+export const CharacterSpellSelectionEntrySchema = SpellSchema.extend({
+    classSpellLevel: z.number().int().min(0, 'Class spell level must be non-negative').max(9, 'Class spell level must be at most 9').nullable(),
+    isKnown: z.boolean().default(false),
+    domainId: z.number().int().positive('Domain ID must be a positive integer').nullable().optional(),
+    domainName: z.string().nullable().optional(),
+    domainSpellLevel: z.number().int().min(1, 'Domain spell level must be at least 1').max(9, 'Domain spell level must be at most 9').nullable().optional(),
+});
+
+export const CharacterSpellSelectionResponseSchema = QueryResponseSchema.extend({
+    results: z.array(CharacterSpellSelectionEntrySchema),
+    domainSpells: z.array(CharacterSpellSelectionEntrySchema).optional(),
+});
+
+export const AddSpellKnownRequestSchema = z.object({
+    characterId: z.number().int().positive('Character ID must be a positive integer'),
+    classId: z.number().int().positive('Class ID must be a positive integer'),
+    spellId: z.number().int().positive('Spell ID must be a positive integer'),
+    advancementId: z.number().int().positive('Advancement ID must be a positive integer'),
+});
+
+export const RemoveSpellKnownRequestSchema = AddSpellKnownRequestSchema.omit({
+    classId: true,
+});
+
+export type CharacterSpellSelectionEntry = z.infer<typeof CharacterSpellSelectionEntrySchema>;
+export type CharacterSpellSelectionResponse = z.infer<typeof CharacterSpellSelectionResponseSchema>;
+export type AddSpellKnownRequest = z.infer<typeof AddSpellKnownRequestSchema>;
+export type RemoveSpellKnownRequest = z.infer<typeof RemoveSpellKnownRequestSchema>;

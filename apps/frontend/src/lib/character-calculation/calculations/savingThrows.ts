@@ -4,6 +4,7 @@ import { getSaveProgression } from '@shared/utils';
 
 import { resolveFeatBenefits } from '../core/featBenefitResolver';
 import { resolveFeatureBonuses } from '../core/featureBonusResolver';
+import { getAbilityScore } from './abilityScore';
 import type { CalculationResult, BreakdownMap, BreakdownComponent } from '../types';
 import { buildBreakdownString, createBreakdownComponent } from '../utils/breakdownBuilder';
 
@@ -47,10 +48,10 @@ export function getSavingThrow(
         abilityId = AbilityId.Wisdom; // Will
     }
 
-    // Get ability modifier
-    const abilityScore = character.abilityScores.find(a => a.abilityId === abilityId);
-    const abilityValue = abilityScore?.value ?? 10;
-    const abilityMod = GetAbilityModifier(abilityValue);
+    // Get ability modifier using total ability score (base + racial modifiers + feat bonuses, etc.)
+    const abilityScoreResult = getAbilityScore(character, abilityId, resolvedProgressions, featsMap);
+    const abilityTotalValue = abilityScoreResult.value;
+    const abilityMod = GetAbilityModifier(abilityTotalValue);
 
     // Calculate base save from class levels
     // TODO: Implement proper base save calculation from class progressions

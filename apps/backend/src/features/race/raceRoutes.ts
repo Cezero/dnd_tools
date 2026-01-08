@@ -2,6 +2,7 @@ import { buildValidatedRouter } from '@/lib/buildValidatedRouter.js';
 import { requireAdmin } from '@/middleware/authMiddleware';
 import {
     RaceIdParamSchema,
+    RaceIdQuerySchema,
     CreateRaceSchema,
     UpdateRaceSchema
 } from '@shared/schema';
@@ -20,7 +21,7 @@ const { router: RaceRouter, get, post, put, delete: deleteRoute } = buildValidat
 // Race Read Routes
 get('/', {}, GetAllRaces);
 get('/cache', {}, GetRaceCache);
-get('/:id', { params: RaceIdParamSchema }, GetRaceById);
+get('/:id', { params: RaceIdParamSchema, query: RaceIdQuerySchema }, GetRaceById);
 
 // Race Write Routes
 post('/', requireAdmin, { body: CreateRaceSchema }, CreateRace);

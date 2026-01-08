@@ -10,7 +10,7 @@ import type {
 } from '@shared/schema';
 
 export interface MonsterService {
-    getAllMonsters(includeStatblockOnly?: boolean): Promise<GetAllMonstersResponse>;
+    getAllMonsters(includeStatblockOnly?: boolean, typeId?: number): Promise<GetAllMonstersResponse>;
     getMonsterById(id: MonsterIdParamRequest): Promise<GetMonsterResponse | null>;
     getMonsterHierarchy(baseMonsterId: number): Promise<MonsterHierarchyEntry[]>;
     updateMonster(id: MonsterIdParamRequest, data: UpdateMonsterRequest): Promise<UpdateResponse>;

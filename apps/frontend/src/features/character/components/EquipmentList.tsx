@@ -159,20 +159,27 @@ export function EquipmentList<T extends ItemWithDetails = ItemWithDetails>({
                 }
             }
 
-            // Check weapon proficiency
+            // Get both weapon and armor categories
             const weaponCategory = getFieldValue(item, 'weapon.category') as number | undefined;
-            if (weaponCategory !== undefined && proficientWeaponCategories) {
-                return proficientWeaponCategories.includes(weaponCategory);
-            }
-
-            // Check armor proficiency
             const armorCategory = getFieldValue(item, 'armor.category') as number | undefined;
-            if (armorCategory !== undefined && proficientArmorCategories) {
-                return proficientArmorCategories.includes(armorCategory);
+
+            // Prioritize armor proficiency check for items with armor category (including shields)
+            // This ensures shields are available when character has "all shields" proficiency
+            if (armorCategory !== undefined) {
+                if (proficientArmorCategories && proficientArmorCategories.includes(armorCategory)) {
+                    return true;
+                }
+                // If item has armor category but is not proficient, return false
+                // (don't check weapon proficiency for armor items)
+                return false;
             }
 
-            // If item is a weapon or armor but doesn't match any proficiency, it's not proficient
-            if (weaponCategory !== undefined || armorCategory !== undefined) {
+            // Check weapon proficiency for items that only have weapon category
+            if (weaponCategory !== undefined) {
+                if (proficientWeaponCategories && proficientWeaponCategories.includes(weaponCategory)) {
+                    return true;
+                }
+                // If item has weapon category but is not proficient, return false
                 return false;
             }
 

@@ -8,12 +8,12 @@ import type {
 } from '@shared/schema';
 import { AbilityId, WEAPON_TYPE_ENUM, ABILITY_MAP, FeatBenefitType, EntityAppliesToType } from '@shared/static-data';
 
+import { getAbilityModifierWithBonuses } from './abilityScore';
 import { getMonkUnarmedDamage } from '../../attack-calculation/monk-damage';
 import {
     isProficientWithWeapon,
     getCharacterBAB,
     getCharacterSizeId,
-    getAbilityModifier as getCharacterAbilityModifier,
 } from '../../attack-calculation/utils';
 import { resolveFeatBenefits, resolveFeatFormulaModifications } from '../core/featBenefitResolver';
 import { resolveFeatureBonuses } from '../core/featureBonusResolver';
@@ -170,9 +170,9 @@ function calculateSingleWeaponAttack(
     const weaponProps = extractWeaponProperties(weaponItem);
     const itemBonuses = resolveItemBonuses(weaponItem);
 
-    // Determine ability modifier
+    // Determine ability modifier (using adjusted score with racial modifiers)
     let baseAbilityId = isRanged ? AbilityId.Dexterity : AbilityId.Strength;
-    let abilityMod = getCharacterAbilityModifier(character, baseAbilityId);
+    let abilityMod = getAbilityModifierWithBonuses(character, baseAbilityId, resolvedProgressions, featsMap);
 
     // Check for formula modifications (Weapon Finesse)
     const formulaModifications = resolveFeatFormulaModifications(
@@ -193,9 +193,9 @@ function calculateSingleWeaponAttack(
         }
     );
 
-    // If ability was modified, get the new modifier
+    // If ability was modified, get the new modifier (using adjusted score with racial modifiers)
     if (modifiedAbilityId !== baseAbilityId) {
-        abilityMod = getCharacterAbilityModifier(character, modifiedAbilityId);
+        abilityMod = getAbilityModifierWithBonuses(character, modifiedAbilityId, resolvedProgressions, featsMap);
     }
 
     // Calculate attack bonus penalties and bonuses
@@ -388,7 +388,7 @@ function calculateUnarmedStrike(
     featsMap?: Map<number, Feat>
 ): CombatValuesResult {
     const bab = getCharacterBAB(character, classDetailsMap);
-    const strMod = getCharacterAbilityModifier(character, AbilityId.Strength);
+    const strMod = getAbilityModifierWithBonuses(character, AbilityId.Strength, resolvedProgressions, featsMap);
     const characterLevel = character.advancements.length;
     const characterSizeId = getCharacterSizeId(character);
 

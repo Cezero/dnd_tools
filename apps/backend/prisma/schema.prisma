@@ -21,6 +21,7 @@ model Class {
   isVisible        Boolean @default(true)
   canCastSpells    Boolean @default(false)
   spellsKnown      Boolean @default(false)
+  isDivine         Boolean @default(false)
   hitDie           Int     @default(1)
   description      String? @db.Text
   skillPoints      Int
@@ -174,14 +175,16 @@ model ClassVariantSourceMap {
 // =================
 
 model Feature {
-  id          Int    @id @default(autoincrement())
-  slug        String @unique
-  name        String
-  description String @db.Text
-  summary     String? @db.Text
+  id                      Int     @id @default(autoincrement())
+  slug                    String  @unique
+  name                    String
+  description             String  @db.Text
+  summary                 String? @db.Text // Can contain template placeholders {{placeholder}}
+  displayInCharacterSheet Boolean @default(true)
 
-  progressions  FeatureProgression[]
-  prerequisites FeaturePrerequisite[]
+  progressions        FeatureProgression[]
+  prerequisites       FeaturePrerequisite[]
+  transformationForms TransformationFormEligibility[]
 }
 
 model FeatureProgression {
@@ -204,6 +207,7 @@ model FeatureProgression {
   characterFeatureChoice CharacterFeatureChoice[]
   entities               FeatureEntity[]
   originalOverrides      ClassVariantFeatureProgressionOverride[] @relation("OriginalFeature")
+  displayConditions      FeatureProgressionCondition[]
 }
 
 model FeatureEntity {
@@ -260,6 +264,17 @@ model FeaturePrerequisite {
   minValue    Int
 
   feature Feature @relation(fields: [featureId], references: [id])
+}
+
+model FeatureProgressionCondition {
+  id             Int @id @default(autoincrement())
+  progressionId  Int
+  conditionType  Int // Reuses FeatureEntityConditionType enum
+  conditionValue Int
+
+  progression FeatureProgression @relation(fields: [progressionId], references: [id])
+
+  @@index([progressionId])
 }
 
 // =================
@@ -666,6 +681,7 @@ model SourceBook {
   classVariants              ClassVariantSourceMap[]
   domains                    DomainSourceMap[] // NEW: Domain source references
   deities                    DeitySourceMap[] // NEW: Deity source references
+  tricks                     TrickSourceMap[] // NEW: Trick source references
   characterDisallowedSources CharacterDisallowedSource[] // NEW: Character disallowed sources relationship
   skillSourceBookInfo        SkillSourceBookMap[]
   featSourceBookInfo         FeatSourceBookMap[]
@@ -762,12 +778,13 @@ model UserCharacter {
   silver   Int @default(0)
   copper   Int @default(0)
 
-  abilityScores     UserCharacterAbilityScore[]
-  characterItems    CharacterItem[]
-  attackDefinitions CharacterAttackDefinition[]
-  advancements      CharacterAdvancement[]
-  preparedSpells    CharacterSpellPreparation[]
-  disallowedSources CharacterDisallowedSource[] // NEW: Disallowed sources relationship
+  abilityScores      UserCharacterAbilityScore[]
+  characterItems     CharacterItem[]
+  attackDefinitions  CharacterAttackDefinition[]
+  companions         CharacterCompanion[]
+  advancements       CharacterAdvancement[]
+  preparedSpells     CharacterSpellPreparation[]
+  disallowedSources  CharacterDisallowedSource[] // NEW: Disallowed sources relationship
   characterLanguages CharacterLanguageMap[]
 
   race  Race   @relation(fields: [raceId], references: [id])
@@ -854,14 +871,17 @@ model AdvancementSpell {
 }
 
 model CharacterFeatureChoice {
-  id              Int  @id @default(autoincrement())
-  characterId     Int
-  progressionId   Int
-  advancementId   Int
-  featureEntityId Int
-  appliesToId     Int
-  appliesToSubId  Int?
-  choiceIndex     Int?
+  id                  Int     @id @default(autoincrement())
+  characterId         Int
+  progressionId       Int
+  advancementId       Int
+  featureEntityId     Int
+  appliesToId         Int
+  appliesToSubId      Int?
+  choiceIndex         Int?
+  choiceGroupId       String?
+  choiceData          Json?
+  linkedChoiceGroupId String?
 
   featureProgression FeatureProgression   @relation(fields: [progressionId], references: [id])
   featureEntity      FeatureEntity        @relation(fields: [featureEntityId], references: [id])
@@ -1179,22 +1199,25 @@ model Monster {
   specialQualities String? @db.VarChar(512) // Special Qualities from statblock (may differ from Combat section abilities)
 
   // Relationships
-  baseMonster        Monster?                    @relation("MonsterVariants", fields: [baseMonsterId], references: [id])
-  variants           Monster[]                   @relation("MonsterVariants")
-  types              MonsterTypeMap[]
-  subtypes           MonsterSubtypeMap[]
-  skills             MonsterSkillMap[]
-  feats              MonsterFeatMap[]
-  specialAbilities   MonsterSpecialAbilityMap[]
-  armorBreakdown     MonsterArmorBreakdown[]
-  equipment          MonsterEquipment[]
-  spells             MonsterSpell[]
-  preparedSpellSlots MonsterPreparedSpellSlots[]
-  sourceBookInfo     MonsterSourceMap[]
-  extraHitDice       MonsterExtraHitDie[]
-  alternateSpeeds    MonsterAlternateSpeed[]
-  domains            MonsterDomainMap[]
-  extraDescriptions  MonsterExtraDescription[]
+  baseMonster         Monster?                        @relation("MonsterVariants", fields: [baseMonsterId], references: [id])
+  variants            Monster[]                       @relation("MonsterVariants")
+  types               MonsterTypeMap[]
+  subtypes            MonsterSubtypeMap[]
+  skills              MonsterSkillMap[]
+  feats               MonsterFeatMap[]
+  specialAbilities    MonsterSpecialAbilityMap[]
+  armorBreakdown      MonsterArmorBreakdown[]
+  equipment           MonsterEquipment[]
+  spells              MonsterSpell[]
+  preparedSpellSlots  MonsterPreparedSpellSlots[]
+  sourceBookInfo      MonsterSourceMap[]
+  extraHitDice        MonsterExtraHitDie[]
+  alternateSpeeds     MonsterAlternateSpeed[]
+  domains             MonsterDomainMap[]
+  extraDescriptions   MonsterExtraDescription[]
+  transformationForms TransformationFormEligibility[]
+  companions          Companion[]
+  characterCompanions CharacterCompanion[]
 }
 
 model MonsterTypeMap {
@@ -1375,5 +1398,123 @@ model MonsterExtraDescription {
 
   monster Monster @relation(fields: [monsterId], references: [id], onDelete: Cascade)
 
+  @@index([monsterId])
+}
+
+// =================
+// Companion related
+// =================
+
+model Companion {
+  id        Int  @id @default(autoincrement())
+  type      Int // CompanionType enum
+  monsterId Int // Link to Monster for base statistics (required)
+  minLevel  Int? // Minimum character level required (for Alternative Companions and Improved Familiars)
+
+  monster             Monster               @relation(fields: [monsterId], references: [id])
+  benefits            CompanionBenefitMap[]
+  characterCompanions CharacterCompanion[]
+
+  @@unique([type, monsterId, minLevel])
+  @@index([type])
+  @@index([monsterId])
+}
+
+model CharacterCompanion {
+  id            Int  @id @default(autoincrement())
+  characterId   Int
+  monsterId     Int // Direct reference to Monster (not through Companion)
+  companionId   Int? // Optional reference to Companion for familiars with benefits
+  levelAcquired Int?
+  hitPoints     Int? // Current/max hit points (defaults to Monster.averageHP, can be rolled)
+  wounds        Int  @default(0) // Current damage taken (for combat tracking)
+
+  character UserCharacter             @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  monster   Monster                   @relation(fields: [monsterId], references: [id])
+  companion Companion?                @relation(fields: [companionId], references: [id])
+  tricks    CharacterCompanionTrick[]
+
+  @@index([characterId])
+  @@index([monsterId])
+  @@index([companionId])
+}
+
+model Trick {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String? @db.Text
+  editionId   Int
+  isVisible   Boolean @default(true)
+
+  characterCompanionTricks CharacterCompanionTrick[]
+  sourceBookInfo           TrickSourceMap[]
+}
+
+model CharacterCompanionTrick {
+  id                   Int @id @default(autoincrement())
+  characterCompanionId Int
+  trickId              Int
+
+  characterCompanion CharacterCompanion @relation(fields: [characterCompanionId], references: [id], onDelete: Cascade)
+  trick              Trick              @relation(fields: [trickId], references: [id], onDelete: Cascade)
+
+  @@unique([characterCompanionId, trickId])
+  @@index([characterCompanionId])
+  @@index([trickId])
+}
+
+model CompanionBenefitMap {
+  id          Int  @id @default(autoincrement())
+  companionId Int
+  typeId      Int
+  referenceId Int?
+  amount      Int?
+  index       Int
+
+  companion  Companion                   @relation(fields: [companionId], references: [id], onDelete: Cascade)
+  conditions CompanionBenefitCondition[]
+
+  @@unique([companionId, index])
+  @@index([companionId])
+}
+
+model CompanionBenefitCondition {
+  id                    Int @id @default(autoincrement())
+  companionBenefitMapId Int
+  conditionType         Int
+  conditionValue        Int
+
+  companionBenefitMap CompanionBenefitMap @relation(fields: [companionBenefitMapId], references: [id], onDelete: Cascade)
+
+  @@index([companionBenefitMapId])
+}
+
+model TrickSourceMap {
+  trickId      Int
+  sourceBookId Int
+  pageNumber   Int?
+
+  trick      Trick      @relation(fields: [trickId], references: [id], onDelete: Cascade)
+  sourceBook SourceBook @relation(fields: [sourceBookId], references: [id])
+
+  @@id([trickId, sourceBookId])
+}
+
+// =================
+// Transformation Form Eligibility
+// =================
+
+model TransformationFormEligibility {
+  id        Int     @id @default(autoincrement())
+  featureId Int
+  monsterId Int
+  minLevel  Int?
+  notes     String? @db.Text
+
+  feature Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  monster Monster @relation(fields: [monsterId], references: [id], onDelete: Cascade)
+
+  @@unique([featureId, monsterId])
+  @@index([featureId])
   @@index([monsterId])
 }

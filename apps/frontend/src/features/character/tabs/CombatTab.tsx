@@ -648,6 +648,7 @@ export function CombatTab({
                     attackDefinition={editingDefinition}
                     character={characterData}
                     characterItems={characterData.characterItems || []}
+                    items={items}
                 />
             )}
         </div>

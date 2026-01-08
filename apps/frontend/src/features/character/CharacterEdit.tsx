@@ -4,7 +4,7 @@ import {
     UserIcon, ShieldCheckIcon, AcademicCapIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, CogIcon, ListBulletIcon, BoltIcon, Bars3Icon
 } from '@heroicons/react/24/outline';
 import { useQueryClient } from '@tanstack/react-query';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
@@ -24,8 +24,10 @@ import type { Race, DnDClass, CharacterWithAllDetailsResponse, FeatInQueryRespon
 import { EditionId, Skill, DisplayType } from '@shared/static-data';
 
 import { generateCharacterPdf } from './characterPdfService';
-import { AbilitiesRaceTab, ChoicesTab, ClassTab, ConfigurationTab, DescriptionTab, EquipmentTab, FeatsTab, SkillsTab, CombatTab } from './tabs';
-import { useFeatureProgressionPool } from './useFeatureProgressionPool';
+import { AbilitiesRaceTab, ChoicesTab, ClassTab, ConfigurationTab, DescriptionTab, EquipmentTab, FeatsTab, SkillsTab, CombatTab, SpellSelectionTab } from './tabs';
+import { useCharacterResolution } from './useCharacterResolution';
+import { CharacterResolutionApi, type CharacterUpdate } from '@/services/api/CharacterResolutionApi';
+import { useCacheFunctions } from '@/services/cache';
 
 export function CharacterEdit(): React.JSX.Element {
     const { user, isLoading: isAuthLoading } = useAuthAuto();
@@ -53,7 +55,7 @@ export function CharacterEdit(): React.JSX.Element {
     const [items, setItems] = useState<ItemWithDetails[]>([]);
     const [classDetailsMap, setClassDetailsMap] = useState<Map<number, DnDClass>>(new Map());
 
-    // Shared data for all tabs - feats, classes, race (must be declared before useFeatureProgressionPool)
+    // Shared data for all tabs - feats, classes, race
     const [allFeats, setAllFeats] = useState<FeatInQueryResponse[]>([]);
     const [isLoadingFeats, setIsLoadingFeats] = useState(false);
     const [featsMap, setFeatsMap] = useState<Map<number, Feat>>(new Map());
@@ -91,8 +93,124 @@ export function CharacterEdit(): React.JSX.Element {
         return levels;
     }, [characterData?.advancements]);
 
-    // Initialize feature progression pool with allFeats (will be updated when feats are loaded)
-    const { isResolving, resolutionError, resolvedData, addRace, addClass, addSecondaryClass, triggerResolution, handleChoiceSelection } = useFeatureProgressionPool(allFeats, state.level, classLevels);
+    // Use new character resolution hook with backend session management
+    const resolution = useCharacterResolution(state.characterId || null);
+
+    // Compute derived data from resolved character result
+    const resolvedData = useMemo(() => {
+        if (!resolution.resolvedCharacter) {
+            return {
+                progressions: [],
+                classSkills: [],
+                skillBonuses: [],
+                pendingChoices: [],
+                grantedFeats: [],
+                availableFeats: 0,
+                availableFighterBonusFeats: 0
+            };
+        }
+
+        return {
+            progressions: resolution.resolvedCharacter.resolvedProgressions,
+            classSkills: resolution.resolvedCharacter.classSkills.map((skill): { skillId: number; skillSubId: number | null } => ({ skillId: skill.skillId, skillSubId: skill.skillSubId ?? null })),
+            skillBonuses: resolution.resolvedCharacter.skillBonuses.map((bonus): { skillId: number; skillSubId: number | null; bonus: number; source: string } => ({ skillId: bonus.skillId, skillSubId: bonus.skillSubId ?? null, bonus: bonus.bonus, source: bonus.source })),
+            pendingChoices: resolution.resolvedCharacter.pendingChoices,
+            grantedFeats: resolution.resolvedCharacter.grantedFeats.map(featId => ({
+                id: 0,
+                progressionId: 0,
+                type: 0,
+                appliesTo: 2, // EntityAppliesToType.Feat
+                appliesToId: featId,
+                appliesToSubId: null,
+                value: null,
+                bonusType: null,
+                formulaParamsId: null,
+                groupingId: 0,
+                displayInDetail: true,
+                filterType: null,
+            })),
+            availableFeats: resolution.resolvedCharacter.availableFeats,
+            availableFighterBonusFeats: resolution.resolvedCharacter.availableFighterBonusFeats
+        };
+    }, [resolution.resolvedCharacter]);
+
+    const isResolving = resolution.isLoading;
+    const resolutionError = resolution.error;
+
+    // Handle choice selection - apply update to resolution session
+    const handleChoiceSelection = useCallback(async (choiceType: number, selectedId: number, _features: FeatureProgression[]) => {
+        if (!state.characterId || !resolution.sessionId) {
+            console.warn('Cannot save choice: session not initialized');
+            return;
+        }
+
+        // Find the pending choice to get progressionId and featureEntityId
+        const pendingChoice = resolvedData.pendingChoices.find(p =>
+            p.type === choiceType && p.options.some(opt => opt.value === selectedId)
+        );
+
+        if (!pendingChoice) {
+            console.warn(`Pending choice not found for type ${choiceType}, id ${selectedId}`);
+            return;
+        }
+
+        // Extract progressionId and featureEntityId from pending choice ID
+        const [progressionIdStr, featureEntityIdStr] = pendingChoice.id.split('-');
+        const progressionId = parseInt(progressionIdStr, 10);
+        const featureEntityId = parseInt(featureEntityIdStr, 10);
+
+        if (isNaN(progressionId) || isNaN(featureEntityId)) {
+            console.warn(`Invalid pending choice ID: ${pendingChoice.id}`);
+            return;
+        }
+
+        // Apply update via resolution API
+        try {
+            const update: CharacterUpdate = {
+                type: 'MAKE_CHOICE',
+                payload: {
+                    progressionId,
+                    featureEntityId,
+                    appliesToId: selectedId,
+                    appliesToSubId: null
+                }
+            };
+
+            await resolution.applyUpdate(update);
+        } catch (error) {
+            console.error('Failed to apply choice update:', error);
+        }
+    }, [state.characterId, resolution, resolvedData.pendingChoices]);
+
+    // Handle skill rank update - sync to backend resolution API
+    const handleSkillRankUpdate = useCallback(async (skillId: number, skillSubId: number | null, customSubtype: string | null, pointsSpent: number) => {
+        if (!state.characterId || !resolution.sessionId) {
+            console.warn('Cannot update skill rank: session not initialized');
+            return;
+        }
+
+        try {
+            const update: CharacterUpdate = {
+                type: 'SET_SKILL_RANK',
+                payload: {
+                    skillId,
+                    skillSubId,
+                    customSubtype,
+                    pointsSpent
+                }
+            };
+
+            await resolution.applyUpdate(update);
+        } catch (error) {
+            console.error('Failed to apply skill rank update:', error);
+        }
+    }, [state.characterId, resolution.sessionId, resolution.applyUpdate]);
+
+    // Trigger feature resolution (no-op since useCharacterResolution handles it automatically)
+    const triggerFeatureResolution = useCallback(async () => {
+        // Resolution happens automatically when session updates
+        // This is kept for compatibility with tabs that call it
+    }, []);
 
     const [primaryClassData, setPrimaryClassData] = useState<DnDClass | null>(null);
     const [secondaryClassData, setSecondaryClassData] = useState<DnDClass | null>(null);
@@ -187,6 +305,27 @@ export function CharacterEdit(): React.JSX.Element {
     }, [queryClient]);
 
 
+    // Helper function to extract choices from character advancements
+    const getCharacterFeatureChoices = useCallback((): Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }> | undefined => {
+        if (!characterData?.advancements) return undefined;
+
+        // Collect all feature choices from all advancements
+        const choices: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }> = [];
+        for (const advancement of characterData.advancements) {
+            if (advancement.featureChoices) {
+                for (const choice of advancement.featureChoices) {
+                    choices.push({
+                        progressionId: choice.progressionId,
+                        featureEntityId: choice.featureEntityId,
+                        appliesToId: choice.appliesToId,
+                        appliesToSubId: choice.appliesToSubId,
+                    });
+                }
+            }
+        }
+        return choices.length > 0 ? choices : undefined;
+    }, [characterData]);
+
     // Fetch race details when raceId changes
     useEffect(() => {
         const fetchRaceDetails = async () => {
@@ -199,10 +338,11 @@ export function CharacterEdit(): React.JSX.Element {
 
             try {
                 setIsLoadingRaceData(true);
+                const choices = getCharacterFeatureChoices();
                 // Use queryClient.fetchQuery to leverage TanStack Query cache
                 const raceData = await queryClient.fetchQuery({
-                    queryKey: RaceQueryHooks.getRaceByIdQueryKey(state.raceId),
-                    queryFn: () => RaceQueryHooks.getRaceByIdQueryFn({ pathParams: { id: state.raceId } }),
+                    queryKey: [...RaceQueryHooks.getRaceByIdQueryKey(state.raceId), choices ? JSON.stringify(choices) : 'no-choices'],
+                    queryFn: () => RaceQueryHooks.getRaceById(state.raceId, choices),
                     staleTime: 5 * 60 * 1000, // 5 minutes
                     gcTime: 10 * 60 * 1000, // 10 minutes
                 });
@@ -219,7 +359,7 @@ export function CharacterEdit(): React.JSX.Element {
             }
         };
         fetchRaceDetails();
-    }, [state.raceId, queryClient]);
+    }, [state.raceId, queryClient, getCharacterFeatureChoices]);
 
     // Fetch class details when classId changes
     useEffect(() => {
@@ -233,10 +373,11 @@ export function CharacterEdit(): React.JSX.Element {
 
             try {
                 setIsLoadingPrimaryClass(true);
+                const choices = getCharacterFeatureChoices();
                 // Use queryClient.fetchQuery to leverage TanStack Query cache
                 const classData = await queryClient.fetchQuery({
-                    queryKey: ClassQueryHooks.getClassByIdQueryKey(state.classId),
-                    queryFn: () => ClassQueryHooks.getClassByIdQueryFn({ pathParams: { id: state.classId } }),
+                    queryKey: [...ClassQueryHooks.getClassByIdQueryKey(state.classId), choices ? JSON.stringify(choices) : 'no-choices'],
+                    queryFn: () => ClassQueryHooks.getClassById(state.classId, choices),
                     staleTime: 5 * 60 * 1000, // 5 minutes
                     gcTime: 10 * 60 * 1000, // 10 minutes
                 });
@@ -253,7 +394,7 @@ export function CharacterEdit(): React.JSX.Element {
             }
         };
         fetchClassDetails();
-    }, [state.classId, queryClient]);
+    }, [state.classId, queryClient, getCharacterFeatureChoices]);
 
     // Fetch secondary class details when secondaryClassId changes
     useEffect(() => {
@@ -267,10 +408,11 @@ export function CharacterEdit(): React.JSX.Element {
 
             try {
                 setIsLoadingSecondaryClassData(true);
+                const choices = getCharacterFeatureChoices();
                 // Use queryClient.fetchQuery to leverage TanStack Query cache
                 const classData = await queryClient.fetchQuery({
-                    queryKey: ClassQueryHooks.getClassByIdQueryKey(state.secondaryClassId),
-                    queryFn: () => ClassQueryHooks.getClassByIdQueryFn({ pathParams: { id: state.secondaryClassId } }),
+                    queryKey: [...ClassQueryHooks.getClassByIdQueryKey(state.secondaryClassId), choices ? JSON.stringify(choices) : 'no-choices'],
+                    queryFn: () => ClassQueryHooks.getClassById(state.secondaryClassId, choices),
                     staleTime: 5 * 60 * 1000, // 5 minutes
                     gcTime: 10 * 60 * 1000, // 10 minutes
                 });
@@ -287,31 +429,9 @@ export function CharacterEdit(): React.JSX.Element {
             }
         };
         fetchSecondaryClassDetails();
-    }, [state.secondaryClassId, queryClient]);
+    }, [state.secondaryClassId, queryClient, getCharacterFeatureChoices]);
 
-    // Manage race progressions in the pool
-    useEffect(() => {
-        if (raceDetailsData && state.raceId) {
-            console.log(`Adding race ${state.raceId} to pool`);
-            addRace(state.raceId, raceDetailsData.features || []);
-        }
-    }, [raceDetailsData, state.raceId, addRace]);
-
-    // Manage class progressions in the pool
-    useEffect(() => {
-        if (classDetailsData && state.classId) {
-            console.log(`Adding class ${state.classId} to pool`);
-            addClass(state.classId, classDetailsData.features || []);
-        }
-    }, [classDetailsData, state.classId, addClass]);
-
-    // Manage secondary class progressions in the pool
-    useEffect(() => {
-        if (secondaryClassDetailsData && state.secondaryClassId) {
-            console.log(`Adding secondary class ${state.secondaryClassId} to pool`);
-            addSecondaryClass(state.secondaryClassId, secondaryClassDetailsData.features || []);
-        }
-    }, [secondaryClassDetailsData, state.secondaryClassId, addSecondaryClass]);
+    // Feature resolution is handled by useCharacterResolution hook with backend API
 
     // TODO: Add domain management back when we implement domain choice handling
 
@@ -620,6 +740,16 @@ export function CharacterEdit(): React.JSX.Element {
             };
 
             // Debug: Log the save data to verify featureChoices are included
+            // Save resolution session to database first (if session exists)
+            if (state.characterId && resolution.sessionId) {
+                try {
+                    await resolution.saveSession();
+                } catch (error) {
+                    console.error('Failed to save resolution session:', error);
+                    // Continue with regular save even if session save fails
+                }
+            }
+
             // Use unified save endpoint - backend handles all orchestration
             let result;
             if (state.characterId) {
@@ -687,11 +817,8 @@ export function CharacterEdit(): React.JSX.Element {
                             });
                         }
 
-                        // Trigger feature resolution to apply feat benefits
-                        // Use setTimeout to allow state updates to complete first
-                        setTimeout(async () => {
-                            await triggerFeatureResolution();
-                        }, 200);
+                        // Resolution will be re-initialized when characterId changes
+                        // No need to manually trigger resolution
                     }
                 } catch (error) {
                     console.error('Failed to reload character after save:', error);
@@ -767,12 +894,28 @@ export function CharacterEdit(): React.JSX.Element {
                 }
             }
 
+            // Extract choices from character advancements
+            const choices: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }> = [];
+            for (const advancement of character.advancements) {
+                if (advancement.featureChoices) {
+                    for (const choice of advancement.featureChoices) {
+                        choices.push({
+                            progressionId: choice.progressionId,
+                            featureEntityId: choice.featureEntityId,
+                            appliesToId: choice.appliesToId,
+                            appliesToSubId: choice.appliesToSubId,
+                        });
+                    }
+                }
+            }
+            const featureChoices = choices.length > 0 ? choices : undefined;
+
             // Fetch class details using TanStack Query cache
             for (const classId of classIds) {
                 try {
                     const classData = await queryClient.fetchQuery({
-                        queryKey: ClassQueryHooks.getClassByIdQueryKey(classId),
-                        queryFn: () => ClassQueryHooks.getClassByIdQueryFn({ pathParams: { id: classId } }),
+                        queryKey: [...ClassQueryHooks.getClassByIdQueryKey(classId), featureChoices ? JSON.stringify(featureChoices) : 'no-choices'],
+                        queryFn: () => ClassQueryHooks.getClassById(classId, featureChoices),
                         staleTime: 5 * 60 * 1000, // 5 minutes
                         gcTime: 10 * 60 * 1000, // 10 minutes
                     });
@@ -782,8 +925,16 @@ export function CharacterEdit(): React.JSX.Element {
                 }
             }
 
-            // Generate PDF (pass queryClient and raceData to use cache)
-            await generateCharacterPdf(character, classDetailsMap, resolvedData.progressions, queryClient, raceData);
+            // Generate PDF (pass queryClient, raceData, classSkills, and skillBonuses to use cache and backend data)
+            await generateCharacterPdf(
+                character,
+                classDetailsMap,
+                resolvedData.progressions,
+                queryClient,
+                raceData,
+                resolvedData.classSkills.map(skill => ({ skillId: skill.skillId, skillSubId: skill.skillSubId ?? null })),
+                resolvedData.skillBonuses.map(bonus => ({ skillId: bonus.skillId, skillSubId: bonus.skillSubId ?? null, bonus: bonus.bonus, source: bonus.source }))
+            );
 
             toastManager?.add({
                 title: 'Export Successful',
@@ -842,12 +993,30 @@ export function CharacterEdit(): React.JSX.Element {
                 }
             }
 
+            // Extract choices from character advancements
+            const choices: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }> = [];
+            if (characterData?.advancements) {
+                for (const advancement of characterData.advancements) {
+                    if (advancement.featureChoices) {
+                        for (const choice of advancement.featureChoices) {
+                            choices.push({
+                                progressionId: choice.progressionId,
+                                featureEntityId: choice.featureEntityId,
+                                appliesToId: choice.appliesToId,
+                                appliesToSubId: choice.appliesToSubId,
+                            });
+                        }
+                    }
+                }
+            }
+            const featureChoices = choices.length > 0 ? choices : undefined;
+
             const map = new Map<number, DnDClass>();
             const fetchPromises = Array.from(classIds).map(async (classId) => {
                 try {
                     const classData = await queryClient.fetchQuery({
-                        queryKey: ClassQueryHooks.getClassByIdQueryKey(classId),
-                        queryFn: () => ClassQueryHooks.getClassByIdQueryFn({ pathParams: { id: classId } }),
+                        queryKey: [...ClassQueryHooks.getClassByIdQueryKey(classId), featureChoices ? JSON.stringify(featureChoices) : 'no-choices'],
+                        queryFn: () => ClassQueryHooks.getClassById(classId, featureChoices),
                         staleTime: 5 * 60 * 1000, // 5 minutes
                         gcTime: 10 * 60 * 1000, // 10 minutes
                     });
@@ -871,6 +1040,11 @@ export function CharacterEdit(): React.JSX.Element {
         if (!resolvedData.progressions) return '';
         return resolvedData.progressions.map(p => p.id).sort((a, b) => a - b).join(',');
     }, [resolvedData.progressions]);
+
+    // Create a stable key for skill ranks to ensure formattedCharacter recalculates when ranks change
+    const skillRanksKey = useMemo(() => {
+        return state.skillRanks.map(sr => `${sr.skillId}-${sr.skillSubId ?? 'null'}-${sr.customSubtype ?? 'null'}-${sr.pointsSpent}`).sort().join('|');
+    }, [state.skillRanks]);
 
     const formattedCharacter = useMemo(() => {
         if (!characterData || !resolvedData.progressions || classDetailsMap.size === 0 || items.length === 0 || featsMap.size === 0) {
@@ -904,14 +1078,20 @@ export function CharacterEdit(): React.JSX.Element {
                 items,
                 characterData.characterItems || [],
                 classDetailsMap,
-                { character: characterContext, featsMap },
+                {
+                    character: characterContext,
+                    featsMap,
+                    skillRanks: state.skillRanks,
+                    classSkills: resolvedData.classSkills.map(skill => ({ skillId: skill.skillId, skillSubId: skill.skillSubId ?? null })),
+                    skillBonuses: resolvedData.skillBonuses.map(bonus => ({ skillId: bonus.skillId, skillSubId: bonus.skillSubId ?? null, bonus: bonus.bonus, source: bonus.source }))
+                },
                 raceDetailsData ?? null
             );
         } catch (error) {
             console.error('Error formatting character:', error);
             return null;
         }
-    }, [characterData, progressionsKey, classDetailsMap, items, raceDetailsData, featsMap]);
+    }, [characterData, progressionsKey, classDetailsMap, items, raceDetailsData, featsMap, skillRanksKey]);
 
     // Separate bonus languages from characterLanguages when characterData is available
     useEffect(() => {
@@ -954,6 +1134,8 @@ export function CharacterEdit(): React.JSX.Element {
         );
 
         // Only update if different to avoid infinite loops
+        // Only sync FROM database TO state, not the other way around
+        // Don't include state.selectedBonusLanguages in deps to avoid overwriting user selections
         const currentBonus = [...state.selectedBonusLanguages].sort().join(',');
         const newBonus = [...bonusLanguages].sort().join(',');
         if (currentBonus !== newBonus) {
@@ -962,19 +1144,9 @@ export function CharacterEdit(): React.JSX.Element {
                 payload: { selectedBonusLanguages: bonusLanguages }
             });
         }
-    }, [characterData?.characterLanguages, resolvedData.progressions, state.skillRanks, state.selectedBonusLanguages, updateState]);
+    }, [characterData?.characterLanguages, resolvedData.progressions, state.skillRanks, updateState]);
 
     // Tab configuration
-    // Wrapper for triggerResolution (no longer needs character state)
-    // MUST be defined before any early returns to follow rules of hooks
-    const triggerFeatureResolution = useCallback(async () => {
-        // Extract existing choices from state.featureChoices to filter them out from pending choices
-        const existingChoices = state.featureChoices.map(choice => ({
-            progressionId: choice.progressionId,
-            featureEntityId: choice.featureEntityId
-        }));
-        await triggerResolution(existingChoices);
-    }, [triggerResolution, state.featureChoices]);
 
     // Refetch character data (e.g., after attack definition changes)
     // Must be defined before early returns to avoid React Hook rules violation
@@ -1016,17 +1188,37 @@ export function CharacterEdit(): React.JSX.Element {
         }
     }, [state.characterId, queryClient, updateState]);
 
-    const tabs: TabConfig[] = [
-        { id: 'abilities-race', label: 'Abilities & Race', icon: UserIcon, component: AbilitiesRaceTab },
-        { id: 'class', label: 'Class', icon: AcademicCapIcon, component: ClassTab },
-        { id: 'skills', label: 'Skills', icon: ShieldCheckIcon, component: SkillsTab },
-        { id: 'feats', label: 'Feats', icon: SparklesIcon, component: FeatsTab },
-        { id: 'choices', label: 'Choices', icon: ListBulletIcon, component: ChoicesTab },
-        { id: 'description', label: 'Description', icon: DocumentTextIcon, component: DescriptionTab },
-        { id: 'equipment', label: 'Equipment', icon: BriefcaseIcon, component: EquipmentTab },
-        { id: 'combat', label: 'Combat', icon: BoltIcon, component: CombatTab },
-        { id: 'configuration', label: 'Configuration', icon: CogIcon, component: ConfigurationTab }
-    ];
+    // Check if character has spellcasting classes
+    const hasSpellcastingClasses = useMemo(() => {
+        if (!characterData?.advancements) return false;
+        return characterData.advancements.some(a => {
+            const primaryClass = classDetailsMap.get(a.classId);
+            const secondaryClass = a.secondaryClassId ? classDetailsMap.get(a.secondaryClassId) : null;
+            return (primaryClass?.canCastSpells) || (secondaryClass?.canCastSpells);
+        });
+    }, [characterData?.advancements, classDetailsMap]);
+
+    const tabs: TabConfig[] = useMemo(() => {
+        const baseTabs: TabConfig[] = [
+            { id: 'abilities-race', label: 'Abilities & Race', icon: UserIcon, component: AbilitiesRaceTab },
+            { id: 'class', label: 'Class', icon: AcademicCapIcon, component: ClassTab },
+            { id: 'skills', label: 'Skills', icon: ShieldCheckIcon, component: SkillsTab },
+            { id: 'feats', label: 'Feats', icon: SparklesIcon, component: FeatsTab },
+            { id: 'choices', label: 'Choices', icon: ListBulletIcon, component: ChoicesTab },
+            { id: 'description', label: 'Description', icon: DocumentTextIcon, component: DescriptionTab },
+            { id: 'equipment', label: 'Equipment', icon: BriefcaseIcon, component: EquipmentTab },
+            { id: 'combat', label: 'Combat', icon: BoltIcon, component: CombatTab },
+        ];
+
+        // Add Spell Selection tab if character has spellcasting classes
+        if (hasSpellcastingClasses) {
+            baseTabs.push({ id: 'spell-selection', label: 'Spells', icon: SparklesIcon, component: SpellSelectionTab });
+        }
+
+        baseTabs.push({ id: 'configuration', label: 'Configuration', icon: CogIcon, component: ConfigurationTab });
+
+        return baseTabs;
+    }, [hasSpellcastingClasses]);
 
     const currentTab = tabs.find(tab => tab.id === activeTab);
     const CurrentTabComponent = currentTab?.component;
@@ -1051,6 +1243,7 @@ export function CharacterEdit(): React.JSX.Element {
         isLoading: isResolving,
         triggerFeatureResolution,
         handleChoiceSelection,
+        handleSkillRankUpdate,
         formattedCharacter,
         sharedData: {
             allFeats,
@@ -1061,7 +1254,8 @@ export function CharacterEdit(): React.JSX.Element {
             secondaryClass: secondaryClassData,
             race: raceData,
             isLoadingClasses: isLoadingPrimaryClass || isLoadingSecondaryClassData,
-            isLoadingRace: isLoadingRaceData
+            isLoadingRace: isLoadingRaceData,
+            classDetailsMap
         },
         character: characterData,
         refetchCharacter
@@ -1121,22 +1315,6 @@ export function CharacterEdit(): React.JSX.Element {
                         </div>
                     </nav>
                 </div>
-
-                {/* Feature Resolution Status */}
-                {isResolving && (
-                    <div className="px-6 py-2 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800">
-                        <div className="text-sm text-blue-700 dark:text-blue-300">
-                            Resolving features...
-                        </div>
-                    </div>
-                )}
-                {resolutionError && (
-                    <div className="px-6 py-2 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
-                        <div className="text-sm text-red-700 dark:text-red-300">
-                            Resolution error: {resolutionError}
-                        </div>
-                    </div>
-                )}
 
                 {/* Tab Content */}
                 <div className="bg-white dark:bg-gray-800">

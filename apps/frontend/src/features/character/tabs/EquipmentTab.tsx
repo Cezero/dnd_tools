@@ -218,7 +218,23 @@ export function EquipmentTab({
                 const item = info.row.original;
                 const parts: string[] = [];
 
-                if (item.weapon) {
+                // Prioritize armor details for items with armor category (including shields)
+                // This ensures shields show armor info instead of weapon info
+                if (item.armor) {
+                    // Armor details
+                    if (item.armor.bonus !== null) {
+                        parts.push(`+${item.armor.bonus}`);
+                    }
+                    if (item.armor.dexterityCap !== null) {
+                        parts.push(`Dex +${item.armor.dexterityCap}`);
+                    }
+                    if (item.armor.checkPenalty !== null) {
+                        parts.push(`ACP: ${item.armor.checkPenalty}`);
+                    }
+                    if (item.armor.speedCapThirty !== null) {
+                        parts.push(`${item.armor.speedCapThirty} ft`);
+                    }
+                } else if (item.weapon) {
                     // Weapon details - format: "Dmg: 1d6, Crit: x2, piercing"
                     if (item.weapon.damageMedium) {
                         parts.push(`Dmg: ${item.weapon.damageMedium}`);
@@ -260,20 +276,6 @@ export function EquipmentTab({
                     // Always show range if present (for thrown weapons like daggers and throwing axes)
                     if (item.weapon.range) {
                         parts.push(`Rng: ${item.weapon.range}`);
-                    }
-                } else if (item.armor) {
-                    // Armor details
-                    if (item.armor.bonus !== null) {
-                        parts.push(`+${item.armor.bonus}`);
-                    }
-                    if (item.armor.dexterityCap !== null) {
-                        parts.push(`Dex +${item.armor.dexterityCap}`);
-                    }
-                    if (item.armor.checkPenalty !== null) {
-                        parts.push(`ACP: ${item.armor.checkPenalty}`);
-                    }
-                    if (item.armor.speedCapThirty !== null) {
-                        parts.push(`${item.armor.speedCapThirty} ft`);
                     }
                 }
 

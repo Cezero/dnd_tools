@@ -1,6 +1,6 @@
 import { EntityAppliesToType, EntityType } from '@shared/static-data';
 
-import { classSkillLabeler, skillModifierLabeler, displayNameLabeler, emptyStringLabeler, bonusLanguageLabeler, automaticLanguageLabeler, abilityModifierLabeler, savingThrowModifierLabeler, creatureTypeLabeler, sizeCategoryLabeler, choiceLabeler, groupedChoiceLabeler, grantedFeatLabeler, weaponFamiliarityLabeler, groupedWeaponFamiliarityLabeler, groupedUsesLabeler, spellSaveDCLabeler, groupedResistanceLabeler, domainLabeler, casterLevelLabeler, groupedBonusLanguageLabeler, groupedAutomaticLanguageLabeler, groupedSkillPointsLabeler } from './label-formatters';
+import { classSkillLabeler, skillModifierLabeler, displayNameLabeler, emptyStringLabeler, bonusLanguageLabeler, automaticLanguageLabeler, abilityModifierLabeler, savingThrowModifierLabeler, creatureTypeLabeler, sizeCategoryLabeler, choiceLabeler, groupedChoiceLabeler, grantedFeatLabeler, weaponFamiliarityLabeler, groupedWeaponFamiliarityLabeler, groupedUsesLabeler, spellSaveDCLabeler, groupedResistanceLabeler, domainLabeler, casterLevelLabeler, groupedBonusLanguageLabeler, groupedAutomaticLanguageLabeler, groupedSkillPointsLabeler, animalCompanionLabeler } from './label-formatters';
 import { generateKey } from './registry-utils';
 import type { CalculatedEntity } from './types';
 
@@ -109,6 +109,7 @@ export class LabelerRegistry implements ILabelerRegistry {
         this.registerBonusLabeler(EntityAppliesToType.Skill, skillModifierLabeler); // Special case for skills
         this.registerBonusLabeler(EntityAppliesToType.Resistance, groupedResistanceLabeler);
         this.registerBonusLabeler(EntityAppliesToType.CasterLevel, casterLevelLabeler);
+        this.registerBonusLabeler(EntityAppliesToType.HitPoints, displayNameLabeler);
 
         // EntityType.Quantity - use displayName labeler for most types
         this.registerQuantityLabeler(EntityAppliesToType.MovementSpeed, displayNameLabeler);
@@ -138,13 +139,23 @@ export class LabelerRegistry implements ILabelerRegistry {
         this.registerOtherLabeler(EntityAppliesToType.WeaponFamiliarity, weaponFamiliarityLabeler);
         this.registerOtherLabeler(EntityAppliesToType.Skill, classSkillLabeler); // Special case for class skills
         this.registerOtherLabeler(EntityAppliesToType.Domain, domainLabeler); // Domain grants
+        this.registerOtherLabeler(EntityAppliesToType.AnimalCompanion, animalCompanionLabeler); // Animal companion grants
+        this.registerOtherLabeler(EntityAppliesToType.Familiar, animalCompanionLabeler); // Familiar grants (use same labeler as animal companions)
 
         // EntityType.Proficiency
         this.registerProficiencyLabeler(EntityAppliesToType.Feat, emptyStringLabeler);
 
         // Choice labelers
-        this.registerLabeler(EntityType.Choice, choiceLabeler);
-        this.registerLabeler(EntityType.Allocation, choiceLabeler);
+        this.registerLabeler(EntityType.Choice, choiceLabeler, EntityAppliesToType.AnimalCompanion);
+        this.registerLabeler(EntityType.Choice, choiceLabeler, EntityAppliesToType.Familiar);
+        this.registerLabeler(EntityType.Choice, choiceLabeler, EntityAppliesToType.Domain);
+        this.registerLabeler(EntityType.Choice, choiceLabeler, EntityAppliesToType.Feat);
+        this.registerLabeler(EntityType.Choice, choiceLabeler, EntityAppliesToType.Feature);
+        this.registerLabeler(EntityType.Choice, choiceLabeler, EntityAppliesToType.CreatureType);
+        this.registerLabeler(EntityType.Choice, choiceLabeler, EntityAppliesToType.SkillPoints);
+        this.registerLabeler(EntityType.Allocation, emptyStringLabeler, EntityAppliesToType.Feat);
+        this.registerLabeler(EntityType.Allocation, emptyStringLabeler, EntityAppliesToType.Feature);
+        this.registerLabeler(EntityType.Allocation, emptyStringLabeler, EntityAppliesToType.CreatureType);
     }
 
     // Grouped labeler methods

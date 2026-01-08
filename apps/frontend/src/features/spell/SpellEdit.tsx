@@ -1,6 +1,7 @@
 
 import { TrashIcon } from '@heroicons/react/24/outline';
-import React, { useState, useEffect, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
 import {
@@ -15,11 +16,12 @@ import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { useCacheFunctions } from '@/services/cache';
 import { SpellQueryHooks } from '@/services/query/SpellQueryHooks';
 import { SpellLevelMapping, GetSpellResponse, UpdateSpellSchema, UpdateSpellRequest } from '@shared/schema';
-import { SPELL_DESCRIPTOR_LIST, SPELL_COMPONENT_LIST, SPELL_RANGE_LIST, SPELL_RANGE_MAP, SPELL_SUBSCHOOL_BY_SCHOOL_ID_MAP, SPELL_SCHOOL_LIST, SourceType, EditionId, CoreComponent } from '@shared/static-data';
+import { SPELL_DESCRIPTOR_LIST, SPELL_COMPONENT_LIST, SPELL_RANGE_LIST, SPELL_RANGE_MAP, SPELL_SUBSCHOOL_BY_SCHOOL_ID_MAP, SPELL_SUBSCHOOL_MAP, SPELL_SCHOOL_LIST, SourceType, EditionId, CoreComponent } from '@shared/static-data';
 
 
 export function SpellEdit() {
-    const { getSpellcasterClassSelectByEdition } = useCacheFunctions();
+    const { getSpellcasterClassSelectByEdition, getClassNameById } = useCacheFunctions();
+    const queryClient = useQueryClient();
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
@@ -31,7 +33,9 @@ export function SpellEdit() {
     const [selectedLevelToAdd, setSelectedLevelToAdd] = useState<number>(1);
     const [classLevelMappings, setClassLevelMappings] = useState<SpellLevelMapping[]>([]);
     const [availableClasses, setAvailableClasses] = useState<CoreComponent[]>([]);
+    const [classNames, setClassNames] = useState<Map<number, string>>(new Map());
     const fromListParams = location.state?.fromListParams || '';
+    const loadingClassIdsRef = useRef<Set<number>>(new Set());
 
     const [formData, setFormData] = useState<UpdateSpellRequest | null>(null);
 
@@ -86,23 +90,78 @@ export function SpellEdit() {
 
     // Load available classes for spell selection (only once)
     useEffect(() => {
+        let isMounted = true;
+
         const loadAvailableClasses = async () => {
             try {
                 // Default to edition 5 (3.5e) for now - this could be made configurable
-                const classes = getSpellcasterClassSelectByEdition(EditionId.DND_3_5E);
-                setAvailableClasses(classes.map(cls => ({
-                    id: cls.id,
-                    name: cls.name,
-                    abbreviation: cls.abbreviation
-                })));
+                const classes = await getSpellcasterClassSelectByEdition(EditionId.DND_3_5E);
+                if (isMounted) {
+                    setAvailableClasses(classes.map(cls => ({
+                        id: cls.id,
+                        name: cls.name,
+                        abbreviation: cls.abbreviation
+                    })));
+                }
             } catch (error) {
                 console.error('Failed to load available classes:', error);
-                setAvailableClasses([]);
+                if (isMounted) {
+                    setAvailableClasses([]);
+                }
             }
         };
 
         loadAvailableClasses();
-    }, []); // Remove classLevelMappings dependency to avoid unnecessary reloading
+
+        return () => {
+            isMounted = false;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run once on mount
+
+    // Load class names for classLevelMappings using getClassNameById
+    useEffect(() => {
+        if (classLevelMappings.length === 0) {
+            return;
+        }
+
+        // Find class IDs that need to be loaded
+        const classIdsToLoad = classLevelMappings
+            .map(mapping => mapping.classId)
+            .filter(classId => {
+                // Skip if already in classNames or currently loading
+                if (classNames.has(classId) || loadingClassIdsRef.current.has(classId)) {
+                    return false;
+                }
+                // Mark as loading
+                loadingClassIdsRef.current.add(classId);
+                return true;
+            });
+
+        if (classIdsToLoad.length > 0) {
+            // Load class names asynchronously
+            Promise.all(
+                classIdsToLoad.map(classId => getClassNameById(classId))
+            ).then(classData => {
+                setClassNames(prev => {
+                    const updated = new Map(prev);
+                    classData.forEach((cls, index) => {
+                        if (cls) {
+                            updated.set(classIdsToLoad[index], cls.name);
+                        }
+                        // Remove from loading set once processed
+                        loadingClassIdsRef.current.delete(classIdsToLoad[index]);
+                    });
+                    return updated;
+                });
+            }).catch(error => {
+                console.error('Failed to load class names:', error);
+                // Remove from loading set on error so we can retry
+                classIdsToLoad.forEach(id => loadingClassIdsRef.current.delete(id));
+            });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [classLevelMappings]); // Only depend on classLevelMappings
 
     // Filter available classes to exclude those already in classLevelMappings
     const filteredAvailableClasses = useMemo(() => {
@@ -245,7 +304,12 @@ export function SpellEdit() {
                 levelMapping: classLevelMappings
             };
 
-            await SpellQueryHooks.updateSpell(parseInt(id), submitData as UpdateSpellRequest);
+            await SpellQueryHooks.updateSpell(parseInt(id!), submitData as UpdateSpellRequest, queryClient);
+
+            // Invalidate spell queries to ensure fresh data
+            queryClient.invalidateQueries({ queryKey: ['spells', 'item', parseInt(id!)] });
+            queryClient.invalidateQueries({ queryKey: ['spells', 'list'] });
+
             setMessage('Spell updated successfully!');
             navigate(`/spells/${id}`, { state: { fromListParams: fromListParams, refresh: true } });
 
@@ -442,11 +506,11 @@ export function SpellEdit() {
                                 <div className="mb-2">
                                     <div className="flex flex-wrap items-center gap-4">
                                         {classLevelMappings.map((mapping) => {
-                                            const dndClass = availableClasses.find(cls => cls.id === mapping.classId);
+                                            const className = classNames.get(mapping.classId) || 'Unknown Class';
                                             return (
                                                 <div key={mapping.classId} className="border rounded p-1 flex items-center justify-between gap-2 dark:border-gray-600">
                                                     <span className="text-sm whitespace-nowrap">
-                                                        {dndClass?.name || 'Unknown Class'} - Lvl {mapping.level}
+                                                        {className} - Lvl {mapping.level}
                                                     </span>
                                                     <button
                                                         type="button"
@@ -514,17 +578,21 @@ export function SpellEdit() {
                                     onCheckedChange={(checked) => handleSchoolChange(school.id, checked)}
                                     labelClassName="font-bold text-base"
                                 />
-                                {(SPELL_SUBSCHOOL_BY_SCHOOL_ID_MAP[school.id]).length > 0 && (
+                                {SPELL_SUBSCHOOL_BY_SCHOOL_ID_MAP[school.id] && SPELL_SUBSCHOOL_BY_SCHOOL_ID_MAP[school.id].length > 0 && (
                                     <div className="ml-6 mt-1 grid grid-cols-1 gap-y-1">
-                                        {(SPELL_SUBSCHOOL_BY_SCHOOL_ID_MAP[school.id]).map(subschool => (
-                                            <CustomCheckbox
-                                                key={subschool.id}
-                                                label={subschool.name}
-                                                checked={(formData?.subSchoolIds || []).some(s => s.subSchoolId === subschool.id)}
-                                                onCheckedChange={(checked) => handleSubschoolChange(subschool.id, checked)}
-                                                labelClassName="text-sm"
-                                            />
-                                        ))}
+                                        {SPELL_SUBSCHOOL_BY_SCHOOL_ID_MAP[school.id].map(subschoolId => {
+                                            const subschool = SPELL_SUBSCHOOL_MAP[subschoolId];
+                                            if (!subschool) return null;
+                                            return (
+                                                <CustomCheckbox
+                                                    key={`${school.id}-${subschool.id}`}
+                                                    label={subschool.name}
+                                                    checked={(formData?.subSchoolIds || []).some(s => s.subSchoolId === subschool.id)}
+                                                    onCheckedChange={(checked) => handleSubschoolChange(subschool.id, checked)}
+                                                    labelClassName="text-sm text-gray-700 dark:text-gray-300"
+                                                />
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>

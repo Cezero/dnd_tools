@@ -336,12 +336,12 @@ export function DescriptionTab({
         }
 
         // Calculate automatic languages from all progressions (any source)
-        const automaticLanguages = LanguageService.getAutomaticLanguages(resolvedData.progressions);
+        const automaticLanguages = LanguageService.getAutomaticLanguages(resolvedData.progressions || []);
 
         // Calculate available bonus languages from all progressions (any source)
         // Remove duplicates since a language can be available from multiple sources
         const availableBonusLanguages = Array.from(new Set(
-            LanguageService.getBonusLanguages(resolvedData.progressions)
+            LanguageService.getBonusLanguages(resolvedData.progressions || [])
         ));
 
         // Calculate INT modifier
@@ -385,13 +385,20 @@ export function DescriptionTab({
 
     // Handle adding a bonus language
     const handleAddBonusLanguage = useCallback((languageId: number) => {
-        if (!languageData.availableBonusLanguages.includes(languageId)) {
+        // Ensure languageData exists and has the required properties
+        if (!languageData) {
             return;
         }
+        // Don't add if already selected (shouldn't happen due to dropdown filtering, but safety check)
         if (state.selectedBonusLanguages.includes(languageId)) {
             return;
         }
+        // Don't add if we've reached the max
         if (state.selectedBonusLanguages.length >= languageData.maxBonusLanguages) {
+            return;
+        }
+        // Validate that the language is actually available (safety check)
+        if (!languageData.availableBonusLanguages.includes(languageId)) {
             return;
         }
         updateState({
@@ -410,10 +417,13 @@ export function DescriptionTab({
 
     // Filter available bonus languages (exclude already selected)
     const availableBonusLanguagesForSelection = useMemo(() => {
+        if (!languageData) {
+            return [];
+        }
         return languageData.availableBonusLanguages.filter(
             langId => !state.selectedBonusLanguages.includes(langId)
         );
-    }, [languageData.availableBonusLanguages, state.selectedBonusLanguages]);
+    }, [languageData, state.selectedBonusLanguages]);
 
     return (
         <div className="p-6">
@@ -631,29 +641,33 @@ export function DescriptionTab({
                         )}
 
                         {/* Bonus language selection dropdown */}
-                        {languageData.maxBonusLanguages > 0 && 
-                         state.selectedBonusLanguages.length < languageData.maxBonusLanguages && 
-                         availableBonusLanguagesForSelection.length > 0 && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Bonus Languages (Choose {languageData.maxBonusLanguages - state.selectedBonusLanguages.length} more)
-                                </label>
-                                <CustomSelect
-                                    value={null}
-                                    onValueChange={(value) => {
-                                        if (value && typeof value === 'number') {
-                                            handleAddBonusLanguage(value);
-                                        }
-                                    }}
-                                    options={availableBonusLanguagesForSelection.map(langId => ({
-                                        id: langId,
-                                        name: LANGUAGE_MAP[langId]?.name || `Language ${langId}`
-                                    }))}
-                                    placeholder="Select a bonus language..."
-                                    componentExtraClassName="flex items-center gap-2"
-                                />
-                            </div>
-                        )}
+                        {languageData.maxBonusLanguages > 0 &&
+                            state.selectedBonusLanguages.length < languageData.maxBonusLanguages &&
+                            availableBonusLanguagesForSelection.length > 0 && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Bonus Languages (Choose {languageData.maxBonusLanguages - state.selectedBonusLanguages.length} more)
+                                    </label>
+                                    <CustomSelect
+                                        value={null}
+                                        onValueChange={(value) => {
+                                            if (value !== null && value !== undefined) {
+                                                // Convert to number if needed (Select component may pass strings)
+                                                const languageId = typeof value === 'string' ? parseInt(value, 10) : value;
+                                                if (!isNaN(languageId) && typeof languageId === 'number') {
+                                                    handleAddBonusLanguage(languageId);
+                                                }
+                                            }
+                                        }}
+                                        options={availableBonusLanguagesForSelection.map(langId => ({
+                                            id: langId,
+                                            name: LANGUAGE_MAP[langId]?.name || `Language ${langId}`
+                                        }))}
+                                        placeholder="Select a bonus language..."
+                                        componentExtraClassName="flex items-center gap-2"
+                                    />
+                                </div>
+                            )}
                     </div>
                 </div>
 

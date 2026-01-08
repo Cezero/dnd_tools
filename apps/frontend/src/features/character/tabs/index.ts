@@ -6,4 +6,5 @@ export { ChoicesTab } from './ChoicesTab';
 export { DescriptionTab } from './DescriptionTab';
 export { EquipmentTab } from './EquipmentTab';
 export { CombatTab } from './CombatTab';
-export { ConfigurationTab } from './ConfigurationTab'; 
+export { ConfigurationTab } from './ConfigurationTab';
+export { SpellSelectionTab } from './SpellSelectionTab'; 

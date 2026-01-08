@@ -1,5 +1,6 @@
 import {
     RaceIdParamSchema,
+    RaceIdQuerySchema,
     UpdateRaceSchema,
     CreateResponseSchema,
     UpdateResponseSchema,
@@ -66,7 +67,16 @@ export const RaceQueryHooks = {
 
     // Add imperative methods
     getRaces: (params?: unknown) => racesConfig.fetch(params),
-    getRaceById: (raceId: number) => raceByIdConfig.fetch({ pathParams: { id: raceId } }),
+    getRaceById: (raceId: number, characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>) => {
+        const queryParams: { characterFeatureChoices?: string } = {};
+        if (characterFeatureChoices && characterFeatureChoices.length > 0) {
+            queryParams.characterFeatureChoices = JSON.stringify(characterFeatureChoices);
+        }
+        return raceByIdConfig.fetch({
+            pathParams: { id: raceId },
+            requestData: Object.keys(queryParams).length > 0 ? queryParams : undefined
+        });
+    },
     createRace: (data: unknown) => createRaceConfig.mutate({ requestData: data }),
     updateRace: (raceId: number, data: unknown) => updateRaceConfig.mutate({
         requestData: data,
@@ -78,7 +88,16 @@ export const RaceQueryHooks = {
 
     // Expose query functions for advanced usage
     getRacesQueryFn: racesConfig.queryFn,
-    getRaceByIdQueryFn: raceByIdConfig.queryFn,
+    getRaceByIdQueryFn: (params: { pathParams: { id: number }; queryParams?: { characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }> } }) => {
+        const queryData: { characterFeatureChoices?: string } = {};
+        if (params.queryParams?.characterFeatureChoices && params.queryParams.characterFeatureChoices.length > 0) {
+            queryData.characterFeatureChoices = JSON.stringify(params.queryParams.characterFeatureChoices);
+        }
+        return raceByIdConfig.queryFn({
+            pathParams: params.pathParams,
+            requestData: Object.keys(queryData).length > 0 ? queryData : undefined
+        });
+    },
     getRacesQueryKey: (params?: unknown) => racesConfig.queryKeyBuilder(params),
     getRaceByIdQueryKey: (raceId: number) => raceByIdConfig.queryKeyBuilder({ pathParams: { id: raceId } }),
 };

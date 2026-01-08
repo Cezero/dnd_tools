@@ -589,6 +589,7 @@ export interface TabComponentProps {
     isLoading: boolean;
     triggerFeatureResolution: () => Promise<void>;
     handleChoiceSelection?: (choiceType: number, selectedId: number, features: FeatureProgression[]) => Promise<void>;
+    handleSkillRankUpdate?: (skillId: number, skillSubId: number | null, customSubtype: string | null, pointsSpent: number) => Promise<void>;
     formattedCharacter?: FormattedCharacterResult | null;
     // Shared data fetched in CharacterEdit and passed to all tabs
     sharedData: {
@@ -601,6 +602,7 @@ export interface TabComponentProps {
         race: Race | null;
         isLoadingClasses: boolean;
         isLoadingRace: boolean;
+        classDetailsMap: Map<number, DnDClass>;
     };
     // Character data for prerequisite checking
     character: CharacterWithAllDetailsResponse | null;

@@ -3,13 +3,15 @@ import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 
 import { DomainDisplay } from '@/features/domain/DomainDisplay';
+import { formatCompanionBenefit } from '@/features/companion/CompanionUtil';
 import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import { SpellQueryHooks } from '@/services/query/SpellQueryHooks';
-import type { Domain, GetSpellResponse, GetFeatureResponse } from '@shared/schema';
+import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
+import type { Domain, GetSpellResponse, GetFeatureResponse, GetCompanionResponse } from '@shared/schema';
 import { FeatSchema } from '@shared/schema';
-import { EntityAppliesToType } from '@shared/static-data';
+import { EntityAppliesToType, COMPANION_TYPE_MAP } from '@shared/static-data';
 
 interface SelectedEntityDisplayProps {
     choiceType: EntityAppliesToType;
@@ -35,6 +37,12 @@ export function SelectedEntityDisplay({
 
         case EntityAppliesToType.Feature:
             return <FeatureDisplayWrapper featureId={selectedValue} showHeader={showHeader} />;
+
+        case EntityAppliesToType.AnimalCompanion:
+            return <CompanionDisplayWrapper companionId={selectedValue} choiceType={EntityAppliesToType.AnimalCompanion} showHeader={showHeader} />;
+
+        case EntityAppliesToType.Familiar:
+            return <CompanionDisplayWrapper companionId={selectedValue} choiceType={EntityAppliesToType.Familiar} showHeader={showHeader} />;
 
         default:
             return null;
@@ -282,6 +290,82 @@ function FeatureDisplayWrapper({ featureId, showHeader: _showHeader }: { feature
             <h4 className="font-semibold text-green-800 dark:text-green-200 mb-2">{feature.name}</h4>
             {feature.description && (
                 <p className="text-green-600 dark:text-green-300 text-sm">{feature.description}</p>
+            )}
+        </div>
+    );
+}
+
+// Companion Display Wrapper
+function CompanionDisplayWrapper({ companionId, choiceType, showHeader: _showHeader }: { companionId: number; choiceType: EntityAppliesToType.Familiar | EntityAppliesToType.AnimalCompanion; showHeader: boolean }): React.JSX.Element | null {
+    const queryClient = useQueryClient();
+    const [companion, setCompanion] = useState<GetCompanionResponse | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<Error | null>(null);
+
+    useEffect(() => {
+        const fetchCompanion = async () => {
+            if (!companionId) return;
+
+            try {
+                setIsLoading(true);
+                setError(null);
+                const companionData = await queryClient.fetchQuery({
+                    queryKey: CompanionQueryHooks.getCompanionByIdQueryKey(companionId),
+                    queryFn: () => CompanionQueryHooks.getCompanionByIdQueryFn({ pathParams: { id: companionId } }),
+                    staleTime: 5 * 60 * 1000, // 5 minutes
+                    gcTime: 10 * 60 * 1000, // 10 minutes
+                });
+                setCompanion(companionData);
+            } catch (err) {
+                setError(err instanceof Error ? err : new Error('Failed to fetch companion'));
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchCompanion();
+    }, [companionId, queryClient]);
+
+    if (isLoading) {
+        return (
+            <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div className="animate-pulse">
+                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
+                </div>
+            </div>
+        );
+    }
+
+    if (error || !companion) {
+        return (
+            <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
+                <p className="text-red-600 dark:text-red-400">Error loading companion details</p>
+            </div>
+        );
+    }
+
+    const companionName = companion.monster?.name || `Companion ${companion.id}`;
+    const companionTypeName = COMPANION_TYPE_MAP[companion.type]?.name || (choiceType === EntityAppliesToType.Familiar ? 'Familiar' : 'Animal Companion');
+
+    return (
+        <div className="mt-4 p-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-lg">
+            <h4 className="font-semibold text-indigo-800 dark:text-indigo-200 mb-2">{companionTypeName}</h4>
+            <p className="text-indigo-600 dark:text-indigo-300 mb-2">{companionName}</p>
+            {choiceType === EntityAppliesToType.Familiar && companion.benefits && companion.benefits.length > 0 && (
+                <div className="mt-3">
+                    <p className="text-sm font-semibold text-indigo-800 dark:text-indigo-200 mb-2">Benefits:</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                        {companion.benefits.map((benefit, index) => {
+                            const formattedBenefit = formatCompanionBenefit(benefit);
+                            return (
+                                <div key={index} className="rounded border border-indigo-300 dark:border-indigo-600 p-2 bg-indigo-100 dark:bg-indigo-900/30">
+                                    <span className="text-sm text-indigo-800 dark:text-indigo-200">{formattedBenefit}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
             )}
         </div>
     );

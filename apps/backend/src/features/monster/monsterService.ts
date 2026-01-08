@@ -92,7 +92,7 @@ async function getMonsterHierarchy(
 }
 
 export const monsterService: MonsterService = {
-    async getAllMonsters(includeStatblockOnly: boolean = false): Promise<GetAllMonstersResponse> {
+    async getAllMonsters(includeStatblockOnly: boolean = false, typeId?: number): Promise<GetAllMonstersResponse> {
         const whereClause: Record<string, unknown> = {};
 
         if (includeStatblockOnly) {
@@ -107,6 +107,14 @@ export const monsterService: MonsterService = {
                 { refSave: { not: null } },
                 { willSave: { not: null } },
             ];
+        }
+
+        if (typeId !== undefined) {
+            whereClause.types = {
+                some: {
+                    typeId: typeId,
+                },
+            };
         }
 
         const monsters = await prisma.monster.findMany({

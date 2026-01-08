@@ -9,7 +9,7 @@ import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { FEAT_TYPES, FEAT_BENEFIT_TYPE_BY_ID, FeatBenefitType, EDITION_MAP } from '@shared/static-data';
 import { GetSourceDisplay } from '@shared/utils';
 
-import { FeatOptions, getPrereqDisplayText } from './FeatUtil';
+import { FeatOptions, getPrereqDisplayText, formatFeatBenefit } from './FeatUtil';
 
 export function FeatDetail() {
     const { id } = useParams();
@@ -148,7 +148,7 @@ export function FeatDetail() {
                         <div className="flex items-center gap-2">
                             {feat.benefits.map((benefit, index) => (
                                 <div key={index} className="rounded border p-1 dark:border-gray-500">
-                                    {FEAT_BENEFIT_TYPE_BY_ID[benefit.typeId]}: {FeatOptions(benefit.typeId).find(option => option.id === benefit.referenceId)?.name || ''} {benefit.typeId !== FeatBenefitType.PROFICIENCY && benefit.amount && benefit.amount > 0 ? `+${benefit.amount}` : benefit.typeId !== FeatBenefitType.PROFICIENCY && benefit.amount ? `${benefit.amount}` : ''}
+                                    {formatFeatBenefit(benefit)}
                                 </div>
                             ))}
                         </div>

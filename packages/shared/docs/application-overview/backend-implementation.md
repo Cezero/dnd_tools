@@ -38,6 +38,13 @@ The backend follows a standard layered architecture with clear separation of con
 - **Pattern**: Prisma ORM with type-safe queries
 - **Integration**: Direct database access
 
+**Session Storage Layer** (SQLite with better-sqlite3):
+- **Purpose**: Lightweight, file-based session storage
+- **Responsibilities**: Session state persistence, expiration management
+- **Pattern**: Direct SQL with better-sqlite3 (no ORM)
+- **Integration**: Separate from main database for session-specific data
+- **Use Cases**: Temporary editing sessions, state that survives restarts
+
 **Benefits**:
 - **Separation of Concerns**: Clear boundaries between layers
 - **Testability**: Each layer can be tested independently
@@ -291,6 +298,162 @@ Controllers handle HTTP requests and delegate business logic to services:
 - **Service Delegation**: Delegate deletion to service layer
 - **Response Formatting**: Format deletion response
 - **Error Handling**: Handle not found and constraint errors
+
+### **Session Management Controller Patterns**
+
+Controllers for session-based resources follow a RESTful session pattern:
+
+**Initialize Session** (`POST /resource/:id/session`):
+- **Purpose**: Create new editing session
+- **Request**: No body required (uses resource ID from path)
+- **Response**: Session data with unique session ID
+- **Pattern**: Load resource, initialize state, create session, return session ID
+
+**Resume Session** (`GET /resource/:id/session`):
+- **Purpose**: Retrieve active session for resource
+- **Request**: No body required
+- **Response**: Session data or null if no active session
+- **Pattern**: Look up session by resource ID and user ID, return if exists and not expired
+
+**Update Session** (`PATCH /resource/:id/session/:sessionId`):
+- **Purpose**: Apply update to session state
+- **Request**: Update payload (discriminated union for different update types)
+- **Response**: Updated session data
+- **Pattern**: Load session, apply update, re-compute derived data, update session, return result
+
+**Get Session State** (`GET /resource/:id/session/:sessionId`):
+- **Purpose**: Get current session state without re-computation
+- **Request**: No body required
+- **Response**: Current session data
+- **Pattern**: Load session, return stored state
+
+**Save Session** (`POST /resource/:id/session/:sessionId/save`):
+- **Purpose**: Persist session state to main database
+- **Request**: No body required
+- **Response**: Success message
+- **Pattern**: Load session, persist to main database, delete session
+
+**Cancel Session** (`DELETE /resource/:id/session/:sessionId`):
+- **Purpose**: Discard session without saving
+- **Request**: No body required
+- **Response**: Success message
+- **Pattern**: Delete session from storage
+
+**Benefits**:
+- **RESTful Design**: Follows REST conventions for session management
+- **Clear Lifecycle**: Explicit session lifecycle operations
+- **State Persistence**: Sessions survive backend restarts
+- **User Experience**: Users can resume editing after page refresh or restart
+
+**Source File**: `apps/backend/src/features/characterResolution/characterResolutionController.ts`
+
+## 💾 **Session Management Patterns**
+
+### **SQLite Session Storage Pattern**
+
+For temporary, session-based data that needs to persist across backend restarts, the application uses SQLite with better-sqlite3 instead of the main Prisma database.
+
+**When to Use**:
+- Temporary editing sessions
+- State that should survive backend restarts
+- Data that doesn't need complex relationships
+- Lightweight, file-based storage requirements
+
+**Implementation Pattern**:
+- **Direct SQL**: Use raw SQL queries with better-sqlite3 (no ORM)
+- **WAL Mode**: Enable Write-Ahead Logging for better concurrency
+- **Automatic Cleanup**: Implement periodic cleanup of expired sessions
+- **Singleton Database**: Use singleton pattern for database connection
+- **File-Based**: Store database file in `data/` directory (configurable)
+
+**Example Structure**:
+```typescript
+// Initialize database with direct SQL
+db.exec(`
+  CREATE TABLE IF NOT EXISTS sessions (
+    id TEXT PRIMARY KEY,
+    data TEXT NOT NULL,
+    expires_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_expires_at ON sessions(expires_at);
+`);
+
+// Enable WAL mode
+db.pragma('journal_mode = WAL');
+```
+
+**Benefits**:
+- **Lightweight**: No additional database server required
+- **Fast**: File-based storage with excellent read performance
+- **Persistent**: Survives backend restarts
+- **Simple**: Direct SQL without ORM overhead
+- **Configurable**: Database location configurable via environment variables
+
+**Source File**: `apps/backend/src/features/characterResolution/sessionDatabase.ts`
+
+**Related Documentation**: [Character Resolution System](../character-management/character-resolution-system.md#session-database-schema)
+
+### **Session Lifecycle Management**
+
+Sessions follow a standard lifecycle pattern:
+
+**Initialization**:
+- Create session with unique ID
+- Store initial state
+- Set expiration time
+- Return session ID to client
+
+**Update**:
+- Load session by ID
+- Apply updates to state
+- Re-compute derived data
+- Update expiration time
+- Save updated session
+
+**Resume**:
+- Look up session by key (e.g., `characterId:userId`)
+- Return stored state if session exists and not expired
+- Return null if session expired or not found
+
+**Save**:
+- Load session state
+- Persist to main database
+- Delete session from storage
+- Return success
+
+**Cancel**:
+- Delete session from storage
+- Discard all changes
+- Return success
+
+**Cleanup**:
+- Periodic background job (every 5 minutes)
+- Delete all sessions where `expires_at < now()`
+- Log cleanup statistics
+
+**Source File**: `apps/backend/src/features/characterResolution/characterSessionService.ts`
+
+### **Session Expiration Pattern**
+
+Sessions automatically expire after a configurable period of inactivity:
+
+**Expiration Strategy**:
+- **Time-Based**: Sessions expire after fixed time period (default: 30 minutes)
+- **Activity-Based**: Expiration time extended on each update
+- **Configurable**: Expiration time configurable via environment variable
+- **Automatic Cleanup**: Background job removes expired sessions
+
+**Implementation**:
+- Store `expires_at` timestamp in session record
+- Update `expires_at` on each session update
+- Filter expired sessions in queries (`WHERE expires_at > now()`)
+- Background cleanup job removes expired sessions
+
+**Benefits**:
+- **Prevents Stale Data**: Ensures sessions don't accumulate indefinitely
+- **Resource Management**: Frees up storage space automatically
+- **Data Freshness**: Ensures users get fresh data after inactivity
+- **Configurable**: Expiration time can be adjusted per environment
 
 ## 🔗 **Integration Patterns**
 

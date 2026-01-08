@@ -21,6 +21,25 @@ export const FeatureSourceType = {
 
 export type FeatureSourceType = typeof FeatureSourceType[keyof typeof FeatureSourceType];
 
+export const CompanionType = {
+    Familiar: 1,
+    AnimalCompanion: 2,
+    AlternativeAnimalCompanion: 3,
+    ImprovedFamiliar: 4,
+} as const;
+
+export type CompanionType = typeof CompanionType[keyof typeof CompanionType];
+
+export const COMPANION_TYPES: BaseMap<CoreComponent> = {
+    [CompanionType.Familiar]: { id: CompanionType.Familiar, name: 'Familiar' },
+    [CompanionType.AnimalCompanion]: { id: CompanionType.AnimalCompanion, name: 'Animal Companion' },
+    [CompanionType.AlternativeAnimalCompanion]: { id: CompanionType.AlternativeAnimalCompanion, name: 'Alternative Animal Companion' },
+    [CompanionType.ImprovedFamiliar]: { id: CompanionType.ImprovedFamiliar, name: 'Improved Familiar' },
+};
+
+export const COMPANION_TYPE_LIST = Object.values(COMPANION_TYPES);
+export const COMPANION_TYPE_MAP: Record<number, CoreComponent> = COMPANION_TYPES;
+
 export const FEATURE_SOURCE_TYPES: BaseMap<CoreComponent> = {
     [FeatureSourceType.Race]: { id: FeatureSourceType.Race, name: 'Race' },
     [FeatureSourceType.Class]: { id: FeatureSourceType.Class, name: 'Class' },
@@ -96,6 +115,9 @@ export const EntityAppliesToType = {
     Feature: 25,        // Direct feature grants (e.g., Ranger Endurance)
     Domain: 29,         // NEW: Domain grants by other systems (loose coupling)
     SkillPoints: 31,    // Skill points (e.g., Human bonus skill points)
+    AnimalCompanion: 32, // Animal companion choice
+    HitPoints: 33,      // Hit points (e.g., Toughness feat, companion benefits)
+    Familiar: 34,       // Familiar choice
 } as const;
 
 export type EntityAppliesToType = typeof EntityAppliesToType[keyof typeof EntityAppliesToType];
@@ -113,6 +135,7 @@ export const ENTITY_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
     [EntityAppliesToType.SpellSvDC]: { id: EntityAppliesToType.SpellSvDC, name: 'Spell Save DC', displayName: 'Spell Save DC' },
     [EntityAppliesToType.Resistance]: { id: EntityAppliesToType.Resistance, name: 'Resistance', displayName: 'Resistance' },
     [EntityAppliesToType.CasterLevel]: { id: EntityAppliesToType.CasterLevel, name: 'Caster Level', displayName: 'Caster Level' },
+    [EntityAppliesToType.HitPoints]: { id: EntityAppliesToType.HitPoints, name: 'Hit Points', displayName: 'HP' },
     // Quantity-compatible types
     [EntityAppliesToType.MovementSpeed]: { id: EntityAppliesToType.MovementSpeed, name: 'Movement Speed', displayName: 'Move Speed' },
     [EntityAppliesToType.HitDice]: { id: EntityAppliesToType.HitDice, name: 'Hit Dice', displayName: 'HD' },
@@ -139,6 +162,8 @@ export const ENTITY_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
     [EntityAppliesToType.Feature]: { id: EntityAppliesToType.Feature, name: 'Feature', displayName: 'Feature' },
     [EntityAppliesToType.Domain]: { id: EntityAppliesToType.Domain, name: 'Domain', displayName: 'Domain' },
     [EntityAppliesToType.SkillPoints]: { id: EntityAppliesToType.SkillPoints, name: 'Skill Points', displayName: 'Skill Points' },
+    [EntityAppliesToType.AnimalCompanion]: { id: EntityAppliesToType.AnimalCompanion, name: 'Animal Companion', displayName: 'Animal Companion' },
+    [EntityAppliesToType.Familiar]: { id: EntityAppliesToType.Familiar, name: 'Familiar', displayName: 'Familiar' },
 }
 
 export const ENTITY_APPLIES_TO_LIST = Object.values(ENTITY_APPLIES_TO_TYPES);
@@ -157,6 +182,7 @@ export const ENTITY_TYPE_COMPATIBILITY = {
         EntityAppliesToType.SpellSvDC,
         EntityAppliesToType.Resistance,
         EntityAppliesToType.CasterLevel,
+        EntityAppliesToType.HitPoints,
     ],
     [EntityType.Quantity]: [
         EntityAppliesToType.MovementSpeed,
@@ -199,6 +225,8 @@ export const ENTITY_TYPE_COMPATIBILITY = {
         EntityAppliesToType.CreatureType, // Choice between creature types (e.g., Ranger favored enemy)
         EntityAppliesToType.Domain, // Choice between domains
         EntityAppliesToType.SkillPoints, // Choice for skill points (e.g., Human bonus skill points)
+        EntityAppliesToType.AnimalCompanion, // Choice between animal companions
+        EntityAppliesToType.Familiar, // Choice between familiars
     ],
     [EntityType.Allocation]: [
         EntityAppliesToType.Feat, // Allocation to feats

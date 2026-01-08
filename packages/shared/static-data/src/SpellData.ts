@@ -138,23 +138,23 @@ export const SpellSubschool = {
 export type SpellSubschool = (typeof SpellSubschool)[keyof typeof SpellSubschool];
 
 export const SPELL_SUBSCHOOL_MAP: SpellSubschoolMap = {
-    [SpellSubschool.Calling]: { id: SpellSubschool.Calling, name: 'Calling' },
-    [SpellSubschool.Creation]: { id: SpellSubschool.Creation, name: 'Creation' },
-    [SpellSubschool.Healing]: { id: SpellSubschool.Healing, name: 'Healing' },
-    [SpellSubschool.Summoning]: { id: SpellSubschool.Summoning, name: 'Summoning' },
-    [SpellSubschool.Teleportation]: { id: SpellSubschool.Teleportation, name: 'Teleportation' },
-    [SpellSubschool.Scrying]: { id: SpellSubschool.Scrying, name: 'Scrying' },
-    [SpellSubschool.Charm]: { id: SpellSubschool.Charm, name: 'Charm' },
-    [SpellSubschool.Compulsion]: { id: SpellSubschool.Compulsion, name: 'Compulsion' },
-    [SpellSubschool.Figment]: { id: SpellSubschool.Figment, name: 'Figment' },
-    [SpellSubschool.Glamer]: { id: SpellSubschool.Glamer, name: 'Glamer' },
-    [SpellSubschool.Pattern]: { id: SpellSubschool.Pattern, name: 'Pattern' },
-    [SpellSubschool.Phantasm]: { id: SpellSubschool.Phantasm, name: 'Phantasm' },
-    [SpellSubschool.Shadow]: { id: SpellSubschool.Shadow, name: 'Shadow' },
-    [SpellSubschool.Least]: { id: SpellSubschool.Least, name: 'Least' },
-    [SpellSubschool.Lesser]: { id: SpellSubschool.Lesser, name: 'Lesser' },
-    [SpellSubschool.Greater]: { id: SpellSubschool.Greater, name: 'Greater' },
-    [SpellSubschool.Dark]: { id: SpellSubschool.Dark, name: 'Dark' }
+    [SpellSubschool.Calling]: { id: SpellSubschool.Calling, name: 'Calling', abbreviation: 'call' },
+    [SpellSubschool.Creation]: { id: SpellSubschool.Creation, name: 'Creation', abbreviation: 'cre' },
+    [SpellSubschool.Healing]: { id: SpellSubschool.Healing, name: 'Healing', abbreviation: 'heal' },
+    [SpellSubschool.Summoning]: { id: SpellSubschool.Summoning, name: 'Summoning', abbreviation: 'summon' },
+    [SpellSubschool.Teleportation]: { id: SpellSubschool.Teleportation, name: 'Teleportation', abbreviation: 'tele' },
+    [SpellSubschool.Scrying]: { id: SpellSubschool.Scrying, name: 'Scrying', abbreviation: 'scry' },
+    [SpellSubschool.Charm]: { id: SpellSubschool.Charm, name: 'Charm', abbreviation: 'charm' },
+    [SpellSubschool.Compulsion]: { id: SpellSubschool.Compulsion, name: 'Compulsion', abbreviation: 'comp' },
+    [SpellSubschool.Figment]: { id: SpellSubschool.Figment, name: 'Figment', abbreviation: 'fig' },
+    [SpellSubschool.Glamer]: { id: SpellSubschool.Glamer, name: 'Glamer', abbreviation: 'glam' },
+    [SpellSubschool.Pattern]: { id: SpellSubschool.Pattern, name: 'Pattern', abbreviation: 'pattern' },
+    [SpellSubschool.Phantasm]: { id: SpellSubschool.Phantasm, name: 'Phantasm', abbreviation: 'phant' },
+    [SpellSubschool.Shadow]: { id: SpellSubschool.Shadow, name: 'Shadow', abbreviation: 'shadow' },
+    [SpellSubschool.Least]: { id: SpellSubschool.Least, name: 'Least', abbreviation: 'least' },
+    [SpellSubschool.Lesser]: { id: SpellSubschool.Lesser, name: 'Lesser', abbreviation: 'less' },
+    [SpellSubschool.Greater]: { id: SpellSubschool.Greater, name: 'Greater', abbreviation: 'greater' },
+    [SpellSubschool.Dark]: { id: SpellSubschool.Dark, name: 'Dark', abbreviation: 'dark' }
 }
 
 export const SPELL_SUBSCHOOL_LIST = Object.values(SPELL_SUBSCHOOL_MAP);

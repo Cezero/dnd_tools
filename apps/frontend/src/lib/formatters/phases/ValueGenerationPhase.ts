@@ -13,6 +13,7 @@ import {
 
 import { calculatorRegistry } from '../calculator-registry';
 import { buildFormulaParams } from '../formula-utils';
+import { FormulaCalculatorImpl } from '../calculators';
 import type {
     DisplayContext,
     ProgressionValue,
@@ -113,33 +114,52 @@ export class ValueGenerationPhase {
     private generateFormulaIntervalValues(
         formulaEntity: FeatureEntity,
         progression: FeatureProgression,
-        _calculationContext: CalculationContext
+        calculationContext: CalculationContext
     ): ProgressionValue[] {
         const values: ProgressionValue[] = [];
         const formula = formulaEntity.formulaParams!;
         const formulaDef = FORMULA_MAP[formula.formulaId];
 
-        // Pass FeatureEntity.value to getFormulaIntervalLevels for proper formula calculation
-        const intervalData = this.getFormulaIntervalLevels(formula, progression.level, formulaEntity.value);
+        // Pass FeatureEntity.value and calculationContext to getFormulaIntervalLevels for proper formula calculation
+        const intervalData = this.getFormulaIntervalLevels(formula, progression.level, formulaEntity.value, calculationContext);
 
         for (const [level, calculatedValue] of intervalData) {
             let singleValue: number | string;
             let breakdown: CalculationBreakdown;
 
-            if (formulaDef.isCharacterDependent) {
-                // For character-dependent formulas (Edit/Detail display - no character context)
-                // Use getDisplayString() - no context needed
-                const params = buildFormulaParams(formula, level, progression.level, undefined, formulaEntity.value);
-                singleValue = formulaDef.getDisplayString(params);
+            // Convert CalculationContext to DisplayContext for buildFormulaParams
+            const displayContext: DisplayContext | undefined = calculationContext.character ? {
+                character: calculationContext.character,
+                currentLevel: calculationContext.characterLevel,
+                level: calculationContext.level
+            } : undefined;
 
-                breakdown = {
-                    components: [{
-                        source: 'Formula',
-                        value: 0, // Use 0 for string values
-                        type: BreakdownComponentType.formula,
-                        description: singleValue as string
-                    }]
-                };
+            if (formulaDef.isCharacterDependent) {
+                // For character-dependent formulas:
+                // - If character context is available, use calculate() to get the actual value
+                // - If no character context, use getDisplayString() to show the formula
+                if (calculationContext.character) {
+                    // Character context available - calculate the actual value
+                    const calculator = new FormulaCalculatorImpl();
+                    const result = calculator.calculate(formula, level, calculationContext, formulaEntity.value);
+                    singleValue = result.value ?? calculatedValue; // Fall back to calculatedValue if result.value is null
+                    
+                    // Use the detailed breakdown from the calculator
+                    breakdown = result.breakdown;
+                } else {
+                    // No character context - use display string
+                    const params = buildFormulaParams(formula, level, progression.level, displayContext, formulaEntity.value);
+                    singleValue = formulaDef.getDisplayString(params);
+
+                    breakdown = {
+                        components: [{
+                            source: 'Formula',
+                            value: 0, // Use 0 for string values
+                            type: BreakdownComponentType.formula,
+                            description: singleValue as string
+                        }]
+                    };
+                }
             } else {
                 // For non-character-dependent formulas, use the pre-calculated value
                 singleValue = calculatedValue;
@@ -252,11 +272,16 @@ export class ValueGenerationPhase {
      * For ALL entities, this should only be at the formula-determined intervals
      * Returns array of [level, value] tuples for non-null values
      */
-    private getFormulaIntervalLevels(formula: FormulaParamsData, progressionLevel: number, entityValue?: number): Array<[number, number]> {
+    private getFormulaIntervalLevels(
+        formula: FormulaParamsData,
+        progressionLevel: number,
+        entityValue?: number,
+        calculationContext?: CalculationContext
+    ): Array<[number, number]> {
         const formulaDef = FORMULA_MAP[formula.formulaId];
 
-        // Create mock character context for character-dependent formulas
-        const mockCharacter = {
+        // Use real character context if available, otherwise use mock character for interval detection
+        const characterContext = calculationContext?.character || {
             abilityScores: {
                 1: 12, 2: 12, 3: 12, 4: 12, 5: 12, 6: 12 // All abilities = 12 (modifier = +1)
             },
@@ -265,9 +290,12 @@ export class ValueGenerationPhase {
             }
         };
 
-        const mockContext = {
-            progressionLevel,
-            character: mockCharacter
+        // Convert CalculationContext to DisplayContext for buildFormulaParams
+        // Always create displayContext when we have a character-dependent formula to avoid undefined context errors
+        const displayContext: DisplayContext = {
+            character: characterContext,
+            currentLevel: calculationContext?.characterLevel,
+            level: calculationContext?.level
         };
 
         // Special handling for CONDITIONAL_SCALING formulas
@@ -283,8 +311,8 @@ export class ValueGenerationPhase {
         if (formula.formulaId === FormulaId.STATIC_EVERY_N_LEVELS) {
             const allLevels: Array<[number, number]> = [];
             for (let level = progressionLevel; level <= this.MAX_CHARACTER_LEVEL; level++) {
-                // Pass entityValue to buildFormulaParams - it will use this value or default to 1
-                const params = buildFormulaParams(formula, level, progressionLevel, mockContext, entityValue);
+                // Pass entityValue and displayContext to buildFormulaParams - it will use this value or default to 1
+                const params = buildFormulaParams(formula, level, progressionLevel, displayContext, entityValue);
                 const value = formulaDef.calculate(params);
                 // Include all levels where value is non-zero (not null and not 0)
                 if (value !== null && value !== 0) {
@@ -298,8 +326,8 @@ export class ValueGenerationPhase {
         const changingValues: Array<[number, number]> = [];
 
         for (let level = progressionLevel; level <= this.MAX_CHARACTER_LEVEL; level++) {
-            // Pass entityValue to buildFormulaParams - it will use this value or default to 1
-            const params = buildFormulaParams(formula, level, progressionLevel, mockContext, entityValue);
+            // Pass entityValue and displayContext to buildFormulaParams - it will use this value or default to 1
+            const params = buildFormulaParams(formula, level, progressionLevel, displayContext, entityValue);
             const value = formulaDef.calculate(params);
 
             // Only include non-null values
@@ -351,9 +379,9 @@ export class ValueGenerationPhase {
                         breakdown: {
                             components: [{
                                 source: 'Static',
-                                value: entity.value,
+                                value: entity.value ?? 0,
                                 type: BreakdownComponentType.base,
-                                description: `Static modifier: ${EntityType[entity.type] || entity.type}`
+                                description: `Static modifier: ${entity.value ?? 0}`
                             }]
                         },
                         entity: calculatedEntity,

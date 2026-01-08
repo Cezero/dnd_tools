@@ -1,6 +1,7 @@
 import { buildValidatedRouter } from '@/lib/buildValidatedRouter.js';
 import {
     ClassIdParamSchema,
+    ClassIdQuerySchema,
     CreateClassSchema,
     UpdateClassSchema,
     GetAllClassesQuerySchema
@@ -22,7 +23,7 @@ const { router: ClassRouter, get, post, put, delete: deleteRoute } = buildValida
 // Class Read Routes
 post('/query', { body: GetAllClassesQuerySchema }, GetAllClasses);
 get('/cache', {}, GetClassCache);
-get('/:id', { params: ClassIdParamSchema }, GetClassById);
+get('/:id', { params: ClassIdParamSchema, query: ClassIdQuerySchema }, GetClassById);
 
 // Class Write Routes
 post('/', requireAdmin, { body: CreateClassSchema }, CreateClass);

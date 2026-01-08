@@ -3,6 +3,7 @@ import { Response, NextFunction } from 'express';
 import {
     ValidatedNoInput,
     ValidatedParamsT,
+    ValidatedParamsQueryT,
     ValidatedBodyT,
     ValidatedParamsBodyT,
     ValidatedQueryT,
@@ -10,6 +11,7 @@ import {
 import {
     Race,
     RaceIdParamRequest,
+    RaceIdQuerySchema,
     CreateRaceRequest,
     UpdateRaceRequest,
     GetAllRacesResponse,
@@ -17,6 +19,7 @@ import {
     CreateResponse,
     RaceCacheResponse,
 } from '@shared/schema';
+import { z } from 'zod';
 
 import { raceService } from './raceService';
 /**
@@ -29,9 +32,15 @@ export async function GetAllRaces(req: ValidatedNoInput<GetAllRacesResponse>, re
 
 /**
  * Fetches a single race by its ID.
+ * Optionally accepts character feature choices to enrich progressions with choice data.
  */
-export async function GetRaceById(req: ValidatedParamsT<RaceIdParamRequest, Race>, res: Response, _next: NextFunction) {
-    const race = await raceService.getRaceById(req.params);
+export async function GetRaceById(
+    req: ValidatedParamsQueryT<RaceIdParamRequest, z.infer<typeof RaceIdQuerySchema>, Race>,
+    res: Response,
+    _next: NextFunction
+) {
+    const choices = req.query.characterFeatureChoices;
+    const race = await raceService.getRaceById(req.params, choices);
 
     if (!race) {
         res.status(404).json({ error: 'Race not found' });

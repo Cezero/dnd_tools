@@ -6,5 +6,5 @@ alwaysApply: true
 **CRITICAL**: Documentation updates are MANDATORY for any code changes.
 
 - all documentation is in the packages/shared/docs folder
-- follow the @documentation-standards.md instructions for all documentation
+- follow the instructions in packages/shared/docs/documentation-standards.md for all documentation
 - update the project-mgmt markdown files to track completed and pending tasks

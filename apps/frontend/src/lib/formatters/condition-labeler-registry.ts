@@ -1,4 +1,4 @@
-import { FeatureEntityConditionType, EntityAppliesToType } from '@shared/static-data';
+import { FeatureEntityConditionType, EntityAppliesToType, CompanionBenefitConditionType } from '@shared/static-data';
 
 import {
     materialConditionLabeler,
@@ -9,7 +9,8 @@ import {
     attackTypeConditionLabeler,
     targetConditionLabeler,
     environmentConditionLabeler,
-    spellSchoolSpellDCLabeler
+    spellSchoolSpellDCLabeler,
+    lightingConditionLabeler
 } from './condition-labelers';
 import type { ConditionLabeler } from './condition-labelers';
 // Custom key generation for condition labelers
@@ -73,6 +74,8 @@ class ConditionLabelerRegistry {
         this.registerLabeler(FeatureEntityConditionType.attack_type, undefined, attackTypeConditionLabeler);
         this.registerLabeler(FeatureEntityConditionType.target, undefined, targetConditionLabeler);
         this.registerLabeler(FeatureEntityConditionType.environment, undefined, environmentConditionLabeler);
+        // Register lighting condition labeler (CompanionBenefitConditionType.lighting = 8)
+        this.registerLabeler(CompanionBenefitConditionType.lighting as FeatureEntityConditionType, undefined, lightingConditionLabeler);
 
         // Register context-specific labelers
         this.registerLabeler(FeatureEntityConditionType.spell_school, EntityAppliesToType.SpellSvDC, spellSchoolSpellDCLabeler);

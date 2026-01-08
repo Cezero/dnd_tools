@@ -6,7 +6,10 @@ import type {
 import {
     FORMULA_MAP,
     DisplayType,
-    BreakdownComponentType
+    BreakdownComponentType,
+    FormulaId,
+    GetAbilityModifier,
+    ABILITY_MAP
 } from '@shared/static-data';
 
 import { buildFormulaParams } from './formula-utils';
@@ -66,13 +69,30 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
             formulaDef.getDisplayString(params) :
             formulaDef.name;
 
-        components.push({
-            source: formulaDef.name,
-            value: value || 0, // Use 0 for breakdown display when value is null
-            type: BreakdownComponentType.formula,
-            description: value === null ? `Formula does not apply at level ${level}` : formulaDef.description,
-            formula: formulaString
-        });
+        // Create detailed breakdown components for character-dependent formulas
+        if (formulaDef.isCharacterDependent && context?.character && value !== null) {
+            const componentsBefore = components.length;
+            this.createDetailedBreakdown(formula, params, value, components);
+            // If detailed breakdown didn't add any components, fall back to generic breakdown
+            if (components.length === componentsBefore) {
+                components.push({
+                    source: formulaDef.name,
+                    value: value || 0,
+                    type: BreakdownComponentType.formula,
+                    description: formulaDef.description,
+                    formula: formulaString
+                });
+            }
+        } else {
+            // Generic breakdown for non-character-dependent formulas or when no character context
+            components.push({
+                source: formulaDef.name,
+                value: value || 0, // Use 0 for breakdown display when value is null
+                type: BreakdownComponentType.formula,
+                description: value === null ? `Formula does not apply at level ${level}` : formulaDef.description,
+                formula: formulaString
+            });
+        }
 
         return {
             value, // Keep null values as null
@@ -82,6 +102,161 @@ export class FormulaCalculatorImpl implements FormulaCalculator {
                 explanation: value === null ? `Formula does not apply at level ${level}` : `Calculated using ${formulaDef.name} formula`
             }
         };
+    }
+
+    /**
+     * Create detailed breakdown components for character-dependent formulas
+     */
+    private createDetailedBreakdown(
+        formula: FormulaParamsData,
+        params: Record<string, unknown>,
+        totalValue: number,
+        components: Array<{
+            source: string;
+            value: number | string;
+            type: BreakdownComponentType;
+            description: string;
+            formula?: string;
+        }>
+    ): void {
+        const formulaId = formula.formulaId;
+
+        // ABILITY_BASED: baseValue + ability modifier (e.g., 3 + CHA)
+        if (formulaId === FormulaId.ABILITY_BASED) {
+            const baseValue = params.baseValue as number;
+            const abilityId = params.abilityId as number;
+            const abilityName = ABILITY_MAP[abilityId]?.abbreviation || 'ability';
+            
+            if (params.context && typeof params.context === 'object' && 'character' in params.context) {
+                const context = params.context as { character?: { abilityScores: Record<number, number> } };
+                if (context.character && context.character.abilityScores) {
+                    const abilityScore = context.character.abilityScores[abilityId];
+                    if (abilityScore !== undefined) {
+                        const modifier = GetAbilityModifier(abilityScore);
+
+                        // Base value component
+                        components.push({
+                            source: 'Base value',
+                            value: baseValue,
+                            type: BreakdownComponentType.base,
+                            description: `Base value: ${baseValue}`
+                        });
+
+                        // Ability modifier component
+                        const modifierString = modifier >= 0 ? `+${modifier}` : `${modifier}`;
+                        components.push({
+                            source: abilityName,
+                            value: modifier,
+                            type: BreakdownComponentType.ability,
+                            description: `${abilityName}: ${modifierString}`
+                        });
+                        return;
+                    }
+                }
+            }
+            // Fall back to generic breakdown if character data is not available
+            return;
+        }
+
+        // ABILITY_MODIFIER: just ability modifier (e.g., +WIS)
+        if (formulaId === FormulaId.ABILITY_MODIFIER) {
+            const abilityId = params.abilityId as number;
+            const abilityName = ABILITY_MAP[abilityId]?.abbreviation || 'ability';
+            
+            if (params.context && typeof params.context === 'object' && 'character' in params.context) {
+                const context = params.context as { character?: { abilityScores: Record<number, number> } };
+                if (context.character && context.character.abilityScores) {
+                    const abilityScore = context.character.abilityScores[abilityId];
+                    if (abilityScore !== undefined) {
+                        const modifier = GetAbilityModifier(abilityScore);
+
+                        const modifierString = modifier >= 0 ? `+${modifier}` : `${modifier}`;
+                        components.push({
+                            source: abilityName,
+                            value: modifier,
+                            type: BreakdownComponentType.ability,
+                            description: `${abilityName}: ${modifierString}`
+                        });
+                        return;
+                    }
+                }
+            }
+            // Fall back to generic breakdown if character data is not available
+            return;
+        }
+
+        // LEVEL_TIMES_ABILITY: level × ability modifier
+        if (formulaId === FormulaId.LEVEL_TIMES_ABILITY) {
+            const abilityId = params.abilityId as number;
+            const level = params.level as number;
+            const abilityName = ABILITY_MAP[abilityId]?.abbreviation || 'ability';
+            
+            if (params.context && typeof params.context === 'object' && 'character' in params.context) {
+                const context = params.context as { character?: { abilityScores: Record<number, number> } };
+                if (context.character && context.character.abilityScores) {
+                    const abilityScore = context.character.abilityScores[abilityId];
+                    if (abilityScore !== undefined) {
+                        const modifier = GetAbilityModifier(abilityScore);
+
+                        components.push({
+                            source: 'Level',
+                            value: level,
+                            type: BreakdownComponentType.base,
+                            description: `Level: ${level}`
+                        });
+
+                        const modifierString = modifier >= 0 ? `+${modifier}` : `${modifier}`;
+                        components.push({
+                            source: abilityName,
+                            value: modifier,
+                            type: BreakdownComponentType.ability,
+                            description: `${abilityName}: ${modifierString}`
+                        });
+                        return;
+                    }
+                }
+            }
+            // Fall back to generic breakdown if character data is not available
+            return;
+        }
+
+        // LEVEL_PLUS_ABILITY: level + ability modifier
+        if (formulaId === FormulaId.LEVEL_PLUS_ABILITY) {
+            const abilityId = params.abilityId as number;
+            const level = params.level as number;
+            const abilityName = ABILITY_MAP[abilityId]?.abbreviation || 'ability';
+            
+            if (params.context && typeof params.context === 'object' && 'character' in params.context) {
+                const context = params.context as { character?: { abilityScores: Record<number, number> } };
+                if (context.character && context.character.abilityScores) {
+                    const abilityScore = context.character.abilityScores[abilityId];
+                    if (abilityScore !== undefined) {
+                        const modifier = GetAbilityModifier(abilityScore);
+
+                        components.push({
+                            source: 'Level',
+                            value: level,
+                            type: BreakdownComponentType.base,
+                            description: `Level: ${level}`
+                        });
+
+                        const modifierString = modifier >= 0 ? `+${modifier}` : `${modifier}`;
+                        components.push({
+                            source: abilityName,
+                            value: modifier,
+                            type: BreakdownComponentType.ability,
+                            description: `${abilityName}: ${modifierString}`
+                        });
+                        return;
+                    }
+                }
+            }
+            // Fall back to generic breakdown if character data is not available
+            return;
+        }
+
+        // For other formulas, fall back to generic breakdown
+        // This will be handled by the caller
     }
 }
 

@@ -20,7 +20,8 @@ export const FeatureSchema = z.object({
     slug: z.string().min(1, 'Feature slug is required').max(100, 'Feature slug must be less than 100 characters').trim(),
     name: z.string().min(1, 'Feature name is required').max(100, 'Feature name must be less than 100 characters').trim(),
     description: z.string().max(10000, 'Description must be less than 10000 characters'),
-    summary: z.string().max(10000, 'Summary must be less than 10000 characters').nullable().optional(),
+    summary: z.string().max(10000, 'Summary must be less than 10000 characters').nullable().optional().describe('Can contain template placeholders {{placeholder}} which will be resolved dynamically'),
+    displayInCharacterSheet: z.boolean().default(true),
     prerequisites: z.array(FeaturePrerequisiteSchema).optional(),
 });
 
@@ -61,6 +62,13 @@ export const FeatureEntityConditionSchema = z.object({
     conditionValue: z.number().int(),
 });
 
+export const FeatureProgressionConditionSchema = z.object({
+    id: z.number().int().positive('Progression condition ID must be a positive integer'),
+    progressionId: z.number().int().positive('Progression ID must be a positive integer'),
+    conditionType: z.enum(FeatureEntityConditionType),
+    conditionValue: z.number().int(),
+});
+
 export const FeatureEntitySchema = z.object({
     id: z.number().int().positive('Entity ID must be a positive integer'),
     progressionId: z.number().int().positive('Progression ID must be a positive integer'),
@@ -88,6 +96,10 @@ export const FeatureEntitySchema = z.object({
         id: z.number().int().positive('Domain ID must be a positive integer'),
         name: z.string().min(1, 'Domain name is required')
     }).optional().nullable(),  // NEW: When appliesTo === Domain (minimal data only)
+    companion: z.object({
+        id: z.number().int().positive('Companion ID must be a positive integer'),
+        name: z.string().min(1, 'Companion name is required')
+    }).optional().nullable(),  // NEW: When appliesTo === AnimalCompanion (minimal data only)
     formulaParams: FeatureFormulaParamsSchema.optional().nullable(),
 });
 
@@ -108,11 +120,17 @@ export const FeatureProgressionSchema = z.object({
     }).optional(),
     entities: z.array(FeatureEntitySchema).optional(),
     spellcasting: SpellcastingLinkSchema.optional(),
+    displayConditions: z.array(FeatureProgressionConditionSchema).optional(),
 });
 
 export const CreateFeatureEntityConditionSchema = FeatureEntityConditionSchema.omit({
     id: true,
     featureEntityId: true,
+});
+
+export const CreateFeatureProgressionConditionSchema = FeatureProgressionConditionSchema.omit({
+    id: true,
+    progressionId: true,
 });
 
 export const CreateFeatureFormulaParamsSchema = FeatureFormulaParamsSchema.omit({
@@ -230,6 +248,8 @@ export type CreateFeatureFormulaParamsRequest = z.infer<typeof CreateFeatureForm
 export type UpdateFeatureProgression = z.infer<typeof UpdateFeatureProgressionSchema>;
 
 export type FeatureEntityCondition = z.infer<typeof FeatureEntityConditionSchema>;
+export type FeatureProgressionCondition = z.infer<typeof FeatureProgressionConditionSchema>;
+export type CreateFeatureProgressionConditionRequest = z.infer<typeof CreateFeatureProgressionConditionSchema>;
 export type FeatureFormulaParams = z.infer<typeof FeatureFormulaParamsSchema>;
 export type GetFeatureProgressionsResponse = z.infer<typeof GetFeatureProgressionsResponseSchema>;
 export type UpdateFeatureProgressionsRequest = z.infer<typeof UpdateFeatureProgressionsRequestSchema>;

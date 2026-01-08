@@ -1,13 +1,17 @@
 import { Response, NextFunction } from 'express';
+import { z } from 'zod';
 
 import {
     ValidatedParamsT,
+    ValidatedQueryT,
+    ValidatedParamsQueryT,
     ValidatedBodyT,
     ValidatedParamsBodyT,
     ValidatedNoInput,
 } from '@/util/validated-types';
 import {
     ClassIdParamRequest,
+    ClassIdQuerySchema,
     CreateClassRequest,
     UpdateClassRequest,
     GetAllClassesResponse,
@@ -28,9 +32,15 @@ export async function GetAllClasses(req: ValidatedBodyT<GetAllClassesQuery, GetA
 
 /**
  * Fetches a single class by its ID (supports both base classes and variants via unified ID system).
+ * Optionally accepts character feature choices to enrich progressions with choice data.
  */
-export async function GetClassById(req: ValidatedParamsT<ClassIdParamRequest, DnDClass>, res: Response, _next: NextFunction) {
-    const cls = await classService.getClassById(req.params);
+export async function GetClassById(
+    req: ValidatedParamsQueryT<ClassIdParamRequest, z.infer<typeof ClassIdQuerySchema>, DnDClass>,
+    res: Response,
+    _next: NextFunction
+) {
+    const choices = req.query.characterFeatureChoices;
+    const cls = await classService.getClassById(req.params, choices);
 
     if (!cls) {
         res.status(404).json({ error: 'Class not found' });

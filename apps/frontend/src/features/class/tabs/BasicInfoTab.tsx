@@ -207,6 +207,13 @@ export function BasicInfoTab({
                             checked={formData.canCastSpells as boolean}
                             onCheckedChange={(checked) => setFormData({ ...formData, canCastSpells: checked })}
                         />
+                        {formData.canCastSpells && (
+                            <CustomCheckbox
+                                label="Divine Caster"
+                                checked={formData.isDivine as boolean}
+                                onCheckedChange={(checked) => setFormData({ ...formData, isDivine: checked })}
+                            />
+                        )}
                     </div>
 
                     <div>

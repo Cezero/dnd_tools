@@ -23,7 +23,8 @@ export async function GetAllMonsters(
     res: Response
 ) {
     const includeStatblockOnly = req.query?.includeStatblockOnly ?? false;
-    const result = await monsterService.getAllMonsters(includeStatblockOnly);
+    const typeId = req.query?.typeId;
+    const result = await monsterService.getAllMonsters(includeStatblockOnly, typeId);
     res.json(result);
 }
 

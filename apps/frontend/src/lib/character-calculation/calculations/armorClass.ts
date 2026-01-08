@@ -1,10 +1,11 @@
 import type { CharacterWithAllDetailsResponse, FeatureProgression, Feat } from '@shared/schema';
-import { AbilityId, GetAbilityModifier, SIZE_MAP } from '@shared/static-data';
+import { AbilityId, GetAbilityModifier, SIZE_MAP, ARMOR_CATEGORY_ENUM } from '@shared/static-data';
 import { resolveFeatBenefits } from '../core/featBenefitResolver';
 import { resolveFeatureBonuses, resolveFeatureFormulaModifications } from '../core/featureBonusResolver';
 import { FeatBenefitType, EntityAppliesToType } from '@shared/static-data';
 import { buildBreakdownString, createBreakdownComponent } from '../utils/breakdownBuilder';
 import { getAdditionalAbilityModifiers } from '../core/formulaModifier';
+import { getAbilityScore } from './abilityScore';
 import type { CalculationResult } from '../types';
 
 /**
@@ -27,30 +28,34 @@ export interface ACBreakdownMap {
 export function getAC(
     character: CharacterWithAllDetailsResponse,
     resolvedProgressions: FeatureProgression[],
-    items?: Array<{ id: number; armor?: { bonus: number | null }; weapon?: unknown }>,
+    items?: Array<{ id: number; armor?: { bonus: number | null; category?: number }; weapon?: unknown }>,
     featsMap?: Map<number, Feat>
 ): CalculationResult<ACBreakdownMap> {
     // Base AC
     const baseAC = 10;
 
-    // Get Dex modifier
-    const dexScore = character.abilityScores.find(a => a.abilityId === AbilityId.Dexterity);
-    const dexValue = dexScore?.value ?? 10;
-    const dexMod = GetAbilityModifier(dexValue);
+    // Get Dex modifier using total ability score (base + racial modifiers + feat bonuses, etc.)
+    const dexScoreResult = getAbilityScore(character, AbilityId.Dexterity, resolvedProgressions, featsMap);
+    const dexTotalValue = dexScoreResult.value;
+    const dexMod = GetAbilityModifier(dexTotalValue);
 
     // Get size modifier from race
     const raceSizeId = character.race?.sizeId ?? 5; // Default to Medium
     const sizeMod = SIZE_MAP[raceSizeId as keyof typeof SIZE_MAP]?.sizeModifier ?? 0;
 
-    // Get armor bonus from equipped items
+    // Get armor bonus from equipped items (exclude shields - they have separate bonus)
     let armorBonus = 0;
     let armorSource: string | null = null;
     if (items) {
         for (const item of items) {
             if (item.armor?.bonus) {
-                armorBonus = item.armor.bonus;
-                armorSource = `armor: ${item.id}`; // TODO: Get actual item name
-                break; // Only one armor piece
+                // If category is undefined, treat as armor (not shield) for backward compatibility
+                const isShield = item.armor.category === ARMOR_CATEGORY_ENUM.Shield;
+                if (!isShield) {
+                    armorBonus = item.armor.bonus;
+                    armorSource = `armor: ${item.id}`; // TODO: Get actual item name
+                    break; // Only one armor piece
+                }
             }
         }
     }
@@ -58,7 +63,15 @@ export function getAC(
     // Get shield bonus from equipped items
     let shieldBonus = 0;
     let shieldSource: string | null = null;
-    // TODO: Implement shield detection from items
+    if (items) {
+        for (const item of items) {
+            if (item.armor?.bonus && item.armor.category === ARMOR_CATEGORY_ENUM.Shield) {
+                shieldBonus = item.armor.bonus;
+                shieldSource = `shield: ${item.id}`; // TODO: Get actual item name
+                break; // Only one shield
+            }
+        }
+    }
 
     // Get natural armor from features/race
     const naturalBonuses = resolveFeatureBonuses(
@@ -161,9 +174,10 @@ export function getAC(
 export function getTouchAC(
     character: CharacterWithAllDetailsResponse,
     resolvedProgressions: FeatureProgression[],
+    items?: Array<{ id: number; armor?: { bonus: number | null; category?: number }; weapon?: unknown }>,
     featsMap?: Map<number, Feat>
 ): number {
-    const acResult = getAC(character, resolvedProgressions, undefined, featsMap);
+    const acResult = getAC(character, resolvedProgressions, items, featsMap);
     // Touch AC = base + dex + size + deflection + misc (no armor, shield, natural)
     return (
         acResult.breakdown.base.value +
@@ -175,15 +189,19 @@ export function getTouchAC(
 }
 
 /**
- * Get flat-footed AC (AC without Dex modifier)
+ * Get flat-footed AC (AC without Dex modifier and without Dodge bonuses)
+ * 
+ * Flat-footed AC includes: base + armor + shield + size + natural + deflection + misc (excluding Dex and Dodge)
  */
 export function getFlatFootedAC(
     character: CharacterWithAllDetailsResponse,
     resolvedProgressions: FeatureProgression[],
+    items?: Array<{ id: number; armor?: { bonus: number | null; category?: number }; weapon?: unknown }>,
     featsMap?: Map<number, Feat>
 ): number {
-    const acResult = getAC(character, resolvedProgressions, undefined, featsMap);
-    // Flat-footed AC = base + armor + shield + size + natural + deflection + misc (no dex)
+    const acResult = getAC(character, resolvedProgressions, items, featsMap);
+    // Flat-footed AC = base + armor + shield + size + natural + deflection + misc (no dex, no dodge)
+    // Note: Dodge bonuses would need to be filtered from misc if bonusType tracking is implemented
     return (
         acResult.breakdown.base.value +
         acResult.breakdown.armor.value +

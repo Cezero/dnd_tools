@@ -60,9 +60,10 @@ export class CharacterCalculationService {
     static getTouchAC(
         character: CharacterWithAllDetailsResponse,
         resolvedProgressions: FeatureProgression[],
+        items?: Array<{ id: number; armor?: { bonus: number | null; category?: number }; weapon?: unknown }>,
         featsMap?: Map<number, Feat>
     ): number {
-        return getTouchAC(character, resolvedProgressions, featsMap);
+        return getTouchAC(character, resolvedProgressions, items, featsMap);
     }
 
     /**
@@ -71,9 +72,10 @@ export class CharacterCalculationService {
     static getFlatFootedAC(
         character: CharacterWithAllDetailsResponse,
         resolvedProgressions: FeatureProgression[],
+        items?: Array<{ id: number; armor?: { bonus: number | null; category?: number }; weapon?: unknown }>,
         featsMap?: Map<number, Feat>
     ): number {
-        return getFlatFootedAC(character, resolvedProgressions, featsMap);
+        return getFlatFootedAC(character, resolvedProgressions, items, featsMap);
     }
 
     /**

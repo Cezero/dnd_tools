@@ -1,22 +1,23 @@
-import { ChevronDownIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import React, { useState, useEffect, useRef } from 'react';
+import { useMemo } from 'react';
 
-import { SPELL_ID_LIST } from '@shared/static-data';
+import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
+import type { SpellCacheEntry } from '@shared/schema';
 
-type SpellListItem = {
-    id: number;
-    name: string;
+import { GenericSearchInput, type SearchableItem } from './GenericSearchInput';
+
+type SpellListItem = SearchableItem & {
     editionId: number;
 };
 
-interface SpellSearchInputProps {
+export interface SpellSearchInputProps {
     value: number | null;
     onValueChange: (spellId: number | null) => void;
     label?: string;
     placeholder?: string;
     disabled?: boolean;
     componentExtraClassName?: string;
-    spellList?: SpellListItem[]; // Optional prop for filtering
+    labelExtraClassName?: string;
+    spellList?: SpellListItem[]; // Optional prop for pre-loaded spells
 }
 
 export function SpellSearchInput({
@@ -26,158 +27,41 @@ export function SpellSearchInput({
     placeholder = 'Search for a spell...',
     disabled = false,
     componentExtraClassName = '',
-    spellList
+    labelExtraClassName = '',
+    spellList,
 }: SpellSearchInputProps) {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filteredSpells, setFilteredSpells] = useState<SpellListItem[]>([]);
-    const [isOpen, setIsOpen] = useState(false);
-    const [selectedSpell, setSelectedSpell] = useState<SpellListItem | null>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
-    const dropdownRef = useRef<HTMLDivElement>(null);
+    // Fetch lightweight spell cache if not provided
+    const { data: spellsData, isLoading } = CacheQueryHooks.useSpellsCache(
+        undefined,
+        { enabled: !spellList } // Only fetch if spellList not provided
+    );
 
-    // Use provided spell list or fallback to static data
-    const spells = spellList || SPELL_ID_LIST;
-
-    // Filter spells based on search term
-    useEffect(() => {
-        if (!searchTerm.trim()) {
-            setFilteredSpells([]);
-            return;
+    // Memoize spells array to prevent infinite loops
+    const spells: SpellListItem[] = useMemo(() => {
+        if (spellList) {
+            return spellList;
         }
-
-        const filtered = spells.filter(spell =>
-            spell.name.toLowerCase().includes(searchTerm.toLowerCase())
-        ).slice(0, 10); // Limit to 10 results for performance
-
-        setFilteredSpells(filtered);
-    }, [searchTerm, spells]);
-
-    // Set selected spell when value changes
-    useEffect(() => {
-        if (value && spells.length > 0) {
-            const spell = spells.find(s => s.id === value);
-            if (spell) {
-                setSelectedSpell(spell);
-                setSearchTerm(spell.name);
-            } else {
-                setSelectedSpell(null);
-                setSearchTerm('');
-            }
-        } else {
-            setSelectedSpell(null);
-            setSearchTerm('');
+        if (spellsData?.results) {
+            return spellsData.results.map((spell: SpellCacheEntry) => ({
+                id: spell.id,
+                name: spell.name,
+                editionId: spell.editionId,
+            }));
         }
-    }, [value, spells]);
-
-    // Handle input change
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const term = e.target.value;
-        setSearchTerm(term);
-        setIsOpen(term.length > 0);
-
-        // Clear selection if user is typing
-        if (selectedSpell && term !== selectedSpell.name) {
-            setSelectedSpell(null);
-            onValueChange(null);
-        }
-    };
-
-    // Handle spell selection
-    const handleSpellSelect = (spell: SpellListItem) => {
-        setSelectedSpell(spell);
-        setSearchTerm(spell.name);
-        setIsOpen(false);
-        onValueChange(spell.id);
-    };
-
-    // Handle input focus
-    const handleInputFocus = () => {
-        if (searchTerm.length > 0) {
-            setIsOpen(true);
-        }
-    };
-
-    // Handle input blur
-    const handleInputBlur = (e: React.FocusEvent) => {
-        // Don't close if clicking on dropdown
-        if (dropdownRef.current && dropdownRef.current.contains(e.relatedTarget as Node)) {
-            return;
-        }
-        setIsOpen(false);
-    };
-
-    // Handle clear
-    const handleClear = () => {
-        setSelectedSpell(null);
-        setSearchTerm('');
-        setIsOpen(false);
-        onValueChange(null);
-        inputRef.current?.focus();
-    };
+        return [];
+    }, [spellList, spellsData?.results]);
 
     return (
-        <div className={`relative ${componentExtraClassName}`}>
-            {label && (
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {label}
-                </label>
-            )}
-
-            <div className="relative">
-                <div className="relative">
-                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input
-                        ref={inputRef}
-                        type="text"
-                        value={searchTerm}
-                        onChange={handleInputChange}
-                        onFocus={handleInputFocus}
-                        onBlur={handleInputBlur}
-                        placeholder={placeholder}
-                        disabled={disabled}
-                        className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
-                    />
-                    {selectedSpell && (
-                        <button
-                            type="button"
-                            onClick={handleClear}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                        >
-                            ×
-                        </button>
-                    )}
-                    {!selectedSpell && (
-                        <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    )}
-                </div>
-
-                {/* Dropdown */}
-                {isOpen && (
-                    <div
-                        ref={dropdownRef}
-                        className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto"
-                    >
-                        {filteredSpells.length > 0 ? (
-                            filteredSpells.map((spell) => (
-                                <button
-                                    key={spell.id}
-                                    type="button"
-                                    onClick={() => handleSpellSelect(spell)}
-                                    className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 focus:outline-none"
-                                >
-                                    <div className="font-medium text-gray-900 dark:text-gray-100">
-                                        {spell.name}
-                                    </div>
-                                </button>
-                            ))
-                        ) : searchTerm.length > 0 ? (
-                            <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
-                                No spells found matching "{searchTerm}"
-                            </div>
-                        ) : null}
-                    </div>
-                )}
-            </div>
-        </div>
+        <GenericSearchInput
+            value={value}
+            onValueChange={onValueChange}
+            items={spells}
+            label={label}
+            placeholder={placeholder}
+            disabled={disabled || isLoading}
+            componentExtraClassName={componentExtraClassName}
+            labelExtraClassName={labelExtraClassName}
+            emptyMessage="No spells found matching {searchTerm}"
+        />
     );
 }

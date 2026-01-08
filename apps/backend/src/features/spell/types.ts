@@ -1,4 +1,4 @@
-import type { SpellIdParamRequest, GetSpellResponse, UpdateSpellRequest, GetAllSpellsResponse, UpdateResponse, ClassSpellListEntry, ClassSpellListResponse, SpellCacheResponse } from '@shared/schema';
+import type { SpellIdParamRequest, GetSpellResponse, UpdateSpellRequest, GetAllSpellsResponse, UpdateResponse, ClassSpellListEntry, ClassSpellListResponse, SpellCacheResponse, Spell } from '@shared/schema';
 
 
 export interface SpellService {
@@ -11,4 +11,5 @@ export interface SpellService {
     getVariantSpellOverrides(variantId: number): Promise<ClassSpellListEntry[]>;
     applySpellOverrides(baseSpells: ClassSpellListEntry[], overrides: ClassSpellListEntry[]): ClassSpellListEntry[];
     getSpellCache(): Promise<SpellCacheResponse>;
+    getDomainSpells(domainIds: number[], characterLevel: number, classId: number): Promise<Array<{ domainId: number; domainName: string; spell: Spell; spellLevel: number; classSpellLevel: number | null }>>;
 } 

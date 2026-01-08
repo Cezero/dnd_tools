@@ -491,6 +491,7 @@ For comprehensive contributing guidelines and anti-patterns to avoid, see **[usa
 ## Related Documentation
 
 - **[Usage Guidelines](./usage-guidelines.md)** - Comprehensive usage patterns and guidelines
+- **[Adding Formatters](./adding-formatters.md)** - Step-by-step guide for adding new formatters with labels and grouping
 - **[Final Implementation Summary](./final-implementation-summary.md)** - Current implementation status
 - **[Refactoring Strategy](./refactoring-strategy.md)** - Design decisions and architecture rationale
 - **[Architecture Decisions](./architecture-decisions.md)** - Key architectural decisions and future extensibility

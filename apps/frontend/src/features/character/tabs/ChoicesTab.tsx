@@ -8,9 +8,9 @@ import type { TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
 import { useCacheFunctions } from '@/services/cache';
 import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
+import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
 import type { Feat, FeatInQueryResponse } from '@shared/schema';
-import { EntityAppliesToType, EntityType, FeatureFeatChoiceFilter } from '@shared/static-data';
-import { ChoiceResolver } from '../ChoiceResolver';
+import { EntityAppliesToType, EntityType, FeatureFeatChoiceFilter, CompanionType } from '@shared/static-data';
 import { filterAvailableFeats } from '../utils/featFiltering';
 
 export function ChoicesTab({
@@ -143,6 +143,31 @@ export function ChoicesTab({
     // This ensures the order stays consistent and selected choices are still shown
     const [allChoices, setAllChoices] = useState<Array<{ choice: typeof resolvedData.pendingChoices[0]; isSelected: boolean; selectedId?: number }>>([]);
 
+    // Fetch all companions (cached via TanStack Query) for Familiar/Animal Companion choices
+    const { data: allCompanionsData } = CompanionQueryHooks.useGetCompanions(undefined, {
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        gcTime: 10 * 60 * 1000, // 10 minutes
+    } as any);
+
+    // Memoize companions filtered by type for quick lookup
+    const companionsByType = useMemo(() => {
+        const byType = new Map<CompanionType, Array<{ id: number; name: string }>>();
+        if (allCompanionsData?.results) {
+            for (const companion of allCompanionsData.results) {
+                const type = companion.type as CompanionType;
+                if (!byType.has(type)) {
+                    byType.set(type, []);
+                }
+                const monsterName = companion.monster?.name || `Companion ${companion.id}`;
+                byType.get(type)!.push({
+                    id: companion.id,
+                    name: monsterName,
+                });
+            }
+        }
+        return byType;
+    }, [allCompanionsData]);
+
     useEffect(() => {
         const loadAllChoices = async () => {
             // Create a map of selected choices by their choice key (progressionId-featureEntityId)
@@ -158,25 +183,27 @@ export function ChoicesTab({
                 }
             });
 
-            // Get all choices (both pending and selected) from progressions
-            // Pass empty array to not filter out selected choices
-            const allPendingChoices = await ChoiceResolver.identifyPendingChoices(
-                resolvedData.progressions,
-                {
-                    getClassNameById: async (id: number) => await getClassNameById(id),
-                    getDomainSelectByEdition: async (editionId: number) => await getDomainSelectByEdition(editionId)
-                },
-                state.editionId,
-                [], // Don't filter out any choices - we want to see all of them
-                sharedData.allFeats // Pass feats from sharedData instead of fetching
-            );
+            // Calculate class levels from character advancements
+            const classLevels = new Map<number, number>();
+            if (character?.advancements) {
+                for (const adv of character.advancements) {
+                    const currentLevel = classLevels.get(adv.classId) ?? 0;
+                    classLevels.set(adv.classId, currentLevel + 1);
+
+                    if (adv.secondaryClassId) {
+                        const secondaryLevel = classLevels.get(adv.secondaryClassId) ?? 0;
+                        classLevels.set(adv.secondaryClassId, secondaryLevel + 1);
+                    }
+                }
+            }
+
+            // Use backend-provided pending choices
+            // These are only the unselected choices - we'll add selected ones from state
+            const pendingChoicesMap = new Map(resolvedData.pendingChoices.map(c => [c.id, c]));
 
             // Build the combined list with selection status, preserving order from progressions
             // Sort by progression level and entity order to ensure stable ordering
-            const combined: Array<{ choice: typeof allPendingChoices[0]; isSelected: boolean; selectedId?: number }> = [];
-
-            // Create a map of choices by their ID for quick lookup
-            const choicesMap = new Map(allPendingChoices.map(c => [c.id, c]));
+            const combined: Array<{ choice: typeof resolvedData.pendingChoices[0]; isSelected: boolean; selectedId?: number }> = [];
 
             // Iterate through progressions in order to maintain stable ordering
             // Sort progressions by sourceType and level to ensure consistent order
@@ -203,19 +230,104 @@ export function ChoicesTab({
                     if (entity.type !== EntityType.Choice) continue;
 
                     const choiceId = `${progression.id}-${entity.id}`;
-                    const pendingChoice = choicesMap.get(choiceId);
-                    if (!pendingChoice) continue;
-
-                    // Extract progressionId and featureEntityId from the choice ID
-                    const [progressionId, featureEntityId] = choiceId.split('-').map(Number);
-                    const choiceKey = `${progressionId}-${featureEntityId}`;
+                    const choiceKey = `${progression.id}-${entity.id}`;
                     const selected = selectedChoicesMap.get(choiceKey);
 
-                    combined.push({
-                        choice: pendingChoice,
-                        isSelected: !!selected,
-                        selectedId: selected?.appliesToId
-                    });
+                    // If this choice is selected, we need to create a pending choice object for display
+                    // Otherwise, use the pending choice from backend
+                    if (selected) {
+                        // Build proper choice name based on type (matching backend logic)
+                        const source = progression.class?.name || progression.race?.name || progression.feature?.name || 'Unknown';
+                        let choiceName = '';
+                        if (entity.appliesTo === EntityAppliesToType.Domain) {
+                            choiceName = `${source}: Select a Domain`;
+                        } else if (entity.appliesTo === EntityAppliesToType.Feat) {
+                            if (entity.filterType === FeatureFeatChoiceFilter.FighterBonus) {
+                                choiceName = `${source}: Select a Fighter Bonus Feat`;
+                            } else {
+                                choiceName = `${source}: Select a Feat`;
+                            }
+                        } else if (entity.appliesTo === EntityAppliesToType.Skill) {
+                            choiceName = `${source}: Select a Skill`;
+                        } else if (entity.appliesTo === EntityAppliesToType.Spell) {
+                            choiceName = `${source}: Select a Spell`;
+                        } else if (entity.appliesTo === EntityAppliesToType.AnimalCompanion) {
+                            choiceName = `${source}: Select an Animal Companion`;
+                        } else if (entity.appliesTo === EntityAppliesToType.Familiar) {
+                            choiceName = `${source}: Select a Familiar`;
+                        } else {
+                            choiceName = `${source}: Make a Choice`;
+                        }
+
+                        // Build options array based on choice type
+                        const options: Array<{ id: string; name: string; description: string; value: number }> = [];
+
+                        if (entity.appliesTo === EntityAppliesToType.Familiar || entity.appliesTo === EntityAppliesToType.AnimalCompanion) {
+                            // Get companions of the appropriate type
+                            const companionType = entity.appliesTo === EntityAppliesToType.Familiar
+                                ? CompanionType.Familiar
+                                : CompanionType.AnimalCompanion;
+                            const availableCompanions = companionsByType.get(companionType) || [];
+                            
+                            availableCompanions.forEach(companion => {
+                                options.push({
+                                    id: `companion-${companion.id}`,
+                                    name: companion.name,
+                                    description: `${companionType === CompanionType.Familiar ? 'Familiar' : 'Animal Companion'}: ${companion.name}`,
+                                    value: companion.id,
+                                });
+                            });
+                        } else if (entity.appliesTo === EntityAppliesToType.Domain) {
+                            // Use domain options from state
+                            domainOptions.forEach(domain => {
+                                options.push({
+                                    id: `domain-${domain.id}`,
+                                    name: domain.name,
+                                    description: `Domain: ${domain.name}`,
+                                    value: domain.id,
+                                });
+                            });
+                        } else if (entity.appliesTo === EntityAppliesToType.Feat) {
+                            // For feats, we'll use the filtered feats from the existing logic
+                            // This will be handled separately in the rendering logic
+                            options.push({
+                                id: `feat-${selected.appliesToId}`,
+                                name: entity.feat?.name || sharedData.allFeats.find(f => f.id === selected.appliesToId)?.name || 'Selected Feat',
+                                description: '',
+                                value: selected.appliesToId,
+                            });
+                        }
+
+                        const syntheticChoice = {
+                            id: choiceId,
+                            type: entity.appliesTo as EntityAppliesToType,
+                            name: choiceName,
+                            description: choiceName,
+                            source,
+                            level: progression.level,
+                            required: true,
+                            maxSelections: entity.value || 1,
+                            minSelections: 1,
+                            options, // Include all available options for dropdown
+                            progressionId: progression.id,
+                            featureEntityId: entity.id,
+                        };
+                        combined.push({
+                            choice: syntheticChoice as typeof resolvedData.pendingChoices[0],
+                            isSelected: true,
+                            selectedId: selected.appliesToId
+                        });
+                    } else {
+                        // Use pending choice from backend
+                        const pendingChoice = pendingChoicesMap.get(choiceId);
+                        if (pendingChoice) {
+                            combined.push({
+                                choice: pendingChoice,
+                                isSelected: false,
+                                selectedId: undefined
+                            });
+                        }
+                    }
                 }
             }
 
@@ -227,7 +339,9 @@ export function ChoicesTab({
         // Only depend on stable values that indicate actual changes
         resolvedData.progressions.length,
         state.featureChoices.length,
-        state.editionId
+        state.editionId,
+        companionsByType.size, // Rebuild when companions are loaded
+        domainOptions.length, // Rebuild when domain options change
     ]);
 
     // Fetch domain options when edition changes
