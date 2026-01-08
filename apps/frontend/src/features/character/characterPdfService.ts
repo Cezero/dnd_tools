@@ -147,6 +147,13 @@ export async function generateCharacterPdf(
     }
 
     try {
+        const characterContextWithQueryClient = {
+            character: characterContext,
+            featsMap,
+            classSkills: classSkills?.length > 0 ? classSkills : undefined,
+            skillBonuses: skillBonuses?.length > 0 ? skillBonuses : undefined,
+            queryClient,
+        };
         formattedCharacter = characterSheetStrategy.formatCharacter(
             character,
             resolvedProgressions,
@@ -157,7 +164,8 @@ export async function generateCharacterPdf(
                 character: characterContext,
                 featsMap,
                 classSkills: classSkills && classSkills.length > 0 ? classSkills : undefined,
-                skillBonuses: skillBonuses && skillBonuses.length > 0 ? skillBonuses : undefined
+                skillBonuses: skillBonuses && skillBonuses.length > 0 ? skillBonuses : undefined,
+                queryClient
             },
             fullRace
         );

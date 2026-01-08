@@ -39,18 +39,20 @@ export const BaseFeatSchema = z.object({
     repeatable: z.boolean().nullable(),
     fighterBonus: z.boolean().nullable(),
     useSubId: z.boolean().default(false),
-    benefits: z.array(FeatBenefitMapSchema).optional(),
-    prereqs: z.array(FeatPrerequisiteMapSchema).optional(),
+    // benefits and prereqs removed - now handled via Feature system
     isVisible: z.boolean().default(true),
     editionId: z.number().int().positive('Edition ID must be a positive integer'),
     sourceBookInfo: z.array(SourceMapSchema).optional(),
 });
 
+import { FeatureProgressionSchema } from './feature.js';
+
 export const FeatSchema = BaseFeatSchema.extend({
     id: z.number().int().positive('Feat ID must be a positive integer'),
+    featureProgressions: z.array(FeatureProgressionSchema).optional(),
 });
 
-export const FeatInQueryResponseSchema = FeatSchema.omit({ benefits: true, prereqs: true });
+export const FeatInQueryResponseSchema = FeatSchema.omit({ featureProgressions: true });
 
 export const FeatSummarySchema = z.object({
     id: z.number().int().positive(),

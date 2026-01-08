@@ -1,12 +1,10 @@
+import { useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
 
 import { useAuthAuto } from '@/components/auth';
 import { FeatureProgressionDetailEdit } from '@/components/feature-system';
 import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
-import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
-import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import {
     ValidatedForm,
     ValidatedInput,
@@ -16,6 +14,10 @@ import {
     useFormContext
 } from '@/components/forms';
 import { displayStrategyFactory } from '@/lib/formatters';
+import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
+import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
+import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
+import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import { CreateFeatureRequest, CreateFeatureSchema, UpdateFeatureRequest, UpdateFeatureSchema, GetFeatureResponse, FeatureProgression, FeaturePrerequisite } from '@shared/schema';
 import { DisplayType, FEATURE_PRE_REQ_LIST, FeaturePrerequisiteType, SKILL_LIST, FeatureSourceType, ABILITY_LIST } from '@shared/static-data';
 
@@ -270,7 +272,7 @@ export function FeatureEdit() {
                             featureId: featureId,
                             // Remove temporary IDs from related entities
                             entities: progression.entities?.map(entity => {
-                                const { id: _, progressionId: __, feat: _feat, feature: _feature, item: _item, domain: _domain, ...entityData } = entity;
+                                const { id: _, progressionId: __, feature: _feature, item: _item, domain: _domain, ...entityData } = entity;
                                 return entityData;
                             }) || [],
                         };
@@ -336,7 +338,7 @@ export function FeatureEdit() {
                             ...progressionData,
                             // Remove temporary IDs from related entities
                             entities: progression.entities?.map(entity => {
-                                const { id: _, progressionId: __, feat: _feat, feature: _feature, item: _item, domain: _domain, ...entityData } = entity;
+                                const { id: _, progressionId: __, feature: _feature, item: _item, domain: _domain, ...entityData } = entity;
                                 return entityData;
                             }) || [],
                         };
@@ -678,6 +680,17 @@ function PrerequisiteDetailForm({ index }: PrerequisiteDetailFormProps) {
     const prerequisites = formData.prerequisites as FeaturePrerequisite[] || [];
     const prerequisite = prerequisites[index] || { type: undefined };
 
+    // Get feats for Feat prerequisite selector
+    const { data: featsResponse } = FeatQueryHooks.useGetFeats({});
+    const featOptions = featsResponse?.results || [];
+
+    // Get classes for ClassLevel prerequisite selector
+    const { data: classesCacheData } = CacheQueryHooks.useClassesCache();
+    const classOptions = classesCacheData?.results || [];
+
+    // Determine if minValue should be shown (not for Feat prerequisites)
+    const showMinValue = prerequisite.type !== FeaturePrerequisiteType.Feat;
+
     return (
         <div className="space-y-4">
             <div>
@@ -720,18 +733,48 @@ function PrerequisiteDetailForm({ index }: PrerequisiteDetailFormProps) {
                     </div>
                 )}
 
-                <div>
-                    <ValidatedInput
-                        field={`prerequisites.${index}.minValue`}
-                        label="Minimum Value"
-                        type="number"
-                        min={1}
-                        required
-                        componentExtraClassName="flex items-center gap-2"
-                        inputExtraClassName="w-16"
-                        nested
-                    />
-                </div>
+                {prerequisite.type === FeaturePrerequisiteType.Feat && (
+                    <div>
+                        <ValidatedCustomSelect
+                            field={`prerequisites.${index}.appliesToId`}
+                            label="Feat"
+                            required
+                            options={featOptions}
+                            placeholder="Select feat"
+                            componentExtraClassName="flex items-center gap-2"
+                            nested
+                        />
+                    </div>
+                )}
+
+                {prerequisite.type === FeaturePrerequisiteType.ClassLevel && (
+                    <div>
+                        <ValidatedCustomSelect
+                            field={`prerequisites.${index}.appliesToId`}
+                            label="Class"
+                            required
+                            options={classOptions}
+                            placeholder="Select class"
+                            componentExtraClassName="flex items-center gap-2"
+                            nested
+                        />
+                    </div>
+                )}
+
+                {showMinValue && (
+                    <div>
+                        <ValidatedInput
+                            field={`prerequisites.${index}.minValue`}
+                            label="Minimum Value"
+                            type="number"
+                            min={1}
+                            required
+                            componentExtraClassName="flex items-center gap-2"
+                            inputExtraClassName="w-16"
+                            nested
+                        />
+                    </div>
+                )}
             </div>
         </div>
     );

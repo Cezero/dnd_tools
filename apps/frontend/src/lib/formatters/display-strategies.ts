@@ -110,12 +110,16 @@ export class DetailPageDisplayStrategy extends DisplayStrategyBase {
         // Phase 6: Multi-Progression Level Grouping (Detail only)
         const levelEntries = this.groupMultiProgressionByLevel(progressionResults);
 
+        // Preserve formattedPrerequisites from the first progression that has them
+        const formattedPrerequisites = progressionResults.find(r => r.formattedPrerequisites && r.formattedPrerequisites.length > 0)?.formattedPrerequisites;
+
         return {
             formattedValue: 'Full Progression',
             breakdown: { components: [] },
             showBreakdown: context?.showBreakdown || false,
             components: [],
-            levelEntries
+            levelEntries,
+            formattedPrerequisites
         };
     }
 

@@ -17,6 +17,7 @@ import {
     CreateFeatureProgressionWithRelations,
     UpdateFeatureProgressions,
     GetFeatureProgressions,
+    GetFeatureProgressionsByFeatId,
     GetFeatureList,
 } from './featureSystemController.js';
 import { requireAdmin } from '../../middleware/authMiddleware.js';
@@ -34,6 +35,9 @@ deleteRoute('/:id', requireAdmin, { params: FeatureIdParamSchema }, DeleteFeatur
 // Feature Progression Routes (for individual feature management)
 get('/:id/progressions', { params: FeatureIdParamSchema }, GetFeatureProgressions);
 put('/:id/progressions', requireAdmin, { params: FeatureIdParamSchema, body: UpdateFeatureProgressionsRequestSchema }, UpdateFeatureProgressions);
+
+// Feature Progression Routes (for feat management)
+get('/by-feat/:id/progressions', { params: FeatureIdParamSchema }, GetFeatureProgressionsByFeatId);
 
 // Bulk Feature Progression Routes (for class/race creation)
 post('/progressions/bulk', requireAdmin, { body: CreateFeatureProgressionSchema }, CreateFeatureProgressionWithRelations);

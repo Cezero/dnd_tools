@@ -1,7 +1,6 @@
-import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
 import {
     ValidatedForm,
@@ -10,20 +9,12 @@ import {
     SourceEditor
 } from '@/components/forms';
 import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
-import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
-import { useCacheFunctions } from '@/services/cache';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
-import { CreateFeatRequest, UpdateFeatRequest, UpdateFeatSchema, FeatBenefitMap, FeatPrerequisiteMap, BaseFeatSchema } from '@shared/schema';
-import { FEAT_BENEFIT_TYPE_BY_ID, FEAT_TYPE_LIST, FeatBenefitType, EDITION_LIST, SourceType, EditionId } from '@shared/static-data';
-
-import { FeatBenefitEdit } from './FeatBenefitEdit';
-import { FeatPrereqEdit } from './FeatPrereqEdit';
-import { FeatOptions, getPrereqDisplayText, formatFeatBenefit } from './FeatUtil';
+import { CreateFeatRequest, UpdateFeatRequest, UpdateFeatSchema, BaseFeatSchema, Feat, FeatureProgression } from '@shared/schema';
+import { FEAT_TYPE_LIST, EDITION_LIST, SourceType, EditionId, FeatureSourceType } from '@shared/static-data';
 
 // Type definitions for the form state
 type FeatFormData = CreateFeatRequest | UpdateFeatRequest;
-type FeatBenefitFormData = FeatBenefitMap;
-type FeatPrerequisiteFormData = FeatPrerequisiteMap;
 
 export function FeatEdit() {
     const { id } = useParams<{ id: string }>();
@@ -33,46 +24,31 @@ export function FeatEdit() {
     const [error, setError] = useState<string | null>(null);
 
     // Use imperative API for data fetching and mutations
-    const [feat, setFeat] = useState<unknown | null>(null);
+    const [feat, setFeat] = useState<Feat | null>(null);
     const [isLoadingFeat, setIsLoadingFeat] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [featError, setFeatError] = useState<Error | null>(null);
-
-    // Get cache functions
-    const { getFeatNameById, getFeatureNameById } = useCacheFunctions();
 
     // Get query client for cache invalidation
     const queryClient = useQueryClient();
 
     // Use the mutation hook for proper cache invalidation
     const updateFeatMutation = FeatQueryHooks.useUpdateFeat();
-    const [isAddBenefitModalOpen, setIsAddBenefitModalOpen] = useState(false);
-    const [isAddPrereqModalOpen, setIsAddPrereqModalOpen] = useState(false);
-    const [editingBenefit, setEditingBenefit] = useState<FeatBenefitFormData | null>(null);
-    const [editingPrereq, setEditingPrereq] = useState<FeatPrerequisiteFormData | null>(null);
-    const [prereqDisplayTexts, setPrereqDisplayTexts] = useState<Record<number, string>>({});
 
     const fromListParams = location.state?.fromListParams || '';
 
     // Determine which schema to use based on whether we're creating or editing
     const schema = id === 'new' ? BaseFeatSchema : UpdateFeatSchema;
 
-    // Initialize form data with default values
+    // Initialize form data with default values (only feat-specific metadata)
     const initialFormData: FeatFormData = useMemo(() => ({
         name: '',
         typeId: 1,
         editionId: 1,
-        description: '',
-        benefit: '',
         summary: '',
-        normalEffect: '',
-        specialEffect: '',
-        prerequisites: '',
         repeatable: false,
         fighterBonus: false,
         useSubId: false,
-        benefits: [],
-        prereqs: [],
         sourceBookInfo: [],
         ...(id !== 'new' && { id: parseInt(id) })
     }), [id]);
@@ -109,17 +85,10 @@ export function FeatEdit() {
                     name: fetchedFeat.name || '',
                     typeId: fetchedFeat.typeId || 1,
                     editionId: fetchedFeat.editionId || 1,
-                    description: fetchedFeat.description || '',
-                    benefit: fetchedFeat.benefit || '',
                     summary: fetchedFeat.summary || '',
-                    normalEffect: fetchedFeat.normalEffect || '',
-                    specialEffect: fetchedFeat.specialEffect || '',
-                    prerequisites: fetchedFeat.prerequisites || '',
                     repeatable: fetchedFeat.repeatable ?? false,
                     fighterBonus: fetchedFeat.fighterBonus ?? false,
                     useSubId: fetchedFeat.useSubId ?? false,
-                    benefits: fetchedFeat.benefits || [],
-                    prereqs: fetchedFeat.prereqs || [],
                     sourceBookInfo: fetchedFeat.sourceBookInfo || [],
                     ...(fetchedFeat.id && { id: fetchedFeat.id })
                 } as FeatFormData);
@@ -135,125 +104,25 @@ export function FeatEdit() {
         fetchFeat();
     }, [id]);
 
-    // Load prerequisite display texts
-    useEffect(() => {
-        let isCancelled = false;
+    // Get the associated feature ID from feat progressions
+    const featWithProgressions = feat as (typeof feat & { featureProgressions?: FeatureProgression[] }) | undefined;
+    const featProgression = featWithProgressions?.featureProgressions?.find((p: FeatureProgression) =>
+        p.sourceType === FeatureSourceType.Feat && p.featId === parseInt(id || '0')
+    ) || featWithProgressions?.featureProgressions?.[0] || null;
+    const featureId = featProgression?.featureId || featProgression?.feature?.id;
 
-        const loadPrereqTexts = async () => {
-            if (formData.prereqs && formData.prereqs.length > 0) {
-                const texts: Record<number, string> = {};
-                for (let i = 0; i < formData.prereqs.length; i++) {
-                    if (isCancelled) break;
-
-                    const prereq = formData.prereqs[i];
-                    try {
-                        texts[i] = await getPrereqDisplayText(prereq, getFeatNameById, getFeatureNameById);
-                    } catch (error) {
-                        console.error('Error loading prerequisite text:', error);
-                        texts[i] = `Prerequisite ${i + 1}`;
-                    }
+    const handleEditFeature = () => {
+        if (featureId) {
+            navigate(`/features/${featureId}/edit`, {
+                state: {
+                    fromPage: 'feats',
+                    fromListParams: fromListParams,
+                    parentType: 'feat',
+                    parentId: parseInt(id || '0')
                 }
-
-                if (!isCancelled) {
-                    setPrereqDisplayTexts(texts);
-                }
-            } else {
-                if (!isCancelled) {
-                    setPrereqDisplayTexts({});
-                }
-            }
-        };
-
-        loadPrereqTexts();
-
-        return () => {
-            isCancelled = true;
-        };
-    }, [formData.prereqs]);
-
-    const HandleAddBenefitClick = useCallback(() => {
-        setEditingBenefit({
-            index: formData.benefits?.length || 0,
-            typeId: null,
-            referenceId: null,
-            amount: null
-        });
-        setIsAddBenefitModalOpen(true);
-    }, [formData.benefits]);
-
-    const HandleEditBenefitClick = useCallback((benefit: FeatBenefitFormData) => {
-        setEditingBenefit(benefit);
-        setIsAddBenefitModalOpen(true);
-    }, []);
-
-    const HandleSaveBenefit = useCallback((savedBenefit: FeatBenefitFormData) => {
-        setFormData(prev => {
-            const updatedBenefits = [...(prev.benefits || [])];
-            updatedBenefits[savedBenefit.index] = savedBenefit;
-            return { ...prev, benefits: updatedBenefits };
-        });
-        setIsAddBenefitModalOpen(false);
-        setEditingBenefit(null);
-    }, []);
-
-    const HandleDeleteBenefit = useCallback(async (benefitIndex: number) => {
-        if (window.confirm('Are you sure you want to remove this benefit from the feat?')) {
-            setFormData(prev => {
-                const filteredBenefits = prev.benefits?.filter((_, index) => index !== benefitIndex) || [];
-                // Re-index the remaining benefits
-                const reindexedBenefits = filteredBenefits.map((benefit, newIndex) => ({
-                    ...benefit,
-                    index: newIndex
-                }));
-                return {
-                    ...prev,
-                    benefits: reindexedBenefits
-                };
             });
         }
-    }, []);
-
-    const HandleAddPrereqClick = useCallback(() => {
-        setEditingPrereq({
-            index: formData.prereqs?.length || 0,
-            typeId: null,
-            referenceId: null,
-            amount: null,
-        });
-        setIsAddPrereqModalOpen(true);
-    }, [formData.prereqs]);
-
-    const HandleEditPrereqClick = useCallback((prereq: FeatPrerequisiteFormData) => {
-        setEditingPrereq(prereq);
-        setIsAddPrereqModalOpen(true);
-    }, []);
-
-    const HandleSavePrereq = useCallback((savedPrereq: FeatPrerequisiteFormData) => {
-        setFormData(prev => {
-            const updatedPrereqs = [...(prev.prereqs || [])];
-            updatedPrereqs[savedPrereq.index] = savedPrereq;
-            return { ...prev, prereqs: updatedPrereqs };
-        });
-        setIsAddPrereqModalOpen(false);
-        setEditingPrereq(null);
-    }, []);
-
-    const HandleDeletePrereq = useCallback(async (prereqIndex: number) => {
-        if (window.confirm('Are you sure you want to remove this prerequisite from the feat?')) {
-            setFormData(prev => {
-                const filteredPrereqs = prev.prereqs?.filter((_, index) => index !== prereqIndex) || [];
-                // Re-index the remaining prerequisites
-                const reindexedPrereqs = filteredPrereqs.map((prereq, newIndex) => ({
-                    ...prereq,
-                    index: newIndex
-                }));
-                return {
-                    ...prev,
-                    prereqs: reindexedPrereqs
-                };
-            });
-        }
-    }, []);
+    };
 
     const HandleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -434,149 +303,42 @@ export function FeatEdit() {
                         </div>
                     </div>
                 </div>
-                <div className="space-y-2">
-                    <MarkdownEditor
-                        id="description"
-                        value={formData.description || ''}
-                        onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
-                    />
-                    {form.validation.getError('description') && (
-                        <span className="text-red-500 text-sm">{form.validation.getError('description')}</span>
-                    )}
 
-                    <MarkdownEditor
-                        id="benefit"
-                        label="Benefit"
-                        value={formData.benefit || ''}
-                        onChange={(value) => setFormData(prev => ({ ...prev, benefit: value }))}
-                    />
-                    {form.validation.getError('benefit') && (
-                        <span className="text-red-500 text-sm">{form.validation.getError('benefit')}</span>
-                    )}
-
-                    <div className="mt-6">
-                        <div className="space-y-2">
-                            <ValidatedInput
-                                field="summary"
-                                label="Summary (for PDF character sheets)"
-                                type="textarea"
-                                labelExtraClassName="mb-2"
-                                inputExtraClassName="w-full"
-                                placeholder="Enter brief summary for character sheets (plain text, no markdown)"
-                                rows={4}
-                            />
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                This summary will be displayed on PDF character sheets. Keep it concise and avoid markdown formatting.
-                            </p>
-                        </div>
+                {/* Summary field (still in Feat for backward compatibility, but also in Feature) */}
+                <div className="mt-6">
+                    <div className="space-y-2">
+                        <ValidatedInput
+                            field="summary"
+                            label="Summary (for PDF character sheets)"
+                            type="textarea"
+                            labelExtraClassName="mb-2"
+                            inputExtraClassName="w-full"
+                            placeholder="Enter brief summary for character sheets (plain text, no markdown)"
+                            rows={4}
+                        />
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                            This summary will be displayed on PDF character sheets. Keep it concise and avoid markdown formatting.
+                            Note: This is also stored in the associated Feature for consistency.
+                        </p>
                     </div>
+                </div>
 
-                    <div className="flex items-center gap-2 border p-3 rounded dark:border-gray-600">
-                        {formData.benefits && formData.benefits.length > 0 ? (
-                            <>
-                                {
-                                    formData.benefits.map((benefit, index) => (
-                                        <div key={index} className="flex gap-2 items-center rounded border p-2 dark:border-gray-700">
-                                            <button
-                                                type="button"
-                                                onClick={() => HandleEditBenefitClick(benefit)}
-                                                className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-600"
-                                            >
-                                                {formatFeatBenefit(benefit)}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                title="Delete Benefit"
-                                                onClick={() => HandleDeleteBenefit(index)}
-                                                className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600"
-                                            >
-                                                <TrashIcon className="h-5 w-5" />
-                                            </button>
-                                        </div>
-                                    ))
-                                }
-                            </>
-                        ) : (
-                            <div className="border p-2 rounded dark:border-gray-600">No benefits added yet.</div>
-                        )}
+                {/* Link to edit associated Feature */}
+                {id !== 'new' && featureId && (
+                    <div className="mt-6 p-4 border rounded-md dark:border-gray-600 bg-blue-50 dark:bg-blue-900/20">
+                        <h3 className="text-lg font-semibold mb-2">Feature Information</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                            Benefits, prerequisites, and descriptive text (description, benefit, normal effect, special effect) are now managed through the Feature system.
+                        </p>
                         <button
                             type="button"
-                            title="Add Benefit"
-                            onClick={HandleAddBenefitClick}
-                            className="text-green-500 hover:text-green-700"
+                            onClick={handleEditFeature}
+                            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
                         >
-                            <PlusIcon className="h-5 w-5" />
+                            Edit Associated Feature
                         </button>
                     </div>
-                    <div className="space-y-2">
-                        <MarkdownEditor
-                            id="normalEffect"
-                            label="Normal"
-                            value={formData.normalEffect || ''}
-                            onChange={(value) => setFormData(prev => ({ ...prev, normalEffect: value }))}
-                        />
-                        {form.validation.getError('normalEffect') && (
-                            <span className="text-red-500 text-sm">{form.validation.getError('normalEffect')}</span>
-                        )}
-                    </div>
-                    <div className="space-y-2">
-                        <MarkdownEditor
-                            id="specialEffect"
-                            label="Special"
-                            value={formData.specialEffect || ''}
-                            onChange={(value) => setFormData(prev => ({ ...prev, specialEffect: value }))}
-                        />
-                        {form.validation.getError('specialEffect') && (
-                            <span className="text-red-500 text-sm">{form.validation.getError('specialEffect')}</span>
-                        )}
-                    </div>
-                    <div className="space-y-2">
-                        <MarkdownEditor
-                            id="prerequisites"
-                            label="Prerequisites"
-                            value={formData.prerequisites || ''}
-                            onChange={(value) => setFormData(prev => ({ ...prev, prerequisites: value }))}
-                        />
-                        {form.validation.getError('prerequisites') && (
-                            <span className="text-red-500 text-sm">{form.validation.getError('prerequisites')}</span>
-                        )}
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-2 border p-3 rounded dark:border-gray-600">
-                    {formData.prereqs && formData.prereqs.length > 0 ? (
-                        <div className="flex items-center gap-2">
-                            {formData.prereqs.map((prereq, index) => (
-                                <div key={index} className="flex gap-2 items-center rounded border p-2 dark:border-gray-700">
-                                    <button
-                                        type="button"
-                                        onClick={() => HandleEditPrereqClick(prereq)}
-                                        className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-600"
-                                    >
-                                        {prereqDisplayTexts[index] || 'Loading...'}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => HandleDeletePrereq(index)}
-                                        className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600"
-                                    >
-                                        <TrashIcon className="h-5 w-5" />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="border p-2 rounded dark:border-gray-600">No prerequisites added yet.</div>
-                    )}
-
-                    <button
-                        type="button"
-                        onClick={HandleAddPrereqClick}
-                        className="text-green-500 hover:text-green-700"
-                    >
-                        <PlusIcon className="h-5 w-5" />
-                    </button>
-                </div>
+                )}
 
                 {/* Source References */}
                 <div className="mt-8">
@@ -608,30 +370,6 @@ export function FeatEdit() {
                 </div>
             </ValidatedForm>
 
-            {editingBenefit && (
-                <FeatBenefitEdit
-                    isOpen={isAddBenefitModalOpen}
-                    onClose={() => {
-                        setIsAddBenefitModalOpen(false);
-                        setEditingBenefit(null);
-                    }}
-                    onSave={HandleSaveBenefit}
-                    initialBenefitData={editingBenefit}
-                    featId={parseInt(id || '0')}
-                />
-            )}
-
-            {editingPrereq && (
-                <FeatPrereqEdit
-                    isOpen={isAddPrereqModalOpen}
-                    onClose={() => {
-                        setIsAddPrereqModalOpen(false);
-                        setEditingPrereq(null);
-                    }}
-                    onSave={HandleSavePrereq}
-                    initialPrereqData={editingPrereq}
-                />
-            )}
 
         </div>
     );

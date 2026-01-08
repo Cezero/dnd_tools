@@ -2,7 +2,6 @@ import z from "zod";
 import { FeatureSourceType, FeatureBonusType, FeaturePrerequisiteType, ConditionalScalingValueType, EntityType, FeatureEntityConditionType, EntityAppliesToType } from "@shared/static-data";
 import { SpellcastingLinkSchema } from "./spellcasting";
 import { QueryResponseSchema } from "./query";
-import { FeatSchema } from "./feat";
 import { ItemSchema } from "./item";
 
 // Feature Prerequisite Schema
@@ -86,7 +85,6 @@ export const FeatureEntitySchema = z.object({
 
     // Optional related entities
     item: ItemSchema.optional().nullable(),  // When appliesTo === Item
-    feat: FeatSchema.optional().nullable(),  // When appliesTo === Feat
     spell: z.object({
         id: z.number().int().positive('Spell ID must be a positive integer'),
         name: z.string().min(1, 'Spell name is required')
@@ -113,6 +111,7 @@ export const FeatureProgressionSchema = z.object({
     raceId: z.number().int().nullable(),
     variantOverrideId: z.number().int().nullable(),
     domainId: z.number().int().nullable(), // NEW: Reference to domain for domain-granted features
+    featId: z.number().int().nullable(), // NEW: Reference to Feat (same pattern as classId/raceId/domainId)
     feature: FeatureSchema.optional(),
     class: z.object({
         name: z.string(),

@@ -101,6 +101,9 @@ class FeatureResolution {
         if (this.context.classDetails) {
             await this.resolveClassFeatures(this.context.classDetails);
         }
+
+        // Resolve feat features
+        await this.resolveFeatFeatures();
     }
 
     /**
@@ -289,6 +292,55 @@ class FeatureResolution {
 
         // Process each class progression
         for (const progression of classProgressions) {
+            if (progression.entities) {
+                for (const entity of progression.entities) {
+                    const result = FeatureEntityHandlers.processFeatureEntity(entity, progression);
+                    this.processEntityResult(result, progression);
+                }
+            }
+            this.resolvedProgressions.push(progression);
+        }
+    }
+
+    /**
+     * Resolves feat features from character's selected feats.
+     * 
+     * For each AdvancementFeat, retrieves the corresponding FeatureProgression
+     * with sourceType: Feat and adds it to resolved progressions.
+     */
+    private async resolveFeatFeatures(): Promise<void> {
+        if (!this.character.advancements) {
+            return;
+        }
+
+        // Collect all unique feat IDs from character advancements
+        const featIds = new Set<number>();
+        for (const advancement of this.character.advancements) {
+            if (advancement.feats) {
+                for (const featSelection of advancement.feats) {
+                    featIds.add(featSelection.featId);
+                }
+            }
+        }
+
+        if (featIds.size === 0) {
+            return;
+        }
+
+        // Import featureSystemService to get feat progressions
+        const { featureSystemService } = await import('../featureSystem/featureSystemService');
+
+        // Get all feat progressions for the selected feats
+        const featProgressions = await featureSystemService.getFeatureProgressionsByFeatIds(Array.from(featIds));
+
+        // Process each feat progression
+        for (const progression of featProgressions) {
+            // Check if this progression already exists to avoid duplicates
+            const existingProgression = this.resolvedProgressions.find(p => p.id === progression.id);
+            if (existingProgression) {
+                continue;
+            }
+
             if (progression.entities) {
                 for (const entity of progression.entities) {
                     const result = FeatureEntityHandlers.processFeatureEntity(entity, progression);

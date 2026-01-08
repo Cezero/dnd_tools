@@ -112,3 +112,11 @@ export async function GetFeatureProgressions(req: ValidatedParamsT<FeatureIdPara
     const progressions = await featureSystemService.getFeatureProgressions(req.params.id);
     res.status(200).json(progressions);
 } 
+
+/**
+ * Gets feature progressions for a specific feat.
+ */
+export async function GetFeatureProgressionsByFeatId(req: ValidatedParamsT<{ id: number }, GetFeatureProgressionsResponse>, res: Response, _next: NextFunction) {
+    const progressions = await featureSystemService.getFeatureProgressionsByFeatIds([req.params.id]);
+    res.status(200).json(progressions);
+} 

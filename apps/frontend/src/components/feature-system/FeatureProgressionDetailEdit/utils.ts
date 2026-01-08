@@ -173,32 +173,9 @@ export function useProficiencySubIdOptions(
             setIsLoading(true);
 
             try {
-                // Get the feat data - either from entity.feat or fetch it
-                let feat = entity.feat;
-                if (!feat || feat.id !== appliesToId) {
-                    // Fetch the feat if we don't have it
-                    const fetchedFeat = await FeatQueryHooks.getFeatById(appliesToId);
-                    feat = fetchedFeat;
-                }
-
-                if (!feat?.benefits) {
-                    setOptions([]);
-                    setIsLoading(false);
-                    return;
-                }
-
-                // Extract proficiency type from feat benefits
-                const proficiencyBenefit = feat.benefits.find(
-                    benefit => benefit.typeId === FeatBenefitType.PROFICIENCY
-                );
-
-                if (!proficiencyBenefit?.referenceId) {
-                    setOptions([]);
-                    setIsLoading(false);
-                    return;
-                }
-
-                const proficiencyTypeId = proficiencyBenefit.referenceId;
+                // After migration, appliesToId contains the proficiency type ID directly
+                // (not the feat ID - appliesTo === EntityAppliesToType.Feat just indicates it's feat-granted)
+                const proficiencyTypeId = appliesToId;
                 const proficiencyType = PROFICIENCY_TYPES[proficiencyTypeId];
 
                 if (!proficiencyType) {

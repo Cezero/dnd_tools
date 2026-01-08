@@ -85,14 +85,8 @@ export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeatur
 
             try {
                 if (entity.appliesTo === EntityAppliesToType.Feat) {
-                    // Check if we already have full feat data
-                    if (entity.feat && entity.feat.id === entity.appliesToId) {
-                        return; // Already have the full data
-                    }
-
-                    // For now, we'll skip the API call and let the component handle data fetching
-                    // This should be refactored to use query hooks at the component level
-                    console.log('Feat data fetching should be handled by query hooks at component level');
+                    // Feat data is no longer included in entity - use cache lookups when needed
+                    // This is handled by formatters and other components via cache helpers
                 } else if (entity.appliesTo === EntityAppliesToType.WeaponFamiliarity) {
                     // Check if we already have full weapon data
                     if (entity.item && entity.item.id === entity.appliesToId) {

@@ -17,6 +17,7 @@ export const FeatureSourceType = {
     None: 3,
     ClassVariant: 4,
     Domain: 5, // NEW: Domain-granted features
+    Feat: 6, // NEW: Feat-granted features
 } as const;
 
 export type FeatureSourceType = typeof FeatureSourceType[keyof typeof FeatureSourceType];
@@ -47,6 +48,7 @@ export const FEATURE_SOURCE_TYPES: BaseMap<CoreComponent> = {
     [FeatureSourceType.None]: { id: FeatureSourceType.None, name: 'None' },
     [FeatureSourceType.ClassVariant]: { id: FeatureSourceType.ClassVariant, name: 'Class Variant' },
     [FeatureSourceType.Domain]: { id: FeatureSourceType.Domain, name: 'Domain' },
+    [FeatureSourceType.Feat]: { id: FeatureSourceType.Feat, name: 'Feat' },
 }
 
 export const FEATURE_SOURCE_LIST = Object.values(FEATURE_SOURCE_TYPES);
@@ -118,6 +120,7 @@ export const EntityAppliesToType = {
     AnimalCompanion: 32, // Animal companion choice
     HitPoints: 33,      // Hit points (e.g., Toughness feat, companion benefits)
     Familiar: 34,       // Familiar choice
+    Prerequisite: 35,   // Prerequisites for features
 } as const;
 
 export type EntityAppliesToType = typeof EntityAppliesToType[keyof typeof EntityAppliesToType];
@@ -164,6 +167,7 @@ export const ENTITY_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
     [EntityAppliesToType.SkillPoints]: { id: EntityAppliesToType.SkillPoints, name: 'Skill Points', displayName: 'Skill Points' },
     [EntityAppliesToType.AnimalCompanion]: { id: EntityAppliesToType.AnimalCompanion, name: 'Animal Companion', displayName: 'Animal Companion' },
     [EntityAppliesToType.Familiar]: { id: EntityAppliesToType.Familiar, name: 'Familiar', displayName: 'Familiar' },
+    [EntityAppliesToType.Prerequisite]: { id: EntityAppliesToType.Prerequisite, name: 'Prerequisite', displayName: 'Prerequisite' },
 }
 
 export const ENTITY_APPLIES_TO_LIST = Object.values(ENTITY_APPLIES_TO_TYPES);
@@ -323,6 +327,11 @@ export const FeaturePrerequisiteType = {
     ClassLevel: 3,
     BaseAttackBonus: 4,
     Other: 5,
+    Feat: 6,
+    Spellcasting: 7,
+    ClassFeature: 8,
+    Size: 9,
+    Proficiency: 10,
 } as const;
 
 export type FeaturePrerequisiteType = typeof FeaturePrerequisiteType[keyof typeof FeaturePrerequisiteType];
@@ -334,6 +343,11 @@ export const FEATURE_PRE_REQ_TYPES: BaseMap<CoreComponent> = {
     [FeaturePrerequisiteType.ClassLevel]: { id: FeaturePrerequisiteType.ClassLevel, name: 'Class Level' },
     [FeaturePrerequisiteType.BaseAttackBonus]: { id: FeaturePrerequisiteType.BaseAttackBonus, name: 'Base Attack Bonus' },
     [FeaturePrerequisiteType.Other]: { id: FeaturePrerequisiteType.Other, name: 'Other' },
+    [FeaturePrerequisiteType.Feat]: { id: FeaturePrerequisiteType.Feat, name: 'Feat' },
+    [FeaturePrerequisiteType.Spellcasting]: { id: FeaturePrerequisiteType.Spellcasting, name: 'Spellcasting' },
+    [FeaturePrerequisiteType.ClassFeature]: { id: FeaturePrerequisiteType.ClassFeature, name: 'Class Feature' },
+    [FeaturePrerequisiteType.Size]: { id: FeaturePrerequisiteType.Size, name: 'Size' },
+    [FeaturePrerequisiteType.Proficiency]: { id: FeaturePrerequisiteType.Proficiency, name: 'Proficiency' },
 }
 
 export const FEATURE_PRE_REQ_LIST = Object.values(FEATURE_PRE_REQ_TYPES);

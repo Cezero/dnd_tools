@@ -196,11 +196,13 @@ model FeatureProgression {
   raceId            Int?
   variantOverrideId Int?
   domainId          Int? // NEW: Reference to domain for domain-granted features
+  featId            Int? // NEW: Reference to Feat (same pattern as classId/raceId/domainId)
 
   class                Class?                                  @relation(fields: [classId], references: [id])
   race                 Race?                                   @relation(fields: [raceId], references: [id])
   classVariantOverride ClassVariantFeatureProgressionOverride? @relation(fields: [variantOverrideId], references: [id])
   domain               Domain?                                 @relation(fields: [domainId], references: [id]) // NEW: Domain relationship
+  feat                 Feat?                                   @relation(fields: [featId], references: [id]) // NEW: Feat relationship
 
   feature                Feature                                  @relation(fields: [featureId], references: [id])
   spellcasting           SpellcastingLink?
@@ -208,6 +210,8 @@ model FeatureProgression {
   entities               FeatureEntity[]
   originalOverrides      ClassVariantFeatureProgressionOverride[] @relation("OriginalFeature")
   displayConditions      FeatureProgressionCondition[]
+
+  @@index([featId])
 }
 
 model FeatureEntity {
@@ -422,8 +426,9 @@ model Feat {
   prereqs  FeatPrerequisiteMap[]
   advFeat  AdvancementFeat[]
 
-  spellPrepMetamagic SpellPreparationMetamagic[]
-  monsters           MonsterFeatMap[]
+  spellPrepMetamagic  SpellPreparationMetamagic[]
+  monsters            MonsterFeatMap[]
+  featureProgressions FeatureProgression[]
 }
 
 model FeatSourceBookMap {

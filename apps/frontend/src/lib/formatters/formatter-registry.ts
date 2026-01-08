@@ -25,7 +25,8 @@ import {
     DamageTypeFormatter,
     WeaponFamiliarityFormatter,
     SpellSaveDCFormatter,
-    ResistanceFormatter
+    ResistanceFormatter,
+    PrerequisiteFormatter
 } from './pure-formatters';
 import { generateKey } from './registry-utils';
 import type { BaseFormatter } from './types';
@@ -172,6 +173,10 @@ export class FormatterRegistry implements IFormatterRegistry {
         this.registerOtherFormatter(EntityAppliesToType.SizeCategory, sizeCategoryFormatter);
         this.registerOtherFormatter(EntityAppliesToType.DamageType, damageTypeFormatter);
         this.registerOtherFormatter(EntityAppliesToType.WeaponFamiliarity, weaponFamiliarityFormatter);
+        
+        // Prerequisite formatter
+        const prerequisiteFormatter = new PrerequisiteFormatter();
+        this.registerOtherFormatter(EntityAppliesToType.Prerequisite, prerequisiteFormatter);
 
         // Proficiency-compatible types
         this.registerProficiencyFormatter(EntityAppliesToType.Feat, proficiencyFormatter);

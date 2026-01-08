@@ -1,11 +1,15 @@
 import type {
     FeatureProgression,
-    FeatureEntity
+    FeatureEntity,
+    FeaturePrerequisite
 } from '@shared/schema';
 import {
+    EntityType,
+    EntityAppliesToType,
     FormulaId
 } from '@shared/static-data';
 
+import { formatterRegistry } from './formatter-registry';
 import {
     ValueGenerationPhase,
     FormattingPhase,
@@ -101,6 +105,14 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
         // Phase 5: Display-Specific Final Grouping
         const result = this.createDisplayResult(withinProgressionGrouped, context, progression);
 
+        // Phase 6: Format Prerequisites (if feature has prerequisites)
+        if (progression.feature?.prerequisites && progression.feature.prerequisites.length > 0) {
+            const formatted = this.formatPrerequisites(
+                progression.feature.prerequisites,
+                context
+            );
+            result.formattedPrerequisites = formatted;
+        }
         return result;
     }
 
@@ -174,6 +186,77 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
         context?: DisplayContext,
         progression?: FeatureProgression
     ): DisplayResult;
+
+    /**
+     * Format prerequisites for display
+     * This is called as part of the orchestration phase (Phase 6)
+     * Uses the formatter registry to format prerequisites consistently with other entities
+     */
+    protected formatPrerequisites(
+        prerequisites: FeaturePrerequisite[],
+        context?: DisplayContext
+    ): string[] {
+        if (!prerequisites || prerequisites.length === 0) {
+            return [];
+        }
+
+        // Get the prerequisite formatter from registry
+        const formatter = formatterRegistry.getFormatter(EntityType.Other, EntityAppliesToType.Prerequisite);
+        if (!formatter) {
+            // Fallback if formatter not found
+            console.warn('PrerequisiteFormatter not found in registry');
+            return prerequisites.map(prereq => `Prerequisite ${prereq.id || ''}`);
+        }
+
+        // Convert each FeaturePrerequisite to CalculatedEntity format for formatting
+        const result = prerequisites.map(prereq => {
+            // Convert FeaturePrerequisite to CalculatedEntity-like structure
+            // Store prerequisite type in filterType (since appliesTo is for EntityAppliesToType, not FeaturePrerequisiteType)
+            // Store appliesToId and minValue in their respective fields
+            // Ensure type is a number (FeaturePrerequisiteType is a number enum)
+            const prereqTypeValue = typeof prereq.type === 'number' ? prereq.type : Number(prereq.type);
+
+            const entityLike: CalculatedEntity = {
+                id: prereq.id,
+                progressionId: 0, // Prerequisites don't belong to progressions
+                type: EntityType.Other,
+                appliesTo: EntityAppliesToType.Prerequisite, // Use Prerequisite appliesTo type
+                appliesToId: prereq.appliesToId,
+                appliesToSubId: null,
+                value: prereq.minValue, // Store minValue in value field
+                bonusType: null,
+                formulaParamsId: null,
+                groupingId: 0,
+                displayInDetail: true,
+                filterType: prereqTypeValue, // Store FeaturePrerequisiteType in filterType (this is a number enum value)
+            };
+
+            // Format using the formatter
+            let formattedValue = formatter.format(entityLike, context);
+
+            // Prerequisites don't need labelers - they're already fully formatted by the formatter
+            // (e.g., "Perform 6 ranks" doesn't need a "Prerequisite:" prefix)
+            // Skip labeler application for prerequisites
+
+            // Debug logging
+            if (!formattedValue || formattedValue.trim() === '') {
+                console.warn('PrerequisiteFormatter returned empty string for prerequisite:', {
+                    prereq,
+                    entityLike,
+                    filterType: entityLike.filterType,
+                    appliesToId: entityLike.appliesToId,
+                    minValue: entityLike.value,
+                    prereqType: prereq.type
+                });
+                // Return a fallback instead of empty string
+                return `Prerequisite ${prereq.id || ''}`;
+            }
+
+            return formattedValue;
+        });
+
+        return result;
+    }
 
 
     protected processEntity(

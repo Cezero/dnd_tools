@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import type { QueryFunctionContext } from '@tanstack/react-query';
+import type { QueryFunctionContext, QueryClient } from '@tanstack/react-query';
 
 import {
     ItemIdParamSchema,
@@ -43,14 +43,14 @@ const itemByIdBaseConfig = createQueryHooks({
 const createItemByIdQueryFn = (originalQueryFn: (params?: unknown) => Promise<ItemWithDetails | null>) => {
     return async (contextOrParams: QueryFunctionContext | { pathParams?: { id?: number } } | undefined): Promise<ItemWithDetails | null> => {
         // Check if this is a QueryFunctionContext from TanStack Query
-        if (contextOrParams && 'queryKey' in contextOrParams && 'queryClient' in contextOrParams) {
+        if (contextOrParams && 'queryKey' in contextOrParams) {
             const context = contextOrParams as QueryFunctionContext;
             const queryKey = context.queryKey as (string | number)[];
             const itemId = queryKey[2] as number | undefined;
-            
+
             // Check if 'items', 'list' exists in cache (with undefined params for getAll)
-            if (context.queryClient && itemId !== undefined) {
-                const allItemsData = context.queryClient.getQueryData<GetAllItemsResponse>(['items', 'list', undefined]);
+            if (context.client && itemId !== undefined) {
+                const allItemsData = context.client.getQueryData<GetAllItemsResponse>(['items', 'list', undefined]);
                 if (allItemsData?.results) {
                     const item = allItemsData.results.find(i => i.id === itemId);
                     if (item) {
@@ -58,13 +58,13 @@ const createItemByIdQueryFn = (originalQueryFn: (params?: unknown) => Promise<It
                     }
                 }
             }
-            
+
             // Fall back to API call
             const typedParams = { pathParams: { id: itemId } };
             return originalQueryFn(typedParams);
         } else {
             // This is a direct call (not from TanStack Query context)
-            // For direct calls, we can't check cache without queryClient, so just call the API
+            // For direct calls, pass params as-is
             return originalQueryFn(contextOrParams);
         }
     };
@@ -77,13 +77,14 @@ const itemByIdQueryFn = createItemByIdQueryFn(itemByIdBaseConfig.queryFn);
 const useGetItemByIdWithCache = (params?: unknown, options?: unknown) => {
     const typedParams = params as { pathParams?: { id?: number } } | undefined;
     const itemId = typedParams?.pathParams?.id;
-    
+    const queryClient = useQueryClient();
+
     return useQuery({
         queryKey: itemByIdBaseConfig.queryKeyBuilder(params),
-        queryFn: async (context: QueryFunctionContext) => {
-            // Check cache first using the context's queryClient
-            if (itemId !== undefined && context.queryClient) {
-                const allItemsData = context.queryClient.getQueryData<GetAllItemsResponse>(['items', 'list', undefined]);
+        queryFn: async () => {
+            // Check cache first using the queryClient
+            if (itemId !== undefined && queryClient) {
+                const allItemsData = queryClient.getQueryData<GetAllItemsResponse>(['items', 'list', undefined]);
                 if (allItemsData?.results) {
                     const item = allItemsData.results.find(i => i.id === itemId);
                     if (item) {
@@ -91,24 +92,24 @@ const useGetItemByIdWithCache = (params?: unknown, options?: unknown) => {
                     }
                 }
             }
-            
-            // Fall back to API call
-            return itemByIdQueryFn(context);
+
+            // Fall back to API call - pass params directly
+            return itemByIdQueryFn(params);
         },
         ...(options as Record<string, unknown>),
     });
 };
 
 // Override the fetch method to also check cache
-const itemByIdFetch = async (params?: unknown, options?: { staleTime?: number; cacheTime?: number }, queryClient?: any) => {
+const itemByIdFetch = async (params?: unknown, options?: { staleTime?: number; gcTime?: number }, queryClient?: QueryClient) => {
     if (!queryClient) {
         // If no queryClient provided, just call the API directly
         return itemByIdQueryFn(params);
     }
-    
+
     const typedParams = params as { pathParams?: { id?: number } } | undefined;
     const itemId = typedParams?.pathParams?.id;
-    
+
     // Check cache first
     if (itemId !== undefined) {
         const allItemsData = queryClient.getQueryData<GetAllItemsResponse>(['items', 'list', undefined]);
@@ -121,13 +122,13 @@ const itemByIdFetch = async (params?: unknown, options?: { staleTime?: number; c
             }
         }
     }
-    
-    // Fall back to normal fetch
+
+    // Fall back to normal fetch - use the base config's queryFn directly
     return queryClient.fetchQuery({
         queryKey: itemByIdBaseConfig.queryKeyBuilder(params),
-        queryFn: () => itemByIdQueryFn(params),
+        queryFn: () => itemByIdBaseConfig.queryFn(params),
         staleTime: options?.staleTime || 5 * 60 * 1000,
-        cacheTime: options?.cacheTime || 10 * 60 * 1000,
+        gcTime: options?.gcTime || 10 * 60 * 1000,
     });
 };
 

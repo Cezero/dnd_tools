@@ -15,8 +15,21 @@ import {
     CREATURE_TYPES,
     SIZE_MAP,
     SPELL_ID_LIST,
+    FeaturePrerequisiteType,
+    SKILL_MAP,
+    ABILITY_MAP,
+    SIZE_LIST,
+    PROFICIENCY_TYPE_LIST,
 } from '@shared/static-data';
 
+import {
+    getFeatNameFromCache,
+    getFeatureNameFromCache,
+    getSpellNameFromCache,
+    getDomainNameFromCache,
+    getSkillNameFromCache,
+    getClassNameFromCache,
+} from './utils/cache-helpers';
 import type { BaseFormatter, CalculatedEntity, DisplayContext } from './types';
 
 export class DamageFormatter implements BaseFormatter {
@@ -91,7 +104,7 @@ export class LanguageFormatter implements BaseFormatter {
 }
 
 export class FeatFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
+    format(modifier: CalculatedEntity, context?: DisplayContext): string {
         const value = modifier.value;
 
         // This is a proficiency - return the item name
@@ -100,43 +113,62 @@ export class FeatFormatter implements BaseFormatter {
             return itemName.toLowerCase();
         }
 
-        // Handle general feats - use included entity data
-        if (modifier.feat) {
-            return modifier.feat.name;
+        // Use cache helper to get feat name
+        const featId = modifier.appliesToId;
+        if (featId) {
+            const cachedName = getFeatNameFromCache(context?.queryClient, featId);
+            if (cachedName) {
+                return cachedName;
+            }
         }
 
-        // Fallback to appliesToId if feat data is missing
-        const featId = modifier.appliesToId;
+        // Fallback to ID
         return `${featId || value} (feat name not found)`;
     }
 }
 
 export class DomainFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
+    format(modifier: CalculatedEntity, context?: DisplayContext): string {
         const value = modifier.value;
 
-        // Handle general domains - use included entity data
+        // Priority 1: Use included entity data
         if (modifier.domain) {
             return modifier.domain.name;
         }
 
-        // Fallback to appliesToId if domain data is missing
+        // Priority 2: Use cache helper
         const domainId = modifier.appliesToId;
+        if (domainId) {
+            const cachedName = getDomainNameFromCache(context?.queryClient, domainId);
+            if (cachedName) {
+                return cachedName;
+            }
+        }
+
+        // Priority 3: Fallback to ID
         return `${domainId || value} (domain name not found)`;
     }
 }
 
 export class SpellFormatter implements BaseFormatter {
-    format(modifier: CalculatedEntity, _context?: DisplayContext): string {
+    format(modifier: CalculatedEntity, context?: DisplayContext): string {
         const value = modifier.value;
 
-        // Use included spell data if available (from backend)
+        // Priority 1: Use included spell data if available (from backend)
         if (modifier.spell) {
             return modifier.spell.name;
         }
 
-        // Fallback: Look up spell name from static data using appliesToId
+        // Priority 2: Use cache helper
         const spellId = modifier.appliesToId;
+        if (spellId) {
+            const cachedName = getSpellNameFromCache(context?.queryClient, spellId);
+            if (cachedName) {
+                return cachedName;
+            }
+        }
+
+        // Priority 3: Look up spell name from static data using appliesToId
         if (spellId) {
             const spell = SPELL_ID_LIST.find((s) => s.id === spellId);
             if (spell) {
@@ -144,7 +176,7 @@ export class SpellFormatter implements BaseFormatter {
             }
         }
 
-        // Fallback if spell not found
+        // Priority 4: Fallback if spell not found
         return `${spellId || value} (spell name not found)`;
     }
 }
@@ -244,14 +276,14 @@ export class DamageReductionFormatter implements BaseFormatter {
 // this is not how this should be structured, this bypasses the formatter registry and uses the formatter directly
 // this should be refactored to use the formatter registry
 export class FeatureEntityFormatter implements BaseFormatter {
-    format(choice: CalculatedEntity, _context?: DisplayContext): string {
+    format(choice: CalculatedEntity, context?: DisplayContext): string {
         // If value is already a formatted string, return it directly
         if (typeof choice.value === 'string') {
             return choice.value;
         }
 
         // CRITICAL: Always use actual names/abbreviations, never IDs
-        const choiceName = this.getChoiceName(choice);
+        const choiceName = this.getChoiceName(choice, context);
 
         switch (choice.type) {
             case EntityType.Choice:
@@ -260,7 +292,7 @@ export class FeatureEntityFormatter implements BaseFormatter {
                 // For allocation entities, use base choice name without ordinal
                 // Choice/Allocation entities now only generate values at formula-determined intervals
                 // so ordinal numbers are not required
-                const baseChoiceName = this.getBaseChoiceName(choice);
+                const baseChoiceName = this.getBaseChoiceName(choice, context);
                 return `Allocate Bonus to ${baseChoiceName}`;
             }
             default:
@@ -268,14 +300,14 @@ export class FeatureEntityFormatter implements BaseFormatter {
         }
     }
 
-    private getChoiceName(choice: CalculatedEntity): string {
+    private getChoiceName(choice: CalculatedEntity, context?: DisplayContext): string {
         switch (choice.appliesTo) {
             case EntityAppliesToType.Feat:
-                return this.getFeatName(choice);
+                return this.getFeatName(choice, context);
             case EntityAppliesToType.Domain:
-                return this.getDomainName(choice);
+                return this.getDomainName(choice, context);
             case EntityAppliesToType.Feature:
-                return this.getFeatureName(choice);
+                return this.getFeatureName(choice, context);
             case EntityAppliesToType.CreatureType:
                 return this.getCreatureTypeName(choice);
             case EntityAppliesToType.AnimalCompanion:
@@ -288,10 +320,13 @@ export class FeatureEntityFormatter implements BaseFormatter {
         }
     }
 
-    private getFeatName(choice: CalculatedEntity): string {
-        // Priority 1: Use included entity data (specific feat selected)
-        if (choice.feat) {
-            return choice.feat.name;
+    private getFeatName(choice: CalculatedEntity, context?: DisplayContext): string {
+        // Use cache helper to get feat name
+        if (choice.appliesToId) {
+            const cachedName = getFeatNameFromCache(context?.queryClient, choice.appliesToId);
+            if (cachedName) {
+                return cachedName;
+            }
         }
 
         // Priority 3: Use static data filter type name (filter type is set)
@@ -299,29 +334,45 @@ export class FeatureEntityFormatter implements BaseFormatter {
             return FEATURE_FEAT_CHOICE_FILTER_TYPES[choice.filterType].name;
         }
 
-        // Priority 5: Fall back to "Bonus Feat" when no filter type is set
+        // Priority 4: Fall back to "Bonus Feat" when no filter type is set
         return 'Bonus Feat';
     }
 
-    private getDomainName(choice: CalculatedEntity): string {
+    private getDomainName(choice: CalculatedEntity, context?: DisplayContext): string {
         // Priority 1: Use included entity data (specific domain selected)
         if (choice.domain) {
             return choice.domain.name;
         }
 
-        // Priority 2: Use static data filter type name (filter type is set)
+        // Priority 2: Use cache helper
+        if (choice.appliesToId) {
+            const cachedName = getDomainNameFromCache(context?.queryClient, choice.appliesToId);
+            if (cachedName) {
+                return cachedName;
+            }
+        }
+
+        // Priority 3: Use static data filter type name (filter type is set)
         if (choice.filterType && FEATURE_FEAT_CHOICE_FILTER_TYPES[choice.filterType]) {
             return FEATURE_FEAT_CHOICE_FILTER_TYPES[choice.filterType].name;
         }
 
-        // Priority 3: Fall back to "Domain Choice" when no filter type is set
+        // Priority 4: Fall back to "Domain Choice" when no filter type is set
         return 'Domain Choice';
     }
 
-    private getFeatureName(choice: CalculatedEntity): string {
+    private getFeatureName(choice: CalculatedEntity, context?: DisplayContext): string {
         // Priority 1: Use included entity data
         if (choice.feature) {
             return choice.feature.name;
+        }
+
+        // Priority 2: Use cache helper
+        if (choice.appliesToId) {
+            const cachedName = getFeatureNameFromCache(context?.queryClient, choice.appliesToId);
+            if (cachedName) {
+                return cachedName;
+            }
         }
 
         // Priority 3: Use static data filter type name
@@ -329,7 +380,7 @@ export class FeatureEntityFormatter implements BaseFormatter {
             return FEATURE_FEAT_CHOICE_FILTER_TYPES[choice.filterType].name;
         }
 
-        // Priority 5: Fall back to generic name or ID
+        // Priority 4: Fall back to generic name or ID
         if (choice.appliesToId) {
             console.warn(`Unable to resolve feature name for ID: ${choice.appliesToId}`);
             return `Feature ID: ${choice.appliesToId}`;
@@ -386,14 +437,14 @@ export class FeatureEntityFormatter implements BaseFormatter {
         return 'Familiar';
     }
 
-    private getBaseChoiceName(choice: CalculatedEntity): string {
+    private getBaseChoiceName(choice: CalculatedEntity, context?: DisplayContext): string {
         switch (choice.appliesTo) {
             case EntityAppliesToType.Feat:
-                return this.getFeatName(choice);
+                return this.getFeatName(choice, context);
             case EntityAppliesToType.Domain:
-                return this.getDomainName(choice);
+                return this.getDomainName(choice, context);
             case EntityAppliesToType.Feature:
-                return this.getFeatureName(choice);
+                return this.getFeatureName(choice, context);
             case EntityAppliesToType.CreatureType:
                 return this.getBaseCreatureTypeName(choice);
             case EntityAppliesToType.AnimalCompanion:
@@ -423,14 +474,11 @@ export class ProficiencyFormatter implements BaseFormatter {
     format(modifier: CalculatedEntity, _context?: DisplayContext): string {
 
         if (modifier.appliesToSubId === -1) {
-            // Use included entity data
-            if (modifier.feat?.benefits) {
-                const proficiencyBenefit = modifier.feat.benefits.find(benefit => benefit.typeId === FeatBenefitType.PROFICIENCY);
-                if (proficiencyBenefit) {
-                    return PROFICIENCY_TYPES[proficiencyBenefit.referenceId].allName;
-                }
+            // Category-based proficiency - appliesToId contains the proficiency type ID
+            if (modifier.appliesToId && PROFICIENCY_TYPES[modifier.appliesToId]) {
+                return PROFICIENCY_TYPES[modifier.appliesToId].allName;
             }
-            // Fallback if feat object or proficiency benefit not found
+            // Fallback if proficiency type not found
             return 'all items';
         } else if (modifier.appliesToSubId && modifier.appliesToSubId > 0) {
             // itemId > 0 means a specific item proficiency
@@ -623,5 +671,116 @@ export class DamageStringFormatter implements BaseFormatter {
         }
         const modifierStr = totalModifier >= 0 ? `+${totalModifier}` : `${totalModifier}`;
         return `${baseDamage}${modifierStr}`;
+    }
+}
+
+/**
+ * Formatter for FeaturePrerequisite objects
+ * Converts prerequisites to CalculatedEntity-like format for formatting
+ */
+export class PrerequisiteFormatter implements BaseFormatter {
+    format(prereq: CalculatedEntity, context?: DisplayContext): string {
+        // Prerequisites are passed as CalculatedEntity with FeaturePrerequisiteType stored in filterType
+        // This formatter is called from formatPrerequisites which converts FeaturePrerequisite to CalculatedEntity format
+        // The prerequisite type is stored in filterType, appliesToId, and minValue in value
+        
+        // Get prerequisite type from filterType (where we stored FeaturePrerequisiteType)
+        // Ensure it's a number (FeaturePrerequisiteType is a number enum: 0-10)
+        const filterTypeValue = prereq.filterType !== null && prereq.filterType !== undefined 
+            ? (typeof prereq.filterType === 'number' ? prereq.filterType : Number(prereq.filterType))
+            : null;
+        
+        if (filterTypeValue === null || isNaN(filterTypeValue)) {
+            console.warn('PrerequisiteFormatter: filterType is null/undefined/NaN for prerequisite:', prereq);
+            return `Prerequisite ${prereq.id || ''}`;
+        }
+        
+        const prereqType = filterTypeValue as FeaturePrerequisiteType;
+        const appliesToId = prereq.appliesToId;
+        const minValue = typeof prereq.value === 'number' ? prereq.value : (prereq.value ? Number(prereq.value) : 0);
+
+        switch (prereqType) {
+            case FeaturePrerequisiteType.SkillRanks: {
+                // Priority 1: Use cache helper
+                if (appliesToId) {
+                    const skillName = getSkillNameFromCache(context?.queryClient, appliesToId);
+                    if (skillName) {
+                        return `${skillName} ${minValue} ranks`;
+                    }
+                }
+                // Priority 2: Use static data
+                if (appliesToId && SKILL_MAP[appliesToId]) {
+                    const skillName = SKILL_MAP[appliesToId].name;
+                    return `${skillName} ${minValue} ranks`;
+                }
+                // Fallback if skill not found
+                return appliesToId ? `Skill ${appliesToId} ${minValue} ranks` : `Skill ${minValue} ranks`;
+            }
+            case FeaturePrerequisiteType.AbilityScore: {
+                const abilityName = appliesToId ? ABILITY_MAP[appliesToId]?.abbreviation || 'Unknown' : 'Ability';
+                return `${abilityName} ${minValue}+`;
+            }
+            case FeaturePrerequisiteType.CharacterLevel:
+                return `Character Level ${minValue}+`;
+            case FeaturePrerequisiteType.ClassLevel: {
+                // If appliesToId is set and not -1, it's a class-specific level requirement
+                if (appliesToId && appliesToId !== -1) {
+                    const className = getClassNameFromCache(context?.queryClient, appliesToId);
+                    if (className) {
+                        return `${className} Level ${minValue}+`;
+                    }
+                }
+                // Fallback to generic "Class Level" if no class specified or class name not found
+                return `Class Level ${minValue}+`;
+            }
+            case FeaturePrerequisiteType.BaseAttackBonus:
+                return `BAB ${minValue}+`;
+            case FeaturePrerequisiteType.Feat: {
+                // Priority 1: Use cache helper
+                if (appliesToId) {
+                    const featName = getFeatNameFromCache(context?.queryClient, appliesToId);
+                    if (featName) {
+                        return `Feat: ${featName}`;
+                    }
+                }
+                // Priority 2: Fallback to ID
+                return `Feat ${appliesToId || ''}`;
+            }
+            case FeaturePrerequisiteType.Feature: {
+                // Priority 1: Use cache helper
+                if (appliesToId) {
+                    const featureName = getFeatureNameFromCache(context?.queryClient, appliesToId);
+                    if (featureName) {
+                        return `Feature: ${featureName}`;
+                    }
+                }
+                // Priority 2: Fallback to ID
+                return `Feature ${appliesToId || ''}`;
+            }
+            case FeaturePrerequisiteType.Spellcasting:
+                // If minValue is set, format as "Caster level Xth"
+                if (minValue > 0) {
+                    // Format ordinal suffix (1st, 2nd, 3rd, 4th, etc.)
+                    const suffix = minValue === 1 ? 'st' : minValue === 2 ? 'nd' : minValue === 3 ? 'rd' : 'th';
+                    return `Caster level ${minValue}${suffix}`;
+                }
+                return `Spellcasting`;
+            case FeaturePrerequisiteType.Size: {
+                // Size prerequisites use appliesToId to reference SIZE_LIST
+                const sizeName = appliesToId ? SIZE_LIST.find(s => s.id === appliesToId)?.name || 'Unknown Size' : 'Size';
+                return `${sizeName}`;
+            }
+            case FeaturePrerequisiteType.Proficiency: {
+                // Proficiency prerequisites use appliesToId to reference proficiency types
+                const profName = appliesToId ? PROFICIENCY_TYPE_LIST.find(p => p.id === appliesToId)?.name || 'Unknown Proficiency' : 'Proficiency';
+                return `${profName}`;
+            }
+            case FeaturePrerequisiteType.Other:
+                return `Other Requirement: ${minValue !== null && minValue !== undefined ? minValue : ''}`;
+            default:
+                // If we don't recognize the type, try to return something useful
+                console.warn('Unknown prerequisite type:', prereqType, 'for prerequisite:', prereq);
+                return `Requirement: ${minValue !== null && minValue !== undefined ? minValue : ''}`;
+        }
     }
 }

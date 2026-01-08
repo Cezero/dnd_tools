@@ -11,9 +11,11 @@ import {
     GetFeatListResponse,
     FeatCacheResponse
 } from '@shared/schema';
-import { FeatBenefitType } from '@shared/static-data';
+import { FeatBenefitType, FeatureSourceType, EntityAppliesToType, EntityType } from '@shared/static-data';
 
 import type { FeatService } from './types';
+import { featureSystemService } from '../featureSystem/index';
+
 
 const prisma = new PrismaClient();
 
@@ -22,7 +24,21 @@ export const featService: FeatService = {
         const [feats] = await Promise.all([
             prisma.feat.findMany({
                 orderBy: { name: 'asc' },
-                include: {
+                select: {
+                    id: true,
+                    name: true,
+                    typeId: true,
+                    description: true,
+                    benefit: true,
+                    summary: true,
+                    normalEffect: true,
+                    specialEffect: true,
+                    prerequisites: true,
+                    repeatable: true,
+                    fighterBonus: true,
+                    useSubId: true,
+                    isVisible: true,
+                    editionId: true,
                     sourceBookInfo: {
                         select: {
                             sourceBookId: true,
@@ -41,23 +57,39 @@ export const featService: FeatService = {
     },
 
     async featQuery(query: FeatQueryRequest): Promise<FeatQueryResponse> {
-        let whereClause: Prisma.FeatWhereInput = {};
+        let featIds: number[] | undefined = undefined;
+
         if (query.queryType === 'proficiency') {
-            whereClause = {
-                benefits: {
-                    some: {
-                        typeId: FeatBenefitType.PROFICIENCY
+            // Query FeatureProgression to find feats with proficiency entities
+            const progressions = await prisma.featureProgression.findMany({
+                where: {
+                    sourceType: FeatureSourceType.Feat,
+                    entities: {
+                        some: {
+                            appliesTo: EntityAppliesToType.Feat,
+                            type: EntityType.Proficiency,
+                        }
                     }
+                },
+                select: {
+                    featId: true,
                 }
-            }
+            });
+
+            featIds = progressions
+                .map(p => p.featId)
+                .filter((id): id is number => id !== null);
         }
+
+        const whereClause: Prisma.FeatWhereInput = featIds && featIds.length > 0
+            ? { id: { in: featIds } }
+            : {};
+
         // For 'all' query type, no where clause is needed - get all feats
         const [feats] = await Promise.all([
             prisma.feat.findMany({
                 where: whereClause,
                 include: {
-                    benefits: true,
-                    prereqs: true,
                     sourceBookInfo: {
                         select: {
                             sourceBookId: true,
@@ -78,18 +110,35 @@ export const featService: FeatService = {
     },
 
     async getFeatList(query: FeatQueryRequest): Promise<GetFeatListResponse> {
-        let whereClause: Prisma.FeatWhereInput = {};
-        if (query.queryType === 'proficiency') {
-            whereClause = {
-                benefits: {
-                    some: {
-                        typeId: FeatBenefitType.PROFICIENCY
-                    }
-                }
-            }
-        }
-        // For 'all' query type, no where clause is needed - get all feats
+        let featIds: number[] | undefined = undefined;
 
+        if (query.queryType === 'proficiency') {
+            // Query FeatureProgression to find feats with proficiency entities
+            const progressions = await prisma.featureProgression.findMany({
+                where: {
+                    sourceType: FeatureSourceType.Feat,
+                    entities: {
+                        some: {
+                            appliesTo: EntityAppliesToType.Feat,
+                            type: EntityType.Proficiency,
+                        }
+                    }
+                },
+                select: {
+                    featId: true,
+                }
+            });
+
+            featIds = progressions
+                .map(p => p.featId)
+                .filter((id): id is number => id !== null);
+        }
+
+        const whereClause: Prisma.FeatWhereInput = featIds && featIds.length > 0
+            ? { id: { in: featIds } }
+            : {};
+
+        // For 'all' query type, no where clause is needed - get all feats
         const feats = await prisma.feat.findMany({
             where: whereClause,
             select: {
@@ -106,8 +155,6 @@ export const featService: FeatService = {
         const feat = await prisma.feat.findUnique({
             where: { id: query.id },
             include: {
-                benefits: true,
-                prereqs: true,
                 sourceBookInfo: {
                     select: {
                         sourceBookId: true,
@@ -117,22 +164,29 @@ export const featService: FeatService = {
             },
         });
 
-        return feat as Feat;
+        if (!feat) {
+            return null;
+        }
+
+        // Get fully populated feature progressions using the feature system service
+        const progressions = await featureSystemService.getFeatureProgressionsByFeatIds([query.id]);
+
+        // Attach progressions to the feat object
+        return {
+            ...feat,
+            featureProgressions: progressions,
+        } as Feat;
     },
 
     async createFeat(data: CreateFeatRequest): Promise<CreateResponse> {
         const result = await prisma.$transaction(async (tx) => {
+            // benefits and prereqs are no longer part of the Feat model - handled via Feature system
+            const { sourceBookInfo, ...featData } = data;
             const newFeat = await tx.feat.create({
                 data: {
-                    ...data,
-                    benefits: data.benefits ? {
-                        create: data.benefits
-                    } : undefined,
-                    prereqs: data.prereqs ? {
-                        create: data.prereqs
-                    } : undefined,
+                    ...featData,
                     sourceBookInfo: {
-                        create: data.sourceBookInfo?.map(source => ({
+                        create: sourceBookInfo?.map(source => ({
                             sourceBookId: source.sourceBookId,
                             pageNumber: source.pageNumber
                         })) || []
@@ -148,59 +202,20 @@ export const featService: FeatService = {
 
     async updateFeat(query: FeatIdParamRequest, data: UpdateFeatRequest): Promise<UpdateResponse> {
         await prisma.$transaction(async (tx) => {
-            // Handle prerequisites separately to avoid unique constraint issues
-            if (data.prereqs) {
-                // Delete existing prerequisites
-                await tx.featPrerequisiteMap.deleteMany({
-                    where: { featId: query.id }
-                });
-
-                // Create new prerequisites with proper indexing
-                if (data.prereqs.length > 0) {
-                    await tx.featPrerequisiteMap.createMany({
-                        data: data.prereqs.map((prereq, index) => ({
-                            featId: query.id,
-                            typeId: prereq.typeId,
-                            referenceId: prereq.referenceId,
-                            amount: prereq.amount,
-                            index: index
-                        }))
-                    });
-                }
-            }
-
-            // Handle benefits separately
-            if (data.benefits) {
-                // Delete existing benefits
-                await tx.featBenefitMap.deleteMany({
-                    where: { featId: query.id }
-                });
-
-                // Create new benefits with proper indexing
-                if (data.benefits.length > 0) {
-                    await tx.featBenefitMap.createMany({
-                        data: data.benefits.map((benefit, index) => ({
-                            featId: query.id,
-                            typeId: benefit.typeId,
-                            referenceId: benefit.referenceId,
-                            amount: benefit.amount,
-                            index: index
-                        }))
-                    });
-                }
-            }
+            // benefits and prereqs are no longer part of the Feat model - handled via Feature system
+            const { sourceBookInfo, ...featData } = data;
 
             // Handle source book info separately
-            if (data.sourceBookInfo) {
+            if (sourceBookInfo) {
                 // Delete existing source book info
                 await tx.featSourceBookMap.deleteMany({
                     where: { featId: query.id }
                 });
 
                 // Create new source book info
-                if (data.sourceBookInfo.length > 0) {
+                if (sourceBookInfo.length > 0) {
                     await tx.featSourceBookMap.createMany({
-                        data: data.sourceBookInfo.map(source => ({
+                        data: sourceBookInfo.map(source => ({
                             featId: query.id,
                             sourceBookId: source.sourceBookId,
                             pageNumber: source.pageNumber
@@ -209,8 +224,7 @@ export const featService: FeatService = {
                 }
             }
 
-            // Update the main feat record (excluding the relationship fields)
-            const { benefits, prereqs, sourceBookInfo, ...featData } = data;
+            // Update the main feat record
             const updatedFeat = await tx.feat.update({
                 where: { id: query.id },
                 data: featData
@@ -230,16 +244,34 @@ export const featService: FeatService = {
     },
 
     async getFeatCache(query: FeatQueryRequest): Promise<FeatCacheResponse> {
-        let whereClause: Prisma.FeatWhereInput = {};
+        let featIds: number[] | undefined = undefined;
+
         if (query.queryType === 'proficiency') {
-            whereClause = {
-                benefits: {
-                    some: {
-                        typeId: FeatBenefitType.PROFICIENCY
+            // Query FeatureProgression to find feats with proficiency entities
+            const progressions = await prisma.featureProgression.findMany({
+                where: {
+                    sourceType: FeatureSourceType.Feat,
+                    entities: {
+                        some: {
+                            appliesTo: EntityAppliesToType.Feat,
+                            type: EntityType.Proficiency,
+                        }
                     }
+                },
+                select: {
+                    featId: true,
                 }
-            }
+            });
+
+            featIds = progressions
+                .map(p => p.featId)
+                .filter((id): id is number => id !== null);
         }
+
+        const whereClause: Prisma.FeatWhereInput = featIds && featIds.length > 0
+            ? { id: { in: featIds } }
+            : {};
+
         const feats = await prisma.feat.findMany({
             where: whereClause,
             orderBy: { name: 'asc' },
@@ -264,8 +296,6 @@ export const featService: FeatService = {
         const [feats] = await Promise.all([
             prisma.feat.findMany({
                 include: {
-                    benefits: true,
-                    prereqs: true,
                     sourceBookInfo: {
                         select: {
                             sourceBookId: true,

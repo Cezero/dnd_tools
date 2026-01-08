@@ -29,21 +29,15 @@ export function extractProficiencies(resolvedProgressions: FeatureProgression[])
 
                     // Check if it's a category-based proficiency (appliesToSubId === -1 means "all")
                     if (entity.appliesToSubId === -1 || entity.appliesToSubId === null) {
-                        // Category-based proficiency - get the proficiency type from the feat
-                        if (entity.feat?.benefits) {
-                            const proficiencyBenefit = entity.feat.benefits.find(
-                                benefit => benefit.typeId === FeatBenefitType.PROFICIENCY
-                            );
-
-                            if (proficiencyBenefit?.referenceId) {
-                                const proficiencyType = PROFICIENCY_TYPES[proficiencyBenefit.referenceId];
+                        // Category-based proficiency - appliesToId contains the proficiency type ID
+                        if (entity.appliesToId) {
+                            const proficiencyType = PROFICIENCY_TYPES[entity.appliesToId];
                                 if (proficiencyType) {
                                     // Check if it's a weapon or armor proficiency
                                     if (proficiencyType.itemTypeId === ITEM_TYPE_ENUM.Weapon) {
                                         weaponCategories.add(proficiencyType.category);
                                     } else if (proficiencyType.itemTypeId === ITEM_TYPE_ENUM.Armor) {
                                         armorCategories.add(proficiencyType.category);
-                                    }
                                 }
                             }
                         }

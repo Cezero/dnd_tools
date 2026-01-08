@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import type { QueryFunctionContext } from '@tanstack/react-query';
+import type { QueryFunctionContext, QueryClient } from '@tanstack/react-query';
 
 import {
     FeatIdParamSchema,
@@ -45,14 +45,14 @@ const featByIdBaseConfig = createQueryHooks({
 const createFeatByIdQueryFn = (originalQueryFn: (params?: unknown) => Promise<Feat | null>) => {
     return async (contextOrParams: QueryFunctionContext | { pathParams?: { id?: number } } | undefined): Promise<Feat | null> => {
         // Check if this is a QueryFunctionContext from TanStack Query
-        if (contextOrParams && 'queryKey' in contextOrParams && 'queryClient' in contextOrParams) {
+        if (contextOrParams && 'queryKey' in contextOrParams) {
             const context = contextOrParams as QueryFunctionContext;
             const queryKey = context.queryKey as (string | number)[];
             const featId = queryKey[2] as number | undefined;
-            
+
             // Check if 'feats', 'full' exists in cache
-            if (context.queryClient && featId !== undefined) {
-                const fullFeatsData = context.queryClient.getQueryData<FeatQueryResponse>(['feats', 'full']);
+            if (context.client && featId !== undefined) {
+                const fullFeatsData = context.client.getQueryData<FeatQueryResponse>(['feats', 'full']);
                 if (fullFeatsData?.results) {
                     const feat = fullFeatsData.results.find(f => f.id === featId);
                     if (feat) {
@@ -60,13 +60,13 @@ const createFeatByIdQueryFn = (originalQueryFn: (params?: unknown) => Promise<Fe
                     }
                 }
             }
-            
-            // Fall back to API call
+
+            // Fall back to API call - ensure params are in correct format
             const typedParams = { pathParams: { id: featId } };
             return originalQueryFn(typedParams);
         } else {
             // This is a direct call (not from TanStack Query context)
-            // For direct calls, we can't check cache without queryClient, so just call the API
+            // For direct calls, pass params as-is
             return originalQueryFn(contextOrParams);
         }
     };
@@ -79,13 +79,14 @@ const featByIdQueryFn = createFeatByIdQueryFn(featByIdBaseConfig.queryFn);
 const useGetFeatByIdWithCache = (params?: unknown, options?: unknown) => {
     const typedParams = params as { pathParams?: { id?: number } } | undefined;
     const featId = typedParams?.pathParams?.id;
-    
+    const queryClient = useQueryClient();
+
     return useQuery({
         queryKey: featByIdBaseConfig.queryKeyBuilder(params),
-        queryFn: async (context: QueryFunctionContext) => {
-            // Check cache first using the context's queryClient
-            if (featId !== undefined && context.queryClient) {
-                const fullFeatsData = context.queryClient.getQueryData<FeatQueryResponse>(['feats', 'full']);
+        queryFn: async () => {
+            // Check cache first using the queryClient
+            if (featId !== undefined && queryClient) {
+                const fullFeatsData = queryClient.getQueryData<FeatQueryResponse>(['feats', 'full']);
                 if (fullFeatsData?.results) {
                     const feat = fullFeatsData.results.find(f => f.id === featId);
                     if (feat) {
@@ -93,24 +94,24 @@ const useGetFeatByIdWithCache = (params?: unknown, options?: unknown) => {
                     }
                 }
             }
-            
-            // Fall back to API call
-            return featByIdQueryFn(context);
+
+            // Fall back to API call - pass params directly
+            return featByIdQueryFn(params);
         },
         ...(options as Record<string, unknown>),
     });
 };
 
 // Override the fetch method to also check cache
-const featByIdFetch = async (params?: unknown, options?: { staleTime?: number; cacheTime?: number }, queryClient?: any) => {
+const featByIdFetch = async (params?: unknown, options?: { staleTime?: number; gcTime?: number }, queryClient?: QueryClient) => {
     if (!queryClient) {
         // If no queryClient provided, just call the API directly
         return featByIdQueryFn(params);
     }
-    
+
     const typedParams = params as { pathParams?: { id?: number } } | undefined;
     const featId = typedParams?.pathParams?.id;
-    
+
     // Check cache first
     if (featId !== undefined) {
         const fullFeatsData = queryClient.getQueryData<FeatQueryResponse>(['feats', 'full']);
@@ -123,13 +124,13 @@ const featByIdFetch = async (params?: unknown, options?: { staleTime?: number; c
             }
         }
     }
-    
-    // Fall back to normal fetch
+
+    // Fall back to normal fetch - use the base config's queryFn directly
     return queryClient.fetchQuery({
         queryKey: featByIdBaseConfig.queryKeyBuilder(params),
-        queryFn: () => featByIdQueryFn(params),
+        queryFn: () => featByIdBaseConfig.queryFn(params),
         staleTime: options?.staleTime || 5 * 60 * 1000,
-        cacheTime: options?.cacheTime || 10 * 60 * 1000,
+        gcTime: options?.gcTime || 10 * 60 * 1000,
     });
 };
 
@@ -215,7 +216,7 @@ export const FeatQueryHooks = {
     }),
     featQuery: (data: unknown) => featQueryConfig.fetch({ requestData: data }),
     getFeatList: (data: unknown) => featListConfig.fetch({ requestData: data }),
-    getAllFeatsFull: (params?: unknown, options?: { staleTime?: number; cacheTime?: number }, queryClient?: any) => 
+    getAllFeatsFull: (params?: unknown, options?: { staleTime?: number; gcTime?: number }, queryClient?: QueryClient) =>
         getAllFeatsFullConfig.fetch(params, options, queryClient),
 
     // Expose query functions for advanced usage

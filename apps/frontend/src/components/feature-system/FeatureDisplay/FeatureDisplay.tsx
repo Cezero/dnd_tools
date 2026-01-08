@@ -1,11 +1,12 @@
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { useQueryClient } from '@tanstack/react-query';
 import React from 'react';
 
 import { useAuthAuto } from '@/components/auth';
 import { renderCellValue } from '@/components/generic-list/columnUtils';
 import { displayStrategyFactory } from '@/lib/formatters';
-import { FeaturePrerequisite, FeatureProgression } from '@shared/schema';
-import { DisplayType, FeaturePrerequisiteType, ABILITY_MAP, SKILL_MAP } from '@shared/static-data';
+import { FeatureProgression } from '@shared/schema';
+import { DisplayType } from '@shared/static-data';
 
 import { FeatureDisplayProps } from './types';
 
@@ -18,47 +19,11 @@ export function FeatureDisplay({
     showAddProgressionButton = true,
     className = '',
     onEditFeature,
-    parentType,
-    parentId
+    parentType: _parentType,
+    parentId: _parentId
 }: FeatureDisplayProps): React.JSX.Element {
     const { isAdmin } = useAuthAuto();
-    // Helper function to format prerequisites for display
-    const formatPrerequisites = (prerequisites: FeaturePrerequisite[]) => {
-        if (!prerequisites || prerequisites.length === 0) return 'None';
-
-        return prerequisites.map((prereq, index) => {
-            let text = '';
-
-            switch (prereq.type) {
-                case FeaturePrerequisiteType.SkillRanks: {
-                    const skillName = prereq.appliesToId ? SKILL_MAP[prereq.appliesToId]?.name || 'Unknown Skill' : 'Skill';
-                    text = `${skillName} ${prereq.minValue} ranks`;
-                    break;
-                }
-                case FeaturePrerequisiteType.AbilityScore: {
-                    const abilityName = prereq.appliesToId ? ABILITY_MAP[prereq.appliesToId]?.abbreviation || 'Unknown' : 'Ability';
-                    text = `${abilityName} ${prereq.minValue}+`;
-                    break;
-                }
-                case FeaturePrerequisiteType.CharacterLevel:
-                    text = `Character Level ${prereq.minValue}+`;
-                    break;
-                case FeaturePrerequisiteType.ClassLevel:
-                    text = `Class Level ${prereq.minValue}+`;
-                    break;
-                case FeaturePrerequisiteType.BaseAttackBonus:
-                    text = `BAB ${prereq.minValue}+`;
-                    break;
-                case FeaturePrerequisiteType.Other:
-                    text = `Other Requirement: ${prereq.minValue}`;
-                    break;
-                default:
-                    text = `Requirement: ${prereq.minValue}`;
-            }
-
-            return index === prerequisites.length - 1 ? text : text + ', ';
-        }).join('');
-    };
+    const queryClient = useQueryClient();
 
     const handleEditProgression = (progression: FeatureProgression) => {
         onEditProgression?.(progression);
@@ -102,14 +67,44 @@ export function FeatureDisplay({
                             )}
                         </div>
                     </div>
-                    {/* Show prerequisites if they exist */}
-                    {feature.prerequisites && feature.prerequisites.length > 0 && (
-                        <div className="ml-4 p-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-md flex-shrink-0">
-                            <p className="text-xs text-slate-700 dark:text-slate-300">
-                                <strong>Prerequisites:</strong> {formatPrerequisites(feature.prerequisites)}
-                            </p>
-                        </div>
-                    )}
+                    {/* Show prerequisites if they exist - use formatting system (Phase 6) */}
+                    {feature.prerequisites && feature.prerequisites.length > 0 && (() => {
+                        // Format prerequisites using the display strategy system
+                        // Use the first progression if available, otherwise create a minimal one for formatting
+                        // IMPORTANT: Always use the feature prop's prerequisites, not the progression's feature prerequisites
+                        const baseProgression = progressions?.[0];
+
+                        // Create a feature object that definitely has prerequisites from the prop
+                        const featureWithPrerequisites = {
+                            ...feature,
+                            prerequisites: feature.prerequisites // Explicitly use the prop's prerequisites
+                        };
+
+                        const progressionForFormatting: FeatureProgression = baseProgression
+                            ? {
+                                ...baseProgression,
+                                feature: featureWithPrerequisites // Always use the feature prop with prerequisites
+                            }
+                            : {
+                                id: 0,
+                                sourceType: 0,
+                                level: 1,
+                                featureId: feature.id || 0,
+                                feature: featureWithPrerequisites
+                            } as FeatureProgression;
+
+                        const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
+                        const displayResult = strategy.format(progressionForFormatting, { queryClient });
+                        const formattedPrereqs = displayResult.formattedPrerequisites || [];
+
+                        return (
+                            <div className="ml-4 p-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-md flex-shrink-0">
+                                <p className="text-xs text-slate-700 dark:text-slate-300">
+                                    <strong>Prerequisites:</strong> {formattedPrereqs.join(', ')}
+                                </p>
+                            </div>
+                        );
+                    })()}
                 </div>
                 {/* Show feature description */}
                 {feature?.description && (
@@ -139,7 +134,7 @@ export function FeatureDisplay({
                             >
                                 {(() => {
                                     const strategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
-                                    const result = strategy.format(progression);
+                                    const result = strategy.format(progression, { queryClient });
                                     return result.formattedValue || 'No preview';
                                 })()}
                             </button>

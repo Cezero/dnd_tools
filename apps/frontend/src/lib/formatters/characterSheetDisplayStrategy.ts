@@ -14,6 +14,7 @@ import { conditionValueFormatterRegistry } from './condition-value-formatter-reg
 import { DisplayStrategyBase } from './displayStrategyBase';
 import { weaponNameLabeler, type WeaponNameLabelerContext } from './label-formatters';
 import { WeightFormatter, CriticalFormatter, AttackBonusFormatter, DistanceFormatter, SizeCategoryFormatter, DamageTypeFormatter, DamageStringFormatter } from './pure-formatters';
+import { getFeatNameFromCache } from './utils/cache-helpers';
 import type {
     DisplayContext,
     DisplayResult,
@@ -168,8 +169,12 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         if (entity.item?.name) {
             return entity.item.name;
         }
-        if (entity.feat?.name) {
-            return entity.feat.name;
+        // Use cache helper for feat name
+        if (entity.appliesTo === EntityAppliesToType.Feat && entity.appliesToId) {
+            const featName = getFeatNameFromCache(context?.queryClient, entity.appliesToId);
+            if (featName) {
+                return featName;
+            }
         }
         if (entity.feature?.name) {
             return entity.feature.name;
@@ -1029,8 +1034,11 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         for (const progression of resolvedProgressions) {
             if (!progression.entities) continue;
             for (const entity of progression.entities) {
-                if (entity.appliesTo === EntityAppliesToType.Feat && entity.appliesToId && entity.feat?.name) {
-                    featNameMap.set(entity.appliesToId, entity.feat.name);
+                if (entity.appliesTo === EntityAppliesToType.Feat && entity.appliesToId) {
+                    const featName = getFeatNameFromCache(context?.queryClient, entity.appliesToId);
+                    if (featName) {
+                        featNameMap.set(entity.appliesToId, featName);
+                    }
                 }
             }
         }
@@ -1091,7 +1099,8 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                     }
                     processedFeatIds.add(entity.appliesToId);
 
-                    const featName = entity.feat?.name || `Feat ${entity.appliesToId}`;
+                    // Use cache helper for feat name
+                    const featName = getFeatNameFromCache(context?.queryClient, entity.appliesToId) || `Feat ${entity.appliesToId}`;
                     const entityValue = entity.value ?? 0;
                     const formattedValue = entityValue >= 0 ? `+${entityValue}` : `${entityValue}`;
 

@@ -1,6 +1,7 @@
 import pluralize from 'pluralize';
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { generateClassProgression } from '@/lib/ClassProgression';
@@ -39,6 +40,7 @@ export function ClassDisplay({
     isAdmin = false,
     fromListParams: _fromListParams = ''
 }: ClassDisplayProps): React.JSX.Element {
+    const queryClient = useQueryClient();
 
     if (!cls) {
         return <div>Error: Class not found</div>;
@@ -106,7 +108,7 @@ export function ClassDisplay({
                         if (classSkillProgressions.length > 0) {
                             // Use display strategy to format class skills
                             const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
-                            const result = strategy.format(classSkillProgressions, undefined, true);
+                            const result = strategy.format(classSkillProgressions, { queryClient }, true);
                             return (
                                 <div className="mt-4">
                                     <h3 className="text-lg font-semibold mb-2">Class Skills</h3>
@@ -131,7 +133,7 @@ export function ClassDisplay({
                         if (proficiencyProgressions.length > 0) {
                             // Use display strategy to format proficiencies
                             const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
-                            const result = strategy.format(proficiencyProgressions, undefined, false);
+                            const result = strategy.format(proficiencyProgressions, { queryClient }, false);
                             return (
                                 <div className="mt-4">
                                     <h3 className="text-lg font-semibold mb-2">Class Proficiencies</h3>
@@ -242,7 +244,7 @@ export function ClassDisplay({
                         if (actualFeatures.length > 0) {
                             // Use display strategy to format features
                             const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
-                            const result = strategy.format(actualFeatures, undefined);
+                            const result = strategy.format(actualFeatures, { queryClient });
 
                             return (
                                 <div className="mt-4">

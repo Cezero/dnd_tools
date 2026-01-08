@@ -1,3 +1,5 @@
+import type { QueryClient } from '@tanstack/react-query';
+
 import type {
     FeatureEntity,
     FeatureEntityCondition,
@@ -146,6 +148,7 @@ export interface DisplayContext extends BaseFormatterContext {
     skillRanks?: Array<{ skillId: number; skillSubId: number | null; customSubtype: string | null; pointsSpent: number }>; // Session skill ranks (overrides character.advancements[].skills)
     classSkills?: Array<{ skillId: number; skillSubId: number | null }>; // Class skills from backend resolution API
     skillBonuses?: Array<{ skillId: number; skillSubId: number | null; bonus: number; source: string }>; // Skill bonuses from backend resolution API
+    queryClient?: QueryClient; // TanStack Query client for synchronous cache access
 }
 
 // Calculation context for formatter calculations
@@ -213,6 +216,7 @@ export interface DisplayResult extends BaseFormattedValue {
     components: Array<FeatureEntity>;
     levelEntries?: LevelEntry[];
     conditionalDisplays?: ConditionalDisplay[]; // For xxxEdit page 1:1 relationship
+    formattedPrerequisites?: string[]; // Formatted prerequisite strings
 }
 
 // Individual entity formatting result

@@ -751,25 +751,32 @@ export const featureSystemService: FeatureSystemService = {
             where: { id: { in: progressionIds } },
             include: {
                 feature: {
-                    select: {
-                        id: true,
-                        slug: true,
-                        name: true,
-                        description: true,
-                        summary: true,
+                    include: {
                         prerequisites: true
-                    }
+                    },
+                    // Explicitly select the fields we need (Prisma allows this with include)
                 },
                 entities: {
                     include: {
                         formulaParams: true,
                         conditions: true
                     }
+                },
+                feat: {
+                    select: {
+                        id: true,
+                        typeId: true,
+                        repeatable: true,
+                        fighterBonus: true,
+                        useSubId: true,
+                        isVisible: true,
+                        editionId: true,
+                    }
                 }
             }
         });
 
-        // Extract class and race IDs from progressions
+        // Extract class, race, and feat IDs from progressions
         const classIds = progressions
             .filter(p => p.classId !== null && p.classId !== undefined)
             .map(p => p.classId!)
@@ -778,6 +785,11 @@ export const featureSystemService: FeatureSystemService = {
         const raceIds = progressions
             .filter(p => p.raceId !== null && p.raceId !== undefined)
             .map(p => p.raceId!)
+            .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
+
+        const progressionFeatIds = progressions
+            .filter(p => p.featId !== null && p.featId !== undefined)
+            .map(p => p.featId!)
             .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
 
         // Create a map of character choices by progressionId and featureEntityId
@@ -854,10 +866,7 @@ export const featureSystemService: FeatureSystemService = {
         }) : [];
 
         const feats = featIds.length > 0 ? await prisma.feat.findMany({
-            where: { id: { in: featIds } },
-            include: {
-                benefits: true
-            }
+            where: { id: { in: featIds } }
         }) : [];
 
         const features = featureIds.length > 0 ? await prisma.feature.findMany({
@@ -901,6 +910,19 @@ export const featureSystemService: FeatureSystemService = {
             }
         }) : [];
 
+        const featDetails = progressionFeatIds.length > 0 ? await prisma.feat.findMany({
+            where: { id: { in: progressionFeatIds } },
+            select: {
+                id: true,
+                typeId: true,
+                repeatable: true,
+                fighterBonus: true,
+                useSubId: true,
+                isVisible: true,
+                editionId: true,
+            }
+        }) : [];
+
         // Create lookup maps
         const itemMap = new Map(items.map(item => [item.id, item]));
         const featMap = new Map(feats.map(feat => [feat.id, feat]));
@@ -909,6 +931,7 @@ export const featureSystemService: FeatureSystemService = {
         const domainMap = new Map(domains.map(domain => [domain.id, domain]));
         const classMap = new Map(classes.map(cls => [cls.id, cls]));
         const raceMap = new Map(races.map(race => [race.id, race]));
+        const featDetailMap = new Map(featDetails.map(feat => [feat.id, feat]));
 
         // Transform formula parameters and add item/feat data
         const transformedProgressions = progressions.map(progression => {
@@ -940,10 +963,6 @@ export const featureSystemService: FeatureSystemService = {
                             ? itemMap.get(effectiveAppliesToSubId) || null
                             : entity.appliesTo === EntityAppliesToType.WeaponFamiliarity && effectiveAppliesToId
                                 ? itemMap.get(effectiveAppliesToId) || null
-                                : null,
-                        // Add feat data if appliesTo === Feat (use choice's appliesToId if available)
-                        feat: entity.appliesTo === EntityAppliesToType.Feat && effectiveAppliesToId
-                            ? featMap.get(effectiveAppliesToId) || null
                             : null,
                         // Add feature data if appliesTo === Feature (use choice's appliesToId if available)
                         feature: entity.appliesTo === EntityAppliesToType.Feature && effectiveAppliesToId
@@ -1001,6 +1020,27 @@ export const featureSystemService: FeatureSystemService = {
         // Get progression IDs for this domain
         const progressionIds = await prisma.featureProgression.findMany({
             where: { domainId },
+            select: { id: true }
+        });
+
+        // Delegate to core method with choices
+        return await this.getFeatureProgressionsByIds(progressionIds.map(p => p.id), characterFeatureChoices);
+    },
+
+    async getFeatureProgressionsByFeatIds(
+        featIds: number[],
+        characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>
+    ): Promise<FeatureProgression[]> {
+        if (featIds.length === 0) {
+            return [];
+        }
+
+        // Get progression IDs for these feats
+        const progressionIds = await prisma.featureProgression.findMany({
+            where: {
+                featId: { in: featIds },
+                sourceType: FeatureSourceType.Feat,
+            },
             select: { id: true }
         });
 

@@ -150,4 +150,28 @@ export const FeatureQueryHooks = {
         responseSchema: UpdateResponseSchema,
         queryKey: 'features',
     }).mutate({ pathParams: { id: featureId } }),
+
+    getFeatureProgressions: (featureId: number) => createQueryHooks({
+        path: '/features/:id/progressions',
+        method: 'GET',
+        paramsSchema: FeatureIdParamSchema,
+        responseSchema: GetFeatureProgressionsResponseSchema,
+        queryKey: 'features',
+        queryKeyBuilder: (params) => {
+            const typedParams = params as { pathParams?: { id?: number } } | undefined;
+            return ['features', 'progressions', typedParams?.pathParams?.id];
+        },
+    }).fetch({ pathParams: { id: featureId } }),
+
+    getFeatureProgressionsByFeatId: (featId: number) => createQueryHooks({
+        path: '/features/by-feat/:id/progressions',
+        method: 'GET',
+        paramsSchema: FeatureIdParamSchema,
+        responseSchema: GetFeatureProgressionsResponseSchema,
+        queryKey: 'features',
+        queryKeyBuilder: (params) => {
+            const typedParams = params as { pathParams?: { id?: number } } | undefined;
+            return ['features', 'by-feat', 'progressions', typedParams?.pathParams?.id];
+        },
+    }).fetch({ pathParams: { id: featId } }),
 };

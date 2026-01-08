@@ -40,5 +40,6 @@ export interface FeatureSystemService {
     getFeatureProgressionsByClassId(classId: number, characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureProgression[]>;
     getFeatureProgressionsByRaceId(raceId: number, characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureProgression[]>;
     getFeatureProgressionsByDomainId(domainId: number, characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureProgression[]>;
+    getFeatureProgressionsByFeatIds(featIds: number[], characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureProgression[]>;
     getFeatureProgressionById(progressionId: number, characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>): Promise<FeatureProgression | null>;
 } 

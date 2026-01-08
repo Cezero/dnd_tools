@@ -3,8 +3,9 @@ import type {
     CharacterFeatureChoice,
     Feat,
     FeatureProgression,
+    FeatureEntity,
 } from '@shared/schema';
-import { FeatBenefitType } from '@shared/static-data';
+import { FeatBenefitType, EntityAppliesToType, EntityType, FeatureSourceType } from '@shared/static-data';
 
 import type {
     FeatBenefit,
@@ -33,6 +34,44 @@ function findFeatureChoiceForFeat(
     return null;
 }
 
+/**
+ * Map FeatBenefitType to EntityAppliesToType for finding matching entities
+ */
+function mapFeatBenefitTypeToEntityAppliesTo(benefitType: FeatBenefitType): EntityAppliesToType {
+    switch (benefitType) {
+        case FeatBenefitType.SKILL:
+            return EntityAppliesToType.Skill;
+        case FeatBenefitType.SAVE:
+            return EntityAppliesToType.SavingThrow;
+        case FeatBenefitType.PROFICIENCY:
+            return EntityAppliesToType.Feat;
+        case FeatBenefitType.ATTACK_BONUS:
+            return EntityAppliesToType.Attack;
+        case FeatBenefitType.DAMAGE_BONUS:
+            return EntityAppliesToType.Damage;
+        case FeatBenefitType.INITIATIVE:
+            return EntityAppliesToType.Initiative;
+        case FeatBenefitType.CASTER_LEVEL:
+            return EntityAppliesToType.CasterLevel;
+        case FeatBenefitType.DIFFICULTY_CLASS:
+            return EntityAppliesToType.SpellSvDC;
+        default:
+            return EntityAppliesToType.Other;
+    }
+}
+
+/**
+ * Find feat progression for a given featId
+ */
+function findFeatProgression(
+    resolvedProgressions: FeatureProgression[],
+    featId: number
+): FeatureProgression | null {
+    return resolvedProgressions.find(
+        p => p.sourceType === FeatureSourceType.Feat && p.featId === featId
+    ) || null;
+}
+
 
 /**
  * Resolve feat benefits from character's selected feats
@@ -55,20 +94,35 @@ export function resolveFeatBenefits(
 
 
     // Use unified accessor if available, otherwise fall back to old method
-    if (allFeats.length > 0) {
-        // Process feats from unified accessor (includes both advancement and choice-based feats)
+    if (allFeats.length > 0 && resolvedProgressions) {
+        // Process feats from unified accessor using FeatureEntity from progressions
+        const entityAppliesTo = mapFeatBenefitTypeToEntityAppliesTo(benefitType);
+        
         for (const characterFeat of allFeats) {
-            // Get feat details from map if provided, otherwise skip
-            const feat = featsMap?.get(characterFeat.featId);
-            if (!feat?.benefits) {
+            // Find the progression for this feat
+            const progression = findFeatProgression(resolvedProgressions, characterFeat.featId);
+            if (!progression || !progression.entities) {
                 continue;
             }
 
-            for (const benefit of feat.benefits) {
-                if (benefit.typeId !== benefitType) continue;
+            // Get feat details from map if provided
+            const feat = featsMap?.get(characterFeat.featId);
+
+            // Find entities that match the benefit type
+            for (const entity of progression.entities) {
+                if (entity.appliesTo !== entityAppliesTo) continue;
+                
+                // For proficiency benefits, check entity type
+                if (benefitType === FeatBenefitType.PROFICIENCY && entity.type !== EntityType.Proficiency) {
+                    continue;
+                }
+                // For other benefits, check entity type is Bonus
+                if (benefitType !== FeatBenefitType.PROFICIENCY && entity.type !== EntityType.Bonus) {
+                    continue;
+                }
 
                 // Handle useSubId feats (player choice feats)
-                if (feat.useSubId) {
+                if (feat?.useSubId) {
                     // For choice-based feats, use the featSubId from the choice
                     // For advancement-based feats, check CharacterFeatureChoice for player's selection
                     const subId = characterFeat.source === 'choice'
@@ -81,21 +135,21 @@ export function resolveFeatBenefits(
                     }
 
                     benefits.push({
-                        amount: benefit.amount ?? 0,
+                        amount: entity.value ?? 0,
                         source: {
                             type: 'feat',
                             id: characterFeat.featId,
-                            name: feat.name,
+                            name: feat?.name || progression.feature?.name || 'Unknown Feat',
                         },
                         context: {
                             itemId: subId ?? undefined,
                         },
                     });
                 } else {
-                    // For non-useSubId feats, referenceId is the entity ID
+                    // For non-useSubId feats, appliesToId is the entity ID
                     // For item-specific benefits, check if itemId matches
-                    // Only filter if the benefit IS item-specific (referenceId is not null)
-                    if (benefit.referenceId !== null && context?.itemId && benefit.referenceId !== context.itemId) {
+                    // Only filter if the benefit IS item-specific (appliesToId is not null)
+                    if (entity.appliesToId !== null && context?.itemId && entity.appliesToId !== context.itemId) {
                         continue;
                     }
 
@@ -113,90 +167,23 @@ export function resolveFeatBenefits(
                     }
 
                     benefits.push({
-                        amount: benefit.amount ?? 0,
+                        amount: entity.value ?? 0,
                         source: {
                             type: 'feat',
                             id: characterFeat.featId,
-                            name: feat.name,
+                            name: feat?.name || progression.feature?.name || 'Unknown Feat',
                         },
                         context: {
-                            itemId: benefit.referenceId ?? undefined,
+                            itemId: entity.appliesToId ?? undefined,
                         },
                     });
                 }
             }
         }
     } else {
-        // Fallback to old method if resolvedProgressions not provided (for backward compatibility)
-    for (const advancement of character.advancements) {
-        if (!advancement.feats) continue;
-
-        for (const featSelection of advancement.feats) {
-            // Get feat details from map if provided, otherwise skip (feat details not available)
-            const feat = featsMap?.get(featSelection.featId);
-            if (!feat?.benefits) continue;
-
-            for (const benefit of feat.benefits) {
-                if (benefit.typeId !== benefitType) continue;
-
-                // Handle useSubId feats (player choice feats)
-                if (feat.useSubId) {
-                    // Check CharacterFeatureChoice for player's selection
-                    const choice = findFeatureChoiceForFeat(character, featSelection.featId);
-                    if (!choice) continue;
-
-                    // For item-specific benefits, check if itemId matches
-                    if (context?.itemId && choice.appliesToSubId !== context.itemId) {
-                        continue;
-                    }
-
-                    benefits.push({
-                        amount: benefit.amount ?? 0,
-                        source: {
-                            type: 'feat',
-                            id: featSelection.featId,
-                            name: feat.name,
-                        },
-                        context: {
-                            itemId: choice.appliesToSubId ?? undefined,
-                        },
-                    });
-                } else {
-                    // For non-useSubId feats, referenceId is the entity ID
-                    // For item-specific benefits, check if itemId matches
-                    // Only filter if the benefit IS item-specific (referenceId is not null)
-                    if (benefit.referenceId !== null && context?.itemId && benefit.referenceId !== context.itemId) {
-                        continue;
-                    }
-
-                    // Context filtering for Two-Weapon Fighting benefit types
-                    if (benefitType === FeatBenefitType.TWO_WEAPON_MAIN_HAND) {
-                        // Only apply when dual-wielding and not off-hand
-                        if (!context?.isDualWield || context?.isOffHand) {
-                            continue;
-                        }
-                    } else if (benefitType === FeatBenefitType.TWO_WEAPON_OFF_HAND) {
-                        // Only apply when dual-wielding and off-hand
-                        if (!context?.isDualWield || !context?.isOffHand) {
-                            continue;
-                        }
-                    }
-
-                    benefits.push({
-                        amount: benefit.amount ?? 0,
-                        source: {
-                            type: 'feat',
-                            id: featSelection.featId,
-                            name: feat.name,
-                        },
-                        context: {
-                            itemId: benefit.referenceId ?? undefined,
-                        },
-                    });
-                    }
-                }
-            }
-        }
+        // Fallback: if resolvedProgressions not provided, return empty (should not happen in new system)
+        // This is kept for backward compatibility during transition
+        console.warn('resolveFeatBenefits called without resolvedProgressions - feat benefits cannot be resolved');
     }
 
     return benefits;
@@ -220,19 +207,23 @@ export function resolveFeatFormulaModifications(
         ? getAllCharacterFeats(character, resolvedProgressions)
         : [];
 
-    // Use unified accessor if available, otherwise fall back to old method
-    if (allFeats.length > 0) {
-        // Process feats from unified accessor
+    // Use unified accessor if available
+    if (allFeats.length > 0 && resolvedProgressions) {
+        // Process feats from unified accessor using FeatureEntity from progressions
         for (const characterFeat of allFeats) {
-            // Get feat details from map if provided, otherwise skip
-            const feat = featsMap?.get(characterFeat.featId);
-            if (!feat?.benefits) continue;
+            // Find the progression for this feat
+            const progression = findFeatProgression(resolvedProgressions, characterFeat.featId);
+            if (!progression || !progression.entities) {
+                continue;
+            }
 
-            for (const benefit of feat.benefits) {
-                // Check for ability replacement (Weapon Finesse)
-                if (benefit.typeId === FeatBenefitType.ATTACK_ABILITY_REPLACEMENT) {
-                    // Weapon Finesse: Use DEX instead of STR for light weapons, rapier, whip, or spiked chain
-                    if (feat.name === 'Weapon Finesse') {
+            // Get feat details from map if provided
+            const feat = featsMap?.get(characterFeat.featId);
+
+            // Check entities for ability replacement (Weapon Finesse)
+            // This would be represented as a special entity type or condition
+            // For now, check by feat name if available
+            if (feat?.name === 'Weapon Finesse' || progression.feature?.name === 'Weapon Finesse') {
                         // Check if weapon type matches (light weapon, rapier, whip, or spiked chain)
                         // This would need weapon type checking from context
                         if (context?.weaponType) {
@@ -249,51 +240,9 @@ export function resolveFeatFormulaModifications(
                                 source: {
                                     type: 'feat',
                                     id: characterFeat.featId,
-                                    name: feat.name,
+                            name: feat?.name || progression.feature?.name || 'Unknown Feat',
                                 },
                             });
-                        }
-                    }
-                }
-            }
-        }
-    } else {
-        // Fallback to old method if resolvedProgressions not provided
-    for (const advancement of character.advancements) {
-        if (!advancement.feats) continue;
-
-        for (const featSelection of advancement.feats) {
-            // Get feat details from map if provided, otherwise skip (feat details not available)
-            const feat = featsMap?.get(featSelection.featId);
-            if (!feat?.benefits) continue;
-
-            for (const benefit of feat.benefits) {
-                // Check for ability replacement (Weapon Finesse)
-                if (benefit.typeId === FeatBenefitType.ATTACK_ABILITY_REPLACEMENT) {
-                    // Weapon Finesse: Use DEX instead of STR for light weapons, rapier, whip, or spiked chain
-                    if (feat.name === 'Weapon Finesse') {
-                        // Check if weapon type matches (light weapon, rapier, whip, or spiked chain)
-                        // This would need weapon type checking from context
-                        if (context?.weaponType) {
-                            // TODO: Check if weapon type is light, rapier, whip, or spiked chain
-                            modifications.push({
-                                type: 'ability_replacement',
-                                context: {
-                                    weaponType: context.weaponType ? [context.weaponType] : undefined,
-                                },
-                                parameters: {
-                                    fromAbility: 1, // Strength
-                                    toAbility: 2, // Dexterity
-                                },
-                                source: {
-                                    type: 'feat',
-                                    id: featSelection.featId,
-                                    name: feat.name,
-                                },
-                            });
-                        }
-                        }
-                    }
                 }
             }
         }

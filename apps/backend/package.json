@@ -17,6 +17,7 @@
         "seed-weapons": "tsx scripts/seed-weapons.ts",
         "convert-damage-types": "tsx scripts/convert-damage-types.ts",
         "import-phb": "tsx scripts/import-phb-data.ts",
+        "migrate-feats-to-features": "tsx scripts/migrateFeatsToFeatures.ts",
         "test": "vitest",
         "test:run": "vitest run",
         "test:watch": "vitest watch",

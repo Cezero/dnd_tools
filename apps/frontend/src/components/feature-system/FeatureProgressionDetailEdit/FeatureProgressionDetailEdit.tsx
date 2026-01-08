@@ -1,10 +1,12 @@
 import { Dialog } from '@base-ui-components/react/dialog';
 import { ScrollArea } from '@base-ui-components/react/scroll-area';
 import React, { useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { ValidatedInput, ValidatedForm, ValidatedCustomSelect } from '@/components/forms';
+import { displayStrategyFactory } from '@/lib/formatters';
 import type { FeatureProgression, Feature, FeaturePrerequisite, FeatureEntity } from '@shared/schema';
-import { FeaturePrerequisiteType, EntityType, FEATURE_SOURCE_LIST, ABILITY_MAP, SKILL_MAP } from '@shared/static-data';
+import { EntityType, FEATURE_SOURCE_LIST, DisplayType } from '@shared/static-data';
 
 // Import our refactored components and hooks
 import { EntityDetailForm } from './EntityDetailForm';
@@ -31,6 +33,7 @@ export function FeatureProgressionDetailEdit({
     preSelectedFeature,
     showSourceTypeSelector = true
 }: FeatureProgressionDetailEditProps) {
+    const queryClient = useQueryClient();
     // Use our custom hooks
     const {
         formData,
@@ -167,43 +170,6 @@ export function FeatureProgressionDetailEdit({
         hasFeature: hasEntities
     };
 
-    // Helper function to format prerequisites for display
-    const formatPrerequisites = (prerequisites: FeaturePrerequisite[]) => {
-        if (!prerequisites || prerequisites.length === 0) return 'None';
-
-        return prerequisites.map((prereq, index) => {
-            let text = '';
-
-            switch (prereq.type) {
-                case FeaturePrerequisiteType.SkillRanks: {
-                    const skillName = prereq.appliesToId ? SKILL_MAP[prereq.appliesToId]?.name || 'Unknown Skill' : 'Skill';
-                    text = `${skillName} ${prereq.minValue} ranks`;
-                    break;
-                }
-                case FeaturePrerequisiteType.AbilityScore: {
-                    const abilityName = prereq.appliesToId ? ABILITY_MAP[prereq.appliesToId]?.abbreviation || 'Unknown' : 'Ability';
-                    text = `${abilityName} ${prereq.minValue}+`;
-                    break;
-                }
-                case FeaturePrerequisiteType.CharacterLevel:
-                    text = `Character Level ${prereq.minValue}+`;
-                    break;
-                case FeaturePrerequisiteType.ClassLevel:
-                    text = `Class Level ${prereq.minValue}+`;
-                    break;
-                case FeaturePrerequisiteType.BaseAttackBonus:
-                    text = `BAB ${prereq.minValue}+`;
-                    break;
-                case FeaturePrerequisiteType.Other:
-                    text = `Other Requirement: ${prereq.minValue}`;
-                    break;
-                default:
-                    text = `Requirement: ${prereq.minValue}`;
-            }
-
-            return index === prerequisites.length - 1 ? text : text + ', ';
-        }).join('');
-    };
 
     return (
         <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -238,14 +204,30 @@ export function FeatureProgressionDetailEdit({
                                     </div>
                                 );
                             })()}
-                            {/* Feature Prerequisites Display */}
-                            {((progression?.feature as Feature)?.prerequisites?.length > 0 || (preSelectedFeature as Feature)?.prerequisites?.length > 0) && (
-                                <div className="mt-2 inline-block p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-md">
-                                    <p className="text-xs text-slate-700 dark:text-slate-300">
-                                        <strong>Feature Prerequisites:</strong> {formatPrerequisites((progression?.feature as Feature)?.prerequisites || (preSelectedFeature as Feature)?.prerequisites || [])}
-                                    </p>
-                                </div>
-                            )}
+                            {/* Feature Prerequisites Display - use formatting system (Phase 6) */}
+                            {((progression?.feature as Feature)?.prerequisites?.length > 0 || (preSelectedFeature as Feature)?.prerequisites?.length > 0) && (() => {
+                                // Format prerequisites using the display strategy system
+                                const featureForFormatting = (progression?.feature || preSelectedFeature) as Feature;
+                                const progressionForFormatting: FeatureProgression = progression || {
+                                    id: 0,
+                                    sourceType: 0,
+                                    level: formData.level || 1,
+                                    featureId: featureForFormatting?.id || 0,
+                                    feature: featureForFormatting
+                                } as FeatureProgression;
+
+                                const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
+                                const displayResult = strategy.format(progressionForFormatting, { queryClient });
+                                const formattedPrereqs = displayResult.formattedPrerequisites || [];
+
+                                return (
+                                    <div className="mt-2 inline-block p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-md">
+                                        <p className="text-xs text-slate-700 dark:text-slate-300">
+                                            <strong>Feature Prerequisites:</strong> {formattedPrereqs.join(', ')}
+                                        </p>
+                                    </div>
+                                );
+                            })()}
                         </div>
 
                         {/* Scrollable Content */}

@@ -244,7 +244,8 @@ export function useCharacterExplorerData(characterId: number | null, selectedDis
                     character: characterContext, 
                     featsMap,
                     classSkills: classSkills.length > 0 ? classSkills : undefined,
-                    skillBonuses: skillBonuses.length > 0 ? skillBonuses : undefined
+                    skillBonuses: skillBonuses.length > 0 ? skillBonuses : undefined,
+                    queryClient
                 },
                 character.race ? { ...character.race, id: character.raceId } as Race : null
             );
@@ -262,7 +263,7 @@ export function useCharacterExplorerData(characterId: number | null, selectedDis
 
         try {
             const strategy = displayStrategyFactory.createStrategy(selectedDisplayType);
-            return strategy.format(resolvedProgressions);
+            return strategy.format(resolvedProgressions, { queryClient });
         } catch (err) {
             console.error('Error formatting display result:', err);
             return null;

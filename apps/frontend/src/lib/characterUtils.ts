@@ -3,9 +3,10 @@ import type {
     DnDClass,
     Race,
     Feat,
-    GetAllFeatsResponse
+    GetAllFeatsResponse,
+    FeaturePrerequisite
 } from '@shared/schema';
-import { FeatPrerequisiteType } from '@shared/static-data';
+import { FeaturePrerequisiteType, FeatPrerequisiteType } from '@shared/static-data';
 import { getBABProgression } from '@shared/utils';
 
 export function meetsPrerequisites(
@@ -13,9 +14,13 @@ export function meetsPrerequisites(
     character: CharacterWithAllDetailsResponse,
     selectedClassDetails: DnDClass | null,
     selectedRaceDetails: Race | null,
-    _allFeats: GetAllFeatsResponse
+    _allFeats: GetAllFeatsResponse,
+    featurePrerequisites?: FeaturePrerequisite[]
 ): boolean {
-    if (!feat.prereqs || feat.prereqs.length === 0) {
+    // Use FeaturePrerequisite if provided, otherwise fall back to feat.prereqs for backward compatibility
+    const prerequisites = featurePrerequisites || (feat.prereqs ? mapFeatPrereqsToFeaturePrereqs(feat.prereqs) : []);
+
+    if (!prerequisites || prerequisites.length === 0) {
         return true;
     }
 
@@ -24,69 +29,69 @@ export function meetsPrerequisites(
         return false;
     }
 
-    return feat.prereqs.every(prereq => {
-        switch (prereq.typeId) {
-            case FeatPrerequisiteType.ABILITY: {
-                if (!prereq.referenceId || !prereq.amount) return true;
-                const abilityScore = character.abilityScores.find(ability => ability.abilityId === prereq.referenceId);
+    return prerequisites.every(prereq => {
+        switch (prereq.type) {
+            case FeaturePrerequisiteType.AbilityScore: {
+                if (!prereq.appliesToId || !prereq.minValue) return true;
+                const abilityScore = character.abilityScores.find(ability => ability.abilityId === prereq.appliesToId);
                 const abilityScoreValue = abilityScore?.value ?? 0;
-                return abilityScoreValue >= prereq.amount;
+                return abilityScoreValue >= prereq.minValue;
             }
 
-            case FeatPrerequisiteType.SKILL: {
-                if (!prereq.referenceId || !prereq.amount) return true;
-                const skillEntry = character.advancements[0]?.skills?.find(skill => skill.skillId === prereq.referenceId);
+            case FeaturePrerequisiteType.SkillRanks: {
+                if (!prereq.appliesToId || !prereq.minValue) return true;
+                const skillEntry = character.advancements[0]?.skills?.find(skill => skill.skillId === prereq.appliesToId);
                 const skillRanks = skillEntry?.pointsSpent ?? 0;
-                return skillRanks >= prereq.amount;
+                return skillRanks >= prereq.minValue;
             }
 
-            case FeatPrerequisiteType.FEAT: {
-                if (!prereq.referenceId) return true;
-                return character.advancements[0]?.feats?.some(feat => feat.featId === prereq.referenceId) ?? false;
+            case FeaturePrerequisiteType.Feat: {
+                if (!prereq.appliesToId) return true;
+                return character.advancements[0]?.feats?.some(feat => feat.featId === prereq.appliesToId) ?? false;
             }
 
-            case FeatPrerequisiteType.BAB: {
-                if (!prereq.amount) return true;
+            case FeaturePrerequisiteType.BaseAttackBonus: {
+                if (!prereq.minValue) return true;
                 const characterBAB = getCharacterBAB(character, selectedClassDetails);
-                return characterBAB >= prereq.amount;
+                return characterBAB >= prereq.minValue;
             }
 
-            case FeatPrerequisiteType.SPELLCASTING: {
+            case FeaturePrerequisiteType.Spellcasting: {
                 if (!selectedClassDetails) return false;
                 return selectedClassDetails.canCastSpells;
             }
 
-            case FeatPrerequisiteType.CLASSLEVEL: {
-                if (!prereq.amount) return true;
-                if (prereq.referenceId === -1) {
+            case FeaturePrerequisiteType.ClassLevel: {
+                if (!prereq.minValue) return true;
+                if (prereq.appliesToId === -1 || prereq.appliesToId === null) {
                     // Total character level
-                    return character.advancements.length >= prereq.amount;
+                    return character.advancements.length >= prereq.minValue;
                 } else {
                     // Class-specific level
                     const classLevel = character.advancements
-                        .filter(adv => adv.classId === prereq.referenceId)
+                        .filter(adv => adv.classId === prereq.appliesToId)
                         .length;
-                    return classLevel >= prereq.amount;
+                    return classLevel >= prereq.minValue;
                 }
             }
 
-            case FeatPrerequisiteType.PROFICIENCY: {
+            case FeaturePrerequisiteType.Proficiency: {
                 // This is a post-selection check, so we don't filter based on this
                 return true;
             }
 
-            case FeatPrerequisiteType.SIZE: {
-                if (!prereq.referenceId || !selectedRaceDetails?.sizeId) return true;
+            case FeaturePrerequisiteType.Size: {
+                if (!prereq.appliesToId || !selectedRaceDetails?.sizeId) return true;
                 const characterSizeId = selectedRaceDetails.sizeId;
-                const requiredSizeId = prereq.referenceId;
+                const requiredSizeId = prereq.appliesToId;
                 
-                // amount: 0 = exact, 1 = or larger, 2 = or smaller
-                if (prereq.amount === 0) {
+                // minValue: 0 = exact, 1 = or larger, 2 = or smaller
+                if (prereq.minValue === 0) {
                     return characterSizeId === requiredSizeId;
-                } else if (prereq.amount === 1) {
+                } else if (prereq.minValue === 1) {
                     // or larger: character size must be >= required size (higher IDs = larger)
                     return characterSizeId >= requiredSizeId;
-                } else if (prereq.amount === 2) {
+                } else if (prereq.minValue === 2) {
                     // or smaller: character size must be <= required size (lower IDs = smaller)
                     return characterSizeId <= requiredSizeId;
                 }
@@ -96,6 +101,58 @@ export function meetsPrerequisites(
             default:
                 return true;
         }
+    });
+}
+
+/**
+ * Helper function to map FeatPrerequisiteMap to FeaturePrerequisite for backward compatibility
+ * This will be removed once all code is updated to use FeaturePrerequisite directly
+ */
+function mapFeatPrereqsToFeaturePrereqs(featPrereqs: Array<{ typeId: number; referenceId: number | null; amount: number | null }>): FeaturePrerequisite[] {
+    return featPrereqs.map(prereq => {
+        let featurePrereqType: FeaturePrerequisiteType;
+        switch (prereq.typeId) {
+            case FeatPrerequisiteType.ABILITY:
+                featurePrereqType = FeaturePrerequisiteType.AbilityScore;
+                break;
+            case FeatPrerequisiteType.SKILL:
+                featurePrereqType = FeaturePrerequisiteType.SkillRanks;
+                break;
+            case FeatPrerequisiteType.BAB:
+                featurePrereqType = FeaturePrerequisiteType.BaseAttackBonus;
+                break;
+            case FeatPrerequisiteType.CLASSLEVEL:
+                featurePrereqType = FeaturePrerequisiteType.ClassLevel;
+                break;
+            case FeatPrerequisiteType.FEAT:
+                featurePrereqType = FeaturePrerequisiteType.Feat;
+                break;
+            case FeatPrerequisiteType.SPELLCASTING:
+                featurePrereqType = FeaturePrerequisiteType.Spellcasting;
+                break;
+            case FeatPrerequisiteType.CLASSFEATURE:
+                featurePrereqType = FeaturePrerequisiteType.ClassFeature;
+                break;
+            case FeatPrerequisiteType.SIZE:
+                featurePrereqType = FeaturePrerequisiteType.Size;
+                break;
+            case FeatPrerequisiteType.SPECIAL:
+                featurePrereqType = FeaturePrerequisiteType.Other;
+                break;
+            case FeatPrerequisiteType.PROFICIENCY:
+                featurePrereqType = FeaturePrerequisiteType.Proficiency;
+                break;
+            default:
+                featurePrereqType = FeaturePrerequisiteType.Other;
+        }
+
+        return {
+            id: 0, // Temporary ID for mapping
+            featureId: 0, // Will be set by caller if needed
+            type: featurePrereqType,
+            appliesToId: prereq.referenceId,
+            minValue: prereq.amount || 0,
+        };
     });
 }
 

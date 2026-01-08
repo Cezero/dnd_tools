@@ -470,16 +470,30 @@ export class ChoiceResolver {
                 break;
 
             case EntityAppliesToType.Feat:
-                if (entity.feat) {
-                    // Specific feat choice
+                if (entity.appliesToId) {
+                    // Specific feat choice - fetch feat data
+                    try {
+                        const featResponse = await featService.getFeatById({ id: entity.appliesToId });
+                        if (featResponse && featResponse.id) {
+                            const feat = featResponse;
+                            // Get feature description for description field
+                            const featureDescription = feat.featureProgressions?.[0]?.feature?.description || null;
                     options.push({
-                        id: `feat-${entity.feat.id}`,
-                        name: entity.feat.name,
-                        description: entity.feat.description || `Feat: ${entity.feat.name}`,
-                        value: entity.feat.id,
-                        prerequisites: entity.feat.prerequisites ? [entity.feat.prerequisites] : []
+                                id: `feat-${feat.id}`,
+                                name: feat.name,
+                                description: featureDescription || `Feat: ${feat.name}`,
+                                value: feat.id,
+                                prerequisites: feat.featureProgressions?.[0]?.feature?.prerequisites?.map(p => p.type.toString()) || []
                     });
-                } else {
+                        }
+                    } catch (error) {
+                        console.error(`Error fetching feat ${entity.appliesToId}:`, error);
+                        // Fall through to general feat choice
+                    }
+                }
+                
+                if (options.length === 0) {
+                    // General feat choice
                     // General feat choice
                     if (!allFeats || allFeats.length === 0) {
                         options.push({

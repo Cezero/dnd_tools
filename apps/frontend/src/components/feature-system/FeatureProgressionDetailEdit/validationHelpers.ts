@@ -52,8 +52,8 @@ export function hasValidEntityConfig(entity: FeatureEntity): boolean {
     // Type-specific validation
     switch (entity.appliesTo) {
         case EntityAppliesToType.Feat:
-            // For feat entities, either filterType or featId should be set
-            return !!(entity.filterType || entity.feat?.id);
+            // For feat entities, either filterType or appliesToId should be set
+            return !!(entity.filterType || entity.appliesToId);
 
         case EntityAppliesToType.Feature:
             // For feature entities, featureId is optional
