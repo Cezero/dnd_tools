@@ -137,6 +137,7 @@ export function FeatureProgressionDetailEdit({
     // Handle form submission
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        e.stopPropagation(); // Prevent event from bubbling to parent forms
 
         // Check for malformed data - every FeatureProgression should have a featureId (0 is valid for new features)
         if (formData.featureId === null || formData.featureId === undefined) {
@@ -334,8 +335,10 @@ export function FeatureProgressionDetailEdit({
                                     type="button"
                                     onClick={(e) => {
                                         e.preventDefault();
+                                        e.stopPropagation(); // Prevent event from bubbling
                                         if (form.validation.validationState.hasErrors) {
                                             console.log('Validation errors:', form.validation.validationState.errors);
+                                            return;
                                         }
                                         handleSubmit(e as React.FormEvent);
                                     }}

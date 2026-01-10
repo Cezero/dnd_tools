@@ -164,6 +164,49 @@ export function useCharacterResolution(characterId: number | null) {
     }, [characterId, sessionId]);
 
     /**
+     * Updates the resolved character state from an external source.
+     * 
+     * **Purpose**: Allows external operations (like spell add/remove) to update the resolution
+     * state without going through the normal `applyUpdate` flow. This keeps the frontend
+     * resolution state synchronized with backend state after direct database operations.
+     * 
+     * **Spell Operation Integration**:
+     * - Called by `SpellSelectionTab` after `addSpellKnown` or `removeSpellKnown` operations
+     * - Receives updated `ResolvedCharacterResult` from backend response
+     * - Updates local state immediately, causing `CharacterEdit` to re-render with fresh data
+     * - Updates `sessionId` if it changed in the response
+     * 
+     * **When to Use**:
+     * - After spell operations that return `resolvedCharacter` in the response
+     * - When backend operations update the character and re-resolve features
+     * - To keep frontend resolution state in sync without full re-initialization
+     * 
+     * **When NOT to Use**:
+     * - For normal character updates (use `applyUpdate` instead)
+     * - When you need to trigger validation or choice identification
+     * 
+     * @param newResolvedCharacter - The updated resolved character result from the backend.
+     *                                Should be a complete `ResolvedCharacterResult` with all fields populated.
+     * 
+     * @example
+     * // After adding a spell
+     * const response = await CharacterQueryHooks.addSpellKnown({...});
+     * if (response?.resolvedCharacter) {
+     *   resolution.updateResolvedCharacter(response.resolvedCharacter);
+     * }
+     * 
+     * @see SpellSelectionTab.handleLearnSpell - Uses this after adding spells
+     * @see SpellSelectionTab.handleRemoveSpell - Uses this after removing spells
+     */
+    const updateResolvedCharacter = useCallback((newResolvedCharacter: ResolvedCharacterResult): void => {
+        setResolvedCharacter(newResolvedCharacter);
+        // Update sessionId if it changed
+        if (newResolvedCharacter.sessionId && newResolvedCharacter.sessionId !== sessionId) {
+            setSessionId(newResolvedCharacter.sessionId);
+        }
+    }, [sessionId]);
+
+    /**
      * Cleanup on unmount - cancel session if still active
      */
     useEffect(() => {
@@ -184,6 +227,7 @@ export function useCharacterResolution(characterId: number | null) {
         saveSession,
         cancelSession,
         refreshState,
+        updateResolvedCharacter,
     };
 }
 

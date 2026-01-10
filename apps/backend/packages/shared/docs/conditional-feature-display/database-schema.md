@@ -81,53 +81,32 @@ Defines display conditions at the feature progression level, allowing features t
 
 Defines available companions, familiars, and animal companions that characters can acquire.
 
-**Purpose**: Stores companion definitions including links to monster statistics and progression benefits.
+**Purpose**: Stores companion definitions including links to monster statistics. Companion benefits are now managed through the unified Feature system.
 
 **Key Fields**:
 - **`id`**: `Int @id @default(autoincrement())` - Unique identifier
-- **`name`**: `String` - Human-readable companion name
-- **`slug`**: `String @unique` - URL-friendly unique identifier
 - **`type`**: `Int` - Companion type (references `@CompanionType` enum from static data: Familiar, AnimalCompanion, etc.)
-- **`monsterId`**: `Int?` - Optional reference to Monster model for base statistics
-- **`description`**: `String? @db.Text` - Full description of the companion
-- **`summary`**: `String? @db.Text` - Brief summary for display
+- **`monsterId`**: `Int` - Reference to Monster model for base statistics (required)
+- **`minLevel`**: `Int?` - Minimum character level required (for Alternative Companions and Improved Familiars)
 
 **Relationships**:
-- **`monster`**: Many-to-one relationship with `Monster` - Links to monster statistics if applicable
-- **`progressions`**: One-to-many relationship with `CompanionProgression` - Level-based benefits
-- **`characters`**: One-to-many relationship with `CharacterCompanion` - Characters who have selected this companion
+- **`monster`**: Many-to-one relationship with `Monster` - Links to monster statistics
+- **`featureProgressions`**: One-to-many relationship with `FeatureProgression` - Feature progressions for companion benefits (e.g., familiar benefits, animal companion benefits)
+- **`characterCompanions`**: One-to-many relationship with `CharacterCompanion` - Characters who have selected this companion
 
 **Constraints**:
-- **Unique**: `@@unique([slug])` - Slug must be unique
+- **Unique**: `@@unique([type, monsterId, minLevel])` - Unique combination of type, monster, and minimum level
+- **Indexes**: `@@index([type])`, `@@index([monsterId])` - Indexed for efficient queries
 
-**Usage**: Defines companions that can be selected by characters (e.g., wizard familiars, druid animal companions). Links to Monster model for statistics and includes progression benefits.
+**Usage**: Defines companions that can be selected by characters (e.g., wizard familiars, druid animal companions). Links to Monster model for statistics. Companion benefits are managed through the unified Feature system using `FeatureProgression` with `sourceType: FeatureSourceType.Companion` and `companionId` set to this companion.
+
+**Migration Note**: Companion benefits were consolidated from the old `CompanionBenefitMap` and `CompanionBenefitCondition` models into the unified Feature system. Benefits are now defined as `FeatureProgression` records with `featureId: SpecialFeatureId.CompanionBenefit`, `sourceType: FeatureSourceType.Companion`, and `companionId` linking to this companion.
 
 **Source File**: [`apps/backend/prisma/schema.prisma`](../../../../apps/backend/prisma/schema.prisma) (Companion model)
 
-**Related Documentation**: [Monster System Database Schema](../monster-system/database-schema.md) for Monster model details
-
-### **CompanionProgression Model**
-
-Defines level-based benefits for companions.
-
-**Purpose**: Stores progression benefits that companions gain at specific levels.
-
-**Key Fields**:
-- **`id`**: `Int @id @default(autoincrement())` - Unique identifier
-- **`companionId`**: `Int` - Reference to the companion
-- **`level`**: `Int` - Level at which this benefit is gained
-- **`benefit`**: `String @db.Text` - Description of the benefit gained at this level
-
-**Relationships**:
-- **`companion`**: Many-to-one relationship with `Companion` - The companion this progression applies to
-
-**Constraints**:
-- **Index**: `@@index([companionId])` - Indexed for efficient queries by companion
-- **Cascade Delete**: `onDelete: Cascade` - Deleting a companion deletes its progressions
-
-**Usage**: Tracks how companions improve as characters gain levels. For example, a familiar might gain improved abilities at certain levels.
-
-**Source File**: [`apps/backend/prisma/schema.prisma`](../../../../apps/backend/prisma/schema.prisma) (CompanionProgression model)
+**Related Documentation**: 
+- [Feature System Database Schema](../feature-system/database-schema.md) for FeatureProgression model details
+- [Monster System Database Schema](../monster-system/database-schema.md) for Monster model details
 
 ### **CharacterCompanion Model**
 
@@ -138,23 +117,29 @@ Links characters to their selected companions.
 **Key Fields**:
 - **`id`**: `Int @id @default(autoincrement())` - Unique identifier
 - **`characterId`**: `Int` - Reference to the character
-- **`companionId`**: `Int` - Reference to the companion
-- **`levelAcquired`**: `Int` - Level at which the companion was acquired
+- **`monsterId`**: `Int` - Direct reference to Monster (not through Companion)
+- **`companionId`**: `Int?` - Optional reference to Companion for familiars with benefits
+- **`levelAcquired`**: `Int?` - Level at which the companion was acquired
+- **`hitPoints`**: `Int?` - Current/max hit points (defaults to Monster.averageHP, can be rolled)
+- **`wounds`**: `Int @default(0)` - Current damage taken (for combat tracking)
 
 **Relationships**:
 - **`character`**: Many-to-one relationship with `UserCharacter` - The character who has this companion
-- **`companion`**: Many-to-one relationship with `Companion` - The companion definition
+- **`monster`**: Many-to-one relationship with `Monster` - Links to monster statistics
+- **`companion`**: Many-to-one relationship with `Companion` - Optional link to companion definition (for familiars with benefits)
+- **`tricks`**: One-to-many relationship with `CharacterCompanionTrick` - Tricks known by the companion
 
 **Constraints**:
-- **Unique**: `@@unique([characterId, companionId])` - A character cannot have the same companion twice
-- **Indexes**: `@@index([characterId])`, `@@index([companionId])` - Indexed for efficient queries
+- **Indexes**: `@@index([characterId])`, `@@index([monsterId])`, `@@index([companionId])` - Indexed for efficient queries
 - **Cascade Delete**: `onDelete: Cascade` - Deleting a character deletes their companion selections
 
-**Usage**: Tracks which companions each character has selected. Used for displaying companion information on character sheets and managing companion progression.
+**Usage**: Tracks which companions each character has selected. Used for displaying companion information on character sheets and managing companion progression. Companion benefits are resolved through the Feature system using `FeatureProgression` records linked to the companion via `companionId`.
 
 **Source File**: [`apps/backend/prisma/schema.prisma`](../../../../apps/backend/prisma/schema.prisma) (CharacterCompanion model)
 
-**Related Documentation**: [Character Management Database Schema](../character-management/database-schema.md) for UserCharacter model details
+**Related Documentation**: 
+- [Character Management Database Schema](../character-management/database-schema.md) for UserCharacter model details
+- [Feature System Database Schema](../feature-system/database-schema.md) for companion benefit resolution
 
 ### **TransformationFormEligibility Model**
 
@@ -193,9 +178,10 @@ Links features to eligible monster forms for transformation abilities (e.g., Wil
 The conditional feature display system extends the existing feature system:
 
 - **Feature Model**: Extended with `displayInCharacterSheet` field; `summary` field now supports template placeholders
-- **FeatureProgression Model**: Extended with `displayConditions` relationship
+- **FeatureProgression Model**: Extended with `displayConditions` relationship and `companionId` field for companion-granted features
 - **CharacterFeatureChoice Model**: Extended with `choiceGroupId`, `choiceData`, and `linkedChoiceGroupId` fields
 - **FeatureEntityCondition**: Reused for `FeatureProgressionCondition` condition types
+- **Companion Benefits**: Companion benefits are now managed through the unified Feature system using `FeatureProgression` with `sourceType: FeatureSourceType.Companion`
 
 **Related Documentation**: [Feature System Database Schema](../feature-system/database-schema.md)
 
@@ -224,12 +210,13 @@ Companion types reference the `CompanionType` enum from static data:
 
 **Type Field**: `Companion.type` references `@CompanionType` enum values
 
-**Enum Values**: (To be defined in static data)
-- Familiar
-- AnimalCompanion
-- Other types as needed
+**Enum Values**:
+- **`Familiar` (1)**: Wizard familiars
+- **`AnimalCompanion` (2)**: Druid/ranger animal companions
+- **`AlternativeAnimalCompanion` (3)**: Alternative animal companion options
+- **`ImprovedFamiliar` (4)**: Improved familiar options
 
-**Source File**: `packages/shared/static-data/src/FeatureData.ts` (or new file)
+**Source File**: `packages/shared/static-data/src/FeatureData.ts` (CompanionType definition)
 
 ### **FeatureEntityConditionType Enum Integration**
 

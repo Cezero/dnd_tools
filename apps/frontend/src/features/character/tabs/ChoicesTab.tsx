@@ -10,7 +10,7 @@ import { useCacheFunctions } from '@/services/cache';
 import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
 import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
 import type { Feat, FeatInQueryResponse } from '@shared/schema';
-import { EntityAppliesToType, EntityType, FeatureFeatChoiceFilter, CompanionType } from '@shared/static-data';
+import { EntityAppliesToType, EntityType, FeatureFeatChoiceFilter, CompanionType, FeatureSourceType } from '@shared/static-data';
 import { filterAvailableFeats } from '../utils/featFiltering';
 
 export function ChoicesTab({
@@ -58,6 +58,19 @@ export function ChoicesTab({
                 return;
             }
 
+            // Create a map of feat ID to feature data from resolved progressions
+            const featFeatureMap = new Map<number, { description?: string | null; summary?: string | null }>();
+            if (resolvedData.progressions) {
+                resolvedData.progressions.forEach(progression => {
+                    if (progression.sourceType === FeatureSourceType.Feat && progression.featId && progression.feature) {
+                        featFeatureMap.set(progression.featId, {
+                            description: progression.feature.description,
+                            summary: progression.feature.summary
+                        });
+                    }
+                });
+            }
+
             for (const choice of resolvedData.pendingChoices) {
                 if (choice.type === EntityAppliesToType.Feat) {
                     // Find the corresponding entity to check filterType
@@ -92,10 +105,12 @@ export function ChoicesTab({
                     // Apply search filter if there's a search term for this choice
                     const searchTerm = featSearchTerms[choice.id]?.toLowerCase() || '';
                     const filteredBySearch = searchTerm
-                        ? allFilteredFeats.filter(feat =>
-                            feat.name.toLowerCase().includes(searchTerm) ||
-                            (feat.description && feat.description.toLowerCase().includes(searchTerm))
-                        )
+                        ? allFilteredFeats.filter(feat => {
+                            const featureData = featFeatureMap.get(feat.id);
+                            return feat.name.toLowerCase().includes(searchTerm) ||
+                                featureData?.description?.toLowerCase().includes(searchTerm) ||
+                                featureData?.summary?.toLowerCase().includes(searchTerm);
+                        })
                         : allFilteredFeats;
 
                     filtered[choice.id] = filteredBySearch;
@@ -125,6 +140,22 @@ export function ChoicesTab({
         // Re-filter when search terms change (use JSON.stringify to detect value changes)
         JSON.stringify(featSearchTerms)
     ]);
+
+    // Create a map of feat ID to feature data from resolved progressions (for display)
+    const featFeatureMap = useMemo(() => {
+        const map = new Map<number, { description?: string | null; summary?: string | null }>();
+        if (resolvedData.progressions) {
+            resolvedData.progressions.forEach(progression => {
+                if (progression.sourceType === FeatureSourceType.Feat && progression.featId && progression.feature) {
+                    map.set(progression.featId, {
+                        description: progression.feature.description,
+                        summary: progression.feature.summary
+                    });
+                }
+            });
+        }
+        return map;
+    }, [resolvedData.progressions]);
 
     // Derive selectedChoices directly from global state
     const selectedChoices = useMemo(() => {
@@ -588,11 +619,23 @@ export function ChoicesTab({
                                                     <h4 className="font-medium text-gray-900 dark:text-white mb-1">
                                                         {selectedFeat.name}
                                                     </h4>
-                                                    {selectedFeat.description && (
-                                                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                                                            {selectedFeat.description}
-                                                        </p>
-                                                    )}
+                                                    {(() => {
+                                                        const featureData = featFeatureMap.get(selectedFeat.id);
+                                                        return (
+                                                            <>
+                                                                {featureData?.description && (
+                                                                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                                                                        {featureData.description}
+                                                                    </p>
+                                                                )}
+                                                                {featureData?.summary && (
+                                                                    <p className="text-sm text-gray-700 dark:text-gray-200 mb-1">
+                                                                        <span className="font-medium">Summary:</span> {featureData.summary}
+                                                                    </p>
+                                                                )}
+                                                            </>
+                                                        );
+                                                    })()}
                                                     {selectedFeat.prerequisites && (
                                                         <p className="text-sm text-gray-600 dark:text-gray-400">
                                                             <span className="font-medium">Prerequisites:</span> {selectedFeat.prerequisites}
@@ -664,16 +707,23 @@ export function ChoicesTab({
                                                                 <h4 className="font-medium text-gray-900 dark:text-white mb-1">
                                                                     {feat.name}
                                                                 </h4>
-                                                                {feat.description && (
-                                                                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                                                                        {feat.description}
-                                                                    </p>
-                                                                )}
-                                                                {feat.prerequisites && (
-                                                                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                                        <span className="font-medium">Prerequisites:</span> {feat.prerequisites}
-                                                                    </p>
-                                                                )}
+                                                                {(() => {
+                                                                    const featureData = featFeatureMap.get(feat.id);
+                                                                    return (
+                                                                        <>
+                                                                            {featureData?.description && (
+                                                                                <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                                                                                    {featureData.description}
+                                                                                </p>
+                                                                            )}
+                                                                            {featureData?.summary && (
+                                                                                <p className="text-sm text-gray-700 dark:text-gray-200 mb-1">
+                                                                                    <span className="font-medium">Summary:</span> {featureData.summary}
+                                                                                </p>
+                                                                            )}
+                                                                        </>
+                                                                    );
+                                                                })()}
                                                             </div>
                                                             <button
                                                                 onClick={() => {

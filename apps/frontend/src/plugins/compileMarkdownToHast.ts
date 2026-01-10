@@ -8,6 +8,7 @@ import { unified } from 'unified';
 
 import { preloadTablesFromMarkdown } from '@/lib/TableResolution';
 import { RehypeCustomMarkdown } from '@/plugins/RehypeCustomMarkdown';
+import { RehypeLinkPreviews } from '@/plugins/RehypeLinkPreviews';
 
 import { MarkdownComponentProps } from './types';
 
@@ -28,7 +29,8 @@ export async function compileMarkdownToHast(props: MarkdownComponentProps): Prom
         .use(remarkRehype, { allowDangerousHtml: true })
         .use(rehypeRaw)
         .use(rehypeFormat)
-        .use(RehypeCustomMarkdown, props, { enableTables: true });
+        .use(RehypeCustomMarkdown, props, { enableTables: true })
+        .use(RehypeLinkPreviews);
 
     const file = processor.parse(markdownContent);
     return processor.run(file) as Promise<Root>;

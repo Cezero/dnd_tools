@@ -241,6 +241,7 @@ export const spellService: SpellService = {
                 name: true,
                 editionId: true,
                 isVisible: true,
+                baseLevel: true,
             }
         });
 

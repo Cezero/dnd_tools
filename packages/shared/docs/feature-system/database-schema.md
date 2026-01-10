@@ -36,25 +36,39 @@ The core feature definition containing basic information about character abiliti
 
 Defines when and how features are granted to characters, including level-based progression and source tracking.
 
-**Purpose**: Connects features to their sources (classes, races) and defines when they are acquired during character advancement.
+**Purpose**: Connects features to their sources (classes, races, domains, feats, companions) and defines when they are acquired during character advancement.
 
 **Key Fields**:
 - **`id`**: Unique identifier for the feature progression
-- **`sourceType`**: Type of source (Race, Class, Template)
+- **`sourceType`**: Type of source (Race, Class, Template, ClassVariant, Domain, Feat, Companion) - references @FeatureSourceType enum
 - **`level`**: Character level when feature is granted
 - **`featureId`**: Reference to the feature being granted
 - **`classId`**: Reference to class (if class-granted)
 - **`raceId`**: Reference to race (if race-granted)
+- **`variantOverrideId`**: Reference to class variant override (if variant-granted)
+- **`domainId`**: Reference to domain (if domain-granted)
+- **`featId`**: Reference to feat (if feat-granted)
+- **`companionId`**: Reference to companion (if companion-granted)
 
 **Relationships**:
 - **`class`**: Links to class that grants this feature
 - **`race`**: Links to race that grants this feature
+- **`classVariantOverride`**: Links to class variant override (if applicable)
+- **`domain`**: Links to domain that grants this feature (if applicable)
+- **`feat`**: Links to feat that grants this feature (if applicable)
+- **`companion`**: Links to companion that grants this feature (if applicable)
 - **`feature`**: Links to the feature being granted
 - **`spellcasting`**: Links to spellcasting abilities (if applicable)
 - **`entities`**: Links to feature entities that define the feature's effects
 - **`characterFeatureChoice`**: Links to character choices for this progression
+- **`displayConditions`**: Links to display conditions for this progression
 
-**Usage**: The central model that connects features to their sources and defines progression patterns.
+**Constraints**:
+- **Indexes**: `@@index([featId])`, `@@index([companionId])` - Indexed for efficient queries by feat and companion
+
+**Usage**: The central model that connects features to their sources and defines progression patterns. Supports multiple source types including classes, races, domains, feats, and companions.
+
+**Related Documentation**: [Companion System](../monster-system/database-schema.md) for Companion model details (companion-granted features)
 
 **Source File**: `apps/backend/prisma/schema.prisma` (FeatureProgression model)
 
@@ -74,7 +88,7 @@ The unified model that handles all types of feature effects including modifiers,
 - **`appliesToSubId`**: Sub-target ID for complex applications
 - **`formulaParamsId`**: Reference to formula parameters (if formula-based)
 - **`groupingId`**: Groups related entities together (default: 0)
-- **`type`**: Type of entity (Bonus, Quantity, Replacement, Other, Proficiency, Choice, Allocation) - references @EntityType enum
+- **`type`**: Type of entity (Bonus, Quantity, Replacement, Other, Choice, Allocation) - references @EntityType enum. Note: Proficiencies use EntityType.Other with appliesTo = EntityAppliesToType.Proficiency
 - **`value`**: Numerical value of the entity (if applicable)
 - **`bonusType`**: Bonus type for stacking rules (if applicable)
 - **`displayInDetail`**: Whether to display this entity in detailed views (default: true)
@@ -203,6 +217,9 @@ The feature system follows the standard **Relationship Patterns** documented in 
 #### **Integration Relationships**
 **FeatureProgression → Class**: Class-granted features
 **FeatureProgression → Race**: Race-granted features
+**FeatureProgression → Domain**: Domain-granted features
+**FeatureProgression → Feat**: Feat-granted features
+**FeatureProgression → Companion**: Companion-granted features (e.g., familiar benefits, animal companion benefits)
 **FeatureProgression → SpellcastingLink**: Spellcasting features
 **FeatureProgression → CharacterFeatureChoice**: Player choices for feature options
 **CharacterFeatureChoice → CharacterAdvancement**: Choices are tied to character advancement
@@ -220,7 +237,7 @@ The feature system follows the standard **Data Integrity** patterns documented i
 **Foreign Key Constraints**: All relationships are properly constrained with appropriate cascade behavior
 
 **Nullable Fields**: Appropriate fields are nullable based on usage:
-- `classId` and `raceId` in FeatureProgression (only one should be set)
+- `classId`, `raceId`, `variantOverrideId`, `domainId`, `featId`, and `companionId` in FeatureProgression (only one source type should be set per progression)
 - `appliesToId`, `appliesToSubId`, `formulaParamsId` in FeatureEntity (optional based on entity type)
 - `value`, `bonusType`, `filterType` in FeatureEntity (optional based on entity type)
 
@@ -237,5 +254,6 @@ The feature system follows the standard **Schema Evolution** patterns documented
 **Index Strategy**: Strategic indexing for common query patterns:
 - Feature lookups by slug
 - FeatureProgression queries by source type and level
+- FeatureProgression queries by featId and companionId (indexed for efficient companion/feat feature lookups)
 - FeatureEntity queries by progression and type
 **Caching Support**: Schema supports effective caching strategies for feature calculations and character progression

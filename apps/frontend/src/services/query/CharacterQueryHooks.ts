@@ -9,7 +9,9 @@ import {
     CharacterSpellSelectionResponseSchema,
     CharacterSpellSelectionParamSchema,
     AddSpellKnownRequestSchema,
+    AddSpellKnownResponseSchema,
     RemoveSpellKnownRequestSchema,
+    RemoveSpellKnownResponseSchema,
 } from '@shared/schema';
 
 import { createQueryHooks } from './QueryHooksFactory';
@@ -87,7 +89,7 @@ const addSpellKnownConfig = createQueryHooks({
     path: '/characters/spell-selection/add',
     method: 'POST',
     requestSchema: AddSpellKnownRequestSchema,
-    responseSchema: UpdateResponseSchema,
+    responseSchema: AddSpellKnownResponseSchema,
     queryKey: 'characters',
 });
 
@@ -95,7 +97,7 @@ const removeSpellKnownConfig = createQueryHooks({
     path: '/characters/spell-selection/remove',
     method: 'POST',
     requestSchema: RemoveSpellKnownRequestSchema,
-    responseSchema: UpdateResponseSchema,
+    responseSchema: RemoveSpellKnownResponseSchema,
     queryKey: 'characters',
 });
 
@@ -138,8 +140,8 @@ export const CharacterQueryHooks = {
     useRemoveSpellKnown: removeSpellKnownConfig.useMutation,
 
     getCharacterSpellSelection: (characterId: number, classId: number) => getCharacterSpellSelectionConfig.fetch({ pathParams: { id: characterId, classId: classId.toString() } }),
-    addSpellKnown: (data: unknown) => addSpellKnownConfig.mutate({ requestData: data }),
-    removeSpellKnown: (data: unknown) => removeSpellKnownConfig.mutate({ requestData: data }),
+    addSpellKnown: (data: unknown, queryClient?: any) => addSpellKnownConfig.mutate({ requestData: data }, queryClient),
+    removeSpellKnown: (data: unknown, queryClient?: any) => removeSpellKnownConfig.mutate({ requestData: data }, queryClient),
 
     getCharacterSpellSelectionQueryFn: getCharacterSpellSelectionConfig.queryFn,
     getCharacterSpellSelectionQueryKey: (characterId: number, classId: number) => getCharacterSpellSelectionConfig.queryKeyBuilder({ pathParams: { id: characterId, classId: classId.toString() } }),

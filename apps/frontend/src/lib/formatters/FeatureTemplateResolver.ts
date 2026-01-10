@@ -376,7 +376,7 @@ export class FeatureTemplateResolver {
             'quantity': EntityType.Quantity,
             'replacement': EntityType.Replacement,
             'other': EntityType.Other,
-            'proficiency': EntityType.Proficiency,
+            'proficiency': EntityType.Other, // Proficiencies use EntityType.Other with appliesTo = EntityAppliesToType.Proficiency
             'choice': EntityType.Choice,
             'allocation': EntityType.Allocation,
         };

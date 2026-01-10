@@ -127,6 +127,7 @@ export const CreateAdvancementFeatSchema = AdvancementFeatSchema.omit({ advancem
 export const AdvancementSpellSchema = z.object({
     advancementId: z.number().int().positive('Advancement ID must be a positive integer'),
     spellId: z.number().int().positive('Spell ID must be a positive integer'),
+    isFreeGrant: z.boolean().default(false),
 });
 
 // Character feature choice schema

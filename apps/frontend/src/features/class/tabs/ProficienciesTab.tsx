@@ -4,19 +4,12 @@ import React, { useState, useEffect } from 'react';
 
 import { FeatureSystemService } from '@/components/feature-system/FeatureSystemService';
 import { CustomSelect } from '@/components/forms';
-import { renderCellValue } from '@/components/generic-list/columnUtils';
 import { ClassProficiencyService } from '@/features/class/ClassProficiencyService';
 import { displayStrategyFactory } from '@/lib/formatters';
 import type { CharacterSheetDisplayResult, FormattedEntityResult } from '@/lib/formatters/types';
-import { DisplayType, SpecialFeatureId } from '@shared/static-data';
+import { DisplayType, SpecialFeatureId, PROFICIENCY_TYPE_LIST, CoreComponent } from '@shared/static-data';
 
 import type { ClassTabProps } from './types';
-
-export interface ProficiencyFeat {
-    id: number;
-    name: string;
-    proficiencyTypeId: number;
-}
 
 export interface ProficiencyItem {
     id: number;
@@ -43,64 +36,67 @@ export function ProficienciesTab({
 
     // Dialog state
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [proficiencyFeats, setProficiencyFeats] = useState<ProficiencyFeat[]>([]);
-    const [selectedProficiencyFeat, setSelectedProficiencyFeat] = useState<ProficiencyFeat | null>(null);
+    const [selectedProficiencyType, setSelectedProficiencyType] = useState<CoreComponent | null>(null);
     const [proficiencyItems, setProficiencyItems] = useState<ProficiencyItem[]>([]);
     const [selectedProficiencyItem, setSelectedProficiencyItem] = useState<number | null>(null);
     const [_isDialogLoading, _setIsDialogLoading] = useState(false);
 
-    // Use the ClassProficiencyService hook to get proficiency feats
-    const { proficiencyFeats: serviceProficiencyFeats, isLoading: isLoadingFeats } = ClassProficiencyService.useProficiencyFeats();
+    const [isLoadingItems, setIsLoadingItems] = useState(false);
 
-    // Process feats when data is available
-    useEffect(() => {
-        if (serviceProficiencyFeats && serviceProficiencyFeats.length > 0) {
-            setProficiencyFeats(serviceProficiencyFeats);
-        }
-    }, [serviceProficiencyFeats]);
-
-    const handleFeatSelection = (featId: number) => {
-        const feat = proficiencyFeats.find(f => f.id === featId);
-        if (feat) {
-            setSelectedProficiencyFeat(feat);
+    const handleProficiencyTypeSelection = (proficiencyTypeId: number) => {
+        const proficiencyType = PROFICIENCY_TYPE_LIST.find(pt => pt.id === proficiencyTypeId);
+        if (proficiencyType) {
+            setSelectedProficiencyType(proficiencyType);
             setSelectedProficiencyItem(null);
             setProficiencyItems([]);
         }
     };
 
-    // Load items when a feat is selected
-    const { data: itemsData, isLoading: isLoadingItems } = FeatureSystemService.useGetItemsByProficiencyType(
-        selectedProficiencyFeat?.proficiencyTypeId || 0
-    );
-
-    // Update proficiency items when data changes
+    // Load items when a proficiency type is selected
     useEffect(() => {
-        if (itemsData && selectedProficiencyFeat) {
-            const transformedItems = itemsData.map(item => ({
-                id: item.id,
-                name: item.name,
-                typeId: item.typeId,
-                weapon: item.weapon,
-                armor: item.armor
-            }));
-            setProficiencyItems(transformedItems);
-        }
-    }, [itemsData, selectedProficiencyFeat]);
+        const loadItems = async () => {
+            if (!selectedProficiencyType?.id) {
+                setProficiencyItems([]);
+                return;
+            }
+
+            setIsLoadingItems(true);
+            try {
+                const itemsResult = await FeatureSystemService.getItemsByProficiencyType(selectedProficiencyType.id);
+                const transformedItems = (itemsResult.results || []).map(item => ({
+                    id: item.id,
+                    name: item.name,
+                    typeId: item.typeId,
+                    weapon: item.weapon,
+                    armor: item.armor
+                }));
+                setProficiencyItems(transformedItems);
+            } catch (error) {
+                console.error('Failed to load proficiency items:', error);
+                setProficiencyItems([]);
+            } finally {
+                setIsLoadingItems(false);
+            }
+        };
+
+        loadItems();
+    }, [selectedProficiencyType]);
 
     const handleItemSelection = (itemId: number) => {
         setSelectedProficiencyItem(itemId);
     };
 
     const handleAddProficiency = () => {
-        if (selectedProficiencyFeat && selectedProficiencyItem !== null) {
+        if (selectedProficiencyType && selectedProficiencyItem !== null) {
             const itemName = selectedProficiencyItem === -1 ? 'All Items' : proficiencyItems.find(item => item.id === selectedProficiencyItem)?.name;
-            onAddProficiency(selectedProficiencyFeat.id, selectedProficiencyItem, selectedProficiencyFeat.name, itemName);
+            // Pass proficiencyTypeId directly (the parameter name is misleading but kept for compatibility)
+            onAddProficiency(selectedProficiencyType.id, selectedProficiencyItem, selectedProficiencyType.name, itemName);
             setIsDialogOpen(false);
         }
     };
 
-    const isProficiencyAlreadyAdded = (featId: number, itemId: number) => {
-        return classProficiencies.some(modifier => modifier.appliesToId === featId && modifier.appliesToSubId === itemId);
+    const isProficiencyAlreadyAdded = (proficiencyTypeId: number, itemId: number) => {
+        return classProficiencies.some(modifier => modifier.appliesToId === proficiencyTypeId && modifier.appliesToSubId === itemId);
     };
 
     const classProficiencies = ClassProficiencyService.getClassProficiencies(featureProgressions);
@@ -135,7 +131,7 @@ export function ProficienciesTab({
                         {classProficiencies.map((modifier) => {
                             const key = `${modifier.appliesToId}-${modifier.appliesToSubId}`;
 
-                            // Find the formatted result for this entity
+                            // Find the formatted result for this entity from the display strategy
                             const entityResult = result.individualEntities?.find((entity: FormattedEntityResult) =>
                                 entity.entity.id === modifier.id
                             );
@@ -143,8 +139,8 @@ export function ProficienciesTab({
 
                             return (
                                 <div key={key} className="border border-gray-200 rounded-lg p-3 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h4 className="font-medium text-base flex-1">{formattedText}</h4>
+                                    <div className="flex justify-between items-center">
+                                        <div className="font-medium text-base flex-1">{formattedText}</div>
                                         <button
                                             type="button"
                                             onClick={() => onRemoveProficiency(modifier.appliesToId || 0, modifier.appliesToSubId || -1)}
@@ -153,30 +149,6 @@ export function ProficienciesTab({
                                         >
                                             <TrashIcon className="h-4 w-4" />
                                         </button>
-                                    </div>
-
-                                    <div>
-                                        {modifier.item?.description ? (
-                                            <div className="text-sm">
-                                                {renderCellValue(
-                                                    modifier.item.description,
-                                                    { truncate: 200, isMarkdown: true },
-                                                    `proficiency-${key}-item-description`
-                                                )}
-                                            </div>
-                                        ) : modifier.feat?.description ? (
-                                            <div className="text-sm">
-                                                {renderCellValue(
-                                                    modifier.feat.description,
-                                                    { truncate: 200, isMarkdown: true },
-                                                    `proficiency-${key}-feat-description`
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <div className="text-sm text-gray-500 dark:text-gray-400 italic">
-                                                No description available
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
                             );
@@ -202,24 +174,23 @@ export function ProficienciesTab({
                             </Dialog.Title>
 
                             <div className="space-y-4">
-                                {/* Feat Selection */}
+                                {/* Proficiency Type Selection */}
                                 <div>
                                     <CustomSelect
-                                        label="Select Proficiency Feat"
+                                        label="Select Proficiency Type"
                                         popupExtraClassName='w-60'
                                         triggerExtraClassName="w-60"
                                         itemExtraClassName="w-68"
                                         itemTextExtraClassName="w-60"
-                                        value={selectedProficiencyFeat?.id || null}
-                                        onValueChange={(value) => handleFeatSelection(value as number)}
-                                        options={proficiencyFeats}
-                                        placeholder="Choose a proficiency feat"
-                                        disabled={isLoadingFeats}
+                                        value={selectedProficiencyType?.id || null}
+                                        onValueChange={(value) => handleProficiencyTypeSelection(value as number)}
+                                        options={PROFICIENCY_TYPE_LIST}
+                                        placeholder="Choose a proficiency type"
                                     />
                                 </div>
 
-                                {/* Item Selection - only show if feat is selected */}
-                                {selectedProficiencyFeat && (
+                                {/* Item Selection - only show if proficiency type is selected */}
+                                {selectedProficiencyType && (
                                     <div>
                                         <CustomSelect
                                             label="Select Items"
@@ -232,7 +203,7 @@ export function ProficienciesTab({
                                             options={[
                                                 { id: -1, name: 'All Items' },
                                                 ...proficiencyItems
-                                                    .filter(item => !isProficiencyAlreadyAdded(selectedProficiencyFeat.id, item.id))
+                                                    .filter(item => !isProficiencyAlreadyAdded(selectedProficiencyType.id, item.id))
                                                     .sort((a, b) => a.name.localeCompare(b.name))
                                                     .map(item => ({ id: item.id, name: item.name }))
                                             ]}
@@ -248,14 +219,14 @@ export function ProficienciesTab({
                                     type="button"
                                     onClick={() => setIsDialogOpen(false)}
                                     className="px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                                    disabled={isLoadingFeats || isLoadingItems}
+                                    disabled={isLoadingItems}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="button"
                                     onClick={handleAddProficiency}
-                                    disabled={!selectedProficiencyFeat || selectedProficiencyItem === null || isLoadingFeats || isLoadingItems}
+                                    disabled={!selectedProficiencyType || selectedProficiencyItem === null || isLoadingItems}
                                     className="px-4 py-2 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Add Proficiency

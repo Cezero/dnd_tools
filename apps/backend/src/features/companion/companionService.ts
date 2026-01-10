@@ -13,6 +13,7 @@ import {
 } from '@shared/schema';
 
 import type { CompanionService } from './types';
+import { featureSystemService } from '../featureSystem/featureSystemService';
 
 const prisma = new PrismaClient();
 
@@ -51,14 +52,6 @@ export const companionService: CompanionService = {
                         id: true,
                         name: true,
                     }
-                },
-                benefits: {
-                    include: {
-                        conditions: true,
-                    },
-                    orderBy: {
-                        index: 'asc',
-                    }
                 }
             }
         });
@@ -67,100 +60,28 @@ export const companionService: CompanionService = {
             return null;
         }
 
-        return companion;
+        // Get feature progressions using the feature system service
+        const features = await featureSystemService.getFeatureProgressionsByCompanionId(query.id);
+
+        // Combine companion data with feature progressions
+        return {
+            ...companion,
+            features,
+        };
     },
 
     async createCompanion(data: CreateCompanionRequest): Promise<CreateResponse> {
-        const { benefits, ...companionData } = data;
-
-        const result = await prisma.$transaction(async (tx) => {
-            // Create the companion
-            const companion = await tx.companion.create({
-                data: companionData,
-            });
-
-            // Create benefits if provided
-            if (benefits && benefits.length > 0) {
-                for (const benefit of benefits) {
-                    const { conditions, ...benefitData } = benefit;
-                    const createdBenefit = await tx.companionBenefitMap.create({
-                        data: {
-                            ...benefitData,
-                            companionId: companion.id,
-                        }
-                    });
-
-                    // Create conditions if provided
-                    if (conditions && conditions.length > 0) {
-                        await tx.companionBenefitCondition.createMany({
-                            data: conditions.map((condition) => ({
-                                companionBenefitMapId: createdBenefit.id,
-                                conditionType: condition.conditionType,
-                                conditionValue: condition.conditionValue,
-                            }))
-                        });
-                    }
-                }
-            }
-
-            return companion;
+        const companion = await prisma.companion.create({
+            data: data,
         });
 
-        return { id: result.id.toString(), message: 'Companion created successfully' };
+        return { id: companion.id.toString(), message: 'Companion created successfully' };
     },
 
     async updateCompanion(data: UpdateCompanionRequest, query: CompanionIdParamRequest): Promise<UpdateResponse> {
-        const { benefits, ...companionData } = data;
-
-        await prisma.$transaction(async (tx) => {
-            // Update the companion
-            await tx.companion.update({
-                where: { id: query.id },
-                data: companionData,
-            });
-
-            // Update benefits if provided
-            if (benefits !== undefined) {
-                // Get existing benefits
-                const existingBenefits = await tx.companionBenefitMap.findMany({
-                    where: { companionId: query.id },
-                    include: { conditions: true },
-                });
-
-                // Delete existing benefits and their conditions
-                for (const existingBenefit of existingBenefits) {
-                    await tx.companionBenefitCondition.deleteMany({
-                        where: { companionBenefitMapId: existingBenefit.id },
-                    });
-                    await tx.companionBenefitMap.delete({
-                        where: { id: existingBenefit.id },
-                    });
-                }
-
-                // Create new benefits
-                if (benefits.length > 0) {
-                    for (const benefit of benefits) {
-                        const { conditions, ...benefitData } = benefit;
-                        const createdBenefit = await tx.companionBenefitMap.create({
-                            data: {
-                                ...benefitData,
-                                companionId: query.id,
-                            }
-                        });
-
-                        // Create conditions if provided
-                        if (conditions && conditions.length > 0) {
-                            await tx.companionBenefitCondition.createMany({
-                                data: conditions.map((condition) => ({
-                                    companionBenefitMapId: createdBenefit.id,
-                                    conditionType: condition.conditionType,
-                                    conditionValue: condition.conditionValue,
-                                }))
-                            });
-                        }
-                    }
-                }
-            }
+        await prisma.companion.update({
+            where: { id: query.id },
+            data: data,
         });
 
         return { message: 'Companion updated successfully' };

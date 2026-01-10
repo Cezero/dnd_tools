@@ -1,6 +1,8 @@
 import { Root, RootContent } from 'hast';
 import React from 'react';
 
+import { EntityLink } from '@/components/entity-link';
+
 import { customComponents } from './RenderHastToReactComponents';
 
 type Props = {
@@ -25,6 +27,34 @@ function renderNode(node: RootContent): React.ReactNode {
     }
 
     if (node.type === 'element') {
+        // Check if this is an entity link that should be replaced with EntityLink
+        if (node.tagName === 'a' && node.properties) {
+            const entityType = node.properties['data-entity-type'];
+            const entityId = node.properties['data-entity-id'];
+            const href = node.properties.href;
+            
+            if (typeof entityType === 'string' && typeof entityId === 'string' && typeof href === 'string') {
+                const id = parseInt(entityId, 10);
+                if (!isNaN(id)) {
+                    const children = node.children.map((child, i) => (
+                        <React.Fragment key={i}>{renderNode(child)}</React.Fragment>
+                    ));
+                    
+                    return (
+                        <EntityLink
+                            key={typeof node.properties.key === 'string' || typeof node.properties.key === 'number' ? node.properties.key : undefined}
+                            entityType={entityType as 'spell' | 'monster' | 'item' | 'feat' | 'class' | 'race' | 'domain'}
+                            entityId={id}
+                            href={href}
+                            className={Array.isArray(node.properties.className) ? node.properties.className.join(' ') : typeof node.properties.className === 'string' ? node.properties.className : 'entity-link'}
+                        >
+                            {children}
+                        </EntityLink>
+                    );
+                }
+            }
+        }
+        
         const Tag = customComponents[node.tagName] || node.tagName;
 
         if (

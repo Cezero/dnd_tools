@@ -5,7 +5,9 @@ import type { MonsterCacheEntry } from '@shared/schema';
 
 import { GenericSearchInput, type SearchableItem } from './GenericSearchInput';
 
-type MonsterListItem = SearchableItem;
+type MonsterListItem = SearchableItem & {
+    typeIds?: number[]; // Array of monster type IDs
+};
 
 export interface MonsterSearchInputProps {
     value: number | null;
@@ -16,7 +18,8 @@ export interface MonsterSearchInputProps {
     componentExtraClassName?: string;
     labelExtraClassName?: string;
     monsterList?: MonsterListItem[]; // Optional prop for pre-loaded monsters
-    typeId?: number; // Optional filter by monster type (not supported in cache, but kept for API compatibility)
+    customOptions?: MonsterListItem[]; // Custom options to prepend (e.g., "All" option with id: -1)
+    filter?: (monster: MonsterListItem) => boolean; // Filter function for monsters (e.g., by type)
 }
 
 export function MonsterSearchInput({
@@ -28,7 +31,8 @@ export function MonsterSearchInput({
     componentExtraClassName = '',
     labelExtraClassName = '',
     monsterList,
-    typeId: _typeId, // Note: typeId filtering not supported in cache endpoint, but kept for API compatibility
+    customOptions = [],
+    filter,
 }: MonsterSearchInputProps) {
     // Fetch lightweight monster cache if not provided
     const { data: monstersData, isLoading } = CacheQueryHooks.useMonstersCache(
@@ -45,13 +49,11 @@ export function MonsterSearchInput({
             return monstersData.results.map((monster: MonsterCacheEntry) => ({
                 id: monster.id,
                 name: monster.name,
+                typeIds: monster.typeIds,
             }));
         }
         return [];
     }, [monsterList, monstersData?.results]);
-
-    // Note: typeId filtering is not supported in the cache endpoint
-    // If typeId filtering is needed, consider using MonsterQueryHooks.useGetAllMonsters instead
 
     return (
         <GenericSearchInput
@@ -64,6 +66,8 @@ export function MonsterSearchInput({
             componentExtraClassName={componentExtraClassName}
             labelExtraClassName={labelExtraClassName}
             emptyMessage="No monsters found matching {searchTerm}"
+            customOptions={customOptions}
+            filter={filter}
         />
     );
 }

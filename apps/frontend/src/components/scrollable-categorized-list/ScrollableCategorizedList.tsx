@@ -99,6 +99,7 @@ function renderCategoryGroup<T>(
     columns: ColumnDef<T, unknown>[],
     allColumnsForFormatting: ColumnDef<T, unknown>[],
     actionButtonLabel: string | undefined,
+    getActionButtonLabel: ((item: T) => string) | undefined,
     onAction: ((item: T) => void) | undefined,
     isActionDisabled: ((item: T) => boolean) | undefined,
     collapsedCategories: Set<string>,
@@ -135,7 +136,7 @@ function renderCategoryGroup<T>(
                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
                     ))}
-                    {actionButtonLabel && onAction && (
+                    {(actionButtonLabel || getActionButtonLabel) && onAction && (
                         <td className="px-1 text-center">
                             <button
                                 onClick={() => onAction(item)}
@@ -145,7 +146,7 @@ function renderCategoryGroup<T>(
                                     : 'bg-blue-600 text-white hover:bg-blue-700'
                                     }`}
                             >
-                                {actionButtonLabel}
+                                {getActionButtonLabel ? getActionButtonLabel(item) : actionButtonLabel}
                             </button>
                         </td>
                     )}
@@ -201,7 +202,7 @@ function renderCategoryGroup<T>(
             <React.Fragment key={fullPath}>
                 <tr className="bg-gray-200 dark:bg-gray-700">
                     <td
-                        colSpan={table.getVisibleLeafColumns().length + (actionButtonLabel ? 1 : 0)}
+                        colSpan={table.getVisibleLeafColumns().length + ((actionButtonLabel || getActionButtonLabel) ? 1 : 0)}
                         className="px-1 py-1 font-semibold cursor-pointer"
                         onClick={() => toggleCategory(fullPath)}
                     >
@@ -225,6 +226,7 @@ function renderCategoryGroup<T>(
                             columns,
                             allColumnsForFormatting,
                             actionButtonLabel,
+                            getActionButtonLabel,
                             onAction,
                             isActionDisabled,
                             collapsedCategories,
@@ -260,7 +262,7 @@ function renderCategoryGroup<T>(
                                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                         </td>
                                     ))}
-                                    {actionButtonLabel && onAction && (
+                                    {(actionButtonLabel || getActionButtonLabel) && onAction && (
                                         <td className="px-2 text-center">
                                             <button
                                                 onClick={() => onAction(item)}
@@ -270,7 +272,7 @@ function renderCategoryGroup<T>(
                                                     : 'bg-blue-600 text-white hover:bg-blue-700'
                                                     }`}
                                             >
-                                                {actionButtonLabel}
+                                                {getActionButtonLabel ? getActionButtonLabel(item) : actionButtonLabel}
                                             </button>
                                         </td>
                                     )}
@@ -292,6 +294,7 @@ export function ScrollableCategorizedList<T extends { id?: number }>({
     groupingConfig,
     columns,
     actionButtonLabel,
+    getActionButtonLabel,
     onAction,
     isActionDisabled,
     allowMultiple: _allowMultiple = true,
@@ -308,6 +311,8 @@ export function ScrollableCategorizedList<T extends { id?: number }>({
     const [searchQuery, setSearchQuery] = useState('');
     const containerRef = useRef<HTMLDivElement>(null);
     const searchRef = useRef<HTMLDivElement>(null);
+    const scrollViewportRef = useRef<HTMLDivElement>(null);
+    const hasFetchedRef = useRef(false);
     const [calculatedHeight, setCalculatedHeight] = useState<number | undefined>(undefined);
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -330,12 +335,27 @@ export function ScrollableCategorizedList<T extends { id?: number }>({
         }
     }, [dataFetcher]);
 
-    // Fetch data on mount and when dataFetcher changes
+    // Fetch data on mount only - don't refetch when dataFetcher changes
+    // Instead, update data directly when dataFetcher result changes
     useEffect(() => {
-        if (dataFetcher) {
+        if (dataFetcher && !hasFetchedRef.current) {
             fetchData();
+            hasFetchedRef.current = true;
         }
-    }, [fetchData]);
+    }, [fetchData, dataFetcher]);
+    
+    // Update data when dataFetcher result changes (but don't trigger loading state)
+    useEffect(() => {
+        if (dataFetcher && hasFetchedRef.current) {
+            // Update data directly without refetching
+            dataFetcher().then(result => {
+                setData(result.results);
+                setTotal(result.total);
+            }).catch(err => {
+                setError(err as Error);
+            });
+        }
+    }, [dataFetcher]);
 
     // Check if an item is enabled (using itemFilter if provided)
     const isItemEnabled = useCallback((item: T): boolean => {
@@ -373,6 +393,90 @@ export function ScrollableCategorizedList<T extends { id?: number }>({
             }
         }
     }, [storageKey]);
+
+    // Save scroll position on scroll
+    useEffect(() => {
+        if (!storageKey) return;
+
+        // Use a callback to get the viewport element after it's rendered
+        const saveScrollPosition = () => {
+            const viewport = scrollViewportRef.current;
+            if (viewport) {
+                localStorage.setItem(`${storageKey}-scroll`, String(viewport.scrollTop));
+            } else {
+                // Fallback: try to find viewport in DOM
+                const container = containerRef.current;
+                if (container) {
+                    // ScrollArea.Viewport is typically the first scrollable div
+                    const scrollableDiv = container.querySelector('div[style*="overflow"]') as HTMLElement;
+                    if (scrollableDiv && scrollableDiv.scrollHeight > scrollableDiv.clientHeight) {
+                        localStorage.setItem(`${storageKey}-scroll`, String(scrollableDiv.scrollTop));
+                    }
+                }
+            }
+        };
+
+        // Set up scroll listener with a small delay to ensure DOM is ready
+        const timeoutId = setTimeout(() => {
+            const viewport = scrollViewportRef.current;
+            if (viewport) {
+                viewport.addEventListener('scroll', saveScrollPosition, { passive: true });
+            } else {
+                // Fallback: attach to container and use event delegation
+                const container = containerRef.current;
+                if (container) {
+                    container.addEventListener('scroll', saveScrollPosition, { passive: true, capture: true });
+                }
+            }
+        }, 100);
+
+        return () => {
+            clearTimeout(timeoutId);
+            const viewport = scrollViewportRef.current;
+            if (viewport) {
+                viewport.removeEventListener('scroll', saveScrollPosition);
+            }
+            const container = containerRef.current;
+            if (container) {
+                container.removeEventListener('scroll', saveScrollPosition, { capture: true });
+            }
+        };
+    }, [storageKey]);
+
+    // Restore scroll position after data loads and DOM updates
+    useEffect(() => {
+        if (!storageKey || isLoading || data.length === 0) return;
+
+        const savedScroll = localStorage.getItem(`${storageKey}-scroll`);
+        if (savedScroll) {
+            const scrollTop = parseInt(savedScroll, 10);
+            if (!isNaN(scrollTop)) {
+                // Use multiple animation frames and a small delay to ensure DOM is fully updated
+                const timeoutId = setTimeout(() => {
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            // Try to find the viewport element
+                            const viewport = scrollViewportRef.current;
+                            if (viewport) {
+                                viewport.scrollTop = scrollTop;
+                            } else {
+                                // Fallback: try to find it in the DOM
+                                const container = containerRef.current;
+                                if (container) {
+                                    const foundViewport = container.querySelector('[data-baseui-scroll-area-viewport]') as HTMLElement;
+                                    if (foundViewport) {
+                                        foundViewport.scrollTop = scrollTop;
+                                    }
+                                }
+                            }
+                        });
+                    });
+                }, 100);
+
+                return () => clearTimeout(timeoutId);
+            }
+        }
+    }, [storageKey, isLoading, data]);
 
     // Save collapsed categories to localStorage
     const toggleCategory = useCallback((path: string) => {
@@ -545,7 +649,7 @@ export function ScrollableCategorizedList<T extends { id?: number }>({
     const processedItems = new Set<T>();
 
     return (
-        <div ref={containerRef} className="h-full flex flex-col overflow-hidden">
+        <div ref={containerRef} data-storage-key={storageKey} className="h-full flex flex-col overflow-hidden">
             {/* Search input */}
             <div ref={searchRef} className="mb-4 flex-shrink-0">
                 <input
@@ -583,7 +687,7 @@ export function ScrollableCategorizedList<T extends { id?: number }>({
                                 {table.getVisibleLeafColumns().map(column => (
                                     <col key={column.id} style={{ width: column.getSize() }} />
                                 ))}
-                                {actionButtonLabel && <col style={{ width: '80px' }} />}
+                                {(actionButtonLabel || getActionButtonLabel) && <col style={{ width: '80px' }} />}
                             </colgroup>
                             <thead>
                                 {table.getHeaderGroups().map(headerGroup => (
@@ -609,7 +713,7 @@ export function ScrollableCategorizedList<T extends { id?: number }>({
                                                 </th>
                                             );
                                         })}
-                                        {actionButtonLabel && <th className="px-1 bg-gray-200 dark:bg-gray-700 text-center">Action</th>}
+                                        {(actionButtonLabel || getActionButtonLabel) && <th className="px-1 bg-gray-200 dark:bg-gray-700 text-center">Action</th>}
                                     </tr>
                                 ))}
                             </thead>
@@ -618,14 +722,14 @@ export function ScrollableCategorizedList<T extends { id?: number }>({
 
                     {/* Scrollable body */}
                     <ScrollArea.Root className="flex-1 min-h-0">
-                        <ScrollArea.Viewport className="h-full">
+                        <ScrollArea.Viewport ref={scrollViewportRef} className="h-full">
                             <ScrollArea.Content className="p-0">
                                 <table className="table-fixed w-full border-collapse border border-solid border-gray-600">
                                     <colgroup>
                                         {table.getVisibleLeafColumns().map(column => (
                                             <col key={column.id} style={{ width: column.getSize() }} />
                                         ))}
-                                        {actionButtonLabel && <col style={{ width: '80px' }} />}
+                                        {(actionButtonLabel || getActionButtonLabel) && <col style={{ width: '80px' }} />}
                                     </colgroup>
                                     <tbody>
                                         {renderCategoryGroup(
@@ -636,6 +740,7 @@ export function ScrollableCategorizedList<T extends { id?: number }>({
                                             processedColumns,
                                             allColumnsForFormatting,
                                             actionButtonLabel,
+                                            getActionButtonLabel,
                                             onAction,
                                             combinedIsActionDisabled,
                                             collapsedCategories,

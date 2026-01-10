@@ -9,12 +9,14 @@ import {
     FeatQueryResponse,
     FeatQueryRequest,
     GetFeatListResponse,
-    FeatCacheResponse
+    FeatCacheResponse,
+    GetAllFeatsWithFeatureInfoResponse
 } from '@shared/schema';
-import { FeatBenefitType, FeatureSourceType, EntityAppliesToType, EntityType } from '@shared/static-data';
+import { FeatureSourceType, EntityAppliesToType, EntityType } from '@shared/static-data';
 
 import type { FeatService } from './types';
 import { featureSystemService } from '../featureSystem/index';
+import type { FeatureProgressionContext } from '../featureSystem/types';
 
 
 const prisma = new PrismaClient();
@@ -28,12 +30,6 @@ export const featService: FeatService = {
                     id: true,
                     name: true,
                     typeId: true,
-                    description: true,
-                    benefit: true,
-                    summary: true,
-                    normalEffect: true,
-                    specialEffect: true,
-                    prerequisites: true,
                     repeatable: true,
                     fighterBonus: true,
                     useSubId: true,
@@ -56,39 +52,83 @@ export const featService: FeatService = {
         };
     },
 
-    async featQuery(query: FeatQueryRequest): Promise<FeatQueryResponse> {
-        let featIds: number[] | undefined = undefined;
+    /**
+     * Get all feats with feature information (description and summary).
+     * 
+     * This method returns a lightweight schema containing only:
+     * - id: from Feat.id
+     * - name: from Feat.name
+     * - description: from the associated Feature.description (via FeatureProgression)
+     * - summary: from the associated Feature.summary (via FeatureProgression)
+     * 
+     * IMPORTANT: This is a composite schema where:
+     * - id and name come from the Feat table
+     * - description and summary come from the associated Feature table
+     * 
+     * If a feat has no associated feature, description and summary will be null.
+     * If a feat has multiple feature progressions, the first one's feature is used.
+     * 
+     * This endpoint is optimized for list views where full feat data and progressions
+     * are not needed, but feature description/summary are required for display.
+     */
+    async getAllFeatsWithFeatureInfo(): Promise<GetAllFeatsWithFeatureInfoResponse> {
+        // Get all feats
+        const feats = await prisma.feat.findMany({
+            select: {
+                id: true,
+                name: true,
+            },
+            orderBy: { name: 'asc' },
+        });
 
-        if (query.queryType === 'proficiency') {
-            // Query FeatureProgression to find feats with proficiency entities
-            const progressions = await prisma.featureProgression.findMany({
-                where: {
-                    sourceType: FeatureSourceType.Feat,
-                    entities: {
-                        some: {
-                            appliesTo: EntityAppliesToType.Feat,
-                            type: EntityType.Proficiency,
-                        }
-                    }
-                },
-                select: {
-                    featId: true,
-                }
-            });
+        // Get all feat IDs
+        const featIds = feats.map(f => f.id);
 
-            featIds = progressions
-                .map(p => p.featId)
-                .filter((id): id is number => id !== null);
+        if (featIds.length === 0) {
+            return {
+                total: 0,
+                results: [],
+            };
         }
 
-        const whereClause: Prisma.FeatWhereInput = featIds && featIds.length > 0
-            ? { id: { in: featIds } }
-            : {};
+        // Get feature progressions for all feats
+        const progressions = await featureSystemService.getFeatureProgressionsByFeatIds(featIds);
 
-        // For 'all' query type, no where clause is needed - get all feats
+        // Create a map of featId -> feature (using first progression if multiple exist)
+        const featFeatureMap = new Map<number, { description: string | null; summary: string | null }>();
+        for (const progression of progressions) {
+            if (progression.featId && progression.feature) {
+                // Only set if not already set (use first progression)
+                if (!featFeatureMap.has(progression.featId)) {
+                    featFeatureMap.set(progression.featId, {
+                        description: progression.feature.description || null,
+                        summary: progression.feature.summary || null,
+                    });
+                }
+            }
+        }
+
+        // Combine feat data with feature info
+        const results = feats.map(feat => {
+            const featureInfo = featFeatureMap.get(feat.id);
+            return {
+                id: feat.id,
+                name: feat.name,
+                description: featureInfo?.description ?? null,
+                summary: featureInfo?.summary ?? null,
+            };
+        });
+
+        return {
+            total: results.length,
+            results,
+        };
+    },
+
+    async featQuery(query: FeatQueryRequest): Promise<FeatQueryResponse> {
+        // All feats are returned - proficiency feats are identified via FeatureProgressions, not query filtering
         const [feats] = await Promise.all([
             prisma.feat.findMany({
-                where: whereClause,
                 include: {
                     sourceBookInfo: {
                         select: {
@@ -99,9 +139,7 @@ export const featService: FeatService = {
                 },
                 orderBy: { name: 'asc' },
             }),
-            prisma.feat.count({
-                where: whereClause,
-            }),
+            prisma.feat.count(),
         ]);
         return {
             total: feats.length,
@@ -110,37 +148,8 @@ export const featService: FeatService = {
     },
 
     async getFeatList(query: FeatQueryRequest): Promise<GetFeatListResponse> {
-        let featIds: number[] | undefined = undefined;
-
-        if (query.queryType === 'proficiency') {
-            // Query FeatureProgression to find feats with proficiency entities
-            const progressions = await prisma.featureProgression.findMany({
-                where: {
-                    sourceType: FeatureSourceType.Feat,
-                    entities: {
-                        some: {
-                            appliesTo: EntityAppliesToType.Feat,
-                            type: EntityType.Proficiency,
-                        }
-                    }
-                },
-                select: {
-                    featId: true,
-                }
-            });
-
-            featIds = progressions
-                .map(p => p.featId)
-                .filter((id): id is number => id !== null);
-        }
-
-        const whereClause: Prisma.FeatWhereInput = featIds && featIds.length > 0
-            ? { id: { in: featIds } }
-            : {};
-
-        // For 'all' query type, no where clause is needed - get all feats
+        // All feats are returned - proficiency feats are identified via FeatureProgressions, not query filtering
         const feats = await prisma.feat.findMany({
-            where: whereClause,
             select: {
                 id: true,
                 name: true,
@@ -181,7 +190,7 @@ export const featService: FeatService = {
     async createFeat(data: CreateFeatRequest): Promise<CreateResponse> {
         const result = await prisma.$transaction(async (tx) => {
             // benefits and prereqs are no longer part of the Feat model - handled via Feature system
-            const { sourceBookInfo, ...featData } = data;
+            const { sourceBookInfo, featureProgressions, ...featData } = data;
             const newFeat = await tx.feat.create({
                 data: {
                     ...featData,
@@ -193,6 +202,12 @@ export const featService: FeatService = {
                     }
                 },
             });
+
+            // Create feature progressions if provided
+            if (featureProgressions && featureProgressions.length > 0) {
+                const context: FeatureProgressionContext = { featId: newFeat.id };
+                await featureSystemService.createMultipleFeatureProgressions(featureProgressions, context, tx);
+            }
 
             return newFeat.id;
         });
@@ -244,36 +259,8 @@ export const featService: FeatService = {
     },
 
     async getFeatCache(query: FeatQueryRequest): Promise<FeatCacheResponse> {
-        let featIds: number[] | undefined = undefined;
-
-        if (query.queryType === 'proficiency') {
-            // Query FeatureProgression to find feats with proficiency entities
-            const progressions = await prisma.featureProgression.findMany({
-                where: {
-                    sourceType: FeatureSourceType.Feat,
-                    entities: {
-                        some: {
-                            appliesTo: EntityAppliesToType.Feat,
-                            type: EntityType.Proficiency,
-                        }
-                    }
-                },
-                select: {
-                    featId: true,
-                }
-            });
-
-            featIds = progressions
-                .map(p => p.featId)
-                .filter((id): id is number => id !== null);
-        }
-
-        const whereClause: Prisma.FeatWhereInput = featIds && featIds.length > 0
-            ? { id: { in: featIds } }
-            : {};
-
+        // All feats are returned - proficiency feats are identified via FeatureProgressions, not query filtering
         const feats = await prisma.feat.findMany({
-            where: whereClause,
             orderBy: { name: 'asc' },
             select: {
                 id: true,

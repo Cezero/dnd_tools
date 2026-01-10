@@ -1,39 +1,7 @@
 import z from "zod";
 import { QueryResponseSchema } from "./query";
 import { TrickSchema, CharacterCompanionTrickSchema } from "./trick";
-
-// Companion Benefit Condition Schema
-export const CompanionBenefitConditionSchema = z.object({
-    id: z.number().int().positive('Condition ID must be a positive integer'),
-    companionBenefitMapId: z.number().int().positive('Companion benefit map ID must be a positive integer'),
-    conditionType: z.number().int().min(0, 'Condition type must be non-negative').max(8, 'Condition type must be at most 8'),
-    conditionValue: z.number().int(),
-});
-
-// Companion Benefit Condition Create Schema (omits backend-assigned IDs)
-export const CreateCompanionBenefitConditionSchema = CompanionBenefitConditionSchema.omit({
-    id: true,
-    companionBenefitMapId: true,
-});
-
-// Companion Benefit Map Schema
-export const CompanionBenefitMapSchema = z.object({
-    id: z.number().int().positive('Benefit map ID must be a positive integer'),
-    companionId: z.number().int().positive('Companion ID must be a positive integer'),
-    typeId: z.number().int().positive('Benefit type ID must be a positive integer').nullable(),
-    referenceId: z.number().int().positive('Reference ID must be a positive integer').nullable(),
-    amount: z.number().int().min(0, 'Benefit amount must be non-negative').nullable(),
-    index: z.number().int().min(0, 'Benefit index must be non-negative'),
-    conditions: z.array(CompanionBenefitConditionSchema).optional(),
-});
-
-// Companion Benefit Map Create Schema (omits backend-assigned IDs)
-export const CreateCompanionBenefitMapSchema = CompanionBenefitMapSchema.omit({
-    id: true,
-    companionId: true,
-}).extend({
-    conditions: z.array(CreateCompanionBenefitConditionSchema).optional(),
-});
+import { FeatureProgressionSchema } from "./feature";
 
 // Companion Schema
 export const CompanionSchema = z.object({
@@ -60,7 +28,7 @@ export const CompanionWithRelationsSchema = CompanionSchema.extend({
         id: z.number().int().positive(),
         name: z.string(),
     }).optional(),
-    benefits: z.array(CompanionBenefitMapSchema).optional(),
+    features: z.array(FeatureProgressionSchema).optional(),
 });
 
 // Character Companion with relations schema
@@ -85,8 +53,6 @@ export const CharacterCompanionWithRelationsSchema = CharacterCompanionSchema.ex
 // Request schemas
 export const CreateCompanionSchema = CompanionSchema.omit({
     id: true,
-}).extend({
-    benefits: z.array(CreateCompanionBenefitMapSchema).optional(),
 });
 
 export const UpdateCompanionSchema = CreateCompanionSchema.partial();
@@ -133,10 +99,6 @@ export type CharacterCompanionIdParamRequest = z.infer<typeof CharacterCompanion
 export type GetAllCompanionsResponse = z.infer<typeof GetAllCompanionsResponseSchema>;
 export type GetCompanionResponse = z.infer<typeof GetCompanionResponseSchema>;
 export type GetAllCharacterCompanionsResponse = z.infer<typeof GetAllCharacterCompanionsResponseSchema>;
-export type CompanionBenefitMap = z.infer<typeof CompanionBenefitMapSchema>;
-export type CompanionBenefitCondition = z.infer<typeof CompanionBenefitConditionSchema>;
-export type CreateCompanionBenefitMapRequest = z.infer<typeof CreateCompanionBenefitMapSchema>;
-export type CreateCompanionBenefitConditionRequest = z.infer<typeof CreateCompanionBenefitConditionSchema>;
 
 // Re-export common response types
 export { CreateResponse, UpdateResponse } from './common';

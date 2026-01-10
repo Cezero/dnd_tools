@@ -1,13 +1,15 @@
+import { useQueryClient } from '@tanstack/react-query';
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
 
 import { FeatureDisplay } from '@/components/feature-system/FeatureDisplay';
+import { FeatureEditForm } from '@/components/feature-system/FeatureEditForm';
 import { ListSelectionDialog } from '@/components/generic-list';
+import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
 import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import { Feature, FeatureProgression } from '@shared/schema';
 import { FeatureSourceType } from '@shared/static-data';
 
-interface FeaturesTabProps {
+interface FeaturesManagerProps {
     // Common props
     featureProgressions?: FeatureProgression[];
     onEditProgression?: (progression: FeatureProgression) => void;
@@ -17,7 +19,7 @@ interface FeaturesTabProps {
     // Context-specific props
     contextType: FeatureSourceType;
     contextId: number;
-    parentType?: 'class' | 'race';
+    parentType?: 'class' | 'race' | 'domain' | 'feat';
 
     // UI text props
     title: string;
@@ -32,7 +34,7 @@ interface FeaturesTabProps {
     setIsProgressionDialogOpen?: (open: boolean) => void;
 }
 
-export function FeaturesTab({
+export function FeaturesManager({
     featureProgressions = [],
     onEditProgression,
     onRemoveProgression,
@@ -46,10 +48,15 @@ export function FeaturesTab({
     setEditingProgression,
     setPreSelectedFeature,
     setIsProgressionDialogOpen
-}: FeaturesTabProps): React.JSX.Element {
+}: FeaturesManagerProps): React.JSX.Element {
     const [isFeatureSelectionOpen, setIsFeatureSelectionOpen] = useState(false);
-    const navigate = useNavigate();
-    const location = useLocation();
+    const [isFeatureEditOpen, setIsFeatureEditOpen] = useState(false);
+    const [isNewFeatureDialogOpen, setIsNewFeatureDialogOpen] = useState(false);
+    const [editingFeatureId, setEditingFeatureId] = useState<number | 'new' | undefined>(undefined);
+    const queryClient = useQueryClient();
+
+    // Precache all entities referenced in feature progressions (including prerequisites)
+    const { isComplete: prereqsPrefetched } = usePrecacheFeatureEntities(featureProgressions);
 
     // Group progressions by feature, excluding special features based on context
     const featuresByFeature = featureProgressions
@@ -83,24 +90,90 @@ export function FeaturesTab({
         onAddFeature?.(feature);
     };
 
-    const handleAddProgression = (feature: Feature) => {
+    const handleAddProgression = (_feature: Feature) => {
         setEditingProgression?.(null);
-        setPreSelectedFeature?.(feature);
+        setPreSelectedFeature?.(_feature);
         setIsProgressionDialogOpen?.(true);
     };
 
     const handleEditFeature = (featureId: number) => {
-        const fromListParams = location.state?.fromListParams || location.search || '';
-        const fromPage = parentType === 'class' ? 'classes' : parentType === 'race' ? 'races' : 'features';
+        setEditingFeatureId(featureId);
+        setIsFeatureEditOpen(true);
+    };
 
-        navigate(`/features/${featureId}/edit`, {
-            state: {
-                fromPage,
-                fromListParams: fromListParams.replace('?', ''),
-                parentType,
-                parentId: contextId
-            }
+    const handleFeatureSave = async (feature: Feature, _progressions: FeatureProgression[]) => {
+        await queryClient.invalidateQueries({
+            queryKey: ['features'],
+            exact: false
         });
+        await queryClient.invalidateQueries({
+            queryKey: ['features', 'item', feature.id]
+        });
+        await queryClient.invalidateQueries({
+            queryKey: ['features', 'progressions', feature.id]
+        });
+
+        if (parentType === 'class' && contextId) {
+            await queryClient.invalidateQueries({
+                queryKey: ['classes', 'item', contextId]
+            });
+            await queryClient.invalidateQueries({
+                queryKey: ['classes'],
+                exact: false
+            });
+        }
+        if (parentType === 'race' && contextId) {
+            await queryClient.invalidateQueries({
+                queryKey: ['races', 'item', contextId]
+            });
+            await queryClient.invalidateQueries({
+                queryKey: ['races'],
+                exact: false
+            });
+        }
+        if (parentType === 'domain' && contextId) {
+            await queryClient.invalidateQueries({
+                queryKey: ['domains', 'item', contextId]
+            });
+            await queryClient.invalidateQueries({
+                queryKey: ['domains'],
+                exact: false
+            });
+        }
+        if (parentType === 'feat' && contextId) {
+            await queryClient.invalidateQueries({
+                queryKey: ['feats', 'item', contextId]
+            });
+            await queryClient.invalidateQueries({
+                queryKey: ['feats'],
+                exact: false
+            });
+            await queryClient.invalidateQueries({
+                queryKey: ['feats-cache'],
+                exact: false
+            });
+        }
+
+        const wasNewFeature = editingFeatureId === 'new' || isNewFeatureDialogOpen;
+
+        setIsFeatureEditOpen(false);
+        setIsNewFeatureDialogOpen(false);
+        setEditingFeatureId(undefined);
+
+        // If this was a new feature created from the selection dialog, automatically add it
+        if (wasNewFeature && onAddFeature) {
+            onAddFeature({
+                id: feature.id,
+                name: feature.name,
+                description: feature.description,
+                slug: feature.slug
+            });
+        }
+    };
+
+    const handleFeatureEditClose = () => {
+        setIsFeatureEditOpen(false);
+        setEditingFeatureId(undefined);
     };
 
     return (
@@ -119,17 +192,17 @@ export function FeaturesTab({
 
                 {sortedFeatures.length > 0 ? (
                     <div className="space-y-4">
-                        {sortedFeatures.map(({ feature, progressions }) => (
+                        {sortedFeatures.map(({ feature, progressions: _progressions }) => (
                             <FeatureDisplay
-                                key={feature?.id || 'unknown'}
+                                key={`${feature?.id || 'unknown'}-${prereqsPrefetched ? 'prefetched' : 'loading'}`}
                                 feature={feature}
-                                progressions={progressions}
+                                progressions={_progressions}
                                 onEditProgression={handleEditProgression}
                                 onRemoveProgression={handleRemoveProgression}
                                 onAddProgression={handleAddProgression}
                                 showAddProgressionButton={true}
                                 onEditFeature={handleEditFeature}
-                                parentType={parentType}
+                                parentType={parentType === 'class' || parentType === 'race' ? parentType : undefined}
                                 parentId={contextId}
                             />
                         ))}
@@ -166,13 +239,18 @@ export function FeaturesTab({
                 }}
                 initialSelectedIds={featureProgressions.map(p => p.featureId)}
                 parentId={contextId}
-                parentType={parentType}
+                parentType={parentType === 'class' || parentType === 'race' ? parentType : undefined}
                 dataFetcher={async () => {
                     return await FeatureQueryHooks.getFeatures({ requestData: { sourceTypes: [contextType] } });
                 }}
                 storageKey="feature-selection"
                 itemDesc="feature"
                 createNewRoute="/features/new/edit"
+                onCreateNew={() => {
+                    setIsFeatureSelectionOpen(false);
+                    setIsNewFeatureDialogOpen(true);
+                    setEditingFeatureId('new');
+                }}
                 transformSelectedItems={(features) => features.map(f => ({
                     id: f.id,
                     name: f.name,
@@ -182,6 +260,25 @@ export function FeaturesTab({
                 dialogTitle="Select Features"
                 createNewButtonText="Create New Feature"
             />
+
+            {/* Feature Edit Dialog */}
+            {editingFeatureId !== undefined && (
+                <FeatureEditForm
+                    featureId={editingFeatureId}
+                    isOpen={isFeatureEditOpen || isNewFeatureDialogOpen}
+                    onClose={() => {
+                        handleFeatureEditClose();
+                        setIsNewFeatureDialogOpen(false);
+                    }}
+                    onSave={handleFeatureSave}
+                    mode="modal"
+                    context={parentType ? {
+                        sourceType: contextType,
+                        parentId: contextId,
+                        parentType: parentType
+                    } : undefined}
+                />
+            )}
         </>
     );
 }

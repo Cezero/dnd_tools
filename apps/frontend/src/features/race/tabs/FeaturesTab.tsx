@@ -1,13 +1,13 @@
 import React from 'react';
 
-import { FeaturesTab as SharedFeaturesTab } from '@/components/feature-system/FeaturesTab';
+import { FeaturesManager } from '@/components/feature-system/FeaturesManager';
 import { FeatureSourceType, SpecialFeatureId } from '@shared/static-data';
 
 import type { RaceTabProps } from './types';
 
 export function FeaturesTab(props: RaceTabProps): React.JSX.Element {
     return (
-        <SharedFeaturesTab
+        <FeaturesManager
             {...props}
             contextType={FeatureSourceType.Race}
             contextId={props.raceId || 0}

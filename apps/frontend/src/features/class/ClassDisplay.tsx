@@ -7,6 +7,7 @@ import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { generateClassProgression } from '@/lib/ClassProgression';
 import { ClassProgressionTable } from '@/lib/ClassProgressionTable';
 import { displayStrategyFactory } from '@/lib/formatters';
+import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
 import { DnDClass, ClassVariant } from '@shared/schema';
 import {
     DisplayType,
@@ -41,6 +42,9 @@ export function ClassDisplay({
     fromListParams: _fromListParams = ''
 }: ClassDisplayProps): React.JSX.Element {
     const queryClient = useQueryClient();
+
+    // Precache all entities referenced in feature progressions
+    usePrecacheFeatureEntities(cls?.features);
 
     if (!cls) {
         return <div>Error: Class not found</div>;

@@ -1,136 +1,24 @@
 import { useQueryClient } from '@tanstack/react-query';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
-import { useAuthAuto } from '@/components/auth';
-import { FeatureProgressionDetailEdit } from '@/components/feature-system';
-import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
-import {
-    ValidatedForm,
-    ValidatedInput,
-    ValidatedCustomSelect,
-    ValidatedCustomCheckbox,
-    useValidatedForm,
-    useFormContext
-} from '@/components/forms';
-import { displayStrategyFactory } from '@/lib/formatters';
-import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
-import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
-import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
-import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
-import { CreateFeatureRequest, CreateFeatureSchema, UpdateFeatureRequest, UpdateFeatureSchema, GetFeatureResponse, FeatureProgression, FeaturePrerequisite } from '@shared/schema';
-import { DisplayType, FEATURE_PRE_REQ_LIST, FeaturePrerequisiteType, SKILL_LIST, FeatureSourceType, ABILITY_LIST } from '@shared/static-data';
-
-type FeatureFormData = CreateFeatureRequest | UpdateFeatureRequest;
+import { FeatureEditForm } from '@/components/feature-system/FeatureEditForm';
+import { Feature, FeatureProgression } from '@shared/schema';
+import { FeatureSourceType } from '@shared/static-data';
 
 export function FeatureEdit() {
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
-    const { isAdmin } = useAuthAuto();
     const queryClient = useQueryClient();
-    const [feature, setFeature] = useState<GetFeatureResponse | null>(null);
-    const [message, setMessage] = useState('');
-    const [error, setError] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
     const fromListParams = location.state?.fromListParams || '';
-    const fromPage = location.state?.fromPage || 'features'; // 'classes', 'races', or 'features'
-
-    // FeatureProgression management state
-    const [featureProgressions, setFeatureProgressions] = useState<FeatureProgression[]>([]);
-    const [isProgressionDialogOpen, setIsProgressionDialogOpen] = useState(false);
-    const [editingProgression, setEditingProgression] = useState<FeatureProgression | null>(null);
-
-    // Determine which schema to use based on whether we're creating or editing
-    const schema = id === 'new' ? CreateFeatureSchema : UpdateFeatureSchema;
-
-    // Initialize form data with default values
-    const initialFormData: FeatureFormData = {
-        name: '',
-        slug: '',
-        description: '',
-        summary: null,
-        displayInCharacterSheet: true,
-        prerequisites: [],
-    };
-
-    const [formData, setFormData] = useState<FeatureFormData>(initialFormData);
-
-    // Use the validated form hook
-    const form = useValidatedForm(
-        schema,
-        formData,
-        setFormData,
-        {
-            validateOnChange: true,
-            validateOnBlur: true,
-            debounceMs: 300
-        }
-    );
-
-    useEffect(() => {
-        const fetchFeature = async () => {
-            // Early return for new feature or invalid id
-            if (id === 'new' || !id) {
-                setFeature(null);
-                setFormData({
-                    name: '',
-                    slug: '',
-                    description: '',
-                    summary: null,
-                    displayInCharacterSheet: true,
-                    prerequisites: [],
-                });
-                return;
-            }
-
-            // Additional safety check to ensure id is a valid number
-            const numericId = parseInt(id);
-            if (isNaN(numericId)) {
-                setFeature(null);
-                setFormData({
-                    name: '',
-                    slug: '',
-                    description: '',
-                    summary: null,
-                    displayInCharacterSheet: true,
-                    prerequisites: [],
-                });
-                return;
-            }
-
-            try {
-                setIsLoading(true);
-                const fetchedFeature = await FeatureSystemApi.getFeatureById(undefined, { id: numericId });
-                setFeature(fetchedFeature);
-                setFormData(fetchedFeature);
-
-                // Load feature progressions for this feature
-                const progressions = await FeatureSystemApi.getFeatureProgressions(undefined, { id: numericId });
-                setFeatureProgressions(progressions);
-            } catch (err) {
-                setError(err instanceof Error ? err.message : 'Failed to fetch feature');
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchFeature();
-    }, [id]);
-
-
-    const handleBack = () => {
-        const backLink = getBackLink();
-        navigate(backLink);
-    };
+    const fromPage = location.state?.fromPage || 'features';
 
     const getBackLink = () => {
-        // Handle return from ListSelectionDialog
         if (location.state?.from === 'ListSelectionDialog') {
             return location.state.returnPath;
         }
 
-        // Handle return to class/race edit pages
         const parentType = location.state?.parentType;
         const parentId = location.state?.parentId;
 
@@ -142,640 +30,110 @@ export function FeatureEdit() {
             return `/races/${parentId}/edit`;
         }
 
-        // Default to list pages
+        if (parentType === 'feat' && parentId) {
+            return `/feats/${parentId}/edit`;
+        }
+
         switch (fromPage) {
             case 'classes':
                 return fromListParams ? `/classes?${fromListParams}` : '/classes';
             case 'races':
                 return fromListParams ? `/races?${fromListParams}` : '/races';
+            case 'feats':
+                return fromListParams ? `/feats?${fromListParams}` : '/feats';
             default:
                 return fromListParams ? `/features?${fromListParams}` : '/features';
         }
     };
 
-    const getBackText = () => {
-        // Handle return to class/race edit pages
+    const handleSave = async (feature: Feature, progressions: FeatureProgression[]) => {
         const parentType = location.state?.parentType;
+        const parentId = location.state?.parentId;
 
-        if (parentType === 'class') {
-            return 'Back to Edit Class';
+        if (parentType === 'class' && parentId) {
+            await queryClient.invalidateQueries({
+                queryKey: ['classes', 'item', parentId]
+            });
+            await queryClient.invalidateQueries({
+                queryKey: ['classes'],
+                exact: false
+            });
+        }
+        if (parentType === 'race' && parentId) {
+            await queryClient.invalidateQueries({
+                queryKey: ['races', 'item', parentId]
+            });
+            await queryClient.invalidateQueries({
+                queryKey: ['races'],
+                exact: false
+            });
+        }
+        if (parentType === 'feat' && parentId) {
+            await queryClient.invalidateQueries({
+                queryKey: ['feats', 'item', parentId]
+            });
+            await queryClient.invalidateQueries({
+                queryKey: ['feats'],
+                exact: false
+            });
+            await queryClient.invalidateQueries({
+                queryKey: ['feats-cache'],
+                exact: false
+            });
         }
 
-        if (parentType === 'race') {
-            return 'Back to Edit Race';
-        }
-
-        // Default to list pages
-        switch (fromPage) {
-            case 'classes':
-                return 'Back to Classes';
-            case 'races':
-                return 'Back to Races';
-            default:
-                return 'Back to Features';
-        }
-    };
-
-    const addPrerequisite = () => {
-        const newPrerequisite = {
-            type: FeaturePrerequisiteType.SkillRanks,
-            appliesToId: null,
-            minValue: 1,
-        };
-        setFormData(prev => ({
-            ...prev,
-            prerequisites: [...(prev.prerequisites || []), newPrerequisite]
-        }));
-    };
-
-    const removePrerequisite = (index: number) => {
-        setFormData(prev => ({
-            ...prev,
-            prerequisites: (prev.prerequisites || []).filter((_, i) => i !== index)
-        }));
-    };
-
-    // FeatureProgression management handlers
-    const handleAddProgression = (progression: FeatureProgression) => {
-        setFeatureProgressions(prev => [...prev, progression]);
-    };
-
-    const handleUpdateProgression = (oldProgression: FeatureProgression, updatedProgression: FeatureProgression) => {
-        setFeatureProgressions(prev => {
-            const progressionIndex = prev.findIndex(p => p.id === oldProgression.id);
-            if (progressionIndex === -1) {
-                return [...prev, updatedProgression];
-            }
-            const newFeatureProgressions = [...prev];
-            newFeatureProgressions[progressionIndex] = updatedProgression;
-            return newFeatureProgressions;
-        });
-    };
-
-    const handleRemoveProgression = (progressionId: number) => {
-        setFeatureProgressions(prev => prev.filter(p => p.id !== progressionId));
-    };
-
-    const handleEditProgression = (progression: FeatureProgression) => {
-        setEditingProgression(progression);
-        setIsProgressionDialogOpen(true);
-    };
-
-    const handleOpenProgressionDialog = () => {
-        setEditingProgression(null);
-        setIsProgressionDialogOpen(true);
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setMessage('');
-        setError(null);
-
-        // Check if form has validation errors
-        const hasErrors = form.validation.validationState.hasErrors;
-
-        if (hasErrors) {
-            setError('Please fix validation errors before submitting');
-            return;
-        }
-
-        try {
-            setIsLoading(true);
-
-            let createdFeatureId: string | null = null;
-
-            if (id === 'new') {
-                const result = await FeatureSystemApi.createFeature(formData as CreateFeatureRequest);
-                setMessage('Feature created successfully');
-                createdFeatureId = result.id;
-
-                // Invalidate feature-related caches
-                await queryClient.invalidateQueries({
-                    queryKey: ['features'],
-                    exact: false
-                });
-
-                // Save FeatureProgressions after feature creation
-                if (featureProgressions.length > 0) {
-                    const featureId = parseInt(result.id);
-                    // Remove temporary IDs from related entities and set the real featureId
-                    const progressionsForBackend = featureProgressions.map(progression => {
-                        // Only remove ID if it's a temporary ID (generated by Date.now() + Math.random())
-                        // Real database IDs should be preserved for updates
-                        const isTemporaryId = progression.id > 1000000000000; // Temporary IDs are much larger than real DB IDs
-                        const progressionData = isTemporaryId
-                            ? (() => { const { id: _, ...data } = progression; return data; })()
-                            : progression;
-
-                        return {
-                            ...progressionData,
-                            featureId: featureId,
-                            // Remove temporary IDs from related entities
-                            entities: progression.entities?.map(entity => {
-                                const { id: _, progressionId: __, feature: _feature, item: _item, domain: _domain, ...entityData } = entity;
-                                return entityData;
-                            }) || [],
-                        };
-                    });
-                    await FeatureSystemApi.updateFeatureProgressions({ progressions: progressionsForBackend }, { id: featureId });
-                }
-            } else {
-                // Additional safety check to ensure id is a valid number
-                const numericId = parseInt(id);
-                if (isNaN(numericId)) {
-                    throw new Error('Invalid feature ID');
-                }
-                await FeatureSystemApi.updateFeature(formData as UpdateFeatureRequest, { id: numericId });
-                setMessage('Feature updated successfully');
-
-                // Invalidate feature-related caches to ensure fresh data
-                await queryClient.invalidateQueries({
-                    queryKey: ['features', 'item', numericId]
-                });
-                await queryClient.invalidateQueries({
-                    queryKey: ['features', 'progressions', numericId]
-                });
-                // Also invalidate all feature lists and progressions that might include this feature
-                await queryClient.invalidateQueries({
-                    queryKey: ['features'],
-                    exact: false
-                });
-
-                // Invalidate class/race caches if feature was edited from within class/race edit pages
-                const parentType = location.state?.parentType;
-                const parentId = location.state?.parentId;
-                if (parentType === 'class' && parentId) {
-                    await queryClient.invalidateQueries({
-                        queryKey: ClassQueryHooks.getClassByIdQueryKey(parentId)
-                    });
-                    await queryClient.invalidateQueries({
-                        queryKey: ['classes'],
-                        exact: false
-                    });
-                }
-                if (parentType === 'race' && parentId) {
-                    await queryClient.invalidateQueries({
-                        queryKey: RaceQueryHooks.getRaceByIdQueryKey(parentId)
-                    });
-                    await queryClient.invalidateQueries({
-                        queryKey: ['races'],
-                        exact: false
-                    });
-                }
-
-                // Save FeatureProgressions after feature update
-                if (featureProgressions.length > 0) {
-                    // Remove temporary IDs from related entities
-                    const progressionsForBackend = featureProgressions.map(progression => {
-                        // Only remove ID if it's a temporary ID (generated by Date.now() + Math.random())
-                        // Real database IDs should be preserved for updates
-                        const isTemporaryId = progression.id > 1000000000000; // Temporary IDs are much larger than real DB IDs
-                        const progressionData = isTemporaryId
-                            ? (() => { const { id: _, ...data } = progression; return data; })()
-                            : progression;
-
-                        return {
-                            ...progressionData,
-                            // Remove temporary IDs from related entities
-                            entities: progression.entities?.map(entity => {
-                                const { id: _, progressionId: __, feature: _feature, item: _item, domain: _domain, ...entityData } = entity;
-                                return entityData;
-                            }) || [],
-                        };
-                    });
-                    await FeatureSystemApi.updateFeatureProgressions({ progressions: progressionsForBackend }, { id: numericId });
-                }
-            }
-
-            // Navigate back after a short delay
-            setTimeout(() => {
-                if (location.state?.from === 'ListSelectionDialog' && createdFeatureId) {
-                    // Navigate back to parent with new feature data
-                    navigate(location.state.returnPath, {
-                        state: {
-                            newFeature: {
-                                featureId: parseInt(createdFeatureId),
-                                name: formData.name,
-                                description: formData.description,
-                                slug: formData.slug,
-                                level: 1
-                            }
+        setTimeout(() => {
+            if (location.state?.from === 'ListSelectionDialog' && feature.id) {
+                navigate(location.state.returnPath, {
+                    state: {
+                        newFeature: {
+                            featureId: feature.id,
+                            name: feature.name,
+                            description: feature.description,
+                            slug: feature.slug,
+                            level: 1
                         }
-                    });
-                } else {
-                    navigate(getBackLink());
-                }
-            }, 1000);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to save feature');
-        } finally {
-            setIsLoading(false);
-        }
+                    }
+                });
+            } else {
+                navigate(getBackLink());
+            }
+        }, 1000);
     };
 
-    if (!isAdmin) {
-        return (
-            <div className="flex flex-col items-center justify-center h-64">
-                <p className="text-red-500 mb-4">Access denied. Admin privileges required.</p>
-                <button
-                    onClick={handleBack}
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                    {getBackText()}
-                </button>
-            </div>
-        );
+    const handleCancel = () => {
+        navigate(getBackLink());
+    };
+
+    const parentType = location.state?.parentType;
+    const parentId = location.state?.parentId;
+
+    let context;
+    if (parentType && parentId) {
+        const sourceTypeMap: Record<string, FeatureSourceType> = {
+            class: FeatureSourceType.Class,
+            race: FeatureSourceType.Race,
+            domain: FeatureSourceType.Domain,
+            feat: FeatureSourceType.Feat
+        };
+
+        context = {
+            sourceType: sourceTypeMap[parentType] || FeatureSourceType.None,
+            parentId: parentId,
+            parentType: parentType as 'class' | 'race' | 'domain' | 'feat'
+        };
     }
 
-    if (isLoading && !formData) {
-        return <div className="flex justify-center items-center h-64">Loading...</div>;
-    }
-
-    if (error && !formData) {
-        return (
-            <div className="flex flex-col items-center justify-center h-64">
-                <p className="text-red-500 mb-4">{error}</p>
-                <button
-                    onClick={handleBack}
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                    {getBackText()}
-                </button>
-            </div>
-        );
-    }
-
-    if (!formData) {
-        return <div>No feature data available</div>;
-    }
+    const featureIdNum = id === 'new' ? 'new' : (id ? parseInt(id) : 'new');
 
     return (
-        <div className="max-w-4xl mx-auto p-6">
-            <div className="mb-6">
-                <h1 className="text-3xl font-bold">
-                    {id === 'new' ? 'Create New Feature' : 'Edit Feature'}
-                </h1>
-            </div>
-
-            {message && (
-                <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-md dark:bg-green-900/20 dark:border-green-800">
-                    <p className="text-green-700 dark:text-green-300">{message}</p>
-                </div>
-            )}
-
-            {error && (
-                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md dark:bg-red-900/20 dark:border-red-800">
-                    <p className="text-red-700 dark:text-red-300">{error}</p>
-                </div>
-            )}
-
-            <ValidatedForm
-                onSubmit={handleSubmit}
-                validationState={form.validation.validationState}
-                isLoading={isLoading}
-                formData={formData}
-                setFormData={setFormData}
-                validation={form.validation}
-            >
-                <div className="grid grid-cols-1 gap-4">
-                    <div className="space-y-2 w-full">
-                        <ValidatedInput
-                            field="name"
-                            label="Feature Name"
-                            type="text"
-                            componentExtraClassName="flex items-center gap-2"
-                            labelExtraClassName="w-30"
-                            inputExtraClassName="w-auto"
-                            required
-                            placeholder="Enter feature name"
-                            data-1p-ignore="true"
-                        />
-
-                        <ValidatedInput
-                            field="slug"
-                            label="Feature Slug"
-                            type="text"
-                            componentExtraClassName="flex items-center gap-2"
-                            labelExtraClassName="w-30"
-                            inputExtraClassName="w-auto"
-                            required
-                            placeholder="Enter feature slug (URL-friendly identifier)"
-                            disabled={id !== 'new'} // Can't change slug when editing existing features
-                        />
-                    </div>
-                </div>
-
-                {/* Description */}
-                <div className="mt-6">
-                    <div className="space-y-2">
-                        <ValidatedInput
-                            field="description"
-                            label="Description"
-                            type="textarea"
-                            labelExtraClassName="mb-2"
-                            inputExtraClassName="w-full"
-                            placeholder="Enter feature description (supports markdown)"
-                            rows={8}
-                            required
-                        />
-                    </div>
-                </div>
-
-                {/* Summary */}
-                <div className="mt-6">
-                    <div className="space-y-2">
-                        <ValidatedInput
-                            field="summary"
-                            label="Summary (for PDF character sheets)"
-                            type="textarea"
-                            labelExtraClassName="mb-2"
-                            inputExtraClassName="w-full"
-                            placeholder="Enter brief summary for character sheets (plain text, no markdown). Can contain template placeholders like {{feature.wild-shape.entities.uses.formattedValue}}"
-                            rows={4}
-                        />
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                            This summary will be displayed on PDF character sheets. Keep it concise and avoid markdown formatting. You can use template placeholders like {`{{feature.wild-shape.entities.uses.formattedValue}}`} for dynamic content.
-                        </p>
-                    </div>
-                </div>
-
-                {/* Display In Character Sheet */}
-                <div className="mt-6">
-                    <div className="space-y-2">
-                        <ValidatedCustomCheckbox
-                            field="displayInCharacterSheet"
-                            label="Display in Character Sheet"
-                            componentExtraClassName="flex items-center gap-2"
-                        />
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                            When unchecked, this feature will be hidden from PDF character sheet output. Useful for features like "ex-clerics" that should not appear on character sheets.
-                        </p>
-                    </div>
-                </div>
-
-                {/* Prerequisites Section */}
-                <div className="mt-6">
-                    <div className="flex justify-between items-center mb-2">
-                        <h2 className="text-xl font-semibold">Prerequisites</h2>
-                        <button
-                            type="button"
-                            onClick={addPrerequisite}
-                            className="px-4 py-2 bg-green-600 rounded hover:bg-green-700 text-white"
-                        >
-                            Add Prerequisite
-                        </button>
-                    </div>
-                    {formData.prerequisites && formData.prerequisites.length > 0 ? (
-                        <div className="space-y-4 border p-4 rounded-md dark:border-gray-600">
-                            {formData.prerequisites.map((prerequisite, index) => (
-                                <div key={index} className="relative p-4 border rounded-md bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
-                                    <button
-                                        type="button"
-                                        onClick={() => removePrerequisite(index)}
-                                        className="absolute top-2 right-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600"
-                                        aria-label="Remove prerequisite"
-                                    >
-                                        ✕
-                                    </button>
-                                    <PrerequisiteDetailForm index={index} />
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-gray-500 dark:text-gray-400 italic p-4 border rounded-md dark:border-gray-600">
-                            No prerequisites added. Click "Add Prerequisite" to add one.
-                        </div>
-                    )}
-                </div>
-
-                {/* Feature Progressions Section */}
-                <div className="mt-6">
-                    <div className="flex justify-between items-center mb-2">
-                        <h2 className="text-xl font-semibold">Feature Progressions</h2>
-                        <button
-                            type="button"
-                            onClick={handleOpenProgressionDialog}
-                            className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={id === 'new' && (!formData.name || !formData.slug)}
-                            title={id === 'new' && (!formData.name || !formData.slug) ? 'Please fill in feature name and slug first' : ''}
-                        >
-                            Add Progression
-                        </button>
-                    </div>
-                    {featureProgressions.length > 0 ? (
-                        <div className="space-y-4 border p-4 rounded-md dark:border-gray-600">
-                            {featureProgressions.map((progression) => (
-                                <div key={progression.id} className="relative p-4 border rounded-md bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveProgression(progression.id)}
-                                        className="absolute top-2 right-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600"
-                                        aria-label="Remove progression"
-                                    >
-                                        ✕
-                                    </button>
-                                    <div className="mb-2">
-                                        <h3 className="text-lg font-medium">
-                                            {progression.feature?.name || `Feature ${progression.featureId}`}
-                                        </h3>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                                            Level: {progression.level} | Source Type: {Object.keys(FeatureSourceType).find(key => FeatureSourceType[key as keyof typeof FeatureSourceType] === progression.sourceType) || `Unknown (${progression.sourceType})`}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        {progression.entities && progression.entities.length > 0 && (
-                                            <div>
-                                                <h4 className="font-medium">Entities:</h4>
-                                                <ul className="text-sm text-gray-600 dark:text-gray-400">
-                                                    {progression.entities.map((entity, index) => {
-                                                        const strategy = displayStrategyFactory.createStrategy(DisplayType.Edit);
-                                                        const result = strategy.format({ ...progression, entities: [entity] });
-                                                        return (
-                                                            <li key={index}>
-                                                                {result.formattedValue || 'No preview'}
-                                                            </li>
-                                                        );
-                                                    })}
-                                                </ul>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleEditProgression(progression)}
-                                        className="mt-2 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
-                                    >
-                                        Edit Progression
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-gray-500 dark:text-gray-400 italic p-4 border rounded-md dark:border-gray-600">
-                            No progressions added. Click "Add Progression" to add one.
-                        </div>
-                    )}
-                </div>
-
-                <div className="flex justify-end space-x-4 mt-8">
-                    <button
-                        type="button"
-                        onClick={handleBack}
-                        className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                        disabled={isLoading}
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isLoading || form.validation.validationState.hasErrors}
-                    >
-                        {isLoading ? 'Saving...' : (id === 'new' ? 'Create Feature' : 'Update Feature')}
-                    </button>
-                </div>
-            </ValidatedForm>
-
-            {/* Feature Progression Dialog */}
-            <FeatureProgressionDetailEdit
-                isOpen={isProgressionDialogOpen}
-                onClose={() => {
-                    setIsProgressionDialogOpen(false);
-                    setEditingProgression(null);
-                }}
-                progression={editingProgression}
-                onSave={(progression) => {
-                    if (editingProgression) {
-                        handleUpdateProgression(editingProgression, progression);
-                    } else {
-                        handleAddProgression(progression);
-                    }
-                    setIsProgressionDialogOpen(false);
-                    setEditingProgression(null);
-                }}
-                preSelectedFeature={feature ? {
-                    id: feature.id,
-                    name: feature.name,
-                    description: feature.description,
-                    slug: feature.slug,
-                    displayInCharacterSheet: feature.displayInCharacterSheet
-                } : id === 'new' ? {
-                    id: 0, // Will be set by the backend when feature is created
-                    name: formData.name || 'New Feature',
-                    description: formData.description || '',
-                    slug: formData.slug || 'new-feature',
-                    displayInCharacterSheet: formData.displayInCharacterSheet ?? true
-                } : undefined}
-            />
-        </div>
-    );
-}
-
-interface PrerequisiteDetailFormProps {
-    index: number;
-}
-
-function PrerequisiteDetailForm({ index }: PrerequisiteDetailFormProps) {
-    const { formData, setFormData: _setFormData } = useFormContext();
-    const prerequisites = formData.prerequisites as FeaturePrerequisite[] || [];
-    const prerequisite = prerequisites[index] || { type: undefined };
-
-    // Get feats for Feat prerequisite selector
-    const { data: featsResponse } = FeatQueryHooks.useGetFeats({});
-    const featOptions = featsResponse?.results || [];
-
-    // Get classes for ClassLevel prerequisite selector
-    const { data: classesCacheData } = CacheQueryHooks.useClassesCache();
-    const classOptions = classesCacheData?.results || [];
-
-    // Determine if minValue should be shown (not for Feat prerequisites)
-    const showMinValue = prerequisite.type !== FeaturePrerequisiteType.Feat;
-
-    return (
-        <div className="space-y-4">
-            <div>
-                <ValidatedCustomSelect
-                    field={`prerequisites.${index}.type`}
-                    label="Prerequisite Type"
-                    required
-                    options={FEATURE_PRE_REQ_LIST}
-                    placeholder="Select prerequisite type"
-                    componentExtraClassName="flex items-center gap-2"
-                    nested
-                />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-                {prerequisite.type === FeaturePrerequisiteType.SkillRanks && (
-                    <div>
-                        <ValidatedCustomSelect
-                            field={`prerequisites.${index}.appliesToId`}
-                            label="Skill"
-                            required
-                            options={SKILL_LIST}
-                            placeholder="Select skill"
-                            componentExtraClassName="flex items-center gap-2"
-                            nested
-                        />
-                    </div>
-                )}
-
-                {prerequisite.type === FeaturePrerequisiteType.AbilityScore && (
-                    <div>
-                        <ValidatedCustomSelect
-                            field={`prerequisites.${index}.appliesToId`}
-                            label="Ability Score"
-                            required
-                            options={ABILITY_LIST}
-                            placeholder="Select ability score"
-                            componentExtraClassName="flex items-center gap-2"
-                            nested
-                        />
-                    </div>
-                )}
-
-                {prerequisite.type === FeaturePrerequisiteType.Feat && (
-                    <div>
-                        <ValidatedCustomSelect
-                            field={`prerequisites.${index}.appliesToId`}
-                            label="Feat"
-                            required
-                            options={featOptions}
-                            placeholder="Select feat"
-                            componentExtraClassName="flex items-center gap-2"
-                            nested
-                        />
-                    </div>
-                )}
-
-                {prerequisite.type === FeaturePrerequisiteType.ClassLevel && (
-                    <div>
-                        <ValidatedCustomSelect
-                            field={`prerequisites.${index}.appliesToId`}
-                            label="Class"
-                            required
-                            options={classOptions}
-                            placeholder="Select class"
-                            componentExtraClassName="flex items-center gap-2"
-                            nested
-                        />
-                    </div>
-                )}
-
-                {showMinValue && (
-                    <div>
-                        <ValidatedInput
-                            field={`prerequisites.${index}.minValue`}
-                            label="Minimum Value"
-                            type="number"
-                            min={1}
-                            required
-                            componentExtraClassName="flex items-center gap-2"
-                            inputExtraClassName="w-16"
-                            nested
-                        />
-                    </div>
-                )}
-            </div>
-        </div>
+        <FeatureEditForm
+            featureId={featureIdNum}
+            mode="embedded"
+            onSave={handleSave}
+            onCancel={handleCancel}
+            context={context}
+            showHeader={true}
+        />
     );
 }

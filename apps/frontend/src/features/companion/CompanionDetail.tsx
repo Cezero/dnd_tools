@@ -1,9 +1,10 @@
 import { Link, useParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
+import { FeatureDisplay } from '@/components/feature-system/FeatureDisplay';
 import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
-import { COMPANION_TYPE_MAP, COMPANION_BENEFIT_TYPE_BY_ID, CompanionBenefitType } from '@shared/static-data';
-import { formatCompanionBenefit } from './CompanionUtil';
+import { COMPANION_TYPE_MAP } from '@shared/static-data';
+import { SpecialFeatureId, FeatureSourceType } from '@shared/static-data';
 
 export function CompanionDetail() {
     const { id } = useParams();
@@ -18,6 +19,11 @@ export function CompanionDetail() {
         pathParams: { id: isValidId ? companionId! : 0 },
         enabled: isValidId
     });
+
+    // Get companion benefit progression from companion.features
+    const benefitProgression = companion?.features?.find(
+        p => p.featureId === SpecialFeatureId.CompanionBenefit && p.sourceType === FeatureSourceType.Companion
+    ) || null;
 
     if (isLoading) return (
         <div className="pt-8">
@@ -85,26 +91,19 @@ export function CompanionDetail() {
                                 <strong>Minimum Level:</strong> {companion.minLevel}
                             </div>
                         )}
-                        {companion.benefits && companion.benefits.length > 0 && (
+                        {benefitProgression && benefitProgression.entities && benefitProgression.entities.length > 0 ? (
                             <div>
                                 <h3 className="text-lg font-semibold mb-2">Benefits</h3>
-                                <div className="flex flex-wrap items-center gap-2">
-                                    {companion.benefits.map((benefit, index) => {
-                                        // Format the entire benefit using the formatting system
-                                        const formattedBenefit = formatCompanionBenefit(benefit);
-                                        return (
-                                            <div key={index} className="rounded border p-2 dark:border-gray-500">
-                                                {formattedBenefit}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                                <FeatureDisplay
+                                    feature={benefitProgression.feature}
+                                    progressions={[benefitProgression]}
+                                    showAddProgressionButton={false}
+                                />
                             </div>
-                        )}
+                        ) : null}
                     </div>
                 </div>
             </div>
         </div>
     );
 }
-

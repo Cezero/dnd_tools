@@ -1,3 +1,5 @@
+import type { QueryClient } from '@tanstack/react-query';
+
 import type {
     FeatureProgression,
     FeatureEntity,
@@ -33,6 +35,16 @@ import {
     BreakdownAnalyzer,
     RegistryManager
 } from './utils';
+import { extractEntityIdsForPrecaching } from './utils/entity-extractor';
+import {
+    precacheFeat,
+    precacheFeature,
+    precacheSpell,
+    precacheDomain,
+    precacheClass,
+    precacheSkill,
+    precacheRace,
+} from './utils/precache-helpers';
 
 // Constants
 const MAX_CHARACTER_LEVEL = 20; // D&D standard maximum character level
@@ -291,6 +303,73 @@ abstract class DisplayStrategyBase implements DisplayStrategy {
                 breakdown: { components: [] }
             };
         }
+    }
+
+    /**
+     * Static method to precache all entities referenced in feature progressions.
+     * This can be called imperatively before formatting when not using the React hook.
+     *
+     * @param progressions - Feature progressions to extract entity IDs from
+     * @param queryClient - TanStack Query client for cache access
+     * @returns Promise that resolves when all entities are precached
+     *
+     * @example
+     * ```typescript
+     * await DisplayStrategyBase.precacheEntities(progressions, queryClient);
+     * const result = strategy.format(progressions, { queryClient });
+     * ```
+     */
+    static async precacheEntities(
+        progressions: FeatureProgression[],
+        queryClient: QueryClient
+    ): Promise<void> {
+        if (!progressions || progressions.length === 0) {
+            return;
+        }
+
+        // Extract all entity IDs that need precaching
+        const entityIds = extractEntityIdsForPrecaching(progressions);
+
+        // Create promises for all precaching operations
+        const precachePromises: Promise<void>[] = [];
+
+        // Precache feats
+        for (const featId of entityIds.featIds) {
+            precachePromises.push(precacheFeat(queryClient, featId));
+        }
+
+        // Precache features
+        for (const featureId of entityIds.featureIds) {
+            precachePromises.push(precacheFeature(queryClient, featureId));
+        }
+
+        // Precache spells
+        for (const spellId of entityIds.spellIds) {
+            precachePromises.push(precacheSpell(queryClient, spellId));
+        }
+
+        // Precache domains
+        for (const domainId of entityIds.domainIds) {
+            precachePromises.push(precacheDomain(queryClient, domainId));
+        }
+
+        // Precache classes
+        for (const classId of entityIds.classIds) {
+            precachePromises.push(precacheClass(queryClient, classId));
+        }
+
+        // Precache skills
+        for (const skillId of entityIds.skillIds) {
+            precachePromises.push(precacheSkill(queryClient, skillId));
+        }
+
+        // Precache races
+        for (const raceId of entityIds.raceIds) {
+            precachePromises.push(precacheRace(queryClient, raceId));
+        }
+
+        // Wait for all precaching to complete
+        await Promise.all(precachePromises);
     }
 }
 

@@ -6,13 +6,18 @@ export const FeatureSystemService = {
     async getItemsByProficiencyType(proficiencyTypeId: number) {
         const proficiencyInfo = PROFICIENCY_TYPES[proficiencyTypeId];
 
+        if (!proficiencyInfo) {
+            return {
+                results: [],
+                total: 0
+            };
+        }
+
         try {
             const queryResult = await ItemQueryHooks.itemQuery({
-                requestData: {
-                    queryType: 'byCategory',
-                    typeId: proficiencyInfo?.itemTypeId,
-                    category: proficiencyInfo?.category
-                }
+                queryType: 'byCategory',
+                typeId: proficiencyInfo.itemTypeId.toString(),
+                category: proficiencyInfo.category.toString()
             });
 
             // Apply filtering logic

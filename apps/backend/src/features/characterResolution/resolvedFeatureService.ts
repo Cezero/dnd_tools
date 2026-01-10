@@ -1,5 +1,5 @@
-import type { FeatureProgression, FeatureEntity } from '@shared/schema';
-import { EntityType, EntityAppliesToType, SpecialFeatureId } from '@shared/static-data';
+import type { FeatureProgression, FeatureEntity, CharacterWithAllDetailsResponse } from '@shared/schema';
+import { EntityType, EntityAppliesToType, SpecialFeatureId, FORMULA_MAP, FormulaId, GetAbilityModifier } from '@shared/static-data';
 
 /**
  * Backend service for extracting resolved feature data
@@ -134,7 +134,7 @@ export class ResolvedFeatureService {
         for (const progression of resolvedProgressions) {
             if (progression.entities) {
                 for (const entity of progression.entities) {
-                    if ((entity.type === EntityType.Other || entity.type === EntityType.Proficiency) &&
+                    if (entity.type === EntityType.Other &&
                         entity.appliesTo === EntityAppliesToType.Feat) {
                         if (entity.appliesToId) {
                             grantedFeats.push(entity);
@@ -237,6 +237,184 @@ export class ResolvedFeatureService {
             return 'Class';
         }
         return 'Unknown Source';
+    }
+
+    /**
+     * Calculate available spellbook spell selections from resolved progressions
+     * Sums quantities from all spellbook spell progressions (class + feats) for a given level
+     */
+    /**
+     * Calculate total free spellbook spells available at a given character level.
+     * 
+     * Sums quantities from all spellbook spell progressions (class features and feats)
+     * that are active at or before the specified level. Supports formula-based calculations
+     * for dynamic spell grants (e.g., "3 + INT" at 1st level, "2 spells per level" from 2nd onward).
+     * 
+     * **Formula Support**:
+     * - `ABILITY_BASED`: Base value + ability modifier (e.g., "3 + INT" for 1st level wizard)
+     * - `STATIC_EVERY_N_LEVELS`: Fixed value every N levels (e.g., "2 spells per level" from 2nd level)
+     * 
+     * **Filtering**:
+     * - Only includes progressions active at or before the specified level
+     * - Filters by classId if progression is class-specific
+     * - Only processes entities with `EntityType.Choice` and `EntityAppliesToType.SpellbookSpell`
+     * 
+     * **Usage**:
+     * Used by `characterService.addSpellKnown()` to validate free grant limits for spellbook classes.
+     * Also used by `characterService.getAvailableSpellsForClass()` to display available free spells.
+     * 
+     * @param resolvedProgressions - All resolved feature progressions for the character
+     * @param level - The character level to calculate available spells for
+     * @param classId - The class to calculate spells for (filters class-specific progressions)
+     * @param character - Character data with ability scores (needed for ABILITY_BASED formulas)
+     * @returns Total number of free spellbook spells available at the specified level
+     * 
+     * @example
+     * // A 1st-level wizard with INT 16 (+3 modifier) and base grant of "3 + INT" = 6 spells
+     * // A 3rd-level wizard with same INT and "2 spells per level" from 2nd level = 6 (1st) + 4 (2nd-3rd) = 10 spells
+     * 
+     * @see characterService.addSpellKnown - Uses this to validate free grant limits
+     * @see characterService.getAvailableSpellsForClass - Uses this to display available free spells
+     */
+    static getAvailableSpellbookSpells(
+        resolvedProgressions: FeatureProgression[],
+        level: number,
+        classId: number,
+        character: CharacterWithAllDetailsResponse
+    ): number {
+        let totalSpells = 0;
+
+        for (const progression of resolvedProgressions) {
+            // Only check progressions that are active at or before this level
+            if (progression.level > level) {
+                continue;
+            }
+
+            // Filter by classId if progression is class-specific
+            if (progression.classId !== null && progression.classId !== classId) {
+                continue;
+            }
+
+            if (!progression.entities) {
+                continue;
+            }
+
+            for (const entity of progression.entities) {
+                // Check if this entity is a spellbook spell choice
+                if (entity.type !== EntityType.Choice ||
+                    entity.appliesTo !== EntityAppliesToType.SpellbookSpell) {
+                    continue;
+                }
+
+                // Calculate the value for this entity at the given level
+                let entityValue = 0;
+
+                if (entity.formulaParams) {
+                    // Calculate using formula
+                    const formulaDef = FORMULA_MAP[entity.formulaParams.formulaId];
+                    if (formulaDef) {
+                        const formulaStartLevel = entity.formulaParams.formulaStartLevel ?? progression.level;
+                        
+                        // Only calculate if level is at or after the formula start level
+                        if (level >= formulaStartLevel) {
+                            const params: any = {
+                                level,
+                                startLevel: progression.level,
+                                scalingValue: entity.value ?? 0,
+                                interval: entity.formulaParams.interval ?? 1,
+                                formulaStartLevel: entity.formulaParams.formulaStartLevel,
+                                context: {
+                                    character: {
+                                        abilityScores: Object.fromEntries(
+                                            character.abilityScores.map(a => [a.abilityId, a.value])
+                                        )
+                                    }
+                                }
+                            };
+
+                            // Add ability-specific params for ABILITY_BASED formula
+                            if (entity.formulaParams.formulaId === FormulaId.ABILITY_BASED && entity.formulaParams.abilityId) {
+                                params.abilityId = entity.formulaParams.abilityId;
+                                params.baseValue = entity.value ?? 0;
+                            }
+
+                            try {
+                                const calculatedValue = formulaDef.calculate(params);
+                                if (typeof calculatedValue === 'number' && calculatedValue > 0) {
+                                    entityValue = calculatedValue;
+                                }
+                            } catch (error) {
+                                console.error('Error calculating formula value:', error);
+                            }
+                        }
+                    }
+                } else if (entity.value !== null && entity.value !== undefined) {
+                    // Static value - only count if level is at or after progression level
+                    if (level >= progression.level) {
+                        entityValue = entity.value;
+                    }
+                }
+
+                totalSpells += entityValue;
+            }
+        }
+
+        return totalSpells;
+    }
+
+    /**
+     * Check if a class has a feature grant for all 0th level spellbook spells.
+     * 
+     * Detects the feature-based 0th level spell grant for spellbook classes. This grant
+     * is represented by an `EntityType.Other` + `EntityAppliesToType.SpellbookSpell` entity
+     * with `appliesToId: 0` (0th level) and `appliesToSubId: -1` (all spells).
+     * 
+     * **Feature-Based Approach**:
+     * Unlike other spell levels, 0th level spells for spellbook classes are not stored in
+     * `AdvancementSpell` records. Instead, they are considered "known" if this grant feature
+     * exists in the resolved progressions. This is similar to how proficiencies are handled.
+     * 
+     * **Usage**:
+     * Used by `characterService.getAvailableSpellsForClass()` to determine if 0th level
+     * spells should be marked as "known" for spellbook classes. Also used by frontend
+     * components to display 0th level spells correctly.
+     * 
+     * @param resolvedProgressions - All resolved feature progressions for the character
+     * @param classId - The class to check for the grant (filters class-specific progressions)
+     * @returns True if the class has the 0th level spell grant feature, false otherwise
+     * 
+     * @see characterService.getAvailableSpellsForClass - Uses this to mark 0th level spells as known
+     * @see EntityType.Other - The entity type used for feature-based grants
+     * @see EntityAppliesToType.SpellbookSpell - The appliesTo type for spellbook spell grants
+     */
+    static hasZeroLevelSpellbookSpellsGrant(
+        resolvedProgressions: FeatureProgression[],
+        classId: number
+    ): boolean {
+        for (const progression of resolvedProgressions) {
+            // Filter by classId if progression is class-specific
+            if (progression.classId !== null && progression.classId !== classId) {
+                continue;
+            }
+
+            if (!progression.entities) {
+                continue;
+            }
+
+            for (const entity of progression.entities) {
+                // Check if this entity grants all 0th level spellbook spells
+                if (
+                    entity.type === EntityType.Other &&
+                    entity.appliesTo === EntityAppliesToType.SpellbookSpell &&
+                    entity.appliesToId === 0 &&
+                    (entity.appliesToSubId === -1 || entity.appliesToSubId === null)
+                ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }
 

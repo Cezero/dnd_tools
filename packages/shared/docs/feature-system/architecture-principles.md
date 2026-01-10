@@ -107,6 +107,9 @@ erDiagram
         int level
         int classId FK
         int raceId FK
+        int domainId FK
+        int featId FK
+        int companionId FK
     }
     
     FeaturePrerequisite {
@@ -162,10 +165,10 @@ erDiagram
 - **Examples**: "Low-Light Vision", "Animal Companion", "Evasion"
 
 #### **FeatureProgression (Specific Implementation)**
-- **Purpose**: Links features to specific classes/races with context
-- **Data**: Feature ID, source type, level, class/race ID
-- **Dependencies**: References single Feature
-- **Examples**: "Elf gets Low-Light Vision at level 1", "Rogue gets Evasion at level 2"
+- **Purpose**: Links features to specific sources (classes, races, domains, feats, companions) with context
+- **Data**: Feature ID, source type, level, source ID (classId, raceId, domainId, featId, or companionId)
+- **Dependencies**: References single Feature, optional source entity (Class, Race, Domain, Feat, or Companion)
+- **Examples**: "Elf gets Low-Light Vision at level 1", "Rogue gets Evasion at level 2", "Familiar grants Alertness feat", "Animal Companion grants +2 to Handle Animal"
 
 #### **FeatureEntity (Unified Effects)**
 - **Purpose**: Unified model for all feature effects with type-based differentiation

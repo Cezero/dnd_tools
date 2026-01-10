@@ -10,7 +10,8 @@ The frontend implementation follows the shared [Frontend Component Architecture]
 
 **Source Files**: 
 - Core Components: `frontend/src/features/feat/FeatEdit.tsx`, `frontend/src/features/feat/FeatList.tsx`, `frontend/src/features/feat/FeatDetail.tsx`
-- Specialized Components: `frontend/src/features/feat/FeatBenefitEdit.tsx`, `frontend/src/features/feat/FeatPrereqEdit.tsx`
+- Character Components: `frontend/src/features/character/tabs/FeatsTab.tsx` (character feat selection)
+- Class Components: `frontend/src/features/class/tabs/ProficienciesTab.tsx` (class proficiency management)
 - API Layer: `frontend/src/features/feat/FeatApi.ts`
 - Configuration: `frontend/src/features/feat/FeatConfig.ts`
 - Columns: `frontend/src/features/feat/FeatColumns.ts`
@@ -31,8 +32,7 @@ The feat system frontend follows the shared [Component Architecture](../applicat
 **FeatList**: Primary component for displaying and managing feat collections
 **FeatDetail**: Container component for feat detail views with navigation
 **FeatEdit**: Main feat creation and editing interface with comprehensive form handling
-**FeatBenefitEdit**: Specialized component for managing feat benefits
-**FeatPrereqEdit**: Specialized component for managing feat prerequisites
+**FeaturesManager**: Shared component for managing FeatureProgression entries (benefits and prerequisites)
 **FeatApi**: API client for backend communication
 
 ## 🔧 **Core Components**
@@ -42,12 +42,17 @@ The feat system frontend follows the shared [Component Architecture](../applicat
 The primary component for displaying and managing feat collections. This component follows the shared [List Components](../application-overview/frontend-components.md#list-components) pattern.
 
 **Feat-Specific Features**:
-- **Feat Attributes**: Sortable columns for feat attributes (name, type, repeatable, fighter bonus, etc.)
-- **Feat Filtering**: Filter by feat type, repeatable status, fighter bonus status
-- **Feat Selection**: Select feats for bulk operations or detailed viewing
+- **Feat Attributes**: Sortable columns for feat attributes (name, description, summary)
+- **Feat Filtering**: Filter by feat name, description, or summary
+- **Description Display**: Descriptions are truncated at the first newline character for list view
+- **Feature Information**: Uses `FeatWithFeatureInfo` type which includes description and summary from associated Features
+
+**Data Source**: Uses `getAllFeatsWithFeatureInfo()` endpoint which returns a composite schema:
+- `id` and `name` from Feat table
+- `description` and `summary` from associated Feature table (via FeatureProgression)
 
 **User Workflow**:
-1. **Browse Feats**: View paginated list of available feats
+1. **Browse Feats**: View paginated list of available feats with descriptions and summaries
 2. **Search and Filter**: Use search and filter controls to find specific feats
 3. **Select Feat**: Click on feat row to view detailed information
 4. **Navigate**: Use pagination to browse through all available feats
@@ -62,9 +67,8 @@ Comprehensive display component for viewing complete feat information. This comp
 **Feat-Specific Features**:
 - **Feat Information**: Feat name, type, and basic characteristics
 - **Feat Details**: Clear, readable presentation of all feat attributes
-- **Feat Benefits**: Display feat benefits and their effects
-- **Feat Prerequisites**: Display feat prerequisites and requirements
-- **Feat Descriptions**: Display feat descriptions, effects, and special rules
+- **Feature Progressions**: Display feat benefits and prerequisites via FeatureProgression entries
+- **Feature Descriptions**: Display feat descriptions and summaries from associated Features
 
 **User Workflow**:
 1. **View Overview**: See feat name, type, and basic information
@@ -74,66 +78,71 @@ Comprehensive display component for viewing complete feat information. This comp
 
 **Source File**: `frontend/src/features/feat/FeatDetail.tsx`
 
+### **FeatsTab Component**
+
+Component for character feat selection and management. This component is part of the character management system.
+
+**Feat-Specific Features**:
+- **Backend Filtering**: Uses `/characters/:characterId/resolution/available-feats` endpoint for filtered feat lists
+- **Prerequisite Checking**: Backend filters feats based on prerequisites, owned feats, and proficiency conflicts
+- **Owned Feats Display**: Displays character's owned feats from complete feat list (not filtered list)
+- **Feature Information**: Displays feat descriptions and summaries from associated Features
+- **Search Functionality**: Search includes feat name, description, and summary
+
+**Filtering Logic** (handled by backend):
+- **Prerequisites**: Only shows feats the character meets prerequisites for
+- **Owned Feats**: Filters out feats the character already has (unless repeatable)
+- **Proficiency Conflicts**: Filters out feats that provide proficiencies the character already has as "all" proficiencies (e.g., Cleric with all heavy armor won't see Heavy Armor Proficiency feat)
+
+**User Workflow**:
+1. **View Owned Feats**: See all feats the character currently has
+2. **Browse Available Feats**: View filtered list of feats the character can select
+3. **Search and Filter**: Use search to find specific feats
+4. **Select Feat**: Click to add feat to character
+5. **View Details**: See feat descriptions and summaries from associated Features
+
+**Source File**: `frontend/src/features/character/tabs/FeatsTab.tsx`
+
+### **ProficienciesTab Component**
+
+Component for managing class proficiencies. This component uses the Feature system for proficiency display.
+
+**Feat-Specific Features**:
+- **Feature Formatting**: Proficiencies are displayed using the feature formatting system (CharacterSheetDisplayStrategy)
+- **Proficiency Selection**: Uses `PROFICIENCY_TYPE_ENUM` directly for selecting proficiency types
+- **No Proficiency Feats**: No longer uses "proficiency feats" - proficiencies are identified via FeatureEntity entries with `appliesTo: EntityAppliesToType.Proficiency`
+
+**User Workflow**:
+1. **View Current Proficiencies**: See all proficiencies granted to the class via FeatureProgressions
+2. **Add Proficiency**: Select proficiency type and items using Feature system
+3. **Format Display**: Proficiencies are formatted using feature display strategies
+
+**Source File**: `frontend/src/features/class/tabs/ProficienciesTab.tsx`
+
 ### **FeatEdit Component**
 
 Comprehensive editing interface for creating and modifying feats. This component follows the shared [Edit Components](../application-overview/frontend-components.md#edit-components) pattern.
 
 **Feat-Specific Features**:
-- **Feat Data Entry**: Forms for entering and modifying feat data
+- **Feat Data Entry**: Forms for entering and modifying feat metadata (name, type, flags)
 - **Feat Validation**: Real-time validation with user-friendly error messages
-- **Feat Complex Data**: Handle complex nested data like benefits and prerequisites
-- **Feat User Guidance**: Guide users through the feat creation/editing process
+- **FeatureProgression Management**: Manage benefits and prerequisites through FeaturesManager component
+- **New Feat Support**: Supports creating new feats with unsaved feature progressions (stored in `unsavedProgressions` state)
+- **Feature Creation**: When creating a new feat, feature progressions can be added before saving and are included in the create request
 
 **User Workflow**:
-1. **Enter Basic Info**: Fill in feat name, type, and basic attributes
-2. **Configure Descriptions**: Set feat descriptions, benefits, and effects
-3. **Add Benefits**: Configure feat benefits and their effects
-4. **Set Prerequisites**: Add feat prerequisites and requirements
-5. **Review and Save**: Review all data and save the feat
+1. **Enter Basic Info**: Fill in feat name, type, and basic attributes (repeatable, fighter bonus, useSubId)
+2. **Add Feature Progressions**: Use FeaturesManager to add/edit FeatureProgression entries for benefits and prerequisites
+   - For new feats: Progressions are stored in local state until feat is saved
+   - For existing feats: Progressions are saved immediately via Feature system API
+3. **Review and Save**: Review all data and save the feat (with feature progressions if creating new feat)
 
 **Source File**: `frontend/src/features/feat/FeatEdit.tsx`
 
-## 🔧 **Specialized Components**
-
-### **FeatBenefitEdit Component**
-
-Specialized component for managing feat benefits with complex relationship handling.
-
-**Purpose**: Provides a dedicated interface for managing feat benefits, including benefit types, references, amounts, and ordering.
-
-**Key Features**:
-- **Benefit Type Selection**: Choose from available benefit types (skill, save, proficiency)
-- **Reference Management**: Link benefits to specific entities (skills, saves, etc.)
-- **Amount Configuration**: Set numeric values for benefit calculations
-- **Ordering Management**: Manage the order of multiple benefits
-
-**User Workflow**:
-1. **Select Benefit Type**: Choose the type of benefit (skill, save, proficiency)
-2. **Configure Reference**: Link to specific entity if required
-3. **Set Amount**: Configure numeric value for the benefit
-4. **Set Order**: Determine the order of this benefit relative to others
-
-**Source File**: `frontend/src/features/feat/FeatBenefitEdit.tsx`
-
-### **FeatPrereqEdit Component**
-
-Specialized component for managing feat prerequisites with complex relationship handling.
-
-**Purpose**: Provides a dedicated interface for managing feat prerequisites, including prerequisite types, references, amounts, and ordering.
-
-**Key Features**:
-- **Prerequisite Type Selection**: Choose from available prerequisite types (ability, skill, feat, BAB, etc.)
-- **Reference Management**: Link prerequisites to specific entities (abilities, skills, feats, etc.)
-- **Amount Configuration**: Set numeric values for prerequisite requirements
-- **Ordering Management**: Manage the order of multiple prerequisites
-
-**User Workflow**:
-1. **Select Prerequisite Type**: Choose the type of prerequisite (ability, skill, feat, etc.)
-2. **Configure Reference**: Link to specific entity if required
-3. **Set Amount**: Configure numeric value for the requirement
-4. **Set Order**: Determine the order of this prerequisite relative to others
-
-**Source File**: `frontend/src/features/feat/FeatPrereqEdit.tsx`
+**Note**: 
+- Benefits and prerequisites are managed through the FeaturesManager component, which provides a unified interface for managing FeatureProgression entries
+- Descriptions and summaries come from associated Features, not the Feat model
+- When creating a new feat, `featureProgressions` can be included in the create request and will be created along with the feat
 
 ## 🔌 **API Integration**
 
@@ -193,24 +202,28 @@ Proper state management for complex feat data:
 
 ### **Character System Integration**
 
-The feat system integrates with the character system through feat selection and prerequisites:
+The feat system integrates with the character system through feat selection and filtering:
 
-**Feat Selection**: Characters can select and acquire feats
-**Prerequisite Validation**: Character abilities and skills are validated against feat prerequisites
-**Feat Benefits**: Character abilities are modified by feat benefits
-**Feat Progression**: Character feat progression follows level and class rules
+**Feat Selection**: Characters can select and acquire feats through FeatsTab component
+**Backend Filtering**: Available feats are filtered by backend service (`AvailableFeatService`) based on:
+- Prerequisites (character must meet all FeaturePrerequisite requirements)
+- Owned feats (filters out feats character already has, unless repeatable)
+- Proficiency conflicts (filters out feats providing proficiencies character already has as "all")
+**Feat Benefits**: Character abilities are modified by feat benefits via FeatureEntity entries
+**Feat Display**: Feat descriptions and summaries come from associated Features, displayed in character feat selection UI
 
 **Related Documentation**: [Character Management Frontend Components](../character-management/frontend-components.md)
 
 
 ### **Feature System Integration**
 
-The feat system integrates with the feature system for feat-related features:
+The feat system is fully integrated with the Feature system:
 
-**Feat Prerequisites**: Features can require specific feats
-**Feat Benefits**: Features can provide feat-related bonuses
-**Feat Progression**: Features can grant additional feats
-**Feat Specializations**: Features can provide feat specializations
+**FeatureProgression Management**: Feats use FeaturesManager component to manage FeatureProgression entries
+**Benefit Definition**: All feat benefits are defined via FeatureEntity entries within FeatureProgressions
+**Prerequisite Definition**: All feat prerequisites are defined via FeaturePrerequisite entries within Features
+**Description and Summary**: Feat descriptions and summaries come from associated Features, not the Feat model
+**Unified System**: Feats use the same Feature system as races, classes, and other sources
 
 **Related Documentation**: [Feature System Frontend Components](../feature-system/frontend-components.md)
 
@@ -225,8 +238,9 @@ Column definitions for feat list displays.
 **Key Features**:
 - **Sortable Columns**: All columns are sortable
 - **Filterable Columns**: Most columns support filtering
-- **Custom Rendering**: Custom cell rendering for complex data
+- **Custom Rendering**: Custom cell rendering for description column (truncates at first newline, renders markdown)
 - **Responsive Design**: Columns adapt to different screen sizes
+- **FeatWithFeatureInfo Type**: Uses composite schema type for list views
 
 **Source File**: `frontend/src/features/feat/FeatColumns.ts`
 
@@ -237,10 +251,11 @@ Utility functions for feat-specific operations.
 **Purpose**: Provide utility functions for feat calculations, formatting, and data manipulation.
 
 **Key Features**:
-- **Feat Calculations**: Calculate feat benefits and prerequisites
 - **Data Formatting**: Format feat data for display
 - **Validation Helpers**: Helper functions for feat validation
 - **Data Transformation**: Transform feat data between formats
+
+**Note**: Feat benefit and prerequisite calculations are now handled by the Feature system and character calculation services.
 
 **Source File**: `frontend/src/features/feat/FeatUtil.ts`
 

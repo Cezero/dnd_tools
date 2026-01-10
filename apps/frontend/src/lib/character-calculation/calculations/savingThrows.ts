@@ -1,5 +1,5 @@
 import type { CharacterWithAllDetailsResponse, FeatureProgression, DnDClass, Feat } from '@shared/schema';
-import { AbilityId, GetAbilityModifier, ABILITY_MAP, ProgressionType, FeatBenefitType, EntityAppliesToType } from '@shared/static-data';
+import { AbilityId, GetAbilityModifier, ABILITY_MAP, ProgressionType, EntityAppliesToType } from '@shared/static-data';
 import { getSaveProgression } from '@shared/utils';
 
 import { resolveFeatBenefits } from '../core/featBenefitResolver';
@@ -87,10 +87,10 @@ export function getSavingThrow(
     }
 
     // Get feat benefits
-    // Note: FeatBenefitContext doesn't support saveType filtering, but FeatBenefitType.SAVE is sufficient
+    // Note: FeatBenefitContext doesn't support saveType filtering, but EntityAppliesToType.SavingThrow is sufficient
     const featBenefits = resolveFeatBenefits(
         character,
-        FeatBenefitType.SAVE,
+        EntityAppliesToType.SavingThrow,
         undefined,
         featsMap,
         resolvedProgressions

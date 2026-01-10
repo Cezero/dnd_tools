@@ -29,7 +29,7 @@ The Feature System integrates with the [Variant Class System](../variant-class-s
 - Validation: `packages/shared/schema/src/feature.ts`
 - Static Data: `packages/shared/static-data/src/FeatureData.ts`, `packages/shared/static-data/src/FormulaDefinitions.ts`
 - Backend: `apps/backend/src/features/featureSystem/` (featureSystemService.ts, featureSystemController.ts, featureSystemRoutes.ts, types.ts)
-- Frontend: `apps/frontend/src/components/feature-system/` (FeatureEdit.tsx, FeatureDetail.tsx, FeatureProgressionDetailEdit.tsx, FeaturesTab.tsx, FeatureSystemApi.ts, FeatureSystemService.ts, ArrayPairEditor.tsx, types.ts)
+- Frontend: `apps/frontend/src/components/feature-system/` (FeatureEdit.tsx, FeatureEditForm/, FeatureDetail.tsx, FeatureDisplay/, FeatureProgressionDetailEdit.tsx, FeaturesManager.tsx, FeatureSystemApi.ts, FeatureSystemService.ts, ArrayPairEditor.tsx, types.ts)
 
 ## 🏗️ **Documentation Structure**
 

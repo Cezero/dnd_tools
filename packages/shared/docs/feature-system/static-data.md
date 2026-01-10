@@ -22,10 +22,33 @@ Defines the source types for feature progressions, determining how features are 
 - **`Race` (0)**: Features granted by character race
 - **`Class` (1)**: Features granted by character class
 - **`Template` (2)**: Features granted by character templates
+- **`None` (3)**: Features with no specific source
+- **`ClassVariant` (4)**: Features granted by class variants
+- **`Domain` (5)**: Features granted by domains (e.g., cleric domains)
+- **`Feat` (6)**: Features granted by feats
+- **`Companion` (7)**: Features granted by companions (e.g., familiar benefits, animal companion benefits)
 
-**Usage**: Used in the `sourceType` field of `FeatureProgression` models to determine feature application logic and source tracking.
+**Usage**: Used in the `sourceType` field of `FeatureProgression` models to determine feature application logic and source tracking. Companion-granted features use `FeatureSourceType.Companion` with `companionId` set to link to the specific companion.
 
 **Source File**: `packages/shared/static-data/src/FeatureData.ts` (FeatureSourceType definition)
+
+### **SpecialFeatureId**
+
+Defines special feature IDs used for container features and system-level features that don't represent traditional character abilities.
+
+**Purpose**: Identifies special features that serve as containers or system-level features, such as companion benefits or class skills.
+
+**Values**:
+- **`ClassSkill` (1)**: Container feature for class skill grants
+- **`ClassProficiency` (2)**: Container feature for class proficiency grants
+- **`AutomaticLanguage` (3)**: Container feature for automatic language grants
+- **`BonusLanguage` (4)**: Container feature for bonus language grants
+- **`AbilityAdjustment` (5)**: Container feature for ability score adjustments
+- **`CompanionBenefit` (6)**: Container feature for companion benefits (e.g., familiar benefits, animal companion benefits)
+
+**Usage**: Used as `featureId` in `FeatureProgression` to create container features that group related entities. Companion benefits use `SpecialFeatureId.CompanionBenefit` with `sourceType: FeatureSourceType.Companion` and `companionId` set to the specific companion.
+
+**Source File**: `packages/shared/static-data/src/FeatureData.ts` (SpecialFeatureId definition)
 
 ### **EntityType**
 
@@ -58,11 +81,12 @@ Defines the types of entities that features can provide, affecting how they are 
 - **Stacking**: Custom logic per effect type
 - **Compatibility**: Other, BonusLanguage, AutomaticLanguage, WeaponFamiliarity, Feat, SizeCategory, CreatureType, DamageType
 
-**Proficiency Entities (4)**: Proficiency bonuses and abilities
-- **Examples**: Weapon proficiencies, armor proficiencies, class skill proficiencies (Monk Class Skills)
+**Proficiency Entities (EntityType.Other with EntityAppliesToType.Proficiency)**: Proficiency bonuses and abilities
+- **Examples**: Weapon proficiencies, armor proficiencies (Monk Class Proficiencies)
 - **Stacking**: Custom logic for proficiency handling
-- **Compatibility**: Feat (when used as proficiencies)
-- **Real Example**: Monk Class Skills grants proficiency in Balance, Climb, Concentration, etc. (type: 4, appliesTo: 1=Skill, appliesToId: specific skill IDs)
+- **Compatibility**: Proficiency (weapon/armor proficiencies use EntityType.Other with appliesTo: Proficiency)
+- **Real Example**: Monk Class Proficiencies grants proficiency with simple weapons and exotic monk weapons (type: 3=Other, appliesTo: 36=Proficiency, appliesToId: proficiency type ID, appliesToSubId: item ID or -1 for "all")
+- **Note**: Class skills use EntityType.Other with appliesTo: Skill (1), not Proficiency. Weapon/armor proficiencies use appliesTo: Proficiency (36).
 
 **Choice Entities (5)**: Player choice mechanics
 - **Examples**: Feat choices, feature choices, creature type choices, bonus feat selection (Monk Bonus Feat)
@@ -120,7 +144,20 @@ Defines what an entity applies to, determining the target of the modification th
 - **`SizeCategory` (22)**: Size category effects
 - **`CreatureType` (23)**: Creature type effects
 - **`DamageType` (24)**: Damage type effects
+- **`SpellbookSpell` (37)**: Spellbook spell grants for spellbook classes (e.g., Wizard)
 - **`Other` (13)**: Special cases and complex effects
+
+**SpellbookSpell (37)**: Spellbook spell grants for spellbook classes
+- **Purpose**: Used for spellbook classes (e.g., Wizard) to grant free spells during level-up
+- **Entity Types**: Used with `EntityType.Choice` for free spell grants, `EntityType.Other` for 0th level spell grants
+- **Parameters**: 
+  - `appliesToId`: Spell level (0-9) for level-specific grants, or 0 for 0th level grants
+  - `appliesToSubId`: Specific spell ID, or -1 for "all spells" at the level
+- **Formula Support**: Supports `ABILITY_BASED` and `STATIC_EVERY_N_LEVELS` formulas for dynamic spell grants
+- **Usage**: 
+  - `EntityType.Choice` + `SpellbookSpell`: Free spell grants with quantity formulas (e.g., "3 + INT" at 1st level, "2 spells per level")
+  - `EntityType.Other` + `SpellbookSpell` + `appliesToId: 0` + `appliesToSubId: -1`: Feature-based 0th level spell grant (all 0th level spells)
+- **Related Documentation**: [Spell Scribing Feature](../character-management/spell-scribing.md) - Comprehensive spell scribing documentation
 
 **Source File**: `packages/shared/static-data/src/FeatureData.ts` (EntityAppliesToType definition)
 
@@ -175,10 +212,14 @@ Defines the types of conditions that can be applied to feature entities.
 - **`spell_school` (5)**: Spell school requirements
 - **`creature_type` (6)**: Creature type conditions
 - **`source` (7)**: Source-based conditions (traps, fear, spells, poison)
+- **`lighting` (8)**: Lighting-based conditions (bright light, shadows, dim light, darkness) - consolidated from CompanionBenefitConditionType
+- **`special` (9)**: Special conditions (e.g., "Casting Defensively")
 
-**Usage**: Enables complex conditional logic for entity application based on various game conditions.
+**Usage**: Enables complex conditional logic for entity application based on various game conditions. The `lighting` condition type was consolidated from the old CompanionBenefitConditionType system when companion benefits were migrated to the unified Feature system.
 
 **Source File**: `packages/shared/static-data/src/FeatureData.ts` (FeatureEntityConditionType definition)
+
+**Related Documentation**: [Companion Data](../reference-data/companion-data.md) for LightingConditionType values
 
 ## 📋 **Prerequisite Enums**
 
@@ -300,6 +341,35 @@ Defines target types for target-based conditions.
 **Usage**: Enables target-specific feature effects and conditions.
 
 **Source File**: `packages/shared/static-data/src/FeatureData.ts` (TargetType definition)
+
+### **LightingConditionType**
+
+Defines lighting condition values for lighting-based feature entity conditions.
+
+**Purpose**: Specifies lighting conditions that can be used in lighting-based feature entity conditions (consolidated from CompanionBenefitConditionType).
+
+**Lighting Types**:
+- **`bright_light` (0)**: Bright light conditions
+- **`shadows` (1)**: Shadow conditions
+- **`dim_light` (2)**: Dim light conditions
+- **`darkness` (3)**: Darkness conditions
+
+**Usage**: Used with `FeatureEntityConditionType.lighting` (8) to create lighting-based conditional effects. This enum was consolidated from the old CompanionBenefitConditionType system when companion benefits were migrated to the unified Feature system.
+
+**Source File**: `packages/shared/static-data/src/CompanionData.ts` (LightingConditionType definition)
+
+### **SpecialType**
+
+Defines special condition values for special-based feature entity conditions.
+
+**Purpose**: Specifies special conditions that can be used in special-based feature entity conditions.
+
+**Special Types**:
+- **`casting_defensively` (0)**: Casting defensively condition
+
+**Usage**: Used with `FeatureEntityConditionType.special` (9) to create special conditional effects such as "Casting Defensively".
+
+**Source File**: `packages/shared/static-data/src/FeatureData.ts` (SpecialType definition)
 
 ### **AttackType**
 

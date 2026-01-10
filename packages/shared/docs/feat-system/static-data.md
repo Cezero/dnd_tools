@@ -4,7 +4,9 @@
 
 ## 📋 **Overview**
 
-The feat system static data provides enums, types, and utility functions that define the behavior and capabilities of the feat system. This includes feat types, benefit types, prerequisite types, and various utility functions for feat calculations and management.
+The feat system static data provides enums, types, and utility functions that define the behavior and capabilities of the feat system. This includes feat types and various utility functions for feat calculations and management.
+
+Benefits and prerequisites are now handled through the unified Feature system, which uses `EntityAppliesToType`, `EntityType`, and `FeaturePrerequisiteType` enums. See [Feature System Static Data](../feature-system/static-data.md) for details.
 
 The static data layer serves as the foundation for type safety, validation, and consistent behavior across the feat system. It defines the vocabulary and rules that govern how feats interact with characters and other game systems.
 
@@ -27,55 +29,29 @@ Defines the different categories of feats available in the game system.
 
 **Source File**: `packages/shared/static-data/src/FeatData.ts` (FeatType enum)
 
-### **Feat Benefit Types**
+### **Feature System Enums**
 
-Defines the different types of benefits that feats can provide.
+Feat benefits and prerequisites now use the unified Feature system enums:
 
-**Purpose**: Identifies the different types of benefits that feats can grant, enabling proper benefit calculation and display.
+- **`EntityAppliesToType`**: Defines what the benefit applies to (Skill, SavingThrow, Attack, etc.)
+- **`EntityType`**: Defines the type of entity (Bonus, Other, etc.)
+- **`FeaturePrerequisiteType`**: Defines prerequisite types (AbilityScore, SkillRanks, Feat, etc.)
+- **`AttackBonusAppliesTo`**: Special enum for attack bonus contexts (MainHand, OffHand, Thrown)
 
-**Values**:
-- **`SKILL` (1)**: Skill bonuses and proficiencies
-- **`SAVE` (2)**: Saving throw bonuses
-- **`PROFICIENCY` (3)**: Weapon and armor proficiencies
-- **`TURN_ATTEMPTS` (4)**: Turn undead attempts
-- **`SPELLS_LEARNED` (5)**: Spells learned bonuses
-- **`RANGE_INCREMENT` (6)**: Range increment bonuses
-- **`DIFFICULTY_CLASS` (7)**: Difficulty class bonuses
-- **`CASTER_LEVEL` (8)**: Caster level bonuses
-- **`ATTACK_BONUS` (9)**: Attack bonus (general, can specify attack type via referenceId)
-- **`DAMAGE_BONUS` (10)**: Damage bonus (general, can specify attack type via referenceId)
-- **`THREAT_RANGE` (11)**: Threat range bonuses
-- **`INITIATIVE` (12)**: Initiative bonuses
-- **`ATTACK_ABILITY_REPLACEMENT` (13)**: Attack ability replacement (e.g., Weapon Finesse)
-- **`UNARMED_LETHAL_DAMAGE` (14)**: Unarmed lethal damage
-- **`TWO_WEAPON_MAIN_HAND` (15)**: Two-weapon fighting main hand bonus (only applies when dual-wielding with main hand)
-- **`TWO_WEAPON_OFF_HAND` (16)**: Two-weapon fighting off hand bonus (only applies when dual-wielding with off hand)
+**AttackBonusAppliesTo Enum**:
+- **`MainHand (1)`: Attack bonus applies only to main hand in two-weapon fighting
+- **`OffHand (2)`: Attack bonus applies only to off hand in two-weapon fighting
+- **`Thrown (3)`: Attack bonus applies only to thrown weapons
 
-**Usage**: Used in feat benefit definitions to specify the type of benefit provided. The `TWO_WEAPON_MAIN_HAND` and `TWO_WEAPON_OFF_HAND` types are specifically designed for feats like Two-Weapon Fighting that grant different bonuses to different hands.
+**Usage**: Used in FeatureEntity entries with `appliesTo: EntityAppliesToType.Attack` and `appliesToSubId: AttackBonusAppliesTo.MainHand` (or OffHand/Thrown) to specify special attack bonus contexts.
 
-**Source File**: `packages/shared/static-data/src/FeatData.ts` (FeatBenefitType enum)
+**Example**: Two-Weapon Fighting feat has two FeatureEntity entries:
+- Main hand: `appliesTo: Attack`, `appliesToSubId: MainHand`, `value: 2`
+- Off hand: `appliesTo: Attack`, `appliesToSubId: OffHand`, `value: 6`
 
-### **Feat Prerequisite Types**
+**Source File**: `packages/shared/static-data/src/FeatureData.ts` (AttackBonusAppliesTo enum)
 
-Defines the different types of prerequisites that feats can require.
-
-**Purpose**: Identifies the different types of prerequisites that feats can have, enabling proper prerequisite validation and display.
-
-**Values**:
-- **`ABILITY` (1)**: Ability score requirements
-- **`SKILL` (2)**: Skill rank requirements
-- **`FEAT` (3)**: Feat requirements
-- **`BAB` (4)**: Base attack bonus requirements
-- **`SPELLCASTING` (5)**: Spellcasting level requirements
-- **`SPECIAL` (6)**: Special requirements
-- **`CLASSLEVEL` (7)**: Class level requirements
-- **`PROFICIENCY` (8)**: Proficiency requirements
-- **`CLASSFEATURE` (9)**: Class feature requirements
-- **`SIZE` (10)**: Size requirements
-
-**Usage**: Used in feat prerequisite definitions to specify the type of requirement.
-
-**Source File**: `packages/shared/static-data/src/FeatData.ts` (FeatPrerequisiteType enum)
+**Related Documentation**: [Feature System Static Data](../feature-system/static-data.md)
 
 ## 🔧 **Feat Data Structures**
 
@@ -105,58 +81,6 @@ The primary data structures containing feat type definitions with their characte
 
 **Source File**: `packages/shared/static-data/src/FeatData.ts` (Feat type definitions)
 
-### **Feat Benefit Type Maps**
-
-The primary data structures containing feat benefit type definitions with their characteristics.
-
-**Purpose**: Provides comprehensive maps of all feat benefit types with their defining characteristics.
-
-**Key Maps**:
-
-**FEAT_BENEFIT_TYPES**: Complete map of all feat benefit types
-- **Purpose**: Provides complete map of all available feat benefit types
-- **Usage**: Used for feat benefit type selection and display
-
-**FEAT_BENEFIT_TYPE_BY_ID**: ID to name mapping for feat benefit types
-- **Purpose**: Provides ID to name mapping for feat benefit types
-- **Usage**: Used for feat benefit type lookup and display
-
-**FEAT_BENEFIT_TYPE_LIST**: Complete list of all feat benefit types
-- **Purpose**: Provides complete list of all available feat benefit types
-- **Usage**: Used for feat benefit type selection and iteration
-
-**FEAT_BENEFIT_TYPE_SELECT_LIST**: Feat benefit type list for selection components
-- **Purpose**: Provides feat benefit type list formatted for selection components
-- **Usage**: Used in feat benefit type selection dropdowns and lists
-
-**Source File**: `packages/shared/static-data/src/FeatData.ts` (Feat benefit type definitions)
-
-### **Feat Prerequisite Type Maps**
-
-The primary data structures containing feat prerequisite type definitions with their characteristics.
-
-**Purpose**: Provides comprehensive maps of all feat prerequisite types with their defining characteristics.
-
-**Key Maps**:
-
-**FEAT_PREREQUISITE_TYPES**: Complete map of all feat prerequisite types
-- **Purpose**: Provides complete map of all available feat prerequisite types
-- **Usage**: Used for feat prerequisite type selection and display
-
-**FEAT_PREREQ_BY_ID**: ID to name mapping for feat prerequisite types
-- **Purpose**: Provides ID to name mapping for feat prerequisite types
-- **Usage**: Used for feat prerequisite type lookup and display
-
-**FEAT_PREREQUISITE_TYPE_LIST**: Complete list of all feat prerequisite types
-- **Purpose**: Provides complete list of all available feat prerequisite types
-- **Usage**: Used for feat prerequisite type selection and iteration
-
-**FEAT_PREREQUISITE_TYPE_SELECT_LIST**: Feat prerequisite type list for selection components
-- **Purpose**: Provides feat prerequisite type list formatted for selection components
-- **Usage**: Used in feat prerequisite type selection dropdowns and lists
-
-**Source File**: `packages/shared/static-data/src/FeatData.ts` (Feat prerequisite type definitions)
-
 ## 🎯 **Feat Calculations**
 
 ### **Feat Type Integration**
@@ -175,37 +99,15 @@ The feat type integration system for determining feat categories and behavior.
 
 **Source File**: `packages/shared/static-data/src/FeatData.ts` (Feat type integration)
 
-### **Feat Benefit Integration**
+### **Feature System Integration**
 
-The feat benefit integration system for determining feat benefits and effects.
+Feat benefits and prerequisites are now calculated through the Feature system:
 
-**Purpose**: Calculate and validate feat benefits for character ability modifications.
+**Benefit Calculation**: Uses FeatureEntity entries with EntityAppliesToType to determine what the benefit applies to
+**Prerequisite Validation**: Uses FeaturePrerequisite entries with FeaturePrerequisiteType to validate requirements
+**Attack Bonus Contexts**: Uses AttackBonusAppliesTo enum with appliesToSubId to handle special attack bonus contexts
 
-**Calculation Pattern**:
-- **Benefit Lookup**: Look up benefit by type ID in benefit type system
-- **Benefit Reference**: Extract benefit type from benefit definition
-- **Benefit Validation**: Validate benefit type against benefit type system
-- **Benefit Calculation**: Use benefit type for benefit calculations
-
-**Example**: Benefit type ID 1 (Skill) provides skill bonuses to characters
-
-**Source File**: `packages/shared/static-data/src/FeatData.ts` (Feat benefit integration)
-
-### **Feat Prerequisite Integration**
-
-The feat prerequisite integration system for determining feat requirements and validation.
-
-**Purpose**: Calculate and validate feat prerequisites for character feat access.
-
-**Calculation Pattern**:
-- **Prerequisite Lookup**: Look up prerequisite by type ID in prerequisite type system
-- **Prerequisite Reference**: Extract prerequisite type from prerequisite definition
-- **Prerequisite Validation**: Validate prerequisite type against prerequisite type system
-- **Prerequisite Calculation**: Use prerequisite type for requirement validation
-
-**Example**: Prerequisite type ID 1 (Ability) requires minimum ability scores
-
-**Source File**: `packages/shared/static-data/src/FeatData.ts` (Feat prerequisite integration)
+**Related Documentation**: [Feature System Static Data](../feature-system/static-data.md)
 
 ## 🔗 **Integration with Other Systems**
 
@@ -225,14 +127,13 @@ The feat system integrates with the character system through feat selection and 
 
 ### **Feature System Integration**
 
-The feat system integrates with the feature system for feat-related features:
+The feat system is fully integrated with the Feature system for managing benefits and prerequisites:
 
-**Feat Prerequisites**: Features can require specific feats
-**Feat Benefits**: Features can provide feat-related bonuses
-**Feat Progression**: Features can grant additional feats
-**Feat Specializations**: Features can provide feat specializations
+**Feat Benefits**: All feat benefits are defined through FeatureEntity entries using EntityAppliesToType
+**Feat Prerequisites**: All feat prerequisites are defined through FeaturePrerequisite entries using FeaturePrerequisiteType
+**Unified System**: Feats use the same Feature system as races, classes, and other sources
 
-**Integration Pattern**: The feat system integrates with the feature system to handle feat-related features, ensuring proper feat prerequisite and benefit calculations.
+**Integration Pattern**: Each feat has one or more FeatureProgression entries (sourceType: Feat) that define its benefits and prerequisites through FeatureEntity and FeaturePrerequisite entries.
 
 **Related Documentation**: [Feature System Static Data](../feature-system/static-data.md)
 

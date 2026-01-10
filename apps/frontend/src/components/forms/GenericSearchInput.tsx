@@ -1,5 +1,5 @@
 import { ChevronDownIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
 export type SearchableItem = {
     id: number;
@@ -22,6 +22,8 @@ interface GenericSearchInputProps<T extends SearchableItem> {
     getDisplayName?: (item: T) => string; // Optional function to customize display name
     emptyMessage?: string; // Custom message when no results found
     maxResults?: number; // Maximum number of results to show (default: 10)
+    customOptions?: T[]; // Custom options to prepend to items (e.g., "All" option with id: -1)
+    filter?: (item: T) => boolean; // Filter function to filter items before searching
 }
 
 export function GenericSearchInput<T extends SearchableItem>({
@@ -36,6 +38,8 @@ export function GenericSearchInput<T extends SearchableItem>({
     getDisplayName = defaultGetDisplayName,
     emptyMessage,
     maxResults = 10,
+    customOptions = [],
+    filter,
 }: GenericSearchInputProps<T>) {
     const [searchTerm, setSearchTerm] = useState('');
     const [filteredItems, setFilteredItems] = useState<T[]>([]);
@@ -50,6 +54,12 @@ export function GenericSearchInput<T extends SearchableItem>({
         [getDisplayName]
     );
 
+    // Apply filter if provided, then combine custom options with items (custom options first)
+    const allItems = useMemo(() => {
+        const filteredItems = filter ? items.filter(filter) : items;
+        return [...customOptions, ...filteredItems];
+    }, [customOptions, items, filter]);
+
     // Filter items based on search term
     useEffect(() => {
         if (!searchTerm.trim()) {
@@ -60,23 +70,32 @@ export function GenericSearchInput<T extends SearchableItem>({
         const searchTermLower = searchTerm.toLowerCase();
         
         // Filter items that match the search term
-        const filtered = items.filter(item => {
+        const filtered = allItems.filter(item => {
             const displayName = stableGetDisplayName(item);
             return displayName.toLowerCase().includes(searchTermLower);
         });
 
         // Sort results to prioritize exact matches and prefix matches
+        // Also prioritize custom options (like "All") when they match
         filtered.sort((a, b) => {
             const nameA = stableGetDisplayName(a).toLowerCase();
             const nameB = stableGetDisplayName(b).toLowerCase();
             
-            // Exact match gets highest priority
+            // Check if items are custom options (in customOptions array)
+            const isCustomA = customOptions.some(co => co.id === a.id);
+            const isCustomB = customOptions.some(co => co.id === b.id);
+            
+            // Custom options that match get highest priority
+            if (isCustomA && !isCustomB) return -1;
+            if (!isCustomA && isCustomB) return 1;
+            
+            // Exact match gets second priority (after custom options)
             const exactMatchA = nameA === searchTermLower;
             const exactMatchB = nameB === searchTermLower;
             if (exactMatchA && !exactMatchB) return -1;
             if (!exactMatchA && exactMatchB) return 1;
             
-            // Prefix match gets second priority
+            // Prefix match gets third priority
             const startsWithA = nameA.startsWith(searchTermLower);
             const startsWithB = nameB.startsWith(searchTermLower);
             if (startsWithA && !startsWithB) return -1;
@@ -88,12 +107,12 @@ export function GenericSearchInput<T extends SearchableItem>({
 
         // Slice to maxResults after sorting
         setFilteredItems(filtered.slice(0, maxResults));
-    }, [searchTerm, items, stableGetDisplayName, maxResults]);
+    }, [searchTerm, allItems, stableGetDisplayName, maxResults, customOptions]);
 
     // Set selected item when value changes
     useEffect(() => {
-        if (value && items.length > 0) {
-            const item = items.find(i => i.id === value);
+        if (value && allItems.length > 0) {
+            const item = allItems.find(i => i.id === value);
             if (item) {
                 setSelectedItem(item);
                 setSearchTerm(stableGetDisplayName(item));
@@ -105,7 +124,7 @@ export function GenericSearchInput<T extends SearchableItem>({
             setSelectedItem(null);
             setSearchTerm('');
         }
-    }, [value, items, stableGetDisplayName]);
+    }, [value, allItems, stableGetDisplayName]);
 
     // Handle input change
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

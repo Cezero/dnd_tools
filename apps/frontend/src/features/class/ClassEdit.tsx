@@ -43,6 +43,7 @@ import {
     generateFeatureProgressionOverrides
 } from '@shared/utils';
 
+import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
 import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
 
 import { ClassApi } from './ClassApi';
@@ -266,7 +267,7 @@ export default function ClassEdit() {
 
                 // Check if this specific proficiency already exists
                 const existingProficiency = classProficiencyProgression.entities?.find(e =>
-                    e.appliesTo === EntityAppliesToType.Feat &&
+                    e.appliesTo === EntityAppliesToType.Proficiency &&
                     e.appliesToId === featId &&
                     e.appliesToSubId === itemId
                 );
@@ -276,13 +277,14 @@ export default function ClassEdit() {
                 }
 
                 // Add the proficiency as an entity
+                // Note: featId parameter is actually the proficiency type ID (from ProficiencyFeat.proficiencyTypeId)
                 const newEntity: FeatureEntity = {
                     id: Date.now() + Math.random(),
                     progressionId: classProficiencyProgression.id,
                     type: EntityType.Other,
                     value: 0,
-                    appliesTo: EntityAppliesToType.Feat,
-                    appliesToId: featId,
+                    appliesTo: EntityAppliesToType.Proficiency,
+                    appliesToId: featId, // This is actually the proficiency type ID
                     appliesToSubId: itemId,
                     bonusType: null,
                     filterType: null,
@@ -972,9 +974,9 @@ export default function ClassEdit() {
                 isOpen={isFeatureAssocOpen}
                 onClose={() => setIsFeatureAssocOpen(false)}
                 onSave={(_selectedFeatures) => {
-                    // The SharedFeaturesTab component handles the change detection logic
-                    // This onSave handler is not used - the actual logic is in FeaturesTab.tsx
-                    console.warn('ClassEdit onSave handler called but not used - change detection handled by SharedFeaturesTab');
+                    // The FeaturesManager component handles the change detection logic
+                    // This onSave handler is not used - the actual logic is in FeaturesManager.tsx
+                    console.warn('ClassEdit onSave handler called but not used - change detection handled by FeaturesManager');
                     setIsFeatureAssocOpen(false);
                 }}
                 initialSelectedFeatureIds={Object.keys(progressionsByFeature)

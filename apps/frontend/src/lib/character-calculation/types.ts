@@ -5,7 +5,6 @@ import type {
     FeatureProgression,
     CharacterFeatureChoice,
 } from '@shared/schema';
-import type { FeatBenefitType } from '@shared/static-data';
 
 /**
  * Simplified context for combat calculations

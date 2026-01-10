@@ -218,6 +218,14 @@ Avoid mixing the old entity type-based grouping with the new `groupingId` approa
 #### ❌ **WRONG: Changing non-grouping aspects**
 Avoid modifying delimiters, display type behavior, or other aspects that should remain unchanged. The groupingId integration only affects the grouping logic, not the formatting or display behavior.
 
+### **5. Entity Precaching Violations**
+
+#### ❌ **WRONG: Formatting without precaching**
+Never format feature progressions without ensuring entities are precached first. This will result in "name not found" errors and poor user experience.
+
+#### ❌ **WRONG: Ignoring loading states**
+Don't ignore the `isComplete` state from the precaching hook. Always check completion before formatting to ensure data is available.
+
 ## 📋 **Best Practices**
 
 ### **1. Registry Usage**
@@ -253,6 +261,109 @@ Avoid modifying delimiters, display type behavior, or other aspects that should 
 - **Test thoroughly**: Verify that complex scenarios work correctly
 - **Document changes**: Update documentation to reflect the new approach
 
+### **6. Entity Precaching Requirements**
+
+#### ✅ **CORRECT: Always precache before formatting**
+
+Entity names (feats, features, spells, domains, classes, skills, races) must be available in the TanStack Query cache when formatters need them. Formatters use synchronous cache access and cannot trigger fetches, so entities must be precached before formatting.
+
+**React Component Pattern**:
+```tsx
+import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
+import { displayStrategyFactory } from '@/lib/formatters';
+import { useQueryClient } from '@tanstack/react-query';
+
+function FeatureDisplay({ progressions }: { progressions: FeatureProgression[] }) {
+    const queryClient = useQueryClient();
+    
+    // Precache all entities referenced in progressions
+    const { isComplete } = usePrecacheFeatureEntities(progressions);
+    
+    // Show loading state while precaching
+    if (!isComplete) {
+        return <div>Loading features...</div>;
+    }
+    
+    // Format after precaching completes
+    const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
+    const result = strategy.format(progressions, { queryClient });
+    
+    return <div>{/* Render formatted features */}</div>;
+}
+```
+
+**Imperative Pattern**:
+```typescript
+import { DisplayStrategyBase } from '@/lib/formatters';
+
+// Precache entities before formatting
+await DisplayStrategyBase.precacheEntities(progressions, queryClient);
+
+// Now safe to format
+const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
+const result = strategy.format(progressions, { queryClient });
+```
+
+#### ❌ **WRONG: Formatting without precaching**
+
+Never format feature progressions without ensuring entities are precached first. This will result in "name not found" errors:
+
+```tsx
+// ❌ WRONG: Formatting without precaching
+const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
+const result = strategy.format(progressions, { queryClient });
+// May show "243 (feat name not found)" instead of actual feat name
+```
+
+#### ✅ **CORRECT: Show loading states during precaching**
+
+Always provide user feedback during precaching:
+
+```tsx
+const { isPrecaching, isComplete } = usePrecacheFeatureEntities(progressions);
+
+if (isPrecaching || !isComplete) {
+    return <div>Loading features...</div>;
+}
+```
+
+#### ❌ **WRONG: No loading state**
+
+Don't leave users wondering what's happening:
+
+```tsx
+// ❌ WRONG: No loading state
+const { isComplete } = usePrecacheFeatureEntities(progressions);
+// User sees nothing while precaching
+```
+
+#### ✅ **CORRECT: Handle errors gracefully**
+
+The precaching system handles errors gracefully, but components should handle error states:
+
+```tsx
+const { isComplete, error } = usePrecacheFeatureEntities(progressions);
+
+if (error) {
+    console.error('Precaching error:', error);
+    // Continue with fallback or show error message
+}
+
+if (!isComplete) {
+    return <div>Loading...</div>;
+}
+```
+
+#### **Precaching Best Practices**
+
+1. **Always Precache**: Never format without precaching first
+2. **Show Loading States**: Provide feedback during precaching
+3. **Handle Errors**: Gracefully handle precaching errors
+4. **Check Completion**: Always check `isComplete` before formatting
+5. **Pass QueryClient**: Ensure `queryClient` is passed to display strategies
+
+For comprehensive precaching documentation, see **[Entity Precaching System](./entity-precaching.md)**.
+
 ## Integration with Other Systems
 
 The formatting system is used by multiple other systems in the D&D Tools project:
@@ -269,6 +380,7 @@ The main [Feature System](../README.md) uses the formatting system for feature d
 ## Related Documentation
 
 - **[README.md](./README.md)** - Architecture overview and navigation
+- **[Entity Precaching System](./entity-precaching.md)** - Entity precaching architecture and usage
 - **[Final Implementation Summary](./final-implementation-summary.md)** - Current implementation status
 - **[Refactoring Strategy](./refactoring-strategy.md)** - Design decisions and architecture rationale
 - **[Architecture Decisions](./architecture-decisions.md)** - Key architectural decisions and future extensibility

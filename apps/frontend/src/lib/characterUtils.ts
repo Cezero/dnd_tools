@@ -6,7 +6,7 @@ import type {
     GetAllFeatsResponse,
     FeaturePrerequisite
 } from '@shared/schema';
-import { FeaturePrerequisiteType, FeatPrerequisiteType } from '@shared/static-data';
+import { FeaturePrerequisiteType } from '@shared/static-data';
 import { getBABProgression } from '@shared/utils';
 
 export function meetsPrerequisites(
@@ -15,10 +15,10 @@ export function meetsPrerequisites(
     selectedClassDetails: DnDClass | null,
     selectedRaceDetails: Race | null,
     _allFeats: GetAllFeatsResponse,
-    featurePrerequisites?: FeaturePrerequisite[]
+    featurePrerequisites: FeaturePrerequisite[]
 ): boolean {
-    // Use FeaturePrerequisite if provided, otherwise fall back to feat.prereqs for backward compatibility
-    const prerequisites = featurePrerequisites || (feat.prereqs ? mapFeatPrereqsToFeaturePrereqs(feat.prereqs) : []);
+    // Use FeaturePrerequisite - required parameter
+    const prerequisites = featurePrerequisites || [];
 
     if (!prerequisites || prerequisites.length === 0) {
         return true;
@@ -101,58 +101,6 @@ export function meetsPrerequisites(
             default:
                 return true;
         }
-    });
-}
-
-/**
- * Helper function to map FeatPrerequisiteMap to FeaturePrerequisite for backward compatibility
- * This will be removed once all code is updated to use FeaturePrerequisite directly
- */
-function mapFeatPrereqsToFeaturePrereqs(featPrereqs: Array<{ typeId: number; referenceId: number | null; amount: number | null }>): FeaturePrerequisite[] {
-    return featPrereqs.map(prereq => {
-        let featurePrereqType: FeaturePrerequisiteType;
-        switch (prereq.typeId) {
-            case FeatPrerequisiteType.ABILITY:
-                featurePrereqType = FeaturePrerequisiteType.AbilityScore;
-                break;
-            case FeatPrerequisiteType.SKILL:
-                featurePrereqType = FeaturePrerequisiteType.SkillRanks;
-                break;
-            case FeatPrerequisiteType.BAB:
-                featurePrereqType = FeaturePrerequisiteType.BaseAttackBonus;
-                break;
-            case FeatPrerequisiteType.CLASSLEVEL:
-                featurePrereqType = FeaturePrerequisiteType.ClassLevel;
-                break;
-            case FeatPrerequisiteType.FEAT:
-                featurePrereqType = FeaturePrerequisiteType.Feat;
-                break;
-            case FeatPrerequisiteType.SPELLCASTING:
-                featurePrereqType = FeaturePrerequisiteType.Spellcasting;
-                break;
-            case FeatPrerequisiteType.CLASSFEATURE:
-                featurePrereqType = FeaturePrerequisiteType.ClassFeature;
-                break;
-            case FeatPrerequisiteType.SIZE:
-                featurePrereqType = FeaturePrerequisiteType.Size;
-                break;
-            case FeatPrerequisiteType.SPECIAL:
-                featurePrereqType = FeaturePrerequisiteType.Other;
-                break;
-            case FeatPrerequisiteType.PROFICIENCY:
-                featurePrereqType = FeaturePrerequisiteType.Proficiency;
-                break;
-            default:
-                featurePrereqType = FeaturePrerequisiteType.Other;
-        }
-
-        return {
-            id: 0, // Temporary ID for mapping
-            featureId: 0, // Will be set by caller if needed
-            type: featurePrereqType,
-            appliesToId: prereq.referenceId,
-            minValue: prereq.amount || 0,
-        };
     });
 }
 

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Api } from '@/services/Api';
+import type { FeatInQueryResponse } from '@shared/schema';
 
 /**
  * Character update operation schema
@@ -200,6 +201,22 @@ export const CharacterResolutionApi = {
             {
                 method: 'DELETE',
                 responseSchema: z.object({ success: z.boolean() }).transform(() => undefined),
+            }
+        );
+    },
+
+    /**
+     * Get available feats for a character (filtered by prerequisites and proficiencies)
+     */
+    getAvailableFeats: async (characterId: number): Promise<{ results: FeatInQueryResponse[]; total: number }> => {
+        return Api<{ results: FeatInQueryResponse[]; total: number }>(
+            `/characters/${characterId}/resolution/available-feats`,
+            {
+                method: 'GET',
+                responseSchema: z.object({
+                    results: z.array(z.any()) as z.ZodType<FeatInQueryResponse[]>,
+                    total: z.number().int().nonnegative(),
+                }),
             }
         );
     },

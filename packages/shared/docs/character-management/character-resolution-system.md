@@ -240,6 +240,64 @@ Cancel/delete a session.
 
 **Source File**: `apps/backend/src/features/characterResolution/characterResolutionRoutes.ts`
 
+### **Spell Operations Integration**
+
+Spell add/remove operations (`addSpellKnown`/`removeSpellKnown`) integrate with the resolution session system to maintain consistency between spell state and resolved features.
+
+**Backend Integration**:
+- `characterService.addSpellKnown()` and `characterService.removeSpellKnown()` check for active resolution sessions
+- If a session exists, these methods:
+  - Rebuild the complete `CharacterEditState` from the updated character (including new/removed spells)
+  - Re-resolve character features with the updated character state
+  - Update the session with the new resolved result
+  - Include the updated `ResolvedCharacterResult` in the response
+- If no session exists, the methods still perform validation but do not update session state
+- The resolved progressions from the session (or on-demand resolution) are used for validation:
+  - Free grant quantity limits for spellbook classes
+  - Spell level validation (max castable at advancement level)
+  - 0th level spell grant detection
+
+**Frontend Integration**:
+- `SpellSelectionTab` uses `useCharacterResolution` hook's `updateResolvedCharacter()` method
+- Spell operations no longer manually manipulate TanStack Query caches for character details
+- The resolved character data from the response is used to keep the resolution session in sync
+- Frontend performs optimistic cache updates for spell data and character advancements
+- The resolution hook state is updated directly from the backend response
+
+**Response Format**:
+- `AddSpellKnownResponse` and `RemoveSpellKnownResponse` include:
+  - `freeSpellsUsed` - Count of free grants used (for spellbook classes)
+  - `availableFreeSpells` - Total free spells available at the advancement level
+  - `remainingFreeSpells` - Remaining free spells that can be granted
+  - `resolvedCharacter` (optional) - Complete resolution result after the spell operation
+- The `resolvedCharacter` field is only included when an active session exists
+- Frontend uses this data to update the resolution hook state via `updateResolvedCharacter()`
+
+**Free Grant vs Ad-Hoc Scribing**:
+- **Free Grants** (`isFreeGrant: true`): Spells granted for free during level-up, subject to quantity limits calculated from resolved progressions
+- **Ad-Hoc Scribing** (`isFreeGrant: false`): Spells scribed from scrolls or found spellbooks, no quantity limits but still subject to spell level validation
+- Both types are stored in `AdvancementSpell` with the `isFreeGrant` flag to distinguish them
+- Free grant validation only applies during level-up mode; ad-hoc scribing has no quantity restrictions
+
+**Spell Level Validation**:
+- Both free grants and ad-hoc scribing are subject to spell level restrictions
+- A character can only scribe spells up to the maximum castable spell level at their advancement level
+- For example, a 1st-level wizard can only scribe 1st-level spells, even if they find a scroll of a 3rd-level spell
+- Validation uses `getMaxCastableSpellLevel()` to determine the maximum spell level for a class at a given character level
+
+**0th Level Spell Grants**:
+- For spellbook classes, 0th level spells are granted via feature system (no database records)
+- Detected by checking for `EntityType.Other` + `EntityAppliesToType.SpellbookSpell` with `appliesToId: 0` and `appliesToSubId: -1`
+- This feature-based approach means 0th level spells are "known" if the grant feature exists in resolved progressions
+- No `AdvancementSpell` records are created for 0th level spells in spellbook classes
+- Non-spellbook classes (Sorcerer, Bard) continue to select and store 0th level spells in `AdvancementSpell` records
+
+**Source Files**:
+- Backend: `apps/backend/src/features/character/characterService.ts` (`addSpellKnown`, `removeSpellKnown` methods)
+- Frontend: `apps/frontend/src/features/character/tabs/SpellSelectionTab.tsx`
+- Frontend Hook: `apps/frontend/src/features/character/useCharacterResolution.ts`
+- Related Documentation: [Spell Scribing Feature](./spell-scribing.md) - Comprehensive spell scribing documentation
+
 ## 🔗 **Integration Points**
 
 ### **Character System Integration**
@@ -308,10 +366,18 @@ The frontend uses the resolution API through:
 - **Character Edit**: `CharacterEdit.tsx` uses the hook for all resolution
 - **Character Explorer**: Uses API directly for read-only resolution
 - **PDF Service**: Uses resolved progressions from API
+- **Spell Selection Tab**: Uses `updateResolvedCharacter()` method to sync state after spell operations
+
+**Spell Operations Integration**:
+- `SpellSelectionTab` uses `useCharacterResolution` hook's `updateResolvedCharacter` method
+- Spell operations (`addSpellKnown`/`removeSpellKnown`) no longer manually manipulate TanStack Query caches
+- The backend returns updated `ResolvedCharacterResult` in spell operation responses
+- Frontend syncs resolution state automatically using the response data
 
 **Source Files**:
 - `apps/frontend/src/services/api/CharacterResolutionApi.ts`
 - `apps/frontend/src/features/character/useCharacterResolution.ts`
+- `apps/frontend/src/features/character/tabs/SpellSelectionTab.tsx`
 
 ## 📊 **Data Flow**
 
@@ -333,6 +399,74 @@ The frontend uses the resolution API through:
 4. Backend re-resolves features with updated state
 5. Backend updates session in SQLite
 6. Backend returns updated `ResolvedCharacterResult`
+
+### **Spell Operation Flow**
+
+Spell add/remove operations integrate with the resolution session system to maintain consistency:
+
+**Add Spell Flow**:
+1. Frontend calls `POST /characters/spell-selection/add` with spell details and `isFreeGrant` flag
+2. Backend validates the request:
+   - Verifies advancement belongs to character and class
+   - Validates spell is available for the class via `SpellLevelMap`
+   - Validates spell level is castable at advancement level (for both free grants and ad-hoc)
+   - If `isFreeGrant: true`, validates quantity limit using resolved progressions:
+     - Fetches character and resolved progressions (from session if available, otherwise resolves on-demand)
+     - Calculates available free spells using `ResolvedFeatureService.getAvailableSpellbookSpells()`
+     - Counts existing free grants for the advancement
+     - Throws error if limit reached
+3. Backend updates database (adds spell to `AdvancementSpell` with `isFreeGrant` flag)
+4. Backend checks for active resolution session
+5. If session exists:
+   - Backend rebuilds complete `CharacterEditState` from updated character
+   - Backend re-resolves character features with updated character state
+   - Backend updates session with new resolved result and character state
+   - Backend includes updated `ResolvedCharacterResult` in response
+6. Backend calculates and includes spell counts in response:
+   - `freeSpellsUsed` - Total free grants used (if spellbook class)
+   - `availableFreeSpells` - Total available free spells
+   - `remainingFreeSpells` - Remaining free spells
+7. Frontend receives response with spell counts and optional `resolvedCharacter` field
+8. Frontend performs optimistic cache updates:
+   - Updates spell data cache (`isKnown: true`)
+   - Updates character cache (`advancements[].spellsKnown` array)
+9. If `resolvedCharacter` is present, frontend updates resolution hook state using `updateResolvedCharacter()`
+10. CharacterEdit re-renders with fresh resolved data
+
+**Remove Spell Flow**:
+1. Frontend calls `POST /characters/spell-selection/remove` with spell ID and advancement ID
+2. Backend validates the request:
+   - Verifies spell exists in `AdvancementSpell` for the character
+   - Verifies advancement belongs to character
+   - Checks if removed spell was a free grant (for count updates)
+3. Backend updates database (removes spell from `AdvancementSpell`)
+4. Backend checks for active resolution session
+5. If session exists:
+   - Backend rebuilds complete `CharacterEditState` from updated character
+   - Backend re-resolves character features with updated character state
+   - Backend updates session with new resolved result and character state
+   - Backend includes updated `ResolvedCharacterResult` in response
+6. Backend calculates and includes updated spell counts in response (if removed spell was a free grant)
+7. Frontend receives response with updated spell counts and optional `resolvedCharacter` field
+8. Frontend performs optimistic cache updates:
+   - Updates spell data cache (`isKnown: false`)
+   - Updates character cache (`advancements[].spellsKnown` array)
+9. If `resolvedCharacter` is present, frontend updates resolution hook state using `updateResolvedCharacter()`
+10. CharacterEdit re-renders with fresh resolved data
+
+**Key Points**:
+- Spell operations are direct database operations that also update the resolution session
+- Backend validation uses resolved progressions from session when available, otherwise resolves on-demand
+- The backend returns updated resolved character data in the response when a session exists
+- The frontend uses `useCharacterResolution.updateResolvedCharacter()` to sync state
+- Frontend performs optimistic cache updates for immediate UI feedback
+- No manual TanStack Query cache manipulation for character details is needed
+
+**Source Files**:
+- Backend: `apps/backend/src/features/character/characterService.ts` (`addSpellKnown`, `removeSpellKnown` methods)
+- Frontend: `apps/frontend/src/features/character/tabs/SpellSelectionTab.tsx`
+- Frontend Hook: `apps/frontend/src/features/character/useCharacterResolution.ts`
+- Related Documentation: [Spell Scribing Feature](./spell-scribing.md) - Comprehensive spell scribing documentation
 
 ### **Session Resume Flow**
 
@@ -440,7 +574,8 @@ To change session storage backend:
 
 - **[Character Management Database Schema](./database-schema.md)** - Character data models
 - **[Character Management Backend Implementation](./backend-implementation.md)** - Character service patterns
-- **[Feature System Documentation](../feature-system/)** - Feature progression models
+- **[Spell Scribing Feature](./spell-scribing.md)** - Comprehensive spell scribing documentation
+- **[Feature System Documentation](../feature-system/)** - Feature progression models and `EntityAppliesToType.SpellbookSpell`
 - **[Class System Documentation](../class-system/)** - Class feature models
 - **[Race System Documentation](../race-system/)** - Race feature models
 - **[Database Schema Patterns](../application-overview/database-schema.md)** - Common database patterns

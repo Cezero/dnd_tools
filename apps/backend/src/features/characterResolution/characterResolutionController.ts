@@ -3,12 +3,14 @@ import type { ValidatedParamsT, ValidatedParamsBodyT, ValidatedBodyT } from '@/u
 import { CharacterResolutionService } from './characterResolutionService';
 import { CharacterSessionService } from './characterSessionService';
 import { ResolvedFeatureService } from './resolvedFeatureService';
+import { AvailableFeatService } from './availableFeatService';
 import { characterService } from '../character/characterService';
 import { raceService } from '../race/raceService';
 import { classService } from '../class/classService';
+import { featService } from '../feat/featService';
 import type { CharacterEditState, ResolutionResult, CharacterUpdate, UserChoices } from './types';
 import type { ResolvedCharacterResult } from './characterSessionService';
-import type { CharacterWithAllDetailsResponse } from '@shared/schema';
+import type { CharacterWithAllDetailsResponse, FeatInQueryResponse } from '@shared/schema';
 
 /**
  * Initialize a new resolution session
@@ -691,5 +693,97 @@ function applyUpdateToState(state: CharacterEditState, update: CharacterUpdate):
     }
 
     return newState;
+}
+
+/**
+ * Get available feats for a character
+ */
+export async function GetAvailableFeats(
+    req: ValidatedParamsT<{ characterId: string }, { results: FeatInQueryResponse[]; total: number }>,
+    res: Response,
+    _next: NextFunction
+) {
+    const userId = req.user?.id;
+    if (!userId) {
+        res.status(401).json({ error: 'User not authenticated' });
+        return;
+    }
+
+    const characterId = typeof req.params.characterId === 'string' 
+        ? parseInt(req.params.characterId, 10)
+        : req.params.characterId;
+    if (isNaN(characterId)) {
+        res.status(400).json({ error: 'Invalid character ID' });
+        return;
+    }
+
+    try {
+        // Load character with all details
+        const character = await characterService.getCharacterWithAllDetails({ id: characterId });
+        if (!character) {
+            res.status(404).json({ error: 'Character not found' });
+            return;
+        }
+
+        // Verify ownership
+        if (character.userId !== userId) {
+            res.status(403).json({ error: 'Access denied' });
+            return;
+        }
+
+        // Load race and class details
+        const raceDetails = character.raceId ? await raceService.getRaceById({ id: character.raceId }) : null;
+        const classDetails = character.advancements?.[0]?.classId
+            ? await classService.getClassById({ id: character.advancements[0].classId })
+            : null;
+
+        // Calculate target level
+        const targetLevel = character.level || 1;
+
+        // Create resolution context to get resolved progressions
+        const context = {
+            character,
+            targetLevel,
+            advancement: character.advancements?.find(adv => adv.level === targetLevel),
+            raceDetails,
+            classDetails,
+            secondaryClassDetails: character.advancements?.[0]?.secondaryClassId
+                ? await classService.getClassById({ id: character.advancements[0].secondaryClassId })
+                : null,
+            isGestalt: !!character.advancements?.[0]?.secondaryClassId,
+            userChoices: undefined,
+            includePendingChoices: false,
+            resolveCascading: true,
+            maxResolutionDepth: 10,
+        };
+
+        // Resolve features to get progressions
+        const resolutionResult = await CharacterResolutionService.resolveCharacterFeatures(
+            character,
+            targetLevel,
+            context
+        );
+
+        // Get all feats
+        const allFeatsResponse = await featService.getAllFeats();
+        const allFeats = allFeatsResponse.results;
+
+        // Filter available feats
+        const availableFeats = await AvailableFeatService.getAvailableFeats(
+            character,
+            resolutionResult.resolvedProgressions,
+            classDetails,
+            raceDetails,
+            allFeats
+        );
+
+        res.json({
+            results: availableFeats,
+            total: availableFeats.length
+        });
+    } catch (error) {
+        console.error('Error getting available feats:', error);
+        res.status(500).json({ error: 'Failed to get available feats' });
+    }
 }
 

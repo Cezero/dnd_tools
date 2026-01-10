@@ -137,6 +137,107 @@ export function CharacterEdit(): React.JSX.Element {
     const isResolving = resolution.isLoading;
     const resolutionError = resolution.error;
 
+    // Track previous values to avoid unnecessary updates and infinite loops
+    const prevClassIdRef = useRef<number | null>(null);
+    const prevSecondaryClassIdRef = useRef<number | null>(null);
+    const prevRaceIdRef = useRef<number | null>(null);
+    const prevLevelRef = useRef<number | null>(null);
+
+    // Sync class changes to resolution session
+    useEffect(() => {
+        // Only sync if session is initialized and we have a character ID
+        if (!state.characterId || !resolution.sessionId) {
+            return;
+        }
+
+        // Initialize refs on first session availability (don't send update on initial sync)
+        if (prevClassIdRef.current === null) {
+            prevClassIdRef.current = state.classId;
+            prevSecondaryClassIdRef.current = state.secondaryClassId;
+            return;
+        }
+
+        // Check if primary class changed
+        if (state.classId !== prevClassIdRef.current) {
+            // Class actually changed
+            if (state.classId) {
+                resolution.applyUpdate({
+                    type: 'SET_CLASS',
+                    payload: { classId: state.classId }
+                }).catch(error => {
+                    console.error('Failed to sync class change to resolution session:', error);
+                });
+            }
+        }
+        prevClassIdRef.current = state.classId;
+
+        // Check if secondary class changed
+        if (state.secondaryClassId !== prevSecondaryClassIdRef.current) {
+            // Secondary class actually changed (including clearing it by setting to null)
+            resolution.applyUpdate({
+                type: 'SET_SECONDARY_CLASS',
+                payload: { secondaryClassId: state.secondaryClassId }
+            }).catch(error => {
+                console.error('Failed to sync secondary class change to resolution session:', error);
+            });
+        }
+        prevSecondaryClassIdRef.current = state.secondaryClassId;
+    }, [state.characterId, state.classId, state.secondaryClassId, resolution.sessionId, resolution.applyUpdate]);
+
+    // Sync race changes to resolution session
+    useEffect(() => {
+        // Only sync if session is initialized and we have a character ID
+        if (!state.characterId || !resolution.sessionId) {
+            return;
+        }
+
+        // Initialize ref on first session availability (don't send update on initial sync)
+        if (prevRaceIdRef.current === null) {
+            prevRaceIdRef.current = state.raceId;
+            return;
+        }
+
+        // Check if race changed
+        if (state.raceId !== prevRaceIdRef.current) {
+            // Race actually changed
+            if (state.raceId) {
+                resolution.applyUpdate({
+                    type: 'SET_RACE',
+                    payload: { raceId: state.raceId }
+                }).catch(error => {
+                    console.error('Failed to sync race change to resolution session:', error);
+                });
+            }
+        }
+        prevRaceIdRef.current = state.raceId;
+    }, [state.characterId, state.raceId, resolution.sessionId, resolution.applyUpdate]);
+
+    // Sync level changes to resolution session
+    useEffect(() => {
+        // Only sync if session is initialized and we have a character ID
+        if (!state.characterId || !resolution.sessionId) {
+            return;
+        }
+
+        // Initialize ref on first session availability (don't send update on initial sync)
+        if (prevLevelRef.current === null) {
+            prevLevelRef.current = state.level;
+            return;
+        }
+
+        // Check if level changed
+        if (state.level !== prevLevelRef.current) {
+            // Level actually changed
+            resolution.applyUpdate({
+                type: 'SET_LEVEL',
+                payload: { level: state.level }
+            }).catch(error => {
+                console.error('Failed to sync level change to resolution session:', error);
+            });
+        }
+        prevLevelRef.current = state.level;
+    }, [state.characterId, state.level, resolution.sessionId, resolution.applyUpdate]);
+
     // Handle choice selection - apply update to resolution session
     const handleChoiceSelection = useCallback(async (choiceType: number, selectedId: number, _features: FeatureProgression[]) => {
         if (!state.characterId || !resolution.sessionId) {

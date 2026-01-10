@@ -55,6 +55,10 @@ export function hasValidEntityConfig(entity: FeatureEntity): boolean {
             // For feat entities, either filterType or appliesToId should be set
             return !!(entity.filterType || entity.appliesToId);
 
+        case EntityAppliesToType.Proficiency:
+            // For proficiency entities, appliesToId should be set (proficiency type ID)
+            return !!entity.appliesToId;
+
         case EntityAppliesToType.Feature:
             // For feature entities, featureId is optional
             return true;

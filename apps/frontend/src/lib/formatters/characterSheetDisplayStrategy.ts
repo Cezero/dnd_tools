@@ -79,7 +79,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                 entity: item.entity,
                 level: item.level,
                 computedValue: this.extractComputedValue(item),
-                structuredData: this.extractStructuredData(item)
+                structuredData: this.extractStructuredData(item, characterSheetContext)
             };
         });
 
@@ -127,7 +127,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
      * Extract structured data from formatted item
      * TODO: what is the poiunt of this function? when is it called?
      */
-    private extractStructuredData(item: FormattedItemWithLevel): FormattedEntityResult['structuredData'] {
+    private extractStructuredData(item: FormattedItemWithLevel, context?: DisplayContext): FormattedEntityResult['structuredData'] {
         const entity = item.entity;
 
         // For bonuses
@@ -136,7 +136,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             return {
                 type: 'bonus',
                 value: value,
-                target: this.getTargetName(entity)
+                target: this.getTargetName(entity, context)
             };
         }
 
@@ -155,7 +155,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             return {
                 type: 'proficiency',
                 value: 1, // Proficiency is binary
-                target: this.getTargetName(entity)
+                target: this.getTargetName(entity, context)
             };
         }
 
@@ -165,7 +165,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
     /**
      * Get target name for structured data
      */
-    private getTargetName(entity: CalculatedEntity): string | undefined {
+    private getTargetName(entity: CalculatedEntity, context?: DisplayContext): string | undefined {
         if (entity.item?.name) {
             return entity.item.name;
         }
@@ -1035,7 +1035,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
             if (!progression.entities) continue;
             for (const entity of progression.entities) {
                 if (entity.appliesTo === EntityAppliesToType.Feat && entity.appliesToId) {
-                    const featName = getFeatNameFromCache(context?.queryClient, entity.appliesToId);
+                    const featName = getFeatNameFromCache(_context?.queryClient, entity.appliesToId);
                     if (featName) {
                         featNameMap.set(entity.appliesToId, featName);
                     }
@@ -1100,7 +1100,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
                     processedFeatIds.add(entity.appliesToId);
 
                     // Use cache helper for feat name
-                    const featName = getFeatNameFromCache(context?.queryClient, entity.appliesToId) || `Feat ${entity.appliesToId}`;
+                    const featName = getFeatNameFromCache(_context?.queryClient, entity.appliesToId) || `Feat ${entity.appliesToId}`;
                     const entityValue = entity.value ?? 0;
                     const formattedValue = entityValue >= 0 ? `+${entityValue}` : `${entityValue}`;
 
@@ -1410,7 +1410,7 @@ export class CharacterSheetDisplayStrategy extends DisplayStrategyBase {
         // and any progression that has proficiency entities (for racial weapon proficiencies, etc.)
         const proficiencyProgressions = resolvedProgressions.filter(p =>
             p.featureId === SpecialFeatureId.ClassProficiency ||
-            (p.entities?.some(entity => entity.type === EntityType.Proficiency && entity.appliesTo === EntityAppliesToType.Feat) ?? false)
+            (p.entities?.some(entity => entity.type === EntityType.Other && entity.appliesTo === EntityAppliesToType.Proficiency) ?? false)
         );
 
         if (proficiencyProgressions.length === 0) {

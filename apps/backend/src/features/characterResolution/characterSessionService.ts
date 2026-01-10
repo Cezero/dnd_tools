@@ -165,6 +165,30 @@ export class CharacterSessionService {
      * 
      * Extends the session expiration time on each update. Throws an error if the session doesn't exist.
      */
+    /**
+     * Updates an existing session with new character state and resolved result.
+     * 
+     * **Spell Operation Integration**:
+     * This method is called by `characterService.addSpellKnown()` and `removeSpellKnown()`
+     * when an active resolution session exists. After a spell is added or removed:
+     * 1. The character state is rebuilt from the updated character (including new/removed spells)
+     * 2. Features are re-resolved using `CharacterResolutionService.resolveCharacterFeatures()`
+     * 3. This method updates the session with the new character state and resolved result
+     * 4. The session expiration time is extended
+     * 
+     * This ensures that the resolution session stays synchronized with the character's
+     * spell state, allowing subsequent spell operations to use the updated resolved
+     * progressions for validation.
+     * 
+     * @param sessionKey - The session key (characterId:userId) to update
+     * @param characterState - Updated character edit state (includes new/removed spells)
+     * @param resolvedResult - Updated resolved character result (includes new resolved progressions)
+     * @throws Error if the session is not found
+     * 
+     * @see characterService.addSpellKnown - Calls this after adding a spell
+     * @see characterService.removeSpellKnown - Calls this after removing a spell
+     * @see CharacterResolutionService.resolveCharacterFeatures - Re-resolves features after spell changes
+     */
     async updateSession(
         sessionKey: string,
         characterState: CharacterEditState,

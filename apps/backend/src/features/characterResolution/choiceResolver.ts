@@ -1,10 +1,9 @@
 import type { FeatureProgression, FeatureEntity, FeatInQueryResponse } from '@shared/schema';
-import { EntityType, EntityAppliesToType, FeatureFeatChoiceFilter, FeatureSourceType, CompanionType } from '@shared/static-data';
+import { EntityType, EntityAppliesToType, FeatureFeatChoiceFilter, FeatureSourceType, CompanionType, SpecialFeatureId } from '@shared/static-data';
 import { featureSystemService } from '../featureSystem/featureSystemService';
 import { domainService } from '../domain/domainService';
 import { featService } from '../feat/featService';
 import { companionService } from '../companion/companionService';
-import { companionBenefitToFeatureEntity } from './companionUtil';
 import type { PendingChoice } from './types';
 
 /**
@@ -314,44 +313,20 @@ export class ChoiceResolver {
             }
         }
 
-        // If no progressions found, fetch companion data and convert benefits to progressions
+        // If no progressions found, fetch companion feature progressions from feature system
         if (grantedProgressions.length === 0) {
             try {
-                const companion = await companionService.getCompanionById({ id: companionId });
+                // Query feature progressions for this companion
+                const companionProgressions = await featureSystemService.getFeatureProgressionsByCompanionId(companionId);
                 
-                if (companion && companion.benefits && companion.benefits.length > 0) {
-                    // Convert each benefit to a FeatureEntity and create a FeatureProgression
-                    for (const benefit of companion.benefits) {
-                        const entity = companionBenefitToFeatureEntity(benefit);
-                        
-                        // Create a FeatureProgression for this benefit
-                        const progressionId = companionId * 10000 + benefit.index;
-                        entity.progressionId = progressionId;
-
-                        const progression: FeatureProgression = {
-                            id: progressionId,
-                            sourceType: FeatureSourceType.Class,
-                            level: 1,
-                            featureId: 0,
-                            classId: null,
-                            raceId: null,
-                            variantOverrideId: null,
-                            domainId: null,
-                            feature: {
-                                id: 0,
-                                name: `Familiar Benefit: ${companion.monster?.name || 'Unknown'}`,
-                                description: '',
-                                slug: `familiar-benefit-${companionId}-${benefit.index}`,
-                                displayInCharacterSheet: true,
-                            },
-                            entities: [entity],
-                        };
-                        
-                        grantedProgressions.push(progression);
-                    }
-                }
+                // Filter for CompanionBenefit feature progressions
+                const benefitProgressions = companionProgressions.filter(
+                    p => p.featureId === SpecialFeatureId.CompanionBenefit && p.sourceType === FeatureSourceType.Companion
+                );
+                
+                grantedProgressions.push(...benefitProgressions);
             } catch (error) {
-                console.error(`Error fetching familiar ${companionId}:`, error);
+                console.error(`Error fetching companion feature progressions for ${companionId}:`, error);
             }
         }
 
@@ -512,12 +487,14 @@ export class ChoiceResolver {
                         }
 
                         availableFeats.forEach(feat => {
+                            // Get feature description from progression if available
+                            const featureDescription = feat.featureProgressions?.[0]?.feature?.description || null;
                             options.push({
                                 id: `feat-${feat.id}`,
                                 name: feat.name,
-                                description: feat.description || `Feat: ${feat.name}`,
+                                description: featureDescription || `Feat: ${feat.name}`,
                                 value: feat.id,
-                                prerequisites: feat.prerequisites ? [feat.prerequisites] : []
+                                prerequisites: [] // Prerequisites are now handled through Feature system
                             });
                         });
                     }

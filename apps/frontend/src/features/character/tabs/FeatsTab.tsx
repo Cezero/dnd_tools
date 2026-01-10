@@ -1,51 +1,14 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import React, { useMemo, useState, useEffect } from 'react';
 
 import type { TabComponentProps } from '@/features/character/types';
 import { CharacterEditStateUpdateType } from '@/features/character/types';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import type { ItemWithDetails, FeatInQueryResponse } from '@shared/schema';
-import { ITEM_TYPE_ENUM, EntityAppliesToType, EntityType } from '@shared/static-data';
+import { ITEM_TYPE_ENUM, EntityAppliesToType, EntityType, FeatureSourceType } from '@shared/static-data';
+import { CharacterResolutionApi } from '@/services/api/CharacterResolutionApi';
 
 import { FeatSubIdSelectionModal } from '../components/FeatSubIdSelectionModal';
-import { filterAvailableFeats } from '../utils/featFiltering';
-
-// Custom hook that filters feats based on character qualifications
-const useFilteredFeats = (
-    state: TabComponentProps['state'],
-    resolvedData: TabComponentProps['resolvedData'],
-    sharedData: TabComponentProps['sharedData'],
-    character: TabComponentProps['character']
-) => {
-    const isLoading = sharedData.isLoadingFeats;
-    const [availableFeats, setAvailableFeats] = useState<FeatInQueryResponse[]>([]);
-    const [isFiltering, setIsFiltering] = useState(false);
-
-    useEffect(() => {
-        if (!character || sharedData.allFeats.length === 0) {
-            setAvailableFeats([]);
-            setIsFiltering(false);
-            return;
-        }
-
-        setIsFiltering(true);
-        filterAvailableFeats(sharedData.allFeats, state, resolvedData, sharedData, character)
-            .then(filtered => {
-                setAvailableFeats(filtered);
-                setIsFiltering(false);
-            })
-            .catch(error => {
-                console.error('Error filtering feats:', error);
-                setAvailableFeats([]);
-                setIsFiltering(false);
-        });
-    }, [sharedData.allFeats, state, resolvedData, sharedData, character]);
-
-    return {
-        data: { results: availableFeats, total: availableFeats.length },
-        isLoading: isLoading || isFiltering
-    };
-};
 
 export function FeatsTab({
     formattedCharacter,
@@ -58,7 +21,19 @@ export function FeatsTab({
     character
 }: TabComponentProps): React.JSX.Element {
     const queryClient = useQueryClient();
-    const { data: featResponse, isLoading: isLoadingFeats } = useFilteredFeats(state, resolvedData, sharedData, character);
+    
+    // Fetch available feats from backend
+    const { data: featResponse, isLoading: isLoadingFeats } = useQuery({
+        queryKey: ['availableFeats', character?.id],
+        queryFn: () => {
+            if (!character?.id) {
+                throw new Error('Character ID is required');
+            }
+            return CharacterResolutionApi.getAvailableFeats(character.id);
+        },
+        enabled: !!character?.id,
+        staleTime: 30 * 1000, // 30 seconds
+    });
     const [searchTerm, setSearchTerm] = useState('');
     const [modalFeat, setModalFeat] = useState<FeatInQueryResponse | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -112,17 +87,34 @@ export function FeatsTab({
     // Memoize availableFeats to prevent dependency issues
     const availableFeats = useMemo(() => featResponse?.results || [], [featResponse?.results]);
 
-    // Filter feats based on search term
+    // Create a map of feat ID to feature data from resolved progressions
+    const featFeatureMap = useMemo(() => {
+        const map = new Map<number, { description?: string | null; summary?: string | null }>();
+        if (resolvedData.progressions) {
+            resolvedData.progressions.forEach(progression => {
+                if (progression.sourceType === FeatureSourceType.Feat && progression.featId && progression.feature) {
+                    map.set(progression.featId, {
+                        description: progression.feature.description,
+                        summary: progression.feature.summary
+                    });
+                }
+            });
+        }
+        return map;
+    }, [resolvedData.progressions]);
+
+    // Filter feats based on search term (including feature description and summary)
     const filteredFeats = useMemo(() => {
         if (!searchTerm.trim()) return availableFeats;
 
         const term = searchTerm.toLowerCase();
-        return availableFeats.filter(feat =>
-            feat.name.toLowerCase().includes(term) ||
-            feat.description?.toLowerCase().includes(term) ||
-            feat.benefit?.toLowerCase().includes(term)
-        );
-    }, [availableFeats, searchTerm]);
+        return availableFeats.filter(feat => {
+            const featureData = featFeatureMap.get(feat.id);
+            return feat.name.toLowerCase().includes(term) ||
+                featureData?.description?.toLowerCase().includes(term) ||
+                featureData?.summary?.toLowerCase().includes(term);
+        });
+    }, [availableFeats, searchTerm, featFeatureMap]);
 
 
     // Get granted feats from resolved data
@@ -131,9 +123,10 @@ export function FeatsTab({
     }, [resolvedData.grantedFeats]);
 
     // Get selected feat details (user-selected feats)
+    // Use sharedData.allFeats for lookup since owned feats are filtered out of availableFeats
     const selectedFeats = useMemo(() => {
         return state.selectedFeats.map(featId => {
-            const feat = availableFeats.find(f => f.id === featId);
+            const feat = sharedData.allFeats.find(f => f.id === featId);
             if (!feat) return null;
             
             // Get sub-id from state.featSubIds (stored in AdvancementFeat.featSubId)
@@ -148,7 +141,7 @@ export function FeatsTab({
                 subIdName
             };
         }).filter(Boolean);
-    }, [state.selectedFeats, availableFeats, state.featSubIds, itemNameMap]);
+    }, [state.selectedFeats, sharedData.allFeats, state.featSubIds, itemNameMap]);
 
     // Get granted feat details (from class/race features)
     // Filter out proficiency feats (those granted by race/class proficiencies)
@@ -157,11 +150,11 @@ export function FeatsTab({
             .filter(entity => {
                 // Exclude proficiency feats - these are granted by proficiency entities
                 // and should not be shown in the "Your Feats" view
-                return entity.type !== EntityType.Proficiency;
+                return !(entity.type === EntityType.Other && entity.appliesTo === EntityAppliesToType.Proficiency);
             })
             .map(entity => {
-                // Look in the unfiltered feat response since granted feats are filtered out of availableFeats
-                const feat = featResponse?.results?.find(f => f.id === entity.appliesToId);
+                // Look in sharedData.allFeats since granted feats are filtered out of availableFeats
+                const feat = sharedData.allFeats.find(f => f.id === entity.appliesToId);
                 if (!feat) return null;
                 
                 // Get sub-id name if present (for granted feats with useSubId)
@@ -172,7 +165,7 @@ export function FeatsTab({
                 return { ...feat, source: 'granted' as const, subIdName };
             })
             .filter(Boolean);
-    }, [grantedFeats, featResponse?.results, itemNameMap]);
+    }, [grantedFeats, sharedData.allFeats, itemNameMap]);
 
     // Get choice-based feat details (from CharacterFeatureChoice, e.g., fighter bonus feats)
     const choiceFeatDetails = useMemo(() => {
@@ -197,7 +190,8 @@ export function FeatsTab({
 
             // Only include if this is a feat choice
             if (entityAppliesTo === EntityAppliesToType.Feat) {
-                const feat = availableFeats.find(f => f.id === choice.appliesToId);
+                // Use sharedData.allFeats for lookup since owned feats are filtered out of availableFeats
+                const feat = sharedData.allFeats.find(f => f.id === choice.appliesToId);
                 if (feat) {
                     const subIdName = choice.appliesToSubId && choice.appliesToSubId > 0
                         ? itemNameMap.get(choice.appliesToSubId)
@@ -214,7 +208,7 @@ export function FeatsTab({
         }
 
         return choiceFeats;
-    }, [state.featureChoices, resolvedData.progressions, availableFeats, itemNameMap]);
+    }, [state.featureChoices, resolvedData.progressions, sharedData.allFeats, itemNameMap]);
 
     // Combine all owned feats for display (selected, granted, and choice-based)
     const allOwnedFeats = useMemo(() => {
@@ -370,21 +364,23 @@ export function FeatsTab({
                                                     </>
                                                 )}
                                             </div>
-                                            {feat.description && (
-                                                <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                                                    {feat.description}
-                                                </p>
-                                            )}
-                                            {feat.benefit && (
-                                                <p className="text-sm text-gray-700 dark:text-gray-200 mb-1">
-                                                    <span className="font-medium">Benefit:</span> {feat.benefit}
-                                                </p>
-                                            )}
-                                            {feat.prerequisites && (
-                                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                    <span className="font-medium">Prerequisites:</span> {feat.prerequisites}
-                                                </p>
-                                            )}
+                                            {(() => {
+                                                const featureData = featFeatureMap.get(feat.id);
+                                                return (
+                                                    <>
+                                                        {featureData?.description && (
+                                                            <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                                                                {featureData.description}
+                                                            </p>
+                                                        )}
+                                                        {featureData?.summary && (
+                                                            <p className="text-sm text-gray-700 dark:text-gray-200 mb-1">
+                                                                <span className="font-medium">Summary:</span> {featureData.summary}
+                                                            </p>
+                                                        )}
+                                                    </>
+                                                );
+                                            })()}
                                         </div>
                                         {(feat.source === 'selected' || feat.source === 'choice') && (
                                             <button
@@ -476,24 +472,23 @@ export function FeatsTab({
                                                         </span>
                                                     )}
                                                 </div>
-
-                                                {feat.description && (
-                                                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                                                        {feat.description}
-                                                    </p>
-                                                )}
-
-                                                {feat.benefit && (
-                                                    <p className="text-sm text-gray-700 dark:text-gray-200 mb-1">
-                                                        <span className="font-medium">Benefit:</span> {feat.benefit}
-                                                    </p>
-                                                )}
-
-                                                {feat.prerequisites && (
-                                                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                        <span className="font-medium">Prerequisites:</span> {feat.prerequisites}
-                                                    </p>
-                                                )}
+                                                {(() => {
+                                                    const featureData = featFeatureMap.get(feat.id);
+                                                    return (
+                                                        <>
+                                                            {featureData?.description && (
+                                                                <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                                                                    {featureData.description}
+                                                                </p>
+                                                            )}
+                                                            {featureData?.summary && (
+                                                                <p className="text-sm text-gray-700 dark:text-gray-200 mb-1">
+                                                                    <span className="font-medium">Summary:</span> {featureData.summary}
+                                                                </p>
+                                                            )}
+                                                        </>
+                                                    );
+                                                })()}
                                             </div>
 
                                             <div className="ml-4 flex-shrink-0">

@@ -13,7 +13,8 @@ import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import { RaceQueryHooks } from '@/services/query/RaceQueryHooks';
 import { SkillQueryHooks } from '@/services/query/SkillQueryHooks';
 import type { CharacterWithAllDetailsResponse, DnDClass, Race, ItemWithDetails, FeatureProgression, Feat, CharacterItem, Spell } from '@shared/schema';
-import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, DisplayType, SIZE_MAP, SKILL_LIST, Skill, FeatBenefitType, ARMOR_CATEGORY_ENUM, LOCATION_ENUM, LANGUAGE_MAP, GetAbilityModifier, ITEM_TYPES, FeatureSourceType, EntityType, SpecialFeatureId, EntityAppliesToType, CRAFT_SKILL_MAP, KNOWLEDGE_SKILL_MAP, SPELL_COMPONENT_MAP, SPELL_SCHOOL_MAP, SPELL_SUBSCHOOL_MAP } from '@shared/static-data';
+import { AbilityId, ABILITY_MAP, ALIGNMENT_MAP, DisplayType, SIZE_MAP, SKILL_LIST, Skill, ARMOR_CATEGORY_ENUM, LOCATION_ENUM, LANGUAGE_MAP, GetAbilityModifier, ITEM_TYPES, FeatureSourceType, EntityType, SpecialFeatureId, EntityAppliesToType, CRAFT_SKILL_MAP, KNOWLEDGE_SKILL_MAP, SPELL_COMPONENT_MAP, SPELL_SCHOOL_MAP, SPELL_SUBSCHOOL_MAP } from '@shared/static-data';
+import { hasZeroLevelSpellbookSpellsGrant } from '@/features/character/utils/spellbookUtils';
 import { getXPTotalForLevel, calculateCarryingCapacity } from '@shared/utils';
 
 /**
@@ -2813,7 +2814,7 @@ export async function generateCharacterPdf(
                 if (entity.appliesTo === EntityAppliesToType.Feat && entity.appliesToId) {
                     // Check if this is NOT a choice and NOT a proficiency
                     // If it's not in featSourceMap, it's auto-granted (not selected by player)
-                    if (entity.type !== EntityType.Proficiency &&
+                    if (!(entity.type === EntityType.Other && entity.appliesTo === EntityAppliesToType.Proficiency) &&
                         entity.type !== EntityType.Choice &&
                         !featSourceMap.has(entity.appliesToId)) {
                         // Check if this feat is in formattedCharacter.feats (meaning it was granted)
@@ -2837,8 +2838,8 @@ export async function generateCharacterPdf(
             for (const progression of resolvedProgressions) {
                 if (!progression.entities) continue;
                 for (const entity of progression.entities) {
-                    if (entity.type === EntityType.Proficiency &&
-                        entity.appliesTo === EntityAppliesToType.Feat &&
+                    if (entity.type === EntityType.Other &&
+                        entity.appliesTo === EntityAppliesToType.Proficiency &&
                         entity.appliesToId === feat.featId) {
                         return false; // This is a proficiency, not a feat
                     }
@@ -2973,8 +2974,12 @@ export async function generateCharacterPdf(
                         featDisplayName = `${levelOrdinal}: ${featNameWithSubId}`;
                     }
 
-                    // Use feat.summary if available, otherwise fall back to feat.benefit
-                    const benefitText = featData?.summary || featData?.benefit || '';
+                    // Get feature summary from progression if available
+                    let benefitText = '';
+                    if (characterFeat?.sourceFeature?.progressionId) {
+                        const progression = resolvedProgressions.find(p => p.id === characterFeat.sourceFeature.progressionId);
+                        benefitText = progression?.feature?.summary || '';
+                    }
 
                     // Draw feat name in bold
                     doc.setFont('ArchivoNarrow', 'bold');
@@ -3124,9 +3129,10 @@ export async function generateCharacterPdf(
         const chaMod = GetAbilityModifier(chaScore);
 
         // Calculate turn attempts using feat benefits
+        // Turn attempts are a uses-per-day mechanic, so use EntityAppliesToType.Uses
         const turnAttemptBenefits = resolveFeatBenefits(
             character,
-            FeatBenefitType.TURN_ATTEMPTS,
+            EntityAppliesToType.Uses,
             undefined,
             featsMap,
             resolvedProgressions
@@ -3257,7 +3263,8 @@ export async function generateCharacterPdf(
                     spellClass,
                     classId,
                     classDetailsMap,
-                    queryClient
+                    queryClient,
+                    resolvedProgressions
                 );
             }
         }
@@ -3349,7 +3356,8 @@ async function generateSpellSheet(
     spellClass: DnDClass,
     classId: number,
     classDetailsMap: Map<number, DnDClass>,
-    queryClient?: QueryClient
+    queryClient?: QueryClient,
+    resolvedProgressions?: FeatureProgression[]
 ): Promise<void> {
     // Get character's class level for this spellcasting class
     const classLevel = character.advancements.filter(a =>
@@ -3409,7 +3417,7 @@ async function generateSpellSheet(
                 const domainSpells = [...domainSpellsFromArray, ...domainSpellsFromResults.filter(ds => !domainSpellsFromArray.some(dsa => dsa.spell.id === ds.spell.id))];
 
                 // Regular spells - exclude any that are domain spells
-                const spells = (response.results ?? [])
+                const allSpells = (response.results ?? [])
                     .filter(s => s.domainName == null && !domainSpellIds.has(s.id))
                     .map(s => ({
                         spell: s as unknown as Spell,
@@ -3417,7 +3425,30 @@ async function generateSpellSheet(
                         isKnown: s.isKnown ?? false
                     }));
 
-                spellData = { spells, domainSpells };
+                // For spellbook classes (non-spellsKnown classes), only show spells in spellbook (isKnown: true)
+                // Unlike prepared casters (Cleric, Druid) which display all spells per level
+                // However, 0th level spells may be granted via feature system (EntityType.Other + SpellbookSpell)
+                // Check if 0th level spells are granted via feature
+                const hasZeroLevelGrant = resolvedProgressions 
+                    ? hasZeroLevelSpellbookSpellsGrant(resolvedProgressions, classId)
+                    : false;
+
+                const spells = spellClass.spellsKnown
+                    ? allSpells // For spellsKnown classes, show all spells
+                    : allSpells.filter(s => {
+                        // For spellbook classes, show known spells
+                        if (s.isKnown) return true;
+                        // Also show 0th level spells if granted via feature (even if not marked as known in API response)
+                        if (s.classSpellLevel === 0 && hasZeroLevelGrant) return true;
+                        return false;
+                    });
+
+                // Filter domain spells similarly for spellbook classes
+                const filteredDomainSpells = spellClass.spellsKnown
+                    ? domainSpells // For spellsKnown classes, show all domain spells
+                    : domainSpells.filter(ds => ds.isKnown); // For spellbook classes, only show known domain spells
+
+                spellData = { spells, domainSpells: filteredDomainSpells };
             }
         } catch (error) {
             console.warn('Failed to fetch spell data for PDF:', error);

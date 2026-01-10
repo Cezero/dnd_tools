@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 
-import { useFormContext, ValidatedCustomSelect, ValidatedInput, CustomCheckbox } from '@/components/forms';
+import { useFormContext, ValidatedCustomSelect, ValidatedInput, CustomCheckbox, SpellSearchInput } from '@/components/forms';
 import type { FeatureEntity, FeatureEntityCondition, FeatureProgression } from '@shared/schema';
 import {
     ENTITY_LIST,
@@ -30,8 +30,30 @@ export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeatur
     const prevAppliesToRef = useRef<number | null>(null);
 
     // Get proficiency subId options if this is a proficiency entity
-    const isProficiencyWithFeat = entity.type === EntityType.Proficiency && entity.appliesTo === EntityAppliesToType.Feat;
+    const isProficiencyWithFeat = entity.type === EntityType.Other && entity.appliesTo === EntityAppliesToType.Proficiency;
     const proficiencySubIdOptions = useProficiencySubIdOptions(isProficiencyWithFeat ? entity : undefined, entity.appliesToId);
+
+    // Check if this is a SpellbookSpell entity (EntityType.Other + EntityAppliesToType.SpellbookSpell)
+    const isSpellbookSpellEntity = entity.type === EntityType.Other && entity.appliesTo === EntityAppliesToType.SpellbookSpell;
+
+    // Prepare custom options and filter for SpellbookSpell entities (always call hooks, conditionally use)
+    const spellbookSpellCustomOptions = useMemo(() => [
+        { id: -1, name: 'All', editionId: 0 }
+    ], []);
+
+    const spellbookSpellLevelFilter = useMemo(() => {
+        if (!isSpellbookSpellEntity) {
+            return undefined;
+        }
+        const spellLevel = entity.appliesToId;
+        if (spellLevel === null || spellLevel === undefined) {
+            return undefined;
+        }
+        // Filter spells by baseLevel matching the selected spell level
+        return (spell: { baseLevel?: number; id: number; name: string; editionId: number }) => {
+            return spell.baseLevel === spellLevel;
+        };
+    }, [isSpellbookSpellEntity, entity.appliesToId]);
 
 
     // Update showConditions when entity changes
@@ -214,6 +236,28 @@ export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeatur
             <div className="grid grid-cols-2 gap-2">
                 {/* Applies To Sub ID - only show for specific combinations */}
                 {(() => {
+                    // For SpellbookSpell entities, show SpellSearchInput with "All" option and level filter
+                    if (isSpellbookSpellEntity) {
+                        return (
+                            <SpellSearchInput
+                                value={entity.appliesToSubId}
+                                onValueChange={(value) => {
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        entities: (prev.entities as FeatureEntity[] || []).map((ent, i) =>
+                                            i === index ? { ...ent, appliesToSubId: value } : ent
+                                        )
+                                    }));
+                                }}
+                                label="Spells"
+                                placeholder="Search for a spell or select 'All'..."
+                                componentExtraClassName="flex items-center gap-2"
+                                customOptions={spellbookSpellCustomOptions}
+                                filter={spellbookSpellLevelFilter}
+                            />
+                        );
+                    }
+
                     const subIdOptions = getAppliesToSubIdSelectOptions(entity.appliesTo, entity.appliesToId);
                     const shouldShowAppliesToSubId = isProficiencyWithFeat || subIdOptions.length > 0;
 
@@ -232,12 +276,15 @@ export function EntityDetailForm({ index, preSelectedFeature: _preSelectedFeatur
                             );
                         }
 
-                        // For other types (like Craft/Knowledge skills), use existing logic
+                        // For other types (like Craft/Knowledge skills, Attack bonuses), use existing logic
                         if (subIdOptions.length > 0) {
+                            const label = entity.appliesTo === EntityAppliesToType.Attack 
+                                ? "Attack Bonus Applies To" 
+                                : "Applies To Sub ID";
                             return (
                                 <ValidatedCustomSelect
                                     field={`entities.${index}.appliesToSubId`}
-                                    label="Applies To Sub ID"
+                                    label={label}
                                     options={subIdOptions}
                                     placeholder="Select subtype..."
                                     componentExtraClassName="flex items-center gap-2"

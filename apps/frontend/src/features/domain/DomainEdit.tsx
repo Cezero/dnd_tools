@@ -1,9 +1,9 @@
-import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 
+import { FeaturesManager } from '@/components/feature-system/FeaturesManager';
 import { FeatureProgressionDetailEdit } from '@/components/feature-system';
-import { FeatureDisplay } from '@/components/feature-system/FeatureDisplay';
 import {
     ValidatedForm,
     ValidatedInput,
@@ -12,9 +12,7 @@ import {
     SourceEditor
 } from '@/components/forms';
 import { CustomSelect } from '@/components/forms/FormComponents';
-import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
-import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import { CreateDomainRequest, UpdateDomainRequest, UpdateDomainSchema, CreateDomainSchema, FeatureProgression, Feature, CreateFeatureProgressionRequest } from '@shared/schema';
 import { EDITION_LIST, SourceType, FeatureSourceType } from '@shared/static-data';
 
@@ -36,43 +34,11 @@ export function DomainEdit() {
     const [isUpdating, setIsUpdating] = useState(false);
     const [domainError, setDomainError] = useState<Error | null>(null);
 
-    // Helper function to handle feature creation/updates with imperative API
-    const handleFeatureMutation = useCallback(async (feature: Feature): Promise<number> => {
-        try {
-            if (feature.id > 1000000000) { // Temporary ID - create new
-                const response = await FeatureQueryHooks.createFeature({
-                    requestData: {
-                        name: feature.name,
-                        slug: feature.slug,
-                        description: feature.description,
-                        prerequisites: feature.prerequisites || []
-                    }
-                });
-                return parseInt(response.id);
-            } else { // Existing feature - update
-                await FeatureQueryHooks.updateFeature(feature.id, {
-                    name: feature.name,
-                    slug: feature.slug,
-                    description: feature.description,
-                    prerequisites: feature.prerequisites || []
-                });
-                return feature.id;
-            }
-        } catch (error) {
-            throw error;
-        }
-    }, []);
 
     // Feature management state (separate from form data)
     const [features, setFeatures] = useState<Feature[]>([]);
     const [featureProgressions, setFeatureProgressions] = useState<FeatureProgression[]>([]);
-    const [isFeatureDialogOpen, setIsFeatureDialogOpen] = useState(false);
-    const [editingFeature, setEditingFeature] = useState<Feature | null>(null);
-    const [featureFormData, setFeatureFormData] = useState<{ name: string; slug: string; description: string }>({
-        name: '',
-        slug: '',
-        description: ''
-    });
+    const queryClient = useQueryClient();
 
     // Progression dialog state
     const [isProgressionDialogOpen, setIsProgressionDialogOpen] = useState(false);
@@ -109,53 +75,33 @@ export function DomainEdit() {
     );
 
     // FeatureProgression management handlers
-    const handleAddFeature = useCallback(() => {
-        setEditingFeature(null);
-        setFeatureFormData({ name: '', slug: '', description: '' });
-        setIsFeatureDialogOpen(true);
-    }, []);
-
-    const handleEditFeature = useCallback((feature: Feature) => {
-        setEditingFeature(feature);
-        setFeatureFormData({
+    const handleAddFeature = useCallback((feature: { id: number; name: string; description: string; slug: string }) => {
+        // Add new feature to features list
+        const newFeature: Feature = {
+            id: feature.id,
             name: feature.name,
             slug: feature.slug,
-            description: feature.description
-        });
-        setIsFeatureDialogOpen(true);
-    }, []);
+            description: feature.description,
+            displayInCharacterSheet: true,
+            prerequisites: []
+        };
+        setFeatures(prev => [...prev, newFeature]);
 
-    const handleFeatureSave = useCallback((feature: Feature) => {
-        if (editingFeature) {
-            // Update existing feature
-            setFeatures(prev => prev.map(f => f.id === editingFeature.id ? feature : f));
-        } else {
-            // Add new feature with temporary ID
-            const newFeature = {
-                ...feature,
-                id: Math.floor(Date.now() + Math.random() * 1000) // Temporary ID as integer
-            };
-            setFeatures(prev => [...prev, newFeature]);
-
-            // Create a default progression for the new feature
-            const defaultProgression: FeatureProgression = {
-                id: Date.now() + Math.random(), // Temporary ID for frontend
-                sourceType: FeatureSourceType.Domain,
-                classId: null,
-                raceId: null,
-                domainId: id === 'new' ? 0 : parseInt(id as string),
-                level: 1,
-                featureId: newFeature.id,
-                variantOverrideId: null,
-                entities: []
-            };
-            setFeatureProgressions(prev => [...prev, defaultProgression]);
-        }
-
-        setIsFeatureDialogOpen(false);
-        setEditingFeature(null);
-        setFeatureFormData({ name: '', slug: '', description: '' });
-    }, [editingFeature, id]);
+        // Create a default progression for the new feature
+        const defaultProgression: FeatureProgression = {
+            id: Date.now() + Math.random(),
+            sourceType: FeatureSourceType.Domain,
+            classId: null,
+            raceId: null,
+            domainId: id === 'new' ? 0 : parseInt(id as string),
+            level: 1,
+            featureId: feature.id,
+            variantOverrideId: null,
+            entities: [],
+            feature: newFeature
+        };
+        setFeatureProgressions(prev => [...prev, defaultProgression]);
+    }, [id]);
 
     const handleRemoveFeature = useCallback((featureId: number) => {
         setFeatures(prev => prev.filter(f => f.id !== featureId));
@@ -278,31 +224,17 @@ export function DomainEdit() {
         }
 
         try {
-            // First, handle feature creation/updates
-            const updatedFeatureProgressions = await Promise.all(
-                features.map(async (feature) => {
-                    // Use the helper function to handle feature mutations
-                    const featureId = await handleFeatureMutation(feature);
-
-                    // Find the corresponding feature progression
-                    const progression = featureProgressions.find(p => p.featureId === feature.id);
-                    if (progression) {
-                        const { id: _, ...progressionData } = progression;
-                        return {
-                            ...progressionData,
-                            featureId: featureId,
-                            entities: progression.entities?.map(entity => {
-                                const { id: _, progressionId: __, feat: _feat, feature: _feature, item: _item, domain: _domain, ...entityData } = entity;
-                                return entityData;
-                            }) || []
-                        };
-                    }
-                    return null;
-                })
-            );
-
-            // Filter out null values and update formData with proper featureIds
-            const validProgressions = updatedFeatureProgressions.filter(p => p !== null) as CreateFeatureProgressionRequest[];
+            // Map features to progressions, ensuring featureIds match
+            const validProgressions = featureProgressions.map(progression => {
+                const { id: _, ...progressionData } = progression;
+                return {
+                    ...progressionData,
+                    entities: progression.entities?.map(entity => {
+                        const { id: _, progressionId: __, feat: _feat, feature: _feature, item: _item, domain: _domain, ...entityData } = entity;
+                        return entityData;
+                    }) || []
+                };
+            }) as CreateFeatureProgressionRequest[];
 
             const domainData = {
                 ...formData,
@@ -455,62 +387,20 @@ export function DomainEdit() {
 
                 {/* Domain Features Section */}
                 <div className="mt-6">
-                    <div className="flex justify-between items-center mb-2">
-                        <h2 className="text-xl font-semibold">Domain Features</h2>
-                        <button
-                            type="button"
-                            onClick={handleAddFeature}
-                            className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 text-white"
-                        >
-                            Add Feature
-                        </button>
-                    </div>
-
-                    {/* Display existing features */}
-                    {features.length > 0 ? (
-                        <div className="space-y-4 border p-4 rounded-md dark:border-gray-600">
-                            {features.map((feature) => {
-                                // Get progressions for this feature
-                                const featureProgs = featureProgressions.filter(p => p.featureId === feature.id);
-
-                                return (
-                                    <div key={feature.id} className="relative">
-                                        {/* Remove feature button */}
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveFeature(feature.id)}
-                                            className="absolute top-2 right-2 z-10 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600"
-                                            aria-label="Remove feature"
-                                        >
-                                            <TrashIcon className="h-4 w-4" />
-                                        </button>
-
-                                        {/* Edit feature button */}
-                                        <button
-                                            type="button"
-                                            onClick={() => handleEditFeature(feature)}
-                                            className="absolute top-2 right-10 z-10 text-blue-600 hover:text-blue-400"
-                                        >
-                                            <PencilIcon className="h-4 w-4" />
-                                        </button>
-
-                                        <FeatureDisplay
-                                            feature={feature}
-                                            progressions={featureProgs}
-                                            onEditProgression={handleEditProgression}
-                                            onRemoveProgression={handleRemoveProgression}
-                                            onAddProgression={() => handleAddProgression(feature.id)}
-                                            showAddProgressionButton={true}
-                                        />
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    ) : (
-                        <div className="text-gray-500 dark:text-gray-400 italic p-4 border rounded-md dark:border-gray-600">
-                            No features added. Click "Add Feature" to add domain-granted features.
-                        </div>
-                    )}
+                    <FeaturesManager
+                        featureProgressions={featureProgressions}
+                        onEditProgression={handleEditProgression}
+                        onRemoveProgression={handleRemoveProgression}
+                        onAddFeature={handleAddFeature}
+                        contextType={FeatureSourceType.Domain}
+                        contextId={id === 'new' ? 0 : parseInt(id as string)}
+                        parentType="domain"
+                        title="Domain Features"
+                        emptyMessage="No features added. Click 'Add Feature' to add domain-granted features."
+                        setEditingProgression={setEditingProgression}
+                        setPreSelectedFeature={setPreSelectedFeature}
+                        setIsProgressionDialogOpen={setIsProgressionDialogOpen}
+                    />
                 </div>
 
                 <div className="flex gap-2 mt-6">
@@ -530,80 +420,6 @@ export function DomainEdit() {
                     </button>
                 </div>
             </ValidatedForm>
-
-            {/* Feature Edit Dialog */}
-            {isFeatureDialogOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-                        <h2 className="text-xl font-semibold mb-4">
-                            {editingFeature ? 'Edit Feature' : 'Add Feature'}
-                        </h2>
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Feature Name</label>
-                                <input
-                                    type="text"
-                                    value={featureFormData.name}
-                                    onChange={(e) => setFeatureFormData(prev => ({ ...prev, name: e.target.value }))}
-                                    className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-                                    placeholder="Enter feature name"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Feature Slug</label>
-                                <input
-                                    type="text"
-                                    value={featureFormData.slug}
-                                    onChange={(e) => setFeatureFormData(prev => ({ ...prev, slug: e.target.value }))}
-                                    className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-                                    placeholder="Enter feature slug"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Description</label>
-                                <MarkdownEditor
-                                    id="feature-description"
-                                    value={featureFormData.description}
-                                    onChange={(value) => setFeatureFormData(prev => ({ ...prev, description: value }))}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex justify-end space-x-2 mt-6">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setIsFeatureDialogOpen(false);
-                                    setEditingFeature(null);
-                                    setFeatureFormData({ name: '', slug: '', description: '' });
-                                }}
-                                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    const feature: Feature = {
-                                        id: editingFeature?.id || 0,
-                                        name: featureFormData.name,
-                                        slug: featureFormData.slug,
-                                        description: featureFormData.description,
-                                        prerequisites: editingFeature?.prerequisites || []
-                                    };
-                                    handleFeatureSave(feature);
-                                }}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                            >
-                                {editingFeature ? 'Update' : 'Add'} Feature
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Feature Progression Dialog */}
             <FeatureProgressionDetailEdit

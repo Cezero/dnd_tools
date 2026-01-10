@@ -43,21 +43,19 @@ The feat system integrates with static data following the shared [Static Data In
 
 The base schema for feat validation, defining all required and optional fields with proper validation rules.
 
-**Purpose**: Validates core feat data including name, type, descriptions, benefits, and prerequisites.
+**Purpose**: Validates core feat data including name, type, and descriptions. Benefits and prerequisites are handled through the Feature system (FeatureProgression).
 
 **Key Validations**:
 - **`name`**: Required string, 1-200 characters, trimmed for display
 - **`typeId`**: Required positive integer for feat type reference
-- **`description`**: Optional string, maximum 10000 characters for detailed descriptions
-- **`benefit`**: Optional string, maximum 2000 characters for benefit descriptions
-- **`normalEffect`**: Optional string, maximum 2000 characters for normal effect descriptions
-- **`specialEffect`**: Optional string, maximum 2000 characters for special effect descriptions
-- **`prerequisites`**: Optional string, maximum 2000 characters for prerequisite descriptions
 - **`repeatable`**: Optional boolean for repeatable feat flag
 - **`fighterBonus`**: Optional boolean for fighter bonus feat flag
 - **`useSubId`**: Optional boolean, defaults to false, indicates player choice mechanics
-- **`benefits`**: Optional array of feat benefit mappings
-- **`prereqs`**: Optional array of feat prerequisite mappings
+- **`isVisible`**: Optional boolean, defaults to true, controls feat visibility
+- **`editionId`**: Required positive integer for edition reference
+- **`sourceBookInfo`**: Optional array of source book references
+- **`featureProgressions`**: Optional array of FeatureProgression entries (benefits and prerequisites)
+- **Note**: `description` and `summary` are not part of BaseFeatSchema - they come from associated Features via FeatureProgression
 
 **Usage**: Primary validation for feat data in API requests and responses.
 
@@ -90,33 +88,15 @@ Schema for feat ID parameter validation in URL paths.
 
 **Source File**: `packages/shared/schema/src/feat.ts` (FeatIdParamSchema definition)
 
-## 🔧 **Relationship Schemas**
+## 🔧 **Feature System Integration**
 
-### **FeatBenefitMapSchema**
+Benefits and prerequisites are now validated through the Feature system schemas:
 
-Schema for feat benefit relationship validation.
+- **FeatureProgressionSchema**: Validates FeatureProgression entries that link feats to features
+- **FeatureEntitySchema**: Validates FeatureEntity entries that define feat benefits
+- **FeaturePrerequisiteSchema**: Validates FeaturePrerequisite entries that define feat prerequisites
 
-**Purpose**: Validates feat benefit relationships and references.
-
-**Key Validations**:
-- **`typeId`**: Required positive integer for benefit type reference
-- **`referenceId`**: Optional positive integer for reference entity
-- **`amount`**: Optional non-negative integer for benefit amount
-- **`index`**: Required non-negative integer for benefit ordering
-
-**Usage**: Validates feat benefit relationships in feat data.
-
-**Source File**: `packages/shared/schema/src/feat.ts` (FeatBenefitMapSchema definition)
-
-### **FeatPrerequisiteMapSchema**
-
-Schema for feat prerequisite relationship validation.
-
-**Purpose**: Validates feat prerequisite relationships and references.
-
-**Key Validations**:
-- **`index`**: Required non-negative integer for prerequisite ordering
-- **`typeId`**: Required positive integer for prerequisite type reference
+**Related Documentation**: [Feature System Validation Schemas](../feature-system/validation-schemas.md)
 - **`amount`**: Optional non-negative integer for prerequisite amount
 - **`referenceId`**: Optional integer for reference entity
 
@@ -153,6 +133,48 @@ Schema for the response when retrieving all feats.
 **Usage**: Validates responses for feat list endpoints.
 
 **Source File**: `packages/shared/schema/src/feat.ts` (GetAllFeatsResponseSchema definition)
+
+### **FeatWithFeatureInfoSchema**
+
+Schema for feats with feature information (description and summary).
+
+**Purpose**: Lightweight schema for list views that need feat information with feature description and summary, but don't require full feat data or feature progressions.
+
+**IMPORTANT**: This is a composite schema where:
+- **`id`**: Comes from `Feat.id` (the feat's database ID)
+- **`name`**: Comes from `Feat.name` (the feat's name)
+- **`description`**: Comes from the associated `Feature.description` (via `FeatureProgression`)
+- **`summary`**: Comes from the associated `Feature.summary` (via `FeatureProgression`)
+
+**Key Validations**:
+- **`id`**: Required positive integer (from Feat table)
+- **`name`**: Required string, 1-200 characters (from Feat table)
+- **`description`**: Optional nullable string, max 10000 characters (from Feature table)
+- **`summary`**: Optional nullable string, max 10000 characters (from Feature table)
+
+**Backend Behavior**:
+- If a feat has no associated feature, `description` and `summary` will be `null`
+- If a feat has multiple feature progressions, the first one's feature is used
+- The backend service method `getAllFeatsWithFeatureInfo()` handles the data combination
+
+**Usage**: Used by the `/feats/with-feature-info` endpoint for list views that need to display feat descriptions and summaries without loading full feat data or progressions.
+
+**Source File**: `packages/shared/schema/src/feat.ts` (FeatWithFeatureInfoSchema definition)
+
+### **GetAllFeatsWithFeatureInfoResponseSchema**
+
+Schema for the response when retrieving all feats with feature information.
+
+**Purpose**: Validates paginated response containing feats with feature description and summary.
+
+**Key Validations**:
+- **`total`**: Required integer for total count
+- **`results`**: Required array of `FeatWithFeatureInfoSchema` entries
+- **Pagination Fields**: Includes standard pagination metadata
+
+**Usage**: Validates responses for the `/feats/with-feature-info` endpoint.
+
+**Source File**: `packages/shared/schema/src/feat.ts` (GetAllFeatsWithFeatureInfoResponseSchema definition)
 
 ### **FeatQueryResponseSchema**
 
@@ -297,28 +319,32 @@ The feat system follows the shared [Error Handling Patterns](../application-over
 The `useSubId` property enables special validation for player choice feats.
 
 **Validation Rules**:
-- **`useSubId: false`**: Standard feat validation, all benefits must have valid `referenceId`
-- **`useSubId: true`**: Player choice feat validation, benefits may have `null` `referenceId`
+- **`useSubId: false`**: Standard feat validation, all FeatureEntity entries must have valid `appliesToId`
+- **`useSubId: true`**: Player choice feat validation, FeatureEntity entries may have `null` `appliesToId` (player choice required)
 
 **Implementation Pattern**:
 ```typescript
 // Predefined feat validation
 if (!feat.useSubId) {
-  // All benefits must have valid referenceId
-  for (const benefit of feat.benefits) {
-    if (!benefit.referenceId) {
-      throw new Error('Predefined feats must have valid referenceId for all benefits');
+  // All FeatureEntity entries must have valid appliesToId
+  for (const progression of feat.featureProgressions) {
+    for (const entity of progression.entities || []) {
+      if (!entity.appliesToId) {
+        throw new Error('Predefined feats must have valid appliesToId for all entities');
+      }
     }
   }
 }
 
 // Player choice feat validation
 if (feat.useSubId) {
-  // Benefits may have null referenceId (player choice)
-  for (const benefit of feat.benefits) {
-    if (benefit.referenceId === null) {
-      // This is valid for player choice feats
-      continue;
+  // FeatureEntity entries may have null appliesToId (player choice)
+  for (const progression of feat.featureProgressions) {
+    for (const entity of progression.entities || []) {
+      if (entity.appliesToId === null) {
+        // This is valid for player choice feats
+        continue;
+      }
     }
   }
 }
@@ -328,19 +354,19 @@ if (feat.useSubId) {
 When a character selects a feat with `useSubId: true`:
 
 **Required Validations**:
-- **Choice Required**: Character must specify which entity (skill, weapon, etc.)
-- **Valid Entity**: The chosen entity must be valid for the benefit type
+- **Choice Required**: Character must specify which entity (skill, weapon, etc.) via CharacterFeatureChoice
+- **Valid Entity**: The chosen entity must be valid for the appliesTo type (EntityAppliesToType)
 - **Unique Selection**: Character cannot select the same entity multiple times
 
 **Example Validation**:
 ```typescript
 // Skill Focus feat selection validation
-if (feat.useSubId && benefit.typeId === FeatBenefitType.SKILL) {
-  if (!characterFeatChoice.skillId) {
+if (feat.useSubId && entity.appliesTo === EntityAppliesToType.Skill) {
+  if (!characterFeatureChoice.appliesToSubId) {
     throw new Error('Player must choose a skill for Skill Focus');
   }
   
-  if (!isValidSkill(characterFeatChoice.skillId)) {
+  if (!isValidSkill(characterFeatureChoice.appliesToSubId)) {
     throw new Error('Invalid skill selection for Skill Focus');
   }
 }

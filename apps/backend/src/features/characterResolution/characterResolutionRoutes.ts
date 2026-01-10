@@ -7,6 +7,7 @@ import {
     GetCurrentState,
     SaveSession,
     CancelSession,
+    GetAvailableFeats,
 } from './characterResolutionController';
 import { requireAuth } from '../../middleware/authMiddleware.js';
 
@@ -135,6 +136,11 @@ post('/:characterId/resolution/session/:sessionId/save', requireAuth, {
 deleteRoute('/:characterId/resolution/session/:sessionId', requireAuth, {
     params: CharacterIdAndSessionIdParamSchema,
 }, CancelSession);
+
+// Get Available Feats
+get('/:characterId/resolution/available-feats', requireAuth, {
+    params: CharacterIdParamSchema,
+}, GetAvailableFeats);
 
 export { CharacterResolutionRouter };
 

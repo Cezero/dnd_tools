@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { displayStrategyFactory } from '@/lib/formatters';
+import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
 import { Domain } from '@shared/schema';
 import { EDITION_MAP, DisplayType } from '@shared/static-data';
 import { GetSourceDisplay } from '@shared/utils';
@@ -26,6 +27,9 @@ export function DomainDisplay({
     isAdmin = false,
     fromListParams: _fromListParams = ''
 }: DomainDisplayProps): React.JSX.Element {
+    // Precache all entities referenced in feature progressions
+    usePrecacheFeatureEntities(domain?.features);
+
     const innerCellContentClasses = showHeader ? "p-3 bg-content border-content rounded-lg border w-full" : "";
     const outerContainerClasses = showHeader ? "w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-600 rounded-lg shadow-lg p-1" : "";
 

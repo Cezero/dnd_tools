@@ -50,8 +50,7 @@ The central service for all feat management operations, providing comprehensive 
 
 **Key Responsibilities**:
 - **Feat CRUD**: Create, read, update, and delete feat definitions
-- **Benefit Management**: Manage feat benefit relationships
-- **Prerequisite Management**: Manage feat prerequisite relationships
+- **Feature System Integration**: Manage feat relationships with Feature system (FeatureProgression, FeatureEntity, FeaturePrerequisite)
 - **Transaction Safety**: Ensure data consistency through proper transaction handling
 - **Validation**: Validate feat data and relationships
 
@@ -60,26 +59,40 @@ The central service for all feat management operations, providing comprehensive 
 **getAllFeats**: Retrieves all feats with ordering and count information
 - **Parameters**: None
 - **Business Logic**: Loads all feats ordered by name, provides total count
-- **Returns**: Array of feats with total count
+- **Returns**: Array of feats with total count (without feature progressions)
 
-**featQuery**: Retrieves feats with advanced filtering and relationship loading
-- **Parameters**: Query request with query type (proficiency, all)
-- **Business Logic**: Loads feats with filtering, includes benefits and prerequisites
-- **Returns**: Array of feats with relationships and total count
+**getAllFeatsWithFeatureInfo**: Retrieves all feats with feature information (description and summary)
+- **Parameters**: None
+- **Business Logic**: 
+  - Loads all feats (id and name only)
+  - Fetches associated feature progressions for all feats
+  - Combines feat data with feature description and summary
+  - If a feat has multiple progressions, uses the first one's feature
+  - If a feat has no associated feature, description and summary are null
+- **Returns**: Array of `FeatWithFeatureInfo` objects with total count
+- **IMPORTANT**: This is a composite schema where:
+  - `id` and `name` come from the `Feat` table
+  - `description` and `summary` come from the associated `Feature` table (via `FeatureProgression`)
+- **Usage**: Optimized for list views that need to display feat descriptions and summaries without loading full feat data or progressions
+
+**featQuery**: Retrieves feats with advanced filtering
+- **Parameters**: Query request with query type (currently only 'all' is supported)
+- **Business Logic**: Loads all feats ordered by name (proficiency identification is handled via FeatureProgressions, not query filtering)
+- **Returns**: Array of feats with total count
 
 **getFeatById**: Retrieves a specific feat by ID with full related data
 - **Parameters**: Feat ID
-- **Business Logic**: Loads feat by unique ID with benefits and prerequisites, returns null if not found
-- **Returns**: Complete feat object with relationships or null
+- **Business Logic**: Loads feat by unique ID with feature progressions (which contain benefits and prerequisites), returns null if not found
+- **Returns**: Complete feat object with feature progressions or null
 
-**createFeat**: Creates a new feat with validation and relationship management
-- **Parameters**: Complete feat creation data including benefits and prerequisites
-- **Business Logic**: Creates feat in database with relationships through transactions
+**createFeat**: Creates a new feat with validation and feature progression management
+- **Parameters**: Complete feat creation data including optional `featureProgressions` array
+- **Business Logic**: Creates feat in database, then creates FeatureProgression entries if provided (via `featureSystemService.createMultipleFeatureProgressions`)
 - **Returns**: Created feat ID and success message
 
-**updateFeat**: Updates an existing feat with relationship management
-- **Parameters**: Feat ID and updated data including benefits and prerequisites
-- **Business Logic**: Updates feat data and manages relationships through transactions
+**updateFeat**: Updates an existing feat
+- **Parameters**: Feat ID and updated data (feature progressions are managed separately via Feature system)
+- **Business Logic**: Updates feat metadata (name, typeId, flags, etc.) - feature progressions are managed through Feature system endpoints
 - **Returns**: Success message
 
 **deleteFeat**: Deletes a feat
@@ -107,7 +120,15 @@ The feat system controllers follow the shared [Controller Layer Pattern](../appl
 
 **GetAllFeats**: Retrieves all feats
 - **Route**: `GET /api/feats`
-- **Response**: Array of feats with total count
+- **Response**: Array of feats with total count (without feature progressions)
+
+**GetAllFeatsWithFeatureInfo**: Retrieves all feats with feature information (description and summary)
+- **Route**: `GET /api/feats/with-feature-info`
+- **Response**: Array of `FeatWithFeatureInfo` objects with total count
+- **IMPORTANT**: This endpoint returns a composite schema where:
+  - `id` and `name` come from the `Feat` table
+  - `description` and `summary` come from the associated `Feature` table (via `FeatureProgression`)
+- **Usage**: Optimized for list views that need to display feat descriptions and summaries without loading full feat data or progressions
 
 **FeatQuery**: Retrieves feats with advanced filtering
 - **Route**: `GET /api/feats/query`
@@ -138,6 +159,22 @@ The feat system controllers follow the shared [Controller Layer Pattern](../appl
 
 **Source File**: `src/features/feat/featController.ts`
 
+### **CharacterResolutionController**
+
+**Purpose**: Handles HTTP requests for character resolution operations, including available feat filtering.
+
+**Key Methods**:
+
+**GetAvailableFeats**: Retrieves filtered available feats for a character
+- **Route**: `GET /api/characters/:characterId/resolution/available-feats`
+- **Authentication**: User authentication required (must own character)
+- **Parameters**: Character ID in URL path
+- **Response**: Array of available feats (filtered by prerequisites, owned feats, and proficiency conflicts)
+- **Business Logic**: Uses `AvailableFeatService.getAvailableFeats()` to filter feats based on character state
+- **Usage**: Called by frontend character feat selection UI to display only eligible feats
+
+**Source File**: `src/features/characterResolution/characterResolutionController.ts`
+
 ## 🔗 **Routes Layer**
 
 The feat system routes follow the shared [RESTful API Structure](../application-overview/backend-implementation.md#restful-api-structure) with feat-specific endpoints:
@@ -149,12 +186,13 @@ The feat system routes follow the shared [RESTful API Structure](../application-
 **Route Structure**:
 - **Core Feat Routes**: Standard CRUD operations for feats
 - **Feat Query Routes**: Advanced querying with filtering
-- **Feat Integration Routes**: Integration with benefit and prerequisite systems
+- **Character Resolution Routes**: Character-specific feat filtering (in character resolution routes)
 
 **Route Definitions**:
 
 **Core Feat Routes**:
-- `GET /api/feats` - Retrieve all feats
+- `GET /api/feats` - Retrieve all feats (without feature progressions)
+- `GET /api/feats/with-feature-info` - Retrieve all feats with feature description and summary (composite schema)
 - `GET /api/feats/:id` - Retrieve specific feat by ID
 - `POST /api/feats` - Create new feat (admin required)
 - `PUT /api/feats/:id` - Update existing feat (admin required)
@@ -163,38 +201,70 @@ The feat system routes follow the shared [RESTful API Structure](../application-
 **Feat Query Routes**:
 - `GET /api/feats/query` - Query feats with filtering
 
-**Authentication**: Admin authentication required for all write operations
+**Character Resolution Routes** (in character resolution router):
+- `GET /api/characters/:characterId/resolution/available-feats` - Get filtered available feats for a character
+
+**Authentication**: Admin authentication required for all write operations. User authentication required for character resolution routes.
 **Validation**: All routes use Zod schemas for request validation
 
-**Source File**: `src/features/feat/featRoutes.ts`
+**Source Files**: 
+- `src/features/feat/featRoutes.ts` - Feat CRUD routes
+- `src/features/characterResolution/characterResolutionRoutes.ts` - Character resolution routes including available feats
 
 ## 🔧 **Business Logic Patterns**
 
-### **Benefit Management**
+### **Feature System Integration**
 
-The feat system manages feat benefits through complex relationship handling:
+All feat benefits and prerequisites are managed through the Feature system:
 
-**Benefit Types**: Skills, saves, proficiencies, and other benefits
-**Benefit References**: Links to specific skills, saves, or other entities
-**Benefit Amounts**: Numeric values for benefit calculations
-**Benefit Indexing**: Ordering of multiple benefits
+**Benefits**: Defined via FeatureEntity entries within FeatureProgression entries
+- **EntityAppliesToType**: Specifies what the benefit applies to (Attack, SavingThrow, Skill, Proficiency, etc.)
+- **appliesToId**: The specific entity ID (skill ID, ability ID, etc.)
+- **appliesToSubId**: Optional sub-identifier for special contexts (e.g., AttackBonusAppliesTo for two-weapon fighting)
+- **value**: The numeric bonus value
 
-**Integration Pattern**: The feat service manages complex benefit relationships through database transactions, ensuring data consistency and proper relationship handling.
+**Prerequisites**: Defined via FeaturePrerequisite entries within Feature entries
+- **FeaturePrerequisiteType**: Specifies the prerequisite type (AbilityScore, SkillRanks, Feat, BaseAttackBonus, etc.)
+- **appliesToId**: The specific entity ID (ability ID, skill ID, feat ID, etc.)
+- **minValue**: The minimum required value
 
-**Related Documentation**: [Feat System Static Data](static-data.md)
+**Integration Pattern**: Benefits and prerequisites are managed through the Feature system service (`featureSystemService`), not directly by the feat service. The feat service creates FeatureProgression entries when creating feats, but all benefit/prerequisite management is handled by the Feature system.
 
-### **Prerequisite Management**
+**Related Documentation**: [Feature System Backend Implementation](../feature-system/backend-implementation.md)
 
-The feat system manages feat prerequisites through complex relationship handling:
+### **AvailableFeatService**
 
-**Prerequisite Types**: Abilities, skills, feats, BAB, spellcasting, and more
-**Prerequisite References**: Links to specific abilities, skills, feats, or other entities
-**Prerequisite Amounts**: Numeric values for prerequisite calculations
-**Prerequisite Indexing**: Ordering of multiple prerequisites
+A service for filtering available feats for character selection based on prerequisites, owned feats, and proficiency conflicts.
 
-**Integration Pattern**: The feat service manages complex prerequisite relationships through database transactions, ensuring data consistency and proper relationship handling.
+**Purpose**: Provides backend filtering of available feats to ensure only eligible feats are shown to users during character feat selection.
 
-**Related Documentation**: [Feat System Static Data](static-data.md)
+**Key Responsibilities**:
+- **Prerequisite Checking**: Validates character meets all feat prerequisites
+- **Owned Feat Filtering**: Filters out feats the character already has (unless repeatable)
+- **Proficiency Conflict Detection**: Filters out feats that provide proficiencies the character already has as "all" proficiencies
+
+**Core Methods**:
+
+**getAvailableFeats**: Filters available feats for a character
+- **Parameters**: 
+  - `character`: CharacterWithAllDetailsResponse
+  - `resolvedProgressions`: FeatureProgression[] (resolved character features)
+  - `classDetails`: DnDClass | null
+  - `raceDetails`: Race | null
+  - `allFeats`: FeatInQueryResponse[] (all feats to filter)
+- **Business Logic**: 
+  - Fetches all feats with their feature progressions
+  - Extracts character's "all" proficiencies (category-based proficiencies)
+  - Identifies owned feats (selected and granted)
+  - Filters feats by:
+    1. Already owned (unless repeatable and not all iterations owned)
+    2. Proficiency conflicts (feats providing proficiencies character already has as "all")
+    3. Prerequisites (character must meet all FeaturePrerequisite requirements)
+- **Returns**: Filtered array of available feats
+
+**Source File**: `src/features/characterResolution/availableFeatService.ts`
+
+**Usage**: Called by character resolution system to provide filtered feat lists for character feat selection UI.
 
 
 ## 🔗 **Integration Points**
@@ -215,14 +285,16 @@ The feat system integrates with the character system through feat selection and 
 
 ### **Feature System Integration**
 
-The feat system integrates with the feature system for feat-related features:
+The feat system is fully integrated with the Feature system:
 
-**Feat Prerequisites**: Features can require specific feats
-**Feat Benefits**: Features can provide feat-related bonuses
-**Feat Progression**: Features can grant additional feats
-**Feat Specializations**: Features can provide feat specializations
+**Feat Benefits and Prerequisites**: All feat benefits and prerequisites are defined through FeatureProgression entries:
+- **FeatureProgression**: Links feats to Features (sourceType: Feat)
+- **FeatureEntity**: Defines feat benefits (skill bonuses, attack bonuses, proficiencies, etc.)
+- **FeaturePrerequisite**: Defines feat prerequisites (ability scores, skills, feats, BAB, etc.)
 
-**Integration Pattern**: The feat system integrates with the feature system to handle feat-related features, ensuring proper feat prerequisite and benefit calculations.
+**Feature Descriptions**: Feat descriptions and summaries come from associated Features, not the Feat model itself.
+
+**Integration Pattern**: When creating a feat, `featureProgressions` can be included in the request. The feat service creates the feat, then calls `featureSystemService.createMultipleFeatureProgressions()` to create the FeatureProgression entries. All benefit and prerequisite management is handled through the Feature system service.
 
 **Related Documentation**: [Feature System Backend Implementation](../feature-system/backend-implementation.md)
 
@@ -233,7 +305,7 @@ The feat system follows the shared [Error Handling Patterns](../application-over
 **Validation Errors**: Zod schema validation errors with detailed field information
 **Business Logic Errors**: Feat-specific business rule violations
 **Database Errors**: Prisma ORM errors with proper error messages
-**Relationship Errors**: Errors from complex benefit and prerequisite management
+**Feature System Errors**: Errors from Feature system operations (benefit and prerequisite management)
 
 ## 🔧 **Performance Considerations**
 

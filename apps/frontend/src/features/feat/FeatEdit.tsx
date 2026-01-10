@@ -9,6 +9,9 @@ import {
     SourceEditor
 } from '@/components/forms';
 import { CustomCheckbox, CustomSelect } from '@/components/forms/FormComponents';
+import { FeaturesManager } from '@/components/feature-system/FeaturesManager';
+import { FeatureProgressionDetailEdit } from '@/components/feature-system/FeatureProgressionDetailEdit';
+import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { CreateFeatRequest, UpdateFeatRequest, UpdateFeatSchema, BaseFeatSchema, Feat, FeatureProgression } from '@shared/schema';
 import { FEAT_TYPE_LIST, EDITION_LIST, SourceType, EditionId, FeatureSourceType } from '@shared/static-data';
@@ -29,11 +32,20 @@ export function FeatEdit() {
     const [isCreating, setIsCreating] = useState(false);
     const [featError, setFeatError] = useState<Error | null>(null);
 
+    // Feature progression management state
+    const [isProgressionDialogOpen, setIsProgressionDialogOpen] = useState(false);
+    const [editingProgression, setEditingProgression] = useState<FeatureProgression | null>(null);
+    const [preSelectedFeature, setPreSelectedFeature] = useState<FeatureProgression['feature'] | null>(null);
+    const [isSavingProgression, setIsSavingProgression] = useState(false);
+    // Store progressions in state for new feats (before they're saved)
+    const [unsavedProgressions, setUnsavedProgressions] = useState<FeatureProgression[]>([]);
+
     // Get query client for cache invalidation
     const queryClient = useQueryClient();
 
-    // Use the mutation hook for proper cache invalidation
+    // Use the mutation hooks for proper cache invalidation
     const updateFeatMutation = FeatQueryHooks.useUpdateFeat();
+    const createFeatMutation = FeatQueryHooks.useCreateFeat();
 
     const fromListParams = location.state?.fromListParams || '';
 
@@ -45,7 +57,6 @@ export function FeatEdit() {
         name: '',
         typeId: 1,
         editionId: 1,
-        summary: '',
         repeatable: false,
         fighterBonus: false,
         useSubId: false,
@@ -85,7 +96,6 @@ export function FeatEdit() {
                     name: fetchedFeat.name || '',
                     typeId: fetchedFeat.typeId || 1,
                     editionId: fetchedFeat.editionId || 1,
-                    summary: fetchedFeat.summary || '',
                     repeatable: fetchedFeat.repeatable ?? false,
                     fighterBonus: fetchedFeat.fighterBonus ?? false,
                     useSubId: fetchedFeat.useSubId ?? false,
@@ -104,28 +114,263 @@ export function FeatEdit() {
         fetchFeat();
     }, [id]);
 
-    // Get the associated feature ID from feat progressions
+    // Get the associated feature progressions from feat
     const featWithProgressions = feat as (typeof feat & { featureProgressions?: FeatureProgression[] }) | undefined;
-    const featProgression = featWithProgressions?.featureProgressions?.find((p: FeatureProgression) =>
-        p.sourceType === FeatureSourceType.Feat && p.featId === parseInt(id || '0')
-    ) || featWithProgressions?.featureProgressions?.[0] || null;
-    const featureId = featProgression?.featureId || featProgression?.feature?.id;
 
-    const handleEditFeature = () => {
-        if (featureId) {
-            navigate(`/features/${featureId}/edit`, {
-                state: {
-                    fromPage: 'feats',
-                    fromListParams: fromListParams,
-                    parentType: 'feat',
-                    parentId: parseInt(id || '0')
+    // Create a properly initialized progression when adding a new one
+    useEffect(() => {
+        if (isProgressionDialogOpen && !editingProgression && preSelectedFeature) {
+            // Generate temporary ID for new feats, use actual ID for existing feats
+            const featIdValue = id === 'new' ? Date.now() + Math.random() : parseInt(id || '0');
+            
+            const newProgression: FeatureProgression = {
+                id: 0,
+                sourceType: FeatureSourceType.Feat,
+                classId: null,
+                raceId: null,
+                domainId: null,
+                featId: featIdValue,
+                companionId: null,
+                variantOverrideId: null,
+                level: 1,
+                featureId: preSelectedFeature.id,
+                feature: preSelectedFeature,
+                entities: [],
+                prerequisites: []
+            };
+            setEditingProgression(newProgression);
+        }
+    }, [isProgressionDialogOpen, editingProgression, preSelectedFeature, id]);
+
+    // Feature progression handlers
+    const handleSaveProgression = async (progression: FeatureProgression) => {
+        setIsSavingProgression(true);
+        try {
+            if (!progression.featureId) {
+                console.error('Cannot save progression: missing featureId', progression);
+                setError('Cannot save progression: missing feature ID');
+                setIsSavingProgression(false);
+                return;
+            }
+
+            // Check if this is a new feat - store in state instead of saving
+            if (id === 'new') {
+                // Ensure sourceType and featId are set correctly (using temporary ID)
+                const progressionData: FeatureProgression = {
+                    ...progression,
+                    id: Date.now() + Math.random(), // Temporary ID for frontend
+                    sourceType: FeatureSourceType.Feat,
+                    companionId: null, // Ensure companionId is null for feat progressions
+                    featId: Date.now() + Math.random(), // Temporary ID, will be replaced when feat is saved
+                };
+
+                // Update or add to unsaved progressions
+                if (editingProgression && editingProgression.id !== 0) {
+                    // Update existing progression
+                    setUnsavedProgressions(prev => 
+                        prev.map(p => p.id === editingProgression.id ? progressionData : p)
+                    );
+                } else {
+                    // Add new progression
+                    setUnsavedProgressions(prev => [...prev, progressionData]);
                 }
+
+                setIsProgressionDialogOpen(false);
+                setEditingProgression(null);
+                setPreSelectedFeature(null);
+                setMessage('Feature progression added (will be saved with feat)');
+                setIsSavingProgression(false);
+                return;
+            }
+
+            // For existing feats, save to backend
+            const featIdNum = parseInt(id || '0');
+            if (!featIdNum) {
+                setError('Cannot save progression: feat ID is required');
+                setIsSavingProgression(false);
+                return;
+            }
+
+            // Ensure featId and sourceType are set correctly
+            const progressionData = {
+                ...progression,
+                featId: featIdNum,
+                companionId: null, // Ensure companionId is null for feat progressions
+                sourceType: FeatureSourceType.Feat,
+                // Clean nested objects that shouldn't be sent
+                feature: progression.feature ? {
+                    id: progression.feature.id,
+                    name: progression.feature.name,
+                    slug: progression.feature.slug
+                } : undefined,
+                entities: progression.entities?.map(e => ({
+                    ...e,
+                    conditions: e.conditions?.map(c => ({
+                        ...c,
+                        entity: c.entity ? { id: c.entity.id } : undefined
+                    }))
+                })),
+                prerequisites: progression.prerequisites?.map(p => ({
+                    ...p,
+                    feature: p.feature ? { id: p.feature.id } : undefined
+                }))
+            };
+
+            await FeatureSystemApi.updateFeatureProgressions(
+                { progressions: [progressionData] },
+                { id: progression.featureId }
+            );
+
+            // Close the dialog FIRST, before any other state changes
+            // This ensures the guard in HandleSubmit can catch it if needed
+            setIsProgressionDialogOpen(false);
+            setEditingProgression(null);
+            setPreSelectedFeature(null);
+
+            // Refetch the feat data to get updated progressions
+            // Use imperative fetch instead of invalidate to avoid triggering navigation
+            const refetchedFeat = await FeatQueryHooks.getFeatById(featIdNum);
+            if (refetchedFeat) {
+                setFeat(refetchedFeat);
+            }
+
+            // Invalidate other queries (but don't await to avoid blocking)
+            // These will be refetched when needed, but won't cause navigation
+            queryClient.invalidateQueries({
+                queryKey: ['feats'],
+                exact: false
             });
+            queryClient.invalidateQueries({
+                queryKey: ['feats-cache'],
+                exact: false
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['features', 'progressions', progression.featureId]
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['features'],
+                exact: false
+            });
+
+            setMessage('Feature progression updated successfully!');
+        } catch (err) {
+            const error = err instanceof Error ? err : new Error('Failed to save feature progression');
+            console.error('Error saving feature progression:', error);
+            setError(error.message);
+        } finally {
+            setIsSavingProgression(false);
+        }
+    };
+
+    const handleEditProgression = (progression: FeatureProgression) => {
+        setEditingProgression(progression);
+        setPreSelectedFeature(null);
+        setIsProgressionDialogOpen(true);
+    };
+
+    const handleRemoveProgression = async (progressionId: number) => {
+        try {
+            if (id === 'new') {
+                // Remove from unsaved progressions
+                setUnsavedProgressions(prev => prev.filter(p => p.id !== progressionId));
+                setMessage('Feature progression removed');
+                return;
+            }
+
+            await FeatureSystemApi.deleteFeatureProgression(progressionId);
+            // Refetch feat to update progressions
+            const refetchedFeat = await FeatQueryHooks.getFeatById(parseInt(id || '0'));
+            if (refetchedFeat) {
+                setFeat(refetchedFeat);
+            }
+            queryClient.invalidateQueries({
+                queryKey: ['feats'],
+                exact: false
+            });
+            setMessage('Feature progression removed successfully!');
+        } catch (err) {
+            const error = err instanceof Error ? err : new Error('Failed to remove feature progression');
+            setError(error.message);
+        }
+    };
+
+    const handleAddFeature = async (feature: { id: number; name: string; description: string; slug: string }) => {
+        if (id === 'new') {
+            // For new feats, just open the dialog to add a progression
+            setPreSelectedFeature({
+                id: feature.id,
+                name: feature.name,
+                description: feature.description,
+                slug: feature.slug,
+                summary: null,
+                displayInCharacterSheet: true,
+                prerequisites: []
+            });
+            setEditingProgression(null);
+            setIsProgressionDialogOpen(true);
+            return;
+        }
+
+        const featIdNum = parseInt(id || '0');
+        if (!featIdNum) {
+            setError('Cannot add feature: feat ID is required');
+            return;
+        }
+
+        try {
+            const newProgression: FeatureProgression = {
+                id: 0,
+                featureId: feature.id,
+                featId: featIdNum,
+                sourceType: FeatureSourceType.Feat,
+                level: 1,
+                entities: [],
+                prerequisites: [],
+                feature: {
+                    id: feature.id,
+                    name: feature.name,
+                    description: feature.description,
+                    slug: feature.slug,
+                    summary: null,
+                    displayInCharacterSheet: true,
+                    prerequisites: []
+                }
+            };
+
+            await FeatureSystemApi.createFeatureProgression(newProgression);
+
+            // Refetch feat to update progressions
+            const refetchedFeat = await FeatQueryHooks.getFeatById(featIdNum);
+            if (refetchedFeat) {
+                setFeat(refetchedFeat);
+            }
+
+            queryClient.invalidateQueries({
+                queryKey: ['feats'],
+                exact: false
+            });
+            setMessage('Feature added successfully!');
+        } catch (err) {
+            const error = err instanceof Error ? err : new Error('Failed to add feature');
+            setError(error.message);
         }
     };
 
     const HandleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // Prevent form submission if we're saving a progression or dialog is open
+        if (isSavingProgression || isProgressionDialogOpen) {
+            return;
+        }
+        
+        // Additional check: if the event originated from within a dialog, block it
+        const target = e.target as HTMLElement;
+        const dialogElement = target.closest('[role="dialog"]') || target.closest('[data-dialog]') || document.querySelector('[role="dialog"]:not([hidden])');
+        if (dialogElement && dialogElement.contains(target)) {
+            return;
+        }
+        
         setMessage('');
         setError(null);
 
@@ -137,8 +382,46 @@ export function FeatEdit() {
         try {
             if (id === 'new') {
                 setIsCreating(true);
-                const newFeat = await FeatQueryHooks.createFeat(formData as CreateFeatRequest);
+                // Prepare progressions for creation (remove temporary IDs and clean up)
+                const progressionsToCreate = unsavedProgressions.map(p => {
+                    const { id: _id, featId: _featId, feature, ...progressionData } = p;
+                    return {
+                        ...progressionData,
+                        // Remove nested objects that shouldn't be sent
+                        feature: undefined,
+                        entities: progressionData.entities?.map(e => {
+                            const { id: _eId, progressionId: _pId, item, feat, feature: _feat, spell, domain, ...entityData } = e;
+                            return {
+                                ...entityData,
+                                conditions: entityData.conditions?.map(c => {
+                                    const { id: _cId, featureEntityId: _feId, entity, ...conditionData } = c;
+                                    return {
+                                        ...conditionData,
+                                        entity: undefined
+                                    };
+                                })
+                            };
+                        }),
+                        prerequisites: progressionData.prerequisites?.map(pr => {
+                            const { id: _prId, featureId: _fId, feature, ...prereqData } = pr;
+                            return {
+                                ...prereqData,
+                                feature: undefined
+                            };
+                        })
+                    };
+                });
+
+                const createData: CreateFeatRequest = {
+                    ...formData,
+                    featureProgressions: progressionsToCreate.length > 0 ? progressionsToCreate : undefined
+                } as CreateFeatRequest;
+
+                const result = await createFeatMutation.mutateAsync({ requestData: createData });
+                const newFeat = { id: result.id };
                 setMessage('Feat created successfully!');
+                // Clear unsaved progressions
+                setUnsavedProgressions([]);
 
                 // Invalidate feat-related queries
                 await queryClient.invalidateQueries({
@@ -242,7 +525,7 @@ export function FeatEdit() {
             <ValidatedForm
                 onSubmit={HandleSubmit}
                 validationState={form.validation.validationState}
-                isLoading={isCreating || updateFeatMutation.isPending}
+                isLoading={isCreating || updateFeatMutation.isPending || createFeatMutation.isPending}
                 formData={formData}
                 setFormData={setFormData}
                 validation={form.validation}
@@ -304,48 +587,30 @@ export function FeatEdit() {
                     </div>
                 </div>
 
-                {/* Summary field (still in Feat for backward compatibility, but also in Feature) */}
-                <div className="mt-6">
-                    <div className="space-y-2">
-                        <ValidatedInput
-                            field="summary"
-                            label="Summary (for PDF character sheets)"
-                            type="textarea"
-                            labelExtraClassName="mb-2"
-                            inputExtraClassName="w-full"
-                            placeholder="Enter brief summary for character sheets (plain text, no markdown)"
-                            rows={4}
-                        />
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                            This summary will be displayed on PDF character sheets. Keep it concise and avoid markdown formatting.
-                            Note: This is also stored in the associated Feature for consistency.
-                        </p>
-                    </div>
+                {/* Feature Progressions Management */}
+                <div className="mt-8">
+                    <FeaturesManager
+                        featureProgressions={id === 'new' ? unsavedProgressions : (featWithProgressions?.featureProgressions || [])}
+                        onEditProgression={handleEditProgression}
+                        onRemoveProgression={handleRemoveProgression}
+                        onAddFeature={handleAddFeature}
+                        contextType={FeatureSourceType.Feat}
+                        contextId={id === 'new' ? 0 : parseInt(id || '0')}
+                        parentType="feat"
+                        title="Feature Progressions"
+                        emptyMessage="No feature progressions. Click 'Add Feature' to add one."
+                        setEditingProgression={setEditingProgression}
+                        setPreSelectedFeature={setPreSelectedFeature}
+                        setIsProgressionDialogOpen={setIsProgressionDialogOpen}
+                    />
                 </div>
-
-                {/* Link to edit associated Feature */}
-                {id !== 'new' && featureId && (
-                    <div className="mt-6 p-4 border rounded-md dark:border-gray-600 bg-blue-50 dark:bg-blue-900/20">
-                        <h3 className="text-lg font-semibold mb-2">Feature Information</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                            Benefits, prerequisites, and descriptive text (description, benefit, normal effect, special effect) are now managed through the Feature system.
-                        </p>
-                        <button
-                            type="button"
-                            onClick={handleEditFeature}
-                            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                        >
-                            Edit Associated Feature
-                        </button>
-                    </div>
-                )}
 
                 {/* Source References */}
                 <div className="mt-8">
                     <SourceEditor
                         sources={formData.sourceBookInfo || []}
                         onSourcesChange={(sources) => setFormData(prev => ({ ...prev, sourceBookInfo: sources }))}
-                        sourceType={SourceType.Core}
+                        sourceType={SourceType.Classes}
                         editionId={formData.editionId as EditionId}
                     />
                 </div>
@@ -356,21 +621,35 @@ export function FeatEdit() {
                         type="button"
                         onClick={() => navigate('/feats')}
                         className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                        disabled={isCreating || updateFeatMutation.isPending}
+                        disabled={isCreating || updateFeatMutation.isPending || createFeatMutation.isPending}
                     >
                         Cancel
                     </button>
                     <button
                         type="submit"
                         className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isCreating || updateFeatMutation.isPending || form.validation.validationState.hasErrors}
+                        disabled={isCreating || updateFeatMutation.isPending || createFeatMutation.isPending || form.validation.validationState.hasErrors}
                     >
-                        {isCreating || updateFeatMutation.isPending ? 'Saving...' : id === 'new' ? 'Create Feat' : 'Update Feat'}
+                        {isCreating || updateFeatMutation.isPending || createFeatMutation.isPending ? 'Saving...' : id === 'new' ? 'Create Feat' : 'Update Feat'}
                     </button>
                 </div>
             </ValidatedForm>
 
-
+            {/* Feature Progression Edit Dialog */}
+            {isProgressionDialogOpen && (
+                <FeatureProgressionDetailEdit
+                    progression={editingProgression}
+                    isOpen={isProgressionDialogOpen}
+                    onClose={() => {
+                        setIsProgressionDialogOpen(false);
+                        setEditingProgression(null);
+                        setPreSelectedFeature(null);
+                    }}
+                    onSave={handleSaveProgression}
+                    preSelectedFeature={preSelectedFeature || undefined}
+                    showSourceTypeSelector={false}
+                />
+            )}
         </div>
     );
 }

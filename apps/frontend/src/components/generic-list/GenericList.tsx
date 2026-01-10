@@ -706,7 +706,8 @@ export function GenericList<T>({
                                                         let finalCellValue = cellValue;
 
                                                         // Apply detail navigation to required column
-                                                        if (isRequiredColumn && (routes || functions?.detail)) {
+                                                        // Skip if cellValue is already a React element (like EntityLink)
+                                                        if (isRequiredColumn && (routes || functions?.detail) && !React.isValidElement(cellValue)) {
                                                             finalCellValue = renderDetailCell(row.original, cell);
                                                         }
 

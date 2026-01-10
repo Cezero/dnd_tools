@@ -26,7 +26,8 @@ import {
     WeaponFamiliarityFormatter,
     SpellSaveDCFormatter,
     ResistanceFormatter,
-    PrerequisiteFormatter
+    PrerequisiteFormatter,
+    SpellbookSpellFormatter
 } from './pure-formatters';
 import { generateKey } from './registry-utils';
 import type { BaseFormatter } from './types';
@@ -95,7 +96,7 @@ export class FormatterRegistry implements IFormatterRegistry {
     }
 
     registerProficiencyFormatter(appliesToType: EntityAppliesToType, formatter: BaseFormatter): void {
-        this.registerFormatter(EntityType.Proficiency, formatter, appliesToType);
+        this.registerFormatter(EntityType.Other, formatter, appliesToType);
     }
 
     // Entity formatter convenience wrapper
@@ -128,6 +129,7 @@ export class FormatterRegistry implements IFormatterRegistry {
         const weaponFamiliarityFormatter = new WeaponFamiliarityFormatter();
         const spellSaveDCFormatter = new SpellSaveDCFormatter();
         const resistanceFormatter = new ResistanceFormatter();
+        const spellbookSpellFormatter = new SpellbookSpellFormatter();
 
         // Bonus-compatible types (using convenience wrapper)
         this.registerBonusFormatter(EntityAppliesToType.Ability, signedValueFormatter);
@@ -178,8 +180,11 @@ export class FormatterRegistry implements IFormatterRegistry {
         const prerequisiteFormatter = new PrerequisiteFormatter();
         this.registerOtherFormatter(EntityAppliesToType.Prerequisite, prerequisiteFormatter);
 
+        // SpellbookSpell formatter
+        this.registerOtherFormatter(EntityAppliesToType.SpellbookSpell, spellbookSpellFormatter);
+
         // Proficiency-compatible types
-        this.registerProficiencyFormatter(EntityAppliesToType.Feat, proficiencyFormatter);
+        this.registerProficiencyFormatter(EntityAppliesToType.Proficiency, proficiencyFormatter);
 
         // Choice-compatible types
         const featureEntityFormatter = new FeatureEntityFormatter();

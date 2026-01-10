@@ -16,10 +16,34 @@ import type {
 /**
  * Synchronous cache access helpers for formatters
  * These functions use queryClient.getQueryData() to read from cache without triggering fetches
+ *
+ * IMPORTANT: Entities should be precached before formatting to ensure names are available.
+ * Use the `usePrecacheFeatureEntities` hook in React components, or call
+ * `DisplayStrategyBase.precacheEntities()` imperatively before formatting.
+ *
+ * @example
+ * ```tsx
+ * // In a React component:
+ * const { isComplete } = usePrecacheFeatureEntities(progressions);
+ * if (!isComplete) return <div>Loading...</div>;
+ * const result = strategy.format(progressions, { queryClient });
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Imperative usage:
+ * await DisplayStrategyBase.precacheEntities(progressions, queryClient);
+ * const result = strategy.format(progressions, { queryClient });
+ * ```
  */
 
 /**
  * Get feat name from cache synchronously
+ * 
+ * Cache key priorities:
+ * 1. Individual feat cache: ['feats', 'item', featId]
+ * 2. Full feats list cache: ['feats', 'full']
+ * 3. Legacy cache format: ['feats-cache', { queryType: 'all' }]
  */
 export function getFeatNameFromCache(queryClient: QueryClient | undefined, featId: number | null | undefined): string | null {
     if (!queryClient || !featId) {

@@ -1,5 +1,6 @@
 import { ColumnDef } from '@tanstack/react-table';
 
+import { EntityLink } from '@/components/entity-link';
 import { createArrayIdFilter, createEqualsFilter, createContainsFilter } from '@/components/generic-list/filterFunctions';
 import { useCacheFunctions } from '@/services/cache';
 import { Spell } from '@shared/schema/spell';
@@ -31,6 +32,19 @@ export const useSpellColumns = (): ColumnDef<Spell, unknown>[] => {
             enableResizing: true,
             size: 100,
             filterFn: createContainsFilter<Spell>(),
+            cell: info => {
+                const spell = info.row.original;
+                const spellName = String(info.getValue());
+                return (
+                    <EntityLink
+                        entityType="spell"
+                        entityId={spell.id}
+                        href={`/spells/${spell.id}`}
+                    >
+                        {spellName}
+                    </EntityLink>
+                );
+            },
             meta: {
                 required: true,
                 filterType: FilterType.TEXT_INPUT,

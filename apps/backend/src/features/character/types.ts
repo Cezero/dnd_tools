@@ -85,11 +85,15 @@ export interface CharacterService {
 
     // NEW: Spell selection methods
     getCharacterDomains: (characterId: number, classId: number) => Promise<number[]>;
-    getAvailableSpellsForClass: (characterId: number, classId: number) => Promise<{
-        spells: Array<{ spell: Spell; classSpellLevel: number | null; isKnown: boolean }>;
+    getAvailableSpellsForClass: (characterId: number, classId: number, resolvedProgressions?: import('@shared/schema').FeatureProgression[]) => Promise<{
+        spells: Array<{ spell: Spell; classSpellLevel: number | null; isKnown: boolean; isFreeGrant?: boolean }>;
         domainSpells: Array<{ domainId: number; domainName: string; spell: Spell; spellLevel: number; classSpellLevel: number | null; isKnown: boolean }>;
+        availableFreeSpells?: number;
     }>;
-    addSpellKnown: (characterId: number, classId: number, spellId: number, advancementId: number) => Promise<UpdateResponse>;
-    removeSpellKnown: (characterId: number, spellId: number, advancementId: number) => Promise<UpdateResponse>;
+    addSpellKnown: (characterId: number, classId: number, spellId: number, advancementId: number, isFreeGrant?: boolean, resolvedProgressions?: import('@shared/schema').FeatureProgression[]) => Promise<import('@shared/schema').AddSpellKnownResponse>;
+    removeSpellKnown: (characterId: number, spellId: number, advancementId: number) => Promise<import('@shared/schema').RemoveSpellKnownResponse>;
+    getMaxCastableSpellLevel: (classId: number, characterLevel: number) => Promise<number>;
+    validateSpellLevelForAdvancement: (classId: number, advancementLevel: number, spellLevel: number) => Promise<boolean>;
+    countFreeGrantsForAdvancement: (advancementId: number) => Promise<number>;
 
 } 

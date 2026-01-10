@@ -10,8 +10,20 @@ export function initializeFormData(
     progression: FeatureProgression | null,
     preSelectedFeature?: Feature
 ): FeatureProgression {
-    // If progression exists, use it as-is
+    // If progression exists, use it as-is (but ensure sourceType is set if featId/classId/etc is set)
     if (progression) {
+        // Infer sourceType from context if not explicitly set
+        if (progression.sourceType === FeatureSourceType.None || !progression.sourceType) {
+            if (progression.featId) {
+                return { ...progression, sourceType: FeatureSourceType.Feat };
+            } else if (progression.classId) {
+                return { ...progression, sourceType: FeatureSourceType.Class };
+            } else if (progression.raceId) {
+                return { ...progression, sourceType: FeatureSourceType.Race };
+            } else if (progression.domainId) {
+                return { ...progression, sourceType: FeatureSourceType.Domain };
+            }
+        }
         return progression;
     }
 
@@ -22,6 +34,8 @@ export function initializeFormData(
         classId: null,
         raceId: null,
         domainId: null,
+        featId: null,
+        companionId: null,
         variantOverrideId: null,
         level: 1,
         featureId: preSelectedFeature?.id || 0,

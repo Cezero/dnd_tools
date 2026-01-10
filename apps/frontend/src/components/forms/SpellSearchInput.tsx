@@ -7,6 +7,7 @@ import { GenericSearchInput, type SearchableItem } from './GenericSearchInput';
 
 type SpellListItem = SearchableItem & {
     editionId: number;
+    baseLevel?: number; // Spell level for filtering
 };
 
 export interface SpellSearchInputProps {
@@ -18,6 +19,8 @@ export interface SpellSearchInputProps {
     componentExtraClassName?: string;
     labelExtraClassName?: string;
     spellList?: SpellListItem[]; // Optional prop for pre-loaded spells
+    customOptions?: SpellListItem[]; // Custom options to prepend (e.g., "All" option with id: -1)
+    filter?: (spell: SpellListItem) => boolean; // Filter function for spells (e.g., by level)
 }
 
 export function SpellSearchInput({
@@ -29,6 +32,8 @@ export function SpellSearchInput({
     componentExtraClassName = '',
     labelExtraClassName = '',
     spellList,
+    customOptions = [],
+    filter,
 }: SpellSearchInputProps) {
     // Fetch lightweight spell cache if not provided
     const { data: spellsData, isLoading } = CacheQueryHooks.useSpellsCache(
@@ -46,6 +51,7 @@ export function SpellSearchInput({
                 id: spell.id,
                 name: spell.name,
                 editionId: spell.editionId,
+                baseLevel: spell.baseLevel,
             }));
         }
         return [];
@@ -62,6 +68,8 @@ export function SpellSearchInput({
             componentExtraClassName={componentExtraClassName}
             labelExtraClassName={labelExtraClassName}
             emptyMessage="No spells found matching {searchTerm}"
+            customOptions={customOptions}
+            filter={filter}
         />
     );
 }

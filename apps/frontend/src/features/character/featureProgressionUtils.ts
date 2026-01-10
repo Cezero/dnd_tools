@@ -71,7 +71,7 @@ export function getGrantedFeats(resolvedProgressions: FeatureProgression[]): Fea
     for (const progression of resolvedProgressions) {
         if (progression.entities) {
             for (const entity of progression.entities) {
-                if ((entity.type === EntityType.Other || entity.type === EntityType.Proficiency) &&
+                if (entity.type === EntityType.Other &&
                     entity.appliesTo === EntityAppliesToType.Feat) {
                     if (entity.appliesToId) {
                         grantedFeats.push(entity);

@@ -11,7 +11,9 @@ import {
     FeatureEntityConditionType,
     ENVIRONMENT_TYPE_LIST,
     MATERIAL_TYPE_LIST,
-    TARGET_TYPE_LIST
+    TARGET_TYPE_LIST,
+    SPECIAL_TYPE_LIST,
+    LIGHTING_CONDITION_LIST
 } from '@shared/static-data';
 
 import type { ConditionEditorProps } from './types';
@@ -118,6 +120,24 @@ export function ConditionEditor({
                                     label=""
                                     options={TARGET_TYPE_LIST}
                                     placeholder="Select target"
+                                    componentExtraClassName="flex-1"
+                                    nested
+                                />
+                            ) : condition.conditionType === FeatureEntityConditionType.special ? (
+                                <ValidatedCustomSelect
+                                    field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
+                                    label=""
+                                    options={SPECIAL_TYPE_LIST}
+                                    placeholder="Select special type"
+                                    componentExtraClassName="flex-1"
+                                    nested
+                                />
+                            ) : condition.conditionType === FeatureEntityConditionType.lighting ? (
+                                <ValidatedCustomSelect
+                                    field={`entities.${index}.conditions.${conditionIndex}.conditionValue`}
+                                    label=""
+                                    options={LIGHTING_CONDITION_LIST}
+                                    placeholder="Select lighting condition"
                                     componentExtraClassName="flex-1"
                                     nested
                                 />

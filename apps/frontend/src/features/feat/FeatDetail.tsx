@@ -6,10 +6,10 @@ import { useAuthAuto } from '@/components/auth';
 import { DetailPage } from '@/components/common/DetailPage';
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { displayStrategyFactory } from '@/lib/formatters';
-import { ClassQueryHooks } from '@/services/query/ClassQueryHooks';
+import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
-import type { FeatureProgression, Feat, FeatQueryResponse } from '@shared/schema';
-import { FEAT_TYPES, EDITION_MAP, FeatureSourceType, DisplayType, FeaturePrerequisiteType } from '@shared/static-data';
+import type { FeatureProgression } from '@shared/schema';
+import { FEAT_TYPES, EDITION_MAP, FeatureSourceType, DisplayType } from '@shared/static-data';
 import { GetSourceDisplay } from '@shared/utils';
 
 import { formatFeatureEntity } from './FeatUtil';
@@ -38,74 +38,21 @@ export function FeatDetail() {
 
     const feature = featProgression?.feature || null;
 
+    // Precache all entities referenced in feature progressions (including prerequisites)
+    const featProgressions = featProgression ? [featProgression] : [];
+    const { isComplete: entitiesPrecached } = usePrecacheFeatureEntities(featProgressions);
+
     // Format prerequisites using the display strategy system (Phase 6)
     useEffect(() => {
-        if (!featProgression || !feature?.prerequisites || feature.prerequisites.length === 0) {
-            setPrereqDisplayTexts([]);
+        if (!featProgression || !feature?.prerequisites || feature.prerequisites.length === 0 || !entitiesPrecached) {
+            if (!featProgression || !feature?.prerequisites || feature.prerequisites.length === 0) {
+                setPrereqDisplayTexts([]);
+            }
             return;
         }
 
         const formatPrerequisites = async () => {
             try {
-                // Prefetch prerequisite feats that aren't in cache
-                const featPrereqIds = feature.prerequisites
-                    .filter(prereq => prereq.type === FeaturePrerequisiteType.Feat)
-                    .map(prereq => prereq.appliesToId)
-                    .filter((id): id is number => id !== null && id !== undefined);
-
-                // Prefetch prerequisite classes that aren't in cache (for ClassLevel prerequisites)
-                const classPrereqIds = feature.prerequisites
-                    .filter(prereq => prereq.type === FeaturePrerequisiteType.ClassLevel && prereq.appliesToId && prereq.appliesToId !== -1)
-                    .map(prereq => prereq.appliesToId)
-                    .filter((id): id is number => id !== null && id !== undefined);
-
-                // Prefetch any prerequisite feats that aren't in cache
-                const featPrefetchPromises = featPrereqIds.map(async (featId) => {
-                    const cachedFeat = queryClient.getQueryData<Feat>(['feats', 'item', featId]);
-                    const fullFeatsData = queryClient.getQueryData<FeatQueryResponse>(['feats', 'full']);
-                    const isInFullCache = fullFeatsData?.results?.some(f => f.id === featId);
-
-                    if (!cachedFeat && !isInFullCache) {
-                        // Prefetch the prerequisite feat using the query hook's query function
-                        try {
-                            await queryClient.fetchQuery({
-                                queryKey: ['feats', 'item', featId],
-                                queryFn: () => FeatQueryHooks.getFeatByIdQueryFn({ pathParams: { id: featId } }),
-                                staleTime: 5 * 60 * 1000,
-                                gcTime: 10 * 60 * 1000,
-                            });
-                        } catch (error) {
-                            // Silently fail - we'll just show the ID if the fetch fails
-                            console.warn(`Failed to prefetch feat ${featId}:`, error);
-                        }
-                    }
-                });
-
-                // Prefetch any prerequisite classes that aren't in cache
-                const classPrefetchPromises = classPrereqIds.map(async (classId) => {
-                    const cachedClass = queryClient.getQueryData(['classes', 'item', classId]);
-                    const classesCacheData = queryClient.getQueryData<{ results?: Array<{ id: number }> }>(['classes-cache']);
-                    const isInCache = cachedClass || classesCacheData?.results?.some(c => c.id === classId);
-
-                    if (!isInCache) {
-                        // Prefetch the prerequisite class using the query hook's query function
-                        try {
-                            await queryClient.fetchQuery({
-                                queryKey: ['classes', 'item', classId],
-                                queryFn: () => ClassQueryHooks.getClassByIdQueryFn({ pathParams: { id: classId } }),
-                                staleTime: 5 * 60 * 1000,
-                                gcTime: 10 * 60 * 1000,
-                            });
-                        } catch (error) {
-                            // Silently fail - we'll just show the ID if the fetch fails
-                            console.warn(`Failed to prefetch class ${classId}:`, error);
-                        }
-                    }
-                });
-
-                // Wait for all prefetches to complete
-                await Promise.all([...featPrefetchPromises, ...classPrefetchPromises]);
-
                 // Use display strategy to format the progression (includes prerequisite formatting in Phase 6)
                 const strategy = displayStrategyFactory.createStrategy(DisplayType.Detail);
                 const displayResult = strategy.format(featProgression, { queryClient });
@@ -119,7 +66,7 @@ export function FeatDetail() {
         };
 
         formatPrerequisites();
-    }, [featProgression, feature?.prerequisites, queryClient]);
+    }, [featProgression, feature?.prerequisites, queryClient, entitiesPrecached]);
 
     const handleBack = () => {
         navigate(`/feats${fromListParams ? `?${fromListParams}` : ''}`);
@@ -163,8 +110,8 @@ export function FeatDetail() {
 
     // Use feature name if available, otherwise fall back to feat name
     const displayName = feature?.name || feat.name;
-    const description = feature?.description || feat.description || '';
-    const summary = feature?.summary || feat.summary;
+    const description = feature?.description || '';
+    const summary = feature?.summary;
     const entities = featProgression?.entities || [];
 
     return (

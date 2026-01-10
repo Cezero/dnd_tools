@@ -1,4 +1,5 @@
 import type { FeatureProgression, CharacterWithAllDetailsResponse, DnDClass, FeatInQueryResponse, FeatureEntity } from '@shared/schema';
+import { EntityType, EntityAppliesToType } from '@shared/static-data';
 
 import { CascadingResolver } from './cascadingResolver';
 import { ChoiceResolver } from './choiceResolver';
@@ -30,7 +31,24 @@ export class CharacterResolutionService {
      * 5. Granted feature resolution (cascading)
      * 6. Final compilation
      * 
+     * **Spell Operation Integration**:
+     * The resolved progressions returned by this method are used by spell operations
+     * (`characterService.addSpellKnown()` and `removeSpellKnown()`) to:
+     * - Calculate available free spellbook spells using `ResolvedFeatureService.getAvailableSpellbookSpells()`
+     * - Detect 0th level spell grants using `ResolvedFeatureService.hasZeroLevelSpellbookSpellsGrant()`
+     * - Validate free grant quantity limits
+     * 
+     * When spell operations update the character, they re-resolve features using this method
+     * to ensure the resolution session stays in sync with the character's spell state.
+     * 
+     * @param character - Character data with all details (including current spells)
+     * @param targetLevel - Level to resolve features for
+     * @param context - Resolution context with race, class, user choices, etc.
      * @returns Complete resolution result with progressions, pending choices, warnings, and errors
+     * 
+     * @see characterService.addSpellKnown - Uses resolved progressions for validation
+     * @see characterService.removeSpellKnown - Uses resolved progressions for validation
+     * @see CharacterSessionService - Stores resolved progressions in session
      */
     static async resolveCharacterFeatures(
         character: CharacterWithAllDetailsResponse,
@@ -104,6 +122,9 @@ class FeatureResolution {
 
         // Resolve feat features
         await this.resolveFeatFeatures();
+
+        // Resolve companion features
+        await this.resolveCompanionFeatures();
     }
 
     /**
@@ -348,6 +369,55 @@ class FeatureResolution {
                 }
             }
             this.resolvedProgressions.push(progression);
+        }
+    }
+
+    /**
+     * Resolves companion features from character's selected companions.
+     * 
+     * For each CharacterCompanion with a companionId, retrieves the corresponding FeatureProgression
+     * with sourceType: Companion and adds it to resolved progressions.
+     */
+    private async resolveCompanionFeatures(): Promise<void> {
+        if (!this.character.companions) {
+            return;
+        }
+
+        // Collect all unique companion IDs from character companions
+        const companionIds = new Set<number>();
+        for (const characterCompanion of this.character.companions) {
+            if (characterCompanion.companionId) {
+                companionIds.add(characterCompanion.companionId);
+            }
+        }
+
+        if (companionIds.size === 0) {
+            return;
+        }
+
+        // Import featureSystemService to get companion progressions
+        const { featureSystemService } = await import('../featureSystem/featureSystemService');
+
+        // Get all companion progressions for the selected companions
+        for (const companionId of companionIds) {
+            const companionProgressions = await featureSystemService.getFeatureProgressionsByCompanionId(companionId);
+
+            // Process each companion progression
+            for (const progression of companionProgressions) {
+                // Check if this progression already exists to avoid duplicates
+                const existingProgression = this.resolvedProgressions.find(p => p.id === progression.id);
+                if (existingProgression) {
+                    continue;
+                }
+
+                if (progression.entities) {
+                    for (const entity of progression.entities) {
+                        const result = FeatureEntityHandlers.processFeatureEntity(entity, progression);
+                        this.processEntityResult(result, progression);
+                    }
+                }
+                this.resolvedProgressions.push(progression);
+            }
         }
     }
 

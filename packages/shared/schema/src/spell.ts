@@ -98,7 +98,7 @@ export const SpellCacheSchema = SpellSchema.omit({
     spellResistance: true,
     effect: true,
     target: true,
-    baseLevel: true,
+    // baseLevel is now included in cache for filtering by spell level
 });
 
 export const SpellCacheResponseSchema = QueryResponseSchema.extend({
@@ -141,13 +141,73 @@ export const AddSpellKnownRequestSchema = z.object({
     classId: z.number().int().positive('Class ID must be a positive integer'),
     spellId: z.number().int().positive('Spell ID must be a positive integer'),
     advancementId: z.number().int().positive('Advancement ID must be a positive integer'),
+    isFreeGrant: z.boolean().default(false).optional(),
+});
+
+/**
+ * Response schema for adding a spell to a character.
+ * 
+ * Includes:
+ * - Operation status message
+ * - Free spell counts (for spellbook classes)
+ * - Updated resolved character data (if resolution session exists)
+ * 
+ * The resolvedCharacter field contains the complete resolution result after
+ * the spell addition, allowing the frontend to keep its resolution state in sync.
+ * 
+ * @see ResolvedCharacterResult - For resolved character structure
+ * @see characterService.addSpellKnown - For implementation
+ */
+export const AddSpellKnownResponseSchema = z.object({
+    message: z.string(),
+    freeSpellsUsed: z.number().int().nonnegative().optional(),
+    availableFreeSpells: z.number().int().nonnegative().optional(),
+    remainingFreeSpells: z.number().int().optional(),
+    resolvedCharacter: z.object({
+        resolvedProgressions: z.array(z.any()), // FeatureProgression[] - complex type, using any for now
+        pendingChoices: z.array(z.any()), // PendingChoice[] - complex type, using any for now
+        classSkills: z.array(z.object({
+            skillId: z.number().int().positive(),
+            skillSubId: z.number().int().nullable(),
+        })),
+        skillBonuses: z.array(z.object({
+            skillId: z.number().int().positive(),
+            skillSubId: z.number().int().nullable(),
+            bonus: z.number(),
+            source: z.string(),
+        })),
+        grantedFeats: z.array(z.number().int().positive()),
+        availableFeats: z.number().int().nonnegative(),
+        availableFighterBonusFeats: z.number().int().nonnegative(),
+        warnings: z.array(z.string()),
+        errors: z.array(z.string()),
+        sessionId: z.string().uuid(),
+    }).optional(),
 });
 
 export const RemoveSpellKnownRequestSchema = AddSpellKnownRequestSchema.omit({
     classId: true,
 });
 
+/**
+ * Response schema for removing a spell from a character.
+ * 
+ * Includes:
+ * - Operation status message
+ * - Free spell counts (for spellbook classes, if removed spell was a free grant)
+ * - Updated resolved character data (if resolution session exists)
+ * 
+ * The resolvedCharacter field contains the complete resolution result after
+ * the spell removal, allowing the frontend to keep its resolution state in sync.
+ * 
+ * @see ResolvedCharacterResult - For resolved character structure
+ * @see characterService.removeSpellKnown - For implementation
+ */
+export const RemoveSpellKnownResponseSchema = AddSpellKnownResponseSchema;
+
 export type CharacterSpellSelectionEntry = z.infer<typeof CharacterSpellSelectionEntrySchema>;
 export type CharacterSpellSelectionResponse = z.infer<typeof CharacterSpellSelectionResponseSchema>;
 export type AddSpellKnownRequest = z.infer<typeof AddSpellKnownRequestSchema>;
+export type AddSpellKnownResponse = z.infer<typeof AddSpellKnownResponseSchema>;
 export type RemoveSpellKnownRequest = z.infer<typeof RemoveSpellKnownRequestSchema>;
+export type RemoveSpellKnownResponse = z.infer<typeof RemoveSpellKnownResponseSchema>;

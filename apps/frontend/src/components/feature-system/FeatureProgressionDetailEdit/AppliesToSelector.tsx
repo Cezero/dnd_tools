@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { ValidatedCustomSelect, CustomSelect, useFormContext, SpellSearchInput } from '@/components/forms';
+import { ValidatedCustomSelect, CustomSelect, useFormContext, SpellSearchInput, ValidatedInput } from '@/components/forms';
 import type { FeatureEntity } from '@shared/schema';
 import {
     ENTITY_APPLIES_TO_LIST,
@@ -55,9 +55,12 @@ export function AppliesToSelector({
     
     // Check if we should show the appliesToId field
     // Show it if appliesTo is set and either we have options or we're loading (for async types)
+    // Also show for SpellbookSpell with EntityType.Other (uses CustomSelect for level)
     const shouldShowAppliesToId = appliesTo !== null && appliesTo !== undefined && (
         finalOptions.length > 0 ||
-        (appliesTo === EntityAppliesToType.Feat || appliesTo === EntityAppliesToType.Domain || appliesTo === EntityAppliesToType.Feature)
+        (appliesTo === EntityAppliesToType.Feat || appliesTo === EntityAppliesToType.Domain || appliesTo === EntityAppliesToType.Feature) ||
+        (appliesTo === EntityAppliesToType.SpellbookSpell && entityType === EntityType.Other) ||
+        (appliesTo === EntityAppliesToType.Spell && entityType !== undefined)
     );
 
     // Helper function to get the appropriate appliesTo options based on entityType
@@ -110,6 +113,34 @@ export function AppliesToSelector({
                                 }}
                                 label="Spell"
                                 placeholder="Search for a spell..."
+                                componentExtraClassName="flex items-center gap-2"
+                            />
+                        ) : appliesTo === EntityAppliesToType.SpellbookSpell && entityType === EntityType.Other ? (
+                            <CustomSelect
+                                key={`appliesToId-${index}-${appliesTo}`}
+                                value={formData?.entities?.[index]?.appliesToId ?? null}
+                                onValueChange={(value) => {
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        entities: (prev.entities as FeatureEntity[] || []).map((ent, i) =>
+                                            i === index ? { ...ent, appliesToId: value } : ent
+                                        )
+                                    }));
+                                }}
+                                label="Spell Level"
+                                options={[
+                                    { id: 0, name: '0th (Cantrip)' },
+                                    { id: 1, name: '1st' },
+                                    { id: 2, name: '2nd' },
+                                    { id: 3, name: '3rd' },
+                                    { id: 4, name: '4th' },
+                                    { id: 5, name: '5th' },
+                                    { id: 6, name: '6th' },
+                                    { id: 7, name: '7th' },
+                                    { id: 8, name: '8th' },
+                                    { id: 9, name: '9th' },
+                                ]}
+                                placeholder="Select spell level..."
                                 componentExtraClassName="flex items-center gap-2"
                             />
                         ) : (

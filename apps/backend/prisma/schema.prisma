@@ -197,12 +197,14 @@ model FeatureProgression {
   variantOverrideId Int?
   domainId          Int? // NEW: Reference to domain for domain-granted features
   featId            Int? // NEW: Reference to Feat (same pattern as classId/raceId/domainId)
+  companionId       Int? // NEW: Reference to Companion for companion-granted features
 
   class                Class?                                  @relation(fields: [classId], references: [id])
   race                 Race?                                   @relation(fields: [raceId], references: [id])
   classVariantOverride ClassVariantFeatureProgressionOverride? @relation(fields: [variantOverrideId], references: [id])
   domain               Domain?                                 @relation(fields: [domainId], references: [id]) // NEW: Domain relationship
   feat                 Feat?                                   @relation(fields: [featId], references: [id]) // NEW: Feat relationship
+  companion            Companion?                              @relation(fields: [companionId], references: [id]) // NEW: Companion relationship
 
   feature                Feature                                  @relation(fields: [featureId], references: [id])
   spellcasting           SpellcastingLink?
@@ -212,6 +214,7 @@ model FeatureProgression {
   displayConditions      FeatureProgressionCondition[]
 
   @@index([featId])
+  @@index([companionId])
 }
 
 model FeatureEntity {
@@ -409,12 +412,6 @@ model Feat {
   id             Int                 @id @default(autoincrement())
   name           String
   typeId         Int
-  description    String?             @db.Text
-  benefit        String?             @db.Text
-  summary        String?             @db.Text
-  normalEffect   String?             @db.Text
-  specialEffect  String?             @db.Text
-  prerequisites  String?             @db.Text
   repeatable     Boolean?
   fighterBonus   Boolean?
   useSubId       Boolean             @default(false)
@@ -422,9 +419,7 @@ model Feat {
   editionId      Int
   sourceBookInfo FeatSourceBookMap[]
 
-  benefits FeatBenefitMap[]
-  prereqs  FeatPrerequisiteMap[]
-  advFeat  AdvancementFeat[]
+  advFeat AdvancementFeat[]
 
   spellPrepMetamagic  SpellPreparationMetamagic[]
   monsters            MonsterFeatMap[]
@@ -440,30 +435,6 @@ model FeatSourceBookMap {
   sourceBook SourceBook @relation(fields: [sourceBookId], references: [id])
 
   @@id([featId, sourceBookId])
-}
-
-model FeatBenefitMap {
-  featId      Int
-  typeId      Int
-  referenceId Int?
-  amount      Int?
-  index       Int
-
-  feat Feat @relation(fields: [featId], references: [id])
-
-  @@id([featId, index])
-}
-
-model FeatPrerequisiteMap {
-  featId      Int
-  typeId      Int
-  referenceId Int?
-  amount      Int?
-  index       Int
-
-  feat Feat @relation(fields: [featId], references: [id])
-
-  @@id([featId, index])
 }
 
 // =================
@@ -868,6 +839,7 @@ model AdvancementFeat {
 model AdvancementSpell {
   advancementId Int
   spellId       Int
+  isFreeGrant   Boolean @default(false)
 
   advancement CharacterAdvancement @relation(fields: [advancementId], references: [id])
   spell       Spell                @relation(fields: [spellId], references: [id])
@@ -1416,9 +1388,9 @@ model Companion {
   monsterId Int // Link to Monster for base statistics (required)
   minLevel  Int? // Minimum character level required (for Alternative Companions and Improved Familiars)
 
-  monster             Monster               @relation(fields: [monsterId], references: [id])
-  benefits            CompanionBenefitMap[]
+  monster             Monster              @relation(fields: [monsterId], references: [id])
   characterCompanions CharacterCompanion[]
+  featureProgressions FeatureProgression[] // Feature progressions for companion benefits
 
   @@unique([type, monsterId, minLevel])
   @@index([type])
@@ -1466,32 +1438,6 @@ model CharacterCompanionTrick {
   @@unique([characterCompanionId, trickId])
   @@index([characterCompanionId])
   @@index([trickId])
-}
-
-model CompanionBenefitMap {
-  id          Int  @id @default(autoincrement())
-  companionId Int
-  typeId      Int
-  referenceId Int?
-  amount      Int?
-  index       Int
-
-  companion  Companion                   @relation(fields: [companionId], references: [id], onDelete: Cascade)
-  conditions CompanionBenefitCondition[]
-
-  @@unique([companionId, index])
-  @@index([companionId])
-}
-
-model CompanionBenefitCondition {
-  id                    Int @id @default(autoincrement())
-  companionBenefitMapId Int
-  conditionType         Int
-  conditionValue        Int
-
-  companionBenefitMap CompanionBenefitMap @relation(fields: [companionBenefitMapId], references: [id], onDelete: Cascade)
-
-  @@index([companionBenefitMapId])
 }
 
 model TrickSourceMap {

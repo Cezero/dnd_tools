@@ -39,7 +39,10 @@ import {
     CharacterSpellSelectionParamRequest,
 } from '@shared/schema';
 
+import { PrismaClient } from '@shared/prisma-client';
 import { characterService } from './characterService';
+
+const prisma = new PrismaClient();
 
 // Character methods
 export async function GetAllCharacters(req: ValidatedNoInput<GetAllCharactersResponse>, res: Response, _next: NextFunction) {
@@ -320,13 +323,16 @@ export async function GetCharacterSpellSelection(req: ValidatedParamsT<Character
             return;
         }
 
-        const result = await characterService.getAvailableSpellsForClass(req.params.id, classId);
+        // TODO: Fetch resolved progressions if needed for spellbook class detection
+        // For now, pass undefined - frontend can provide resolved progressions if available
+        const result = await characterService.getAvailableSpellsForClass(req.params.id, classId, undefined);
 
         // Transform to response format
         const spells = result.spells.map(s => ({
             ...s.spell,
             classSpellLevel: s.classSpellLevel,
-            isKnown: s.isKnown
+            isKnown: s.isKnown,
+            isFreeGrant: s.isFreeGrant
         }));
 
         const domainSpells = result.domainSpells.map(ds => ({
@@ -341,7 +347,8 @@ export async function GetCharacterSpellSelection(req: ValidatedParamsT<Character
         res.json({
             total: spells.length + domainSpells.length,
             results: [...domainSpells, ...spells],
-            domainSpells
+            domainSpells,
+            ...(result.availableFreeSpells !== undefined && { availableFreeSpells: result.availableFreeSpells })
         });
     } catch (error) {
         console.error('Error in GetCharacterSpellSelection:', error);
@@ -355,11 +362,15 @@ export async function GetCharacterSpellSelection(req: ValidatedParamsT<Character
 
 export async function AddSpellKnown(req: ValidatedBodyT<AddSpellKnownRequest>, res: Response, _next: NextFunction) {
     try {
+        // TODO: Fetch resolved progressions if needed for spellbook class validation
+        // For now, pass undefined - frontend should provide resolved progressions for free grant validation
         const result = await characterService.addSpellKnown(
             req.body.characterId,
             req.body.classId,
             req.body.spellId,
-            req.body.advancementId
+            req.body.advancementId,
+            req.body.isFreeGrant ?? false,
+            undefined // resolvedProgressions - should be fetched if isFreeGrant is true
         );
         res.json(result);
     } catch (error) {
@@ -387,3 +398,4 @@ export async function RemoveSpellKnown(req: ValidatedBodyT<RemoveSpellKnownReque
         }
     }
 }
+

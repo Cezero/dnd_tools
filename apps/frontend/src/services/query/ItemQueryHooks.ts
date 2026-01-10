@@ -193,7 +193,7 @@ export const ItemQueryHooks = {
     deleteItem: (itemId: number) => deleteItemConfig.mutate({
         pathParams: { id: itemId }
     }),
-    itemQuery: (data: unknown) => itemQueryConfig.fetch({ requestData: data }),
+    itemQuery: (data: unknown) => itemQueryConfig.fetch(data),
 
     // Expose query functions for advanced usage
     getItemsQueryFn: itemsConfig.queryFn,

@@ -5,6 +5,7 @@ import React from 'react';
 import { useAuthAuto } from '@/components/auth';
 import { renderCellValue } from '@/components/generic-list/columnUtils';
 import { displayStrategyFactory } from '@/lib/formatters';
+import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
 import { FeatureProgression } from '@shared/schema';
 import { DisplayType } from '@shared/static-data';
 
@@ -24,6 +25,9 @@ export function FeatureDisplay({
 }: FeatureDisplayProps): React.JSX.Element {
     const { isAdmin } = useAuthAuto();
     const queryClient = useQueryClient();
+
+    // Precache all entities referenced in feature progressions
+    usePrecacheFeatureEntities(progressions);
 
     const handleEditProgression = (progression: FeatureProgression) => {
         onEditProgression?.(progression);

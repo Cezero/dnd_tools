@@ -1,4 +1,5 @@
 import pluralize from 'pluralize';
+import ordinal from 'ordinal';
 
 import { formatSignedValue } from '@/lib/formatterUtils';
 import {
@@ -11,7 +12,6 @@ import {
     DAMAGE_TYPES,
     USES_FREQUENCIES,
     PROFICIENCY_TYPES,
-    FeatBenefitType,
     CREATURE_TYPES,
     SIZE_MAP,
     SPELL_ID_LIST,
@@ -487,6 +487,15 @@ export class ProficiencyFormatter implements BaseFormatter {
             }
             // Fallback if item name not found
             return `item ${modifier.appliesToSubId}`;
+        } else if (modifier.appliesToSubId === null || modifier.appliesToSubId === undefined) {
+            // appliesToSubId is null/undefined - user must select a specific item
+            // Format as "Grants Proficiency [ProficiencyTypeName] (selected weapon)"
+            if (modifier.appliesToId && PROFICIENCY_TYPES[modifier.appliesToId]) {
+                const proficiencyType = PROFICIENCY_TYPES[modifier.appliesToId];
+                return `Grants Proficiency ${proficiencyType.name} (selected weapon)`;
+            }
+            // Fallback if proficiency type not found
+            return 'Grants Proficiency (selected weapon)';
         } else {
             // No specific item, just return a generic message
             return 'proficiency';
@@ -556,6 +565,55 @@ export class SpellSaveDCFormatter implements BaseFormatter {
     format(modifier: CalculatedEntity, _context?: DisplayContext): string {
         const value = typeof modifier.value === 'string' ? parseInt(modifier.value, 10) || 0 : modifier.value;
         return formatSignedValue(value);
+    }
+}
+
+export class SpellbookSpellFormatter implements BaseFormatter {
+    format(modifier: CalculatedEntity, context?: DisplayContext): string {
+        const spellLevel = modifier.appliesToId;
+        
+        // Helper to format spell level with ordinal (0th, 1st, 2nd, etc.)
+        const formatSpellLevel = (level: number | null | undefined): string => {
+            if (level === null || level === undefined) {
+                return 'unknown level';
+            }
+            if (level === 0) {
+                return '0th (Cantrip)';
+            }
+            // Use ordinal library for proper formatting (handles 11th, 12th, 13th, etc.)
+            return ordinal(level);
+        };
+
+        // If appliesToSubId === -1, show "All {level} level spells"
+        if (modifier.appliesToSubId === -1) {
+            const levelLabel = formatSpellLevel(spellLevel);
+            return `All ${levelLabel} level spells`;
+        }
+
+        // If appliesToSubId is a specific spell ID, show the spell name
+        if (modifier.appliesToSubId && modifier.appliesToSubId > 0) {
+            // Priority 1: Use included spell data if available
+            if (modifier.spell) {
+                return modifier.spell.name;
+            }
+
+            // Priority 2: Use cache helper
+            const cachedName = getSpellNameFromCache(context?.queryClient, modifier.appliesToSubId);
+            if (cachedName) {
+                return cachedName;
+            }
+
+            // Priority 3: Fallback
+            return `Spell ID: ${modifier.appliesToSubId}`;
+        }
+
+        // Fallback for null/undefined appliesToSubId
+        if (spellLevel !== null && spellLevel !== undefined) {
+            const levelLabel = formatSpellLevel(spellLevel);
+            return `${levelLabel} level spell (not selected)`;
+        }
+
+        return 'Spellbook spell (not configured)';
     }
 }
 

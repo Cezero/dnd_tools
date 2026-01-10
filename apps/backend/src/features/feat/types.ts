@@ -15,6 +15,7 @@ import {
 export interface FeatService {
     getAllFeats: () => Promise<GetAllFeatsResponse>;
     getAllFeatsFull: () => Promise<FeatQueryResponse>;
+    getAllFeatsWithFeatureInfo: () => Promise<GetAllFeatsWithFeatureInfoResponse>;
     getFeatById: (id: FeatIdParamRequest) => Promise<Feat | null>;
     featQuery: (query: FeatQueryRequest) => Promise<FeatQueryResponse>;
     getFeatList: (query: FeatQueryRequest) => Promise<GetFeatListResponse>;

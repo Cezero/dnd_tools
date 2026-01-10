@@ -6,7 +6,7 @@ import type {
     DnDClass,
     Feat,
 } from '@shared/schema';
-import { AbilityId, WEAPON_TYPE_ENUM, ABILITY_MAP, FeatBenefitType, EntityAppliesToType } from '@shared/static-data';
+import { AbilityId, WEAPON_TYPE_ENUM, ABILITY_MAP, EntityAppliesToType } from '@shared/static-data';
 
 import { getAbilityModifierWithBonuses } from './abilityScore';
 import { getMonkUnarmedDamage } from '../../attack-calculation/monk-damage';
@@ -212,11 +212,11 @@ function calculateSingleWeaponAttack(
         }
     }
 
-    // Get Two-Weapon Fighting benefits (main hand or off hand)
-    const twfBenefitType = isOffHand ? FeatBenefitType.TWO_WEAPON_OFF_HAND : FeatBenefitType.TWO_WEAPON_MAIN_HAND;
-    const twfBenefits = resolveFeatBenefits(
+    // Get all attack bonus feat benefits (includes two-weapon fighting and other attack bonuses)
+    // The resolveFeatBenefits function will filter based on appliesToSubId and context
+    const featBenefits = resolveFeatBenefits(
         character,
-        twfBenefitType,
+        EntityAppliesToType.Attack,
         {
             itemId: weaponProps.itemId,
             weaponType: weaponProps.weaponType,
@@ -227,23 +227,7 @@ function calculateSingleWeaponAttack(
         featsMap,
         resolvedProgressions
     );
-    const twfBonus = twfBenefits.reduce((sum, b) => sum + b.amount, 0);
-
-    // Get other attack bonus feat benefits
-    const otherFeatBenefits = resolveFeatBenefits(
-        character,
-        FeatBenefitType.ATTACK_BONUS,
-        {
-            itemId: weaponProps.itemId,
-            weaponType: weaponProps.weaponType,
-            isDualWield,
-            isOffHand,
-            isLightWeapon: otherItem && hasWeapon(otherItem) && otherItem.weapon.type === WEAPON_TYPE_ENUM.LightMeleeWeapon,
-        },
-        featsMap,
-        resolvedProgressions
-    );
-    const otherFeatBonus = otherFeatBenefits.reduce((sum, b) => sum + b.amount, 0);
+    const featBonus = featBenefits.reduce((sum, b) => sum + b.amount, 0);
 
     // Light weapon bonus: +2 each (only if off-hand is light and dual-wielding)
     // For main-hand: check if otherItem (off-hand) is light
@@ -274,7 +258,7 @@ function calculateSingleWeaponAttack(
     const featureBonus = featureBonuses.reduce((sum, b) => sum + b.value, 0);
 
     // Calculate attack bonus
-    let attackBonus = bab + abilityMod + attackPenalty + twfBonus + lightWeaponBonus + itemBonuses.attack + otherFeatBonus + featureBonus;
+    let attackBonus = bab + abilityMod + attackPenalty + featBonus + lightWeaponBonus + itemBonuses.attack + featureBonus;
     if (!isProficient) {
         attackBonus -= 4;
     }
@@ -300,7 +284,7 @@ function calculateSingleWeaponAttack(
     // Get damage bonuses from feats
     const damageFeatBenefits = resolveFeatBenefits(
         character,
-        FeatBenefitType.DAMAGE_BONUS,
+        EntityAppliesToType.Damage,
         {
             itemId: weaponProps.itemId,
         },
@@ -340,16 +324,15 @@ function calculateSingleWeaponAttack(
             attackPenalty < 0 ? 'penalty' : null
         ),
         feat: createBreakdownComponent(
-            twfBonus + lightWeaponBonus + otherFeatBonus,
+            featBonus + lightWeaponBonus,
             [
-                twfBonus > 0 ? `Two-Weapon Fighting (+${twfBonus})` : null,
+                featBonus > 0 ? `Feat: ${featBenefits.map(b => b.source.name).join(', ')}` : null,
                 lightWeaponBonus > 0 ? `light weapon (+${lightWeaponBonus})` : null,
-                otherFeatBonus > 0 ? `Feat: ${otherFeatBenefits.map(b => b.source.name).join(', ')}` : null,
             ]
                 .filter(Boolean)
                 .join(', ') || null,
-            twfBonus + lightWeaponBonus + otherFeatBonus > 0 ? 'feat' : null,
-            twfBenefits[0]?.source.id ?? otherFeatBenefits[0]?.source.id
+            featBonus + lightWeaponBonus > 0 ? 'feat' : null,
+            featBenefits[0]?.source.id
         ),
         feature: createBreakdownComponent(
             featureBonus,
@@ -395,9 +378,10 @@ function calculateUnarmedStrike(
     // Check for Improved Unarmed Strike feat benefit
     // This benefit type grants a bonus that offsets the -4 penalty for lethal damage
     // Similar to Two-Weapon Fighting: base penalty (-4) + feat bonus (+4) = net 0
+    // Note: This is handled through FeatureEntity with appliesTo: UnarmedDamage or Other
     const unarmedLethalBenefits = resolveFeatBenefits(
         character,
-        FeatBenefitType.UNARMED_LETHAL_DAMAGE,
+        EntityAppliesToType.UnarmedDamage,
         { isUnarmed: true },
         featsMap,
         resolvedProgressions

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthAuto } from '@/components/auth';
+import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
 import { DnDClass, ClassVariant } from '@shared/schema';
 import { isVariantId } from '@shared/utils';
 
@@ -18,6 +19,9 @@ export default function ClassDetail() {
     const navigate = useNavigate();
     const location = useLocation();
     const fromListParams = location.state?.fromListParams || '';
+
+    // Precache all entities referenced in feature progressions
+    const { isPrecaching: isPrecachingEntities } = usePrecacheFeatureEntities(cls?.features);
 
     useEffect(() => {
         const Initialize = async () => {
@@ -54,7 +58,7 @@ export default function ClassDetail() {
         navigate(`/classes/${id}/edit`, { state: { fromListParams: fromListParams } });
     };
 
-    if (isLoading) return (
+    if (isLoading || isPrecachingEntities) return (
         <div className="pt-8">
             <div className="w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-600 rounded-lg shadow-lg p-1">
                 <div className="p-3 bg-content border-content rounded-lg border w-full">

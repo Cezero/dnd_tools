@@ -274,7 +274,7 @@ Structure containing extracted proficiencies from feature progressions.
 
 The attack calculation library integrates with the feature system to determine character capabilities:
 
-**Proficiency Detection**: Extracts weapon and armor proficiencies from resolved feature progressions by finding Proficiency entities with `appliesTo: Feat` and processing feat benefits to identify proficiency types.
+**Proficiency Detection**: Extracts weapon and armor proficiencies from resolved feature progressions by finding Other entities with `appliesTo: Proficiency` and using appliesToId to identify proficiency types (PROFICIENCY_TYPE_ENUM values).
 
 **Feat Detection**: Checks for specific feats (e.g., Improved Unarmed Strike, Two-Weapon Fighting) by searching resolved progressions for granted feats matching feat names.
 

@@ -76,6 +76,7 @@ export interface ScrollableCategorizedListProps<T> {
 
     // Action button configuration
     actionButtonLabel?: string;
+    getActionButtonLabel?: (item: T) => string; // Dynamic label based on item state
     onAction?: (item: T) => void;
     isActionDisabled?: (item: T) => boolean;
     allowMultiple?: boolean; // If false, items can only be obtained once

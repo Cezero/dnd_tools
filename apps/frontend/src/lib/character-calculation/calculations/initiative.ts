@@ -1,8 +1,7 @@
 import type { CharacterWithAllDetailsResponse, FeatureProgression, Feat } from '@shared/schema';
-import { AbilityId, GetAbilityModifier } from '@shared/static-data';
+import { AbilityId, GetAbilityModifier, EntityAppliesToType } from '@shared/static-data';
 import { resolveFeatBenefits } from '../core/featBenefitResolver';
 import { resolveFeatureBonuses } from '../core/featureBonusResolver';
-import { FeatBenefitType, EntityAppliesToType } from '@shared/static-data';
 import { buildBreakdownString, createBreakdownComponent } from '../utils/breakdownBuilder';
 import { getAbilityScore } from './abilityScore';
 import type { CalculationResult } from '../types';
@@ -31,7 +30,7 @@ export function getInitiative(
     const dexMod = GetAbilityModifier(dexTotalValue);
 
     // Get feat benefits
-    const featBenefits = resolveFeatBenefits(character, FeatBenefitType.INITIATIVE, undefined, featsMap, resolvedProgressions);
+    const featBenefits = resolveFeatBenefits(character, EntityAppliesToType.Initiative, undefined, featsMap, resolvedProgressions);
     const featBonus = featBenefits.reduce((sum, b) => sum + b.amount, 0);
 
     // Get feature bonuses

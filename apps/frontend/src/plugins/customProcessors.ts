@@ -18,10 +18,18 @@ export function createEntityLink(type: string, rawValue: string): ElementContent
     const entityType = type.toLowerCase() as keyof typeof entityTypes;
     const id = entityTypes[entityType]?.[rawValue];
     const href = id ? `/${entityType}s/${id}` : undefined;
-    return h('a', {
+    const props: Record<string, unknown> = {
         href,
         className: 'entity-link',
-    }, rawValue);
+    };
+
+    // Add data attributes for entity tooltip support
+    if (id && href) {
+        props['data-entity-type'] = entityType;
+        props['data-entity-id'] = String(id);
+    }
+
+    return h('a', props, rawValue);
 }
 
 export function createDiceButton(rawValue: string): ElementContent {

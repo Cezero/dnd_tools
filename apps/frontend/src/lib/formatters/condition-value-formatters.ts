@@ -8,6 +8,7 @@ import {
     TARGET_TYPES,
     ENVIRONMENT_TYPES,
     LIGHTING_CONDITION_TYPES,
+    SPECIAL_TYPES,
 } from '@shared/static-data';
 
 import type { ConditionValueFormatter } from './types';
@@ -90,5 +91,14 @@ export class EnvironmentValueFormatter implements ConditionValueFormatter {
 export class LightingValueFormatter implements ConditionValueFormatter {
     format(conditionValue: number): string {
         return LIGHTING_CONDITION_TYPES[conditionValue]?.name || '';
+    }
+}
+
+/**
+ * Special value formatter
+ */
+export class SpecialValueFormatter implements ConditionValueFormatter {
+    format(conditionValue: number): string {
+        return SPECIAL_TYPES[conditionValue]?.name || '';
     }
 }

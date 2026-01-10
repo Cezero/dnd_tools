@@ -1,48 +1,7 @@
-import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { FeatureProgression, FeatureEntity } from '@shared/schema';
-import { FeatBenefitType, EntityAppliesToType, SpecialFeatureId } from '@shared/static-data';
+import { EntityAppliesToType, EntityType, SpecialFeatureId } from '@shared/static-data';
 
 export const ClassProficiencyService = {
-    /**
-     * Imperative method to fetch all feats that provide weapon or armor proficiencies
-     */
-    async getProficiencyFeats() {
-        try {
-            const response = await FeatQueryHooks.featQuery({
-                requestData: { queryType: 'proficiency' }
-            });
-
-            const proficiencyFeats = response.results?.map(feat => {
-                if (feat.benefits && feat.benefits.length > 0) {
-                    const proficiencyBenefit = feat.benefits.find(benefit =>
-                        benefit.typeId === FeatBenefitType.PROFICIENCY
-                    );
-
-                    if (proficiencyBenefit && proficiencyBenefit.referenceId) {
-                        return {
-                            id: feat.id,
-                            name: feat.name,
-                            proficiencyTypeId: proficiencyBenefit.referenceId
-                        };
-                    }
-                }
-                return null;
-            }).filter(Boolean) || [];
-
-            return {
-                proficiencyFeats,
-                isLoading: false,
-                error: null
-            };
-        } catch (error) {
-            console.error('Failed to fetch proficiency feats:', error);
-            return {
-                proficiencyFeats: [],
-                isLoading: false,
-                error: error instanceof Error ? error : new Error('Failed to fetch proficiency feats')
-            };
-        }
-    },
 
     /**
      * Extract proficiencies from feature progressions
@@ -55,7 +14,7 @@ export const ClassProficiencyService = {
             .flatMap(prog =>
                 prog.entities
                     ?.filter((entity) =>
-                        entity.appliesTo === EntityAppliesToType.Feat &&
+                        entity.appliesTo === EntityAppliesToType.Proficiency &&
                         entity.appliesToId !== null
                     ) || []
             );
@@ -74,7 +33,7 @@ export const ClassProficiencyService = {
             if (prog.featureId === SpecialFeatureId.ClassProficiency) {
                 // Remove the specific proficiency entity
                 const updatedEntities = prog.entities?.filter(entity =>
-                    !(entity.appliesTo === EntityAppliesToType.Feat &&
+                    !(entity.appliesTo === EntityAppliesToType.Proficiency &&
                         entity.appliesToId === featId &&
                         entity.appliesToSubId === itemId)
                 ) || [];

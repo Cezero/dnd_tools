@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 
 import { ProcessMarkdown } from '@/components/markdown/ProcessMarkdown';
 import { displayStrategyFactory } from '@/lib/formatters';
+import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
 import { useCacheFunctions } from '@/services/cache';
 import { Race } from '@shared/schema';
 import { DisplayType, SIZE_MAP, EDITION_MAP, SpecialFeatureId } from '@shared/static-data';
@@ -28,6 +29,9 @@ export function RaceDisplay({
     isAdmin = false,
     fromListParams: _fromListParams = ''
 }: RaceDisplayProps): React.JSX.Element {
+    // Precache all entities referenced in feature progressions
+    usePrecacheFeatureEntities(race?.features);
+
     const { getClassNameById } = useCacheFunctions();
     const innerCellContentClasses = "p-3 bg-content border-content rounded-lg border w-full";
     const outerContainerClasses = "w-4/5 mx-auto border-2 border-gray-400 dark:border-gray-600 rounded-lg shadow-lg p-1";

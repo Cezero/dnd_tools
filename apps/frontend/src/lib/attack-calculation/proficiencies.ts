@@ -3,7 +3,6 @@ import {
     EntityType,
     EntityAppliesToType,
     PROFICIENCY_TYPES,
-    FeatBenefitType,
     ITEM_TYPE_ENUM,
 } from '@shared/static-data';
 import type { ProficiencyResult } from './types';
@@ -24,7 +23,7 @@ export function extractProficiencies(resolvedProgressions: FeatureProgression[])
         if (progression.entities) {
             for (const entity of progression.entities) {
                 // Check if this is a proficiency entity
-                if (entity.type === EntityType.Proficiency && entity.appliesTo === EntityAppliesToType.Feat) {
+                if (entity.type === EntityType.Other && entity.appliesTo === EntityAppliesToType.Proficiency) {
                     if (!entity.appliesToId) continue;
 
                     // Check if it's a category-based proficiency (appliesToSubId === -1 means "all")

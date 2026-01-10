@@ -35,9 +35,7 @@ export interface Currency extends CoreComponent {
     gpValue: number;
 }
 
-export interface FeatBenefitTypeInfo extends CoreComponent {
-    hasSubId: boolean;
-}
+// FeatBenefitTypeInfo removed - feat benefits now use Feature system (EntityAppliesToType, EntityType)
 
 export interface Formula extends CoreComponent {
     description: string;
@@ -150,7 +148,7 @@ export type AbilityGenerationMethodMap = BaseMap<CoreComponent>;
 export type PointBuyOptionsMap = BaseMap<CoreComponent>;
 export type BooleanFilterMap = BaseMap<CoreComponent>;
 export type ClassTypeMap = BaseMap<CoreComponent>;
-export type FeatBenefitTypeMap = BaseMap<FeatBenefitTypeInfo>;
+// FeatBenefitTypeMap removed - feat benefits now use Feature system (EntityAppliesToType, EntityType)
 export type MonsterTypeMap = BaseMap<CoreComponent>;
 export type MonsterSubtypeMap = BaseMap<CoreComponent>;
 export type MonsterSpecialAbilityTypeMap = BaseMap<CoreComponent>;

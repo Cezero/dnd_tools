@@ -426,6 +426,48 @@ The formatting system is used by:
 
 Each system provides FeatureProgression data to the formatting system and receives formatted display results that can be rendered in their respective UI components.
 
+## Entity Precaching
+
+The formatting system requires entity names (feats, features, spells, domains, classes, skills, races) to be available in the TanStack Query cache when formatters need them. The entity precaching system ensures these names are loaded before formatting begins.
+
+### **Precaching Requirements**
+
+**IMPORTANT**: Entities must be precached before formatting to prevent "name not found" errors. Formatters use synchronous cache access and cannot trigger fetches, so data must be available in cache.
+
+### **Usage Patterns**
+
+**React Components**:
+```tsx
+import { usePrecacheFeatureEntities } from '@/lib/formatters/hooks/usePrecacheFeatureEntities';
+
+const { isComplete } = usePrecacheFeatureEntities(progressions);
+if (!isComplete) return <div>Loading...</div>;
+// Now safe to format
+```
+
+**Imperative Usage**:
+```typescript
+import { DisplayStrategyBase } from '@/lib/formatters';
+
+await DisplayStrategyBase.precacheEntities(progressions, queryClient);
+// Now safe to format
+```
+
+### **Architecture**
+
+The precaching system consists of three layers:
+1. **Entity Extraction** - Extracts entity IDs from feature progressions
+2. **Precaching Helpers** - Checks cache and fetches missing entities
+3. **React Hook/Imperative API** - Orchestrates precaching with state management
+
+### **Integration**
+
+- **Global Cache**: `CacheProvider` loads bulk caches (skills, spells, domains, races) at app startup
+- **Entity-Specific Precaching**: Individual entities (feats, features, classes) are precached on-demand
+- **Cache Helpers**: Formatters use synchronous cache helpers to read entity names
+
+For comprehensive documentation, see **[Entity Precaching System](./entity-precaching.md)**.
+
 ## Recent Refactoring
 
 The formatting system underwent a major refactoring to implement proper architectural patterns and improve maintainability.
@@ -491,6 +533,7 @@ For comprehensive contributing guidelines and anti-patterns to avoid, see **[usa
 ## Related Documentation
 
 - **[Usage Guidelines](./usage-guidelines.md)** - Comprehensive usage patterns and guidelines
+- **[Entity Precaching System](./entity-precaching.md)** - Entity precaching architecture and usage
 - **[Adding Formatters](./adding-formatters.md)** - Step-by-step guide for adding new formatters with labels and grouping
 - **[Final Implementation Summary](./final-implementation-summary.md)** - Current implementation status
 - **[Refactoring Strategy](./refactoring-strategy.md)** - Design decisions and architecture rationale

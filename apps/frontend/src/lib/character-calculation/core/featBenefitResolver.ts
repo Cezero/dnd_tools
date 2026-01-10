@@ -5,7 +5,7 @@ import type {
     FeatureProgression,
     FeatureEntity,
 } from '@shared/schema';
-import { FeatBenefitType, EntityAppliesToType, EntityType, FeatureSourceType } from '@shared/static-data';
+import { AttackBonusAppliesTo, EntityAppliesToType, EntityType, FeatureSourceType } from '@shared/static-data';
 
 import type {
     FeatBenefit,
@@ -35,32 +35,6 @@ function findFeatureChoiceForFeat(
 }
 
 /**
- * Map FeatBenefitType to EntityAppliesToType for finding matching entities
- */
-function mapFeatBenefitTypeToEntityAppliesTo(benefitType: FeatBenefitType): EntityAppliesToType {
-    switch (benefitType) {
-        case FeatBenefitType.SKILL:
-            return EntityAppliesToType.Skill;
-        case FeatBenefitType.SAVE:
-            return EntityAppliesToType.SavingThrow;
-        case FeatBenefitType.PROFICIENCY:
-            return EntityAppliesToType.Feat;
-        case FeatBenefitType.ATTACK_BONUS:
-            return EntityAppliesToType.Attack;
-        case FeatBenefitType.DAMAGE_BONUS:
-            return EntityAppliesToType.Damage;
-        case FeatBenefitType.INITIATIVE:
-            return EntityAppliesToType.Initiative;
-        case FeatBenefitType.CASTER_LEVEL:
-            return EntityAppliesToType.CasterLevel;
-        case FeatBenefitType.DIFFICULTY_CLASS:
-            return EntityAppliesToType.SpellSvDC;
-        default:
-            return EntityAppliesToType.Other;
-    }
-}
-
-/**
  * Find feat progression for a given featId
  */
 function findFeatProgression(
@@ -79,7 +53,7 @@ function findFeatProgression(
  */
 export function resolveFeatBenefits(
     character: CharacterWithAllDetailsResponse,
-    benefitType: FeatBenefitType,
+    appliesTo: EntityAppliesToType,
     context?: FeatBenefitContext,
     featsMap?: Map<number, Feat>,
     resolvedProgressions?: FeatureProgression[]
@@ -92,12 +66,9 @@ export function resolveFeatBenefits(
         ? getAllCharacterFeats(character, resolvedProgressions)
         : [];
 
-
     // Use unified accessor if available, otherwise fall back to old method
     if (allFeats.length > 0 && resolvedProgressions) {
         // Process feats from unified accessor using FeatureEntity from progressions
-        const entityAppliesTo = mapFeatBenefitTypeToEntityAppliesTo(benefitType);
-        
         for (const characterFeat of allFeats) {
             // Find the progression for this feat
             const progression = findFeatProgression(resolvedProgressions, characterFeat.featId);
@@ -108,17 +79,39 @@ export function resolveFeatBenefits(
             // Get feat details from map if provided
             const feat = featsMap?.get(characterFeat.featId);
 
-            // Find entities that match the benefit type
+            // Find entities that match the appliesTo type
             for (const entity of progression.entities) {
-                if (entity.appliesTo !== entityAppliesTo) continue;
+                if (entity.appliesTo !== appliesTo) continue;
                 
-                // For proficiency benefits, check entity type
-                if (benefitType === FeatBenefitType.PROFICIENCY && entity.type !== EntityType.Proficiency) {
+                // For proficiency, check entity type and appliesTo
+                if (appliesTo === EntityAppliesToType.Proficiency && (entity.type !== EntityType.Other || entity.appliesTo !== EntityAppliesToType.Proficiency)) {
                     continue;
                 }
                 // For other benefits, check entity type is Bonus
-                if (benefitType !== FeatBenefitType.PROFICIENCY && entity.type !== EntityType.Bonus) {
+                if (appliesTo !== EntityAppliesToType.Proficiency && entity.type !== EntityType.Bonus) {
                     continue;
+                }
+
+                // Handle Attack bonus special contexts (two-weapon fighting, thrown weapons)
+                if (appliesTo === EntityAppliesToType.Attack) {
+                    // Check appliesToSubId for special attack bonus contexts
+                    if (entity.appliesToSubId === AttackBonusAppliesTo.MainHand) {
+                        // Only apply when dual-wielding and not off-hand
+                        if (!context?.isDualWield || context?.isOffHand) {
+                            continue;
+                        }
+                    } else if (entity.appliesToSubId === AttackBonusAppliesTo.OffHand) {
+                        // Only apply when dual-wielding and off-hand
+                        if (!context?.isDualWield || !context?.isOffHand) {
+                            continue;
+                        }
+                    } else if (entity.appliesToSubId === AttackBonusAppliesTo.Thrown) {
+                        // Only apply when weapon is thrown
+                        // TODO: Check context for thrown weapon type
+                        // For now, this will need to be determined by weapon properties
+                        // This may require additional context flags or weapon type checking
+                    }
+                    // If appliesToSubId is null, apply to all attacks (normal attack bonus)
                 }
 
                 // Handle useSubId feats (player choice feats)
@@ -153,19 +146,6 @@ export function resolveFeatBenefits(
                         continue;
                     }
 
-                    // Context filtering for Two-Weapon Fighting benefit types
-                    if (benefitType === FeatBenefitType.TWO_WEAPON_MAIN_HAND) {
-                        // Only apply when dual-wielding and not off-hand
-                        if (!context?.isDualWield || context?.isOffHand) {
-                            continue;
-                        }
-                    } else if (benefitType === FeatBenefitType.TWO_WEAPON_OFF_HAND) {
-                        // Only apply when dual-wielding and off-hand
-                        if (!context?.isDualWield || !context?.isOffHand) {
-                            continue;
-                        }
-                    }
-
                     benefits.push({
                         amount: entity.value ?? 0,
                         source: {
@@ -183,7 +163,7 @@ export function resolveFeatBenefits(
     } else {
         // Fallback: if resolvedProgressions not provided, return empty (should not happen in new system)
         // This is kept for backward compatibility during transition
-        console.warn('resolveFeatBenefits called without resolvedProgressions - feat benefits cannot be resolved');
+        // Note: This is expected in some cases (e.g., during initial load before progressions are resolved)
     }
 
     return benefits;

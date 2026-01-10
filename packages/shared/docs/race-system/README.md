@@ -63,9 +63,14 @@ The Race System integrates with the [Feature Formatting System](../feature-syste
 - **Racial Feature Display**: Uses `DisplayType.Detail` for racial feature progression displays
 - **Feature Progression Formatting**: Leverages the formatting system's registry pattern for consistent display
 - **Cross-System Consistency**: Ensures racial features are formatted the same way as class features and standalone features
+- **Entity Precaching**: Uses `usePrecacheFeatureEntities` hook to ensure entity names are available before formatting
+
+**Precaching Requirements**:
+Race display components must precache entities (feats, features, spells, domains, classes, skills, races) referenced in racial features before formatting. This prevents "name not found" errors when displaying feature progressions.
 
 **Related Documentation**:
-- [Feature Formatting System](../feature-system/formatting/README.md) - Complete formatting system overview
+- [Feature Formatting System](../formatting-system/README.md) - Complete formatting system overview
+- [Entity Precaching System](../formatting-system/entity-precaching.md) - Entity precaching architecture and usage
 - [Feature System Documentation](../feature-system/README.md) - Main feature system documentation
 
 ## 🚀 **Getting Started**

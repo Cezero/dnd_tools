@@ -76,3 +76,10 @@ export function spellSchoolSpellDCLabeler(formattedValues: string, _entity?: Cal
 export function lightingConditionLabeler(formattedValues: string, _entity?: CalculatedEntity): string {
     return `in ${formattedValues}`;
 }
+
+/**
+ * Special condition labeler
+ */
+export function specialConditionLabeler(formattedValues: string, _entity?: CalculatedEntity): string {
+    return `when ${formattedValues}`;
+}

@@ -1,8 +1,7 @@
 import type { CharacterWithAllDetailsResponse, FeatureProgression, Feat } from '@shared/schema';
-import { AbilityId, GetAbilityModifier } from '@shared/static-data';
+import { AbilityId, GetAbilityModifier, EntityAppliesToType } from '@shared/static-data';
 import { resolveFeatBenefits } from '../core/featBenefitResolver';
 import { resolveFeatureBonuses } from '../core/featureBonusResolver';
-import { FeatBenefitType, EntityAppliesToType } from '@shared/static-data';
 import { buildBreakdownString, createBreakdownComponent } from '../utils/breakdownBuilder';
 import type { CalculationResult, BreakdownMap, TypedBreakdownComponent } from '../types';
 
@@ -41,7 +40,7 @@ export function getAbilityScore(
     // Get feat benefits
     const featBenefits = resolveFeatBenefits(
         character,
-        FeatBenefitType.SKILL, // Note: Ability bonuses might be a different type, but for now using SKILL
+        EntityAppliesToType.Ability,
         { abilityId },
         featsMap,
         resolvedProgressions

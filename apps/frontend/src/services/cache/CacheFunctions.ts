@@ -111,13 +111,14 @@ export const useCacheFunctions = () => {
 
     const getProficiencyFeatNameById = async (id: number): Promise<FeatCacheEntry | undefined> => {
         try {
-            const proficiencyFeatsData = await queryClient.fetchQuery({
-                queryKey: ['feats-cache', { queryType: 'proficiency' }],
-                queryFn: () => CacheQueryHooks.getFeatsCacheQueryFn({ queryType: 'proficiency' }),
+            // Fetch all feats cache (proficiency feats are now identified via FeatureProgressions)
+            const allFeatsData = await queryClient.fetchQuery({
+                queryKey: ['feats-cache', { queryType: 'all' }],
+                queryFn: () => CacheQueryHooks.getFeatsCacheQueryFn({ queryType: 'all' }),
                 staleTime: Infinity,
                 gcTime: Infinity,
             });
-            return proficiencyFeatsData.results.find(item => item.id === id);
+            return allFeatsData.results.find(item => item.id === id);
         } catch {
             return undefined;
         }
@@ -258,13 +259,14 @@ export const useCacheFunctions = () => {
 
     const getProficiencyFeatSelectFull = async (): Promise<CacheEntryAsCoreComponent<FeatCacheEntry>[]> => {
         try {
-            const proficiencyFeatsData = await queryClient.fetchQuery({
-                queryKey: ['feats-cache', { queryType: 'proficiency' }],
-                queryFn: () => CacheQueryHooks.getFeatsCacheQueryFn({ queryType: 'proficiency' }),
+            // Fetch all feats cache (proficiency feats are now identified via FeatureProgressions)
+            const allFeatsData = await queryClient.fetchQuery({
+                queryKey: ['feats-cache', { queryType: 'all' }],
+                queryFn: () => CacheQueryHooks.getFeatsCacheQueryFn({ queryType: 'all' }),
                 staleTime: Infinity,
                 gcTime: Infinity,
             });
-            return (proficiencyFeatsData.results || []) as CacheEntryAsCoreComponent<FeatCacheEntry>[];
+            return (allFeatsData.results || []) as CacheEntryAsCoreComponent<FeatCacheEntry>[];
         } catch {
             return [];
         }

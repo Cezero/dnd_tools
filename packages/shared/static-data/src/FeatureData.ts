@@ -6,6 +6,7 @@ export const SpecialFeatureId = {
     AutomaticLanguage: 3,
     BonusLanguage: 4,
     AbilityAdjustment: 5,
+    CompanionBenefit: 6,
 } as const;
 
 export type SpecialFeatureId = typeof SpecialFeatureId[keyof typeof SpecialFeatureId];
@@ -18,6 +19,7 @@ export const FeatureSourceType = {
     ClassVariant: 4,
     Domain: 5, // NEW: Domain-granted features
     Feat: 6, // NEW: Feat-granted features
+    Companion: 7, // NEW: Companion-granted features
 } as const;
 
 export type FeatureSourceType = typeof FeatureSourceType[keyof typeof FeatureSourceType];
@@ -58,7 +60,6 @@ export const EntityType = {
     Quantity: 1,     // Counts, amounts, resources (3d6 damage, 2 targets, 30ft speed)
     Replacement: 2,  // Replace existing values (unarmed damage, base speed)
     Other: 3,        // Special cases, complex effects
-    Proficiency: 4,  // Proficiency bonus
     Choice: 5,      // Choice-based features
     Allocation: 6,  // Allocation-based features
 } as const;
@@ -70,7 +71,6 @@ export const ENTITY_TYPES: BaseMap<CoreComponent> = {
     [EntityType.Quantity]: { id: EntityType.Quantity, name: 'Quantity' },
     [EntityType.Replacement]: { id: EntityType.Replacement, name: 'Replacement' },
     [EntityType.Other]: { id: EntityType.Other, name: 'Other' },
-    [EntityType.Proficiency]: { id: EntityType.Proficiency, name: 'Proficiency' },
     [EntityType.Choice]: { id: EntityType.Choice, name: 'Choice' },
     [EntityType.Allocation]: { id: EntityType.Allocation, name: 'Allocation' },
 }
@@ -121,6 +121,8 @@ export const EntityAppliesToType = {
     HitPoints: 33,      // Hit points (e.g., Toughness feat, companion benefits)
     Familiar: 34,       // Familiar choice
     Prerequisite: 35,   // Prerequisites for features
+    Proficiency: 36,     // Proficiency (weapon, armor, etc.)
+    SpellbookSpell: 37,  // Spellbook spell selection (wizard, etc.)
 } as const;
 
 export type EntityAppliesToType = typeof EntityAppliesToType[keyof typeof EntityAppliesToType];
@@ -168,6 +170,8 @@ export const ENTITY_APPLIES_TO_TYPES: BaseMap<AppliesToType> = {
     [EntityAppliesToType.AnimalCompanion]: { id: EntityAppliesToType.AnimalCompanion, name: 'Animal Companion', displayName: 'Animal Companion' },
     [EntityAppliesToType.Familiar]: { id: EntityAppliesToType.Familiar, name: 'Familiar', displayName: 'Familiar' },
     [EntityAppliesToType.Prerequisite]: { id: EntityAppliesToType.Prerequisite, name: 'Prerequisite', displayName: 'Prerequisite' },
+    [EntityAppliesToType.Proficiency]: { id: EntityAppliesToType.Proficiency, name: 'Proficiency', displayName: 'Proficiency' },
+    [EntityAppliesToType.SpellbookSpell]: { id: EntityAppliesToType.SpellbookSpell, name: 'Spellbook Spell', displayName: 'Spellbook Spell' },
 }
 
 export const ENTITY_APPLIES_TO_LIST = Object.values(ENTITY_APPLIES_TO_TYPES);
@@ -214,14 +218,13 @@ export const ENTITY_TYPE_COMPATIBILITY = {
         EntityAppliesToType.Feat, // Direct feat grants are Other type modifiers
         EntityAppliesToType.Spell, // Direct spell grants are Other type modifiers
         EntityAppliesToType.Domain, // Direct domain grants are Other type modifiers
+        EntityAppliesToType.Proficiency, // Proficiencies are Other type modifiers
+        EntityAppliesToType.SpellbookSpell, // Spellbook spell grants (e.g., 0th level spells for wizards)
 
         // New complex ability types
         EntityAppliesToType.SizeCategory,
         EntityAppliesToType.CreatureType,
         EntityAppliesToType.DamageType,
-    ],
-    [EntityType.Proficiency]: [
-        EntityAppliesToType.Feat, // Feats used as proficiencies
     ],
     [EntityType.Choice]: [
         EntityAppliesToType.Feat, // Choice between feats
@@ -231,6 +234,7 @@ export const ENTITY_TYPE_COMPATIBILITY = {
         EntityAppliesToType.SkillPoints, // Choice for skill points (e.g., Human bonus skill points)
         EntityAppliesToType.AnimalCompanion, // Choice between animal companions
         EntityAppliesToType.Familiar, // Choice between familiars
+        EntityAppliesToType.SpellbookSpell, // Choice for spellbook spells (wizard, etc.)
     ],
     [EntityType.Allocation]: [
         EntityAppliesToType.Feat, // Allocation to feats
@@ -361,6 +365,8 @@ export const FeatureEntityConditionType = {
     spell_school: 5,
     creature_type: 6,
     source: 7,
+    lighting: 8,
+    special: 9,
 } as const;
 
 export type FeatureEntityConditionType = typeof FeatureEntityConditionType[keyof typeof FeatureEntityConditionType];
@@ -374,9 +380,28 @@ export const FEATURE_ENTITY_CONDITION_TYPES: BaseMap<CoreComponent> = {
     [FeatureEntityConditionType.source]: { id: FeatureEntityConditionType.source, name: 'Source' },
     [FeatureEntityConditionType.material]: { id: FeatureEntityConditionType.material, name: 'Material' },
     [FeatureEntityConditionType.environment]: { id: FeatureEntityConditionType.environment, name: 'Environment' },
+    [FeatureEntityConditionType.lighting]: { id: FeatureEntityConditionType.lighting, name: 'Lighting' },
+    [FeatureEntityConditionType.special]: { id: FeatureEntityConditionType.special, name: 'Special' },
 }
 
 export const FEATURE_ENTITY_CONDITION_LIST = Object.values(FEATURE_ENTITY_CONDITION_TYPES);
+
+// AttackBonusAppliesTo enum for special attack bonus contexts
+export const AttackBonusAppliesTo = {
+    MainHand: 1,
+    OffHand: 2,
+    Thrown: 3,
+} as const;
+
+export type AttackBonusAppliesTo = typeof AttackBonusAppliesTo[keyof typeof AttackBonusAppliesTo];
+
+export const ATTACK_BONUS_APPLIES_TO_TYPES: BaseMap<CoreComponent> = {
+    [AttackBonusAppliesTo.MainHand]: { id: AttackBonusAppliesTo.MainHand, name: 'Main Hand' },
+    [AttackBonusAppliesTo.OffHand]: { id: AttackBonusAppliesTo.OffHand, name: 'Off Hand' },
+    [AttackBonusAppliesTo.Thrown]: { id: AttackBonusAppliesTo.Thrown, name: 'Thrown' },
+};
+
+export const ATTACK_BONUS_APPLIES_TO_LIST = Object.values(ATTACK_BONUS_APPLIES_TO_TYPES);
 
 // Material values for FeatureEntityConditionType.material
 export const MaterialType = {
@@ -457,6 +482,19 @@ export const TARGET_TYPES: BaseMap<CoreComponent> = {
 };
 
 export const TARGET_TYPE_LIST = Object.values(TARGET_TYPES);
+
+// Special values for FeatureEntityConditionType.special
+export const SpecialType = {
+    casting_defensively: 0,
+} as const;
+
+export type SpecialType = typeof SpecialType[keyof typeof SpecialType];
+
+export const SPECIAL_TYPES: BaseMap<CoreComponent> = {
+    [SpecialType.casting_defensively]: { id: SpecialType.casting_defensively, name: 'Casting Defensively' },
+};
+
+export const SPECIAL_TYPE_LIST = Object.values(SPECIAL_TYPES);
 
 // Attack Type Enum for FeatureEntityConditionType.attack_type
 export const ATTACK_TYPE_ENUM = {

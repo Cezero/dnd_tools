@@ -6,7 +6,7 @@ import { GenericList } from '@/components/generic-list';
 import { createIdDeleteServiceFunction } from '@/components/generic-list/types';
 import { FEAT_COLUMNS } from '@/features/feat/FeatColumns';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
-import { FeatInQueryResponse } from '@shared/schema';
+import { FeatWithFeatureInfo } from '@shared/schema';
 
 import { routes } from './FeatConfig';
 
@@ -40,7 +40,7 @@ export function FeatList(): React.JSX.Element {
                     </button>
                 </div>
             )}
-            <GenericList<FeatInQueryResponse>
+            <GenericList<FeatWithFeatureInfo>
                 storageKey="feats-list"
                 columns={FEAT_COLUMNS}
                 dataFetcher={dataFetcher}

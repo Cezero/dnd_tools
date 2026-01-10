@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { ItemQueryHooks } from '@/services/query/ItemQueryHooks';
 import type { Feat, FeatureProgression, ItemWithDetails } from '@shared/schema';
-import { ITEM_TYPE_ENUM, FeatPrerequisiteType, CoreComponent } from '@shared/static-data';
+import { ITEM_TYPE_ENUM, FeaturePrerequisiteType, FeatureSourceType, CoreComponent } from '@shared/static-data';
 import { extractProficiencies } from '@/lib/attack-calculation';
 
 interface FeatSubIdSelectionModalProps {
@@ -31,11 +31,30 @@ export function FeatSubIdSelectionModal({
         return extractProficiencies(resolvedProgressions);
     }, [resolvedProgressions]);
 
-    // Check if feat has proficiency prerequisite
+    // Find feature progressions for this feat
+    const featProgressions = useMemo(() => {
+        if (!feat || !resolvedProgressions) return [];
+        return resolvedProgressions.filter(
+            p => p.sourceType === FeatureSourceType.Feat && p.featId === feat.id
+        );
+    }, [feat, resolvedProgressions]);
+
+    // Get feature description from progression
+    const featureDescription = useMemo(() => {
+        return featProgressions[0]?.feature?.description || null;
+    }, [featProgressions]);
+
+    // Check if feat has proficiency prerequisite from Feature system
     const hasProficiencyPrereq = useMemo(() => {
-        if (!feat?.prereqs) return false;
-        return feat.prereqs.some(prereq => prereq.typeId === FeatPrerequisiteType.PROFICIENCY);
-    }, [feat]);
+        if (!featProgressions.length) return false;
+        
+        // Check if any progression has a proficiency prerequisite
+        return featProgressions.some(progression => 
+            progression.feature?.prerequisites?.some(
+                prereq => prereq.type === FeaturePrerequisiteType.Proficiency
+            )
+        );
+    }, [featProgressions]);
 
     // Load weapons when modal opens
     useEffect(() => {
@@ -129,7 +148,7 @@ export function FeatSubIdSelectionModal({
                             Select Weapon for {feat.name}
                         </Dialog.Title>
                         <Dialog.Description className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                            {feat.description || 'Please select a weapon for this feat.'}
+                            {featureDescription || 'Please select a weapon for this feat.'}
                         </Dialog.Description>
 
                         {isLoadingWeapons ? (

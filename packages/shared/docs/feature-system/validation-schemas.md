@@ -145,7 +145,7 @@ The unified schema that handles all types of feature effects including modifiers
 **Key Validations**:
 - **`id`**: Required positive integer for unique identification
 - **`progressionId`**: Required positive integer linking to the feature progression
-- **`type`**: Required enum value from @EntityType (Bonus, Quantity, Replacement, Other, Proficiency, Choice, Allocation)
+- **`type`**: Required enum value from @EntityType (Bonus, Quantity, Replacement, Other, Choice, Allocation). Note: Proficiencies use EntityType.Other (3) with appliesTo = EntityAppliesToType.Proficiency (36)
 - **`appliesTo`**: Required enum value from @EntityAppliesToType for target specification
 - **`appliesToId`**: Optional positive integer for specific target ID (references other system IDs)
 - **`appliesToSubId`**: Optional positive integer for sub-target ID
@@ -181,10 +181,13 @@ The unified schema that handles all types of feature effects including modifiers
 #### **@EntityType.Other (3) - Non-Numeric Features**
 **Purpose**: Special cases and complex effects that require custom handling
 **Real Examples**:
-- Class skills and weapon proficiencies
-- Druid Bonus Languages (Sylvan language access)
-- Druid Druidic language grants
-**Usage**: `type: 3, appliesTo: 14 (Language), appliesToId: language ID`
+- Weapon and armor proficiencies (appliesTo: Proficiency (36), appliesToId: PROFICIENCY_TYPE_ENUM value)
+- Class skills (appliesTo: Skill (1), appliesToId: skill ID)
+- Direct feat grants (appliesTo: Feat (21), appliesToId: feat ID)
+- Druid Bonus Languages (Sylvan language access) (appliesTo: Language (14), appliesToId: language ID)
+- Druid Druidic language grants (appliesTo: AutomaticLanguage (15), appliesToId: language ID)
+**Usage**: `type: 3, appliesTo: target type, appliesToId: target ID`
+**Proficiency Usage**: `type: 3, appliesTo: 36 (Proficiency), appliesToId: proficiency type ID (1-8), appliesToSubId: item ID or -1 for "all"`
 
 #### **@EntityType.Choice (5) - Player Choices**
 **Purpose**: Player choice mechanics between different options
@@ -227,6 +230,7 @@ The unified schema that handles all types of feature effects including modifiers
 - **@EntityAppliesToType.SavingThrow (2)**: `appliesToId` references saving throw types (@SavingThrowId enum)
 - **@EntityAppliesToType.Ability (0)**: `appliesToId` references ability types (@AbilityId enum)
 - **@EntityAppliesToType.Feat (21)**: `appliesToId` references feat IDs from feat system
+- **@EntityAppliesToType.Proficiency (36)**: `appliesToId` references PROFICIENCY_TYPE_ENUM values (1-8: SimpleWeapon, MartialWeapon, ExoticWeapon, LightArmor, MediumArmor, HeavyArmor, Shield, TowerShield)
 
 **Usage**: The unified approach allows a single feature to have multiple effects of different types, all managed through one consistent schema. This eliminates the need for separate modifier, choice, and special effect schemas while providing the same functionality.
 

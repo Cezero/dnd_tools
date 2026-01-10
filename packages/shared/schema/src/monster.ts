@@ -197,6 +197,8 @@ export const MonsterCacheSchema = MonsterSchema.pick({
     name: true,
     editionId: true,
     isVisible: true,
+}).extend({
+    typeIds: z.array(z.number().int().nonnegative()).default([]), // Array of monster type IDs
 });
 
 export const MonsterCacheResponseSchema = QueryResponseSchema.extend({

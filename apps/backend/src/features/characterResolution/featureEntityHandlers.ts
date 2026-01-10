@@ -36,8 +36,6 @@ export class FeatureEntityHandlers {
                 return this.processChoiceEntity(entity, progression);
             case EntityType.Allocation:
                 return this.processAllocationEntity(entity, progression);
-            case EntityType.Proficiency:
-                return this.processProficiencyEntity(entity, progression);
             default:
                 result.warnings = [`Unknown entity type: ${entity.type}`];
                 return result;
@@ -117,23 +115,6 @@ export class FeatureEntityHandlers {
         return result;
     }
 
-    /**
-     * Process Proficiency entity type (weapon proficiencies, armor proficiencies, etc.)
-     */
-    private static processProficiencyEntity(
-        entity: FeatureEntity,
-        _progression: FeatureProgression
-    ): EntityProcessingResult {
-        const result: EntityProcessingResult = {
-            grants: []
-        };
-
-        // Proficiency entities directly grant proficiencies
-        // The entity itself contains all the information needed
-        result.grants.push(entity);
-
-        return result;
-    }
 }
 
 

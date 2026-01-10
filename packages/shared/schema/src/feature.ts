@@ -112,6 +112,7 @@ export const FeatureProgressionSchema = z.object({
     variantOverrideId: z.number().int().nullable(),
     domainId: z.number().int().nullable(), // NEW: Reference to domain for domain-granted features
     featId: z.number().int().nullable(), // NEW: Reference to Feat (same pattern as classId/raceId/domainId)
+    companionId: z.number().int().nullable(), // NEW: Reference to Companion for companion-granted features
     feature: FeatureSchema.optional(),
     class: z.object({
         name: z.string(),
@@ -149,7 +150,6 @@ export const CreateFeatureEntitySchema = FeatureEntitySchema.omit({
     formulaParamsId: true,
     // Display-only fields that should be filtered out:
     item: true,
-    feat: true,
     feature: true,
     spell: true,
     domain: true,

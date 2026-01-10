@@ -44,6 +44,8 @@ interface ListSelectionDialogProps<T extends BaseItem, U extends BaseSelectedIte
     itemDesc: string;
     /** Route to navigate to for creating new items */
     createNewRoute: string;
+    /** Optional callback for creating new items (if provided, used instead of navigating) */
+    onCreateNew?: () => void;
     /** Function to transform selected items to the expected format */
     transformSelectedItems: (items: T[]) => U[];
     /** Title for the dialog */
@@ -68,6 +70,7 @@ export function ListSelectionDialog<T extends BaseItem, U extends BaseSelectedIt
     storageKey,
     itemDesc,
     createNewRoute,
+    onCreateNew,
     transformSelectedItems,
     dialogTitle,
     createNewButtonText,
@@ -187,21 +190,25 @@ export function ListSelectionDialog<T extends BaseItem, U extends BaseSelectedIt
                                     type="button"
                                     className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:bg-blue-700 dark:hover:bg-blue-600"
                                     onClick={() => {
-                                        onClose();
-                                        const returnPath = parentType === 'class'
-                                            ? `/classes/${parentId}/edit`
-                                            : parentType === 'race'
-                                                ? `/races/${parentId}/edit`
-                                                : '/features';
+                                        if (onCreateNew) {
+                                            onCreateNew();
+                                        } else {
+                                            onClose();
+                                            const returnPath = parentType === 'class'
+                                                ? `/classes/${parentId}/edit`
+                                                : parentType === 'race'
+                                                    ? `/races/${parentId}/edit`
+                                                    : '/features';
 
-                                        navigate(createNewRoute, {
-                                            state: {
-                                                from: 'ListSelectionDialog',
-                                                parentId: parentId,
-                                                parentType: parentType,
-                                                returnPath: returnPath
-                                            }
-                                        });
+                                            navigate(createNewRoute, {
+                                                state: {
+                                                    from: 'ListSelectionDialog',
+                                                    parentId: parentId,
+                                                    parentType: parentType,
+                                                    returnPath: returnPath
+                                                }
+                                            });
+                                        }
                                     }}
                                 >
                                     {createNewButtonText}

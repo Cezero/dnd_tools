@@ -20,8 +20,9 @@ import {
     Skill,
     ENERGY_DAMAGE_TYPE_LIST,
     SPELL_SCHOOL_LIST,
-    FeatBenefitType,
+    PROFICIENCY_TYPE_LIST,
     PROFICIENCY_TYPES,
+    ATTACK_BONUS_APPLIES_TO_LIST,
     CoreComponent
 } from '@shared/static-data';
 
@@ -29,6 +30,11 @@ import {
  * Get the appropriate select options for AppliesToSubId based on the appliesTo and appliesToId
  */
 export function getAppliesToSubIdSelectOptions(appliesTo: EntityAppliesToType, appliesToId: number | null): CoreComponent[] {
+    // Attack bonus special contexts (two-weapon fighting, thrown weapons, etc.)
+    if (appliesTo === EntityAppliesToType.Attack) {
+        return ATTACK_BONUS_APPLIES_TO_LIST;
+    }
+
     // Only show appliesToSubId for specific combinations
     if (appliesTo === EntityAppliesToType.Skill && appliesToId) {
         if (appliesToId === Skill.Craft) {
@@ -56,11 +62,7 @@ export function getAppliesToSubIdSelectOptions(appliesTo: EntityAppliesToType, a
 export function useAppliesToSelectOptions(appliesTo: EntityAppliesToType | null, entityType?: EntityType | null) {
     // Use the appropriate query hook based on the appliesTo type
     // For GET requests with requestSchema, pass query params directly (not wrapped in requestData)
-    // If entityType is Proficiency and appliesTo is Feat, only fetch proficiency feats
-    const featQueryType = (entityType === EntityType.Proficiency && appliesTo === EntityAppliesToType.Feat)
-        ? 'proficiency'
-        : 'all';
-    const featQuery = FeatQueryHooks.useGetFeatList({ queryType: featQueryType });
+    const featQuery = FeatQueryHooks.useGetFeatList({ queryType: 'all' });
 
     const domainQuery = DomainQueryHooks.useGetDomains({});
 
@@ -71,6 +73,11 @@ export function useAppliesToSelectOptions(appliesTo: EntityAppliesToType | null,
     return useMemo(() => {
         if (appliesTo === null || appliesTo === undefined) {
             return [];
+        }
+
+        // For Proficiency, use static proficiency types (not feats)
+        if (appliesTo === EntityAppliesToType.Proficiency) {
+            return PROFICIENCY_TYPE_LIST;
         }
 
         switch (appliesTo) {
@@ -122,6 +129,8 @@ export function getAppliesToSelectOptionsSync(appliesTo: EntityAppliesToType, _e
             return SKILL_LIST;
         case EntityAppliesToType.SavingThrow:
             return SAVING_THROW_LIST;
+        case EntityAppliesToType.Proficiency:
+            return PROFICIENCY_TYPE_LIST;
         case EntityAppliesToType.Damage:
             return RPG_DICE_LIST;
         case EntityAppliesToType.DamageReduction:
@@ -161,8 +170,8 @@ export function useProficiencySubIdOptions(
             // Check if this is a proficiency entity with a feat
             if (
                 !entity ||
-                entity.type !== EntityType.Proficiency ||
-                entity.appliesTo !== EntityAppliesToType.Feat ||
+                entity.type !== EntityType.Other ||
+                entity.appliesTo !== EntityAppliesToType.Proficiency ||
                 !appliesToId
             ) {
                 setOptions([]);
@@ -173,8 +182,7 @@ export function useProficiencySubIdOptions(
             setIsLoading(true);
 
             try {
-                // After migration, appliesToId contains the proficiency type ID directly
-                // (not the feat ID - appliesTo === EntityAppliesToType.Feat just indicates it's feat-granted)
+                // appliesToId contains the proficiency type ID directly
                 const proficiencyTypeId = appliesToId;
                 const proficiencyType = PROFICIENCY_TYPES[proficiencyTypeId];
 
@@ -239,7 +247,6 @@ export function useProficiencySubIdOptions(
         entity?.type,
         entity?.appliesTo,
         entity?.feat?.id,
-        entity?.feat?.benefits,
         entity?.appliesToSubId,
         entity?.item?.id,
         appliesToId

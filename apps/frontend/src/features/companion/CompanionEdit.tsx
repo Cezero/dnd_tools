@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
 
 import {
     ValidatedForm,
@@ -9,13 +8,14 @@ import {
 } from '@/components/forms';
 import { CustomSelect } from '@/components/forms/FormComponents';
 import { MonsterSearchInput } from '@/components/forms/MonsterSearchInput';
+import { FeatureProgressionDetailEdit } from '@/components/feature-system/FeatureProgressionDetailEdit';
+import { FeaturesManager } from '@/components/feature-system/FeaturesManager';
 import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
+import { FeatureSystemApi } from '@/components/feature-system/FeatureSystemApi';
 import { CacheQueryHooks } from '@/services/query/CacheQueryHooks';
-import { CreateCompanionRequest, UpdateCompanionRequest, UpdateCompanionSchema, CreateCompanionSchema, CompanionWithRelations, CreateCompanionBenefitMapRequest } from '@shared/schema';
-import { COMPANION_TYPE_LIST, CompanionType, COMPANION_BENEFIT_TYPE_BY_ID } from '@shared/static-data';
-import { CompanionBenefitEdit } from './CompanionBenefitEdit';
-import { CompanionBenefitOptions, formatCompanionBenefit } from './CompanionUtil';
-import { CompanionBenefitType } from '@shared/static-data';
+import { CreateCompanionRequest, UpdateCompanionRequest, UpdateCompanionSchema, CreateCompanionSchema, CompanionWithRelations, FeatureProgression } from '@shared/schema';
+import { COMPANION_TYPE_LIST, CompanionType, SpecialFeatureId, FeatureSourceType, MonsterTypeId } from '@shared/static-data';
+import { useQueryClient } from '@tanstack/react-query';
 
 type CompanionFormData = CreateCompanionRequest | UpdateCompanionRequest;
 
@@ -25,6 +25,7 @@ export function CompanionEdit() {
     const location = useLocation();
     const fromListParams = location.state?.fromListParams || '';
     const isNew = id === 'new';
+    const queryClient = useQueryClient();
 
     const createMutation = CompanionQueryHooks.useCreateCompanion();
     const updateMutation = CompanionQueryHooks.useUpdateCompanion();
@@ -32,6 +33,11 @@ export function CompanionEdit() {
     const [companion, setCompanion] = useState<CompanionWithRelations | null>(null);
     const [isLoadingCompanion, setIsLoadingCompanion] = useState(false);
     const [companionError, setCompanionError] = useState<Error | null>(null);
+    const [featureProgressions, setFeatureProgressions] = useState<FeatureProgression[]>([]);
+    const [isProgressionDialogOpen, setIsProgressionDialogOpen] = useState(false);
+    const [editingProgression, setEditingProgression] = useState<FeatureProgression | null>(null);
+    const [preSelectedFeature, setPreSelectedFeature] = useState<FeatureProgression['feature'] | null>(null);
+    const [isSavingProgression, setIsSavingProgression] = useState(false);
 
     // Fetch monster cache to get monster names
     const { data: monstersCache } = CacheQueryHooks.useMonstersCache();
@@ -40,11 +46,7 @@ export function CompanionEdit() {
         type: CompanionType.Familiar,
         monsterId: undefined,
         minLevel: undefined,
-        benefits: [],
     });
-
-    const [isAddBenefitModalOpen, setIsAddBenefitModalOpen] = useState(false);
-    const [editingBenefit, setEditingBenefit] = useState<CreateCompanionBenefitMapRequest | null>(null);
 
     const form = useValidatedForm(
         isNew ? CreateCompanionSchema : UpdateCompanionSchema,
@@ -52,7 +54,7 @@ export function CompanionEdit() {
         setFormData
     );
 
-    // Load companion data only when editing (not creating new)
+    // Load companion data and feature progressions
     useEffect(() => {
         const fetchCompanion = async () => {
             if (isNew || !id) {
@@ -75,17 +77,10 @@ export function CompanionEdit() {
                         type: fetchedCompanion.type,
                         monsterId: fetchedCompanion.monsterId,
                         minLevel: fetchedCompanion.minLevel || undefined,
-                        benefits: fetchedCompanion.benefits?.map(b => ({
-                            typeId: b.typeId,
-                            referenceId: b.referenceId,
-                            amount: b.amount,
-                            index: b.index,
-                            conditions: b.conditions?.map(c => ({
-                                conditionType: c.conditionType,
-                                conditionValue: c.conditionValue,
-                            })) || [],
-                        })) || [],
                     });
+
+                    // Use feature progressions from companion response
+                    setFeatureProgressions(fetchedCompanion.features || []);
                 }
             } catch (err) {
                 const error = err instanceof Error ? err : new Error('Failed to fetch companion');
@@ -99,48 +94,202 @@ export function CompanionEdit() {
         fetchCompanion();
     }, [id, isNew]);
 
-    const HandleAddBenefitClick = useCallback(() => {
-        setEditingBenefit({
-            index: formData.benefits?.length || 0,
-            typeId: null,
-            referenceId: null,
-            amount: null,
-            conditions: [],
-        });
-        setIsAddBenefitModalOpen(true);
-    }, [formData.benefits]);
-
-    const HandleEditBenefitClick = useCallback((benefit: CreateCompanionBenefitMapRequest) => {
-        setEditingBenefit(benefit);
-        setIsAddBenefitModalOpen(true);
+    const handleEditProgression = useCallback((progression: FeatureProgression) => {
+        setEditingProgression(progression);
+        setPreSelectedFeature(null);
+        setIsProgressionDialogOpen(true);
     }, []);
 
-    const HandleSaveBenefit = useCallback((savedBenefit: CreateCompanionBenefitMapRequest) => {
-        setFormData(prev => {
-            const updatedBenefits = [...(prev.benefits || [])];
-            updatedBenefits[savedBenefit.index] = savedBenefit;
-            return { ...prev, benefits: updatedBenefits };
-        });
-        setIsAddBenefitModalOpen(false);
-        setEditingBenefit(null);
-    }, []);
+    const handleRemoveProgression = useCallback(async (progressionId: number) => {
+        try {
+            // Delete by updating with empty progressions array for that feature
+            const progression = featureProgressions.find(p => p.id === progressionId);
+            if (!progression) {
+                return;
+            }
 
-    const HandleDeleteBenefit = useCallback(async (benefitIndex: number) => {
-        if (window.confirm('Are you sure you want to remove this benefit from the companion?')) {
-            setFormData(prev => {
-                const filteredBenefits = prev.benefits?.filter((_, index) => index !== benefitIndex) || [];
-                // Re-index the remaining benefits
-                const reindexedBenefits = filteredBenefits.map((benefit, newIndex) => ({
-                    ...benefit,
-                    index: newIndex
+            // Get remaining progressions for this feature
+            const remainingProgressions = featureProgressions
+                .filter(p => p.id !== progressionId && p.featureId === progression.featureId)
+                .map(p => ({
+                    ...p,
+                    feature: p.feature ? {
+                        id: p.feature.id,
+                        name: p.feature.name,
+                        slug: p.feature.slug
+                    } : undefined,
+                    entities: p.entities?.map(e => ({
+                        ...e,
+                        conditions: e.conditions?.map(c => ({
+                            ...c,
+                            entity: c.entity ? { id: c.entity.id } : undefined
+                        }))
+                    })),
                 }));
-                return {
-                    ...prev,
-                    benefits: reindexedBenefits
-                };
+
+            await FeatureSystemApi.updateFeatureProgressions(
+                { progressions: remainingProgressions },
+                { id: progression.featureId }
+            );
+            
+            // Refetch companion to get updated features
+            if (id && id !== 'new') {
+                const companionId = parseInt(id, 10);
+                if (!isNaN(companionId)) {
+                    const refetchedCompanion = await CompanionQueryHooks.getCompanionById(companionId);
+                    if (refetchedCompanion) {
+                        setFeatureProgressions(refetchedCompanion.features || []);
+                    }
+                }
+            }
+
+            queryClient.invalidateQueries({
+                queryKey: ['features'],
+                exact: false
             });
+        } catch (err) {
+            console.error('Error removing feature progression:', err);
         }
-    }, []);
+    }, [id, queryClient, featureProgressions]);
+
+    const handleAddFeature = useCallback(async (feature: { id: number; name: string; description: string; slug: string }) => {
+        const companionId = id && id !== 'new' ? parseInt(id, 10) : undefined;
+        if (!companionId) {
+            console.error('Cannot add feature: companion ID is required');
+            return;
+        }
+
+        try {
+            const newProgression: FeatureProgression = {
+                id: 0,
+                featureId: feature.id,
+                companionId: companionId,
+                sourceType: FeatureSourceType.Companion,
+                level: 1,
+                classId: null,
+                raceId: null,
+                variantOverrideId: null,
+                domainId: null,
+                featId: null,
+                entities: [],
+                feature: {
+                    id: feature.id,
+                    name: feature.name,
+                    description: feature.description,
+                    slug: feature.slug,
+                    summary: null,
+                    displayInCharacterSheet: true,
+                    prerequisites: []
+                }
+            };
+
+            // Add to existing progressions for this feature
+            const existingProgressions = featureProgressions.filter(p => p.featureId === feature.id);
+            const updatedProgressions = [...existingProgressions, newProgression].map(p => ({
+                ...p,
+                feature: p.feature ? {
+                    id: p.feature.id,
+                    name: p.feature.name,
+                    slug: p.feature.slug
+                } : undefined,
+                entities: p.entities?.map(e => ({
+                    ...e,
+                    conditions: e.conditions?.map(c => ({
+                        ...c,
+                        entity: c.entity ? { id: c.entity.id } : undefined
+                    }))
+                })),
+            }));
+
+            await FeatureSystemApi.updateFeatureProgressions(
+                { progressions: updatedProgressions },
+                { id: feature.id }
+            );
+
+            // Refetch companion to get updated features
+            const refetchedCompanion = await CompanionQueryHooks.getCompanionById(companionId);
+            if (refetchedCompanion) {
+                setFeatureProgressions(refetchedCompanion.features || []);
+            }
+
+            queryClient.invalidateQueries({
+                queryKey: ['features'],
+                exact: false
+            });
+        } catch (err) {
+            console.error('Error adding feature:', err);
+        }
+    }, [id, queryClient, featureProgressions]);
+
+    const handleSaveProgression = async (progression: FeatureProgression) => {
+        setIsSavingProgression(true);
+        try {
+            if (!progression.featureId) {
+                console.error('Cannot save progression: missing featureId', progression);
+                return;
+            }
+
+            const companionId = id && id !== 'new' ? parseInt(id, 10) : undefined;
+            if (!companionId) {
+                console.error('Cannot save progression: companion ID is required');
+                return;
+            }
+
+            // Ensure companionId and sourceType are set correctly
+            const progressionData = {
+                ...progression,
+                companionId: companionId,
+                sourceType: FeatureSourceType.Companion,
+                feature: progression.feature ? {
+                    id: progression.feature.id,
+                    name: progression.feature.name,
+                    slug: progression.feature.slug
+                } : undefined,
+                entities: progression.entities?.map(e => ({
+                    ...e,
+                    conditions: e.conditions?.map(c => ({
+                        ...c,
+                        entity: c.entity ? { id: c.entity.id } : undefined
+                    }))
+                })),
+            };
+
+            await FeatureSystemApi.updateFeatureProgressions(
+                { progressions: [progressionData] },
+                { id: progression.featureId }
+            );
+
+            // Close the dialog
+            setIsProgressionDialogOpen(false);
+            setEditingProgression(null);
+            setPreSelectedFeature(null);
+
+            // Refetch companion to get updated features
+            if (id && id !== 'new') {
+                const companionId = parseInt(id, 10);
+                if (!isNaN(companionId)) {
+                    const refetchedCompanion = await CompanionQueryHooks.getCompanionById(companionId);
+                    if (refetchedCompanion) {
+                        setFeatureProgressions(refetchedCompanion.features || []);
+                    }
+                }
+            }
+
+            // Invalidate queries
+            queryClient.invalidateQueries({
+                queryKey: ['features', 'progressions', progression.featureId]
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['features'],
+                exact: false
+            });
+        } catch (err) {
+            const error = err instanceof Error ? err : new Error('Failed to save feature progression');
+            console.error('Error saving feature progression:', error);
+        } finally {
+            setIsSavingProgression(false);
+        }
+    };
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -183,6 +332,8 @@ export function CompanionEdit() {
         : undefined;
     const monsterName = monsterNameFromCompanion || monsterNameFromCache;
 
+    const companionId = id && id !== 'new' ? parseInt(id, 10) : undefined;
+
     return (
         <div className="p-4">
             <h1 className="text-2xl font-bold mb-4">
@@ -191,127 +342,106 @@ export function CompanionEdit() {
             <ValidatedForm
                 onSubmit={onSubmit}
                 validationState={form.validation.validationState}
-                isLoading={createMutation.isPending || updateMutation.isPending}
+                isLoading={createMutation.isPending || updateMutation.isPending || isSavingProgression}
                 formData={formData}
                 setFormData={setFormData}
                 validation={form.validation}
             >
-                <div className="w-[40%] space-y-4">
-                    <CustomSelect
-                        label="Type"
-                        value={formData.type ?? CompanionType.Familiar}
-                        onValueChange={(value) => setFormData({ ...formData, type: value })}
-                        options={COMPANION_TYPE_LIST}
-                        componentExtraClassName="flex items-center gap-4"
-                        labelExtraClassName="w-32 flex-shrink-0"
-                    />
-                    <MonsterSearchInput
-                        label="Monster"
-                        value={formData.monsterId ?? null}
-                        onValueChange={(monsterId) => setFormData({ ...formData, monsterId: monsterId ?? undefined })}
-                        placeholder="Search for a monster..."
-                        componentExtraClassName="flex items-center gap-4 [&>div]:flex-1"
-                        labelExtraClassName="w-32 flex-shrink-0"
-                    />
-                    <ValidatedInput
-                        field="minLevel"
-                        label="Minimum Level"
-                        type="number"
-                        placeholder="Enter minimum character level"
-                        componentExtraClassName="flex items-center gap-4"
-                        labelExtraClassName="w-32 flex-shrink-0"
-                        inputExtraClassName="flex-1"
-                    />
-                    {formData.monsterId && (monsterName || formData.minLevel) && (
-                        <div className="text-sm text-gray-600 dark:text-gray-300 p-3 bg-gray-50 dark:bg-gray-800 rounded">
-                            {monsterName && (
-                                <p><strong>Monster:</strong> {monsterName}</p>
-                            )}
-                            {formData.minLevel && (
-                                <p><strong>Minimum Level:</strong> {formData.minLevel}</p>
-                            )}
-                        </div>
-                    )}
+                <div className="space-y-6">
+                    <div className="w-[40%] space-y-4">
+                        <CustomSelect
+                            label="Type"
+                            value={formData.type ?? CompanionType.Familiar}
+                            onValueChange={(value) => setFormData({ ...formData, type: value })}
+                            options={COMPANION_TYPE_LIST}
+                            componentExtraClassName="flex items-center gap-4"
+                            labelExtraClassName="w-32 flex-shrink-0"
+                        />
+                        <MonsterSearchInput
+                            label="Monster"
+                            value={formData.monsterId ?? null}
+                            onValueChange={(monsterId) => setFormData({ ...formData, monsterId: monsterId ?? undefined })}
+                            placeholder="Search for a monster..."
+                            componentExtraClassName="flex items-center gap-4 [&>div]:flex-1"
+                            labelExtraClassName="w-32 flex-shrink-0"
+                            filter={(monster) => {
+                                // Filter to only show Animal type monsters
+                                return monster.typeIds?.includes(MonsterTypeId.Animal) ?? false;
+                            }}
+                        />
+                        <ValidatedInput
+                            field="minLevel"
+                            label="Minimum Level"
+                            type="number"
+                            placeholder="Enter minimum character level"
+                            componentExtraClassName="flex items-center gap-4"
+                            labelExtraClassName="w-32 flex-shrink-0"
+                            inputExtraClassName="flex-1"
+                        />
+                        {formData.monsterId && (monsterName || formData.minLevel) && (
+                            <div className="text-sm text-gray-600 dark:text-gray-300 p-3 bg-gray-50 dark:bg-gray-800 rounded">
+                                {monsterName && (
+                                    <p><strong>Monster:</strong> {monsterName}</p>
+                                )}
+                                {formData.minLevel && (
+                                    <p><strong>Minimum Level:</strong> {formData.minLevel}</p>
+                                )}
+                            </div>
+                        )}
 
-                    {/* Benefits Section */}
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-semibold">Benefits</h2>
+                        <div className="flex justify-end space-x-4 pt-2">
                             <button
                                 type="button"
-                                onClick={HandleAddBenefitClick}
-                                className="flex items-center gap-1 px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+                                onClick={() => navigate(`/companions${fromListParams ? `?${fromListParams}` : ''}`)}
+                                className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
                             >
-                                <PlusIcon className="h-4 w-4" />
-                                Add Benefit
+                                Cancel
                             </button>
-                        </div>
-                        <div className="flex items-center gap-2 border p-3 rounded dark:border-gray-600">
-                            {formData.benefits && formData.benefits.length > 0 ? (
-                                <>
-                                    {formData.benefits.map((benefit, index) => {
-                                        // Format the entire benefit using the formatting system
-                                        const formattedBenefit = formatCompanionBenefit(benefit);
-                                        return (
-                                            <div key={index} className="flex gap-2 items-center rounded border p-2 dark:border-gray-700">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => HandleEditBenefitClick(benefit)}
-                                                    className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-600"
-                                                >
-                                                    {formattedBenefit}
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    title="Delete Benefit"
-                                                    onClick={() => HandleDeleteBenefit(index)}
-                                                    className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600"
-                                                >
-                                                    <TrashIcon className="h-5 w-5" />
-                                                </button>
-                                            </div>
-                                        );
-                                    })}
-                                </>
-                            ) : (
-                                <p className="text-gray-500 text-sm">No benefits added</p>
-                            )}
+                            <button
+                                type="submit"
+                                disabled={createMutation.isPending || updateMutation.isPending || isSavingProgression}
+                                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
+                            >
+                                {createMutation.isPending || updateMutation.isPending || isSavingProgression ? 'Saving...' : 'Save'}
+                            </button>
                         </div>
                     </div>
 
-                    <div className="flex justify-end space-x-4 pt-2">
-                        <button
-                            type="button"
-                            onClick={() => navigate(`/companions${fromListParams ? `?${fromListParams}` : ''}`)}
-                            className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={createMutation.isPending || updateMutation.isPending}
-                            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
-                        >
-                            {createMutation.isPending || updateMutation.isPending ? 'Saving...' : 'Save'}
-                        </button>
-                    </div>
+                    {/* Features Section - Only show if companion exists */}
+                    {!isNew && companionId && (
+                        <div>
+                            <FeaturesManager
+                                featureProgressions={featureProgressions}
+                                onEditProgression={handleEditProgression}
+                                onRemoveProgression={handleRemoveProgression}
+                                onAddFeature={handleAddFeature}
+                                contextType={FeatureSourceType.Companion}
+                                contextId={companionId}
+                                title="Companion Benefits"
+                                emptyMessage="No benefits configured for this companion"
+                                excludeSpecialFeatures={[]}
+                                setEditingProgression={setEditingProgression}
+                                setPreSelectedFeature={setPreSelectedFeature}
+                                setIsProgressionDialogOpen={setIsProgressionDialogOpen}
+                            />
+                        </div>
+                    )}
                 </div>
             </ValidatedForm>
 
-            {/* Benefit Edit Modal */}
-            {editingBenefit && (
-                <CompanionBenefitEdit
-                    isOpen={isAddBenefitModalOpen}
-                    onClose={() => {
-                        setIsAddBenefitModalOpen(false);
-                        setEditingBenefit(null);
-                    }}
-                    onSave={HandleSaveBenefit}
-                    initialBenefitData={editingBenefit}
-                    companionId={isNew ? 0 : (id ? parseInt(id, 10) : 0)}
-                />
-            )}
+            {/* Feature Progression Edit Dialog */}
+            <FeatureProgressionDetailEdit
+                isOpen={isProgressionDialogOpen}
+                onClose={() => {
+                    setIsProgressionDialogOpen(false);
+                    setEditingProgression(null);
+                    setPreSelectedFeature(null);
+                }}
+                progression={editingProgression}
+                onSave={handleSaveProgression}
+                preSelectedFeature={preSelectedFeature || undefined}
+                showSourceTypeSelector={false}
+            />
         </div>
     );
 }
-

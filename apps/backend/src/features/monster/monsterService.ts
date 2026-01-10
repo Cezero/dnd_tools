@@ -695,12 +695,26 @@ export const monsterService: MonsterService = {
                 name: true,
                 editionId: true,
                 isVisible: true,
+                types: {
+                    select: {
+                        typeId: true,
+                    },
+                },
             },
         });
 
+        // Transform to include typeIds array
+        const transformedMonsters = monsters.map(monster => ({
+            id: monster.id,
+            name: monster.name,
+            editionId: monster.editionId,
+            isVisible: monster.isVisible,
+            typeIds: monster.types.map(t => t.typeId),
+        }));
+
         return {
-            total: monsters.length,
-            results: monsters,
+            total: transformedMonsters.length,
+            results: transformedMonsters,
         };
     },
 };

@@ -1,8 +1,7 @@
 import type { CharacterWithAllDetailsResponse, FeatureProgression, Feat } from '@shared/schema';
-import { AbilityId, GetAbilityModifier, SIZE_MAP, ARMOR_CATEGORY_ENUM } from '@shared/static-data';
+import { AbilityId, GetAbilityModifier, SIZE_MAP, ARMOR_CATEGORY_ENUM, EntityAppliesToType } from '@shared/static-data';
 import { resolveFeatBenefits } from '../core/featBenefitResolver';
 import { resolveFeatureBonuses, resolveFeatureFormulaModifications } from '../core/featureBonusResolver';
-import { FeatBenefitType, EntityAppliesToType } from '@shared/static-data';
 import { buildBreakdownString, createBreakdownComponent } from '../utils/breakdownBuilder';
 import { getAdditionalAbilityModifiers } from '../core/formulaModifier';
 import { getAbilityScore } from './abilityScore';
@@ -91,8 +90,9 @@ export function getAC(
     // TODO: Implement deflection bonus detection
 
     // Get feat benefits
-    const featBenefits = resolveFeatBenefits(character, FeatBenefitType.ATTACK_BONUS, undefined, featsMap, resolvedProgressions); // Note: AC might need different type
-    const featBonus = 0; // TODO: Check if feats can directly affect AC
+    // Note: AC bonuses from feats would typically be through FeatureEntity with appliesTo: AC
+    const featBenefits = resolveFeatBenefits(character, EntityAppliesToType.AC, undefined, featsMap, resolvedProgressions);
+    const featBonus = featBenefits.reduce((sum, b) => sum + b.amount, 0);
 
     // Get feature bonuses (including formula modifications like Monk AC)
     const featureBonuses = resolveFeatureBonuses(

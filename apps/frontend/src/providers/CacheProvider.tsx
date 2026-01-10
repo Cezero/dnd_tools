@@ -31,11 +31,8 @@ const CachePrefetcher: React.FC<{ isAuthenticated: boolean }> = ({ isAuthenticat
         staleTime: Infinity,
         gcTime: Infinity,
     });
-    CacheQueryHooks.useFeatsCache({ queryType: 'proficiency' }, {
-        enabled: isAuthenticated,
-        staleTime: Infinity,
-        gcTime: Infinity,
-    });
+    // Proficiency feats are now identified via FeatureProgressions, so we just cache all feats
+    // The proficiency query type is no longer needed
     CacheQueryHooks.useDeitiesCache({}, {
         enabled: isAuthenticated,
         staleTime: Infinity,

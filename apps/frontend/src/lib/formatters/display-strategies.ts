@@ -1,5 +1,5 @@
 import type { FeatureProgression } from '@shared/schema';
-import { DisplayType } from '@shared/static-data';
+import { DisplayType, FeatureSourceType } from '@shared/static-data';
 
 import { CharacterSheetDisplayStrategy } from './characterSheetDisplayStrategy';
 import { DisplayStrategyBase } from './displayStrategyBase';
@@ -30,9 +30,13 @@ export class EditPageDisplayStrategy extends DisplayStrategyBase {
         context?: DisplayContext,
         progression?: FeatureProgression
     ): DisplayResult {
+        // Suppress level label for Feat progressions (feats don't have levels)
+        const isFeatProgression = progression?.sourceType === FeatureSourceType.Feat;
+        const showLevelLabel = !isFeatProgression;
+
         if (withinProgressionGrouped.length === 0) {
             return {
-                formattedValue: `Level ${progression.level}`,
+                formattedValue: showLevelLabel ? `Level ${progression.level}` : '',
                 breakdown: { components: [] },
                 showBreakdown: context?.showBreakdown || false,
                 components: [],
@@ -44,14 +48,14 @@ export class EditPageDisplayStrategy extends DisplayStrategyBase {
         // No need to group by level again - just create LevelEntry objects directly
         const levelEntries: LevelEntry[] = withinProgressionGrouped.map(item => ({
             level: item.level,
-            description: `Level ${item.level}`,
+            description: showLevelLabel ? `Level ${item.level}` : '',
             items: [item]
         }));
 
         // DisplayType.Edit: Phase 4 already combined all entities at each level
-        // Now just add "Level X:" prefix and join with "; "
+        // Add "Level X:" prefix only if not a Feat progression, then join with "; "
         const levelStrings = withinProgressionGrouped
-            .map(item => `Level ${item.level}: ${item.formattedValue}`);
+            .map(item => showLevelLabel ? `Level ${item.level}: ${item.formattedValue}` : item.formattedValue);
 
         const formattedValue = levelStrings.join('; ');
 
@@ -108,7 +112,7 @@ export class DetailPageDisplayStrategy extends DisplayStrategyBase {
         }
 
         // Phase 6: Multi-Progression Level Grouping (Detail only)
-        const levelEntries = this.groupMultiProgressionByLevel(progressionResults);
+        const levelEntries = this.groupMultiProgressionByLevel(progressionResults, progressions);
 
         // Preserve formattedPrerequisites from the first progression that has them
         const formattedPrerequisites = progressionResults.find(r => r.formattedPrerequisites && r.formattedPrerequisites.length > 0)?.formattedPrerequisites;
@@ -132,6 +136,10 @@ export class DetailPageDisplayStrategy extends DisplayStrategyBase {
         context?: DisplayContext,
         progression?: FeatureProgression
     ): DisplayResult {
+        // Suppress level label for Feat progressions (feats don't have levels)
+        const isFeatProgression = progression?.sourceType === FeatureSourceType.Feat;
+        const showLevelLabel = !isFeatProgression;
+
         // DisplayType.Detail: This method is a no-op - pass through the data unchanged
         // The actual Phase 6 logic is handled in groupMultiProgressionByLevel
         if (withinProgressionGrouped.length === 0) {
@@ -143,7 +151,7 @@ export class DetailPageDisplayStrategy extends DisplayStrategyBase {
                 components: [],
                 levelEntries: [{
                     level: progression.level,
-                    description: `Level ${progression.level}`,
+                    description: showLevelLabel ? `Level ${progression.level}` : '',
                     items: [{
                         level: progression.level,
                         featureId: progression.featureId,
@@ -161,7 +169,7 @@ export class DetailPageDisplayStrategy extends DisplayStrategyBase {
         // Create a simple DisplayResult that preserves the data without transformation
         const levelEntries: LevelEntry[] = withinProgressionGrouped.map(item => ({
             level: item.level,
-            description: `Level ${item.level}`,
+            description: showLevelLabel ? `Level ${item.level}` : '',
             items: [item]
         }));
 
@@ -179,7 +187,8 @@ export class DetailPageDisplayStrategy extends DisplayStrategyBase {
      * Group multiple FeatureProgressions by level
      */
     private groupMultiProgressionByLevel(
-        progressionResults: DisplayResult[]
+        progressionResults: DisplayResult[],
+        progressions: FeatureProgression[]
     ): LevelEntry[] {
         // Group by level
         const groupedByLevel = new Map<number, LevelEntry[]>();
@@ -193,12 +202,15 @@ export class DetailPageDisplayStrategy extends DisplayStrategyBase {
             }
         }
 
+        // Check if any progression is from a Feat to suppress level labels
+        const hasFeatProgression = progressions.some(progression => progression.sourceType === FeatureSourceType.Feat);
+
         // Create LevelEntry[] for each level
         const levelEntries: LevelEntry[] = [];
         for (const [level, items] of groupedByLevel) {
             levelEntries.push({
                 level,
-                description: `Level ${level}`,
+                description: hasFeatProgression ? '' : `Level ${level}`,
                 items: items.flatMap(item => item.items)
             });
         }

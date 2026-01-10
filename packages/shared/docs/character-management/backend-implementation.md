@@ -186,6 +186,13 @@ The character management system handles complex character advancement through a 
 **Feat Integration**: Feat selection and advancement tracking
 **Spell Integration**: Spell learning and advancement tracking
 
+**Spell Scribing Operations**: Spell add/remove operations with free grant validation
+- **addSpellKnown**: Adds a spell to character's spellbook or known spells with validation
+- **removeSpellKnown**: Removes a spell from character's spellbook or known spells
+- **getAvailableSpellsForClass**: Gets available spells for a class with known status and free grant information
+- **Integration**: Integrates with character resolution sessions for state synchronization
+- **Related Documentation**: [Spell Scribing Feature](./spell-scribing.md) - Comprehensive spell scribing documentation
+
 **Integration Pattern**: The character service manages advancement relationships through database transactions, ensuring data consistency and proper relationship handling.
 
 **Related Documentation**: [Class System Backend Implementation](../class-system/backend-implementation.md), [Feature System Backend Implementation](../feature-system/backend-implementation.md)

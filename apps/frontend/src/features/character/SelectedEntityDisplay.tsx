@@ -3,15 +3,15 @@ import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 
 import { DomainDisplay } from '@/features/domain/DomainDisplay';
-import { formatCompanionBenefit } from '@/features/companion/CompanionUtil';
+import { FeatureDisplay } from '@/components/feature-system/FeatureDisplay';
 import { DomainQueryHooks } from '@/services/query/DomainQueryHooks';
 import { FeatQueryHooks } from '@/services/query/FeatQueryHooks';
 import { FeatureQueryHooks } from '@/services/query/FeatureQueryHooks';
 import { SpellQueryHooks } from '@/services/query/SpellQueryHooks';
 import { CompanionQueryHooks } from '@/services/query/CompanionQueryHooks';
-import type { Domain, GetSpellResponse, GetFeatureResponse, GetCompanionResponse } from '@shared/schema';
+import type { Domain, GetSpellResponse, GetFeatureResponse, GetCompanionResponse, FeatureProgression } from '@shared/schema';
 import { FeatSchema } from '@shared/schema';
-import { EntityAppliesToType, COMPANION_TYPE_MAP } from '@shared/static-data';
+import { EntityAppliesToType, COMPANION_TYPE_MAP, SpecialFeatureId, FeatureSourceType } from '@shared/static-data';
 
 interface SelectedEntityDisplayProps {
     choiceType: EntityAppliesToType;
@@ -347,24 +347,24 @@ function CompanionDisplayWrapper({ companionId, choiceType, showHeader: _showHea
 
     const companionName = companion.monster?.name || `Companion ${companion.id}`;
     const companionTypeName = COMPANION_TYPE_MAP[companion.type]?.name || (choiceType === EntityAppliesToType.Familiar ? 'Familiar' : 'Animal Companion');
+    
+    // Find the companion benefit progression from the companion's features
+    const benefitProgression = companion.features?.find(
+        p => p.featureId === SpecialFeatureId.CompanionBenefit && p.sourceType === FeatureSourceType.Companion
+    ) || null;
 
     return (
         <div className="mt-4 p-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-lg">
             <h4 className="font-semibold text-indigo-800 dark:text-indigo-200 mb-2">{companionTypeName}</h4>
             <p className="text-indigo-600 dark:text-indigo-300 mb-2">{companionName}</p>
-            {choiceType === EntityAppliesToType.Familiar && companion.benefits && companion.benefits.length > 0 && (
+            {choiceType === EntityAppliesToType.Familiar && benefitProgression && benefitProgression.entities && benefitProgression.entities.length > 0 && (
                 <div className="mt-3">
                     <p className="text-sm font-semibold text-indigo-800 dark:text-indigo-200 mb-2">Benefits:</p>
-                    <div className="flex flex-wrap items-center gap-2">
-                        {companion.benefits.map((benefit, index) => {
-                            const formattedBenefit = formatCompanionBenefit(benefit);
-                            return (
-                                <div key={index} className="rounded border border-indigo-300 dark:border-indigo-600 p-2 bg-indigo-100 dark:bg-indigo-900/30">
-                                    <span className="text-sm text-indigo-800 dark:text-indigo-200">{formattedBenefit}</span>
-                                </div>
-                            );
-                        })}
-                    </div>
+                    <FeatureDisplay
+                        feature={benefitProgression.feature}
+                        progressions={[benefitProgression]}
+                        showAddProgressionButton={false}
+                    />
                 </div>
             )}
         </div>

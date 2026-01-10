@@ -6,7 +6,7 @@
 
 The feat system database schema provides a comprehensive framework for defining feats, their characteristics, and relationships. The schema supports complex feat interactions while maintaining data integrity through proper relationships and constraints.
 
-The schema is designed to handle the complexity of D&D feats, including benefits, prerequisites, descriptions, and mechanical details.
+The schema is designed to handle the complexity of D&D feats. All feat benefits, prerequisites, descriptions, and summaries are handled through the unified Feature system (FeatureProgression, FeatureEntity, FeaturePrerequisite). The Feat model contains only metadata fields (name, type, flags).
 
 **Source File**: `prisma/schema.prisma` (Feat-related models)
 
@@ -16,72 +16,24 @@ The schema is designed to handle the complexity of D&D feats, including benefits
 
 The core feat definition containing basic information about feats, their characteristics, and mechanical properties.
 
-**Purpose**: Defines the fundamental characteristics of a feat, including its name, type, descriptions, benefits, and prerequisites.
+**Purpose**: Defines the fundamental characteristics of a feat, including its name, type, and metadata. Benefits, prerequisites, descriptions, and summaries are handled through the Feature system.
 
 **Key Fields**:
 - **`id`**: Unique identifier for the feat
 - **`name`**: Human-readable feat name
 - **`typeId`**: Reference to the feat type
-- **`description`**: Detailed feat description
-- **`benefit`**: Benefit description
-- **`normalEffect`**: Normal effect description
-- **`specialEffect`**: Special effect description
-- **`prerequisites`**: Prerequisite description
 - **`repeatable`**: Boolean flag for repeatable feats
 - **`fighterBonus`**: Boolean flag for fighter bonus feats
 - **`useSubId`**: Boolean flag indicating if the feat allows player choice (e.g., Skill Focus)
+- **`isVisible`**: Boolean flag for feat visibility
+- **`editionId`**: Reference to the edition
 
 **Relationships**:
-- **`type`**: Links to the feat type
-- **`benefits`**: Links to feat benefit mappings
-- **`prereqs`**: Links to feat prerequisite mappings
+- **`featureProgressions`**: Links to FeatureProgression entries that define the feat's benefits and prerequisites through the Feature system
 
-**Usage**: Core feat definitions that are referenced by characters and other systems.
+**Usage**: Core feat definitions that are referenced by characters and other systems. Benefits and prerequisites are managed through FeatureProgression entries.
 
 **Source File**: `prisma/schema.prisma` (Feat model)
-
-## 🔧 **Integration Models**
-
-### **FeatBenefitMap Model**
-
-Defines feat benefit relationships, linking feats to their benefits and effects.
-
-**Purpose**: Links feats to their benefits and effects for feat benefit management.
-
-**Key Fields**:
-- **`featId`**: Reference to the feat
-- **`typeId`**: Reference to the benefit type
-- **`referenceId`**: Reference to the specific entity (skill, save, etc.)
-- **`amount`**: Numeric value for the benefit
-- **`index`**: Ordering index for multiple benefits
-
-**Relationships**:
-- **`feat`**: Links to the feat
-
-**Usage**: Provides feat benefit relationships and calculations.
-
-**Source File**: `prisma/schema.prisma` (FeatBenefitMap model)
-
-### **FeatPrerequisiteMap Model**
-
-Defines feat prerequisite relationships, linking feats to their requirements.
-
-**Purpose**: Links feats to their prerequisites and requirements for feat access management.
-
-**Key Fields**:
-- **`featId`**: Reference to the feat
-- **`typeId`**: Reference to the prerequisite type
-- **`referenceId`**: Reference to the specific entity (ability, skill, feat, etc.)
-- **`amount`**: Numeric value for the requirement
-- **`index`**: Ordering index for multiple prerequisites
-
-**Relationships**:
-- **`feat`**: Links to the feat
-
-**Usage**: Provides feat prerequisite relationships and validation.
-
-**Source File**: `prisma/schema.prisma` (FeatPrerequisiteMap model)
-
 
 ## 🔗 **Cross-System Relationships**
 
@@ -102,14 +54,28 @@ The feat system integrates with the character system through feat selection and 
 
 ### **Feature System Integration**
 
-The feat system integrates with the feature system for feat-related features:
+The feat system is fully integrated with the Feature system for managing benefits and prerequisites:
 
-**Feat Prerequisites**: Features can require specific feats
-**Feat Benefits**: Features can provide feat-related bonuses
-**Feat Progression**: Features can grant additional feats
-**Feat Specializations**: Features can provide feat specializations
+**Feat Benefits**: All feat benefits are defined through FeatureProgression entries with FeatureEntity entries. Each FeatureEntity specifies:
+- **`appliesTo`**: The type of benefit (Attack, SavingThrow, Skill, etc.)
+- **`appliesToId`**: The specific entity ID (skill ID, ability ID, etc.)
+- **`appliesToSubId`**: Optional sub-identifier for special contexts (e.g., AttackBonusAppliesTo for two-weapon fighting)
+- **`value`**: The numeric bonus value
+- **`type`**: The entity type (Bonus, Other, etc.)
 
-**Integration Pattern**: The feat system integrates with the feature system to handle feat-related features, ensuring proper feat prerequisite and benefit calculations.
+**Feat Prerequisites**: All feat prerequisites are defined through FeatureProgression entries with FeaturePrerequisite entries. Each FeaturePrerequisite specifies:
+- **`type`**: The prerequisite type (AbilityScore, SkillRanks, Feat, etc.)
+- **`appliesToId`**: The specific entity ID (ability ID, skill ID, feat ID, etc.)
+- **`minValue`**: The minimum required value
+
+**Integration Pattern**: Each feat has one or more FeatureProgression entries (sourceType: Feat) that define its benefits and prerequisites. This unified approach allows feats to use the same powerful Feature system as races, classes, and other sources.
+
+**Example: Two-Weapon Fighting**
+The Two-Weapon Fighting feat provides different attack bonuses to main hand and off-hand attacks. This is handled using `appliesToSubId` with the `AttackBonusAppliesTo` enum:
+- Main hand entity: `appliesTo: EntityAppliesToType.Attack`, `appliesToSubId: AttackBonusAppliesTo.MainHand`, `value: 2`
+- Off hand entity: `appliesTo: EntityAppliesToType.Attack`, `appliesToSubId: AttackBonusAppliesTo.OffHand`, `value: 6`
+
+The calculation system uses context flags (`isDualWield`, `isOffHand`) to determine which bonus applies.
 
 **Related Documentation**: [Feature System Database Schema](../feature-system/database-schema.md)
 
@@ -119,15 +85,12 @@ The feat system integrates with the feature system for feat-related features:
 ### **Primary Key Constraints**
 
 **Feat Model**: `id` field is the primary key with auto-increment
-**FeatBenefitMap Model**: Composite primary key on `featId` and `index`
-**FeatPrerequisiteMap Model**: Composite primary key on `featId` and `index`
 
 ### **Foreign Key Constraints**
 
 **Feat Relationships**: All foreign key relationships are properly defined with cascade options
 **Type Integration**: Feat type relationships maintain referential integrity
-**Benefit Integration**: Feat benefit relationships maintain proper data consistency
-**Prerequisite Integration**: Feat prerequisite relationships maintain proper data consistency
+**Feature System Integration**: FeatureProgression relationships maintain proper data consistency for benefits and prerequisites
 **Source Attribution**: Source book relationships maintain proper attribution
 
 ### **Validation Constraints**
@@ -135,7 +98,7 @@ The feat system integrates with the feature system for feat-related features:
 **Numeric Ranges**: Type ID values are constrained to valid ranges
 **Type ID Validation**: Type IDs must reference valid types
 **Reference ID Validation**: Reference IDs must reference valid entities
-**String Lengths**: Name and description fields have appropriate length constraints
+**String Lengths**: Name field has appropriate length constraints (descriptions and summaries are stored in the Feature model)
 
 ## 🔧 **Performance Considerations**
 
@@ -168,30 +131,31 @@ The `useSubId` property enables player choice mechanics for feats that allow fle
 ```sql
 -- Fixed benefits, no player choice required
 INSERT INTO Feat (name, useSubId, ...) VALUES ('Alertness', false, ...);
-INSERT INTO FeatBenefitMap (featId, typeId, referenceId, amount) VALUES 
-  (1, 1, 15, 2),  -- +2 Listen
-  (1, 1, 16, 2);  -- +2 Spot
+-- Benefits defined via FeatureProgression with FeatureEntity entries:
+-- Entity 1: appliesTo: Skill, appliesToId: 15 (Listen), value: 2
+-- Entity 2: appliesTo: Skill, appliesToId: 16 (Spot), value: 2
 ```
 
 **Player Choice Feat (Skill Focus)**:
 ```sql
--- Player must choose skill, referenceId is null
+-- Player must choose skill, appliesToId is null in FeatureEntity
 INSERT INTO Feat (name, useSubId, ...) VALUES ('Skill Focus', true, ...);
-INSERT INTO FeatBenefitMap (featId, typeId, referenceId, amount) VALUES 
-  (2, 1, NULL, 3);  -- +3 to chosen skill
+-- Benefit defined via FeatureProgression with FeatureEntity:
+-- Entity: appliesTo: Skill, appliesToId: NULL, value: 3
+-- Player's choice stored in CharacterFeatureChoice.appliesToSubId
 ```
 
 ### **Character Implementation**
 When a character selects a feat with `useSubId: true`:
 1. **Player Choice Required**: Character must specify which skill/weapon/etc.
-2. **Choice Storage**: Selection stored in character's feat choices
-3. **Benefit Application**: Benefits applied to the chosen entity
+2. **Choice Storage**: Selection stored in CharacterFeatureChoice with `appliesToSubId` set to the chosen entity ID
+3. **Benefit Application**: Benefits applied to the chosen entity via FeatureEntity resolution
 4. **Validation**: System validates that the choice is valid for the benefit type
 
 ### **Database Patterns**
-- **Predefined Feats**: `referenceId` contains specific entity ID
-- **Player Choice Feats**: `referenceId` is `NULL`, choice stored separately
-- **Character Feats**: Character's choices stored in character feat selections
+- **Predefined Feats**: FeatureEntity `appliesToId` contains specific entity ID
+- **Player Choice Feats**: FeatureEntity `appliesToId` is `NULL`, choice stored in CharacterFeatureChoice
+- **Character Feats**: Character's choices stored in CharacterFeatureChoice entries
 
 ## 🔗 **Related Documentation**
 

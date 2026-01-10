@@ -240,9 +240,26 @@ format(choice: CalculatedEntity, context?: DisplayContext): string {
 - **Verify**: Is the labeler adding the correct prefix/suffix?
 - **Note**: For grouped choices, the grouped labeler should format the final output
 
+## Entity Precaching Requirements
+
+When adding new formatters that display entity names (feats, features, spells, domains, classes, skills, races), ensure that entities are precached before formatting:
+
+**Important**: Formatters use synchronous cache access and cannot trigger fetches. Entities must be precached before formatting begins to prevent "name not found" errors.
+
+**Precaching Pattern**:
+```tsx
+// In components that use formatters
+const { isComplete } = usePrecacheFeatureEntities(progressions);
+if (!isComplete) return <div>Loading...</div>;
+// Now safe to format
+```
+
+For comprehensive precaching documentation, see **[Entity Precaching System](./entity-precaching.md)**.
+
 ## Related Documentation
 
 - [Formatting System Overview](./README.md) - Complete system architecture
+- [Entity Precaching System](./entity-precaching.md) - Entity precaching architecture and usage
 - [Usage Guidelines](./usage-guidelines.md) - How to use the formatting system
 - [Architecture Decisions](./architecture-decisions.md) - Design rationale
 

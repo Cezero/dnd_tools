@@ -24,18 +24,21 @@ The feat system manages all aspects of feats in D&D Tools, including feat defini
 ### **Core Architecture**
 ```
 Feat (Feat Definition)
-├── Feat Properties (Type, Description, Benefits, Prerequisites)
-├── Feat Benefits (Skill Bonuses, Save Bonuses, Proficiencies)
-├── Feat Prerequisites (Ability Scores, Skills, Feats, BAB)
+├── Feat Properties (Type, Repeatable, Fighter Bonus, Use Sub-ID)
+├── FeatureProgression (Links feat to Feature system)
+│   ├── Feature (Description, Summary from associated Feature)
+│   ├── FeatureEntity (Benefits: Skill Bonuses, Save Bonuses, Attack Bonuses, etc.)
+│   └── FeaturePrerequisite (Prerequisites: Ability Scores, Skills, Feats, BAB)
 └── Character Feats (Feat Selection and Validation)
 ```
 
 ### **Key Principles**
-- **Comprehensive Feat Data**: Complete feat information including benefits and prerequisites
-- **Prerequisite Validation**: Automatic checking of feat prerequisites for characters
-- **Benefit System**: Structured benefits that can be applied to characters
+- **Unified Feature System**: All benefits and prerequisites are managed through the unified Feature system (FeatureProgression, FeatureEntity, FeaturePrerequisite)
+- **Feature-Based Descriptions**: Feat descriptions and summaries come from associated Features, not the Feat model itself
+- **Prerequisite Validation**: Automatic checking of feat prerequisites for characters via FeaturePrerequisite
+- **Benefit System**: Structured benefits applied through FeatureEntity entries with support for special contexts (e.g., two-weapon fighting via AttackBonusAppliesTo)
 - **Flexible Feat Types**: Support for General, Item Creation, and Metamagic feats
-- **Character Integration**: Seamless integration with character advancement and selection
+- **Character Integration**: Seamless integration with character advancement and selection, with backend filtering for available feats
 
 ## 🚀 **Getting Started**
 
@@ -87,12 +90,14 @@ The feat system follows a layered architecture that separates concerns and enabl
 - **API Integration**: Type-safe API client with comprehensive error handling
 
 ### **✅ Feat System Features**
-- **Complete Feat Structure**: Feats with benefits, prerequisites, and types
+- **Complete Feat Structure**: Feats with types, repeatable flags, and fighter bonus flags
 - **Feat Types**: General, Item Creation, Metamagic feats
-- **Benefit System**: Skill bonuses, save bonuses, proficiencies
-- **Prerequisite System**: Ability scores, skills, feats, BAB, spellcasting, class levels
-- **Character Integration**: Character feat selection with prerequisite validation
-- **Advanced Editing**: Complex benefit and prerequisite management interfaces
+- **Feature System Integration**: All benefits and prerequisites managed through FeatureProgression
+- **Feature-Based Content**: Descriptions and summaries come from associated Features
+- **Benefit System**: Skill bonuses, save bonuses, attack bonuses, proficiencies via FeatureEntity with support for special contexts
+- **Prerequisite System**: Ability scores, skills, feats, BAB, spellcasting, class levels via FeaturePrerequisite
+- **Character Integration**: Character feat selection with backend filtering for available feats (prerequisites, owned feats, proficiency conflicts)
+- **Advanced Editing**: FeatureProgression management through FeaturesManager component with support for new feats
 
 ### **Implementation Quality**
 - **Code Quality**: High - Well-structured, type-safe, comprehensive
@@ -144,11 +149,13 @@ The feat system integrates with the class system through bonus feats:
 ## 📋 **Development Guidelines**
 
 ### **Adding New Feats**
-1. **Database**: Add feat record with all required fields
-2. **Benefits**: Create appropriate benefit mappings
-3. **Prerequisites**: Add prerequisite mappings if required
-4. **Validation**: Ensure all data passes Zod validation
-5. **Testing**: Test feat display and functionality
+1. **Database**: Add feat record with all required fields (name, typeId, editionId, etc.)
+2. **Feature**: Create or select a Feature with description and summary
+3. **FeatureProgression**: Create FeatureProgression linking feat to feature
+4. **Benefits**: Add FeatureEntity entries for benefits (skill bonuses, attack bonuses, etc.)
+5. **Prerequisites**: Add FeaturePrerequisite entries if required
+6. **Validation**: Ensure all data passes Zod validation
+7. **Testing**: Test feat display and functionality
 
 ### **Modifying Feat Data**
 1. **Validation**: Ensure changes comply with D&D 3.5 rules
@@ -175,16 +182,19 @@ The feat system integrates with the class system through bonus feats:
 
 ### **Key Data Structures**
 - **Feat Types**: General (1), Item Creation (2), Metamagic (3)
-- **Benefit Types**: Skill (1), Save (2), Proficiency (3)
-- **Prerequisite Types**: Ability (1), Skill (2), Feat (3), BAB (4), Spellcasting (5), Special (6), Class Level (7), Proficiency (8), Class Feature (9)
+- **Feature System Enums**: Benefits use `EntityAppliesToType` (Attack, SavingThrow, Skill, Proficiency, etc.), prerequisites use `FeaturePrerequisiteType` (AbilityScore, SkillRanks, Feat, BaseAttackBonus, etc.)
+- **Attack Bonus Contexts**: `AttackBonusAppliesTo` enum (MainHand, OffHand, Thrown) for special attack bonus contexts
+- **See [Feature System Static Data](../feature-system/static-data.md)** for complete enum definitions
 
 ### **API Endpoints**
 - **GET /feats**: Retrieve all feats with filtering and pagination
-- **GET /feats/:id**: Retrieve specific feat by ID
+- **GET /feats/with-feature-info**: Retrieve all feats with feature description and summary (composite schema for list views)
+- **GET /feats/:id**: Retrieve specific feat by ID with feature progressions
 - **GET /feats/query**: Query feats with specific criteria
-- **POST /feats**: Create new feat
+- **POST /feats**: Create new feat (accepts featureProgressions in request)
 - **PUT /feats/:id**: Update existing feat
 - **DELETE /feats/:id**: Delete feat (admin only)
+- **GET /characters/:characterId/resolution/available-feats**: Get filtered available feats for a character (prerequisites, owned feats, proficiency conflicts)
 
 ## 📚 **Related Documentation**
 

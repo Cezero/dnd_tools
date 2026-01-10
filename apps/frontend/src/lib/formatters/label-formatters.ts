@@ -1,4 +1,4 @@
-import { SKILL_MAP, ABILITY_MAP, SAVING_THROW_MAP, DAMAGE_TYPES, EntityAppliesToType, ENTITY_APPLIES_TO_TYPES, CRAFT_SKILL_MAP, KNOWLEDGE_SKILL_MAP, SkillSubType, SKILL_SUB_TYPE_COMPATIBILITY, SPELL_SCHOOL_MAP } from '@shared/static-data';
+import { SKILL_MAP, ABILITY_MAP, SAVING_THROW_MAP, DAMAGE_TYPES, EntityAppliesToType, ENTITY_APPLIES_TO_TYPES, CRAFT_SKILL_MAP, KNOWLEDGE_SKILL_MAP, SkillSubType, SKILL_SUB_TYPE_COMPATIBILITY, SPELL_SCHOOL_MAP, AttackBonusAppliesTo, ATTACK_BONUS_APPLIES_TO_TYPES } from '@shared/static-data';
 
 import type { CalculatedEntity } from './types';
 
@@ -73,6 +73,25 @@ export function displayNameLabeler(value: string, modifier: CalculatedEntity): s
         return `${typeInfo.displayName}: ${value}`;
     }
     return value;
+}
+
+// Labeler for Attack bonuses - includes appliesToSubId context (main-hand, off-hand, thrown)
+export function attackBonusLabeler(value: string, modifier: CalculatedEntity): string {
+    const typeInfo = ENTITY_APPLIES_TO_TYPES[modifier.appliesTo];
+    const baseLabel = typeInfo?.displayName || 'Atk';
+    
+    // Check if appliesToSubId is set (for special attack bonus contexts)
+    if (modifier.appliesToSubId !== null && modifier.appliesToSubId !== undefined) {
+        const contextType = ATTACK_BONUS_APPLIES_TO_TYPES[modifier.appliesToSubId];
+        if (contextType) {
+            // Convert to lowercase with hyphen for display (e.g., "Main Hand" -> "main-hand")
+            const contextName = contextType.name.toLowerCase().replace(/\s+/g, '-');
+            return `${baseLabel}: ${value} (${contextName})`;
+        }
+    }
+    
+    // Default: just show the base label and value
+    return `${baseLabel}: ${value}`;
 }
 
 // Labeler that returns the value without any label

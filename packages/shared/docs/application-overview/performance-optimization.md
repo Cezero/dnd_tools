@@ -108,6 +108,52 @@ Performance optimization is a critical concern across all systems in the D&D Too
 - **Version-Based**: Invalidate cache based on version changes
 - **Selective Invalidation**: Invalidate only affected cache entries
 
+#### **Entity Precaching Strategy**
+
+The application uses a two-level entity precaching strategy to ensure entity names are available when formatters need them:
+
+**Level 1: Global Bulk Cache (CacheProvider)**
+- **Purpose**: Load bulk caches at application startup for frequently accessed static data
+- **Entities**: Skills, spells, domains, races, feats (all), classes
+- **Cache Duration**: Infinite stale time for static data
+- **Source File**: [`apps/frontend/src/providers/CacheProvider.tsx`](../../../apps/frontend/src/providers/CacheProvider.tsx)
+- **Benefits**: 
+  - Reduces individual API calls
+  - Provides fast access to commonly used entities
+  - Loads once at app startup
+
+**Level 2: Entity-Specific Precaching**
+- **Purpose**: Load individual entities on-demand when needed for formatting
+- **Entities**: Individual feats, features, classes referenced in feature progressions
+- **Trigger**: Activated when feature progressions are displayed
+- **Source Files**: 
+  - [`apps/frontend/src/lib/formatters/utils/entity-extractor.ts`](../../../apps/frontend/src/lib/formatters/utils/entity-extractor.ts)
+  - [`apps/frontend/src/lib/formatters/utils/precache-helpers.ts`](../../../apps/frontend/src/lib/formatters/utils/precache-helpers.ts)
+  - [`apps/frontend/src/lib/formatters/hooks/usePrecacheFeatureEntities.ts`](../../../apps/frontend/src/lib/formatters/hooks/usePrecacheFeatureEntities.ts)
+- **Benefits**:
+  - Only fetches entities that are actually needed
+  - Checks cache before fetching to avoid duplicate requests
+  - Handles multiple cache formats (individual, bulk, legacy)
+
+**Cache Key Priorities**:
+The precaching system checks multiple cache formats in priority order to maximize cache hits:
+1. **Individual Cache**: `['{entity}', 'item', id]` - Fastest, most specific
+2. **Bulk Cache**: `['{entity}-cache']` - Loaded at startup
+3. **Legacy Cache**: `['{entity}-cache', params]` - Backward compatibility
+
+**Integration with Formatting System**:
+- Formatters use synchronous cache access (`cache-helpers.ts`) to read entity names
+- Precaching ensures data is available before formatting begins
+- Prevents "name not found" errors by loading entities proactively
+
+**Performance Characteristics**:
+- **Efficient**: Only fetches missing entities
+- **Parallel**: Fetches multiple entities concurrently using `Promise.all`
+- **Cache-Aware**: Checks cache before fetching to avoid unnecessary requests
+- **Error-Resilient**: Gracefully handles fetch failures without breaking formatting
+
+For comprehensive documentation, see **[Entity Precaching System](../formatting-system/entity-precaching.md)**.
+
 ### **Database Optimization**
 
 #### **Query Optimization**

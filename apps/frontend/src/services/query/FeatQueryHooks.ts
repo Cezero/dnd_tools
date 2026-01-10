@@ -4,6 +4,7 @@ import type { QueryFunctionContext, QueryClient } from '@tanstack/react-query';
 import {
     FeatIdParamSchema,
     BaseFeatSchema,
+    CreateFeatWithProgressionsSchema,
     UpdateFeatSchema,
     UpdateResponseSchema,
     CreateResponseSchema,
@@ -12,17 +13,20 @@ import {
     FeatQueryResponseSchema,
     GetFeatListResponseSchema,
     FeatSchema,
+    GetAllFeatsWithFeatureInfoResponseSchema,
     type Feat,
     type FeatQueryResponse,
+    type GetAllFeatsWithFeatureInfoResponse,
 } from '@shared/schema';
 
 import { createQueryHooks } from './QueryHooksFactory';
 
 // Create query hook configurations
+// Use the endpoint that includes feature description and summary for list views
 const featsConfig = createQueryHooks({
-    path: '/feats',
+    path: '/feats/with-feature-info',
     method: 'GET',
-    responseSchema: GetAllFeatsResponseSchema,
+    responseSchema: GetAllFeatsWithFeatureInfoResponseSchema,
     queryKey: 'feats',
     queryKeyBuilder: (params) => ['feats', 'list', params as string | number | object],
 });
@@ -144,7 +148,7 @@ const featByIdConfig = {
 const createFeatConfig = createQueryHooks({
     path: '/feats',
     method: 'POST',
-    requestSchema: BaseFeatSchema,
+    requestSchema: CreateFeatWithProgressionsSchema,
     responseSchema: CreateResponseSchema,
     queryKey: 'feats',
 });

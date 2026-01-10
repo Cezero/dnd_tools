@@ -363,6 +363,8 @@ export const featureSystemService: FeatureSystemService = {
                     sourceType = FeatureSourceType.Class;
                 } else if (context.domainId) {
                     sourceType = FeatureSourceType.Domain;
+                } else if (context.featId) {
+                    sourceType = FeatureSourceType.Feat;
                 } else if (context.variantOverrideId) {
                     sourceType = FeatureSourceType.ClassVariant;
                 }
@@ -377,6 +379,7 @@ export const featureSystemService: FeatureSystemService = {
                         raceId: context.raceId || null,
                         variantOverrideId: context.variantOverrideId || null,
                         domainId: context.domainId || null,
+                        featId: context.featId || null,
                     },
                 });
 
@@ -406,7 +409,7 @@ export const featureSystemService: FeatureSystemService = {
         context: FeatureProgressionContext,
         tx?: Prisma.TransactionClient
     ): Promise<void> {
-        const whereClause: { classId?: number; raceId?: number; variantOverrideId?: number; domainId?: number } = {};
+        const whereClause: { classId?: number; raceId?: number; variantOverrideId?: number; domainId?: number; featId?: number } = {};
         if (context.classId) {
             whereClause.classId = context.classId;
         }
@@ -418,6 +421,9 @@ export const featureSystemService: FeatureSystemService = {
         }
         if (context.domainId) {
             whereClause.domainId = context.domainId;
+        }
+        if (context.featId) {
+            whereClause.featId = context.featId;
         }
 
         if (Object.keys(whereClause).length === 0) {
@@ -626,6 +632,10 @@ export const featureSystemService: FeatureSystemService = {
                                 featureId,
                                 classId: progressionData.classId || null,
                                 raceId: progressionData.raceId || null,
+                                domainId: progressionData.domainId || null,
+                                variantOverrideId: progressionData.variantOverrideId || null,
+                                featId: progressionData.featId || null,
+                                companionId: progressionData.companionId || null,
                             },
                         });
 
@@ -713,6 +723,10 @@ export const featureSystemService: FeatureSystemService = {
                                 featureId,
                                 classId: progressionData.classId || null,
                                 raceId: progressionData.raceId || null,
+                                domainId: progressionData.domainId || null,
+                                variantOverrideId: progressionData.variantOverrideId || null,
+                                featId: progressionData.featId || null,
+                                companionId: progressionData.companionId || null,
                             },
                         });
 
@@ -1041,6 +1055,20 @@ export const featureSystemService: FeatureSystemService = {
                 featId: { in: featIds },
                 sourceType: FeatureSourceType.Feat,
             },
+            select: { id: true }
+        });
+
+        // Delegate to core method with choices
+        return await this.getFeatureProgressionsByIds(progressionIds.map(p => p.id), characterFeatureChoices);
+    },
+
+    async getFeatureProgressionsByCompanionId(
+        companionId: number,
+        characterFeatureChoices?: Array<{ progressionId: number; featureEntityId: number; appliesToId: number | null; appliesToSubId: number | null }>
+    ): Promise<FeatureProgression[]> {
+        // Get progression IDs for this companion
+        const progressionIds = await prisma.featureProgression.findMany({
+            where: { companionId },
             select: { id: true }
         });
 
